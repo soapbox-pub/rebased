@@ -101,7 +101,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       muted: false,
       pinned: false,
       sensitive: false,
-      spoiler_text: note.data["object"]["summary"],
+      spoiler_text: HtmlSanitizeEx.basic_html(note.data["object"]["summary"]),
       visibility: "public",
       media_attachments: [],
       mentions: [],
@@ -126,7 +126,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       ],
       pleroma: %{
         local: true,
-        conversation_id: convo_id
+        conversation_id: convo_id,
+        content: %{"text/plain" => HtmlSanitizeEx.strip_tags(note.data["object"]["content"])},
+        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(note.data["object"]["summary"])}
       }
     }
 
