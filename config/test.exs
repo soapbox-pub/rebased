@@ -17,3 +17,7 @@ config :pleroma, Pleroma.Repo,
   database: "pleroma_test",
   hostname: "localhost",
   pool: Ecto.Adapters.SQL.Sandbox
+
+
+# Reduce hash rounds for testing
+config :comeonin, :pbkdf2_rounds, 1
