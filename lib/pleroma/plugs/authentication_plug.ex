@@ -22,7 +22,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   end
 
   defp verify(user, password) do
-    if Comeonin.Pbkdf2.checkpw(password, user[:password_hash]) do
+    if Comeonin.Pbkdf2.checkpw(password, user.password_hash) do
       {:ok, user}
     else
       :error
