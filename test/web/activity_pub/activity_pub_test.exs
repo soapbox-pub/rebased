@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       since_id = List.last(activities).id
       last_expected = List.last(later_activities)
 
-      activities = ActivityPub.fetch_public_activities(%{since_id: since_id})
+      activities = ActivityPub.fetch_public_activities(%{"since_id" => since_id})
       last = List.last(activities)
 
       assert length(activities) == 10

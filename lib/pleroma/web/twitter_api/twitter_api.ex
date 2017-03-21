@@ -21,8 +21,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     ActivityPub.insert(activity)
   end
 
-  def fetch_public_statuses do
-    activities = ActivityPub.fetch_public_activities
+  def fetch_public_statuses(opts \\ %{}) do
+    activities = ActivityPub.fetch_public_activities(opts)
 
     Enum.map(activities, fn(activity) ->
       actor = get_in(activity.data, ["actor"])

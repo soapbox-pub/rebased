@@ -9,12 +9,19 @@ defmodule Pleroma.Web.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug :fetch_session
+    plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Pleroma.Web.Router.user_fetcher/1, optional: true}
   end
 
   pipeline :authenticated_api do
     plug :accepts, ["json"]
     plug :fetch_session
-    plug Pleroma.Plugs.AuthenticationPlug, fetcher: &Pleroma.Web.Router.user_fetcher/1
+    plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Pleroma.Web.Router.user_fetcher/1}
+  end
+
+  scope "/api", Pleroma.Web do
+    pipe_through :api
+    get "/statuses/public_timeline.json", TwitterAPI.Controller, :public_timeline
   end
 
   scope "/api", Pleroma.Web do

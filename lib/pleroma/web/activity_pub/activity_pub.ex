@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_public_activities(opts \\ %{}) do
-    since_id = opts[:since_id] || 0
+    since_id = opts["since_id"] || 0
 
     query = from activity in Activity,
       where: fragment(~s(? @> '{"to": ["https://www.w3.org/ns/activitystreams#Public"]}'), activity.data),

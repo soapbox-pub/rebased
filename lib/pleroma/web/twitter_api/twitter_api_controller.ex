@@ -16,6 +16,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, ActivityRepresenter.to_json(activity, %{user: user}))
   end
 
+  def public_timeline(conn, params) do
+    statuses = TwitterAPI.fetch_public_statuses(params)
+    {:ok, json} = Poison.encode(statuses)
+
+    conn
+    |> json_reply(200, json)
+  end
+
   defp json_reply(conn, status, json) do
     conn
     |> put_resp_content_type("application/json")

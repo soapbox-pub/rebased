@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   use Pleroma.Web.ConnCase
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
-  alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Builders.{ActivityBuilder, UserBuilder}
   alias Pleroma.{Repo, Activity}
 
   describe "POST /api/account/verify_credentials" do
@@ -33,6 +33,22 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post("/api/statuses/update.json", %{ status: "Nice meme." })
 
       assert json_response(conn, 200) == ActivityRepresenter.to_map(Repo.one(Activity), %{user: user})
+    end
+  end
+
+  describe "GET /statuses/public_timeline.json" do
+    test "returns statuses", %{conn: conn} do
+      {:ok, user} = UserBuilder.insert
+      activities = ActivityBuilder.insert_list(30, %{}, %{user: user})
+      ActivityBuilder.insert_list(10, %{}, %{user: user})
+      since_id = List.last(activities).id
+
+      conn = conn
+        |> get("/api/statuses/public_timeline.json", %{since_id: since_id})
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 10
     end
   end
 
