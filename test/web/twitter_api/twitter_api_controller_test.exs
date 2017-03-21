@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   use Pleroma.Web.ConnCase
-  alias Pleroma.{User, Repo}
   alias Pleroma.Web.TwitterAPI.Representers.UserRepresenter
+  alias Pleroma.Builders.UserBuilder
 
   describe "POST /api/account/verify_credentials" do
     setup [:valid_user]
@@ -20,14 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   defp valid_user(_context) do
-    user = %User{
-      email: "test@example.org",
-      name: "Test Name",
-      nickname: "testname",
-      password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
-      bio: "A tester."
-    }
-    user = Repo.insert!(user)
+    { :ok, user } = UserBuilder.insert
     [user: user]
   end
 
