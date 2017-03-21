@@ -21,5 +21,6 @@ defmodule Pleroma.Web.Router do
     pipe_through :authenticated_api
 
     post "/account/verify_credentials.json", TwitterAPI.Controller, :verify_credentials
+    post "/statuses/update.json", TwitterAPI.Controller, :status_update
   end
 end

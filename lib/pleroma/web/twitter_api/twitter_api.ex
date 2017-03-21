@@ -6,15 +6,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def create_status(user = %User{}, data = %{}) do
     activity = %{
-      type: "Create",
-      to: [
+      "type" => "Create",
+      "to" => [
         User.ap_followers(user),
         "https://www.w3.org/ns/activitystreams#Public"
       ],
-      actor: User.ap_id(user),
-      object: %{
-        type: "Note",
-        content: data.status
+      "actor" => User.ap_id(user),
+      "object" => %{
+        "type" => "Note",
+        "content" => data["status"]
       }
     }
 
