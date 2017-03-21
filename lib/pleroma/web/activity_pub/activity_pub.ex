@@ -7,9 +7,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.insert(%Activity{data: map})
   end
 
-  def fetch_public_activities do
+  def fetch_public_activities(opts \\ %{}) do
+    since_id = opts[:since_id] || 0
+
     query = from activity in Activity,
       where: fragment(~s(? @> '{"to": ["https://www.w3.org/ns/activitystreams#Public"]}'), activity.data),
+      where: activity.id > ^since_id,
       limit: 20,
       order_by: [desc: :inserted_at]
 

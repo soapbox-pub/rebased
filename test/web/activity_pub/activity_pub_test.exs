@@ -34,5 +34,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert length(activities) == 20
       assert last == last_expected
     end
+
+    test "retrieves ids starting from a since_id" do
+      activities = ActivityBuilder.insert_list(30)
+      later_activities = ActivityBuilder.insert_list(10)
+      since_id = List.last(activities).id
+      last_expected = List.last(later_activities)
+
+      activities = ActivityPub.fetch_public_activities(%{since_id: since_id})
+      last = List.last(activities)
+
+      assert length(activities) == 10
+      assert last == last_expected
+    end
   end
 end
