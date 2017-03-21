@@ -15,13 +15,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "fetch activities" do
-    test "retrieves all public activities" do
+  describe "public fetch activities" do
+    test "retrieves public activities" do
       %{public: public} = ActivityBuilder.public_and_non_public
 
       activities = ActivityPub.fetch_public_activities
       assert length(activities) == 1
       assert Enum.at(activities, 0) == public
+    end
+
+    test "retrieves a maximum of 20 activities" do
+      activities = ActivityBuilder.insert_list(30)
+      last_expected = List.last(activities)
+
+      activities = ActivityPub.fetch_public_activities
+      last = List.last(activities)
+
+      assert length(activities) == 20
+      assert last == last_expected
     end
   end
 end

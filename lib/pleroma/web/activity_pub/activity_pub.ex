@@ -9,8 +9,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_public_activities do
     query = from activity in Activity,
-    where: fragment(~s(? @> '{"to": ["https://www.w3.org/ns/activitystreams#Public"]}'), activity.data)
+      where: fragment(~s(? @> '{"to": ["https://www.w3.org/ns/activitystreams#Public"]}'), activity.data),
+      limit: 20,
+      order_by: [desc: :inserted_at]
 
     Repo.all(query)
+    |> Enum.reverse
   end
 end
