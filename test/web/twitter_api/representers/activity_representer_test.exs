@@ -7,6 +7,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   test "an activity" do
     {:ok, user} = UserBuilder.insert
     content = "Some content"
+    date = DateTime.utc_now() |> DateTime.to_iso8601
+
     activity = %Activity{
       id: 1,
       data: %{
@@ -17,9 +19,11 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         ],
         "actor" => User.ap_id(user),
         "object" => %{
+          "published" => date,
           "type" => "Note",
           "content" => content
-        }
+        },
+        "published" => date
       }
     }
 
@@ -31,7 +35,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "attentions" => [],
       "statusnet_html" => content,
       "text" => content,
-      "is_post_verb" => true
+      "is_post_verb" => true,
+      "created_at" => date
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user}) == expected_status

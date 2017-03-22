@@ -5,6 +5,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
 
   def create_status(user = %User{}, data = %{}) do
+    date = DateTime.utc_now() |> DateTime.to_iso8601
     activity = %{
       "type" => "Create",
       "to" => [
@@ -14,16 +15,26 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       "actor" => User.ap_id(user),
       "object" => %{
         "type" => "Note",
-        "content" => data["status"]
-      }
+        "content" => data["status"],
+        "published" => date
+      },
+      "published" => date
     }
 
     ActivityPub.insert(activity)
   end
 
-  def fetch_public_statuses(opts \\ %{}) do
-    activities = ActivityPub.fetch_public_activities(opts)
+  def fetch_friend_statuses(user, opts \\ %{}) do
+    ActivityPub.fetch_activities(user.following, opts)
+    |> activities_to_statuses
+  end
 
+  def fetch_public_statuses(opts \\ %{}) do
+    ActivityPub.fetch_public_activities(opts)
+    |> activities_to_statuses
+  end
+
+  defp activities_to_statuses(activities) do
     Enum.map(activities, fn(activity) ->
       actor = get_in(activity.data, ["actor"])
       user = Repo.get_by!(User, ap_id: actor)

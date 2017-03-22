@@ -1,8 +1,8 @@
 defmodule Pleroma.Builders.UserBuilder do
   alias Pleroma.{User, Repo}
 
-  def build do
-    %User{
+  def build(data \\ %{}) do
+    user = %User{
       email: "test@example.org",
       name: "Test Name",
       nickname: "testname",
@@ -10,9 +10,10 @@ defmodule Pleroma.Builders.UserBuilder do
       bio: "A tester.",
       ap_id: "some id"
     }
+    Map.merge(user, data)
   end
 
-  def insert do
-    Repo.insert(build())
+  def insert(data \\ %{}) do
+    Repo.insert(build(data))
   end
 end

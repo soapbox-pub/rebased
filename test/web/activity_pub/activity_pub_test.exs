@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "retrieve the activities for certain recipients" do
       {:ok, activity_one} = ActivityBuilder.insert(%{"to" => ["someone"]})
       {:ok, activity_two} = ActivityBuilder.insert(%{"to" => ["someone_else"]})
-      {:ok, activity_three} = ActivityBuilder.insert(%{"to" => ["noone"]})
+      {:ok, _activity_three} = ActivityBuilder.insert(%{"to" => ["noone"]})
 
       activities = ActivityPub.fetch_activities(["someone", "someone_else"])
       assert length(activities) == 2
