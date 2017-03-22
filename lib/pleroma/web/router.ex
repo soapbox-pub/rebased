@@ -22,6 +22,7 @@ defmodule Pleroma.Web.Router do
   scope "/api", Pleroma.Web do
     pipe_through :api
     get "/statuses/public_timeline.json", TwitterAPI.Controller, :public_timeline
+    get "/statuses/public_and_external_timeline.json", TwitterAPI.Controller, :public_timeline
   end
 
   scope "/api", Pleroma.Web do

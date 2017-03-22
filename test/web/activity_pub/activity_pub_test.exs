@@ -15,6 +15,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+
+  describe "fetch activities for recipients" do
+    test "retrieve the activities for certain recipients" do
+      {:ok, activity_one} = ActivityBuilder.insert(%{"to" => ["someone"]})
+      {:ok, activity_two} = ActivityBuilder.insert(%{"to" => ["someone_else"]})
+      {:ok, activity_three} = ActivityBuilder.insert(%{"to" => ["noone"]})
+
+      activities = ActivityPub.fetch_activities(["someone", "someone_else"])
+      assert length(activities) == 2
+      assert activities == [activity_one, activity_two]
+    end
+  end
+
   describe "public fetch activities" do
     test "retrieves public activities" do
       %{public: public} = ActivityBuilder.public_and_non_public
