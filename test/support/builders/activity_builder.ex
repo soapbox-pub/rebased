@@ -23,7 +23,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
 
   def insert_list(times, data \\ %{}, opts \\ %{}) do
     Enum.map(1..times, fn (n) ->
-      {:ok, activity} = insert(%{"id" => n})
+      {:ok, activity} = insert(Map.merge(data, %{"id" => n}))
       activity
     end)
   end

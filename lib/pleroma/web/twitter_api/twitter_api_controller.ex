@@ -24,6 +24,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, json)
   end
 
+  def friends_timeline(%{assigns: %{user: user}} = conn, params) do
+    statuses = TwitterAPI.fetch_friend_statuses(user, params)
+    {:ok, json} = Poison.encode(statuses)
+
+    conn
+    |> json_reply(200, json)
+  end
+
   defp json_reply(conn, status, json) do
     conn
     |> put_resp_content_type("application/json")
