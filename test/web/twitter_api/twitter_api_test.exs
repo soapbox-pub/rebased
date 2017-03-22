@@ -40,4 +40,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert length(statuses) == 1
     assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: activity_user})
   end
+
+  test "Follow another user" do
+    { :ok, user } = UserBuilder.insert
+    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
+
+    {:ok, user, following } = TwitterAPI.follow(user, following.id)
+
+    user = Repo.get(User, user.id)
+
+    assert user.following == [User.ap_followers(following)]
+  end
 end

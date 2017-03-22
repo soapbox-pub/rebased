@@ -79,6 +79,26 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "POST /friendships/create.json" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      conn = post conn, "/api/friendships/create.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      {:ok, followed } = UserBuilder.insert(%{name: "some guy"})
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/friendships/create.json", %{user_id: followed.id})
+
+      current_user = Repo.get(User, current_user.id)
+      assert current_user.following == [User.ap_followers(followed)]
+      assert json_response(conn, 200) == UserRepresenter.to_map(followed)
+    end
+  end
+
   defp valid_user(_context) do
     { :ok, user } = UserBuilder.insert(%{nickname: "lambda", ap_id: "lambda"})
     [user: user]
