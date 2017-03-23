@@ -43,4 +43,14 @@ defmodule Pleroma.User do
     |> follow_changeset(%{following: following})
     |> Repo.update
   end
+
+  def unfollow(%User{} = follower, %User{} = followed) do
+    ap_followers = User.ap_followers(followed)
+    following = follower.following
+    |> List.delete(ap_followers)
+
+    follower
+    |> follow_changeset(%{following: following})
+    |> Repo.update
+  end
 end

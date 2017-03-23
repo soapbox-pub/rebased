@@ -32,5 +32,6 @@ defmodule Pleroma.Web.Router do
     post "/statuses/update.json", TwitterAPI.Controller, :status_update
     get "/statuses/friends_timeline.json", TwitterAPI.Controller, :friends_timeline
     post "/friendships/create.json", TwitterAPI.Controller, :follow
+    post "/friendships/destroy.json", TwitterAPI.Controller, :unfollow
   end
 end

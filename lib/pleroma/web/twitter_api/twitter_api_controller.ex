@@ -41,6 +41,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, response)
   end
 
+  def unfollow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
+    { :ok, _user, follower } = TwitterAPI.unfollow(user, followed_id)
+
+    response = follower |> UserRepresenter.to_json
+
+    conn
+    |> json_reply(200, response)
+  end
+
+
   defp json_reply(conn, status, json) do
     conn
     |> put_resp_content_type("application/json")

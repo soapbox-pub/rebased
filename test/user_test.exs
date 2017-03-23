@@ -24,7 +24,7 @@ defmodule Pleroma.UserTest do
     assert expected_followers_collection == User.ap_followers(user)
   end
 
-  test "follow takes a user and an id and tries to follow another user" do
+  test "follow takes a user and another user" do
     { :ok, user } = UserBuilder.insert
     { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
 
@@ -33,5 +33,16 @@ defmodule Pleroma.UserTest do
     user = Repo.get(User, user.id)
 
     assert user.following == [User.ap_followers(following)]
+  end
+
+  test "unfollow takes a user and another user" do
+    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
+    { :ok, user } = UserBuilder.insert(%{following: [User.ap_followers(following)]})
+
+    {:ok, user } = User.unfollow(user, following)
+
+    user = Repo.get(User, user.id)
+
+    assert user.following == []
   end
 end

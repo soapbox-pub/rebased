@@ -42,6 +42,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
+  def unfollow(%User{} = follower, followed_id) do
+    with %User{} = followed <- Repo.get(User, followed_id),
+         { :ok, follower } <- User.unfollow(follower, followed)
+    do
+      { :ok, follower, followed }
+    end
+  end
+
   defp activities_to_statuses(activities) do
     Enum.map(activities, fn(activity) ->
       actor = get_in(activity.data, ["actor"])
