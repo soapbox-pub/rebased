@@ -14,7 +14,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "text" => content,
       "is_local" => true,
       "is_post_verb" => true,
-      "created_at" => published
+      "created_at" => published,
+      "in_reply_to_status_id" => activity.data["object"]["inReplyToStatusId"]
     }
   end
 end
