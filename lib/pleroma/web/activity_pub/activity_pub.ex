@@ -60,4 +60,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.all(query)
     |> Enum.reverse
   end
+
+  def fetch_activities_for_context(context) do
+    query = from activity in Activity,
+      where: fragment("? @> ?", activity.data, ^%{ context: context })
+    Repo.all(query)
+  end
 end

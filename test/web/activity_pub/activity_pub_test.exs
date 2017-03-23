@@ -49,6 +49,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "fetch activities in context" do
+    test "retrieves activities that have a given context" do
+      {:ok, activity} = ActivityBuilder.insert(%{"context" => "2hu"})
+      {:ok, activity_two} = ActivityBuilder.insert(%{"context" => "2hu"})
+      {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
+
+      activities = ActivityPub.fetch_activities_for_context("2hu")
+
+      assert activities == [activity, activity_two]
+    end
+  end
+
   describe "public fetch activities" do
     test "retrieves public activities" do
       %{public: public} = ActivityBuilder.public_and_non_public
