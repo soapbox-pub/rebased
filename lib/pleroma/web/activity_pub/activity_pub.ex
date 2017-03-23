@@ -4,7 +4,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   import Ecto.Query
 
   def insert(map) when is_map(map) do
+    map = Map.put_new_lazy(map, "id", &generate_activity_id/0)
+
     Repo.insert(%Activity{data: map})
+  end
+
+  def generate_activity_id do
+    host =
+      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
+      |> Keyword.fetch!(:url)
+      |> Keyword.fetch!(:host)
+    "https://#{host}/activities/#{Ecto.UUID.generate}"
   end
 
   def fetch_public_activities(opts \\ %{}) do

@@ -5,16 +5,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Builders.ActivityBuilder
 
   describe "insertion" do
-    test "inserts a given map into the activity database" do
+    test "inserts a given map into the activity database, giving it an id if it has none." do
       data = %{
-        ok: true
+        "ok" => true
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      assert activity.data == data
+      assert activity.data["ok"] == data["ok"]
+      assert is_binary(activity.data["id"])
+
+      given_id = "bla"
+      data = %{
+        "ok" => true,
+        "id" => given_id
+      }
+
+      {:ok, %Activity{} = activity} = ActivityPub.insert(data)
+      assert activity.data["ok"] == data["ok"]
+      assert activity.data["id"] == given_id
     end
   end
-
 
   describe "fetch activities for recipients" do
     test "retrieve the activities for certain recipients" do
