@@ -1,14 +1,23 @@
 defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
+  alias Pleroma.User
 
-  def to_map(user, options) do
+  def to_map(user, opts \\ %{}) do
+
     image = "https://placehold.it/48x48"
+
+    following = if opts[:for] do
+      User.following?(opts[:for], user)
+    else
+      false
+    end
+
     map = %{
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
       "description" => user.bio,
-      "following" => false,
+      "following" => following,
       # Fake fields
       "favourites_count" => 0,
       "statuses_count" => 0,

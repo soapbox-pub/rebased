@@ -26,12 +26,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def fetch_friend_statuses(user, opts \\ %{}) do
     ActivityPub.fetch_activities(user.following, opts)
-    |> activities_to_statuses
+    |> activities_to_statuses(%{for: user})
   end
 
-  def fetch_public_statuses(opts \\ %{}) do
+  def fetch_public_statuses(user, opts \\ %{}) do
     ActivityPub.fetch_public_activities(opts)
-    |> activities_to_statuses
+    |> activities_to_statuses(%{for: user})
   end
 
   def follow(%User{} = follower, followed_id) do
@@ -50,11 +50,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  defp activities_to_statuses(activities) do
+  defp activities_to_statuses(activities, opts) do
     Enum.map(activities, fn(activity) ->
       actor = get_in(activity.data, ["actor"])
       user = Repo.get_by!(User, ap_id: actor)
-      ActivityRepresenter.to_map(activity, %{user: user})
+      ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user}))
     end)
   end
 end

@@ -53,4 +53,8 @@ defmodule Pleroma.User do
     |> follow_changeset(%{following: following})
     |> Repo.update
   end
+
+  def following?(%User{} = follower, %User{} = followed) do
+    Enum.member?(follower.following, User.ap_followers(followed))
+  end
 end

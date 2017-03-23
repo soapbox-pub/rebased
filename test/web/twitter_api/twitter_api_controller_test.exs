@@ -62,7 +62,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "with credentials", %{conn: conn, user: current_user} do
       {:ok, user} = UserBuilder.insert
       activities = ActivityBuilder.insert_list(30, %{"to" => [User.ap_followers(user)]}, %{user: user})
-      ActivityBuilder.insert_list(10, %{"to" => [User.ap_followers(user)]}, %{user: user})
+      returned_activities = ActivityBuilder.insert_list(10, %{"to" => [User.ap_followers(user)]}, %{user: user})
       {:ok, other_user} = UserBuilder.insert(%{ap_id: "glimmung", nickname: "nockame"})
       ActivityBuilder.insert_list(10, %{}, %{user: other_user})
       since_id = List.last(activities).id
@@ -76,6 +76,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert length(response) == 10
+      assert response == Enum.map(returned_activities, fn (activity) -> ActivityRepresenter.to_map(activity, %{user: user, for: current_user}) end)
     end
   end
 

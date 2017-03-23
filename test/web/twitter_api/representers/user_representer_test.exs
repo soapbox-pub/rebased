@@ -3,16 +3,10 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
 
   alias Pleroma.User
   alias Pleroma.Web.TwitterAPI.Representers.UserRepresenter
+  alias Pleroma.Builders.UserBuilder
 
   setup do
-    user = %User{
-      email: "test@example.org",
-      name: "Test Name",
-      nickname: "testname",
-      password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
-      bio: "A tester."
-    }
-    user = Repo.insert!(user)
+    {:ok, user} = UserBuilder.insert
     [user: user]
   end
 
@@ -37,5 +31,29 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
     }
 
     assert represented == UserRepresenter.to_map(user)
+  end
+
+  test "A user for a given other follower", %{user: user} do
+    {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+    image = "https://placehold.it/48x48"
+    represented = %{
+      "id" => user.id,
+      "name" => user.name,
+      "screen_name" => user.nickname,
+      "description" => user.bio,
+      # Fake fields
+      "favourites_count" => 0,
+      "statuses_count" => 0,
+      "friends_count" => 0,
+      "followers_count" => 0,
+      "profile_image_url" => image,
+      "profile_image_url_https" => image,
+      "profile_image_url_profile_size" => image,
+      "profile_image_url_original" => image,
+      "following" => true,
+      "rights" => %{}
+    }
+
+    assert represented == UserRepresenter.to_map(user, %{for: follower})
   end
 end

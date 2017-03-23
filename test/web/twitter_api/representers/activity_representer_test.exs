@@ -6,6 +6,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
   test "an activity" do
     {:ok, user} = UserBuilder.insert
+    {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+
     content = "Some content"
     date = DateTime.utc_now() |> DateTime.to_iso8601
 
@@ -30,7 +32,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
     expected_status = %{
       "id" => activity.id,
-      "user" => UserRepresenter.to_map(user),
+      "user" => UserRepresenter.to_map(user, %{for: follower}),
       "is_local" => true,
       "attentions" => [],
       "statusnet_html" => content,
@@ -39,6 +41,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "created_at" => date
     }
 
-    assert ActivityRepresenter.to_map(activity, %{user: user}) == expected_status
+    assert ActivityRepresenter.to_map(activity, %{user: user, for: follower}) == expected_status
   end
 end

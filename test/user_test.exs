@@ -45,4 +45,12 @@ defmodule Pleroma.UserTest do
 
     assert user.following == []
   end
+
+  test "test if a user is following another user" do
+    { :ok, followed } = UserBuilder.insert(%{nickname: "guy"})
+    { :ok, user } = UserBuilder.insert(%{following: [User.ap_followers(followed)]})
+
+    assert User.following?(user, followed)
+    refute User.following?(followed, user)
+  end
 end

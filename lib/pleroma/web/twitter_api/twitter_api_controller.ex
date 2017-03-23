@@ -4,7 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
-    response = user |> UserRepresenter.to_json
+    response = user |> UserRepresenter.to_json(%{for: user})
 
     conn
     |> json_reply(200, response)
@@ -16,8 +16,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, ActivityRepresenter.to_json(activity, %{user: user}))
   end
 
-  def public_timeline(conn, params) do
-    statuses = TwitterAPI.fetch_public_statuses(params)
+  def public_timeline(%{assigns: %{user: user}} = conn, params) do
+    statuses = TwitterAPI.fetch_public_statuses(user, params)
     {:ok, json} = Poison.encode(statuses)
 
     conn
@@ -35,21 +35,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def follow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
     { :ok, _user, follower } = TwitterAPI.follow(user, followed_id)
 
-    response = follower |> UserRepresenter.to_json
+    response = follower |> UserRepresenter.to_json(%{for: user})
 
     conn
     |> json_reply(200, response)
   end
 
   def unfollow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
-    { :ok, _user, follower } = TwitterAPI.unfollow(user, followed_id)
+    { :ok, user, follower } = TwitterAPI.unfollow(user, followed_id)
 
-    response = follower |> UserRepresenter.to_json
+    response = follower |> UserRepresenter.to_json(%{for: user})
 
     conn
     |> json_reply(200, response)
   end
-
 
   defp json_reply(conn, status, json) do
     conn
