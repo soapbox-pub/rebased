@@ -6,6 +6,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def insert(map) when is_map(map) do
     map = Map.put_new_lazy(map, "id", &generate_activity_id/0)
 
+    map = if map["object"] do
+      object = Map.put_new_lazy(map["object"], "id", &generate_object_id/0)
+      Map.put(map, "object", object)
+    else
+      map
+    end
+
     Repo.insert(%Activity{data: map})
   end
 
@@ -15,6 +22,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Keyword.fetch!(:url)
       |> Keyword.fetch!(:host)
     "https://#{host}/activities/#{Ecto.UUID.generate}"
+  end
+
+  def generate_object_id do
+    host =
+      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
+      |> Keyword.fetch!(:url)
+      |> Keyword.fetch!(:host)
+    "https://#{host}/objects/#{Ecto.UUID.generate}"
   end
 
   def fetch_public_activities(opts \\ %{}) do

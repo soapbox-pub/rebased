@@ -24,6 +24,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["ok"] == data["ok"]
       assert activity.data["id"] == given_id
     end
+
+    test "adds an id to a given object if it lacks one" do
+      data = %{
+        "object" => %{
+          "ok" => true
+        }
+      }
+
+      {:ok, %Activity{} = activity} = ActivityPub.insert(data)
+      assert is_binary(activity.data["object"]["id"])
+    end
   end
 
   describe "fetch activities for recipients" do
