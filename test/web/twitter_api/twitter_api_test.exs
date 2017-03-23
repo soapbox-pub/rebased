@@ -18,6 +18,32 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert get_in(activity.data, ["actor"]) == User.ap_id(user)
     assert Enum.member?(get_in(activity.data, ["to"]), User.ap_followers(user))
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
+
+    # Add a context
+    assert is_binary(get_in(activity.data, ["context"]))
+    assert is_binary(get_in(activity.data, ["object", "context"]))
+  end
+
+  test "create a status that is a reply" do
+    user = UserBuilder.build
+    input = %{
+      "status" => "Hello again."
+    }
+
+    { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
+
+    input = %{
+      "status" => "Here's your (you).",
+      "in_reply_to_status_id" => activity.id
+    }
+
+    { :ok, reply = %Activity{} } = TwitterAPI.create_status(user, input)
+
+    assert get_in(reply.data, ["context"]) == get_in(activity.data, ["context"])
+    assert get_in(reply.data, ["object", "context"]) == get_in(activity.data, ["object", "context"])
+    assert get_in(reply.data, ["object", "context"]) == get_in(activity.data, ["object", "context"])
+    assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
+    assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
   end
 
   test "fetch public statuses" do

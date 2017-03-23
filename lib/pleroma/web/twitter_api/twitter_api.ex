@@ -1,11 +1,12 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.User
+  alias Pleroma.{User, Activity, Repo}
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Repo
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
 
   def create_status(user = %User{}, data = %{}) do
     date = DateTime.utc_now() |> DateTime.to_iso8601
+
+    context = ActivityPub.generate_context_id
     activity = %{
       "type" => "Create",
       "to" => [
@@ -16,10 +17,26 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       "object" => %{
         "type" => "Note",
         "content" => data["status"],
-        "published" => date
+        "published" => date,
+        "context" => context
       },
-      "published" => date
+      "published" => date,
+      "context" => context
     }
+
+    # Wire up reply info.
+    activity = with inReplyToId when not is_nil(inReplyToId) <- data["in_reply_to_status_id"],
+                    inReplyTo <- Repo.get(Activity, inReplyToId),
+                    context <- inReplyTo.data["context"]
+               do
+               activity
+               |> put_in(["context"], context)
+               |> put_in(["object", "context"], context)
+               |> put_in(["object", "inReplyTo"], inReplyTo.data["object"]["id"])
+               |> put_in(["object", "inReplyToStatusId"], inReplyToId)
+               else _e ->
+                 activity
+               end
 
     ActivityPub.insert(activity)
   end

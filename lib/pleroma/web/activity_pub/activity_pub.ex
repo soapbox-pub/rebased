@@ -17,19 +17,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def generate_activity_id do
-    host =
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-      |> Keyword.fetch!(:url)
-      |> Keyword.fetch!(:host)
-    "https://#{host}/activities/#{Ecto.UUID.generate}"
+    generate_id("activities")
+  end
+
+  def generate_context_id do
+    generate_id("contexts")
   end
 
   def generate_object_id do
+    generate_id("objects")
+  end
+
+  def generate_id(type) do
     host =
       Application.get_env(:pleroma, Pleroma.Web.Endpoint)
       |> Keyword.fetch!(:url)
       |> Keyword.fetch!(:host)
-    "https://#{host}/objects/#{Ecto.UUID.generate}"
+    "https://#{host}/#{type}/#{Ecto.UUID.generate}"
   end
 
   def fetch_public_activities(opts \\ %{}) do
