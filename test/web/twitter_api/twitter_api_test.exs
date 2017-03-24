@@ -69,6 +69,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: activity_user})
   end
 
+  test "fetch a single status" do
+    {:ok, activity} = ActivityBuilder.insert()
+    {:ok, user} = UserBuilder.insert()
+    actor = Repo.get_by!(User, ap_id: activity.data["actor"])
+
+    status = TwitterAPI.fetch_status(user, activity.id)
+
+    assert status == ActivityRepresenter.to_map(activity, %{for: user, user: actor})
+  end
+
   test "Follow another user" do
     { :ok, user } = UserBuilder.insert
     { :ok, following } = UserBuilder.insert(%{nickname: "guy"})

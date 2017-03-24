@@ -52,6 +52,21 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /statuses/show/:id.json" do
+    test "returns one status", %{conn: conn} do
+      {:ok, user} = UserBuilder.insert
+      {:ok, activity} = ActivityBuilder.insert(%{}, %{user: user})
+      actor = Repo.get_by!(User, ap_id: activity.data["actor"])
+
+      conn = conn
+      |> get("/api/statuses/show/#{activity.id}.json")
+
+      response = json_response(conn, 200)
+
+      assert reponse = ActivityRepresenter.to_map(activity, %{user: actor})
+    end
+  end
+
   describe "GET /statuses/friends_timeline.json" do
     setup [:valid_user]
     test "without valid credentials", %{conn: conn} do

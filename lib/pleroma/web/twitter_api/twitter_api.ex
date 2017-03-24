@@ -69,9 +69,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   defp activities_to_statuses(activities, opts) do
     Enum.map(activities, fn(activity) ->
-      actor = get_in(activity.data, ["actor"])
-      user = Repo.get_by!(User, ap_id: actor)
-      ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user}))
+      activity_to_status(activity, opts)
     end)
+  end
+
+  defp activity_to_status(activity, opts) do
+    actor = get_in(activity.data, ["actor"])
+    user = Repo.get_by!(User, ap_id: actor)
+    ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user}))
+  end
+
+  def fetch_status(user, id) do
+    with %Activity{} = activity <- Repo.get(Activity, id) do
+      activity_to_status(activity, %{for: user})
+    end
   end
 end
