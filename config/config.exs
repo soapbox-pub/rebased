@@ -9,6 +9,9 @@ use Mix.Config
 config :pleroma,
   ecto_repos: [Pleroma.Repo]
 
+config :pleroma, Pleroma.Upload,
+  uploads: "uploads"
+
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
