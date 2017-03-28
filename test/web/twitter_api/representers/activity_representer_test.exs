@@ -24,7 +24,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "published" => date,
           "type" => "Note",
           "content" => content,
-          "inReplyToStatusId" => 213123
+          "inReplyToStatusId" => 213123,
+          "statusnetConversationId" => 4711
         },
         "published" => date
       }
@@ -40,7 +41,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "text" => content,
       "is_post_verb" => true,
       "created_at" => date,
-      "in_reply_to_status_id" => 213123
+      "in_reply_to_status_id" => 213123,
+      "statusnet_conversation_id" => 4711
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower}) == expected_status

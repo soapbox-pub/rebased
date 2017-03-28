@@ -34,8 +34,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
                |> put_in(["object", "context"], context)
                |> put_in(["object", "inReplyTo"], inReplyTo.data["object"]["id"])
                |> put_in(["object", "inReplyToStatusId"], inReplyToId)
-               |> put_in(["statusnet_conversation_id"], inReplyTo.data["statusnet_conversation_id"])
-               |> put_in(["object", "statusnet_conversation_id"], inReplyTo.data["statusnet_conversation_id"])
+               |> put_in(["statusnetConversationId"], inReplyTo.data["statusnetConversationId"])
+               |> put_in(["object", "statusnetConversationId"], inReplyTo.data["statusnetConversationId"])
                else _e ->
                  activity
                end
@@ -72,12 +72,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   defp add_conversation_id(activity) do
-    if is_integer(activity.data["statusnet_conversation_id"]) do
+    if is_integer(activity.data["statusnetConversationId"]) do
       {:ok, activity}
     else
       data = activity.data
-      |> put_in(["object", "statusnet_conversation_id"], activity.id)
-      |> put_in(["statusnet_conversation_id"], activity.id)
+      |> put_in(["object", "statusnetConversationId"], activity.id)
+      |> put_in(["statusnetConversationId"], activity.id)
 
       changeset = Ecto.Changeset.change(activity, data: data)
       Repo.update(changeset)
