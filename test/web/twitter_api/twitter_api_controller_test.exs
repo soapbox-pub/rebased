@@ -63,7 +63,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       response = json_response(conn, 200)
 
-      assert reponse = ActivityRepresenter.to_map(activity, %{user: actor})
+      assert response == ActivityRepresenter.to_map(activity, %{user: actor})
     end
   end
 
