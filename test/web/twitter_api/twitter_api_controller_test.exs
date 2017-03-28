@@ -67,6 +67,22 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /statusnet/conversation/:id.json" do
+    test "returns the statuses in the conversation", %{conn: conn} do
+      {:ok, _user} = UserBuilder.insert
+      {:ok, _activity} = ActivityBuilder.insert(%{"statusnetConversationId" => 1, "context" => "2hu"})
+      {:ok, _activity_two} = ActivityBuilder.insert(%{"statusnetConversationId" => 1,"context" => "2hu"})
+      {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
+
+      conn = conn
+      |> get("/api/statusnet/conversation/1.json")
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 2
+    end
+  end
+
   describe "GET /statuses/friends_timeline.json" do
     setup [:valid_user]
     test "without valid credentials", %{conn: conn} do

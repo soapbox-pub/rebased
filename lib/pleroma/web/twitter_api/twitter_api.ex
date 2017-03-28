@@ -3,6 +3,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
 
+  import Ecto.Query
+
   def create_status(user = %User{}, data = %{}) do
     date = DateTime.utc_now() |> DateTime.to_iso8601
 
@@ -55,6 +57,29 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     |> activities_to_statuses(%{for: user})
   end
 
+  def fetch_conversation(user, id) do
+    query = from activity in Activity,
+      where: fragment("? @> ?", activity.data, ^%{ statusnetConversationId: id}),
+      limit: 1
+
+    with %Activity{} = activity <- Repo.one(query),
+         context <- activity.data["context"],
+         activities <- ActivityPub.fetch_activities_for_context(context),
+         statuses <- activities |> activities_to_statuses(%{for: user})
+    do
+      statuses
+    else e ->
+        IO.inspect(e)
+      []
+    end
+  end
+
+  def fetch_status(user, id) do
+    with %Activity{} = activity <- Repo.get(Activity, id) do
+      activity_to_status(activity, %{for: user})
+    end
+  end
+
   def follow(%User{} = follower, followed_id) do
     with %User{} = followed <- Repo.get(User, followed_id),
          { :ok, follower } <- User.follow(follower, followed)
@@ -94,11 +119,5 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     actor = get_in(activity.data, ["actor"])
     user = Repo.get_by!(User, ap_id: actor)
     ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user}))
-  end
-
-  def fetch_status(user, id) do
-    with %Activity{} = activity <- Repo.get(Activity, id) do
-      activity_to_status(activity, %{for: user})
-    end
   end
 end

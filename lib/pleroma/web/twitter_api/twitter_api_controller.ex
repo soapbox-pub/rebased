@@ -57,6 +57,15 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, response)
   end
 
+  def fetch_conversation(%{assigns: %{user: user}} = conn, %{ "id" => id }) do
+    id = String.to_integer(id)
+    response = TwitterAPI.fetch_conversation(user, id) |> Poison.encode!
+
+    conn
+    |> json_reply(200, response)
+  end
+
+
   defp json_reply(conn, status, json) do
     conn
     |> put_resp_content_type("application/json")

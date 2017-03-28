@@ -103,4 +103,17 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert user.following == []
   end
+
+  test "fetch statuses in a context using the conversation id" do
+    {:ok, user} = UserBuilder.insert()
+    {:ok, activity} = ActivityBuilder.insert(%{"statusnetConversationId" => 1, "context" => "2hu"})
+    {:ok, activity_two} = ActivityBuilder.insert(%{"statusnetConversationId" => 1,"context" => "2hu"})
+    {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
+
+    statuses = TwitterAPI.fetch_conversation(user, 1)
+
+    assert length(statuses) == 2
+    assert Enum.at(statuses, 0)["id"] == activity.id
+    assert Enum.at(statuses, 1)["id"] == activity_two.id
+  end
 end
