@@ -19,9 +19,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.member?(get_in(activity.data, ["to"]), User.ap_followers(user))
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
 
-    # Add a context
+    # Add a context + 'statusnet_conversation_id'
     assert is_binary(get_in(activity.data, ["context"]))
     assert is_binary(get_in(activity.data, ["object", "context"]))
+    assert get_in(activity.data, ["object", "statusnet_conversation_id"]) == activity.id
+    assert get_in(activity.data, ["statusnet_conversation_id"]) == activity.id
   end
 
   test "create a status that is a reply" do
@@ -41,7 +43,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert get_in(reply.data, ["context"]) == get_in(activity.data, ["context"])
     assert get_in(reply.data, ["object", "context"]) == get_in(activity.data, ["object", "context"])
-    assert get_in(reply.data, ["object", "context"]) == get_in(activity.data, ["object", "context"])
+    assert get_in(reply.data, ["statusnet_conversation_id"]) == get_in(activity.data, ["statusnet_conversation_id"])
+    assert get_in(reply.data, ["object", "statusnet_conversation_id"]) == get_in(activity.data, ["object", "statusnet_conversation_id"])
     assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
     assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
   end

@@ -1,8 +1,9 @@
 defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
+
   alias Pleroma.User
 
-  def to_map(user, opts \\ %{}) do
+  def to_map(user, opts) do
 
     image = "https://placehold.it/48x48"
 

@@ -34,11 +34,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
                |> put_in(["object", "context"], context)
                |> put_in(["object", "inReplyTo"], inReplyTo.data["object"]["id"])
                |> put_in(["object", "inReplyToStatusId"], inReplyToId)
+               |> put_in(["statusnet_conversation_id"], inReplyTo.data["statusnet_conversation_id"])
+               |> put_in(["object", "statusnet_conversation_id"], inReplyTo.data["statusnet_conversation_id"])
                else _e ->
                  activity
                end
 
-    ActivityPub.insert(activity)
+    with {:ok, activity} <- ActivityPub.insert(activity) do
+      add_conversation_id(activity)
+    end
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do
@@ -64,6 +68,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          { :ok, follower } <- User.unfollow(follower, followed)
     do
       { :ok, follower, followed }
+    end
+  end
+
+  defp add_conversation_id(activity) do
+    if is_integer(activity.data["statusnet_conversation_id"]) do
+      {:ok, activity}
+    else
+      data = activity.data
+      |> put_in(["object", "statusnet_conversation_id"], activity.id)
+      |> put_in(["statusnet_conversation_id"], activity.id)
+
+      changeset = Ecto.Changeset.change(activity, data: data)
+      Repo.update(changeset)
     end
   end
 
