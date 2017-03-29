@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Repo
-  alias Pleroma.Activity
+  alias Pleroma.{Activity, Object, Upload}
   import Ecto.Query
 
   def insert(map) when is_map(map) do
@@ -33,7 +33,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       Application.get_env(:pleroma, Pleroma.Web.Endpoint)
       |> Keyword.fetch!(:url)
       |> Keyword.fetch!(:host)
-    "https://#{host}/#{type}/#{Ecto.UUID.generate}"
+
+    protocol = Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.fetch!(:protocol)
+    "#{protocol}://#{host}/#{type}/#{Ecto.UUID.generate}"
   end
 
   def fetch_public_activities(opts \\ %{}) do
@@ -65,5 +67,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{ context: context })
     Repo.all(query)
+  end
+
+  def upload(%Plug.Upload{} = file) do
+    data = Upload.store(file)
+    Repo.insert(%Object{data: data})
   end
 end

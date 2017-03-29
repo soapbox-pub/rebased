@@ -25,6 +25,8 @@ defmodule Pleroma.Upload do
       |> Keyword.fetch!(:url)
       |> Keyword.fetch!(:host)
 
-    "https://#{host}/media/#{file}"
+    protocol = Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.fetch!(:protocol)
+
+    "#{protocol}://#{host}/media/#{file}"
   end
 end

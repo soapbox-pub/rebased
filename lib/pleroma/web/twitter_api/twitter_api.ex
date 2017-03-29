@@ -96,6 +96,23 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
+  def upload(%Plug.Upload{} = file) do
+    {:ok, object} = ActivityPub.upload(file)
+
+    # Fake this as good as possible...
+    """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <rsp stat="ok" xmlns:atom="http://www.w3.org/2005/Atom">
+      <mediaid>#{object.id}</mediaid>
+      <media_id>#{object.id}</media_id>
+      <media_id_string>#{object.id}</media_id_string>
+      <media_url>#{object.data["href"]}</media_url>
+      <mediaurl>#{object.data["href"]}</mediaurl>
+      <atom:link rel="enclosure" href="#{object.data["href"]}" type="image"></atom:link>
+    </rsp>
+    """
+  end
+
   defp add_conversation_id(activity) do
     if is_integer(activity.data["statusnetConversationId"]) do
       {:ok, activity}

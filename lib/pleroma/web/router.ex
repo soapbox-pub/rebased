@@ -35,5 +35,6 @@ defmodule Pleroma.Web.Router do
     get "/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline
     post "/friendships/create", TwitterAPI.Controller, :follow
     post "/friendships/destroy", TwitterAPI.Controller, :unfollow
+    post "/statusnet/media/upload", TwitterAPI.Controller, :upload
   end
 end

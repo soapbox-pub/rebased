@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Activity
+  alias Pleroma.{Activity, Object}
   alias Pleroma.Builders.ActivityBuilder
 
   describe "insertion" do
@@ -92,6 +92,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert length(activities) == 10
       assert last == last_expected
+    end
+  end
+
+  describe "uploading files" do
+    test "copies the file to the configured folder" do
+      file = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+
+      {:ok, %Object{} = object} = ActivityPub.upload(file)
+      assert object.data["name"] == "an_image.jpg"
     end
   end
 end

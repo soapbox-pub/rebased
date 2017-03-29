@@ -116,4 +116,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.at(statuses, 0)["id"] == activity.id
     assert Enum.at(statuses, 1)["id"] == activity_two.id
   end
+
+  test "upload a file" do
+    file = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+
+    response = TwitterAPI.upload(file)
+
+    assert is_binary(response)
+  end
 end

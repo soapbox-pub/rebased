@@ -65,6 +65,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, response)
   end
 
+  def upload(conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media)
+    conn
+    |> put_resp_content_type("application/atom+xml")
+    |> send_resp(200, response)
+  end
 
   defp json_reply(conn, status, json) do
     conn
