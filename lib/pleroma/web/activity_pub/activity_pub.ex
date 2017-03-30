@@ -29,13 +29,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def generate_id(type) do
-    host =
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-      |> Keyword.fetch!(:url)
-      |> Keyword.fetch!(:host)
-
-    protocol = Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.fetch!(:protocol)
-    "#{protocol}://#{host}/#{type}/#{Ecto.UUID.generate}"
+    "#{Pleroma.Web.base_url()}/#{type}/#{Ecto.UUID.generate}"
   end
 
   def fetch_public_activities(opts \\ %{}) do

@@ -20,13 +20,6 @@ defmodule Pleroma.Upload do
   end
 
   defp url_for(file) do
-    host =
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-      |> Keyword.fetch!(:url)
-      |> Keyword.fetch!(:host)
-
-    protocol = Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.fetch!(:protocol)
-
-    "#{protocol}://#{host}/media/#{file}"
+    "#{Pleroma.Web.base_url()}/media/#{file}"
   end
 end

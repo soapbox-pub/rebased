@@ -60,4 +60,23 @@ defmodule Pleroma.Web do
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end
+
+  def base_url do
+    settings = Application.get_env(:pleroma, Pleroma.Web.Endpoint)
+    host =
+      settings
+      |> Keyword.fetch!(:url)
+      |> Keyword.fetch!(:host)
+
+    protocol = settings |> Keyword.fetch!(:protocol)
+
+    port_fragment = with {:ok, protocol_info} <- settings |> Keyword.fetch(String.to_atom(protocol)),
+                         {:ok, port} <- protocol_info |> Keyword.fetch(:port)
+    do
+      ":#{port}"
+    else _e ->
+      ""
+    end
+    "#{protocol}://#{host}#{port_fragment}"
+  end
 end
