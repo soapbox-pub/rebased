@@ -17,7 +17,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "created_at" => published,
       "in_reply_to_status_id" => activity.data["object"]["inReplyToStatusId"],
       "statusnet_conversation_id" => activity.data["object"]["statusnetConversationId"],
-      "attachments" => (activity.data["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts)
+      "attachments" => (activity.data["object"]["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts)
     }
   end
 end

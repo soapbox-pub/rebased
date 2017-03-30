@@ -33,16 +33,16 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           User.ap_followers(user),
           "https://www.w3.org/ns/activitystreams#Public"
         ],
-        "attachment" => [
-          object
-        ],
         "actor" => User.ap_id(user),
         "object" => %{
           "published" => date,
           "type" => "Note",
           "content" => content,
           "inReplyToStatusId" => 213123,
-          "statusnetConversationId" => 4711
+          "statusnetConversationId" => 4711,
+          "attachment" => [
+            object
+          ]
         },
         "published" => date
       }

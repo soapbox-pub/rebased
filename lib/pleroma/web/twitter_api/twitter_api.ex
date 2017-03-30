@@ -24,11 +24,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         "type" => "Note",
         "content" => data["status"],
         "published" => date,
-        "context" => context
+        "context" => context,
+        "attachment" => attachments
       },
       "published" => date,
-      "context" => context,
-      "attachment" => attachments
+      "context" => context
     }
 
     # Wire up reply info.
