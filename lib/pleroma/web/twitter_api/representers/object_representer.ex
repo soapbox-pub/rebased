@@ -8,8 +8,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter do
     %{
       url: url["href"],
       mimetype: url["mediaType"],
-      id: object.id,
+      id: data["uuid"],
       oembed: false
     }
+  end
+
+  # If we only get the naked data, wrap in an object
+  def to_map(%{} = data, opts) do
+    to_map(%Object{data: data}, opts)
   end
 end

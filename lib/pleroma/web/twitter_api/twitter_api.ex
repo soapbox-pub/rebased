@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.{User, Activity, Repo}
+  alias Pleroma.{User, Activity, Repo, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
 
@@ -7,6 +7,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def create_status(user = %User{}, data = %{}) do
     date = DateTime.utc_now() |> DateTime.to_iso8601
+
+    attachments = Enum.map(data["media_ids"] || [], fn (media_id) ->
+      Repo.get(Object, media_id).data
+    end)
 
     context = ActivityPub.generate_context_id
     activity = %{
@@ -23,7 +27,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         "context" => context
       },
       "published" => date,
-      "context" => context
+      "context" => context,
+      "attachment" => attachments
     }
 
     # Wire up reply info.

@@ -2,13 +2,28 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
   alias Pleroma.Builders.{UserBuilder, ActivityBuilder}
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Activity, User}
+  alias Pleroma.{Activity, User, Object, Repo}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
 
   test "create a status" do
     user = UserBuilder.build
+    object_data = %{
+      "type" => "Image",
+      "url" => [
+        %{
+          "type" => "Link",
+          "mediaType" => "image/jpg",
+          "href" => "http://example.org/image.jpg"
+        }
+      ],
+      "uuid" => 1
+    }
+
+    object = Repo.insert!(%Object{data: object_data})
+
     input = %{
-      "status" => "Hello again."
+      "status" => "Hello again.",
+      "media_ids" => [object.id]
     }
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
@@ -24,6 +39,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert is_binary(get_in(activity.data, ["object", "context"]))
     assert get_in(activity.data, ["object", "statusnetConversationId"]) == activity.id
     assert get_in(activity.data, ["statusnetConversationId"]) == activity.id
+
+    assert is_list(activity.data["attachment"])
   end
 
   test "create a status that is a reply" do

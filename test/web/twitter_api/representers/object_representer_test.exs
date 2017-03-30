@@ -14,12 +14,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ObjectReprenterTest do
             "mediaType" => "sometype",
             "href" => "someurl"
           }
-        ]
+        ],
+        "uuid" => 6
       }
     }
 
     expected_object = %{
-      id: 5,
+      id: 6,
       url: "someurl",
       mimetype: "sometype",
       oembed: false

@@ -11,9 +11,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def status_update(%{assigns: %{user: user}} = conn, status_data) do
-    {:ok, activity} = TwitterAPI.create_status(user, status_data)
+    media_ids = extract_media_ids(status_data)
+    {:ok, activity} = TwitterAPI.create_status(user, %{ "status" => status_data["status"], "media_ids" => media_ids })
     conn
     |> json_reply(200, ActivityRepresenter.to_json(activity, %{user: user}))
+  end
+
+  defp extract_media_ids(status_data) do
+    with media_ids when not is_nil(media_ids) <- status_data["media_ids"],
+         split_ids <- String.split(media_ids, ","),
+         clean_ids <- Enum.reject(split_ids, fn (id) -> String.length(id) == 0 end)
+      do
+        clean_ids
+      else _e -> []
+    end
   end
 
   def public_timeline(%{assigns: %{user: user}} = conn, params) do

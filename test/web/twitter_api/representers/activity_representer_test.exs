@@ -1,12 +1,26 @@
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   use Pleroma.DataCase
-  alias Pleroma.{User, Activity}
-  alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
+  alias Pleroma.{User, Activity, Object}
+  alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter, ObjectRepresenter}
   alias Pleroma.Builders.UserBuilder
 
   test "an activity" do
     {:ok, user} = UserBuilder.insert
     {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+
+    object = %Object{
+      data: %{
+        "type" => "Image",
+        "url" => [
+          %{
+            "type" => "Link",
+            "mediaType" => "image/jpg",
+            "href" => "http://example.org/image.jpg"
+          }
+        ],
+        "uuid" => 1
+      }
+    }
 
     content = "Some content"
     date = DateTime.utc_now() |> DateTime.to_iso8601
@@ -18,6 +32,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         "to" => [
           User.ap_followers(user),
           "https://www.w3.org/ns/activitystreams#Public"
+        ],
+        "attachment" => [
+          object
         ],
         "actor" => User.ap_id(user),
         "object" => %{
@@ -42,7 +59,10 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "is_post_verb" => true,
       "created_at" => date,
       "in_reply_to_status_id" => 213123,
-      "statusnet_conversation_id" => 4711
+      "statusnet_conversation_id" => 4711,
+      "attachments" => [
+        ObjectRepresenter.to_map(object)
+      ]
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower}) == expected_status
