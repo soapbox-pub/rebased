@@ -8,20 +8,28 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   def call(conn, opts) do
     with {:ok, username, password} <- decode_header(conn),
          {:ok, user} <- opts[:fetcher].(username),
-         {:ok, verified_user} <- verify(user, password)
+         saved_user_id <- get_session(conn, :user_id),
+         {:ok, verified_user} <- verify(user, password, saved_user_id)
     do
-      conn |> assign(:user, verified_user)
+      conn
+      |> assign(:user, verified_user)
+      |> put_session(:user_id, verified_user.id)
     else
       _ -> conn |> halt_or_continue(opts)
     end
   end
 
-  defp verify(nil, _password) do
+  # Short-circuit if we have a cookie with the id for the given user.
+  defp verify(%{id: id} = user, _password, id) do
+    {:ok, user}
+  end
+
+  defp verify(nil, _password, _user_id) do
     Comeonin.Pbkdf2.dummy_checkpw
     :error
   end
 
-  defp verify(user, password) do
+  defp verify(user, password, _user_id) do
     if Comeonin.Pbkdf2.checkpw(password, user.password_hash) do
       {:ok, user}
     else

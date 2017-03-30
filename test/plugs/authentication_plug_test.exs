@@ -13,6 +13,12 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     password_hash: Comeonin.Pbkdf2.hashpwsalt("guy")
   }
 
+  @session_opts [
+    store: :cookie,
+    key: "_test",
+    signing_salt: "cooldude"
+  ]
+
   defp fetch_user(_name) do
     {:ok, @user}
   end
@@ -23,14 +29,20 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
   describe "without an authorization header" do
     test "it halts the application" do
-      conn = build_conn() |> AuthenticationPlug.call(%{})
+      conn = build_conn()
+      |> Plug.Session.call(Plug.Session.init(@session_opts))
+      |> fetch_session
+      |> AuthenticationPlug.call(%{})
 
       assert conn.status == 403
       assert conn.halted == true
     end
 
     test "it assigns a nil user if the 'optional' option is used" do
-      conn = build_conn() |> AuthenticationPlug.call(%{optional: true})
+      conn = build_conn()
+      |> Plug.Session.call(Plug.Session.init(@session_opts))
+      |> fetch_session
+      |> AuthenticationPlug.call(%{optional: true})
 
       assert %{ user: nil } == conn.assigns
     end
@@ -40,6 +52,8 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     test "it halts the application" do
       conn =
         build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
         |> AuthenticationPlug.call(%{fetcher: &fetch_nil/1})
 
       assert conn.status == 403
@@ -49,6 +63,8 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     test "it assigns a nil user if the 'optional' option is used" do
       conn =
         build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
         |> AuthenticationPlug.call(%{optional: true, fetcher: &fetch_nil/1 })
 
       assert %{ user: nil } == conn.assigns
@@ -65,6 +81,8 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
       conn =
         build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
         |> put_req_header("authorization", header)
         |> AuthenticationPlug.call(opts)
 
@@ -82,6 +100,8 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
       conn =
         build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
         |> put_req_header("authorization", header)
         |> AuthenticationPlug.call(opts)
 
@@ -90,7 +110,7 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
   end
 
   describe "with a correct authorization header for an existing user" do
-    test "it assigns the user" do
+    test "it assigns the user", %{conn: conn} do
       opts = %{
         optional: true,
         fetcher: &fetch_user/1
@@ -98,12 +118,35 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
       header = basic_auth_enc("dude", "guy")
 
-      conn =
-        build_conn()
+      conn = conn
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
         |> put_req_header("authorization", header)
         |> AuthenticationPlug.call(opts)
 
       assert %{ user: @user } == conn.assigns
+      assert get_session(conn, :user_id) == @user.id
+      assert conn.halted == false
+    end
+  end
+  describe "with a user_id in the session for an existing user" do
+    test "it assigns the user", %{conn: conn} do
+      opts = %{
+        optional: true,
+        fetcher: &fetch_user/1
+      }
+
+      header = basic_auth_enc("dude", "THIS IS WRONG")
+
+      conn = conn
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
+        |> put_session(:user_id, @user.id)
+        |> put_req_header("authorization", header)
+        |> AuthenticationPlug.call(opts)
+
+      assert %{ user: @user } == conn.assigns
+      assert get_session(conn, :user_id) == @user.id
       assert conn.halted == false
     end
   end
