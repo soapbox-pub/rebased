@@ -99,6 +99,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   def upload(%Plug.Upload{} = file) do
     {:ok, object} = ActivityPub.upload(file)
 
+    url = List.first(object.data["url"])
+    href = url["href"]
+    type = url["mediaType"]
+
     # Fake this as good as possible...
     """
     <?xml version="1.0" encoding="UTF-8"?>
@@ -106,9 +110,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       <mediaid>#{object.id}</mediaid>
       <media_id>#{object.id}</media_id>
       <media_id_string>#{object.id}</media_id_string>
-      <media_url>#{object.data["href"]}</media_url>
-      <mediaurl>#{object.data["href"]}</mediaurl>
-      <atom:link rel="enclosure" href="#{object.data["href"]}" type="image"></atom:link>
+      <media_url>#{href}</media_url>
+      <mediaurl>#{href}</mediaurl>
+      <atom:link rel="enclosure" href="#{href}" type="#{type}"></atom:link>
     </rsp>
     """
   end

@@ -8,7 +8,11 @@ defmodule Pleroma.Upload do
 
     %{
       "type" => "Image",
-      "href" => url_for(Path.join(uuid, file.filename)),
+      "url" => [%{
+        "type" => "Link",
+        "mediaType" => file.content_type,
+        "href" => url_for(Path.join(uuid, file.filename))
+      }],
       "name" => file.filename,
       "uuid" => uuid
     }
