@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     map = if map["object"] do
       object = Map.put_new_lazy(map["object"], "id", &generate_object_id/0)
+      Repo.insert!(%Object{data: object})
       Map.put(map, "object", object)
     else
       map
