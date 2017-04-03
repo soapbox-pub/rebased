@@ -6,7 +6,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
 
   test "create a status" do
-    user = UserBuilder.build
+    user = UserBuilder.build(%{ap_id: "142344"})
+    _mentioned_user = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
+
     object_data = %{
       "type" => "Image",
       "url" => [
@@ -22,17 +24,18 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     object = Repo.insert!(%Object{data: object_data})
 
     input = %{
-      "status" => "Hello again.",
+      "status" => "Hello again, @shp.<script></script>",
       "media_ids" => [object.id]
     }
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
 
-    assert get_in(activity.data, ["object", "content"]) == "Hello again."
+    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>."
     assert get_in(activity.data, ["object", "type"]) == "Note"
-    assert get_in(activity.data, ["actor"]) == User.ap_id(user)
+    assert get_in(activity.data, ["actor"]) == user.ap_id
     assert Enum.member?(get_in(activity.data, ["to"]), User.ap_followers(user))
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
+    assert Enum.member?(get_in(activity.data, ["to"]), "shp")
 
     # Add a context + 'statusnet_conversation_id'
     assert is_binary(get_in(activity.data, ["context"]))
@@ -44,7 +47,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "create a status that is a reply" do
-    user = UserBuilder.build
+    user = UserBuilder.build(%{ap_id: "some_cool_id"})
     input = %{
       "status" => "Hello again."
     }
@@ -64,6 +67,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert get_in(reply.data, ["object", "statusnetConversationId"]) == get_in(activity.data, ["object", "statusnetConversationId"])
     assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
     assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
+    assert Enum.member?(get_in(reply.data, ["to"]), "some_cool_id")
   end
 
   test "fetch public statuses" do
@@ -140,5 +144,31 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     response = TwitterAPI.upload(file)
 
     assert is_binary(response)
+  end
+
+  test "it can parse mentions and return the relevant users" do
+    text = "@gsimg According to @archaeme , that is @daggsy."
+
+    {:ok, gsimg} = UserBuilder.insert(%{nickname: "gsimg"})
+    {:ok, archaeme} = UserBuilder.insert(%{nickname: "archaeme"})
+
+    expected_result = [
+      {"@gsimg", gsimg},
+      {"@archaeme", archaeme}
+    ]
+
+    assert TwitterAPI.parse_mentions(text) == expected_result
+  end
+
+  test "it adds user links to an existing text" do
+    text = "@gsimg According to @archaeme , that is @daggsy."
+
+    {:ok, _gsimg} = UserBuilder.insert(%{nickname: "gsimg", ap_id: "first_link" })
+    {:ok, _archaeme} = UserBuilder.insert(%{nickname: "archaeme", ap_id: "second_link"})
+
+    mentions = TwitterAPI.parse_mentions(text)
+    expected_text = "<a href='first_link'>@gsimg</a> According to <a href='second_link'>@archaeme</a> , that is @daggsy."
+
+    assert TwitterAPI.add_user_links(text, mentions) == expected_text
   end
 end

@@ -6,6 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
   test "an activity" do
     {:ok, user} = UserBuilder.insert
+    {:ok, mentioned_user } = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
     {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
 
     object = %Object{
@@ -22,7 +23,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       }
     }
 
-    content = "Some content"
+    content = "Some content mentioning @shp"
     date = DateTime.utc_now() |> DateTime.to_iso8601
 
     activity = %Activity{
@@ -31,7 +32,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         "type" => "Create",
         "to" => [
           User.ap_followers(user),
-          "https://www.w3.org/ns/activitystreams#Public"
+          "https://www.w3.org/ns/activitystreams#Public",
+          mentioned_user.ap_id
         ],
         "actor" => User.ap_id(user),
         "object" => %{
@@ -62,9 +64,12 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "statusnet_conversation_id" => 4711,
       "attachments" => [
         ObjectRepresenter.to_map(object)
+      ],
+      "attentions" => [
+        UserRepresenter.to_map(mentioned_user, %{for: follower})
       ]
     }
 
-    assert ActivityRepresenter.to_map(activity, %{user: user, for: follower}) == expected_status
+    assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status
   end
 end

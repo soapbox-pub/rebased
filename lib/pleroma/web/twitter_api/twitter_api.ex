@@ -13,16 +13,28 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end)
 
     context = ActivityPub.generate_context_id
+
+    content = HtmlSanitizeEx.strip_tags(data["status"])
+
+    mentions = parse_mentions(content)
+
+    default_to = [
+      User.ap_followers(user),
+      "https://www.w3.org/ns/activitystreams#Public"
+    ]
+
+    to = default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
+
+    content_html = add_user_links(content, mentions)
+
     activity = %{
       "type" => "Create",
-      "to" => [
-        User.ap_followers(user),
-        "https://www.w3.org/ns/activitystreams#Public"
-      ],
-      "actor" => User.ap_id(user),
+      "to" => to,
+      "actor" => user.ap_id,
       "object" => %{
         "type" => "Note",
-        "content" => data["status"],
+        "to" => to,
+        "content" => content_html,
         "published" => date,
         "context" => context,
         "attachment" => attachments
@@ -36,7 +48,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
                     inReplyTo <- Repo.get(Activity, inReplyToId),
                     context <- inReplyTo.data["context"]
                do
+
+               to = activity["to"] ++ [inReplyTo.data["actor"]]
+
                activity
+               |> put_in(["to"], to)
                |> put_in(["context"], context)
                |> put_in(["object", "context"], context)
                |> put_in(["object", "inReplyTo"], inReplyTo.data["object"]["id"])
@@ -74,7 +90,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     do
       statuses
     else e ->
-        IO.inspect(e)
+      IO.inspect(e)
       []
     end
   end
@@ -122,6 +138,21 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     """
   end
 
+  def parse_mentions(text) do
+    # Modified from https://www.w3.org/TR/html5/forms.html#valid-e-mail-address
+    regex = ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/
+
+    Regex.scan(regex, text)
+    |> List.flatten
+    |> Enum.uniq
+    |> Enum.map(fn ("@" <> match = full_match) -> {full_match, Repo.get_by(User, nickname: match)} end)
+    |> Enum.filter(fn ({_match, user}) -> user end)
+  end
+
+  def add_user_links(text, mentions) do
+    Enum.reduce(mentions, text, fn ({match, %User{ap_id: ap_id}}, text) -> String.replace(text, match, "<a href='#{ap_id}'>#{match}</a>") end)
+  end
+
   defp add_conversation_id(activity) do
     if is_integer(activity.data["statusnetConversationId"]) do
       {:ok, activity}
@@ -144,6 +175,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   defp activity_to_status(activity, opts) do
     actor = get_in(activity.data, ["actor"])
     user = Repo.get_by!(User, ap_id: actor)
-    ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user}))
+    mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
+    ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user, mentioned: mentioned_users}))
   end
 end
