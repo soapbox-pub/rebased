@@ -16,12 +16,7 @@ defmodule Pleroma.User do
   end
 
   def ap_id(%User{nickname: nickname}) do
-    host =
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-      |> Keyword.fetch!(:url)
-      |> Keyword.fetch!(:host)
-
-    "https://#{host}/users/#{nickname}"
+    "#{Pleroma.Web.base_url}/users/#{nickname}"
   end
 
   def ap_followers(%User{} = user) do
