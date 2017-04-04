@@ -3,6 +3,20 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ObjectRepresenter}
   alias Pleroma.Activity
 
+  def to_map(%Activity{data: %{"type" => "Follow"}} = activity, %{user: user} = opts) do
+    %{
+      "id" => activity.id,
+      "user" => UserRepresenter.to_map(user, opts),
+      "attentions" => [],
+      "statusnet_html" => "",  # TODO: add summary
+      "text" => "",
+      "is_local" => true,
+      "is_post_verb" => false,
+      "created_at" => get_in(activity.data, ["published"]),
+      "in_reply_to_status_id" => nil,
+    }
+  end
+
   def to_map(%Activity{} = activity, %{user: user} = opts) do
     content = get_in(activity.data, ["object", "content"])
     published = get_in(activity.data, ["object", "published"])
