@@ -12,7 +12,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def status_update(%{assigns: %{user: user}} = conn, status_data) do
     media_ids = extract_media_ids(status_data)
-    {:ok, activity} = TwitterAPI.create_status(user, %{ "status" => status_data["status"], "media_ids" => media_ids })
+    {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids ))
     conn
     |> json_reply(200, ActivityRepresenter.to_json(activity, %{user: user}))
   end
