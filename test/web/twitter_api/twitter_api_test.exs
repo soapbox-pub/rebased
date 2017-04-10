@@ -116,11 +116,22 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert follow == activity
   end
 
-  test "Unfollow another user" do
+  test "Unfollow another user using user_id" do
     { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
     { :ok, user } = UserBuilder.insert(%{following: [User.ap_followers(following)]})
 
-    {:ok, user, _following } = TwitterAPI.unfollow(user, following.id)
+    {:ok, user, _following } = TwitterAPI.unfollow(user, %{"user_id" => following.id})
+
+    user = Repo.get(User, user.id)
+
+    assert user.following == []
+  end
+
+  test "Unfollow another user using screen_name" do
+    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
+    { :ok, user } = UserBuilder.insert(%{following: [User.ap_followers(following)]})
+
+    {:ok, user, _following } = TwitterAPI.unfollow(user, %{"screen_name" => following.nickname})
 
     user = Repo.get(User, user.id)
 

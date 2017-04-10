@@ -115,10 +115,18 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def unfollow(%User{} = follower, followed_id) do
+  def unfollow(%User{} = follower, %{ "user_id" => followed_id }) do
     with %User{} = followed <- Repo.get(User, followed_id),
          { :ok, follower } <- User.unfollow(follower, followed)
     do
+      { :ok, follower, followed }
+    end
+  end
+
+  def unfollow(%User{} = follower, %{ "screen_name" => followed_name }) do
+    with %User{} = followed <- Repo.get_by(User, nickname: followed_name),
+         { :ok, follower } <- User.unfollow(follower, followed)
+      do
       { :ok, follower, followed }
     end
   end
