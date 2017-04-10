@@ -6,8 +6,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   import Ecto.Query
 
   def create_status(user = %User{}, data = %{}) do
-    date = DateTime.utc_now() |> DateTime.to_iso8601
-
     attachments = Enum.map(data["media_ids"] || [], fn (media_id) ->
       Repo.get(Object, media_id).data
     end)
@@ -26,6 +24,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     to = default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
 
     content_html = add_user_links(content, mentions)
+
+    date = make_date()
 
     activity = %{
       "type" => "Create",
@@ -103,9 +103,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def follow(%User{} = follower, followed_id) do
     with %User{} = followed <- Repo.get(User, followed_id),
-         { :ok, follower } <- User.follow(follower, followed)
+         { :ok, follower } <- User.follow(follower, followed),
+         { :ok, activity } <- ActivityPub.insert(%{
+           "type" => "Follow",
+           "actor" => follower.ap_id,
+           "object" => followed.ap_id,
+           "published" => make_date()
+         })
     do
-      { :ok, follower, followed }
+      { :ok, follower, followed, activity }
     end
   end
 
@@ -177,5 +183,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     user = Repo.get_by!(User, ap_id: actor)
     mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
     ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user, mentioned: mentioned_users}))
+  end
+
+  defp make_date do
+    DateTime.utc_now() |> DateTime.to_iso8601
   end
 end
