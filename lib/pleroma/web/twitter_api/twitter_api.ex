@@ -25,7 +25,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     content_html = add_user_links(content, mentions)
 
-    date = make_date
+    date = make_date()
 
     activity = %{
       "type" => "Create",
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
            "type" => "Follow",
            "actor" => follower.ap_id,
            "object" => followed.ap_id,
-           "published" => make_date
+           "published" => make_date()
          })
     do
       { :ok, follower, followed, activity }
