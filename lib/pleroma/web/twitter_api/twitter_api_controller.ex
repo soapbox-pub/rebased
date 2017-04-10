@@ -43,6 +43,26 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, json)
   end
 
+  def user_timeline(conn, %{ "user_id" => user_id } = params) do
+    user = Repo.get(User, user_id)
+    conn = Map.merge(conn, %{assigns: %{user: user}})
+    params = Map.delete(params, "user_id")
+
+    friends_timeline(conn, params)
+  end
+
+  def user_timeline(conn, %{ "screen_name" => nickname} = params) do
+    user = Repo.get_by!(User, nickname: nickname)
+    conn = Map.merge(conn, %{assigns: %{user: user}})
+    params = Map.delete(params, "screen_name")
+
+    friends_timeline(conn, params)
+  end
+
+  def user_timeline(conn, params) do
+    friends_timeline(conn, params)
+  end
+
   def follow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
     { :ok, _user, follower, _activity } = TwitterAPI.follow(user, followed_id)
 

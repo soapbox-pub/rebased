@@ -33,6 +33,7 @@ defmodule Pleroma.Web.Router do
     post "/account/verify_credentials", TwitterAPI.Controller, :verify_credentials
     post "/statuses/update", TwitterAPI.Controller, :status_update
     get "/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline
+    get "/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
     post "/friendships/create", TwitterAPI.Controller, :follow
     post "/friendships/destroy", TwitterAPI.Controller, :unfollow
     post "/statusnet/media/upload", TwitterAPI.Controller, :upload
