@@ -101,7 +101,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def follow(%User{} = follower, followed_id) do
+  def follow(%User{} = follower, %{ "user_id" => followed_id }) do
     with %User{} = followed <- Repo.get(User, followed_id),
          { :ok, follower } <- User.follow(follower, followed),
          { :ok, activity } <- ActivityPub.insert(%{
@@ -111,6 +111,20 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
            "published" => make_date()
          })
     do
+      { :ok, follower, followed, activity }
+    end
+  end
+
+  def follow(%User{} = follower, %{ "screen_name" => followed_name }) do
+    with %User{} = followed <- Repo.get_by(User, nickname: followed_name),
+         { :ok, follower } <- User.follow(follower, followed),
+         { :ok, activity } <- ActivityPub.insert(%{
+               "type" => "Follow",
+               "actor" => follower.ap_id,
+               "object" => followed.ap_id,
+               "published" => make_date()
+                                                 })
+      do
       { :ok, follower, followed, activity }
     end
   end

@@ -43,8 +43,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, json)
   end
 
-  def follow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
-    { :ok, _user, follower, _activity } = TwitterAPI.follow(user, followed_id)
+  def follow(%{assigns: %{user: user}} = conn, params) do
+    { :ok, _user, follower, _activity } = TwitterAPI.follow(user, params)
 
     response = follower |> UserRepresenter.to_json(%{for: user})
 
