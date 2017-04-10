@@ -30,6 +30,7 @@ defmodule Pleroma.Web.Router do
   scope "/api", Pleroma.Web do
     pipe_through :authenticated_api
 
+    get "/account/verify_credentials", TwitterAPI.Controller, :verify_credentials
     post "/account/verify_credentials", TwitterAPI.Controller, :verify_credentials
     post "/statuses/update", TwitterAPI.Controller, :status_update
     get "/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline
