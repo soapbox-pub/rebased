@@ -82,14 +82,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "fetch friends' statuses" do
     ActivityBuilder.public_and_non_public
+
     {:ok, activity} = ActivityBuilder.insert(%{"to" => ["someguy/followers"]})
+    {:ok, direct_activity} = ActivityBuilder.insert(%{"to" => ["some other id"]})
     {:ok, user} = UserBuilder.insert(%{ap_id: "some other id", following: ["someguy/followers"]})
 
     statuses = TwitterAPI.fetch_friend_statuses(user)
 
     activity_user = Repo.get_by(User, ap_id: activity.data["actor"])
 
-    assert length(statuses) == 1
+    assert length(statuses) == 2
     assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: activity_user})
   end
 
