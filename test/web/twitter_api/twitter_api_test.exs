@@ -93,6 +93,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert length(statuses) == 2
     assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: activity_user})
+    assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: activity_user, mentioned: [user]})
   end
 
   test "fetch a single status" do
