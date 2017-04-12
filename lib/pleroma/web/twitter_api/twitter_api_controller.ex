@@ -83,6 +83,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> send_resp(200, response)
   end
 
+  def config(conn, _params) do
+    response = %{
+      site: %{
+        name: Pleroma.Web.base_url,
+        server: Pleroma.Web.base_url,
+        textlimit: -1
+      }
+    }
+    |> Poison.encode!
+
+    conn
+    |> json_reply(200, response)
+  end
+
   defp json_reply(conn, status, json) do
     conn
     |> put_resp_content_type("application/json")
