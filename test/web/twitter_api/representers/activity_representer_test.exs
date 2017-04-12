@@ -25,7 +25,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
     content_html = "Some content mentioning <a href='shp'>@shp</shp>"
     content = HtmlSanitizeEx.strip_tags(content_html)
-    date = DateTime.utc_now() |> DateTime.to_iso8601
+    date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601
 
     activity = %Activity{
       id: 1,
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "statusnet_html" => content_html,
       "text" => content,
       "is_post_verb" => true,
-      "created_at" => date,
+      "created_at" => "Tue May 24 13:26:08 +0000 2016",
       "in_reply_to_status_id" => 213123,
       "statusnet_conversation_id" => 4711,
       "attachments" => [
