@@ -23,7 +23,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       }
     }
 
-    content = "Some content mentioning @shp"
+    content_html = "Some content mentioning <a href='shp'>@shp</shp>"
+    content = HtmlSanitizeEx.strip_tags(content_html)
     date = DateTime.utc_now() |> DateTime.to_iso8601
 
     activity = %Activity{
@@ -39,7 +40,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         "object" => %{
           "published" => date,
           "type" => "Note",
-          "content" => content,
+          "content" => content_html,
           "inReplyToStatusId" => 213123,
           "statusnetConversationId" => 4711,
           "attachment" => [
@@ -56,7 +57,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "user" => UserRepresenter.to_map(user, %{for: follower}),
       "is_local" => true,
       "attentions" => [],
-      "statusnet_html" => content,
+      "statusnet_html" => content_html,
       "text" => content,
       "is_post_verb" => true,
       "created_at" => date,

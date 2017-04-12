@@ -33,7 +33,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "user" => UserRepresenter.to_map(user, opts),
       "attentions" => [],
       "statusnet_html" => content,
-      "text" => content,
+      "text" => HtmlSanitizeEx.strip_tags(content),
       "is_local" => true,
       "is_post_verb" => true,
       "created_at" => published,
