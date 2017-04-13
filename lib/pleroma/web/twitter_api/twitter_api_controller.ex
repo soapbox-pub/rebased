@@ -44,18 +44,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def follow(%{assigns: %{user: user}} = conn, params) do
-    { :ok, _user, follower, _activity } = TwitterAPI.follow(user, params)
+    { :ok, user, followed, _activity } = TwitterAPI.follow(user, params)
 
-    response = follower |> UserRepresenter.to_json(%{for: user})
+    response = followed |> UserRepresenter.to_json(%{for: user})
 
     conn
     |> json_reply(200, response)
   end
 
   def unfollow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
-    { :ok, user, follower } = TwitterAPI.unfollow(user, followed_id)
+    { :ok, user, followed } = TwitterAPI.unfollow(user, followed_id)
 
-    response = follower |> UserRepresenter.to_json(%{for: user})
+    response = followed |> UserRepresenter.to_json(%{for: user})
 
     conn
     |> json_reply(200, response)
