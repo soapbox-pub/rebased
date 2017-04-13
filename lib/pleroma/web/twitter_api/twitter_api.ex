@@ -37,7 +37,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         "content" => content_html,
         "published" => date,
         "context" => context,
-        "attachment" => attachments
+        "attachment" => attachments,
+        "actor" => user.ap_id
       },
       "published" => date,
       "context" => context

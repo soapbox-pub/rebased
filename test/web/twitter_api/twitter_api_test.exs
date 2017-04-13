@@ -32,6 +32,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>."
     assert get_in(activity.data, ["object", "type"]) == "Note"
+    assert get_in(activity.data, ["object", "actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
     assert Enum.member?(get_in(activity.data, ["to"]), User.ap_followers(user))
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
