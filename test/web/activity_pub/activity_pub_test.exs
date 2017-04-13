@@ -94,6 +94,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert length(activities) == 10
       assert last == last_expected
     end
+
+    test "retrieves ids up to max_id" do
+      _first_activities = ActivityBuilder.insert_list(10)
+      activities = ActivityBuilder.insert_list(20)
+      later_activities = ActivityBuilder.insert_list(10)
+      max_id = List.first(later_activities).id
+      last_expected = List.last(activities)
+
+      activities = ActivityPub.fetch_public_activities(%{"max_id" => max_id})
+      last = List.last(activities)
+
+      assert length(activities) == 20
+      assert last == last_expected
+    end
   end
 
   describe "uploading files" do
