@@ -54,6 +54,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query = from activity in query,
       where: activity.id > ^since_id
 
+    query = if opts["max_id"] do
+      from activity in query, where: activity.id < ^opts["max_id"]
+    else
+      query
+    end
+
     Repo.all(query)
     |> Enum.reverse
   end
