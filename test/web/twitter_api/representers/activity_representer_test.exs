@@ -45,7 +45,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "statusnetConversationId" => 4711,
           "attachment" => [
             object
-          ]
+          ],
+          "like_count" => 5
         },
         "published" => date
       }
@@ -68,7 +69,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       ],
       "attentions" => [
         UserRepresenter.to_map(mentioned_user, %{for: follower})
-      ]
+      ],
+      "fave_num" => 5
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status

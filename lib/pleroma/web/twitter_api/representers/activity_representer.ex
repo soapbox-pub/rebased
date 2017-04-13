@@ -25,6 +25,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     content = get_in(activity.data, ["object", "content"])
     created_at = get_in(activity.data, ["object", "published"])
     |> date_to_asctime
+    like_count = get_in(activity.data, ["object", "like_count"]) || 0
 
     mentions = opts[:mentioned] || []
 
@@ -45,14 +46,15 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "in_reply_to_status_id" => activity.data["object"]["inReplyToStatusId"],
       "statusnet_conversation_id" => activity.data["object"]["statusnetConversationId"],
       "attachments" => (activity.data["object"]["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
-      "attentions" => attentions
+      "attentions" => attentions,
+      "fave_num" => like_count
     }
   end
 
   defp date_to_asctime(date) do
     with {:ok, date, _offset} <- date |> DateTime.from_iso8601 do
       Calendar.Strftime.strftime!(date, "%a %b %d %H:%M:%S %z %Y")
-    else e ->
+    else _e ->
       ""
     end
   end

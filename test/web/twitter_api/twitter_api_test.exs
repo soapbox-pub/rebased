@@ -5,6 +5,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   alias Pleroma.{Activity, User, Object, Repo}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
 
+  import Pleroma.Factory
+
   test "create a status" do
     user = UserBuilder.build(%{ap_id: "142344"})
     _mentioned_user = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
@@ -176,5 +178,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     expected_text = "<a href='first_link'>@gsimg</a> According to <a href='second_link'>@archaeme</a> , that is @daggsy."
 
     assert TwitterAPI.add_user_links(text, mentions) == expected_text
+  end
+
+  test "it favorites a status, returns the updated status" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+    activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
+
+    {:ok, status} = TwitterAPI.favorite(user, note_activity)
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+
+    assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})
   end
 end
