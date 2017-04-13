@@ -34,9 +34,27 @@ defmodule Pleroma.Factory do
     note = insert(:note)
     data = %{
       "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_activity_id,
+      "type" => "Create",
       "actor" => note.data["actor"],
       "to" => note.data["to"],
       "object" => note.data,
+      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601
+    }
+
+    %Pleroma.Activity{
+      data: data
+    }
+  end
+
+  def like_activity_factory do
+    note_activity = insert(:note_activity)
+    user = insert(:user)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_activity_id,
+      "actor" => user.ap_id,
+      "type" => "Like",
+      "object" => note_activity.data["object"]["id"],
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601
     }
 
