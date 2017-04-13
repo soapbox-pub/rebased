@@ -4,6 +4,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Builders.{ActivityBuilder, UserBuilder}
   alias Pleroma.{Repo, Activity, User}
 
+  import Pleroma.Factory
+
   describe "POST /api/account/verify_credentials" do
     setup [:valid_user]
     test "without valid credentials", %{conn: conn} do
@@ -151,6 +153,25 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       current_user = Repo.get(User, current_user.id)
       assert current_user.following == []
       assert json_response(conn, 200) == UserRepresenter.to_map(followed, %{for: current_user})
+    end
+  end
+
+  describe "POST /api/favorites/create/:id" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post conn, "/api/favorites/create/#{note_activity.id}.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      note_activity = insert(:note_activity)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/favorites/create/#{note_activity.id}.json")
+
+      assert json_response(conn, 200)
     end
   end
 

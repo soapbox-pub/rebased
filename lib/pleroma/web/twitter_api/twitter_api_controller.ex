@@ -2,6 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
+  alias Pleroma.{Repo, Activity}
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
     response = user |> UserRepresenter.to_json(%{for: user})
@@ -92,6 +93,15 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       }
     }
     |> Poison.encode!
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def favorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Repo.get(Activity, id)
+    {:ok, status} = TwitterAPI.favorite(user, activity)
+    response = Poison.encode!(status)
 
     conn
     |> json_reply(200, response)
