@@ -4,6 +4,25 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.Activity
 
 
+  def to_map(%Activity{data: %{"type" => "Like"}} = activity, %{user: user, liked_activity: liked_activity} = opts) do
+    created_at = get_in(activity.data, ["published"])
+    |> date_to_asctime
+
+    text = "#{user.nickname} favorited a status."
+
+    %{
+      "id" => activity.id,
+      "user" => UserRepresenter.to_map(user, opts),
+      "statusnet_html" => text,  # TODO: add summary
+      "text" => text,
+      "is_local" => true,
+      "is_post_verb" => false,
+      "uri" => "tag:#{activity.data["id"]}:objectType=Favourite",
+      "created_at" => created_at,
+      "in_reply_to_status_id" => liked_activity.id,
+    }
+  end
+
   def to_map(%Activity{data: %{"type" => "Follow"}} = activity, %{user: user} = opts) do
     created_at = get_in(activity.data, ["published"])
     |> date_to_asctime

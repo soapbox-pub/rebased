@@ -2,7 +2,21 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   use Pleroma.DataCase
   alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter, ObjectRepresenter}
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Builders.UserBuilder
+  import Pleroma.Factory
+
+  test "a like activity" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+    object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+
+    {:ok, like_activity, object} = ActivityPub.like(user, object)
+    status = ActivityRepresenter.to_map(like_activity, %{user: user, liked_activity: note_activity})
+
+    assert status["id"] == like_activity.id
+    assert status["in_reply_to_status_id"] == note_activity.id
+  end
 
   test "an activity" do
     {:ok, user} = UserBuilder.insert

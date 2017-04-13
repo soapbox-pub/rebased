@@ -192,6 +192,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end)
   end
 
+  # For likes, fetch the liked activity, too.
+  defp activity_to_status(%Activity{data: %{"type" => "Like"}} = activity, opts) do
+    actor = get_in(activity.data, ["actor"])
+    user = Repo.get_by!(User, ap_id: actor)
+    [liked_activity] = Activity.all_by_object_ap_id(activity.data["object"])
+
+    ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user, liked_activity: liked_activity}))
+  end
+
   defp activity_to_status(activity, opts) do
     actor = get_in(activity.data, ["actor"])
     user = Repo.get_by!(User, ap_id: actor)
