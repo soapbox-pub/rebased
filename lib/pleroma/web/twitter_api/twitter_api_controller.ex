@@ -44,7 +44,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def follow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
-    { :ok, _user, follower, _activity } = TwitterAPI.follow(user, followed_id)
+    { :ok, user, follower, _activity } = TwitterAPI.follow(user, followed_id)
 
     response = follower |> UserRepresenter.to_json(%{for: user})
 
@@ -83,8 +83,22 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> send_resp(200, response)
   end
 
-  def help_test(conn, _) do
+  def help_test(conn, _params) do
     conn |> json_reply(200, Poison.encode!("ok"))
+  end
+
+  def config(conn, _params) do
+    response = %{
+      site: %{
+        name: Pleroma.Web.base_url,
+        server: Pleroma.Web.base_url,
+        textlimit: -1
+      }
+    }
+    |> Poison.encode!
+
+    conn
+    |> json_reply(200, response)
   end
 
   defp json_reply(conn, status, json) do
