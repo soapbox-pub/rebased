@@ -69,7 +69,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do
-    ActivityPub.fetch_activities(user.following, opts)
+    ActivityPub.fetch_activities([user.ap_id | user.following], opts)
     |> activities_to_statuses(%{for: user})
   end
 

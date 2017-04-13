@@ -127,7 +127,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       current_user = Repo.get(User, current_user.id)
       assert current_user.following == [User.ap_followers(followed)]
-      assert json_response(conn, 200) == UserRepresenter.to_map(followed)
+      assert json_response(conn, 200) == UserRepresenter.to_map(followed, %{for: current_user})
     end
   end
 
@@ -150,7 +150,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       current_user = Repo.get(User, current_user.id)
       assert current_user.following == []
-      assert json_response(conn, 200) == UserRepresenter.to_map(followed)
+      assert json_response(conn, 200) == UserRepresenter.to_map(followed, %{for: current_user})
     end
   end
 
