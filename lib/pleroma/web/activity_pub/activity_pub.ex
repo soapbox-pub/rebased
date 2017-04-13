@@ -1,10 +1,12 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Repo
-  alias Pleroma.{Activity, Object, Upload}
+  alias Pleroma.{Activity, Object, Upload, User}
   import Ecto.Query
 
   def insert(map) when is_map(map) do
-    map = Map.put_new_lazy(map, "id", &generate_activity_id/0)
+    map = map
+    |> Map.put_new_lazy("id", &generate_activity_id/0)
+    |> Map.put_new_lazy("published", &make_date/0)
 
     map = if is_map(map["object"]) do
       object = Map.put_new_lazy(map["object"], "id", &generate_object_id/0)
@@ -15,6 +17,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
 
     Repo.insert(%Activity{data: map})
+  end
+
+  def like(%User{ap_id: ap_id}, object = %Object{data: %{ "id" => id}}) do
+    data = %{
+      "type" => "Like",
+      "actor" => ap_id,
+      "object" => id
+    }
+
+    {:ok, activity} = insert(data)
+    like_count = (object.data["like_count"] || 0) + 1
+    new_data = object.data |> Map.put("like_count", like_count)
+    changeset = Ecto.Changeset.change(object, data: new_data)
+    {:ok, object} = Repo.update(changeset)
+
+    # Update activities that already had this. Could be done in a seperate process.
+    relevant_activities = Activity.all_by_object_ap_id(id)
+    Enum.map(relevant_activities, fn (activity) ->
+      new_activity_data = activity.data |> Map.put("object", new_data)
+      changeset = Ecto.Changeset.change(activity, data: new_activity_data)
+      Repo.update(changeset)
+    end)
+
+    {:ok, activity, object}
   end
 
   def generate_activity_id do
@@ -73,5 +99,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def upload(%Plug.Upload{} = file) do
     data = Upload.store(file)
     Repo.insert(%Object{data: data})
+  end
+
+  defp make_date do
+    DateTime.utc_now() |> DateTime.to_iso8601
   end
 end

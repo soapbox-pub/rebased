@@ -4,6 +4,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.{Activity, Object}
   alias Pleroma.Builders.ActivityBuilder
 
+  import Pleroma.Factory
+
   describe "insertion" do
     test "inserts a given map into the activity database, giving it an id if it has none." do
       data = %{
@@ -107,6 +109,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert length(activities) == 20
       assert last == last_expected
+    end
+  end
+
+  describe "like an object" do
+    test "adds a like activity to the db" do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      user = insert(:user)
+      user_two = insert(:user)
+
+      {:ok, like_activity, object} = ActivityPub.like(user, object)
+
+      assert like_activity.data["actor"] == user.ap_id
+      assert like_activity.data["type"] == "Like"
+      assert like_activity.data["object"] == object.data["id"]
+      assert object.data["like_count"] == 1
+
+      [note_activity] = Activity.all_by_object_ap_id(object.data["id"])
+      assert note_activity.data["object"]["like_count"] == 1
+
+      {:ok, _like_activity, object} = ActivityPub.like(user_two, object)
+      assert object.data["like_count"] == 2
     end
   end
 
