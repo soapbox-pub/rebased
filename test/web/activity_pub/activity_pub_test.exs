@@ -142,6 +142,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "unliking" do
+    test "unliking a previously liked object" do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      user = insert(:user)
+
+      # Unliking something that hasn't been liked does nothing
+      {:ok, object} = ActivityPub.unlike(user, object)
+      assert object.data["like_count"] == 0
+
+      {:ok, like_activity, object} = ActivityPub.like(user, object)
+      assert object.data["like_count"] == 1
+
+      {:ok, object} = ActivityPub.unlike(user, object)
+      assert object.data["like_count"] == 0
+
+      assert Repo.get(Activity, like_activity.id) == nil
+    end
+  end
+
   describe "uploading files" do
     test "copies the file to the configured folder" do
       file = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}

@@ -22,7 +22,9 @@ defmodule Pleroma.Factory do
       "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_object_id,
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601
+      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601,
+      "likes" => [],
+      "like_count" => 0
     }
 
     %Pleroma.Object{

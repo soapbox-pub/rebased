@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       # There's already a like here, so return the original activity.
       ap_id in (object.data["likes"] || []) ->
         query = from activity in Activity,
-          where: fragment("? @> ?", activity.data, ^%{actor: ap_id, object: id})
+          where: fragment("? @> ?", activity.data, ^%{actor: ap_id, object: id, type: "Like"})
 
         activity = Repo.one(query)
         {:ok, activity, object}
@@ -47,14 +47,46 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         changeset = Ecto.Changeset.change(object, data: new_data)
         {:ok, object} = Repo.update(changeset)
 
-        # Update activities that already had this. Could be done in a seperate process.
-        relevant_activities = Activity.all_by_object_ap_id(id)
-        Enum.map(relevant_activities, fn (activity) ->
-          new_activity_data = activity.data |> Map.put("object", new_data)
-          changeset = Ecto.Changeset.change(activity, data: new_activity_data)
-          Repo.update(changeset)
-        end)
+        update_object_in_activities(object)
+
         {:ok, activity, object}
+    end
+  end
+
+  defp update_object_in_activities(%{data: %{"id" => id}} = object) do
+    # Update activities that already had this. Could be done in a seperate process.
+    relevant_activities = Activity.all_by_object_ap_id(id)
+    Enum.map(relevant_activities, fn (activity) ->
+      new_activity_data = activity.data |> Map.put("object", object.data)
+      changeset = Ecto.Changeset.change(activity, data: new_activity_data)
+      Repo.update(changeset)
+    end)
+  end
+
+  def unlike(%User{ap_id: ap_id} = user, %Object{data: %{ "id" => id}} = object) do
+    query = from activity in Activity,
+      where: fragment("? @> ?", activity.data, ^%{actor: ap_id, object: id, type: "Like"})
+
+    activity = Repo.one(query)
+
+    if activity do
+      # just delete for now...
+      {:ok, _activity} = Repo.delete(activity)
+
+      likes = (object.data["likes"] || []) |> List.delete(ap_id)
+
+      new_data = object.data
+      |> Map.put("like_count", length(likes))
+      |> Map.put("likes", likes)
+
+      changeset = Ecto.Changeset.change(object, data: new_data)
+      {:ok, object} = Repo.update(changeset)
+
+      update_object_in_activities(object)
+
+      {:ok, object}
+    else
+      {:ok, object}
     end
   end
 
