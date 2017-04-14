@@ -96,6 +96,24 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: activity_user, mentioned: [user]})
   end
 
+  test "fetch user's statuses" do
+    {:ok, user1} = UserBuilder.insert(%{ap_id: "some id"})
+    {:ok, user2} = UserBuilder.insert(%{ap_id: "some other id", nickname: "testname2"})
+
+    {:ok, status1} = ActivityBuilder.insert(%{"id" => 1}, %{user: user1})
+    {:ok, status2} = ActivityBuilder.insert(%{"id" => 2}, %{user: user2})
+
+    user1_statuses = TwitterAPI.fetch_user_statuses(user1, %{})
+
+    assert length(user1_statuses) == 1
+    assert Enum.at(user1_statuses, 0) == ActivityRepresenter.to_map(status1, %{user: user1})
+
+    user2_statuses = TwitterAPI.fetch_user_statuses(user1, %{"screen_name" => user2.nickname })
+
+    assert length(user2_statuses) == 1
+    assert Enum.at(user2_statuses, 0) == ActivityRepresenter.to_map(status2, %{user: user2})
+  end
+
   test "fetch a single status" do
     {:ok, activity} = ActivityBuilder.insert()
     {:ok, user} = UserBuilder.insert()

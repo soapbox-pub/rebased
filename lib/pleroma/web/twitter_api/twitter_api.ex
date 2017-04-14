@@ -78,6 +78,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     |> activities_to_statuses(%{for: user})
   end
 
+  def fetch_user_statuses(user, opts \\ %{}) do
+    target = get_user(user, opts)
+    ActivityPub.fetch_activities([], Map.merge(opts, %{"actor_id" => target.ap_id}))
+    |> activities_to_statuses(%{for: user})
+  end
+
   def fetch_conversation(user, id) do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{ statusnetConversationId: id}),
@@ -187,5 +193,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   defp make_date do
     DateTime.utc_now() |> DateTime.to_iso8601
+  end
+
+  defp get_user(user, params) do
+    case params do
+      %{ "user_id" => user_id } ->
+        Repo.get(User, user_id)
+      %{ "screen_name" => nickname } ->
+        Repo.get_by!(User, nickname: nickname)
+      _ ->
+        user
+    end
   end
 end
