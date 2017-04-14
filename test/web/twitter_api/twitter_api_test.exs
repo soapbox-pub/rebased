@@ -48,6 +48,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert get_in(activity.data, ["statusnetConversationId"]) == activity.id
 
     assert is_list(activity.data["object"]["attachment"])
+
+    assert activity.data["object"] == Object.get_by_ap_id(activity.data["object"]["id"]).data
   end
 
   test "create a status that is a reply" do

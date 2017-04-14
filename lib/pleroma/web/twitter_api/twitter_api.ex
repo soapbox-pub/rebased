@@ -204,6 +204,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       |> put_in(["object", "statusnetConversationId"], activity.id)
       |> put_in(["statusnetConversationId"], activity.id)
 
+      object = Object.get_by_ap_id(activity.data["object"]["id"])
+
+      changeset = Ecto.Changeset.change(object, data: data["object"])
+      Repo.update(changeset)
+
       changeset = Ecto.Changeset.change(activity, data: data)
       Repo.update(changeset)
     end
