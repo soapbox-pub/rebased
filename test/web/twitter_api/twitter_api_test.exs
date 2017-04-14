@@ -190,4 +190,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})
   end
+
+  setup do
+    Supervisor.terminate_child(Pleroma.Supervisor, ConCache)
+    Supervisor.restart_child(Pleroma.Supervisor, ConCache)
+    :ok
+  end
 end

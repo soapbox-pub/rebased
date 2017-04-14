@@ -52,4 +52,17 @@ defmodule Pleroma.User do
   def following?(%User{} = follower, %User{} = followed) do
     Enum.member?(follower.following, User.ap_followers(followed))
   end
+
+  def get_cached_by_ap_id(ap_id) do
+    ConCache.get_or_store(:users, "ap_id:#{ap_id}", fn() ->
+      # Return false so the cache will store it.
+      Repo.get_by(User, ap_id: ap_id) || false
+    end)
+  end
+
+  def get_cached_by_nickname(nickname) do
+    ConCache.get_or_store(:users, "nickname:#{nickname}", fn() ->
+      Repo.get_by(User, nickname: nickname) || false
+    end)
+  end
 end

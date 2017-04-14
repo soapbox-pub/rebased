@@ -175,7 +175,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     Regex.scan(regex, text)
     |> List.flatten
     |> Enum.uniq
-    |> Enum.map(fn ("@" <> match = full_match) -> {full_match, Repo.get_by(User, nickname: match)} end)
+    |> Enum.map(fn ("@" <> match = full_match) -> {full_match, User.get_cached_by_nickname(match)} end)
     |> Enum.filter(fn ({_match, user}) -> user end)
   end
 
@@ -205,7 +205,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   # For likes, fetch the liked activity, too.
   defp activity_to_status(%Activity{data: %{"type" => "Like"}} = activity, opts) do
     actor = get_in(activity.data, ["actor"])
-    user = Repo.get_by!(User, ap_id: actor)
+    user = User.get_cached_by_ap_id(actor)
     [liked_activity] = Activity.all_by_object_ap_id(activity.data["object"])
 
     ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user, liked_activity: liked_activity}))
@@ -213,8 +213,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   defp activity_to_status(activity, opts) do
     actor = get_in(activity.data, ["actor"])
-    user = Repo.get_by!(User, ap_id: actor)
-    mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
+    user = User.get_cached_by_ap_id(actor)
+    # mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
+    mentioned_users = Enum.map(activity.data["to"], fn (ap_id) ->
+      User.get_cached_by_ap_id(ap_id)
+    end)
+    |> Enum.filter(&(&1))
+
     ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user, mentioned: mentioned_users}))
   end
 
