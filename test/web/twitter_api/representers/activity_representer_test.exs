@@ -11,11 +11,16 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     note_activity = insert(:note_activity)
     object = Object.get_by_ap_id(note_activity.data["object"]["id"])
 
-    {:ok, like_activity, object} = ActivityPub.like(user, object)
+    {:ok, like_activity, _object} = ActivityPub.like(user, object)
     status = ActivityRepresenter.to_map(like_activity, %{user: user, liked_activity: note_activity})
 
     assert status["id"] == like_activity.id
     assert status["in_reply_to_status_id"] == note_activity.id
+
+    note_activity = Activity.get_by_ap_id(note_activity.data["id"])
+    activity_actor = Repo.get_by(User, ap_id: note_activity.data["actor"])
+    liked_status = ActivityRepresenter.to_map(note_activity, %{user: activity_actor, for: user})
+    assert liked_status["favorited"] == true
   end
 
   test "an activity" do
@@ -84,7 +89,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "attentions" => [
         UserRepresenter.to_map(mentioned_user, %{for: follower})
       ],
-      "fave_num" => 5
+      "fave_num" => 5,
+      "favorited" => false
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status

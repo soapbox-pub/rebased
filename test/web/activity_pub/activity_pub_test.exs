@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.{Activity, Object}
+  alias Pleroma.{Activity, Object, User}
   alias Pleroma.Builders.ActivityBuilder
 
   import Pleroma.Factory
@@ -124,7 +124,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert like_activity.data["actor"] == user.ap_id
       assert like_activity.data["type"] == "Like"
       assert like_activity.data["object"] == object.data["id"]
+      assert like_activity.data["to"] == [User.ap_followers(user)]
       assert object.data["like_count"] == 1
+      assert object.data["likes"] == [user.ap_id]
+
+      # Just return the original activity if the user already liked it.
+      {:ok, same_like_activity, object} = ActivityPub.like(user, object)
+
+      assert like_activity == same_like_activity
+      assert object.data["likes"] == [user.ap_id]
 
       [note_activity] = Activity.all_by_object_ap_id(object.data["id"])
       assert note_activity.data["object"]["like_count"] == 1

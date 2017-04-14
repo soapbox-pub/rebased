@@ -19,28 +19,43 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.insert(%Activity{data: map})
   end
 
-  def like(%User{ap_id: ap_id}, object = %Object{data: %{ "id" => id}}) do
-    data = %{
-      "type" => "Like",
-      "actor" => ap_id,
-      "object" => id
-    }
+  def like(%User{ap_id: ap_id} = user, %Object{data: %{ "id" => id}} = object) do
+    cond do
+      # There's already a like here, so return the original activity.
+      ap_id in (object.data["likes"] || []) ->
+        query = from activity in Activity,
+          where: fragment("? @> ?", activity.data, ^%{actor: ap_id, object: id})
 
-    {:ok, activity} = insert(data)
-    like_count = (object.data["like_count"] || 0) + 1
-    new_data = object.data |> Map.put("like_count", like_count)
-    changeset = Ecto.Changeset.change(object, data: new_data)
-    {:ok, object} = Repo.update(changeset)
+        activity = Repo.one(query)
+        {:ok, activity, object}
+      true ->
+        data = %{
+          "type" => "Like",
+          "actor" => ap_id,
+          "object" => id,
+          "to" => [User.ap_followers(user)]
+        }
 
-    # Update activities that already had this. Could be done in a seperate process.
-    relevant_activities = Activity.all_by_object_ap_id(id)
-    Enum.map(relevant_activities, fn (activity) ->
-      new_activity_data = activity.data |> Map.put("object", new_data)
-      changeset = Ecto.Changeset.change(activity, data: new_activity_data)
-      Repo.update(changeset)
-    end)
+        {:ok, activity} = insert(data)
 
-    {:ok, activity, object}
+        likes = [ap_id | (object.data["likes"] || [])] |> Enum.uniq
+
+        new_data = object.data
+        |> Map.put("like_count", length(likes))
+        |> Map.put("likes", likes)
+
+        changeset = Ecto.Changeset.change(object, data: new_data)
+        {:ok, object} = Repo.update(changeset)
+
+        # Update activities that already had this. Could be done in a seperate process.
+        relevant_activities = Activity.all_by_object_ap_id(id)
+        Enum.map(relevant_activities, fn (activity) ->
+          new_activity_data = activity.data |> Map.put("object", new_data)
+          changeset = Ecto.Changeset.change(activity, data: new_activity_data)
+          Repo.update(changeset)
+        end)
+        {:ok, activity, object}
+    end
   end
 
   def generate_activity_id do

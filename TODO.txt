@@ -1,8 +1,1 @@
 - Add cache for user fetching / representing. (mostly in TwitterAPI.activity_to_status)
-
-Favorites:
-- Add 'likes' to activity, collection of ids of people who liked it.
-- show if you favorited something or not.
-- Don't allow double favorites
-- Address favorites to the followers of the liked activity's author.
-

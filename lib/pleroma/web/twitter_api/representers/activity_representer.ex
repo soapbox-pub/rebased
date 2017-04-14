@@ -45,6 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     created_at = get_in(activity.data, ["object", "published"])
     |> date_to_asctime
     like_count = get_in(activity.data, ["object", "like_count"]) || 0
+    favorited = opts[:for] && opts[:for].ap_id in (activity.data["object"]["likes"] || [])
 
     mentions = opts[:mentioned] || []
 
@@ -66,7 +67,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "statusnet_conversation_id" => activity.data["object"]["statusnetConversationId"],
       "attachments" => (activity.data["object"]["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
-      "fave_num" => like_count
+      "fave_num" => like_count,
+      "favorited" => !!favorited
     }
   end
 
