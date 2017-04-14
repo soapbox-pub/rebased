@@ -14,7 +14,7 @@ defmodule Mix.Tasks.RegisterUser do
       bio: bio
     }
 
-    user = %{ user | ap_id: User.ap_id(user) }
+    user = %{ user | ap_id: User.ap_id(user), following: User.ap_followers(user) }
 
     Repo.insert!(user)
   end
