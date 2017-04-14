@@ -137,6 +137,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     {:ok, status}
   end
 
+  def unfavorite(%User{} = user, %Activity{data: %{"object" => object}} = activity) do
+    object = Object.get_by_ap_id(object["id"])
+
+    {:ok, object} = ActivityPub.unlike(user, object)
+    new_data = activity.data
+    |> Map.put("object", object.data)
+
+    status = %{activity | data: new_data}
+    |> activity_to_status(%{for: user})
+
+    {:ok, status}
+  end
+
   def upload(%Plug.Upload{} = file, format \\ "xml") do
     {:ok, object} = ActivityPub.upload(file)
 

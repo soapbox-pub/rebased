@@ -4,6 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.{Activity, User, Object, Repo}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
 
@@ -189,6 +190,22 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
 
     assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})
+  end
+
+  test "it unfavorites a status, returns the updated status" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+    activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
+    object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+
+    {:ok, like_activity, object } = ActivityPub.like(user, object)
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+    assert ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})["fave_num"] == 1
+
+    {:ok, status} = TwitterAPI.unfavorite(user, note_activity)
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+
+    assert status["fave_num"] == 0
   end
 
   setup do
