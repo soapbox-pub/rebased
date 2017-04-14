@@ -113,6 +113,15 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, response)
   end
 
+  def unfavorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Repo.get(Activity, id)
+    {:ok, status} = TwitterAPI.unfavorite(user, activity)
+    response = Poison.encode!(status)
+
+    conn
+    |> json_reply(200, response)
+  end
+
   defp json_reply(conn, status, json) do
     conn
     |> put_resp_content_type("application/json")

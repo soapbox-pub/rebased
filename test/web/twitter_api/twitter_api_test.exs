@@ -198,12 +198,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
     object = Object.get_by_ap_id(note_activity.data["object"]["id"])
 
-    {:ok, like_activity, object } = ActivityPub.like(user, object)
+    {:ok, _like_activity, _object } = ActivityPub.like(user, object)
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
     assert ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})["fave_num"] == 1
 
     {:ok, status} = TwitterAPI.unfavorite(user, note_activity)
-    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
 
     assert status["fave_num"] == 0
   end
