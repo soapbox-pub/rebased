@@ -137,25 +137,35 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     {:ok, status}
   end
 
-  def upload(%Plug.Upload{} = file) do
+  def upload(%Plug.Upload{} = file, format \\ "xml") do
     {:ok, object} = ActivityPub.upload(file)
 
     url = List.first(object.data["url"])
     href = url["href"]
     type = url["mediaType"]
 
-    # Fake this as good as possible...
-    """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <rsp stat="ok" xmlns:atom="http://www.w3.org/2005/Atom">
-      <mediaid>#{object.id}</mediaid>
-      <media_id>#{object.id}</media_id>
-      <media_id_string>#{object.id}</media_id_string>
-      <media_url>#{href}</media_url>
-      <mediaurl>#{href}</mediaurl>
-      <atom:link rel="enclosure" href="#{href}" type="#{type}"></atom:link>
-    </rsp>
-    """
+    case format do
+      "xml" ->
+        # Fake this as good as possible...
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rsp stat="ok" xmlns:atom="http://www.w3.org/2005/Atom">
+        <mediaid>#{object.id}</mediaid>
+        <media_id>#{object.id}</media_id>
+        <media_id_string>#{object.id}</media_id_string>
+        <media_url>#{href}</media_url>
+        <mediaurl>#{href}</mediaurl>
+        <atom:link rel="enclosure" href="#{href}" type="#{type}"></atom:link>
+        </rsp>
+        """
+      "json" ->
+        %{
+          media_id: object.id,
+          media_id_string: "#{object.id}}",
+          media_url: href,
+          size: 0
+        } |> Poison.encode!
+    end
   end
 
   def parse_mentions(text) do
