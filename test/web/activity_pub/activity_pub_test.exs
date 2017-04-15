@@ -124,7 +124,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert like_activity.data["actor"] == user.ap_id
       assert like_activity.data["type"] == "Like"
       assert like_activity.data["object"] == object.data["id"]
-      assert like_activity.data["to"] == [User.ap_followers(user)]
+      assert like_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
       assert object.data["like_count"] == 1
       assert object.data["likes"] == [user.ap_id]
 
@@ -171,7 +171,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, announce_activity, object} = ActivityPub.announce(user, object)
       assert object.data["announcement_count"] == 1
       assert object.data["announcements"] == [user.ap_id]
-      assert announce_activity.data["to"] == [User.ap_followers(user)]
+      assert announce_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
       assert announce_activity.data["object"] == object.data["id"]
       assert announce_activity.data["actor"] == user.ap_id
     end
