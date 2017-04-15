@@ -162,6 +162,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "announcing an object" do
+    test "adds an announce activity to the db" do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      user = insert(:user)
+
+      {:ok, announce_activity, object} = ActivityPub.announce(user, object)
+      assert object.data["announcement_count"] == 1
+      assert object.data["announcements"] == [user.ap_id]
+      assert announce_activity.data["to"] == [User.ap_followers(user)]
+      assert announce_activity.data["object"] == object.data["id"]
+      assert announce_activity.data["actor"] == user.ap_id
+    end
+  end
+
   describe "uploading files" do
     test "copies the file to the configured folder" do
       file = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}

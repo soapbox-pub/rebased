@@ -137,6 +137,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse
   end
 
+  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object) do
+    data = %{
+      "type" => "Announce",
+      "actor" => ap_id,
+      "object" => id,
+      "to" => [User.ap_followers(user)]
+    }
+
+    {:ok, activity} = insert(data)
+
+    announcements = [ap_id | (object.data["announcements"] || [])] |> Enum.uniq
+
+    new_data = object.data
+    |> Map.put("announcement_count", length(announcements))
+    |> Map.put("announcements", announcements)
+
+    changeset = Ecto.Changeset.change(object, data: new_data)
+    {:ok, object} = Repo.update(changeset)
+
+    update_object_in_activities(object)
+
+    {:ok, activity, object}
+  end
+
   def fetch_activities_for_context(context) do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{ context: context })
