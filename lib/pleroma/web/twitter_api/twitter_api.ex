@@ -150,6 +150,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     {:ok, status}
   end
 
+  def retweet(%User{} = user, %Activity{data: %{"object" => object}} = activity) do
+    object = Object.get_by_ap_id(object["id"])
+
+    {:ok, _announce_activity, object} = ActivityPub.announce(user, object)
+    new_data = activity.data
+    |> Map.put("object", object.data)
+
+    status = %{activity | data: new_data}
+    |> activity_to_status(%{for: user})
+
+    {:ok, status}
+  end
+
   def upload(%Plug.Upload{} = file, format \\ "xml") do
     {:ok, object} = ActivityPub.upload(file)
 
@@ -227,6 +240,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     [liked_activity] = Activity.all_by_object_ap_id(activity.data["object"])
 
     ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user, liked_activity: liked_activity}))
+  end
+
+  # For announces, fetch the announced activity and the user.
+  defp activity_to_status(%Activity{data: %{"type" => "Announce"}} = activity, opts) do
+    actor = get_in(activity.data, ["actor"])
+    user = User.get_cached_by_ap_id(actor)
+    [announced_activity] = Activity.all_by_object_ap_id(activity.data["object"])
+    announced_actor = User.get_cached_by_ap_id(announced_activity.data["actor"])
+
+    ActivityRepresenter.to_map(activity, Map.merge(opts, %{users: [user, announced_actor], announced_activity: announced_activity}))
   end
 
   defp activity_to_status(activity, opts) do

@@ -209,6 +209,17 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert status["fave_num"] == 0
   end
 
+  test "it retweets a status and returns the retweet" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+    activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
+
+    {:ok, status} = TwitterAPI.retweet(user, note_activity)
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+
+    assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})
+  end
+
   setup do
     Supervisor.terminate_child(Pleroma.Supervisor, ConCache)
     Supervisor.restart_child(Pleroma.Supervisor, ConCache)

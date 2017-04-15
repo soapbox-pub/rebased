@@ -4,6 +4,32 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.Activity
 
 
+  defp user_by_ap_id(user_list, ap_id) do
+    Enum.find(user_list, fn (%{ap_id: user_id}) -> ap_id == user_id end)
+  end
+
+  def to_map(%Activity{data: %{"type" => "Announce", "actor" => actor}} = activity, %{users: users, announced_activity: announced_activity} = opts) do
+    user = user_by_ap_id(users, actor)
+    created_at = get_in(activity.data, ["published"])
+    |> date_to_asctime
+
+    text = "#{user.nickname} retweeted a status."
+
+    announced_user = user_by_ap_id(users, announced_activity.data["actor"])
+    retweeted_status = to_map(announced_activity, Map.merge(%{user: announced_user}, opts))
+    %{
+      "id" => activity.id,
+      "user" => UserRepresenter.to_map(user, opts),
+      "statusnet_html" => text,
+      "text" => text,
+      "is_local" => true,
+      "is_post_verb" => false,
+      "uri" => "tag:#{activity.data["id"]}:objectType=note",
+      "created_at" => created_at,
+      "retweeted_status" => retweeted_status
+    }
+  end
+
   def to_map(%Activity{data: %{"type" => "Like"}} = activity, %{user: user, liked_activity: liked_activity} = opts) do
     created_at = get_in(activity.data, ["published"])
     |> date_to_asctime
@@ -45,7 +71,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     created_at = get_in(activity.data, ["object", "published"])
     |> date_to_asctime
     like_count = get_in(activity.data, ["object", "like_count"]) || 0
+    announcement_count = get_in(activity.data, ["object", "announcement_count"]) || 0
     favorited = opts[:for] && opts[:for].ap_id in (activity.data["object"]["likes"] || [])
+    repeated = opts[:for] && opts[:for].ap_id in (activity.data["object"]["announcements"] || [])
 
     mentions = opts[:mentioned] || []
 
@@ -68,7 +96,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "attachments" => (activity.data["object"]["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
       "fave_num" => like_count,
-      "favorited" => !!favorited
+      "repeat_num" => announcement_count,
+      "favorited" => !!favorited,
+      "repeated" => !!repeated,
     }
   end
 

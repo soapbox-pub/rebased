@@ -63,7 +63,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end)
   end
 
-  def unlike(%User{ap_id: ap_id} = user, %Object{data: %{ "id" => id}} = object) do
+  def unlike(%User{ap_id: ap_id}, %Object{data: %{ "id" => id}} = object) do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{actor: ap_id, object: id, type: "Like"})
 

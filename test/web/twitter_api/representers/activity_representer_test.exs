@@ -6,6 +6,26 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   alias Pleroma.Builders.UserBuilder
   import Pleroma.Factory
 
+  test "an announce activity" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+    activity_actor = Repo.get_by(User, ap_id: note_activity.data["actor"])
+    object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+
+    {:ok, announce_activity, _object} = ActivityPub.announce(user, object)
+    note_activity = Activity.get_by_ap_id(note_activity.data["id"])
+
+    status = ActivityRepresenter.to_map(announce_activity, %{users: [user, activity_actor], announced_activity: note_activity, for: user})
+
+    assert status["id"] == announce_activity.id
+    assert status["user"] == UserRepresenter.to_map(user, %{for: user})
+
+    retweeted_status = ActivityRepresenter.to_map(note_activity, %{user: activity_actor, for: user})
+    assert retweeted_status["repeated"] == true
+
+    assert status["retweeted_status"] == retweeted_status
+  end
+
   test "a like activity" do
     user = insert(:user)
     note_activity = insert(:note_activity)
@@ -65,7 +85,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "attachment" => [
             object
           ],
-          "like_count" => 5
+          "like_count" => 5,
+          "announcement_count" => 3
         },
         "published" => date
       }
@@ -90,7 +111,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         UserRepresenter.to_map(mentioned_user, %{for: follower})
       ],
       "fave_num" => 5,
-      "favorited" => false
+      "repeat_num" => 3,
+      "favorited" => false,
+      "repeated" => false
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status
