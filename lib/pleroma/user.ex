@@ -9,6 +9,8 @@ defmodule Pleroma.User do
     field :name, :string
     field :nickname, :string
     field :password_hash, :string
+    field :password, :string, virtual: true
+    field :password_confirmation, :string, virtual: true
     field :following, { :array, :string }, default: []
     field :ap_id, :string
 
@@ -27,6 +29,27 @@ defmodule Pleroma.User do
     struct
     |> cast(params, [:following])
     |> validate_required([:following])
+  end
+
+  def register_changeset(struct, params \\ %{}) do
+    changeset = struct
+    |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
+    |> validate_required([:bio, :email, :name, :nickname, :password, :password_confirmation])
+    |> validate_confirmation(:password)
+    |> unique_constraint(:email)
+    |> unique_constraint(:nickname)
+
+    if changeset.valid? do
+      hashed = Comeonin.Pbkdf2.hashpwsalt(changeset.changes[:password])
+      ap_id = User.ap_id(%User{nickname: changeset.changes[:nickname]})
+      followers = User.ap_followers(%User{nickname: changeset.changes[:nickname]})
+      changeset
+      |> put_change(:password_hash, hashed)
+      |> put_change(:ap_id, ap_id)
+      |> put_change(:following, [followers])
+    else
+      changeset
+    end
   end
 
   def follow(%User{} = follower, %User{} = followed) do
