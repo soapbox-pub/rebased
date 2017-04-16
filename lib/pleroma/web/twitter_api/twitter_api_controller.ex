@@ -3,6 +3,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
   alias Pleroma.{Repo, Activity}
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
     response = user |> UserRepresenter.to_json(%{for: user})
@@ -140,6 +141,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       conn
       |> json_reply(400, Poison.encode!(errors))
     end
+  end
+
+  def update_avatar(%{assigns: %{user: user}} = conn, params) do
+    {:ok, object} = ActivityPub.upload(params)
+    change = Ecto.Changeset.change(user, %{avatar: object.data})
+    {:ok, user} = Repo.update(change)
+
+    response = UserRepresenter.to_map(user, %{for: user})
+    |> Poison.encode!
+
+    conn
+    |> json_reply(200, response)
   end
 
   defp json_reply(conn, status, json) do

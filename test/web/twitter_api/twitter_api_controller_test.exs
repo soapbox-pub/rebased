@@ -157,6 +157,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "POST /api/qvitter/update_avatar.json" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      conn = post conn, "/api/qvitter/update_avatar.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/qvitter/update_avatar.json", %{img: Pleroma.Web.ActivityPub.ActivityPubTest.data_uri})
+
+      current_user = Repo.get(User, current_user.id)
+      assert is_map(current_user.avatar)
+      assert json_response(conn, 200) == UserRepresenter.to_map(current_user, %{for: current_user})
+    end
+  end
+
   describe "POST /api/favorites/create/:id" do
     setup [:valid_user]
     test "without valid credentials", %{conn: conn} do
