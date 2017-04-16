@@ -157,6 +157,12 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /help/test.json" do
+    test "returns \"ok\"", %{conn: conn} do
+      conn = get conn, "/api/help/test.json"
+      assert json_response(conn, 200) == "ok"
+  end
+
   describe "POST /api/qvitter/update_avatar.json" do
     setup [:valid_user]
     test "without valid credentials", %{conn: conn} do
