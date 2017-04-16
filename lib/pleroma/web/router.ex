@@ -23,6 +23,7 @@ defmodule Pleroma.Web.Router do
     pipe_through :api
     get "/statuses/public_timeline", TwitterAPI.Controller, :public_timeline
     get "/statuses/public_and_external_timeline", TwitterAPI.Controller, :public_timeline
+    get "/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
     get "/statuses/show/:id", TwitterAPI.Controller, :fetch_status
     get "/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation
     get "/statusnet/config", TwitterAPI.Controller, :config
@@ -37,7 +38,6 @@ defmodule Pleroma.Web.Router do
     post "/statuses/update", TwitterAPI.Controller, :status_update
     get "/statuses/home_timeline", TwitterAPI.Controller, :friends_timeline
     get "/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline
-    get "/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
     post "/friendships/create", TwitterAPI.Controller, :follow
     post "/friendships/destroy", TwitterAPI.Controller, :unfollow
     post "/statusnet/media/upload", TwitterAPI.Controller, :upload

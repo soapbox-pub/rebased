@@ -102,19 +102,33 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: activity_user, mentioned: [user]})
   end
 
+  test "get a user by params" do
+    user1_result = {:ok, user1} = UserBuilder.insert(%{ap_id: "some id", email: "test@pleroma"})
+    {:ok, user2} = UserBuilder.insert(%{ap_id: "some other id", nickname: "testname2", email: "test2@pleroma"})
+
+    assert {:error, "You need to specify screen_name of user_id"} == TwitterAPI.get_user(nil, nil)
+    assert user1_result == TwitterAPI.get_user(nil, %{"user_id" => user1.id})
+    assert user1_result == TwitterAPI.get_user(nil, %{"screen_name" => user1.nickname})
+    assert user1_result == TwitterAPI.get_user(user1, nil)
+    assert user1_result == TwitterAPI.get_user(user2, %{"user_id" => user1.id})
+    assert user1_result == TwitterAPI.get_user(user2, %{"screen_name" => user1.nickname})
+    assert {:error, "No user with such screen_name"} == TwitterAPI.get_user(nil, %{"screen_name" => "Satan"})
+    assert {:error, "No user with such user_id"} == TwitterAPI.get_user(nil, %{"user_id" => 666})
+  end
+
   test "fetch user's statuses" do
-    {:ok, user1} = UserBuilder.insert(%{ap_id: "some id"})
-    {:ok, user2} = UserBuilder.insert(%{ap_id: "some other id", nickname: "testname2"})
+    {:ok, user1} = UserBuilder.insert(%{ap_id: "some id", email: "test@pleroma"})
+    {:ok, user2} = UserBuilder.insert(%{ap_id: "some other id", nickname: "testname2", email: "test2@pleroma"})
 
     {:ok, status1} = ActivityBuilder.insert(%{"id" => 1}, %{user: user1})
     {:ok, status2} = ActivityBuilder.insert(%{"id" => 2}, %{user: user2})
 
-    user1_statuses = TwitterAPI.fetch_user_statuses(user1, %{})
+    user1_statuses = TwitterAPI.fetch_user_statuses(user1, %{"actor_id" => user1.ap_id})
 
     assert length(user1_statuses) == 1
     assert Enum.at(user1_statuses, 0) == ActivityRepresenter.to_map(status1, %{user: user1})
 
-    user2_statuses = TwitterAPI.fetch_user_statuses(user1, %{"screen_name" => user2.nickname })
+    user2_statuses = TwitterAPI.fetch_user_statuses(user1, %{"actor_id" => user2.ap_id})
 
     assert length(user2_statuses) == 1
     assert Enum.at(user2_statuses, 0) == ActivityRepresenter.to_map(status2, %{user: user2})

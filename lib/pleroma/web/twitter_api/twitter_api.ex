@@ -81,8 +81,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_user_statuses(user, opts \\ %{}) do
-    target = get_user(user, opts)
-    ActivityPub.fetch_activities([], Map.merge(opts, %{"actor_id" => target.ap_id}))
+    ActivityPub.fetch_activities([], opts)
     |> activities_to_statuses(%{for: user})
   end
 
@@ -250,9 +249,34 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       {:ok, UserRepresenter.to_map(user)}
     else
       {:error, changeset} ->
-        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} -> msg end)
-        |> Poison.encode!
+        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+      |> Poison.encode!
         {:error, %{error: errors}}
+    end
+  end
+
+  def get_user(user, params) do
+    case params do
+      %{ "user_id" => user_id } ->
+        case target = Repo.get(User, user_id) do
+          nil ->
+            {:error, "No user with such user_id"}
+          _ ->
+            {:ok, target}
+        end
+      %{ "screen_name" => nickname } ->
+        case target = Repo.get_by(User, nickname: nickname) do
+          nil ->
+            {:error, "No user with such screen_name"}
+          _ ->
+            {:ok, target}
+        end
+      _ ->
+        if user do
+          {:ok, user}
+        else
+          {:error, "You need to specify screen_name of user_id"}
+        end
     end
   end
 
@@ -295,16 +319,5 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   defp make_date do
     DateTime.utc_now() |> DateTime.to_iso8601
-  end
-
-  defp get_user(user, params) do
-    case params do
-      %{ "user_id" => user_id } ->
-        Repo.get(User, user_id)
-      %{ "screen_name" => nickname } ->
-        Repo.get_by!(User, nickname: nickname)
-      _ ->
-        user
-    end
   end
 end
