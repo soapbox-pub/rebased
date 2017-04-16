@@ -275,7 +275,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         if user do
           {:ok, user}
         else
-          {:error, "You need to specify screen_name of user_id"}
+          {:error, "You need to specify screen_name or user_id"}
         end
     end
   end

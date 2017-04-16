@@ -106,7 +106,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     user1_result = {:ok, user1} = UserBuilder.insert(%{ap_id: "some id", email: "test@pleroma"})
     {:ok, user2} = UserBuilder.insert(%{ap_id: "some other id", nickname: "testname2", email: "test2@pleroma"})
 
-    assert {:error, "You need to specify screen_name of user_id"} == TwitterAPI.get_user(nil, nil)
+    assert {:error, "You need to specify screen_name or user_id"} == TwitterAPI.get_user(nil, nil)
     assert user1_result == TwitterAPI.get_user(nil, %{"user_id" => user1.id})
     assert user1_result == TwitterAPI.get_user(nil, %{"screen_name" => user1.nickname})
     assert user1_result == TwitterAPI.get_user(user1, nil)
