@@ -8,18 +8,19 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
   import Pleroma.Factory
 
   setup do
-    # {:ok, user} = UserBuilder.insert
     user = insert(:user)
     [user: user]
   end
 
+  test "A user with an avatar object", %{user: user} do
+    image = "image"
+    user = %{ user | avatar: %{ "url" => [%{"href" => image}] }}
+    represented = UserRepresenter.to_map(user)
+    assert represented["profile_image_url"] == image
+  end
+
   test "A user", %{user: user} do
     image = "https://placehold.it/48x48"
-    image = if user.avatar do
-
-    else
-      image
-    end
 
     represented = %{
       "id" => user.id,
