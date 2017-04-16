@@ -45,5 +45,6 @@ defmodule Pleroma.Web.Router do
     post "/favorites/create", TwitterAPI.Controller, :favorite
     post "/favorites/destroy/:id", TwitterAPI.Controller, :unfavorite
     post "/statuses/retweet/:id", TwitterAPI.Controller, :retweet
+    post "/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar
   end
 end

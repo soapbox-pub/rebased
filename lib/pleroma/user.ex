@@ -13,6 +13,7 @@ defmodule Pleroma.User do
     field :password_confirmation, :string, virtual: true
     field :following, { :array, :string }, default: []
     field :ap_id, :string
+    field :avatar, :map
 
     timestamps()
   end

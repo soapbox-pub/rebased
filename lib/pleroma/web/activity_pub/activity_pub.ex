@@ -167,7 +167,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.all(query)
   end
 
-  def upload(%Plug.Upload{} = file) do
+  def upload(file) do
     data = Upload.store(file)
     Repo.insert(%Object{data: data})
   end

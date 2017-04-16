@@ -45,8 +45,11 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
   test "an activity" do
     {:ok, user} = UserBuilder.insert
-    {:ok, mentioned_user } = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
-    {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+    #   {:ok, mentioned_user } = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
+    mentioned_user = insert(:user, %{nickname: "shp"})
+
+    # {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+    follower = insert(:user, %{following: [User.ap_followers(user)]})
 
     object = %Object{
       data: %{
@@ -62,7 +65,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       }
     }
 
-    content_html = "Some content mentioning <a href='shp'>@shp</shp>"
+    content_html = "Some content mentioning <a href='#{mentioned_user.ap_id}'>@shp</shp>"
     content = HtmlSanitizeEx.strip_tags(content_html)
     date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601
 
