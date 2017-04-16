@@ -2,7 +2,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   use Pleroma.Web.ConnCase
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
   alias Pleroma.Builders.{ActivityBuilder, UserBuilder}
-  alias Pleroma.{Repo, Activity, User}
+  alias Pleroma.{Repo, Activity, User, Object}
+  alias Pleroma.Web.ActivityPub.ActivityPub
+
+  import Pleroma.Factory
 
   describe "POST /api/account/verify_credentials" do
     setup [:valid_user]
@@ -91,10 +94,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
-      {:ok, user} = UserBuilder.insert
+      user = insert(:user)
       activities = ActivityBuilder.insert_list(30, %{"to" => [User.ap_followers(user)]}, %{user: user})
       returned_activities = ActivityBuilder.insert_list(10, %{"to" => [User.ap_followers(user)]}, %{user: user})
-      {:ok, other_user} = UserBuilder.insert(%{ap_id: "glimmung", nickname: "nockame"})
+      other_user = insert(:user)
       ActivityBuilder.insert_list(10, %{}, %{user: other_user})
       since_id = List.last(activities).id
 
@@ -107,7 +110,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert length(response) == 10
-      assert response == Enum.map(returned_activities, fn (activity) -> ActivityRepresenter.to_map(activity, %{user: user, for: current_user}) end)
+      assert response == Enum.map(returned_activities, fn (activity) -> ActivityRepresenter.to_map(activity, %{user: User.get_cached_by_ap_id(activity.data["actor"]), for: current_user}) end)
     end
   end
 
@@ -119,7 +122,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
-      {:ok, followed } = UserBuilder.insert(%{name: "some guy"})
+      followed = insert(:user)
 
       conn = conn
       |> with_credentials(current_user.nickname, "test")
@@ -139,7 +142,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
-      {:ok, followed } = UserBuilder.insert(%{name: "some guy"})
+      followed = insert(:user)
 
       {:ok, current_user} = User.follow(current_user, followed)
       assert current_user.following == [User.ap_followers(followed)]
@@ -154,6 +157,121 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "POST /api/qvitter/update_avatar.json" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      conn = post conn, "/api/qvitter/update_avatar.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/qvitter/update_avatar.json", %{img: Pleroma.Web.ActivityPub.ActivityPubTest.data_uri})
+
+      current_user = Repo.get(User, current_user.id)
+      assert is_map(current_user.avatar)
+      assert json_response(conn, 200) == UserRepresenter.to_map(current_user, %{for: current_user})
+    end
+  end
+
+  describe "POST /api/favorites/create/:id" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post conn, "/api/favorites/create/#{note_activity.id}.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      note_activity = insert(:note_activity)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/favorites/create/#{note_activity.id}.json")
+
+      assert json_response(conn, 200)
+    end
+  end
+
+  describe "POST /api/favorites/destroy/:id" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post conn, "/api/favorites/destroy/#{note_activity.id}.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      ActivityPub.like(current_user, object)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/favorites/destroy/#{note_activity.id}.json")
+
+      assert json_response(conn, 200)
+    end
+  end
+
+  describe "POST /api/statuses/retweet/:id" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post conn, "/api/statuses/retweet/#{note_activity.id}.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      note_activity = insert(:note_activity)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/statuses/retweet/#{note_activity.id}.json")
+
+      assert json_response(conn, 200)
+    end
+  end
+
+  describe "POST /api/account/register" do
+    test "it creates a new user", %{conn: conn} do
+      data = %{
+        "nickname" => "lain",
+        "email" => "lain@wired.jp",
+        "fullname" => "lain iwakura",
+        "bio" => "close the world.",
+        "password" => "bear",
+        "confirm" => "bear"
+      }
+
+      conn = conn
+      |> post("/api/account/register", data)
+
+      user = json_response(conn, 200)
+
+      fetched_user = Repo.get_by(User, nickname: "lain")
+      assert user == UserRepresenter.to_map(fetched_user)
+    end
+
+    test "it returns errors on a problem", %{conn: conn} do
+      data = %{
+        "email" => "lain@wired.jp",
+        "fullname" => "lain iwakura",
+        "bio" => "close the world.",
+        "password" => "bear",
+        "confirm" => "bear"
+      }
+
+      conn = conn
+      |> post("/api/account/register", data)
+
+      errors = json_response(conn, 400)
+
+      assert is_binary(errors["error"])
+    end
+  end
+
   defp valid_user(_context) do
     { :ok, user } = UserBuilder.insert(%{nickname: "lambda", ap_id: "lambda"})
     [user: user]
@@ -162,5 +280,11 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   defp with_credentials(conn, username, password) do
     header_content = "Basic " <> Base.encode64("#{username}:#{password}")
     put_req_header(conn, "authorization", header_content)
+  end
+
+  setup do
+    Supervisor.terminate_child(Pleroma.Supervisor, ConCache)
+    Supervisor.restart_child(Pleroma.Supervisor, ConCache)
+    :ok
   end
 end

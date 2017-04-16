@@ -6,15 +6,17 @@ defmodule Mix.Tasks.RegisterUser do
   @shortdoc "Register user"
   def run([name, nickname, email, bio, password]) do
     ensure_started(Repo, [])
-    user = %User{
+
+    params = %{
       name: name,
       nickname: nickname,
       email: email,
-      password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+      password: password,
+      password_confirmation: password,
       bio: bio
     }
 
-    user = %{ user | ap_id: User.ap_id(user) }
+    user = User.register_changeset(%User{}, params)
 
     Repo.insert!(user)
   end

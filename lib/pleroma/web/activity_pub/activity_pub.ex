@@ -1,10 +1,12 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Repo
-  alias Pleroma.{Activity, Object, Upload}
+  alias Pleroma.{Activity, Object, Upload, User}
   import Ecto.Query
 
   def insert(map) when is_map(map) do
-    map = Map.put_new_lazy(map, "id", &generate_activity_id/0)
+    map = map
+    |> Map.put_new_lazy("id", &generate_activity_id/0)
+    |> Map.put_new_lazy("published", &make_date/0)
 
     map = if is_map(map["object"]) do
       object = Map.put_new_lazy(map["object"], "id", &generate_object_id/0)
@@ -15,6 +17,77 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
 
     Repo.insert(%Activity{data: map})
+  end
+
+  def like(%User{ap_id: ap_id} = user, %Object{data: %{ "id" => id}} = object) do
+    cond do
+      # There's already a like here, so return the original activity.
+      ap_id in (object.data["likes"] || []) ->
+        query = from activity in Activity,
+          where: fragment("? @> ?", activity.data, ^%{actor: ap_id, object: id, type: "Like"})
+
+        activity = Repo.one(query)
+        {:ok, activity, object}
+      true ->
+        data = %{
+          "type" => "Like",
+          "actor" => ap_id,
+          "object" => id,
+          "to" => [User.ap_followers(user), object.data["actor"]]
+        }
+
+        {:ok, activity} = insert(data)
+
+        likes = [ap_id | (object.data["likes"] || [])] |> Enum.uniq
+
+        new_data = object.data
+        |> Map.put("like_count", length(likes))
+        |> Map.put("likes", likes)
+
+        changeset = Ecto.Changeset.change(object, data: new_data)
+        {:ok, object} = Repo.update(changeset)
+
+        update_object_in_activities(object)
+
+        {:ok, activity, object}
+    end
+  end
+
+  defp update_object_in_activities(%{data: %{"id" => id}} = object) do
+    # Update activities that already had this. Could be done in a seperate process.
+    relevant_activities = Activity.all_by_object_ap_id(id)
+    Enum.map(relevant_activities, fn (activity) ->
+      new_activity_data = activity.data |> Map.put("object", object.data)
+      changeset = Ecto.Changeset.change(activity, data: new_activity_data)
+      Repo.update(changeset)
+    end)
+  end
+
+  def unlike(%User{ap_id: ap_id}, %Object{data: %{ "id" => id}} = object) do
+    query = from activity in Activity,
+      where: fragment("? @> ?", activity.data, ^%{actor: ap_id, object: id, type: "Like"})
+
+    activity = Repo.one(query)
+
+    if activity do
+      # just delete for now...
+      {:ok, _activity} = Repo.delete(activity)
+
+      likes = (object.data["likes"] || []) |> List.delete(ap_id)
+
+      new_data = object.data
+      |> Map.put("like_count", length(likes))
+      |> Map.put("likes", likes)
+
+      changeset = Ecto.Changeset.change(object, data: new_data)
+      {:ok, object} = Repo.update(changeset)
+
+      update_object_in_activities(object)
+
+      {:ok, object}
+    else
+      {:ok, object}
+    end
   end
 
   def generate_activity_id do
@@ -64,14 +137,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse
   end
 
+  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object) do
+    data = %{
+      "type" => "Announce",
+      "actor" => ap_id,
+      "object" => id,
+      "to" => [User.ap_followers(user), object.data["actor"]]
+    }
+
+    {:ok, activity} = insert(data)
+
+    announcements = [ap_id | (object.data["announcements"] || [])] |> Enum.uniq
+
+    new_data = object.data
+    |> Map.put("announcement_count", length(announcements))
+    |> Map.put("announcements", announcements)
+
+    changeset = Ecto.Changeset.change(object, data: new_data)
+    {:ok, object} = Repo.update(changeset)
+
+    update_object_in_activities(object)
+
+    {:ok, activity, object}
+  end
+
   def fetch_activities_for_context(context) do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{ context: context })
     Repo.all(query)
   end
 
-  def upload(%Plug.Upload{} = file) do
+  def upload(file) do
     data = Upload.store(file)
     Repo.insert(%Object{data: data})
+  end
+
+  defp make_date do
+    DateTime.utc_now() |> DateTime.to_iso8601
   end
 end

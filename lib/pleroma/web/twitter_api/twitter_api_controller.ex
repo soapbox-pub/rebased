@@ -2,6 +2,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
+  alias Pleroma.{Repo, Activity}
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
     response = user |> UserRepresenter.to_json(%{for: user})
@@ -86,6 +88,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> send_resp(200, response)
   end
 
+  def upload_json(conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media, "json")
+    conn
+    |> json_reply(200, response)
+  end
+
   def config(conn, _params) do
     response = %{
       site: %{
@@ -94,6 +102,56 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
         textlimit: -1
       }
     }
+    |> Poison.encode!
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def favorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Repo.get(Activity, id)
+    {:ok, status} = TwitterAPI.favorite(user, activity)
+    response = Poison.encode!(status)
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def unfavorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Repo.get(Activity, id)
+    {:ok, status} = TwitterAPI.unfavorite(user, activity)
+    response = Poison.encode!(status)
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Repo.get(Activity, id)
+    {:ok, status} = TwitterAPI.retweet(user, activity)
+    response = Poison.encode!(status)
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def register(conn, params) do
+    with {:ok, user} <- TwitterAPI.register_user(params) do
+      conn
+      |> json_reply(200, Poison.encode!(user))
+    else
+      {:error, errors} ->
+      conn
+      |> json_reply(400, Poison.encode!(errors))
+    end
+  end
+
+  def update_avatar(%{assigns: %{user: user}} = conn, params) do
+    {:ok, object} = ActivityPub.upload(params)
+    change = Ecto.Changeset.change(user, %{avatar: object.data})
+    {:ok, user} = Repo.update(change)
+
+    response = UserRepresenter.to_map(user, %{for: user})
     |> Poison.encode!
 
     conn

@@ -3,6 +3,8 @@ defmodule Pleroma.UserTest do
   alias Pleroma.User
   use Pleroma.DataCase
 
+  import Pleroma.Factory
+
   test "ap_id returns the activity pub id for the user" do
     host =
       Application.get_env(:pleroma, Pleroma.Web.Endpoint)
@@ -25,21 +27,21 @@ defmodule Pleroma.UserTest do
   end
 
   test "follow takes a user and another user" do
-    { :ok, user } = UserBuilder.insert
-    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
+    user = insert(:user)
+    followed = insert(:user)
 
-    {:ok, user } = User.follow(user, following)
+    {:ok, user } = User.follow(user, followed)
 
     user = Repo.get(User, user.id)
 
-    assert user.following == [User.ap_followers(following)]
+    assert user.following == [User.ap_followers(followed)]
   end
 
   test "unfollow takes a user and another user" do
-    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
-    { :ok, user } = UserBuilder.insert(%{following: [User.ap_followers(following)]})
+    followed = insert(:user)
+    user = insert(:user, %{following: [User.ap_followers(followed)]})
 
-    {:ok, user } = User.unfollow(user, following)
+    {:ok, user } = User.unfollow(user, followed)
 
     user = Repo.get(User, user.id)
 
@@ -47,10 +49,41 @@ defmodule Pleroma.UserTest do
   end
 
   test "test if a user is following another user" do
-    { :ok, followed } = UserBuilder.insert(%{nickname: "guy"})
-    { :ok, user } = UserBuilder.insert(%{following: [User.ap_followers(followed)]})
+    followed = insert(:user)
+    user = insert(:user, %{following: [User.ap_followers(followed)]})
 
     assert User.following?(user, followed)
     refute User.following?(followed, user)
+  end
+
+  describe "user registration" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com"
+    }
+
+    test "it requires a bio, email, name, nickname and password" do
+      @full_user_data
+      |> Map.keys
+      |> Enum.each(fn (key) ->
+        params = Map.delete(@full_user_data, key)
+        changeset = User.register_changeset(%User{}, params)
+        assert changeset.valid? == false
+      end)
+    end
+
+    test "it sets the password_hash, ap_id and following fields" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+
+      assert changeset.valid?
+
+      assert is_binary(changeset.changes[:password_hash])
+      assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
+      assert changeset.changes[:following] == [User.ap_followers(%User{nickname: @full_user_data.nickname})]
+    end
   end
 end
