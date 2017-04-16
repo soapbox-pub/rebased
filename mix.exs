@@ -37,6 +37,9 @@ defmodule Pleroma.Mixfile do
      {:comeonin, "~> 3.0"},
      {:trailing_format_plug, "~> 0.0.5" },
      {:html_sanitize_ex, "~> 1.0.0"},
+     {:calendar, "~> 0.16.1"},
+     {:con_cache, "~> 0.12.0"},
+     {:ex_machina, "~> 2.0", only: :test},
      {:mix_test_watch, "~> 0.2", only: :dev}]
   end
 

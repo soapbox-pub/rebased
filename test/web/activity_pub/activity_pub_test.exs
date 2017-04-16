@@ -1,8 +1,10 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.{Activity, Object}
+  alias Pleroma.{Activity, Object, User}
   alias Pleroma.Builders.ActivityBuilder
+
+  import Pleroma.Factory
 
   describe "insertion" do
     test "inserts a given map into the activity database, giving it an id if it has none." do
@@ -93,6 +95,85 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert length(activities) == 10
       assert last == last_expected
+    end
+
+    test "retrieves ids up to max_id" do
+      _first_activities = ActivityBuilder.insert_list(10)
+      activities = ActivityBuilder.insert_list(20)
+      later_activities = ActivityBuilder.insert_list(10)
+      max_id = List.first(later_activities).id
+      last_expected = List.last(activities)
+
+      activities = ActivityPub.fetch_public_activities(%{"max_id" => max_id})
+      last = List.last(activities)
+
+      assert length(activities) == 20
+      assert last == last_expected
+    end
+  end
+
+  describe "like an object" do
+    test "adds a like activity to the db" do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      user = insert(:user)
+      user_two = insert(:user)
+
+      {:ok, like_activity, object} = ActivityPub.like(user, object)
+
+      assert like_activity.data["actor"] == user.ap_id
+      assert like_activity.data["type"] == "Like"
+      assert like_activity.data["object"] == object.data["id"]
+      assert like_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
+      assert object.data["like_count"] == 1
+      assert object.data["likes"] == [user.ap_id]
+
+      # Just return the original activity if the user already liked it.
+      {:ok, same_like_activity, object} = ActivityPub.like(user, object)
+
+      assert like_activity == same_like_activity
+      assert object.data["likes"] == [user.ap_id]
+
+      [note_activity] = Activity.all_by_object_ap_id(object.data["id"])
+      assert note_activity.data["object"]["like_count"] == 1
+
+      {:ok, _like_activity, object} = ActivityPub.like(user_two, object)
+      assert object.data["like_count"] == 2
+    end
+  end
+
+  describe "unliking" do
+    test "unliking a previously liked object" do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      user = insert(:user)
+
+      # Unliking something that hasn't been liked does nothing
+      {:ok, object} = ActivityPub.unlike(user, object)
+      assert object.data["like_count"] == 0
+
+      {:ok, like_activity, object} = ActivityPub.like(user, object)
+      assert object.data["like_count"] == 1
+
+      {:ok, object} = ActivityPub.unlike(user, object)
+      assert object.data["like_count"] == 0
+
+      assert Repo.get(Activity, like_activity.id) == nil
+    end
+  end
+
+  describe "announcing an object" do
+    test "adds an announce activity to the db" do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      user = insert(:user)
+
+      {:ok, announce_activity, object} = ActivityPub.announce(user, object)
+      assert object.data["announcement_count"] == 1
+      assert object.data["announcements"] == [user.ap_id]
+      assert announce_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
+      assert announce_activity.data["object"] == object.data["id"]
+      assert announce_activity.data["actor"] == user.ap_id
     end
   end
 

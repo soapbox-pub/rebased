@@ -2,6 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
+  alias Pleroma.{Repo, Activity}
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
     response = user |> UserRepresenter.to_json(%{for: user})
@@ -44,7 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def follow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
-    { :ok, _user, follower, _activity } = TwitterAPI.follow(user, followed_id)
+    { :ok, user, follower, _activity } = TwitterAPI.follow(user, followed_id)
 
     response = follower |> UserRepresenter.to_json(%{for: user})
 
@@ -81,6 +82,64 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     conn
     |> put_resp_content_type("application/atom+xml")
     |> send_resp(200, response)
+  end
+
+  def upload_json(conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media, "json")
+    conn
+    |> json_reply(200, response)
+  end
+
+  def config(conn, _params) do
+    response = %{
+      site: %{
+        name: Pleroma.Web.base_url,
+        server: Pleroma.Web.base_url,
+        textlimit: -1
+      }
+    }
+    |> Poison.encode!
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def favorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Repo.get(Activity, id)
+    {:ok, status} = TwitterAPI.favorite(user, activity)
+    response = Poison.encode!(status)
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def unfavorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Repo.get(Activity, id)
+    {:ok, status} = TwitterAPI.unfavorite(user, activity)
+    response = Poison.encode!(status)
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Repo.get(Activity, id)
+    {:ok, status} = TwitterAPI.retweet(user, activity)
+    response = Poison.encode!(status)
+
+    conn
+    |> json_reply(200, response)
+  end
+
+  def register(conn, params) do
+    with {:ok, user} <- TwitterAPI.register_user(params) do
+      conn
+      |> json_reply(200, Poison.encode!(user))
+    else
+      {:error, errors} ->
+      conn
+      |> json_reply(400, Poison.encode!(errors))
+    end
   end
 
   defp json_reply(conn, status, json) do
