@@ -5,13 +5,22 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
   alias Pleroma.Web.TwitterAPI.Representers.UserRepresenter
   alias Pleroma.Builders.UserBuilder
 
+  import Pleroma.Factory
+
   setup do
-    {:ok, user} = UserBuilder.insert
+    # {:ok, user} = UserBuilder.insert
+    user = insert(:user)
     [user: user]
   end
 
   test "A user", %{user: user} do
     image = "https://placehold.it/48x48"
+    image = if user.avatar do
+
+    else
+      image
+    end
+
     represented = %{
       "id" => user.id,
       "name" => user.name,

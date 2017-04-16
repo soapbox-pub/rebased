@@ -94,10 +94,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
-      {:ok, user} = UserBuilder.insert
+      user = insert(:user)
       activities = ActivityBuilder.insert_list(30, %{"to" => [User.ap_followers(user)]}, %{user: user})
       returned_activities = ActivityBuilder.insert_list(10, %{"to" => [User.ap_followers(user)]}, %{user: user})
-      {:ok, other_user} = UserBuilder.insert(%{ap_id: "glimmung", nickname: "nockame"})
+      other_user = insert(:user)
       ActivityBuilder.insert_list(10, %{}, %{user: other_user})
       since_id = List.last(activities).id
 
@@ -110,7 +110,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert length(response) == 10
-      assert response == Enum.map(returned_activities, fn (activity) -> ActivityRepresenter.to_map(activity, %{user: user, for: current_user}) end)
+      assert response == Enum.map(returned_activities, fn (activity) -> ActivityRepresenter.to_map(activity, %{user: User.get_cached_by_ap_id(activity.data["actor"]), for: current_user}) end)
     end
   end
 
@@ -122,7 +122,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
-      {:ok, followed } = UserBuilder.insert(%{name: "some guy"})
+      followed = insert(:user)
 
       conn = conn
       |> with_credentials(current_user.nickname, "test")
@@ -142,7 +142,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
-      {:ok, followed } = UserBuilder.insert(%{name: "some guy"})
+      followed = insert(:user)
 
       {:ok, current_user} = User.follow(current_user, followed)
       assert current_user.following == [User.ap_followers(followed)]

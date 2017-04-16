@@ -191,8 +191,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         "
       }
 
-      {:ok, %Object{} = object} = ActivityPub.upload(file)
-      IO.inspect(object)
+      {:ok, %Object{}} = ActivityPub.upload(file)
     end
   end
 end
