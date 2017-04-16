@@ -118,9 +118,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user, following, activity } = TwitterAPI.follow(user, %{"user_id" => following.id})
 
-    user = Repo.get(User, user.id)
-    follow = Repo.get(Activity, activity.id)
-
     assert user.following == [User.ap_followers(following)]
   end
 
@@ -129,9 +126,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     following = insert(:user)
 
     {:ok, user, following, activity } = TwitterAPI.follow(user, %{"screen_name" => following.nickname})
-
-    user = Repo.get(User, user.id)
-    follow = Repo.get(Activity, activity.id)
 
     assert user.following == [User.ap_followers(following)]
   end
