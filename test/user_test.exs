@@ -53,4 +53,35 @@ defmodule Pleroma.UserTest do
     assert User.following?(user, followed)
     refute User.following?(followed, user)
   end
+
+  describe "user registration" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com"
+    }
+
+    test "it requires a bio, email, name, nickname and password" do
+      @full_user_data
+      |> Map.keys
+      |> Enum.each(fn (key) ->
+        params = Map.delete(@full_user_data, key)
+        changeset = User.register_changeset(%User{}, params)
+        assert changeset.valid? == false
+      end)
+    end
+
+    test "it sets the password_hash, ap_id and following fields" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+
+      assert changeset.valid?
+
+      assert is_binary(changeset.changes[:password_hash])
+      assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
+      assert changeset.changes[:following] == [User.ap_followers(%User{nickname: @full_user_data.nickname})]
+    end
+  end
 end

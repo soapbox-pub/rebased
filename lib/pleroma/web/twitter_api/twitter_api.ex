@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.{User, Activity, Repo, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
 
   import Ecto.Query
 
@@ -13,6 +13,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     context = ActivityPub.generate_context_id
 
     content = HtmlSanitizeEx.strip_tags(data["status"])
+    |> String.replace("\n", "<br>")
 
     mentions = parse_mentions(content)
 
@@ -37,7 +38,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         "content" => content_html,
         "published" => date,
         "context" => context,
-        "attachment" => attachments
+        "attachment" => attachments,
+        "actor" => user.ap_id
       },
       "published" => date,
       "context" => context
@@ -129,25 +131,74 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def upload(%Plug.Upload{} = file) do
+  def favorite(%User{} = user, %Activity{data: %{"object" => object}} = activity) do
+    object = Object.get_by_ap_id(object["id"])
+
+    {:ok, _like_activity, object} = ActivityPub.like(user, object)
+    new_data = activity.data
+    |> Map.put("object", object.data)
+
+    status = %{activity | data: new_data}
+    |> activity_to_status(%{for: user})
+
+    {:ok, status}
+  end
+
+  def unfavorite(%User{} = user, %Activity{data: %{"object" => object}} = activity) do
+    object = Object.get_by_ap_id(object["id"])
+
+    {:ok, object} = ActivityPub.unlike(user, object)
+    new_data = activity.data
+    |> Map.put("object", object.data)
+
+    status = %{activity | data: new_data}
+    |> activity_to_status(%{for: user})
+
+    {:ok, status}
+  end
+
+  def retweet(%User{} = user, %Activity{data: %{"object" => object}} = activity) do
+    object = Object.get_by_ap_id(object["id"])
+
+    {:ok, _announce_activity, object} = ActivityPub.announce(user, object)
+    new_data = activity.data
+    |> Map.put("object", object.data)
+
+    status = %{activity | data: new_data}
+    |> activity_to_status(%{for: user})
+
+    {:ok, status}
+  end
+
+  def upload(%Plug.Upload{} = file, format \\ "xml") do
     {:ok, object} = ActivityPub.upload(file)
 
     url = List.first(object.data["url"])
     href = url["href"]
     type = url["mediaType"]
 
-    # Fake this as good as possible...
-    """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <rsp stat="ok" xmlns:atom="http://www.w3.org/2005/Atom">
-      <mediaid>#{object.id}</mediaid>
-      <media_id>#{object.id}</media_id>
-      <media_id_string>#{object.id}</media_id_string>
-      <media_url>#{href}</media_url>
-      <mediaurl>#{href}</mediaurl>
-      <atom:link rel="enclosure" href="#{href}" type="#{type}"></atom:link>
-    </rsp>
-    """
+    case format do
+      "xml" ->
+        # Fake this as good as possible...
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rsp stat="ok" xmlns:atom="http://www.w3.org/2005/Atom">
+        <mediaid>#{object.id}</mediaid>
+        <media_id>#{object.id}</media_id>
+        <media_id_string>#{object.id}</media_id_string>
+        <media_url>#{href}</media_url>
+        <mediaurl>#{href}</mediaurl>
+        <atom:link rel="enclosure" href="#{href}" type="#{type}"></atom:link>
+        </rsp>
+        """
+      "json" ->
+        %{
+          media_id: object.id,
+          media_id_string: "#{object.id}}",
+          media_url: href,
+          size: 0
+        } |> Poison.encode!
+    end
   end
 
   def parse_mentions(text) do
@@ -157,7 +208,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     Regex.scan(regex, text)
     |> List.flatten
     |> Enum.uniq
-    |> Enum.map(fn ("@" <> match = full_match) -> {full_match, Repo.get_by(User, nickname: match)} end)
+    |> Enum.map(fn ("@" <> match = full_match) -> {full_match, User.get_cached_by_nickname(match)} end)
     |> Enum.filter(fn ({_match, user}) -> user end)
   end
 
@@ -173,8 +224,35 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       |> put_in(["object", "statusnetConversationId"], activity.id)
       |> put_in(["statusnetConversationId"], activity.id)
 
+      object = Object.get_by_ap_id(activity.data["object"]["id"])
+
+      changeset = Ecto.Changeset.change(object, data: data["object"])
+      Repo.update(changeset)
+
       changeset = Ecto.Changeset.change(activity, data: data)
       Repo.update(changeset)
+    end
+  end
+
+  def register_user(params) do
+    params = %{
+      nickname: params["nickname"],
+      name: params["fullname"],
+      bio: params["bio"],
+      email: params["email"],
+      password: params["password"],
+      password_confirmation: params["confirm"]
+    }
+
+    changeset = User.register_changeset(%User{}, params)
+
+    with {:ok, user} <- Repo.insert(changeset) do
+      {:ok, UserRepresenter.to_map(user)}
+    else
+      {:error, changeset} ->
+        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} -> msg end)
+        |> Poison.encode!
+        {:error, %{error: errors}}
     end
   end
 
@@ -184,10 +262,34 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end)
   end
 
+  # For likes, fetch the liked activity, too.
+  defp activity_to_status(%Activity{data: %{"type" => "Like"}} = activity, opts) do
+    actor = get_in(activity.data, ["actor"])
+    user = User.get_cached_by_ap_id(actor)
+    [liked_activity] = Activity.all_by_object_ap_id(activity.data["object"])
+
+    ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user, liked_activity: liked_activity}))
+  end
+
+  # For announces, fetch the announced activity and the user.
+  defp activity_to_status(%Activity{data: %{"type" => "Announce"}} = activity, opts) do
+    actor = get_in(activity.data, ["actor"])
+    user = User.get_cached_by_ap_id(actor)
+    [announced_activity] = Activity.all_by_object_ap_id(activity.data["object"])
+    announced_actor = User.get_cached_by_ap_id(announced_activity.data["actor"])
+
+    ActivityRepresenter.to_map(activity, Map.merge(opts, %{users: [user, announced_actor], announced_activity: announced_activity}))
+  end
+
   defp activity_to_status(activity, opts) do
     actor = get_in(activity.data, ["actor"])
-    user = Repo.get_by!(User, ap_id: actor)
-    mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
+    user = User.get_cached_by_ap_id(actor)
+    # mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
+    mentioned_users = Enum.map(activity.data["to"], fn (ap_id) ->
+      User.get_cached_by_ap_id(ap_id)
+    end)
+    |> Enum.filter(&(&1))
+
     ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user, mentioned: mentioned_users}))
   end
 
