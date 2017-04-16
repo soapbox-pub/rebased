@@ -78,7 +78,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "fetch public statuses" do
     %{ public: activity, user: user } = ActivityBuilder.public_and_non_public
-    {:ok, follower } = UserBuilder.insert(%{name: "dude", ap_id: "idididid", following: [User.ap_followers(user)]})
+
+    follower = insert(:user, following: [User.ap_followers(user)])
 
     statuses = TwitterAPI.fetch_public_statuses(follower)
 
@@ -87,19 +88,18 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "fetch friends' statuses" do
-    ActivityBuilder.public_and_non_public
-
+    user = insert(:user, %{following: ["someguy/followers"]})
     {:ok, activity} = ActivityBuilder.insert(%{"to" => ["someguy/followers"]})
-    {:ok, direct_activity} = ActivityBuilder.insert(%{"to" => ["some other id"]})
-    {:ok, user} = UserBuilder.insert(%{ap_id: "some other id", following: ["someguy/followers"]})
+    {:ok, direct_activity} = ActivityBuilder.insert(%{"to" => [user.ap_id]})
 
     statuses = TwitterAPI.fetch_friend_statuses(user)
 
     activity_user = Repo.get_by(User, ap_id: activity.data["actor"])
+    direct_activity_user = Repo.get_by(User, ap_id: direct_activity.data["actor"])
 
     assert length(statuses) == 2
     assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: activity_user})
-    assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: activity_user, mentioned: [user]})
+    assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: direct_activity_user, mentioned: [user]})
   end
 
   test "get a user by params" do
@@ -145,8 +145,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "Follow another user" do
-    { :ok, user } = UserBuilder.insert
-    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
+    user = insert(:user)
+    following = insert(:user)
 
     {:ok, user, following, activity } = TwitterAPI.follow(user, following.id)
 
@@ -158,8 +158,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "Unfollow another user" do
-    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
-    { :ok, user } = UserBuilder.insert(%{following: [User.ap_followers(following)]})
+    following = insert(:user)
+    user = insert(:user, %{following: [User.ap_followers(following)]})
 
     {:ok, user, _following } = TwitterAPI.unfollow(user, following.id)
 
@@ -192,8 +192,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "it can parse mentions and return the relevant users" do
     text = "@gsimg According to @archaeme , that is @daggsy."
 
-    {:ok, gsimg} = UserBuilder.insert(%{nickname: "gsimg"})
-    {:ok, archaeme} = UserBuilder.insert(%{nickname: "archaeme"})
+    gsimg = insert(:user, %{nickname: "gsimg"})
+    archaeme = insert(:user, %{nickname: "archaeme"})
 
     expected_result = [
       {"@gsimg", gsimg},
@@ -206,11 +206,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "it adds user links to an existing text" do
     text = "@gsimg According to @archaeme , that is @daggsy."
 
-    {:ok, _gsimg} = UserBuilder.insert(%{nickname: "gsimg", ap_id: "first_link" })
-    {:ok, _archaeme} = UserBuilder.insert(%{nickname: "archaeme", ap_id: "second_link"})
+    gsimg = insert(:user, %{nickname: "gsimg"})
+    archaeme = insert(:user, %{nickname: "archaeme"})
 
     mentions = TwitterAPI.parse_mentions(text)
-    expected_text = "<a href='first_link'>@gsimg</a> According to <a href='second_link'>@archaeme</a> , that is @daggsy."
+    expected_text = "<a href='#{gsimg.ap_id}'>@gsimg</a> According to <a href='#{archaeme.ap_id}'>@archaeme</a> , that is @daggsy."
 
     assert TwitterAPI.add_user_links(text, mentions) == expected_text
   end

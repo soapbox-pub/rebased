@@ -3,7 +3,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   def build(data \\ %{}, opts \\ %{}) do
-    user = opts[:user] || UserBuilder.build
+    user = opts[:user] || Pleroma.Factory.insert(:user)
     activity = %{
       "id" => 1,
       "actor" => user.ap_id,
@@ -29,7 +29,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
   end
 
   def public_and_non_public do
-    {:ok, user} = UserBuilder.insert
+    user = Pleroma.Factory.insert(:user)
 
     public = build(%{"id" => 1}, %{user: user})
     non_public = build(%{"id" => 2, "to" => []}, %{user: user})
