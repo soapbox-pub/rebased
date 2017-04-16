@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.{User, Activity, Repo, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
 
   import Ecto.Query
 
@@ -224,6 +224,28 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
       changeset = Ecto.Changeset.change(activity, data: data)
       Repo.update(changeset)
+    end
+  end
+
+  def register_user(params) do
+    params = %{
+      nickname: params["nickname"],
+      name: params["fullname"],
+      bio: params["bio"],
+      email: params["email"],
+      password: params["password"],
+      password_confirmation: params["confirm"]
+    }
+
+    changeset = User.register_changeset(%User{}, params)
+
+    with {:ok, user} <- Repo.insert(changeset) do
+      {:ok, UserRepresenter.to_map(user)}
+    else
+      {:error, changeset} ->
+        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} -> msg end)
+        |> Poison.encode!
+        {:error, %{error: errors}}
     end
   end
 

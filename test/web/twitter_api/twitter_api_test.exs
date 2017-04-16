@@ -3,7 +3,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   alias Pleroma.Builders.{UserBuilder, ActivityBuilder}
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.{Activity, User, Object, Repo}
-  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
@@ -218,6 +218,37 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
 
     assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})
+  end
+
+  test "it registers a new user and returns the user." do
+    data = %{
+      "nickname" => "lain",
+      "email" => "lain@wired.jp",
+      "fullname" => "lain iwakura",
+      "bio" => "close the world.",
+      "password" => "bear",
+      "confirm" => "bear"
+    }
+
+    {:ok, user} = TwitterAPI.register_user(data)
+
+    fetched_user = Repo.get_by(User, nickname: "lain")
+    assert user == UserRepresenter.to_map(fetched_user)
+  end
+
+  test "it returns the error on registration problems" do
+    data = %{
+      "nickname" => "lain",
+      "email" => "lain@wired.jp",
+      "fullname" => "lain iwakura",
+      "bio" => "close the world.",
+      "password" => "bear"
+    }
+
+    {:error, error_object} = TwitterAPI.register_user(data)
+
+    assert is_binary(error_object[:error])
+    refute Repo.get_by(User, nickname: "lain")
   end
 
   setup do
