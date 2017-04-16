@@ -131,6 +131,17 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, response)
   end
 
+  def register(conn, params) do
+    with {:ok, user} <- TwitterAPI.register_user(params) do
+      conn
+      |> json_reply(200, Poison.encode!(user))
+    else
+      {:error, errors} ->
+      conn
+      |> json_reply(400, Poison.encode!(errors))
+    end
+  end
+
   defp json_reply(conn, status, json) do
     conn
     |> put_resp_content_type("application/json")

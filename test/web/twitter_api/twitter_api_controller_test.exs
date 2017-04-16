@@ -216,6 +216,44 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "POST /api/account/register" do
+    test "it creates a new user", %{conn: conn} do
+      data = %{
+        "nickname" => "lain",
+        "email" => "lain@wired.jp",
+        "fullname" => "lain iwakura",
+        "bio" => "close the world.",
+        "password" => "bear",
+        "confirm" => "bear"
+      }
+
+      conn = conn
+      |> post("/api/account/register", data)
+
+      user = json_response(conn, 200)
+
+      fetched_user = Repo.get_by(User, nickname: "lain")
+      assert user == UserRepresenter.to_map(fetched_user)
+    end
+
+    test "it returns errors on a problem", %{conn: conn} do
+      data = %{
+        "email" => "lain@wired.jp",
+        "fullname" => "lain iwakura",
+        "bio" => "close the world.",
+        "password" => "bear",
+        "confirm" => "bear"
+      }
+
+      conn = conn
+      |> post("/api/account/register", data)
+
+      errors = json_response(conn, 400)
+
+      assert is_binary(errors["error"])
+    end
+  end
+
   defp valid_user(_context) do
     { :ok, user } = UserBuilder.insert(%{nickname: "lambda", ap_id: "lambda"})
     [user: user]
