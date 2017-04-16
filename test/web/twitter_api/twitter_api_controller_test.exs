@@ -2,7 +2,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   use Pleroma.Web.ConnCase
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
   alias Pleroma.Builders.{ActivityBuilder, UserBuilder}
-  alias Pleroma.{Repo, Activity, User}
+  alias Pleroma.{Repo, Activity, User, Object}
+  alias Pleroma.Web.ActivityPub.ActivityPub
+
+  import Pleroma.Factory
 
   describe "POST /api/account/verify_credentials" do
     setup [:valid_user]
@@ -158,6 +161,102 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "returns \"ok\"", %{conn: conn} do
       conn = get conn, "/api/help/test.json"
       assert json_response(conn, 200) == "ok"
+  end
+
+  describe "POST /api/favorites/create/:id" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post conn, "/api/favorites/create/#{note_activity.id}.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      note_activity = insert(:note_activity)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/favorites/create/#{note_activity.id}.json")
+
+      assert json_response(conn, 200)
+    end
+  end
+
+  describe "POST /api/favorites/destroy/:id" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post conn, "/api/favorites/destroy/#{note_activity.id}.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      ActivityPub.like(current_user, object)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/favorites/destroy/#{note_activity.id}.json")
+
+      assert json_response(conn, 200)
+    end
+  end
+
+  describe "POST /api/statuses/retweet/:id" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post conn, "/api/statuses/retweet/#{note_activity.id}.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      note_activity = insert(:note_activity)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/statuses/retweet/#{note_activity.id}.json")
+
+      assert json_response(conn, 200)
+    end
+  end
+
+  describe "POST /api/account/register" do
+    test "it creates a new user", %{conn: conn} do
+      data = %{
+        "nickname" => "lain",
+        "email" => "lain@wired.jp",
+        "fullname" => "lain iwakura",
+        "bio" => "close the world.",
+        "password" => "bear",
+        "confirm" => "bear"
+      }
+
+      conn = conn
+      |> post("/api/account/register", data)
+
+      user = json_response(conn, 200)
+
+      fetched_user = Repo.get_by(User, nickname: "lain")
+      assert user == UserRepresenter.to_map(fetched_user)
+    end
+
+    test "it returns errors on a problem", %{conn: conn} do
+      data = %{
+        "email" => "lain@wired.jp",
+        "fullname" => "lain iwakura",
+        "bio" => "close the world.",
+        "password" => "bear",
+        "confirm" => "bear"
+      }
+
+      conn = conn
+      |> post("/api/account/register", data)
+
+      errors = json_response(conn, 400)
+
+      assert is_binary(errors["error"])
     end
   end
 
@@ -169,5 +268,11 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   defp with_credentials(conn, username, password) do
     header_content = "Basic " <> Base.encode64("#{username}:#{password}")
     put_req_header(conn, "authorization", header_content)
+  end
+
+  setup do
+    Supervisor.terminate_child(Pleroma.Supervisor, ConCache)
+    Supervisor.restart_child(Pleroma.Supervisor, ConCache)
+    :ok
   end
 end
