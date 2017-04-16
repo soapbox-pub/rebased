@@ -13,6 +13,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     context = ActivityPub.generate_context_id
 
     content = HtmlSanitizeEx.strip_tags(data["status"])
+    |> String.replace("\n", "<br>")
 
     mentions = parse_mentions(content)
 
