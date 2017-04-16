@@ -122,7 +122,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     follow = Repo.get(Activity, activity.id)
 
     assert user.following == [User.ap_followers(following)]
-    assert follow == activity
   end
 
   test "Follow another user using screen_name" do
@@ -135,7 +134,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     follow = Repo.get(Activity, activity.id)
 
     assert user.following == [User.ap_followers(following)]
-    assert follow == activity
   end
 
   test "Unfollow another user" do
