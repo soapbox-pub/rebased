@@ -1,6 +1,6 @@
 {
   "name": "Pleroma FE",
-  "theme": "base16-ashes.css",
+  "theme": "base16-pleroma-dark.css",
   "background": "/static/bg.jpg",
   "logo": "/static/logo.png"
 }

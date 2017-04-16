@@ -9,8 +9,11 @@ defmodule Pleroma.User do
     field :name, :string
     field :nickname, :string
     field :password_hash, :string
+    field :password, :string, virtual: true
+    field :password_confirmation, :string, virtual: true
     field :following, { :array, :string }, default: []
     field :ap_id, :string
+    field :avatar, :map
 
     timestamps()
   end
@@ -27,6 +30,27 @@ defmodule Pleroma.User do
     struct
     |> cast(params, [:following])
     |> validate_required([:following])
+  end
+
+  def register_changeset(struct, params \\ %{}) do
+    changeset = struct
+    |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
+    |> validate_required([:bio, :email, :name, :nickname, :password, :password_confirmation])
+    |> validate_confirmation(:password)
+    |> unique_constraint(:email)
+    |> unique_constraint(:nickname)
+
+    if changeset.valid? do
+      hashed = Comeonin.Pbkdf2.hashpwsalt(changeset.changes[:password])
+      ap_id = User.ap_id(%User{nickname: changeset.changes[:nickname]})
+      followers = User.ap_followers(%User{nickname: changeset.changes[:nickname]})
+      changeset
+      |> put_change(:password_hash, hashed)
+      |> put_change(:ap_id, ap_id)
+      |> put_change(:following, [followers])
+    else
+      changeset
+    end
   end
 
   def follow(%User{} = follower, %User{} = followed) do
@@ -51,5 +75,18 @@ defmodule Pleroma.User do
 
   def following?(%User{} = follower, %User{} = followed) do
     Enum.member?(follower.following, User.ap_followers(followed))
+  end
+
+  def get_cached_by_ap_id(ap_id) do
+    ConCache.get_or_store(:users, "ap_id:#{ap_id}", fn() ->
+      # Return false so the cache will store it.
+      Repo.get_by(User, ap_id: ap_id) || false
+    end)
+  end
+
+  def get_cached_by_nickname(nickname) do
+    ConCache.get_or_store(:users, "nickname:#{nickname}", fn() ->
+      Repo.get_by(User, nickname: nickname) || false
+    end)
   end
 end

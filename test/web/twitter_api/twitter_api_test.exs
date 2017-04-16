@@ -3,7 +3,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   alias Pleroma.Builders.{UserBuilder, ActivityBuilder}
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.{Activity, User, Object, Repo}
-  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
+  alias Pleroma.Web.ActivityPub.ActivityPub
+
+  import Pleroma.Factory
 
   test "create a status" do
     user = UserBuilder.build(%{ap_id: "142344"})
@@ -24,14 +27,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     object = Repo.insert!(%Object{data: object_data})
 
     input = %{
-      "status" => "Hello again, @shp.<script></script>",
+      "status" => "Hello again, @shp.<script></script>\nThis is on another line.",
       "media_ids" => [object.id]
     }
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
 
-    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>."
+    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.<br>This is on another line."
     assert get_in(activity.data, ["object", "type"]) == "Note"
+    assert get_in(activity.data, ["object", "actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
     assert Enum.member?(get_in(activity.data, ["to"]), User.ap_followers(user))
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
@@ -44,6 +48,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert get_in(activity.data, ["statusnetConversationId"]) == activity.id
 
     assert is_list(activity.data["object"]["attachment"])
+
+    assert activity.data["object"] == Object.get_by_ap_id(activity.data["object"]["id"]).data
   end
 
   test "create a status that is a reply" do
@@ -72,7 +78,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "fetch public statuses" do
     %{ public: activity, user: user } = ActivityBuilder.public_and_non_public
-    {:ok, follower } = UserBuilder.insert(%{name: "dude", ap_id: "idididid", following: [User.ap_followers(user)]})
+
+    follower = insert(:user, following: [User.ap_followers(user)])
 
     statuses = TwitterAPI.fetch_public_statuses(follower)
 
@@ -81,19 +88,18 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "fetch friends' statuses" do
-    ActivityBuilder.public_and_non_public
-
+    user = insert(:user, %{following: ["someguy/followers"]})
     {:ok, activity} = ActivityBuilder.insert(%{"to" => ["someguy/followers"]})
-    {:ok, direct_activity} = ActivityBuilder.insert(%{"to" => ["some other id"]})
-    {:ok, user} = UserBuilder.insert(%{ap_id: "some other id", following: ["someguy/followers"]})
+    {:ok, direct_activity} = ActivityBuilder.insert(%{"to" => [user.ap_id]})
 
     statuses = TwitterAPI.fetch_friend_statuses(user)
 
     activity_user = Repo.get_by(User, ap_id: activity.data["actor"])
+    direct_activity_user = Repo.get_by(User, ap_id: direct_activity.data["actor"])
 
     assert length(statuses) == 2
     assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: activity_user})
-    assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: activity_user, mentioned: [user]})
+    assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: direct_activity_user, mentioned: [user]})
   end
 
   test "fetch a single status" do
@@ -107,8 +113,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "Follow another user using user_id" do
-    { :ok, user } = UserBuilder.insert
-    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
+    user = insert(:user)
+    following = insert(:user)
 
     {:ok, user, following, activity } = TwitterAPI.follow(user, %{"user_id" => following.id})
 
@@ -120,8 +126,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "Follow another user using screen_name" do
-    { :ok, user } = UserBuilder.insert
-    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
+    user = insert(:user)
+    following = insert(:user)
 
     {:ok, user, following, activity } = TwitterAPI.follow(user, %{"screen_name" => following.nickname})
 
@@ -133,8 +139,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "Unfollow another user" do
-    { :ok, following } = UserBuilder.insert(%{nickname: "guy"})
-    { :ok, user } = UserBuilder.insert(%{following: [User.ap_followers(following)]})
+    following = insert(:user)
+    user = insert(:user, %{following: [User.ap_followers(following)]})
 
     {:ok, user, _following } = TwitterAPI.unfollow(user, following.id)
 
@@ -167,8 +173,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "it can parse mentions and return the relevant users" do
     text = "@gsimg According to @archaeme , that is @daggsy."
 
-    {:ok, gsimg} = UserBuilder.insert(%{nickname: "gsimg"})
-    {:ok, archaeme} = UserBuilder.insert(%{nickname: "archaeme"})
+    gsimg = insert(:user, %{nickname: "gsimg"})
+    archaeme = insert(:user, %{nickname: "archaeme"})
 
     expected_result = [
       {"@gsimg", gsimg},
@@ -181,12 +187,86 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "it adds user links to an existing text" do
     text = "@gsimg According to @archaeme , that is @daggsy."
 
-    {:ok, _gsimg} = UserBuilder.insert(%{nickname: "gsimg", ap_id: "first_link" })
-    {:ok, _archaeme} = UserBuilder.insert(%{nickname: "archaeme", ap_id: "second_link"})
+    gsimg = insert(:user, %{nickname: "gsimg"})
+    archaeme = insert(:user, %{nickname: "archaeme"})
 
     mentions = TwitterAPI.parse_mentions(text)
-    expected_text = "<a href='first_link'>@gsimg</a> According to <a href='second_link'>@archaeme</a> , that is @daggsy."
+    expected_text = "<a href='#{gsimg.ap_id}'>@gsimg</a> According to <a href='#{archaeme.ap_id}'>@archaeme</a> , that is @daggsy."
 
     assert TwitterAPI.add_user_links(text, mentions) == expected_text
+  end
+
+  test "it favorites a status, returns the updated status" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+    activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
+
+    {:ok, status} = TwitterAPI.favorite(user, note_activity)
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+
+    assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})
+  end
+
+  test "it unfavorites a status, returns the updated status" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+    activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
+    object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+
+    {:ok, _like_activity, _object } = ActivityPub.like(user, object)
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+    assert ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})["fave_num"] == 1
+
+    {:ok, status} = TwitterAPI.unfavorite(user, note_activity)
+
+    assert status["fave_num"] == 0
+  end
+
+  test "it retweets a status and returns the retweet" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+    activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
+
+    {:ok, status} = TwitterAPI.retweet(user, note_activity)
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+
+    assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})
+  end
+
+  test "it registers a new user and returns the user." do
+    data = %{
+      "nickname" => "lain",
+      "email" => "lain@wired.jp",
+      "fullname" => "lain iwakura",
+      "bio" => "close the world.",
+      "password" => "bear",
+      "confirm" => "bear"
+    }
+
+    {:ok, user} = TwitterAPI.register_user(data)
+
+    fetched_user = Repo.get_by(User, nickname: "lain")
+    assert user == UserRepresenter.to_map(fetched_user)
+  end
+
+  test "it returns the error on registration problems" do
+    data = %{
+      "nickname" => "lain",
+      "email" => "lain@wired.jp",
+      "fullname" => "lain iwakura",
+      "bio" => "close the world.",
+      "password" => "bear"
+    }
+
+    {:error, error_object} = TwitterAPI.register_user(data)
+
+    assert is_binary(error_object[:error])
+    refute Repo.get_by(User, nickname: "lain")
+  end
+
+  setup do
+    Supervisor.terminate_child(Pleroma.Supervisor, ConCache)
+    Supervisor.restart_child(Pleroma.Supervisor, ConCache)
+    :ok
   end
 end
