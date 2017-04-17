@@ -78,15 +78,12 @@ defmodule Pleroma.User do
   end
 
   def get_cached_by_ap_id(ap_id) do
-    ConCache.get_or_store(:users, "ap_id:#{ap_id}", fn() ->
-      # Return false so the cache will store it.
-      Repo.get_by(User, ap_id: ap_id) || false
-    end)
+    key = "ap_id:#{ap_id}"
+    Cachex.get!(:user_cache, key, fallback: fn(_) -> Repo.get_by(User, ap_id: ap_id) end)
   end
 
   def get_cached_by_nickname(nickname) do
-    ConCache.get_or_store(:users, "nickname:#{nickname}", fn() ->
-      Repo.get_by(User, nickname: nickname) || false
-    end)
+    key = "nickname:#{nickname}"
+    Cachex.get!(:user_cache, key, fallback: fn(_) -> Repo.get_by(User, nickname: nickname) end)
   end
 end

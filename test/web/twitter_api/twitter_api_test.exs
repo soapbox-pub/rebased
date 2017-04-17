@@ -252,8 +252,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   setup do
-    Supervisor.terminate_child(Pleroma.Supervisor, ConCache)
-    Supervisor.restart_child(Pleroma.Supervisor, ConCache)
+    Supervisor.terminate_child(Pleroma.Supervisor, Cachex)
+    Supervisor.restart_child(Pleroma.Supervisor, Cachex)
     :ok
   end
 end

@@ -14,10 +14,11 @@ defmodule Pleroma.Application do
       supervisor(Pleroma.Web.Endpoint, []),
       # Start your own worker by calling: Pleroma.Worker.start_link(arg1, arg2, arg3)
       # worker(Pleroma.Worker, [arg1, arg2, arg3]),
-      supervisor(ConCache, [[
-                             ttl_check: :timer.seconds(1),
-                             ttl: :timer.seconds(5)
-                           ], [name: :users]])
+      worker(Cachex, [:user_cache, [
+                         default_ttl: 5000,
+                         ttl_interval: 1000,
+                         limit: 500
+                       ]])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
