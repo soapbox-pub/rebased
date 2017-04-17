@@ -114,26 +114,31 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "Follow another user" do
     user = insert(:user)
-    following = insert(:user)
+    followed = insert(:user)
 
-    {:ok, user, following, activity } = TwitterAPI.follow(user, following.id)
+    { :ok, user, followed, activity } = TwitterAPI.follow(user, followed.id)
 
     user = Repo.get(User, user.id)
     follow = Repo.get(Activity, activity.id)
 
-    assert user.following == [User.ap_followers(following)]
+    assert user.following == [User.ap_followers(followed)]
     assert follow == activity
+
+    { :error, msg } = TwitterAPI.follow(user, followed.id)
+    assert msg == "Could not follow user: #{followed.nickname} is already on your list."
   end
 
   test "Unfollow another user" do
-    following = insert(:user)
-    user = insert(:user, %{following: [User.ap_followers(following)]})
+    followed = insert(:user)
+    user = insert(:user, %{following: [User.ap_followers(followed)]})
 
-    {:ok, user, _following } = TwitterAPI.unfollow(user, following.id)
+    { :ok, user, _followed } = TwitterAPI.unfollow(user, followed.id)
 
     user = Repo.get(User, user.id)
 
     assert user.following == []
+    { :error, msg } = TwitterAPI.unfollow(user, followed.id)
+    assert msg == "Not subscribed!"
   end
 
   test "fetch statuses in a context using the conversation id" do

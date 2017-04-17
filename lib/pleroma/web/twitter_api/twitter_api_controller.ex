@@ -46,21 +46,24 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def follow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
-    { :ok, user, follower, _activity } = TwitterAPI.follow(user, followed_id)
-
-    response = follower |> UserRepresenter.to_json(%{for: user})
-
-    conn
-    |> json_reply(200, response)
+    case TwitterAPI.follow(user, followed_id) do
+      { :ok, user, followed, _activity } ->
+        response = followed |> UserRepresenter.to_json(%{for: user})
+        conn
+        |> json_reply(200, response)
+      { :error, msg } -> forbidden_json_reply(conn, msg)
+    end
   end
 
   def unfollow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
-    { :ok, user, follower } = TwitterAPI.unfollow(user, followed_id)
+    case TwitterAPI.unfollow(user, followed_id) do
+      { :ok, user, followed } ->
+        response = followed |> UserRepresenter.to_json(%{for: user})
 
-    response = follower |> UserRepresenter.to_json(%{for: user})
-
-    conn
-    |> json_reply(200, response)
+        conn
+        |> json_reply(200, response)
+      { :error, msg } -> forbidden_json_reply(conn, msg)
+    end
   end
 
   def fetch_status(%{assigns: %{user: user}} = conn, %{ "id" => id }) do
@@ -163,5 +166,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     conn
     |> put_resp_content_type("application/json")
     |> send_resp(status, json)
+  end
+
+  defp forbidden_json_reply(conn, error_message) do
+    json = %{"error" => error_message, "request" => conn.request_path}
+    |> Poison.encode!
+
+    json_reply(conn, 403, json)
   end
 end
