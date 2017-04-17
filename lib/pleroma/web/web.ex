@@ -61,12 +61,17 @@ defmodule Pleroma.Web do
     apply(__MODULE__, which, [])
   end
 
+  def host do
+    settings = Application.get_env(:pleroma, Pleroma.Web.Endpoint)
+    settings
+    |> Keyword.fetch!(:url)
+    |> Keyword.fetch!(:host)
+  end
+
   def base_url do
     settings = Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-    host =
-      settings
-      |> Keyword.fetch!(:url)
-      |> Keyword.fetch!(:host)
+
+    host = host()
 
     protocol = settings |> Keyword.fetch!(:protocol)
 

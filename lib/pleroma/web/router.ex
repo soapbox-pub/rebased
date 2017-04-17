@@ -19,6 +19,10 @@ defmodule Pleroma.Web.Router do
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Pleroma.Web.Router.user_fetcher/1}
   end
 
+  pipeline :well_known do
+    plug :accepts, ["xml", "xrd+xml"]
+  end
+
   scope "/api", Pleroma.Web do
     pipe_through :api
 
@@ -48,5 +52,12 @@ defmodule Pleroma.Web.Router do
     post "/favorites/destroy/:id", TwitterAPI.Controller, :unfavorite
     post "/statuses/retweet/:id", TwitterAPI.Controller, :retweet
     post "/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar
+  end
+
+  scope "/.well-known", Pleroma.Web do
+    pipe_through :well_known
+
+    get "/host-meta", WebFinger.WebFingerController, :host_meta
+    get "/webfinger", WebFinger.WebFingerController, :webfinger
   end
 end
