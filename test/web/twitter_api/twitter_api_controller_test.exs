@@ -161,6 +161,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "returns \"ok\"", %{conn: conn} do
       conn = get conn, "/api/help/test.json"
       assert json_response(conn, 200) == "ok"
+    end
   end
 
   describe "POST /api/qvitter/update_avatar.json" do
