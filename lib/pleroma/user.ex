@@ -18,6 +18,13 @@ defmodule Pleroma.User do
     timestamps()
   end
 
+  def avatar_url(user) do
+    case user.avatar do
+      %{"url" => [%{"href" => href} | _]} -> href
+      _ -> "https://placehold.it/48x48"
+    end
+  end
+
   def ap_id(%User{nickname: nickname}) do
     "#{Pleroma.Web.base_url}/users/#{nickname}"
   end

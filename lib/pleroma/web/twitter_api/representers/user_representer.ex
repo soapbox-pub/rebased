@@ -4,11 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
   alias Pleroma.User
 
   def to_map(user, opts) do
-    image = case user.avatar do
-      %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "https://placehold.it/48x48"
-    end
-
+    image = User.avatar_url(user)
     following = if opts[:for] do
       User.following?(opts[:for], user)
     else
