@@ -54,6 +54,16 @@ defmodule Pleroma.Web.Router do
     post "/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar
   end
 
+  pipeline :ostatus do
+    plug :accepts, ["xml", "atom"]
+  end
+
+  scope "/users", Pleroma.Web do
+    pipe_through :ostatus
+
+    get "/:nickname/feed", OStatus.OStatusController, :feed
+  end
+
   scope "/.well-known", Pleroma.Web do
     pipe_through :well_known
 

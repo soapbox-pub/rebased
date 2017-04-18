@@ -3,15 +3,26 @@ defmodule Pleroma.Web.OStatus.UserRepresenterTest do
   alias Pleroma.Web.OStatus.UserRepresenter
 
   import Pleroma.Factory
+  alias Pleroma.User
 
   test "returns a user with id, uri, name and link" do
     user = build(:user)
-    tuple = UserRepresenter.to_tuple(user)
-    {:author, author} = tuple
+    tuple = UserRepresenter.to_simple_form(user)
 
-    [:id, :uri, :name, :link]
-    |> Enum.each(fn (tag) ->
-      assert Enum.find(author, fn(e) -> tag == elem(e, 0) end)
-    end)
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+
+    expected = """
+    <id>#{user.ap_id}</id>
+    <activity:object>http://activitystrea.ms/schema/1.0/person</activity:object>
+    <uri>#{user.ap_id}</uri>
+    <name>#{user.nickname}</name>
+    <link rel="avatar" href="#{User.avatar_url(user)}" />
+    """
+
+    assert clean(res) == clean(expected)
+  end
+
+  defp clean(string) do
+    String.replace(string, ~r/\s/, "")
   end
 end
