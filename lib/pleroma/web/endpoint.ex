@@ -9,6 +9,9 @@ defmodule Pleroma.Web.Endpoint do
   # when deploying your static files in production.
   plug Plug.Static,
     at: "/media", from: "uploads", gzip: false
+  plug Plug.Static,
+    at: "/", from: :pleroma,
+    only: ~w(index.html static)
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
