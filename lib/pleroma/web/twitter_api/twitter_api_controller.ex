@@ -45,6 +45,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, json)
   end
 
+  def user_timeline(%{assigns: %{user: user}} = conn, params) do
+    case TwitterAPI.get_user(user, params) do
+      {:ok, target_user} ->
+        params = Map.merge(params, %{"actor_id" => target_user.ap_id})
+        statuses  = TwitterAPI.fetch_user_statuses(user, params)
+        conn
+        |> json_reply(200, statuses |> Poison.encode!)
+      {:error, msg} ->
+        bad_request_reply(conn, msg)
+    end
+  end
+
   def follow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
     case TwitterAPI.follow(user, followed_id) do
       { :ok, user, followed, _activity } ->
@@ -160,6 +172,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     conn
     |> json_reply(200, response)
+  end
+
+  defp bad_request_reply(conn, error_message) do
+    json = Poison.encode!(%{"error" => error_message})
+    json_reply(conn, 400, json)
   end
 
   defp json_reply(conn, status, json) do

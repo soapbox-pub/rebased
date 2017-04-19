@@ -25,6 +25,7 @@ defmodule Pleroma.Web.Router do
     get "/help/test", TwitterAPI.Controller, :help_test
     get "/statuses/public_timeline", TwitterAPI.Controller, :public_timeline
     get "/statuses/public_and_external_timeline", TwitterAPI.Controller, :public_timeline
+    get "/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
     get "/statuses/show/:id", TwitterAPI.Controller, :fetch_status
     get "/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation
     get "/statusnet/config", TwitterAPI.Controller, :config
