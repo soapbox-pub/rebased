@@ -367,7 +367,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   defp valid_user(_context) do
-    { :ok, user } = UserBuilder.insert(%{nickname: "lambda", ap_id: "lambda"})
+    user = insert(:user)
     [user: user]
   end
 
