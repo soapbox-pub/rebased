@@ -67,11 +67,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def unfollow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
-    case TwitterAPI.unfollow(user, followed_id) do
-      { :ok, user, followed } ->
-        response = followed |> UserRepresenter.to_json(%{for: user})
-
+  def unfollow(%{assigns: %{user: user}} = conn, params) do
+    case TwitterAPI.unfollow(user, params) do
+      { :ok, user, unfollowed, } ->
+        response = unfollowed |> UserRepresenter.to_json(%{for: user})
         conn
         |> json_reply(200, response)
       { :error, msg } -> forbidden_json_reply(conn, msg)

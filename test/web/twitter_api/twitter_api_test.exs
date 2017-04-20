@@ -166,16 +166,25 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert msg == "Could not follow user: #{followed.nickname} is already on your list."
   end
 
-  test "Unfollow another user" do
-    followed = insert(:user)
-    user = insert(:user, %{following: [User.ap_followers(followed)]})
+  test "Unfollow another user using user_id" do
+    unfollowed = insert(:user)
+    user = insert(:user, %{following: [User.ap_followers(unfollowed)]})
 
-    { :ok, user, _followed } = TwitterAPI.unfollow(user, followed.id)
-
-    user = Repo.get(User, user.id)
-
+    {:ok, user, unfollowed } = TwitterAPI.unfollow(user, %{"user_id" => unfollowed.id})
     assert user.following == []
-    { :error, msg } = TwitterAPI.unfollow(user, followed.id)
+
+    { :error, msg } = TwitterAPI.unfollow(user, %{"user_id" => unfollowed.id})
+    assert msg == "Not subscribed!"
+  end
+
+  test "Unfollow another user using screen_name" do
+    unfollowed = insert(:user)
+    user = insert(:user, %{following: [User.ap_followers(unfollowed)]})
+
+    {:ok, user, unfollowed } = TwitterAPI.unfollow(user, %{"screen_name" => unfollowed.nickname})
+    assert user.following == []
+
+    { :error, msg } = TwitterAPI.unfollow(user, %{"screen_name" => unfollowed.nickname})
     assert msg == "Not subscribed!"
   end
 
