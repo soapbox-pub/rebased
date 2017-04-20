@@ -71,4 +71,14 @@ defmodule Pleroma.Web.Router do
     get "/host-meta", WebFinger.WebFingerController, :host_meta
     get "/webfinger", WebFinger.WebFingerController, :webfinger
   end
+
+  scope "/", Fallback do
+    get "/*path", RedirectController, :redirector
+  end
+
+end
+
+defmodule Fallback.RedirectController do
+  use Pleroma.Web, :controller
+  def redirector(conn, _params), do: send_file(conn, 200, "priv/static/index.html")
 end
