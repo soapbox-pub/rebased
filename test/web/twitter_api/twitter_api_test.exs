@@ -144,19 +144,25 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert status == ActivityRepresenter.to_map(activity, %{for: user, user: actor})
   end
 
-  test "Follow another user" do
+  test "Follow another user using user_id" do
     user = insert(:user)
     followed = insert(:user)
 
-    { :ok, user, followed, activity } = TwitterAPI.follow(user, followed.id)
-
-    user = Repo.get(User, user.id)
-    follow = Repo.get(Activity, activity.id)
-
+    {:ok, user, followed, _activity } = TwitterAPI.follow(user, %{"user_id" => followed.id})
     assert user.following == [User.ap_followers(followed)]
-    assert follow == activity
 
-    { :error, msg } = TwitterAPI.follow(user, followed.id)
+    { :error, msg } = TwitterAPI.follow(user, %{"user_id" => followed.id})
+    assert msg == "Could not follow user: #{followed.nickname} is already on your list."
+  end
+
+  test "Follow another user using screen_name" do
+    user = insert(:user)
+    followed = insert(:user)
+
+    {:ok, user, followed, _activity } = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
+    assert user.following == [User.ap_followers(followed)]
+
+    { :error, msg } = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
     assert msg == "Could not follow user: #{followed.nickname} is already on your list."
   end
 
