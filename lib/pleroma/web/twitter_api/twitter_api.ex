@@ -85,6 +85,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     |> activities_to_statuses(%{for: user})
   end
 
+  def fetch_mentions(user, opts \\ %{}) do
+    ActivityPub.fetch_activities([user.ap_id], opts)
+    |> activities_to_statuses(%{for: user})
+  end
+
   def fetch_conversation(user, id) do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{ statusnetConversationId: id}),
