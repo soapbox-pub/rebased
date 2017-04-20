@@ -57,6 +57,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def mentions_timeline(%{assigns: %{user: user}} = conn, params) do
+    statuses = TwitterAPI.fetch_mentions(user, params)
+    {:ok, json} = Poison.encode(statuses)
+
+    conn
+    |> json_reply(200, json)
+  end
+
   def follow(%{assigns: %{user: user}} = conn, %{ "user_id" => followed_id }) do
     case TwitterAPI.follow(user, followed_id) do
       { :ok, user, followed, _activity } ->

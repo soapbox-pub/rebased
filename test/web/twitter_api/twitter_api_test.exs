@@ -102,6 +102,17 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: direct_activity_user, mentioned: [user]})
   end
 
+  test "fetch user's mentions" do
+    user = insert(:user)
+    {:ok, activity} = ActivityBuilder.insert(%{"to" => [user.ap_id]})
+    activity_user = Repo.get_by(User, ap_id: activity.data["actor"])
+
+    statuses = TwitterAPI.fetch_mentions(user)
+
+    assert length(statuses) == 1
+    assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: activity_user, mentioned: [user]})
+  end
+
   test "get a user by params" do
     user1_result = {:ok, user1} = UserBuilder.insert(%{ap_id: "some id", email: "test@pleroma"})
     {:ok, user2} = UserBuilder.insert(%{ap_id: "some other id", nickname: "testname2", email: "test2@pleroma"})
