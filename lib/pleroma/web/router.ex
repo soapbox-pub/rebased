@@ -58,10 +58,11 @@ defmodule Pleroma.Web.Router do
     plug :accepts, ["xml", "atom"]
   end
 
-  scope "/users", Pleroma.Web do
+  scope "/", Pleroma.Web do
     pipe_through :ostatus
 
-    get "/:nickname/feed", OStatus.OStatusController, :feed
+    get "/users/:nickname/feed", OStatus.OStatusController, :feed
+    post "/push/hub", OStatus.OStatusController, :temp
   end
 
   scope "/.well-known", Pleroma.Web do

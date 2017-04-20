@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.OStatus.FeedRepresenter do
   alias Pleroma.Web.OStatus
-  alias Pleroma.Web.OStatus.UserRepresenter
+  alias Pleroma.Web.OStatus.{UserRepresenter, ActivityRepresenter}
 
   def to_simple_form(user, activities, users) do
     most_recent_update = List.first(activities).updated_at
@@ -8,7 +8,10 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
 
     h = fn(str) -> [to_charlist(str)] end
 
-    entries = []
+    entries = Enum.map(activities, fn(activity) ->
+      {:entry, ActivityRepresenter.to_simple_form(activity, user)}
+    end)
+
     [{
       :feed, [
         xmlns: 'http://www.w3.org/2005/Atom',
@@ -17,10 +20,9 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
         {:id, h.(OStatus.feed_path(user))},
         {:title, ['#{user.nickname}\'s timeline']},
         {:updated, h.(most_recent_update)},
-        {:entries, []},
         {:link, [rel: 'hub', href: h.(OStatus.pubsub_path)], []},
         {:author, UserRepresenter.to_simple_form(user)}
-      ]
+      ] ++ entries
     }]
   end
 end

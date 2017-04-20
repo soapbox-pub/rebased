@@ -23,4 +23,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> put_resp_content_type("application/atom+xml")
     |> send_resp(200, response)
   end
+
+  def temp(conn, params) do
+    IO.inspect(params)
+  end
 end
