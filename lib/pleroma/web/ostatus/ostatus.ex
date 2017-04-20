@@ -5,8 +5,8 @@ defmodule Pleroma.Web.OStatus do
     "#{user.ap_id}/feed.atom"
   end
 
-  def pubsub_path() do
-    "#{Web.base_url}/push/hub"
+  def pubsub_path(user) do
+    "#{Web.base_url}/push/hub/#{user.nickname}"
   end
 
   def user_path(user) do

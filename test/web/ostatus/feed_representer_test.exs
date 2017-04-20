@@ -26,7 +26,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
       <id>#{OStatus.feed_path(user)}</id>
       <title>#{user.nickname}'s timeline</title>
       <updated>#{most_recent_update}</updated>
-      <link rel="hub" href="#{OStatus.pubsub_path}" />
+      <link rel="hub" href="#{OStatus.pubsub_path(user)}" />
       <author>
         #{user_xml}
       </author>

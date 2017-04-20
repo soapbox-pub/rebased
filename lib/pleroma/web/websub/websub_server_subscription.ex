@@ -7,5 +7,7 @@ defmodule Pleroma.Web.Websub.WebsubServerSubscription do
     field :secret, :string
     field :valid_until, :naive_datetime
     field :state, :string
+
+    timestamps()
   end
 end
