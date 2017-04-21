@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.OStatus.ActivityRepresenter do
-  def to_simple_form(activity, user) do
+  def to_simple_form(%{data: %{"object" => %{"type" => "Note"}}} = activity, user) do
     h = fn(str) -> [to_charlist(str)] end
 
     updated_at = activity.updated_at
@@ -10,7 +10,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/post']},
-      {:id, h.(activity.data["id"])},
+      {:id, h.(activity.data["object"]["id"])},
       {:title, ['New note by #{user.nickname}']},
       {:content, [type: 'html'], h.(activity.data["object"]["content"])},
       {:published, h.(inserted_at)},
