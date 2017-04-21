@@ -102,6 +102,49 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.at(statuses, 1) == ActivityRepresenter.to_map(direct_activity, %{user: direct_activity_user, mentioned: [user]})
   end
 
+  test "fetch user's mentions" do
+    user = insert(:user)
+    {:ok, activity} = ActivityBuilder.insert(%{"to" => [user.ap_id]})
+    activity_user = Repo.get_by(User, ap_id: activity.data["actor"])
+
+    statuses = TwitterAPI.fetch_mentions(user)
+
+    assert length(statuses) == 1
+    assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: activity_user, mentioned: [user]})
+  end
+
+  test "get a user by params" do
+    user1_result = {:ok, user1} = UserBuilder.insert(%{ap_id: "some id", email: "test@pleroma"})
+    {:ok, user2} = UserBuilder.insert(%{ap_id: "some other id", nickname: "testname2", email: "test2@pleroma"})
+
+    assert {:error, "You need to specify screen_name or user_id"} == TwitterAPI.get_user(nil, nil)
+    assert user1_result == TwitterAPI.get_user(nil, %{"user_id" => user1.id})
+    assert user1_result == TwitterAPI.get_user(nil, %{"screen_name" => user1.nickname})
+    assert user1_result == TwitterAPI.get_user(user1, nil)
+    assert user1_result == TwitterAPI.get_user(user2, %{"user_id" => user1.id})
+    assert user1_result == TwitterAPI.get_user(user2, %{"screen_name" => user1.nickname})
+    assert {:error, "No user with such screen_name"} == TwitterAPI.get_user(nil, %{"screen_name" => "Satan"})
+    assert {:error, "No user with such user_id"} == TwitterAPI.get_user(nil, %{"user_id" => 666})
+  end
+
+  test "fetch user's statuses" do
+    {:ok, user1} = UserBuilder.insert(%{ap_id: "some id", email: "test@pleroma"})
+    {:ok, user2} = UserBuilder.insert(%{ap_id: "some other id", nickname: "testname2", email: "test2@pleroma"})
+
+    {:ok, status1} = ActivityBuilder.insert(%{"id" => 1}, %{user: user1})
+    {:ok, status2} = ActivityBuilder.insert(%{"id" => 2}, %{user: user2})
+
+    user1_statuses = TwitterAPI.fetch_user_statuses(user1, %{"actor_id" => user1.ap_id})
+
+    assert length(user1_statuses) == 1
+    assert Enum.at(user1_statuses, 0) == ActivityRepresenter.to_map(status1, %{user: user1})
+
+    user2_statuses = TwitterAPI.fetch_user_statuses(user1, %{"actor_id" => user2.ap_id})
+
+    assert length(user2_statuses) == 1
+    assert Enum.at(user2_statuses, 0) == ActivityRepresenter.to_map(status2, %{user: user2})
+  end
+
   test "fetch a single status" do
     {:ok, activity} = ActivityBuilder.insert()
     {:ok, user} = UserBuilder.insert()
@@ -114,26 +157,31 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "Follow another user" do
     user = insert(:user)
-    following = insert(:user)
+    followed = insert(:user)
 
-    {:ok, user, following, activity } = TwitterAPI.follow(user, following.id)
+    { :ok, user, followed, activity } = TwitterAPI.follow(user, followed.id)
 
     user = Repo.get(User, user.id)
     follow = Repo.get(Activity, activity.id)
 
-    assert user.following == [User.ap_followers(following)]
+    assert user.following == [User.ap_followers(followed)]
     assert follow == activity
+
+    { :error, msg } = TwitterAPI.follow(user, followed.id)
+    assert msg == "Could not follow user: #{followed.nickname} is already on your list."
   end
 
   test "Unfollow another user" do
-    following = insert(:user)
-    user = insert(:user, %{following: [User.ap_followers(following)]})
+    followed = insert(:user)
+    user = insert(:user, %{following: [User.ap_followers(followed)]})
 
-    {:ok, user, _following } = TwitterAPI.unfollow(user, following.id)
+    { :ok, user, _followed } = TwitterAPI.unfollow(user, followed.id)
 
     user = Repo.get(User, user.id)
 
     assert user.following == []
+    { :error, msg } = TwitterAPI.unfollow(user, followed.id)
+    assert msg == "Not subscribed!"
   end
 
   test "fetch statuses in a context using the conversation id" do

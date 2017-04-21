@@ -80,6 +80,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     |> activities_to_statuses(%{for: user})
   end
 
+  def fetch_user_statuses(user, opts \\ %{}) do
+    ActivityPub.fetch_activities([], opts)
+    |> activities_to_statuses(%{for: user})
+  end
+
+  def fetch_mentions(user, opts \\ %{}) do
+    ActivityPub.fetch_activities([user.ap_id], opts)
+    |> activities_to_statuses(%{for: user})
+  end
+
   def fetch_conversation(user, id) do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{ statusnetConversationId: id}),
@@ -105,7 +115,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def follow(%User{} = follower, followed_id) do
     with %User{} = followed <- Repo.get(User, followed_id),
-         { :ok, follower } <- User.follow(follower, followed),
+    { :ok, follower } <- User.follow(follower, followed),
          { :ok, activity } <- ActivityPub.insert(%{
            "type" => "Follow",
            "actor" => follower.ap_id,
@@ -114,6 +124,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          })
     do
       { :ok, follower, followed, activity }
+    else
+      err -> err
     end
   end
 
@@ -122,6 +134,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          { :ok, follower } <- User.unfollow(follower, followed)
     do
       { :ok, follower, followed }
+    else
+      err -> err
     end
   end
 
@@ -244,9 +258,34 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       {:ok, UserRepresenter.to_map(user)}
     else
       {:error, changeset} ->
-        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} -> msg end)
-        |> Poison.encode!
+        errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+      |> Poison.encode!
         {:error, %{error: errors}}
+    end
+  end
+
+  def get_user(user, params) do
+    case params do
+      %{ "user_id" => user_id } ->
+        case target = Repo.get(User, user_id) do
+          nil ->
+            {:error, "No user with such user_id"}
+          _ ->
+            {:ok, target}
+        end
+      %{ "screen_name" => nickname } ->
+        case target = Repo.get_by(User, nickname: nickname) do
+          nil ->
+            {:error, "No user with such screen_name"}
+          _ ->
+            {:ok, target}
+        end
+      _ ->
+        if user do
+          {:ok, user}
+        else
+          {:error, "You need to specify screen_name or user_id"}
+        end
     end
   end
 
@@ -279,7 +318,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     actor = get_in(activity.data, ["actor"])
     user = User.get_cached_by_ap_id(actor)
     # mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
-    mentioned_users = Enum.map(activity.data["to"], fn (ap_id) ->
+    mentioned_users = Enum.map(activity.data["to"] || [], fn (ap_id) ->
       User.get_cached_by_ap_id(ap_id)
     end)
     |> Enum.filter(&(&1))

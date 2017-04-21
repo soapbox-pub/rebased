@@ -133,6 +133,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       query
     end
 
+    query = if opts["actor_id"] do
+      from activity in query,
+        where: fragment("? @> ?", activity.data, ^%{actor: opts["actor_id"]})
+    else
+      query
+    end
+
     Repo.all(query)
     |> Enum.reverse
   end
