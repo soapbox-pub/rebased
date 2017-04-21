@@ -64,4 +64,14 @@ defmodule Pleroma.Factory do
       data: data
     }
   end
+
+  def websub_subscription_factory do
+    %Pleroma.Web.Websub.WebsubServerSubscription{
+      topic: "http://example.org",
+      callback: "http://example/org/callback",
+      secret: "here's a secret",
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now, 100),
+      state: "requested"
+    }
+  end
 end
