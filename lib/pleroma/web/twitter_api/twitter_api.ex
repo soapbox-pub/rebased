@@ -85,6 +85,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     |> activities_to_statuses(%{for: user})
   end
 
+  def fetch_mentions(user, opts \\ %{}) do
+    ActivityPub.fetch_activities([user.ap_id], opts)
+    |> activities_to_statuses(%{for: user})
+  end
+
   def fetch_conversation(user, id) do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{ statusnetConversationId: id}),
@@ -313,7 +318,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     actor = get_in(activity.data, ["actor"])
     user = User.get_cached_by_ap_id(actor)
     # mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
-    mentioned_users = Enum.map(activity.data["to"], fn (ap_id) ->
+    mentioned_users = Enum.map(activity.data["to"] || [], fn (ap_id) ->
       User.get_cached_by_ap_id(ap_id)
     end)
     |> Enum.filter(&(&1))

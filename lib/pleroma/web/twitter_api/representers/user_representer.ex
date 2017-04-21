@@ -15,6 +15,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
       false
     end
 
+    user_info = User.user_info(user)
+
     map = %{
       "id" => user.id,
       "name" => user.name,
@@ -23,9 +25,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
       "following" => following,
       # Fake fields
       "favourites_count" => 0,
-      "statuses_count" => 0,
-      "friends_count" => 0,
-      "followers_count" => 0,
+      "statuses_count" => user_info[:note_count],
+      "friends_count" => user_info[:following_count],
+      "followers_count" => user_info[:follower_count],
       "profile_image_url" => image,
       "profile_image_url_https" => image,
       "profile_image_url_profile_size" => image,

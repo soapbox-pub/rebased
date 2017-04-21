@@ -1,7 +1,8 @@
 defmodule Pleroma.User do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Pleroma.{Repo, User}
+  import Ecto.Query
+  alias Pleroma.{Repo, User, Activity, Object}
 
   schema "users" do
     field :bio, :string
@@ -30,6 +31,22 @@ defmodule Pleroma.User do
     struct
     |> cast(params, [:following])
     |> validate_required([:following])
+  end
+
+  def user_info(%User{} = user) do
+    note_count_query = from a in Object,
+      where: fragment("? @> ?", a.data, ^%{actor: user.ap_id, type: "Note"}),
+      select: count(a.id)
+
+    follower_count_query = from u in User,
+      where: fragment("? @> ?", u.following, ^User.ap_followers(user)),
+      select: count(u.id)
+
+    %{
+      following_count: length(user.following),
+      note_count: Repo.one(note_count_query),
+      follower_count: Repo.one(follower_count_query)
+    }
   end
 
   def register_changeset(struct, params \\ %{}) do
