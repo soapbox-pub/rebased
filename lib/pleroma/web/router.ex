@@ -44,6 +44,7 @@ defmodule Pleroma.Web.Router do
     get "/statuses/home_timeline", TwitterAPI.Controller, :friends_timeline
     get "/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline
     get "/statuses/mentions", TwitterAPI.Controller, :mentions_timeline
+    get "/statuses/mentions_timeline", TwitterAPI.Controller, :mentions_timeline
 
     post "/statuses/update", TwitterAPI.Controller, :status_update
     post "/statuses/retweet/:id", TwitterAPI.Controller, :retweet
