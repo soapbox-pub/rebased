@@ -2,7 +2,8 @@ defmodule Pleroma.User do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query
-  alias Pleroma.{Repo, User, Activity, Object}
+  alias Pleroma.{Repo, User, Object}
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   schema "users" do
     field :bio, :string
@@ -91,9 +92,10 @@ defmodule Pleroma.User do
       following = follower.following
       |> List.delete(ap_followers)
 
-      follower
+      { :ok, follower } = follower
       |> follow_changeset(%{following: following})
       |> Repo.update
+      { :ok, follower, ActivityPub.fetch_latest_follow(follower, followed)}
     else
       { :error, "Not subscribed!" }
     end

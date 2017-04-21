@@ -129,11 +129,17 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def unfollow(%User{} = follower, params) do
+def unfollow(%User{} = follower, params) do
     with { :ok, %User{} = unfollowed } <- get_user(params),
-         { :ok, follower } <- User.unfollow(follower, unfollowed)
+         { :ok, follower, follow_activity } <- User.unfollow(follower, unfollowed),
+         { :ok, _activity } <- ActivityPub.insert(%{
+           "type" => "Undo",
+           "actor" => follower.ap_id,
+           "object" => follow_activity, # get latest Follow for these users
+           "published" => make_date()
+         })
     do
-      { :ok, follower, unfollowed}
+      { :ok, follower, unfollowed }
     else
       err -> err
     end

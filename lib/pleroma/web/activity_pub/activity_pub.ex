@@ -174,6 +174,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.all(query)
   end
 
+  def fetch_latest_follow(%User{ap_id: follower_id},
+                          %User{ap_id: followed_id}) do
+    query = from activity in Activity,
+      where: fragment("? @> ?", activity.data, ^%{type: "Follow", actor: follower_id,
+                                                  object: followed_id}),
+      order_by: [desc: :inserted_at],
+      limit: 1
+    Repo.one(query)
+  end
+
   def upload(file) do
     data = Upload.store(file)
     Repo.insert(%Object{data: data})

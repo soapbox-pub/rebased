@@ -41,7 +41,7 @@ defmodule Pleroma.UserTest do
     followed = insert(:user)
     user = insert(:user, %{following: [User.ap_followers(followed)]})
 
-    {:ok, user } = User.unfollow(user, followed)
+    {:ok, user, _activity } = User.unfollow(user, followed)
 
     user = Repo.get(User, user.id)
 
