@@ -15,6 +15,9 @@ defmodule Pleroma.Web.OStatus.UserRepresenterTest do
     <id>#{user.ap_id}</id>
     <activity:object>http://activitystrea.ms/schema/1.0/person</activity:object>
     <uri>#{user.ap_id}</uri>
+    <poco:preferredUsername>#{user.nickname}</poco:preferredUsername>
+    <poco:displayName>#{user.name}</poco:displayName>
+    <poco:note>#{user.bio}</poco:note>
     <name>#{user.nickname}</name>
     <link rel="avatar" href="#{User.avatar_url(user)}" />
     """
