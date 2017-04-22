@@ -14,7 +14,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
     most_recent_update = note_activity.updated_at
     |> NaiveDateTime.to_iso8601
 
-    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> to_string
     user_xml = UserRepresenter.to_simple_form(user)
     |> :xmerl.export_simple_content(:xmerl_xml)
 

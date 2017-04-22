@@ -18,6 +18,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
     response = FeedRepresenter.to_simple_form(user, activities, [user])
     |> :xmerl.export_simple(:xmerl_xml)
+    |> to_string
 
     conn
     |> put_resp_content_type("application/atom+xml")
