@@ -9,7 +9,7 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
 
     data = %{
       "hub.callback": "http://example.org/sub",
-      "hub.mode": "subscription",
+      "hub.mode": "subscribe",
       "hub.topic": Pleroma.Web.OStatus.feed_path(user),
       "hub.secret": "a random secret",
       "hub.lease_seconds": "100"

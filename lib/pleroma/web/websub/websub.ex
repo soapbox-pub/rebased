@@ -52,7 +52,7 @@ defmodule Pleroma.Web.Websub do
     end)
   end
 
-  def incoming_subscription_request(user, params) do
+  def incoming_subscription_request(user, %{"hub.mode" => "subscribe"} = params) do
     with {:ok, topic} <- valid_topic(params, user),
          {:ok, lease_time} <- lease_time(params),
          secret <- params["hub.secret"],
