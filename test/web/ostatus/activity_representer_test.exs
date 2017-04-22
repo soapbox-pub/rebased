@@ -2,7 +2,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
   use Pleroma.DataCase
 
   alias Pleroma.Web.OStatus.ActivityRepresenter
-  alias Pleroma.User
+  alias Pleroma.{User, Activity}
 
   import Pleroma.Factory
 
@@ -30,6 +30,11 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
 
     assert clean(res) == clean(expected)
+  end
+
+  test "an unknown activity" do
+    tuple = ActivityRepresenter.to_simple_form(%Activity{}, nil)
+    assert is_nil(tuple)
   end
 
   defp clean(string) do

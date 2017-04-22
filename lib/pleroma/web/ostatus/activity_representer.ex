@@ -22,4 +22,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:updated, h.(updated_at)}
     ] ++ attachments
   end
+
+  def to_simple_form(_,_), do: nil
 end

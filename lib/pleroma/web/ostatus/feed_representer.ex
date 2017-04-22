@@ -11,6 +11,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
     entries = Enum.map(activities, fn(activity) ->
       {:entry, ActivityRepresenter.to_simple_form(activity, user)}
     end)
+    |> Enum.filter(fn ({_, form}) -> form end)
 
     [{
       :feed, [

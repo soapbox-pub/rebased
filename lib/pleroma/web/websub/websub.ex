@@ -1,6 +1,5 @@
 defmodule Pleroma.Web.Websub do
   alias Pleroma.Repo
-  alias Pleroma.Websub
   alias Pleroma.Web.Websub.WebsubServerSubscription
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.OStatus
