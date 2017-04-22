@@ -7,6 +7,11 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     inserted_at = activity.inserted_at
     |> NaiveDateTime.to_iso8601
 
+    attachments = Enum.map(activity.data["object"]["attachment"] || [], fn(attachment) ->
+      url = hd(attachment["url"])
+      {:link, [rel: 'enclosure', href: to_charlist(url["href"]), type: to_charlist(url["mediaType"])], []}
+    end)
+
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/post']},
@@ -15,6 +20,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:content, [type: 'html'], h.(activity.data["object"]["content"])},
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)}
-    ]
+    ] ++ attachments
   end
 end
