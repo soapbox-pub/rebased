@@ -15,7 +15,7 @@ defmodule Pleroma.Web.WebsubTest do
         "hub.mode": "subscribe"
       } = Keyword.get(options, :params)
 
-      assert is_number(seconds)
+      assert String.to_integer(seconds) > 0
 
       {:ok, %HTTPoison.Response{
         status_code: 200,
