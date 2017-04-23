@@ -19,7 +19,18 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
     assert represented["profile_image_url"] == image
   end
 
-  test "A user", %{user: user} do
+  test "A user" do
+    note_activity = insert(:note_activity)
+    user = User.get_cached_by_ap_id(note_activity.data["actor"])
+    follower = insert(:user)
+    second_follower = insert(:user)
+
+    User.follow(follower, user)
+    User.follow(second_follower, user)
+    User.follow(user, follower)
+
+    user = Repo.get!(User, user.id)
+
     image = "https://placehold.it/48x48"
 
     represented = %{
@@ -29,9 +40,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
       "description" => user.bio,
       # Fake fields
       "favourites_count" => 0,
-      "statuses_count" => 0,
-      "friends_count" => 0,
-      "followers_count" => 0,
+      "statuses_count" => 1,
+      "friends_count" => 1,
+      "followers_count" => 2,
       "profile_image_url" => image,
       "profile_image_url_https" => image,
       "profile_image_url_profile_size" => image,
@@ -55,7 +66,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
       "favourites_count" => 0,
       "statuses_count" => 0,
       "friends_count" => 0,
-      "followers_count" => 0,
+      "followers_count" => 1,
       "profile_image_url" => image,
       "profile_image_url_https" => image,
       "profile_image_url_profile_size" => image,

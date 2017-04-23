@@ -1,7 +1,8 @@
 defmodule Pleroma.User do
   use Ecto.Schema
   import Ecto.Changeset
-  alias Pleroma.{Repo, User}
+  import Ecto.Query
+  alias Pleroma.{Repo, User, Activity, Object}
 
   schema "users" do
     field :bio, :string
@@ -39,6 +40,22 @@ defmodule Pleroma.User do
     |> validate_required([:following])
   end
 
+  def user_info(%User{} = user) do
+    note_count_query = from a in Object,
+      where: fragment("? @> ?", a.data, ^%{actor: user.ap_id, type: "Note"}),
+      select: count(a.id)
+
+    follower_count_query = from u in User,
+      where: fragment("? @> ?", u.following, ^User.ap_followers(user)),
+      select: count(u.id)
+
+    %{
+      following_count: length(user.following),
+      note_count: Repo.one(note_count_query),
+      follower_count: Repo.one(follower_count_query)
+    }
+  end
+
   def register_changeset(struct, params \\ %{}) do
     changeset = struct
     |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
@@ -62,22 +79,31 @@ defmodule Pleroma.User do
 
   def follow(%User{} = follower, %User{} = followed) do
     ap_followers = User.ap_followers(followed)
-    following = [ap_followers | follower.following]
-    |> Enum.uniq
+    if following?(follower, followed) do
+      { :error,
+        "Could not follow user: #{followed.nickname} is already on your list." }
+    else
+      following = [ap_followers | follower.following]
+      |> Enum.uniq
 
-    follower
-    |> follow_changeset(%{following: following})
-    |> Repo.update
+      follower
+      |> follow_changeset(%{following: following})
+      |> Repo.update
+    end
   end
 
   def unfollow(%User{} = follower, %User{} = followed) do
     ap_followers = User.ap_followers(followed)
-    following = follower.following
-    |> List.delete(ap_followers)
+    if following?(follower, followed) do
+      following = follower.following
+      |> List.delete(ap_followers)
 
-    follower
-    |> follow_changeset(%{following: following})
-    |> Repo.update
+      follower
+      |> follow_changeset(%{following: following})
+      |> Repo.update
+    else
+      { :error, "Not subscribed!" }
+    end
   end
 
   def following?(%User{} = follower, %User{} = followed) do
