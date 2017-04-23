@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.Salmon do
   use Bitwise
 
-  def decode_and_validate(magickey, salmon) do
+  def decode(salmon) do
     {doc, _rest} = :xmerl_scan.string(to_charlist(salmon))
 
     {:xmlObj, :string, data} = :xmerl_xpath.string('string(//me:data[1])', doc)
@@ -16,6 +16,31 @@ defmodule Pleroma.Web.Salmon do
     alg = to_string(alg)
     encoding = to_string(encoding)
     type = to_string(type)
+
+    [data, type, encoding, alg, sig]
+  end
+
+  def fetch_magic_key(salmon) do
+    [data, _, _, _, _] = decode(salmon)
+    {doc, _rest} = :xmerl_scan.string(to_charlist(data))
+    {:xmlObj, :string, uri} = :xmerl_xpath.string('string(//author[1]/uri)', doc)
+
+    uri = to_string(uri)
+    base = URI.parse(uri).host
+
+    # TODO: Find out if this endpoint is mandated by the standard.
+    {:ok, response} = HTTPoison.get(base <> "/.well-known/webfinger", ["Accept": "application/xrd+xml"], [params: [resource: uri]])
+
+    {doc, _rest} = :xmerl_scan.string(to_charlist(response.body))
+
+    {:xmlObj, :string, magickey} = :xmerl_xpath.string('string(//Link[@rel="magic-public-key"]/@href)', doc)
+    "data:application/magic-public-key," <> magickey = to_string(magickey)
+
+    magickey
+  end
+
+  def decode_and_validate(magickey, salmon) do
+    [data, type, encoding, alg, sig] = decode(salmon)
 
     signed_text = [data, type, encoding, alg]
     |> Enum.map(&Base.url_encode64/1)
