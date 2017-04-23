@@ -163,11 +163,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     activity = Repo.get(Activity, id)
-    {:ok, status} = TwitterAPI.retweet(user, activity)
-    response = Poison.encode!(status)
+    if activity.data["actor"] == user.ap_id do
+      bad_request_reply(conn, "You cannot repeat your own notice.")
+    else
+      {:ok, status} = TwitterAPI.retweet(user, activity)
+      response = Poison.encode!(status)
 
-    conn
-    |> json_reply(200, response)
+      conn
+
+      |> json_reply(200, response)
+    end
   end
 
   def register(conn, params) do
