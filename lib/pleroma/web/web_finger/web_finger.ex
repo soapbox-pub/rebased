@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.WebFinger do
   alias Pleroma.XmlBuilder
   alias Pleroma.User
+  alias Pleroma.Web.OStatus
 
   def host_meta() do
     base_url  = Pleroma.Web.base_url
@@ -30,7 +31,7 @@ defmodule Pleroma.Web.WebFinger do
       [
         {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.host}"},
         {:Alias, user.ap_id},
-        {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: "#{user.ap_id}.atom"}}
+        {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: OStatus.feed_path(user)}}
       ]
     }
     |> XmlBuilder.to_doc
