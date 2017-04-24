@@ -42,6 +42,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn = conn_with_creds |> post(request_path, %{ status: "" })
       assert json_response(conn, 400) == error_response
 
+      conn = conn_with_creds |> post(request_path, %{ status: " " })
+      assert json_response(conn, 400) == error_response
+
       conn =  conn_with_creds |> post(request_path, %{ status: "Nice meme." })
       assert json_response(conn, 200) == ActivityRepresenter.to_map(Repo.one(Activity), %{user: user})
     end
