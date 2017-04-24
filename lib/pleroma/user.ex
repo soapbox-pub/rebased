@@ -63,6 +63,7 @@ defmodule Pleroma.User do
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
     |> unique_constraint(:nickname)
+    |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
 
     if changeset.valid? do
       hashed = Comeonin.Pbkdf2.hashpwsalt(changeset.changes[:password])
