@@ -15,6 +15,8 @@ defmodule Pleroma.User do
     field :following, { :array, :string }, default: []
     field :ap_id, :string
     field :avatar, :map
+    field :local, :boolean, default: true
+    field :info, :map
 
     timestamps()
   end
