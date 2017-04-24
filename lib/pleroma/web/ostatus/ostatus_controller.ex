@@ -25,7 +25,14 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> send_resp(200, response)
   end
 
-  def temp(conn, params) do
-    IO.inspect(params)
+  def salmon_incoming(conn, params) do
+    {:ok, body, _conn} = read_body(conn)
+    magic_key = Pleroma.Web.Salmon.fetch_magic_key(body)
+    {:ok, doc} = Pleroma.Web.Salmon.decode_and_validate(magic_key, body)
+
+    Pleroma.Web.OStatus.handle_incoming(doc)
+
+    conn
+    |> send_resp(200, "")
   end
 end

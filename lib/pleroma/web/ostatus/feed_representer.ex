@@ -23,6 +23,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
         {:title, ['#{user.nickname}\'s timeline']},
         {:updated, h.(most_recent_update)},
         {:link, [rel: 'hub', href: h.(OStatus.pubsub_path(user))], []},
+        {:link, [rel: 'salmon', href: h.(OStatus.salmon_path(user))], []},
         {:link, [rel: 'self', href: h.(OStatus.feed_path(user))], []},
         {:author, UserRepresenter.to_simple_form(user)},
       ] ++ entries

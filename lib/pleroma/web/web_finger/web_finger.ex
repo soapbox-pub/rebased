@@ -31,7 +31,8 @@ defmodule Pleroma.Web.WebFinger do
       [
         {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.host}"},
         {:Alias, user.ap_id},
-        {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: OStatus.feed_path(user)}}
+        {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: OStatus.feed_path(user)}},
+        {:Link, %{rel: "salmon", href: OStatus.salmon_path(user)}}
       ]
     }
     |> XmlBuilder.to_doc

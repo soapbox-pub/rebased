@@ -28,11 +28,33 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     date = make_date()
 
-    activity = %{
-      "type" => "Create",
-      "to" => to,
-      "actor" => user.ap_id,
-      "object" => %{
+    # Wire up reply info.
+    [to, context, object, additional] =
+      with inReplyToId when not is_nil(inReplyToId) <- data["in_reply_to_status_id"],
+                  inReplyTo <- Repo.get(Activity, inReplyToId),
+                    context <- inReplyTo.data["context"]
+      do
+      to = to ++ [inReplyTo.data["actor"]]
+
+      object = %{
+        "type" => "Note",
+        "to" => to,
+        "content" => content_html,
+        "published" => date,
+        "context" => context,
+        "attachment" => attachments,
+        "actor" => user.ap_id,
+        "inReplyTo" => inReplyTo.data["object"]["id"],
+        "inReplyToStatusId" => inReplyToId,
+        "statusnetConversationId" => inReplyTo.data["statusnetConversationId"]
+      }
+      additional = %{
+        "statusnetConversationId" => inReplyTo.data["statusnetConversationId"]
+      }
+
+      [to, context, object, additional]
+      else _e ->
+      object = %{
         "type" => "Note",
         "to" => to,
         "content" => content_html,
@@ -40,36 +62,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         "context" => context,
         "attachment" => attachments,
         "actor" => user.ap_id
-      },
-      "published" => date,
-      "context" => context
-    }
-
-    # Wire up reply info.
-    activity = with inReplyToId when not is_nil(inReplyToId) <- data["in_reply_to_status_id"],
-                    inReplyTo <- Repo.get(Activity, inReplyToId),
-                    context <- inReplyTo.data["context"]
-               do
-
-               to = activity["to"] ++ [inReplyTo.data["actor"]]
-
-               activity
-               |> put_in(["to"], to)
-               |> put_in(["context"], context)
-               |> put_in(["object", "context"], context)
-               |> put_in(["object", "inReplyTo"], inReplyTo.data["object"]["id"])
-               |> put_in(["object", "inReplyToStatusId"], inReplyToId)
-               |> put_in(["statusnetConversationId"], inReplyTo.data["statusnetConversationId"])
-               |> put_in(["object", "statusnetConversationId"], inReplyTo.data["statusnetConversationId"])
-               else _e ->
-                 activity
-               end
-
-    with {:ok, activity} <- ActivityPub.insert(activity) do
-      {:ok, activity} = add_conversation_id(activity)
-      Pleroma.Web.Websub.publish(Pleroma.Web.OStatus.feed_path(user), user, activity)
-      {:ok, activity}
+      }
+      [to, context, object, %{}]
     end
+
+    ActivityPub.create(to, user, context, object, additional, data)
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do

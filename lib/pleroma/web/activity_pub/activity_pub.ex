@@ -19,6 +19,48 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.insert(%Activity{data: map})
   end
 
+  def create(to, actor, context, object, additional \\ %{}, published \\ nil) do
+    published = published || make_date()
+
+    activity = %{
+      "type" => "Create",
+      "to" => to,
+      "actor" => actor.ap_id,
+      "object" => object,
+      "published" => published,
+      "context" => context
+    }
+    |> Map.merge(additional)
+
+    with {:ok, activity} <- insert(activity) do
+      {:ok, activity} = add_conversation_id(activity)
+
+      if actor.local do
+        Pleroma.Web.Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
+       end
+
+      {:ok, activity}
+    end
+  end
+
+  defp add_conversation_id(activity) do
+    if is_integer(activity.data["statusnetConversationId"]) do
+      {:ok, activity}
+    else
+      data = activity.data
+      |> put_in(["object", "statusnetConversationId"], activity.id)
+      |> put_in(["statusnetConversationId"], activity.id)
+
+      object = Object.get_by_ap_id(activity.data["object"]["id"])
+
+      changeset = Ecto.Changeset.change(object, data: data["object"])
+      Repo.update(changeset)
+
+      changeset = Ecto.Changeset.change(activity, data: data)
+      Repo.update(changeset)
+    end
+  end
+
   def like(%User{ap_id: ap_id} = user, %Object{data: %{ "id" => id}} = object) do
     cond do
       # There's already a like here, so return the original activity.
