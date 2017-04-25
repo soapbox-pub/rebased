@@ -26,21 +26,26 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end)
   end
 
+  def get_replied_to_activity(id) when not is_nil(id) do
+    Repo.get(Activity, id)
+  end
+
+  def get_replied_to_activity(_), do: nil
+
   def create_status(user = %User{}, data = %{"status" => status}) do
     attachments = attachments_from_ids(data["media_ids"])
     context = ActivityPub.generate_context_id
     mentions = parse_mentions(status)
     content_html = format_input(status, mentions)
     to = to_for_user_and_mentions(user, mentions)
-
     date = make_date()
+
+    inReplyTo = get_replied_to_activity(data["in_reply_to_status_id"])
 
     # Wire up reply info.
     [to, context, object, additional] =
-      with inReplyToId when not is_nil(inReplyToId) <- data["in_reply_to_status_id"],
-                  inReplyTo <- Repo.get(Activity, inReplyToId),
-                    context <- inReplyTo.data["context"]
-      do
+      if inReplyTo do
+      context = inReplyTo.data["context"]
       to = to ++ [inReplyTo.data["actor"]]
 
       object = %{
@@ -52,7 +57,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         "attachment" => attachments,
         "actor" => user.ap_id,
         "inReplyTo" => inReplyTo.data["object"]["id"],
-        "inReplyToStatusId" => inReplyToId,
+        "inReplyToStatusId" => inReplyTo.id,
         "statusnetConversationId" => inReplyTo.data["statusnetConversationId"]
       }
       additional = %{
@@ -60,7 +65,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       }
 
       [to, context, object, additional]
-      else _e ->
+      else
       object = %{
         "type" => "Note",
         "to" => to,
