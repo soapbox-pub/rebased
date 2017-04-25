@@ -253,7 +253,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       {:error, changeset} ->
         errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
       |> Poison.encode!
-        {:error, %{error: errors}}
+      {:error, %{error: errors}}
     end
   end
 

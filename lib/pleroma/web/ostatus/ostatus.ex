@@ -41,7 +41,12 @@ defmodule Pleroma.Web.OStatus do
     [author] = :xmerl_xpath.string('/entry/author[1]', doc)
     {:ok, actor} = find_or_make_user(author)
 
-    context = ActivityPub.generate_context_id
+    context = string_from_xpath("/entry/ostatus:conversation[1]", doc) |> String.trim
+    context = if String.length(context) > 0 do
+      context
+    else
+      ActivityPub.generate_context_id
+    end
 
     to = [
       "https://www.w3.org/ns/activitystreams#Public"
