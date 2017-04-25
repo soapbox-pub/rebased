@@ -11,11 +11,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       "https://www.w3.org/ns/activitystreams#Public"
     ]
 
-    to = default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
+    default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
   end
 
   def format_input(text, mentions) do
-    content = HtmlSanitizeEx.strip_tags(text)
+    HtmlSanitizeEx.strip_tags(text)
     |> String.replace("\n", "<br>")
     |> add_user_links(mentions)
   end
@@ -233,24 +233,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def add_user_links(text, mentions) do
     Enum.reduce(mentions, text, fn ({match, %User{ap_id: ap_id}}, text) -> String.replace(text, match, "<a href='#{ap_id}'>#{match}</a>") end)
-  end
-
-  defp add_conversation_id(activity) do
-    if is_integer(activity.data["statusnetConversationId"]) do
-      {:ok, activity}
-    else
-      data = activity.data
-      |> put_in(["object", "statusnetConversationId"], activity.id)
-      |> put_in(["statusnetConversationId"], activity.id)
-
-      object = Object.get_by_ap_id(activity.data["object"]["id"])
-
-      changeset = Ecto.Changeset.change(object, data: data["object"])
-      Repo.update(changeset)
-
-      changeset = Ecto.Changeset.change(activity, data: data)
-      Repo.update(changeset)
-    end
   end
 
   def register_user(params) do
