@@ -5,26 +5,33 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   import Ecto.Query
 
-  def create_status(user = %User{}, data = %{}) do
-    attachments = Enum.map(data["media_ids"] || [], fn (media_id) ->
-      Repo.get(Object, media_id).data
-    end)
-
-    context = ActivityPub.generate_context_id
-
-    content = HtmlSanitizeEx.strip_tags(data["status"])
-    |> String.replace("\n", "<br>")
-
-    mentions = parse_mentions(content)
-
+  def to_for_user_and_mentions(user, mentions) do
     default_to = [
       User.ap_followers(user),
       "https://www.w3.org/ns/activitystreams#Public"
     ]
 
     to = default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
+  end
 
-    content_html = add_user_links(content, mentions)
+  def format_input(text, mentions) do
+    content = HtmlSanitizeEx.strip_tags(text)
+    |> String.replace("\n", "<br>")
+    |> add_user_links(mentions)
+  end
+
+  def attachments_from_ids(ids) do
+    Enum.map(ids || [], fn (media_id) ->
+      Repo.get(Object, media_id).data
+    end)
+  end
+
+  def create_status(user = %User{}, data = %{"status" => status}) do
+    attachments = attachments_from_ids(data["media_ids"])
+    context = ActivityPub.generate_context_id
+    mentions = parse_mentions(status)
+    content_html = format_input(status, mentions)
+    to = to_for_user_and_mentions(user, mentions)
 
     date = make_date()
 
