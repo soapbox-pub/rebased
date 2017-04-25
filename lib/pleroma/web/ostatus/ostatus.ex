@@ -31,10 +31,7 @@ defmodule Pleroma.Web.OStatus do
   end
 
   # TODO
-  # Parse mention
   # wire up replies
-  # Set correct context
-  # Set correct statusnet ids.
   def handle_note(doc) do
     content_html = string_from_xpath("/entry/content[1]", doc)
 
@@ -52,6 +49,11 @@ defmodule Pleroma.Web.OStatus do
       "https://www.w3.org/ns/activitystreams#Public"
     ]
 
+    mentions = :xmerl_xpath.string('/entry/link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/person"]', doc)
+    |> Enum.map(fn(person) -> string_from_xpath("@href", person) end)
+
+    to = to ++ mentions
+
     date = string_from_xpath("/entry/published", doc)
 
     object = %{
@@ -64,19 +66,6 @@ defmodule Pleroma.Web.OStatus do
     }
 
     ActivityPub.create(to, actor, context, object, %{}, date)
-  end
-
-  def find_or_make(author, doc) do
-    query = from user in User,
-      where: user.local == false and fragment("? @> ?", user.info, ^%{ostatus_uri: author})
-
-    user = Repo.one(query)
-
-    if is_nil(user) do
-      make_user(doc)
-    else
-      {:ok, user}
-    end
   end
 
   def find_or_make_user(author_doc) do

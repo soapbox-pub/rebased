@@ -10,6 +10,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["published"] == "2017-04-23T14:51:03+00:00"
     assert activity.data["context"] == "tag:gs.example.org:4040,2017-04-23:objectType=thread:nonce=f09e22f58abd5c7b"
+    assert "http://pleroma.example.org:4000/users/lain3" in activity.data["to"]
   end
 
   describe "new remote user creation" do
