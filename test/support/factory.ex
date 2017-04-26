@@ -24,7 +24,8 @@ defmodule Pleroma.Factory do
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601,
       "likes" => [],
-      "like_count" => 0
+      "like_count" => 0,
+      "context" => "2hu"
     }
 
     %Pleroma.Object{
@@ -40,7 +41,8 @@ defmodule Pleroma.Factory do
       "actor" => note.data["actor"],
       "to" => note.data["to"],
       "object" => note.data,
-      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601
+      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601,
+      "context" => note.data["context"]
     }
 
     %Pleroma.Activity{

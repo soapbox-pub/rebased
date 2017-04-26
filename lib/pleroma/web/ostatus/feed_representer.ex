@@ -17,7 +17,8 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
       :feed, [
         xmlns: 'http://www.w3.org/2005/Atom',
         "xmlns:activity": 'http://activitystrea.ms/spec/1.0/',
-        "xmlns:poco": 'http://portablecontacts.net/spec/1.0'
+        "xmlns:poco": 'http://portablecontacts.net/spec/1.0',
+        "xmlns:ostatus": 'http://ostatus.org/schema/1.0'
       ], [
         {:id, h.(OStatus.feed_path(user))},
         {:title, ['#{user.nickname}\'s timeline']},

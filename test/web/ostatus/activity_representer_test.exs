@@ -23,6 +23,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <content type="html">#{note_activity.data["object"]["content"]}</content>
     <published>#{inserted_at}</published>
     <updated>#{updated_at}</updated>
+    <ostatus:conversation>#{note_activity.data["context"]}</ostatus:conversation>
+    <link href="#{note_activity.data["context"]}" rel="ostatus:conversation" />
     """
 
     tuple = ActivityRepresenter.to_simple_form(note_activity, user)
