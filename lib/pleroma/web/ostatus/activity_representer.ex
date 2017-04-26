@@ -19,7 +19,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:title, ['New note by #{user.nickname}']},
       {:content, [type: 'html'], h.(activity.data["object"]["content"])},
       {:published, h.(inserted_at)},
-      {:updated, h.(updated_at)}
+      {:updated, h.(updated_at)},
+      {:"ostatus:conversation", [], h.(activity.data["context"])},
+      {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []}
     ] ++ attachments
   end
 
