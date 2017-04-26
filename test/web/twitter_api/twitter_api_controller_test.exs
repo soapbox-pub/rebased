@@ -331,11 +331,21 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "with credentials", %{conn: conn, user: current_user} do
       note_activity = insert(:note_activity)
 
-      conn = conn
-      |> with_credentials(current_user.nickname, "test")
-      |> post("/api/statuses/retweet/#{note_activity.id}.json")
+      request_path = "/api/statuses/retweet/#{note_activity.id}.json"
 
-      assert json_response(conn, 200)
+      user = Repo.get_by(User, ap_id: note_activity.data["actor"])
+      response = conn
+      |> with_credentials(user.nickname, "test")
+      |> post(request_path)
+      assert json_response(response, 400) == %{"error" => "You cannot repeat your own notice.",
+                                               "request" => request_path}
+
+      response = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post(request_path)
+      activity = Repo.get(Activity, note_activity.id)
+      activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
+      assert json_response(response, 200) == ActivityRepresenter.to_map(activity, %{user: activity_user, for: current_user})
     end
   end
 
