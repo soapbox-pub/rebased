@@ -13,6 +13,16 @@ defmodule Pleroma.Web.OStatusTest do
     assert "http://pleroma.example.org:4000/users/lain3" in activity.data["to"]
   end
 
+  test "handle incoming replies" do
+    incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
+    {:ok, activity} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Create"
+    assert activity.data["object"]["type"] == "Note"
+    assert activity.data["object"]["inReplyTo"] == "http://pleroma.example.org:4000/objects/55bce8fc-b423-46b1-af71-3759ab4670bc"
+    assert "http://pleroma.example.org:4000/users/lain5" in activity.data["to"]
+  end
+
   describe "new remote user creation" do
     test "make new user or find them based on an 'author' xml doc" do
       incoming = File.read!("test/fixtures/user_name_only.xml")

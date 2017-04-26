@@ -65,6 +65,14 @@ defmodule Pleroma.Web.OStatus do
       "actor" => actor.ap_id
     }
 
+    inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@href", doc)
+
+    object = if inReplyTo do
+      Map.put(object, "inReplyTo", inReplyTo)
+    else
+      object
+    end
+
     ActivityPub.create(to, actor, context, object, %{}, date)
   end
 
