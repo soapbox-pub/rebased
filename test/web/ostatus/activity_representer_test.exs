@@ -18,7 +18,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
     <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
-    <id>#{note_activity.data["object"]["id"]}</id>
+    <id>#{note_activity.data["id"]}</id>
     <title>New note by #{user.nickname}</title>
     <content type="html">#{note_activity.data["object"]["content"]}</content>
     <published>#{inserted_at}</published>

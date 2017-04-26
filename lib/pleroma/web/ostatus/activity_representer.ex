@@ -15,7 +15,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/post']},
-      {:id, h.(activity.data["object"]["id"])},
+      {:id, h.(activity.data["id"])},
       {:title, ['New note by #{user.nickname}']},
       {:content, [type: 'html'], h.(activity.data["object"]["content"])},
       {:published, h.(inserted_at)},
