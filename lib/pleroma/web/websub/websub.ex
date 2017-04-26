@@ -1,12 +1,10 @@
 defmodule Pleroma.Web.Websub do
   alias Pleroma.Repo
-  alias Pleroma.Web.Websub.WebsubServerSubscription
+  alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.OStatus
 
   import Ecto.Query
-
-  @websub_verifier Application.get_env(:pleroma, :websub_verifier)
 
   def verify(subscription, getter \\ &HTTPoison.get/3 ) do
     challenge = Base.encode16(:crypto.strong_rand_bytes(8))
@@ -71,8 +69,7 @@ defmodule Pleroma.Web.Websub do
       change = Ecto.Changeset.change(websub, %{valid_until: NaiveDateTime.add(websub.updated_at, lease_time)})
       websub = Repo.update!(change)
 
-      # Just spawn that for now, maybe pool later.
-      spawn(fn -> @websub_verifier.verify(websub) end)
+      Pleroma.Web.Federator.enqueue(:verify_websub, websub)
 
       {:ok, websub}
     else {:error, reason} ->
@@ -98,5 +95,24 @@ defmodule Pleroma.Web.Websub do
     else
       {:error, "Wrong topic requested, expected #{OStatus.feed_path(user)}, got #{topic}"}
     end
+  end
+
+  def subscribe(user, topic) do
+    # Race condition, use transactions
+    {:ok, subscription} = with subscription when not is_nil(subscription) <- Repo.get_by(WebsubClientSubscription, topic: topic) do
+      subscribers = [user.ap_id, subscription.subcribers] |> Enum.uniq
+      change = Ecto.Changeset.change(subscription, %{subscribers: subscribers})
+      Repo.update(change)
+    else _e ->
+      subscription = %WebsubClientSubscription{
+        topic: topic,
+        subscribers: [user.ap_id],
+        state: "requested",
+        secret: :crypto.strong_rand_bytes(8) |> Base.url_encode64
+      }
+      Repo.insert(subscription)
+    end
+
+    {:ok, subscription}
   end
 end

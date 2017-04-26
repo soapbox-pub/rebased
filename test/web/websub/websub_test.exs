@@ -58,7 +58,6 @@ defmodule Pleroma.Web.WebsubTest do
       "hub.lease_seconds" => "100"
     }
 
-
     {:ok, subscription } = Websub.incoming_subscription_request(user, data)
     assert subscription.topic == Pleroma.Web.OStatus.feed_path(user)
     assert subscription.state == "requested"
@@ -86,5 +85,16 @@ defmodule Pleroma.Web.WebsubTest do
     assert subscription.callback == sub.callback
     assert length(Repo.all(WebsubServerSubscription)) == 1
     assert subscription.id == sub.id
+  end
+
+  test "initiate a subscription for a given user and topic" do
+    user = insert(:user)
+    topic = "http://example.org/some-topic.atom"
+
+    {:ok, websub} = Websub.subscribe(user, topic)
+    assert websub.subscribers == [user.ap_id]
+    assert websub.topic == topic
+    assert is_binary(websub.secret)
+    assert websub.state == "accepted"
   end
 end

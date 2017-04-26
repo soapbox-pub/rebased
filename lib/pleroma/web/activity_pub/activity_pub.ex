@@ -36,7 +36,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       {:ok, activity} = add_conversation_id(activity)
 
       if actor.local do
-        Pleroma.Web.Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
+        Pleroma.Web.Federator.enqueue(:publish, activity)
        end
 
       {:ok, activity}
