@@ -344,8 +344,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> with_credentials(current_user.nickname, "test")
       |> post(request_path)
       activity = Repo.get(Activity, note_activity.id)
-      current_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
-      assert json_response(response, 200) == ActivityRepresenter.to_map(activity, %{user: current_user})
+      activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
+      assert json_response(response, 200) == ActivityRepresenter.to_map(activity, %{user: activity_user, for: current_user})
     end
   end
 
