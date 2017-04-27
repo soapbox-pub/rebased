@@ -4,6 +4,7 @@ defmodule Pleroma.Web.Websub do
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
+  require Logger
 
   import Ecto.Query
 
@@ -98,8 +99,8 @@ defmodule Pleroma.Web.Websub do
     end
   end
 
-  def subscribe(user, topic) do
-    # Race condition, use transactions
+  def subscribe(user, topic, requester \\ &request_subscription/1) do
+    # FIXME: Race condition, use transactions
     {:ok, subscription} = with subscription when not is_nil(subscription) <- Repo.get_by(WebsubClientSubscription, topic: topic) do
       subscribers = [user.ap_id, subscription.subcribers] |> Enum.uniq
       change = Ecto.Changeset.change(subscription, %{subscribers: subscribers})
@@ -109,11 +110,60 @@ defmodule Pleroma.Web.Websub do
         topic: topic,
         subscribers: [user.ap_id],
         state: "requested",
-        secret: :crypto.strong_rand_bytes(8) |> Base.url_encode64
+        secret: :crypto.strong_rand_bytes(8) |> Base.url_encode64,
+        user: user
       }
       Repo.insert(subscription)
     end
+    requester.(subscription)
+  end
 
-    {:ok, subscription}
+  def discover(topic, getter \\ &HTTPoison.get/1) do
+    with {:ok, response} <- getter.(topic),
+         status_code when status_code in 200..299 <- response.status_code,
+         body <- response.body,
+         doc <- XML.parse_document(body),
+         url when not is_nil(url) <- XML.string_from_xpath(~S{/feed/link[@rel="self"]/@href}, doc),
+         hub when not is_nil(hub) <- XML.string_from_xpath(~S{/feed/link[@rel="hub"]/@href}, doc) do
+      {:ok, %{url: url, hub: hub}}
+    else e ->
+      {:error, e}
+    end
+  end
+
+  def request_subscription(websub, poster \\ &HTTPoison.post/3, timeout \\ 10_000) do
+    data = [
+      "hub.mode": "subscribe",
+      "hub.topic": websub.topic,
+      "hub.secret": websub.secret,
+      "hub.callback": "https://social.heldscal.la/callback"
+    ]
+
+    # This checks once a second if we are confirmed yet
+    websub_checker = fn ->
+      helper = fn (helper) ->
+        :timer.sleep(1000)
+        websub = Repo.get_by(WebsubClientSubscription, id: websub.id, state: "accepted")
+        if websub, do: websub, else: helper.(helper)
+      end
+      helper.(helper)
+    end
+
+    task = Task.async(websub_checker)
+
+    with {:ok, %{status_code: 202}} <- poster.(websub.hub, {:form, data}, ["Content-type": "application/x-www-form-urlencoded"]),
+         {:ok, websub} <- Task.yield(task, timeout) do
+      {:ok, websub}
+    else e ->
+      Task.shutdown(task)
+
+      change = Ecto.Changeset.change(websub, %{state: "rejected"})
+      {:ok, websub} = Repo.update(change)
+
+      Logger.debug("Couldn't confirm subscription: #{inspect(websub)}")
+      Logger.debug("error: #{inspect(e)}")
+
+      {:error, websub}
+    end
   end
 end

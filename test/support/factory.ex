@@ -76,4 +76,14 @@ defmodule Pleroma.Factory do
       state: "requested"
     }
   end
+
+  def websub_client_subscription_factory do
+    %Pleroma.Web.Websub.WebsubClientSubscription{
+      topic: "http://example.org",
+      secret: "here's a secret",
+      valid_until: nil,
+      state: "requested",
+      subscribers: []
+    }
+  end
 end
