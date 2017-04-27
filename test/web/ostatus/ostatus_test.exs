@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
 
   test "handle incoming notes" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
@@ -26,7 +27,7 @@ defmodule Pleroma.Web.OStatusTest do
   describe "new remote user creation" do
     test "make new user or find them based on an 'author' xml doc" do
       incoming = File.read!("test/fixtures/user_name_only.xml")
-      {doc, _rest} = :xmerl_scan.string(to_charlist(incoming))
+      doc = XML.parse_document(incoming)
 
       {:ok, user} = OStatus.find_or_make_user(doc)
 
@@ -44,7 +45,7 @@ defmodule Pleroma.Web.OStatusTest do
 
     test "tries to use the information in poco fields" do
       incoming = File.read!("test/fixtures/user_full.xml")
-      {doc, _rest} = :xmerl_scan.string(to_charlist(incoming))
+      doc = XML.parse_document(incoming)
 
       {:ok, user} = OStatus.find_or_make_user(doc)
 

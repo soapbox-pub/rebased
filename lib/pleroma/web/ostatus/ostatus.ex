@@ -1,5 +1,6 @@
 defmodule Pleroma.Web.OStatus do
   import Ecto.Query
+  import Pleroma.Web.XML
   require Logger
 
   alias Pleroma.{Repo, User, Web}
@@ -18,7 +19,7 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def handle_incoming(xml_string) do
-    {doc, _rest} = :xmerl_scan.string(to_charlist(xml_string))
+    doc = parse_document(xml_string)
 
     {:xmlObj, :string, object_type } = :xmerl_xpath.string('string(/entry/activity:object-type[1])', doc)
 
@@ -89,16 +90,6 @@ defmodule Pleroma.Web.OStatus do
     else
       {:ok, user}
     end
-  end
-
-  defp string_from_xpath(xpath, doc) do
-    {:xmlObj, :string, res} = :xmerl_xpath.string('string(#{xpath})', doc)
-
-    res = res
-    |> to_string
-    |> String.trim
-
-    if res == "", do: nil, else: res
   end
 
   def make_user(author_doc) do

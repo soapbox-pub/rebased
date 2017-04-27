@@ -1,8 +1,9 @@
 defmodule Pleroma.Web.Salmon do
   use Bitwise
+  alias Pleroma.Web.XML
 
   def decode(salmon) do
-    {doc, _rest} = :xmerl_scan.string(to_charlist(salmon))
+    doc = XML.parse_document(salmon)
 
     {:xmlObj, :string, data} = :xmerl_xpath.string('string(//me:data[1])', doc)
     {:xmlObj, :string, sig} = :xmerl_xpath.string('string(//me:sig[1])', doc)
@@ -22,16 +23,17 @@ defmodule Pleroma.Web.Salmon do
 
   def fetch_magic_key(salmon) do
     [data, _, _, _, _] = decode(salmon)
-    {doc, _rest} = :xmerl_scan.string(to_charlist(data))
+    doc = XML.parse_document(data)
     {:xmlObj, :string, uri} = :xmerl_xpath.string('string(//author[1]/uri)', doc)
 
     uri = to_string(uri)
     base = URI.parse(uri).host
 
     # TODO: Find out if this endpoint is mandated by the standard.
+    # At least diaspora does it differently
     {:ok, response} = HTTPoison.get(base <> "/.well-known/webfinger", ["Accept": "application/xrd+xml"], [params: [resource: uri]])
 
-    {doc, _rest} = :xmerl_scan.string(to_charlist(response.body))
+    doc = XML.parse_document(response.body)
 
     {:xmlObj, :string, magickey} = :xmerl_xpath.string('string(//Link[@rel="magic-public-key"]/@href)', doc)
     "data:application/magic-public-key," <> magickey = to_string(magickey)

@@ -3,6 +3,7 @@ defmodule Pleroma.Web.Websub do
   alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
 
   import Ecto.Query
 
