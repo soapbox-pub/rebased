@@ -8,7 +8,8 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
 
     h = fn(str) -> [to_charlist(str)] end
 
-    entries = Enum.map(activities, fn(activity) ->
+    entries = activities
+    |> Enum.map(fn(activity) ->
       {:entry, ActivityRepresenter.to_simple_form(activity, user)}
     end)
     |> Enum.filter(fn ({_, form}) -> form end)

@@ -12,7 +12,7 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
   end
 
   def webfinger(conn, %{"resource" => resource}) do
-    {:ok, response} = Pleroma.Web.WebFinger.webfinger(resource)
+    {:ok, response} = WebFinger.webfinger(resource)
 
     conn
     |> put_resp_content_type("application/xrd+xml")

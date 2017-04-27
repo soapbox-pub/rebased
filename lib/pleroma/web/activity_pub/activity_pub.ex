@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.Repo
-  alias Pleroma.{Activity, Object, Upload, User}
+  alias Pleroma.{Activity, Repo, Object, Upload, User, Web}
+  alias Ecto.{Changeset, UUID}
   import Ecto.Query
 
   def insert(map) when is_map(map) do
@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.insert(%Activity{data: map})
   end
 
-  def like(%User{ap_id: ap_id} = user, %Object{data: %{ "id" => id}} = object) do
+  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object) do
     cond do
       # There's already a like here, so return the original activity.
       ap_id in (object.data["likes"] || []) ->
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         |> Map.put("like_count", length(likes))
         |> Map.put("likes", likes)
 
-        changeset = Ecto.Changeset.change(object, data: new_data)
+        changeset = Changeset.change(object, data: new_data)
         {:ok, object} = Repo.update(changeset)
 
         update_object_in_activities(object)
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     relevant_activities = Activity.all_by_object_ap_id(id)
     Enum.map(relevant_activities, fn (activity) ->
       new_activity_data = activity.data |> Map.put("object", object.data)
-      changeset = Ecto.Changeset.change(activity, data: new_activity_data)
+      changeset = Changeset.change(activity, data: new_activity_data)
       Repo.update(changeset)
     end)
   end
@@ -79,7 +79,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("like_count", length(likes))
       |> Map.put("likes", likes)
 
-      changeset = Ecto.Changeset.change(object, data: new_data)
+      changeset = Changeset.change(object, data: new_data)
       {:ok, object} = Repo.update(changeset)
 
       update_object_in_activities(object)
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def generate_id(type) do
-    "#{Pleroma.Web.base_url()}/#{type}/#{Ecto.UUID.generate}"
+    "#{Web.base_url()}/#{type}/#{UUID.generate}"
   end
 
   def fetch_public_activities(opts \\ %{}) do
@@ -140,8 +140,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       query
     end
 
-    Repo.all(query)
-    |> Enum.reverse
+    Enum.reverse(Repo.all(query))
   end
 
   def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object) do
@@ -160,7 +159,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Map.put("announcement_count", length(announcements))
     |> Map.put("announcements", announcements)
 
-    changeset = Ecto.Changeset.change(object, data: new_data)
+    changeset = Changeset.change(object, data: new_data)
     {:ok, object} = Repo.update(changeset)
 
     update_object_in_activities(object)

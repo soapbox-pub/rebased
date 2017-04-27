@@ -10,7 +10,6 @@ defmodule Pleroma.Web.Salmon do
     {:xmlObj, :string, encoding} = :xmerl_xpath.string('string(//me:encoding[1])', doc)
     {:xmlObj, :string, type} = :xmerl_xpath.string('string(//me:data[1]/@type)', doc)
 
-
     {:ok, data} = Base.url_decode64(to_string(data), ignore: :whitespace)
     {:ok, sig} = Base.url_decode64(to_string(sig), ignore: :whitespace)
     alg = to_string(alg)

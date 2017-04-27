@@ -2,8 +2,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
-  alias Pleroma.{Repo, Activity}
+  alias Pleroma.{Web, Repo, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Ecto.Changeset
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
     response = user |> UserRepresenter.to_json(%{for: user})
@@ -15,7 +16,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => status_text} = status_data) do
     if status_text |> String.trim |> String.length != 0 do
       media_ids = extract_media_ids(status_data)
-      {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids ))
+      {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids))
       conn
       |> json_reply(200, ActivityRepresenter.to_json(activity, %{user: user}))
     else
@@ -79,34 +80,34 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def follow(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.follow(user, params) do
-      { :ok, user, followed, _activity } ->
+      {:ok, user, followed, _activity} ->
         response = followed |> UserRepresenter.to_json(%{for: user})
         conn
         |> json_reply(200, response)
-      { :error, msg } -> forbidden_json_reply(conn, msg)
+      {:error, msg} -> forbidden_json_reply(conn, msg)
     end
   end
 
   def unfollow(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.unfollow(user, params) do
-      { :ok, user, unfollowed, } ->
+      {:ok, user, unfollowed} ->
         response = unfollowed |> UserRepresenter.to_json(%{for: user})
         conn
         |> json_reply(200, response)
-      { :error, msg } -> forbidden_json_reply(conn, msg)
+      {:error, msg} -> forbidden_json_reply(conn, msg)
     end
   end
 
-  def fetch_status(%{assigns: %{user: user}} = conn, %{ "id" => id }) do
-    response = TwitterAPI.fetch_status(user, id) |> Poison.encode!
+  def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    response = Poison.encode!(TwitterAPI.fetch_status(user, id))
 
     conn
     |> json_reply(200, response)
   end
 
-  def fetch_conversation(%{assigns: %{user: user}} = conn, %{ "id" => id }) do
+  def fetch_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     id = String.to_integer(id)
-    response = TwitterAPI.fetch_conversation(user, id) |> Poison.encode!
+    response = Poison.encode!(TwitterAPI.fetch_conversation(user, id))
 
     conn
     |> json_reply(200, response)
@@ -132,8 +133,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def config(conn, _params) do
     response = %{
       site: %{
-        name: Pleroma.Web.base_url,
-        server: Pleroma.Web.base_url,
+        name: Web.base_url,
+        server: Web.base_url,
         textlimit: -1
       }
     }
@@ -188,11 +189,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
     {:ok, object} = ActivityPub.upload(params)
-    change = Ecto.Changeset.change(user, %{avatar: object.data})
+    change = Changeset.change(user, %{avatar: object.data})
     {:ok, user} = Repo.update(change)
 
-    response = UserRepresenter.to_map(user, %{for: user})
-    |> Poison.encode!
+    response = Poison.encode!(UserRepresenter.to_map(user, %{for: user}))
 
     conn
     |> json_reply(200, response)

@@ -16,7 +16,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     activities = query
     |> Repo.all
 
-    response = FeedRepresenter.to_simple_form(user, activities, [user])
+    response = user
+    |> FeedRepresenter.to_simple_form(activities, [user])
     |> :xmerl.export_simple(:xmerl_xml)
     |> to_string
 
@@ -25,7 +26,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> send_resp(200, response)
   end
 
-  def temp(conn, params) do
+  def temp(_conn, params) do
     IO.inspect(params)
   end
 end

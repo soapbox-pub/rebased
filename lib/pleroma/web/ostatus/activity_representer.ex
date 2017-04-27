@@ -23,5 +23,5 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     ] ++ attachments
   end
 
-  def to_simple_form(_,_), do: nil
+  def to_simple_form(_, _), do: nil
 end

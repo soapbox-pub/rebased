@@ -30,13 +30,13 @@ defmodule Pleroma.XmlBuilder do
     NaiveDateTime.to_iso8601(time)
   end
 
-  def to_doc(content), do: "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" <> to_xml(content)
+  def to_doc(content), do: ~s(<?xml version="1.0" encoding="UTF-8"?>) <> to_xml(content)
 
   defp make_open_tag(tag, attributes) do
     attributes_string = for {attribute, value} <- attributes do
       "#{attribute}=\"#{value}\""
     end |> Enum.join(" ")
 
-    Enum.join([tag, attributes_string], " ") |> String.strip
+    [tag, attributes_string] |> Enum.join(" ") |> String.strip
   end
 end

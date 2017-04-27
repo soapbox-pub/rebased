@@ -20,8 +20,7 @@ defmodule Pleroma.Web do
     quote do
       use Phoenix.Controller, namespace: Pleroma.Web
       import Plug.Conn
-      import Pleroma.Web.Router.Helpers
-      import Pleroma.Web.Gettext
+      import Pleroma.Web.{Gettext, Router.Helpers}
     end
   end
 
@@ -33,9 +32,7 @@ defmodule Pleroma.Web do
       # Import convenience functions from controllers
       import Phoenix.Controller, only: [get_csrf_token: 0, get_flash: 2, view_module: 1]
 
-      import Pleroma.Web.Router.Helpers
-      import Pleroma.Web.ErrorHelpers
-      import Pleroma.Web.Gettext
+      import Pleroma.Web.{ErrorHelpers, Gettext, Router.Helpers}
     end
   end
 
@@ -75,7 +72,8 @@ defmodule Pleroma.Web do
 
     protocol = settings |> Keyword.fetch!(:protocol)
 
-    port_fragment = with {:ok, protocol_info} <- settings |> Keyword.fetch(String.to_atom(protocol)),
+    port_fragment = with {:ok, protocol_info} <- settings
+                         |> Keyword.fetch(String.to_atom(protocol)),
                          {:ok, port} <- protocol_info |> Keyword.fetch(:port)
     do
       ":#{port}"

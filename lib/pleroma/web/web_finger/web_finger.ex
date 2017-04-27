@@ -1,21 +1,20 @@
 defmodule Pleroma.Web.WebFinger do
-  alias Pleroma.XmlBuilder
-  alias Pleroma.User
-  alias Pleroma.Web.OStatus
+  alias Pleroma.{User, XmlBuilder}
+  alias Pleroma.{Web, Web.OStatus}
 
-  def host_meta() do
-    base_url  = Pleroma.Web.base_url
+  def host_meta do
+    base_url  = Web.base_url
     {
-      :XRD, %{ xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0" },
+      :XRD, %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       {
-        :Link, %{ rel: "lrdd", type: "application/xrd+xml", template: "#{base_url}/.well-known/webfinger?resource={uri}"  }
+        :Link, %{rel: "lrdd", type: "application/xrd+xml", template: "#{base_url}/.well-known/webfinger?resource={uri}"}
       }
     }
     |> XmlBuilder.to_doc
   end
 
   def webfinger(resource) do
-    host = Pleroma.Web.host
+    host = Web.host
     regex = ~r/acct:(?<username>\w+)@#{host}/
     case Regex.named_captures(regex, resource) do
       %{"username" => username} ->
@@ -29,7 +28,7 @@ defmodule Pleroma.Web.WebFinger do
     {
       :XRD, %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
-        {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.host}"},
+        {:Subject, "acct:#{user.nickname}@#{Web.host}"},
         {:Alias, user.ap_id},
         {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: OStatus.feed_path(user)}}
       ]

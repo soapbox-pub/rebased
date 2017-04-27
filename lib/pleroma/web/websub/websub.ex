@@ -1,4 +1,5 @@
 defmodule Pleroma.Web.Websub do
+  alias Ecto.Changeset
   alias Pleroma.Repo
   alias Pleroma.Web.Websub.WebsubServerSubscription
   alias Pleroma.Web.OStatus.FeedRepresenter
@@ -8,9 +9,10 @@ defmodule Pleroma.Web.Websub do
 
   @websub_verifier Application.get_env(:pleroma, :websub_verifier)
 
-  def verify(subscription, getter \\ &HTTPoison.get/3 ) do
+  def verify(subscription, getter \\ &HTTPoison.get/3) do
     challenge = Base.encode16(:crypto.strong_rand_bytes(8))
-    lease_seconds = NaiveDateTime.diff(subscription.valid_until, subscription.updated_at) |> to_string
+    lease_seconds = NaiveDateTime.diff(subscription.valid_until, subscription.updated_at)
+    lease_seconds = lease_seconds |> to_string
 
     params = %{
       "hub.challenge": challenge,
@@ -25,11 +27,11 @@ defmodule Pleroma.Web.Websub do
     with {:ok, response} <- getter.(url, [], [params: params]),
          ^challenge <- response.body
     do
-      changeset = Ecto.Changeset.change(subscription, %{state: "active"})
+      changeset = Changeset.change(subscription, %{state: "active"})
       Repo.update(changeset)
     else _e ->
-      changeset = Ecto.Changeset.change(subscription, %{state: "rejected"})
-      {:ok, subscription } = Repo.update(changeset)
+      changeset = Changeset.change(subscription, %{state: "rejected"})
+      {:ok, subscription} = Repo.update(changeset)
       {:error, subscription}
     end
   end
@@ -39,10 +41,11 @@ defmodule Pleroma.Web.Websub do
     where: sub.topic == ^topic and sub.state == "active"
     subscriptions = Repo.all(query)
     Enum.each(subscriptions, fn(sub) ->
-      response = FeedRepresenter.to_simple_form(user, [activity], [user])
+      response = user
+      |> FeedRepresenter.to_simple_form([activity], [user])
       |> :xmerl.export_simple(:xmerl_xml)
 
-      signature = :crypto.hmac(:sha, sub.secret, response) |> Base.encode16
+      signature = Base.encode16(:crypto.hmac(:sha, sub.secret, response))
 
       HTTPoison.post(sub.callback, response, [
             {"Content-Type", "application/atom+xml"},
@@ -65,10 +68,11 @@ defmodule Pleroma.Web.Websub do
         callback: callback
       }
 
-      change = Ecto.Changeset.change(subscription, data)
+      change = Changeset.change(subscription, data)
       websub = Repo.insert_or_update!(change)
 
-      change = Ecto.Changeset.change(websub, %{valid_until: NaiveDateTime.add(websub.updated_at, lease_time)})
+      change = Changeset.change(websub, %{valid_until:
+                                          NaiveDateTime.add(websub.updated_at, lease_time)})
       websub = Repo.update!(change)
 
       # Just spawn that for now, maybe pool later.
@@ -81,7 +85,8 @@ defmodule Pleroma.Web.Websub do
   end
 
   defp get_subscription(topic, callback) do
-    Repo.get_by(WebsubServerSubscription, topic: topic, callback: callback) || %WebsubServerSubscription{}
+    Repo.get_by(WebsubServerSubscription, topic: topic, callback: callback) ||
+      %WebsubServerSubscription{}
   end
 
   defp lease_time(%{"hub.lease_seconds" => lease_seconds}) do
