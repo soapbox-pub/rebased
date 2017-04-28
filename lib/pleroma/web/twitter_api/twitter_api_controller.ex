@@ -12,11 +12,23 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, response)
   end
 
-  def status_update(%{assigns: %{user: user}} = conn, status_data) do
-    media_ids = extract_media_ids(status_data)
-    {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids ))
-    conn
-    |> json_reply(200, ActivityRepresenter.to_json(activity, %{user: user}))
+  def status_update(%{assigns: %{user: user}} = conn, %{"status" => status_text} = status_data) do
+    if status_text |> String.trim |> String.length != 0 do
+      media_ids = extract_media_ids(status_data)
+      {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids ))
+      conn
+      |> json_reply(200, ActivityRepresenter.to_json(activity, %{user: user}))
+    else
+      empty_status_reply(conn)
+    end
+  end
+
+  def status_update(conn, _status_data) do
+    empty_status_reply(conn)
+  end
+
+  defp empty_status_reply(conn) do
+    bad_request_reply(conn, "Client must provide a 'status' parameter with a value.")
   end
 
   defp extract_media_ids(status_data) do
@@ -151,11 +163,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     activity = Repo.get(Activity, id)
-    {:ok, status} = TwitterAPI.retweet(user, activity)
-    response = Poison.encode!(status)
+    if activity.data["actor"] == user.ap_id do
+      bad_request_reply(conn, "You cannot repeat your own notice.")
+    else
+      {:ok, status} = TwitterAPI.retweet(user, activity)
+      response = Poison.encode!(status)
 
-    conn
-    |> json_reply(200, response)
+      conn
+
+      |> json_reply(200, response)
+    end
   end
 
   def register(conn, params) do
@@ -182,7 +199,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   defp bad_request_reply(conn, error_message) do
-    json = Poison.encode!(%{"error" => error_message})
+    json = error_json(conn, error_message)
     json_reply(conn, 400, json)
   end
 
@@ -193,9 +210,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   defp forbidden_json_reply(conn, error_message) do
-    json = %{"error" => error_message, "request" => conn.request_path}
-    |> Poison.encode!
-
+    json = error_json(conn, error_message)
     json_reply(conn, 403, json)
+  end
+
+  defp error_json(conn, error_message) do
+    %{"error" => error_message, "request" => conn.request_path} |> Poison.encode!
   end
 end

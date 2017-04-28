@@ -31,10 +31,21 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: user} do
-      conn = conn
-        |> with_credentials(user.nickname, "test")
-        |> post("/api/statuses/update.json", %{ status: "Nice meme." })
+      conn_with_creds = conn |> with_credentials(user.nickname, "test")
+      request_path = "/api/statuses/update.json"
 
+      error_response = %{"request" => request_path,
+                         "error" => "Client must provide a 'status' parameter with a value."}
+      conn = conn_with_creds |> post(request_path)
+      assert json_response(conn, 400) == error_response
+
+      conn = conn_with_creds |> post(request_path, %{ status: "" })
+      assert json_response(conn, 400) == error_response
+
+      conn = conn_with_creds |> post(request_path, %{ status: " " })
+      assert json_response(conn, 400) == error_response
+
+      conn =  conn_with_creds |> post(request_path, %{ status: "Nice meme." })
       assert json_response(conn, 200) == ActivityRepresenter.to_map(Repo.one(Activity), %{user: user})
     end
   end
@@ -139,7 +150,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     setup [:valid_user]
     test "without any params", %{conn: conn} do
       conn = get(conn, "/api/statuses/user_timeline.json")
-      assert json_response(conn, 400) == %{"error" => "You need to specify screen_name or user_id"}
+      assert json_response(conn, 400) == %{"error" => "You need to specify screen_name or user_id", "request" => "/api/statuses/user_timeline.json"}
     end
 
     test "with user_id", %{conn: conn} do
@@ -320,11 +331,21 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "with credentials", %{conn: conn, user: current_user} do
       note_activity = insert(:note_activity)
 
-      conn = conn
-      |> with_credentials(current_user.nickname, "test")
-      |> post("/api/statuses/retweet/#{note_activity.id}.json")
+      request_path = "/api/statuses/retweet/#{note_activity.id}.json"
 
-      assert json_response(conn, 200)
+      user = Repo.get_by(User, ap_id: note_activity.data["actor"])
+      response = conn
+      |> with_credentials(user.nickname, "test")
+      |> post(request_path)
+      assert json_response(response, 400) == %{"error" => "You cannot repeat your own notice.",
+                                               "request" => request_path}
+
+      response = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post(request_path)
+      activity = Repo.get(Activity, note_activity.id)
+      activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
+      assert json_response(response, 200) == ActivityRepresenter.to_map(activity, %{user: activity_user, for: current_user})
     end
   end
 

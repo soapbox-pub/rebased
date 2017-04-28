@@ -20,6 +20,13 @@ defmodule Pleroma.User do
     timestamps()
   end
 
+  def avatar_url(user) do
+    case user.avatar do
+      %{"url" => [%{"href" => href} | _]} -> href
+      _ -> "https://placehold.it/48x48"
+    end
+  end
+
   def ap_id(%User{nickname: nickname}) do
     "#{Pleroma.Web.base_url}/users/#{nickname}"
   end
@@ -57,6 +64,7 @@ defmodule Pleroma.User do
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
     |> unique_constraint(:nickname)
+    |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
 
     if changeset.valid? do
       hashed = Comeonin.Pbkdf2.hashpwsalt(changeset.changes[:password])

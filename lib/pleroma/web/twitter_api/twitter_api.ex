@@ -66,7 +66,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
                end
 
     with {:ok, activity} <- ActivityPub.insert(activity) do
-      add_conversation_id(activity)
+      {:ok, activity} = add_conversation_id(activity)
+      Pleroma.Web.Websub.publish(Pleroma.Web.OStatus.feed_path(user), user, activity)
+      {:ok, activity}
     end
   end
 

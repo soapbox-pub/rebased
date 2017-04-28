@@ -19,6 +19,10 @@ defmodule Pleroma.Web.Router do
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Pleroma.Web.Router.user_fetcher/1}
   end
 
+  pipeline :well_known do
+    plug :accepts, ["xml", "xrd+xml"]
+  end
+
   scope "/api", Pleroma.Web do
     pipe_through :api
 
@@ -61,4 +65,32 @@ defmodule Pleroma.Web.Router do
 
     post "/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar
   end
+
+  pipeline :ostatus do
+    plug :accepts, ["xml", "atom"]
+  end
+
+  scope "/", Pleroma.Web do
+    pipe_through :ostatus
+
+    get "/users/:nickname/feed", OStatus.OStatusController, :feed
+    post "/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request
+  end
+
+  scope "/.well-known", Pleroma.Web do
+    pipe_through :well_known
+
+    get "/host-meta", WebFinger.WebFingerController, :host_meta
+    get "/webfinger", WebFinger.WebFingerController, :webfinger
+  end
+
+  scope "/", Fallback do
+    get "/*path", RedirectController, :redirector
+  end
+
+end
+
+defmodule Fallback.RedirectController do
+  use Pleroma.Web, :controller
+  def redirector(conn, _params), do: send_file(conn, 200, "priv/static/index.html")
 end
