@@ -2,6 +2,8 @@ defmodule Pleroma.Web.WebFinger do
   alias Pleroma.XmlBuilder
   alias Pleroma.User
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
+  require Logger
 
   def host_meta() do
     base_url  = Pleroma.Web.base_url
@@ -36,5 +38,40 @@ defmodule Pleroma.Web.WebFinger do
       ]
     }
     |> XmlBuilder.to_doc
+  end
+
+  # FIXME: Make this call the host-meta to find the actual address.
+  defp webfinger_address(domain) do
+    "https://#{domain}/.well-known/webfinger"
+  end
+
+  defp webfinger_from_xml(doc) do
+    magic_key = XML.string_from_xpath(~s{//Link[@rel="magic-public-key"]/@href}, doc)
+    "data:application/magic-public-key," <> magic_key = magic_key
+    topic = XML.string_from_xpath(~s{//Link[@rel="http://schemas.google.com/g/2010#updates-from"]/@href}, doc)
+    subject = XML.string_from_xpath("//Subject", doc)
+    salmon = XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc)
+    data = %{
+      magic_key: magic_key,
+      topic: topic,
+      subject: subject,
+      salmon: salmon
+    }
+    {:ok, data}
+  end
+
+  def finger(account, getter \\ &HTTPoison.get/3) do
+    [name, domain] = String.split(account, "@")
+    address = webfinger_address(domain)
+    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- getter.(address, ["Accept": "application/xrd+xml"], [params: [resource: account]]),
+         doc <- XML.parse_document(body),
+         {:ok, data} <- webfinger_from_xml(doc) do
+      {:ok, data}
+    else
+      e ->
+        Logger.debug("Couldn't finger #{account}.")
+        Logger.debug(e)
+        {:error, e}
+    end
   end
 end
