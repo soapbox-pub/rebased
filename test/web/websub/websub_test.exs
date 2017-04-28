@@ -3,11 +3,13 @@ defmodule Pleroma.Web.WebsubMock do
     {:ok, sub}
   end
 end
+
 defmodule Pleroma.Web.WebsubTest do
   use Pleroma.DataCase
   alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubServerSubscription
   import Pleroma.Factory
+  alias Pleroma.Web.Router.Helpers
 
   test "a verification of a request that is accepted" do
     sub = insert(:websub_subscription)
@@ -121,6 +123,7 @@ defmodule Pleroma.Web.WebsubTest do
 
     poster = fn (^hub, {:form, data}, _headers) ->
       assert Keyword.get(data, :"hub.mode") == "subscribe"
+      assert Keyword.get(data, :"hub.callback") == Helpers.websub_url(Pleroma.Web.Endpoint, :websub_subscription_confirmation, websub.id)
       {:ok, %{status_code: 202}}
     end
 

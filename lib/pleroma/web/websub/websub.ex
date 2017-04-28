@@ -2,8 +2,8 @@ defmodule Pleroma.Web.Websub do
   alias Pleroma.Repo
   alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   alias Pleroma.Web.OStatus.FeedRepresenter
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.XML
+  alias Pleroma.Web.{XML, Endpoint, OStatus}
+  alias Pleroma.Web.Router.Helpers
   require Logger
 
   import Ecto.Query
@@ -136,7 +136,7 @@ defmodule Pleroma.Web.Websub do
       "hub.mode": "subscribe",
       "hub.topic": websub.topic,
       "hub.secret": websub.secret,
-      "hub.callback": "https://social.heldscal.la/callback"
+      "hub.callback": Helpers.websub_url(Endpoint, :websub_subscription_confirmation, websub.id)
     ]
 
     # This checks once a second if we are confirmed yet

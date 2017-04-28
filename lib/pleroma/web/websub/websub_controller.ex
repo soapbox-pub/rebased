@@ -15,4 +15,9 @@ defmodule Pleroma.Web.Websub.WebsubController do
       |> send_resp(500, reason)
     end
   end
+
+  def websub_subscription_confirmation(conn, params) do
+    IO.inspect(params)
+    conn
+  end
 end
