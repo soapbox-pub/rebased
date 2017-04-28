@@ -2,7 +2,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.User
   require Logger
 
-  @websub_verifier Application.get_env(:pleroma, :websub_verifier)
+  @websub Application.get_env(:pleroma, :websub)
 
   def handle(:publish, activity) do
     Logger.debug("Running publish for #{activity.data["id"]}")
@@ -13,7 +13,7 @@ defmodule Pleroma.Web.Federator do
 
   def handle(:verify_websub, websub) do
     Logger.debug("Running websub verification for #{websub.id} (#{websub.topic}, #{websub.callback})")
-    @websub_verifier.verify(websub)
+    @websub.verify(websub)
   end
 
   def handle(type, payload) do

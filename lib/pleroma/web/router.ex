@@ -75,8 +75,9 @@ defmodule Pleroma.Web.Router do
 
     get "/users/:nickname/feed", OStatus.OStatusController, :feed
     post "/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming
-    post "/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation
     post "/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request
+    get "/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation
+    post "/push/subscriptions/:id", Websub.WebsubController, :websub_incoming
   end
 
   scope "/.well-known", Pleroma.Web do

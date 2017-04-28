@@ -42,13 +42,16 @@ defmodule Pleroma.Web.Websub do
       response = FeedRepresenter.to_simple_form(user, [activity], [user])
       |> :xmerl.export_simple(:xmerl_xml)
 
-      signature = :crypto.hmac(:sha, sub.secret, response) |> Base.encode16
-
+      signature = sign(sub.secret, response)
       HTTPoison.post(sub.callback, response, [
             {"Content-Type", "application/atom+xml"},
             {"X-Hub-Signature", "sha1=#{signature}"}
           ])
     end)
+  end
+
+  def sign(secret, doc) do
+    :crypto.hmac(:sha, secret, doc) |> Base.encode16
   end
 
   def incoming_subscription_request(user, %{"hub.mode" => "subscribe"} = params) do
