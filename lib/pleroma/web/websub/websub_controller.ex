@@ -34,6 +34,7 @@ defmodule Pleroma.Web.Websub.WebsubController do
 
   def websub_incoming(conn, %{"id" => id}) do
     with "sha1=" <> signature <- hd(get_req_header(conn, "x-hub-signature")),
+         signature <- String.upcase(signature),
          %WebsubClientSubscription{} = websub <- Repo.get(WebsubClientSubscription, id),
          {:ok, body, _conn} = read_body(conn),
          ^signature <- Websub.sign(websub.secret, body) do
