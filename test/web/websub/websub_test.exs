@@ -118,7 +118,8 @@ defmodule Pleroma.Web.WebsubTest do
       hub: "https://mastodon.social/api/push",
       uri: "https://mastodon.social/users/lambadalambda",
       nickname: "lambadalambda",
-      name: "Critical Value"
+      name: "Critical Value",
+      host: "mastodon.social"
     }
 
     assert expected == discovered

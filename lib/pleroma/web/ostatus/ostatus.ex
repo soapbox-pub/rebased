@@ -96,10 +96,12 @@ defmodule Pleroma.Web.OStatus do
       data = %{
         local: false,
         name: info.name,
-        nickname: info.nickname,
+        nickname: info.nickname <> "@" <> info.host,
         ap_id: info.uri,
         info: info
       }
+      # TODO: Make remote user changeset
+      # SHould enforce fqn nickname
       Repo.insert(Ecto.Changeset.change(%User{}, data))
     end
   end

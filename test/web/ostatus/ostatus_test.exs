@@ -33,7 +33,7 @@ defmodule Pleroma.Web.OStatusTest do
 
       user = Repo.get(Pleroma.User, user.id)
       assert user.name == "Constance Variable"
-      assert user.nickname == "lambadalambda"
+      assert user.nickname == "lambadalambda@social.heldscal.la"
       assert user.local == false
       assert user.info["uri"] == uri
       assert user.ap_id == uri
@@ -60,6 +60,7 @@ defmodule Pleroma.Web.OStatusTest do
         subject: "acct:shp@social.heldscal.la",
         topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
         uri: "https://social.heldscal.la/user/29191",
+        host: "social.heldscal.la",
         fqn: user
       }
       assert data == expected
@@ -80,6 +81,7 @@ defmodule Pleroma.Web.OStatusTest do
         subject: "https://social.heldscal.la/user/29191",
         topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
         uri: "https://social.heldscal.la/user/29191",
+        host: "social.heldscal.la",
         fqn: user
       }
       assert data == expected

@@ -139,7 +139,8 @@ defmodule Pleroma.Web.Websub do
         uri: uri,
         hub: hub,
         nickname: preferredUsername || name,
-        name: displayName || name
+        name: displayName || name,
+        host: URI.parse(uri).host
       }}
     else e ->
       {:error, e}
