@@ -41,6 +41,8 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
 
     assert response(conn, 200) == "some challenge"
     assert websub.state == "accepted"
+
+    # TODO valid_until
   end
 
   test "handles incoming feed updates", %{conn: conn} do

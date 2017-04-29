@@ -1,11 +1,10 @@
 defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
   alias Pleroma.Web.OStatus
-  alias Pleroma.Web.XML
 
-  test "handle incoming notes" do
+  test "handle incoming note - GS, Salmon" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
-    {:ok, activity} = OStatus.handle_incoming(incoming)
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"
@@ -14,9 +13,19 @@ defmodule Pleroma.Web.OStatusTest do
     assert "http://pleroma.example.org:4000/users/lain3" in activity.data["to"]
   end
 
+  test "handle incoming notes - GS, subscription" do
+    incoming = File.read!("test/fixtures/ostatus_incoming_post.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Create"
+    assert activity.data["object"]["type"] == "Note"
+    assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
+    assert activity.data["object"]["content"] == "Will it blend?"
+  end
+
   test "handle incoming replies" do
     incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
-    {:ok, activity} = OStatus.handle_incoming(incoming)
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"

@@ -21,26 +21,32 @@ defmodule Pleroma.Web.OStatus do
 
   def handle_incoming(xml_string) do
     doc = parse_document(xml_string)
+    entries = :xmerl_xpath.string('//entry', doc)
 
-    {:xmlObj, :string, object_type } = :xmerl_xpath.string('string(/entry/activity:object-type[1])', doc)
+    activities = Enum.map(entries, fn (entry) ->
+      {:xmlObj, :string, object_type } = :xmerl_xpath.string('string(/entry/activity:object-type[1])', entry)
 
-    case object_type do
-      'http://activitystrea.ms/schema/1.0/note' ->
-        handle_note(doc)
-      _ ->
-        Logger.error("Couldn't parse incoming document")
-    end
+      case object_type do
+        'http://activitystrea.ms/schema/1.0/note' ->
+          {:ok, activity} = handle_note(entry, doc)
+          activity
+        _ ->
+          Logger.error("Couldn't parse incoming document")
+          nil
+      end
+    end)
+    {:ok, activities}
   end
 
   # TODO
   # wire up replies
-  def handle_note(doc) do
-    content_html = string_from_xpath("/entry/content[1]", doc)
+  def handle_note(entry, doc \\ nil) do
+    content_html = string_from_xpath("/entry/content[1]", entry)
 
-    uri = string_from_xpath("/entry/author/uri[1]", doc)
+    uri = string_from_xpath("/entry/author/uri[1]", entry) || string_from_xpath("/feed/author/uri[1]", doc)
     {:ok, actor} = find_or_make_user(uri)
 
-    context = string_from_xpath("/entry/ostatus:conversation[1]", doc) |> String.trim
+    context = string_from_xpath("/entry/ostatus:conversation[1]", entry) |> String.trim
     context = if String.length(context) > 0 do
       context
     else
@@ -51,12 +57,12 @@ defmodule Pleroma.Web.OStatus do
       "https://www.w3.org/ns/activitystreams#Public"
     ]
 
-    mentions = :xmerl_xpath.string('/entry/link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/person"]', doc)
+    mentions = :xmerl_xpath.string('/entry/link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/person"]', entry)
     |> Enum.map(fn(person) -> string_from_xpath("@href", person) end)
 
     to = to ++ mentions
 
-    date = string_from_xpath("/entry/published", doc)
+    date = string_from_xpath("/entry/published", entry)
 
     object = %{
       "type" => "Note",
@@ -67,7 +73,7 @@ defmodule Pleroma.Web.OStatus do
       "actor" => actor.ap_id
     }
 
-    inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@href", doc)
+    inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@href", entry)
 
     object = if inReplyTo do
       Map.put(object, "inReplyTo", inReplyTo)
