@@ -21,24 +21,16 @@ defmodule Pleroma.Web.Salmon do
     [data, type, encoding, alg, sig]
   end
 
+  # TODO rewrite in with-stile
+  # Make it fetch the key from the saved user if there is one
   def fetch_magic_key(salmon) do
     [data, _, _, _, _] = decode(salmon)
     doc = XML.parse_document(data)
-    {:xmlObj, :string, uri} = :xmerl_xpath.string('string(//author[1]/uri)', doc)
+    uri = XML.string_from_xpath("/entry/author[1]/uri", doc)
 
-    uri = to_string(uri)
-    base = URI.parse(uri).host
+    {:ok, info} = Pleroma.Web.OStatus.gather_user_info(uri)
 
-    # TODO: Find out if this endpoint is mandated by the standard.
-    # At least diaspora does it differently
-    {:ok, response} = HTTPoison.get(base <> "/.well-known/webfinger", ["Accept": "application/xrd+xml"], [params: [resource: uri]])
-
-    doc = XML.parse_document(response.body)
-
-    {:xmlObj, :string, magickey} = :xmerl_xpath.string('string(//Link[@rel="magic-public-key"]/@href)', doc)
-    "data:application/magic-public-key," <> magickey = to_string(magickey)
-
-    magickey
+    info.magic_key
   end
 
   def decode_and_validate(magickey, salmon) do
