@@ -93,12 +93,13 @@ defmodule Pleroma.Web.WebsubTest do
   end
 
   test "initiate a subscription for a given user and topic" do
-    user = insert(:user)
-    topic = "http://example.org/some-topic.atom"
+    subscriber = insert(:user)
+    user = insert(:user, %{info: %{ "topic" =>  "some_topic", "hub" => "some_hub"}})
 
-    {:ok, websub} = Websub.subscribe(user, topic, &accepting_verifier/1)
-    assert websub.subscribers == [user.ap_id]
-    assert websub.topic == topic
+    {:ok, websub} = Websub.subscribe(subscriber, user, &accepting_verifier/1)
+    assert websub.subscribers == [subscriber.ap_id]
+    assert websub.topic == "some_topic"
+    assert websub.hub == "some_hub"
     assert is_binary(websub.secret)
     assert websub.user == user
     assert websub.state == "accepted"

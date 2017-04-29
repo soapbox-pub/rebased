@@ -37,8 +37,8 @@ defmodule Pleroma.Web.OStatus do
   def handle_note(doc) do
     content_html = string_from_xpath("/entry/content[1]", doc)
 
-    [author] = :xmerl_xpath.string('/entry/author[1]', doc)
-    {:ok, actor} = find_or_make_user(author)
+    uri = string_from_xpath("/entry/author/uri[1]", doc)
+    {:ok, actor} = find_or_make_user(uri)
 
     context = string_from_xpath("/entry/ostatus:conversation[1]", doc) |> String.trim
     context = if String.length(context) > 0 do
@@ -78,42 +78,30 @@ defmodule Pleroma.Web.OStatus do
     ActivityPub.create(to, actor, context, object, %{}, date)
   end
 
-  def find_or_make_user(author_doc) do
-    {:xmlObj, :string, uri } = :xmerl_xpath.string('string(/author[1]/uri)', author_doc)
-
+  def find_or_make_user(uri) do
     query = from user in User,
-      where: user.local == false and fragment("? @> ?", user.info, ^%{ostatus_uri: to_string(uri)})
+      where: user.local == false and fragment("? @> ?", user.info, ^%{uri: uri})
 
     user = Repo.one(query)
 
     if is_nil(user) do
-      make_user(author_doc)
+      make_user(uri)
     else
       {:ok, user}
     end
   end
 
-  def make_user(author_doc) do
-    author = string_from_xpath("/author[1]/uri", author_doc)
-    name = string_from_xpath("/author[1]/name", author_doc)
-    preferredUsername = string_from_xpath("/author[1]/poco:preferredUsername", author_doc)
-    displayName = string_from_xpath("/author[1]/poco:displayName", author_doc)
-    avatar = make_avatar_object(author_doc)
-
-    data = %{
-      local: false,
-      name: preferredUsername || name,
-      nickname: displayName || name,
-      ap_id: author,
-      info: %{
-        "ostatus_uri" => author,
-        "host" => URI.parse(author).host,
-        "system" => "ostatus"
-      },
-      avatar: avatar
-    }
-
-    Repo.insert(Ecto.Changeset.change(%User{}, data))
+  def make_user(uri) do
+    with {:ok, info} <- gather_user_info(uri) do
+      data = %{
+        local: false,
+        name: info.name,
+        nickname: info.nickname,
+        ap_id: info.uri,
+        info: info
+      }
+      Repo.insert(Ecto.Changeset.change(%User{}, data))
+    end
   end
 
   # TODO: Just takes the first one for now.

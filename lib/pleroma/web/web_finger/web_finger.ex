@@ -42,7 +42,7 @@ defmodule Pleroma.Web.WebFinger do
 
   # FIXME: Make this call the host-meta to find the actual address.
   defp webfinger_address(domain) do
-    "https://#{domain}/.well-known/webfinger"
+    "//#{domain}/.well-known/webfinger"
   end
 
   defp webfinger_from_xml(doc) do
@@ -61,9 +61,21 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def finger(account, getter \\ &HTTPoison.get/3) do
-    [name, domain] = String.split(account, "@")
+    domain = with [_name, domain] <- String.split(account, "@") do
+               domain
+             else _e ->
+               URI.parse(account).host
+             end
     address = webfinger_address(domain)
-    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- getter.(address, ["Accept": "application/xrd+xml"], [params: [resource: account]]),
+
+    # try https first
+    response = with {:ok, result} <- getter.("https:" <> address, ["Accept": "application/xrd+xml"], [params: [resource: account]]) do
+                 {:ok, result}
+               else _ ->
+                 getter.("http:" <> address, ["Accept": "application/xrd+xml"], [params: [resource: account]])
+               end
+
+    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
          doc <- XML.parse_document(body),
          {:ok, data} <- webfinger_from_xml(doc) do
       {:ok, data}

@@ -25,40 +25,20 @@ defmodule Pleroma.Web.OStatusTest do
   end
 
   describe "new remote user creation" do
-    test "make new user or find them based on an 'author' xml doc" do
-      incoming = File.read!("test/fixtures/user_name_only.xml")
-      doc = XML.parse_document(incoming)
-
-      {:ok, user} = OStatus.find_or_make_user(doc)
-
-      assert user.name == "lambda"
-      assert user.nickname == "lambda"
-      assert user.local == false
-      assert user.info["ostatus_uri"] == "http://gs.example.org:4040/index.php/user/1"
-      assert user.info["system"] == "ostatus"
-      assert user.ap_id == "http://gs.example.org:4040/index.php/user/1"
-
-      {:ok, user_again} = OStatus.find_or_make_user(doc)
-
-      assert user == user_again
-    end
-
     test "tries to use the information in poco fields" do
-      incoming = File.read!("test/fixtures/user_full.xml")
-      doc = XML.parse_document(incoming)
+      # TODO make test local
+      uri = "https://social.heldscal.la/user/23211"
 
-      {:ok, user} = OStatus.find_or_make_user(doc)
+      {:ok, user} = OStatus.find_or_make_user(uri)
 
+      user = Repo.get(Pleroma.User, user.id)
       assert user.name == "Constance Variable"
       assert user.nickname == "lambadalambda"
       assert user.local == false
-      assert user.info["ostatus_uri"] == "http://gs.example.org:4040/index.php/user/1"
-      assert user.info["system"] == "ostatus"
-      assert user.ap_id == "http://gs.example.org:4040/index.php/user/1"
+      assert user.info["uri"] == uri
+      assert user.ap_id == uri
 
-      assert List.first(user.avatar["url"])["href"] == "http://gs.example.org:4040/theme/neo-gnu/default-avatar-profile.png"
-
-      {:ok, user_again} = OStatus.find_or_make_user(doc)
+      {:ok, user_again} = OStatus.find_or_make_user(uri)
 
       assert user == user_again
     end
@@ -78,6 +58,26 @@ defmodule Pleroma.Web.OStatusTest do
         nickname: "shp",
         salmon: "https://social.heldscal.la/main/salmon/user/29191",
         subject: "acct:shp@social.heldscal.la",
+        topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
+        uri: "https://social.heldscal.la/user/29191",
+        fqn: user
+      }
+      assert data == expected
+    end
+
+    test "it works with the uri" do
+      user = "https://social.heldscal.la/user/29191"
+
+      # TODO: make test local
+      {:ok, data} = OStatus.gather_user_info(user)
+
+      expected = %{
+        hub: "https://social.heldscal.la/main/push/hub",
+        magic_key: "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
+        name: "shp",
+        nickname: "shp",
+        salmon: "https://social.heldscal.la/main/salmon/user/29191",
+        subject: "https://social.heldscal.la/user/29191",
         topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
         uri: "https://social.heldscal.la/user/29191",
         fqn: user
