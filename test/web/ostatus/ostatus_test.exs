@@ -63,4 +63,26 @@ defmodule Pleroma.Web.OStatusTest do
       assert user == user_again
     end
   end
+
+  describe "gathering user info from a user id" do
+    test "it returns user info in a hash" do
+      user = "shp@social.heldscal.la"
+
+      # TODO: make test local
+      {:ok, data} = OStatus.gather_user_info(user)
+
+      expected = %{
+        hub: "https://social.heldscal.la/main/push/hub",
+        magic_key: "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
+        name: "shp",
+        nickname: "shp",
+        salmon: "https://social.heldscal.la/main/salmon/user/29191",
+        subject: "acct:shp@social.heldscal.la",
+        topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
+        uri: "https://social.heldscal.la/user/29191",
+        fqn: user
+      }
+      assert data == expected
+    end
+  end
 end

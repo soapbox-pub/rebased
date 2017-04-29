@@ -5,6 +5,7 @@ defmodule Pleroma.Web.OStatus do
 
   alias Pleroma.{Repo, User, Web}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.{WebFinger, Websub}
 
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
@@ -132,6 +133,16 @@ defmodule Pleroma.Web.OStatus do
       }
     else
       nil
+    end
+  end
+
+  def gather_user_info(username) do
+    with {:ok, webfinger_data} <- WebFinger.finger(username),
+         {:ok, feed_data} <- Websub.gather_feed_data(webfinger_data.topic) do
+      {:ok, Map.merge(webfinger_data, feed_data) |> Map.put(:fqn, username)}
+    else e ->
+      Logger.debug("Couldn't gather info for #{username}")
+      {:error, e}
     end
   end
 end

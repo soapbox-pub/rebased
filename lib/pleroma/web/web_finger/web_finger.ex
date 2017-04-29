@@ -18,7 +18,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def webfinger(resource) do
     host = Pleroma.Web.host
-    regex = ~r/acct:(?<username>\w+)@#{host}/
+    regex = ~r/(acct:)?(?<username>\w+)@#{host}/
     case Regex.named_captures(regex, resource) do
       %{"username" => username} ->
         user = User.get_cached_by_nickname(username)
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.WebFinger do
     else
       e ->
         Logger.debug("Couldn't finger #{account}.")
-        Logger.debug(e)
+        Logger.debug(inspect(e))
         {:error, e}
     end
   end

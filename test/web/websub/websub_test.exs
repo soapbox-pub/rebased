@@ -112,8 +112,15 @@ defmodule Pleroma.Web.WebsubTest do
       {:ok, %{status_code: 200, body: doc}}
     end
 
-    {:ok, discovered} = Websub.discover(topic, getter)
-    assert %{hub: "https://mastodon.social/api/push", url: topic} == discovered
+    {:ok, discovered} = Websub.gather_feed_data(topic, getter)
+    expected = %{
+      hub: "https://mastodon.social/api/push",
+      uri: "https://mastodon.social/users/lambadalambda",
+      nickname: "lambadalambda",
+      name: "Critical Value"
+    }
+
+    assert expected == discovered
   end
 
   test "calls the hub, requests topic" do

@@ -121,14 +121,24 @@ defmodule Pleroma.Web.Websub do
     requester.(subscription)
   end
 
-  def discover(topic, getter \\ &HTTPoison.get/1) do
+  def gather_feed_data(topic, getter \\ &HTTPoison.get/1) do
     with {:ok, response} <- getter.(topic),
          status_code when status_code in 200..299 <- response.status_code,
          body <- response.body,
          doc <- XML.parse_document(body),
-         url when not is_nil(url) <- XML.string_from_xpath(~S{/feed/link[@rel="self"]/@href}, doc),
+         uri when not is_nil(uri) <- XML.string_from_xpath("/feed/author[1]/uri", doc),
          hub when not is_nil(hub) <- XML.string_from_xpath(~S{/feed/link[@rel="hub"]/@href}, doc) do
-      {:ok, %{url: url, hub: hub}}
+
+      name = XML.string_from_xpath("/feed/author[1]/name", doc)
+      preferredUsername = XML.string_from_xpath("/feed/author[1]/poco:preferredUsername", doc)
+      displayName = XML.string_from_xpath("/feed/author[1]/poco:displayName", doc)
+
+      {:ok, %{
+        uri: uri,
+        hub: hub,
+        nickname: preferredUsername || name,
+        name: displayName || name
+      }}
     else e ->
       {:error, e}
     end
