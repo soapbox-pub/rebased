@@ -20,7 +20,7 @@ defmodule Pleroma.Web.WebFinger do
     regex = ~r/(acct:)?(?<username>\w+)@#{host}/
     case Regex.named_captures(regex, resource) do
       %{"username" => username} ->
-        user = User.get_cached_by_nickname(username)
+        user = User.get_by_nickname(username)
         {:ok, represent_user(user)}
       _ -> nil
     end
