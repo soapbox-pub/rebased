@@ -18,7 +18,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
     <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
-    <id>#{note_activity.data["id"]}</id>
+    <id>#{note_activity.data["object"]["id"]}</id>
     <title>New note by #{user.nickname}</title>
     <content type="html">#{note_activity.data["object"]["content"]}</content>
     <published>#{inserted_at}</published>
@@ -53,14 +53,14 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
     <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
-    <id>#{answer.data["id"]}</id>
+    <id>#{answer.data["object"]["id"]}</id>
     <title>New note by #{user.nickname}</title>
     <content type="html">#{answer.data["object"]["content"]}</content>
     <published>#{inserted_at}</published>
     <updated>#{updated_at}</updated>
     <ostatus:conversation>#{answer.data["context"]}</ostatus:conversation>
     <link href="#{answer.data["context"]}" rel="ostatus:conversation" />
-    <thr:in-reply-to ref="#{note.data["id"]}" />
+    <thr:in-reply-to ref="#{note.data["object"]["id"]}" />
     """
 
     tuple = ActivityRepresenter.to_simple_form(answer, user)

@@ -3,13 +3,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   require Logger
 
   defp get_in_reply_to(%{"object" => %{ "inReplyTo" => in_reply_to}}) do
-    with %Activity{data: %{"id" => id}} <- Activity.get_create_activity_by_object_ap_id(in_reply_to) do
-      [{:"thr:in-reply-to", [ref: to_charlist(id)], []}]
-    else _e ->
-      Logger.debug("Couldn't find replied-to activity:")
-      Logger.debug(in_reply_to)
-      []
-    end
+    [{:"thr:in-reply-to", [ref: to_charlist(in_reply_to)], []}]
   end
 
   defp get_in_reply_to(_), do: []
@@ -32,7 +26,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/post']},
-      {:id, h.(activity.data["id"])},
+      {:id, h.(activity.data["object"]["id"])}, # For notes, federate the object id.
       {:title, ['New note by #{user.nickname}']},
       {:content, [type: 'html'], h.(activity.data["object"]["content"])},
       {:published, h.(inserted_at)},
