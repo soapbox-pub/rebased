@@ -123,7 +123,7 @@ defmodule Pleroma.User do
     Cachex.get!(:user_cache, key, fallback: fn(_) -> Repo.get_by(User, nickname: nickname) end)
   end
 
-  def get_cached_by_nickname(nickname) do
+  def get_by_nickname(nickname) do
     Repo.get_by(User, nickname: nickname)
   end
 
