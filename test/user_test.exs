@@ -86,4 +86,24 @@ defmodule Pleroma.UserTest do
       assert changeset.changes[:following] == [User.ap_followers(%User{nickname: @full_user_data.nickname})]
     end
   end
+
+  describe "fetching a user from nickname or trying to build one" do
+    test "gets an existing user" do
+      user = insert(:user)
+      fetched_user = User.get_or_fetch_by_nickname(user.nickname)
+
+      assert user == fetched_user
+    end
+
+    test "fetches an external user via ostatus if no user exists" do
+      fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
+      assert fetched_user.nickname == "shp@social.heldscal.la"
+    end
+
+    test "returns nil if no user could be fetched" do
+      fetched_user = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
+      assert fetched_user == nil
+    end
+  end
 end
+

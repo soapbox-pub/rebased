@@ -3,6 +3,7 @@ defmodule Pleroma.User do
   import Ecto.Changeset
   import Ecto.Query
   alias Pleroma.{Repo, User, Activity, Object}
+  alias Pleroma.Web.OStatus
 
   schema "users" do
     field :bio, :string
@@ -130,5 +131,16 @@ defmodule Pleroma.User do
   def get_cached_user_info(user) do
     key = "user_info:#{user.id}"
     Cachex.get!(:user_cache, key, fallback: fn(_) -> user_info(user) end)
+  end
+
+  def get_or_fetch_by_nickname(nickname) do
+    with %User{} = user <- get_by_nickname(nickname)  do
+      user
+    else _e ->
+      with {:ok, user} <- OStatus.make_user(nickname) do
+        user
+      else _e -> nil
+      end
+    end
   end
 end
