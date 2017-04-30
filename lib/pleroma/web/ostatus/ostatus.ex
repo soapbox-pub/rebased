@@ -63,6 +63,7 @@ defmodule Pleroma.Web.OStatus do
     to = to ++ mentions
 
     date = string_from_xpath("/entry/published", entry)
+    id = string_from_xpath("/entry/id", entry)
 
     object = %{
       "type" => "Note",
@@ -81,7 +82,7 @@ defmodule Pleroma.Web.OStatus do
       object
     end
 
-    ActivityPub.create(to, actor, context, object, %{}, date)
+    ActivityPub.create(to, actor, context, object, %{"id" => id}, date)
   end
 
   def find_or_make_user(uri) do
