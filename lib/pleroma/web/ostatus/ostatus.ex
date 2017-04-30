@@ -30,6 +30,9 @@ defmodule Pleroma.Web.OStatus do
         'http://activitystrea.ms/schema/1.0/note' ->
           {:ok, activity} = handle_note(entry, doc)
           activity
+        'http://activitystrea.ms/schema/1.0/comment' ->
+          {:ok, activity} = handle_note(entry, doc)
+          activity
         _ ->
           Logger.error("Couldn't parse incoming document")
           nil
@@ -74,7 +77,7 @@ defmodule Pleroma.Web.OStatus do
       "actor" => actor.ap_id
     }
 
-    inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@href", entry)
+    inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@ref", entry)
 
     object = if inReplyTo do
       Map.put(object, "inReplyTo", inReplyTo)

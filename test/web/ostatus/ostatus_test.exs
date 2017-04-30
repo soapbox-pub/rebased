@@ -24,6 +24,17 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["content"] == "Will it blend?"
   end
 
+  test "handle incoming notes - GS, subscription, reply" do
+    incoming = File.read!("test/fixtures/ostatus_incoming_reply.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Create"
+    assert activity.data["object"]["type"] == "Note"
+    assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
+    assert activity.data["object"]["content"] == "@<a href=\"https://gs.archae.me/user/4687\" class=\"h-card u-url p-nickname mention\" title=\"shpbot\">shpbot</a> why not indeed."
+    assert activity.data["object"]["inReplyTo"] == "tag:gs.archae.me,2017-04-30:noticeId=778260:objectType=note"
+  end
+
   test "handle incoming replies" do
     incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
