@@ -58,11 +58,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         "actor" => user.ap_id,
         "inReplyTo" => inReplyTo.data["object"]["id"],
         "inReplyToStatusId" => inReplyTo.id,
-        "statusnetConversationId" => inReplyTo.data["statusnetConversationId"]
       }
-      additional = %{
-        "statusnetConversationId" => inReplyTo.data["statusnetConversationId"]
-      }
+      additional = %{}
 
       [to, context, object, additional]
       else

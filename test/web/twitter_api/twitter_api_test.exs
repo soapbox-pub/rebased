@@ -67,8 +67,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert get_in(reply.data, ["context"]) == get_in(activity.data, ["context"])
     assert get_in(reply.data, ["object", "context"]) == get_in(activity.data, ["object", "context"])
-    assert get_in(reply.data, ["statusnetConversationId"]) == get_in(activity.data, ["statusnetConversationId"])
-    assert get_in(reply.data, ["object", "statusnetConversationId"]) == get_in(activity.data, ["object", "statusnetConversationId"])
     assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
     assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
     assert Enum.member?(get_in(reply.data, ["to"]), "some_cool_id")
