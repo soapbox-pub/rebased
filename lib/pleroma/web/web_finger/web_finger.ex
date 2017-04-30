@@ -1,8 +1,7 @@
 defmodule Pleroma.Web.WebFinger do
   alias Pleroma.XmlBuilder
-  alias Pleroma.User
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.XML
+  alias Pleroma.{Repo, User}
+  alias Pleroma.Web.{XML, Salmon, OStatus}
   require Logger
 
   def host_meta() do
@@ -28,16 +27,31 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def represent_user(user) do
+    {:ok, user} = ensure_keys_present(user)
+    {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
+    magic_key = Salmon.encode_key(public)
     {
       :XRD, %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
         {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.host}"},
         {:Alias, user.ap_id},
         {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: OStatus.feed_path(user)}},
-        {:Link, %{rel: "salmon", href: OStatus.salmon_path(user)}}
+        {:Link, %{rel: "salmon", href: OStatus.salmon_path(user)}},
+        {:Link, %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}}
       ]
     }
     |> XmlBuilder.to_doc
+  end
+
+  def ensure_keys_present(user) do
+    info = user.info || %{}
+    if info["keys"] do
+      {:ok, user}
+    else
+      {:ok, pem} = Salmon.generate_rsa_pem
+      info = Map.put(info, "keys", pem)
+      Repo.update(Ecto.Changeset.change(user, info: info))
+    end
   end
 
   # FIXME: Make this call the host-meta to find the actual address.

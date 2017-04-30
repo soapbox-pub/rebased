@@ -16,7 +16,7 @@ defmodule Pleroma.User do
     field :ap_id, :string
     field :avatar, :map
     field :local, :boolean, default: true
-    field :info, :map
+    field :info, :map, default: %{}
 
     timestamps()
   end

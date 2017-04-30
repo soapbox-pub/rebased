@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.WebFingerTest do
   use Pleroma.DataCase
   alias Pleroma.Web.WebFinger
+  import Pleroma.Factory
 
   describe "host meta" do
     test "returns a link to the xml lrdd" do
@@ -24,6 +25,21 @@ defmodule Pleroma.Web.WebFingerTest do
       assert data.topic == "https://social.heldscal.la/api/statuses/user_timeline/29191.atom"
       assert data.subject == "acct:shp@social.heldscal.la"
       assert data.salmon == "https://social.heldscal.la/main/salmon/user/29191"
+    end
+  end
+
+  describe "ensure_keys_present" do
+    test "it creates keys for a user and stores them in info" do
+      user = insert(:user)
+      refute is_binary(user.info["keys"])
+      {:ok, user} = WebFinger.ensure_keys_present(user)
+      assert is_binary(user.info["keys"])
+    end
+
+    test "it doesn't create keys if there already are some" do
+      user = insert(:user, %{info: %{"keys" => "xxx"}})
+      {:ok, user} = WebFinger.ensure_keys_present(user)
+      assert user.info["keys"] == "xxx"
     end
   end
 end
