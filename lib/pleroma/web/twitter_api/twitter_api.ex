@@ -102,12 +102,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_conversation(user, id) do
-    query = from activity in Activity,
-      where: fragment("? @> ?", activity.data, ^%{ statusnetConversationId: id}),
-      limit: 1
-
-    with %Activity{} = activity <- Repo.one(query),
-         context <- activity.data["context"],
+    with context when is_binary(context) <- conversation_id_to_context(id),
          activities <- ActivityPub.fetch_activities_for_context(context),
          statuses <- activities |> activities_to_statuses(%{for: user})
     do
@@ -321,5 +316,23 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   defp make_date do
     DateTime.utc_now() |> DateTime.to_iso8601
+  end
+
+  def context_to_conversation_id(context) do
+    with %Object{id: id} <- Object.get_by_ap_id(context) do
+      id
+    else _e ->
+      changeset = Object.context_mapping(context)
+      {:ok, %{id: id}} = Repo.insert(changeset)
+      id
+    end
+  end
+
+  def conversation_id_to_context(id) do
+    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
+      context
+    else _e ->
+      {:error, "No such conversation"}
+    end
   end
 end

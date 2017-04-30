@@ -69,6 +69,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     content = HtmlSanitizeEx.strip_tags(content_html)
     date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601
 
+    {:ok, convo_object} = Object.context_mapping("2hu") |> Repo.insert
+
     activity = %Activity{
       id: 1,
       data: %{
@@ -84,14 +86,15 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "type" => "Note",
           "content" => content_html,
           "inReplyToStatusId" => 213123,
-          "statusnetConversationId" => 4711,
           "attachment" => [
             object
           ],
           "like_count" => 5,
-          "announcement_count" => 3
+          "announcement_count" => 3,
+          "context" => "2hu"
         },
-        "published" => date
+        "published" => date,
+        "context" => "2hu"
       }
     }
 
@@ -106,7 +109,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",
       "in_reply_to_status_id" => 213123,
-      "statusnet_conversation_id" => 4711,
+      "statusnet_conversation_id" => convo_object.id,
       "attachments" => [
         ObjectRepresenter.to_map(object)
       ],

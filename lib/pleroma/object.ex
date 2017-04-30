@@ -13,4 +13,8 @@ defmodule Pleroma.Object do
     Repo.one(from object in Object,
       where: fragment("? @> ?", object.data, ^%{id: ap_id}))
   end
+
+  def context_mapping(context) do
+    %Object{data: %{"id" => context}}
+  end
 end

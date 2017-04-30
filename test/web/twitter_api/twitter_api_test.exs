@@ -201,11 +201,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "fetch statuses in a context using the conversation id" do
     {:ok, user} = UserBuilder.insert()
-    {:ok, activity} = ActivityBuilder.insert(%{"statusnetConversationId" => 1, "context" => "2hu"})
-    {:ok, activity_two} = ActivityBuilder.insert(%{"statusnetConversationId" => 1,"context" => "2hu"})
+    {:ok, activity} = ActivityBuilder.insert(%{"context" => "2hu"})
+    {:ok, activity_two} = ActivityBuilder.insert(%{"context" => "2hu"})
     {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
 
-    statuses = TwitterAPI.fetch_conversation(user, 1)
+    {:ok, object} = Object.context_mapping("2hu") |> Repo.insert
+
+    statuses = TwitterAPI.fetch_conversation(user, object.id)
 
     assert length(statuses) == 2
     assert Enum.at(statuses, 0)["id"] == activity.id
@@ -314,9 +316,33 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     refute Repo.get_by(User, nickname: "lain")
   end
 
+  test "it assigns an integer conversation_id" do
+    note_activity = insert(:note_activity)
+    user = User.get_cached_by_ap_id(note_activity.data["actor"])
+    status = ActivityRepresenter.to_map(note_activity, %{user: user})
+
+    assert is_number(status["statusnet_conversation_id"])
+  end
+
   setup do
     Supervisor.terminate_child(Pleroma.Supervisor, Cachex)
     Supervisor.restart_child(Pleroma.Supervisor, Cachex)
     :ok
+  end
+
+  describe "context_to_conversation_id" do
+    test "creates a mapping object" do
+      conversation_id = TwitterAPI.context_to_conversation_id("random context")
+      object = Object.get_by_ap_id("random context")
+
+      assert conversation_id == object.id
+    end
+
+    test "returns an existing mapping for an existing object" do
+      {:ok, object} = Object.context_mapping("random context") |> Repo.insert
+      conversation_id = TwitterAPI.context_to_conversation_id("random context")
+
+      assert conversation_id == object.id
+    end
   end
 end
