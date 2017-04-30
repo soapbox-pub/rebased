@@ -41,11 +41,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
     assert Enum.member?(get_in(activity.data, ["to"]), "shp")
 
-    # Add a context + 'statusnet_conversation_id'
+    # Add a context
     assert is_binary(get_in(activity.data, ["context"]))
     assert is_binary(get_in(activity.data, ["object", "context"]))
-    assert get_in(activity.data, ["object", "statusnetConversationId"]) == activity.id
-    assert get_in(activity.data, ["statusnetConversationId"]) == activity.id
 
     assert is_list(activity.data["object"]["attachment"])
 
