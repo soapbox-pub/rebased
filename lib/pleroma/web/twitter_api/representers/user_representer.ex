@@ -11,7 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
       false
     end
 
-    user_info = User.user_info(user)
+    user_info = User.get_cached_user_info(user)
 
     map = %{
       "id" => user.id,
