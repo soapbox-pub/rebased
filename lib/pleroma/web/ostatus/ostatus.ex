@@ -39,8 +39,6 @@ defmodule Pleroma.Web.OStatus do
     {:ok, activities}
   end
 
-  # TODO
-  # wire up replies
   def handle_note(entry, doc \\ nil) do
     content_html = string_from_xpath("/entry/content[1]", entry)
 
@@ -112,7 +110,8 @@ defmodule Pleroma.Web.OStatus do
         name: info.name,
         nickname: info.nickname <> "@" <> info.host,
         ap_id: info.uri,
-        info: info
+        info: info,
+        avatar: info.avatar
       }
       # TODO: Make remote user changeset
       # SHould enforce fqn nickname
@@ -121,9 +120,9 @@ defmodule Pleroma.Web.OStatus do
   end
 
   # TODO: Just takes the first one for now.
-  defp make_avatar_object(author_doc) do
-    href = string_from_xpath("/author[1]/link[@rel=\"avatar\"]/@href", author_doc)
-    type = string_from_xpath("/author[1]/link[@rel=\"avatar\"]/@type", author_doc)
+  def make_avatar_object(author_doc) do
+    href = string_from_xpath("/feed/author[1]/link[@rel=\"avatar\"]/@href", author_doc)
+    type = string_from_xpath("/feed/author[1]/link[@rel=\"avatar\"]/@type", author_doc)
 
     if href do
       %{

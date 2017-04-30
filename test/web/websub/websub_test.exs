@@ -119,7 +119,8 @@ defmodule Pleroma.Web.WebsubTest do
       uri: "https://mastodon.social/users/lambadalambda",
       nickname: "lambadalambda",
       name: "Critical Value",
-      host: "mastodon.social"
+      host: "mastodon.social",
+      avatar: %{"type" => "Image", "url" => [%{"href" => "https://files.mastodon.social/accounts/avatars/000/000/264/original/1429214160519.gif?1492379244", "mediaType" => "image/gif", "type" => "Link"}]}
     }
 
     assert expected == discovered

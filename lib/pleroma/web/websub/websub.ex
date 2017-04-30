@@ -134,13 +134,15 @@ defmodule Pleroma.Web.Websub do
       name = XML.string_from_xpath("/feed/author[1]/name", doc)
       preferredUsername = XML.string_from_xpath("/feed/author[1]/poco:preferredUsername", doc)
       displayName = XML.string_from_xpath("/feed/author[1]/poco:displayName", doc)
+      avatar = OStatus.make_avatar_object(doc)
 
       {:ok, %{
         uri: uri,
         hub: hub,
         nickname: preferredUsername || name,
         name: displayName || name,
-        host: URI.parse(uri).host
+        host: URI.parse(uri).host,
+        avatar: avatar
       }}
     else e ->
       {:error, e}

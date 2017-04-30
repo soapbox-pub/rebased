@@ -64,6 +64,7 @@ defmodule Pleroma.Web.OStatusTest do
       assert user.local == false
       assert user.info["uri"] == uri
       assert user.ap_id == uri
+      assert user.avatar["type"] == "Image"
 
       {:ok, user_again} = OStatus.find_or_make_user(uri)
 
@@ -88,7 +89,8 @@ defmodule Pleroma.Web.OStatusTest do
         topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
         uri: "https://social.heldscal.la/user/29191",
         host: "social.heldscal.la",
-        fqn: user
+        fqn: user,
+        avatar: %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]}
       }
       assert data == expected
     end
@@ -109,7 +111,8 @@ defmodule Pleroma.Web.OStatusTest do
         topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
         uri: "https://social.heldscal.la/user/29191",
         host: "social.heldscal.la",
-        fqn: user
+        fqn: user,
+        avatar: %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]}
       }
       assert data == expected
     end
