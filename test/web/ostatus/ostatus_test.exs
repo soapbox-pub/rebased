@@ -2,6 +2,12 @@ defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
   alias Pleroma.Web.OStatus
 
+  test "don't insert create notes twice" do
+    incoming = File.read!("test/fixtures/incoming_note_activity.xml")
+    {:ok, [_activity]} = OStatus.handle_incoming(incoming)
+    assert {:ok, [{:error, "duplicate activity"}]} == OStatus.handle_incoming(incoming)
+  end
+
   test "handle incoming note - GS, Salmon" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)

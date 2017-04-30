@@ -3,7 +3,7 @@ defmodule Pleroma.Web.OStatus do
   import Pleroma.Web.XML
   require Logger
 
-  alias Pleroma.{Repo, User, Web}
+  alias Pleroma.{Repo, User, Web, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.{WebFinger, Websub}
 
@@ -28,11 +28,9 @@ defmodule Pleroma.Web.OStatus do
 
       case object_type do
         'http://activitystrea.ms/schema/1.0/note' ->
-          {:ok, activity} = handle_note(entry, doc)
-          activity
+          with {:ok, activity} <- handle_note(entry, doc), do: activity
         'http://activitystrea.ms/schema/1.0/comment' ->
-          {:ok, activity} = handle_note(entry, doc)
-          activity
+          with {:ok, activity} <- handle_note(entry, doc), do: activity
         _ ->
           Logger.error("Couldn't parse incoming document")
           nil
@@ -86,7 +84,12 @@ defmodule Pleroma.Web.OStatus do
       object
     end
 
-    ActivityPub.create(to, actor, context, object, %{}, date)
+    # TODO: Bail out sooner and use transaction.
+    if Object.get_by_ap_id(id) do
+      {:error, "duplicate activity"}
+    else
+      ActivityPub.create(to, actor, context, object, %{}, date)
+    end
   end
 
   def find_or_make_user(uri) do
