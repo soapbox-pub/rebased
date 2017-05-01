@@ -45,7 +45,7 @@ defmodule Pleroma.Web.OStatus do
     uri = string_from_xpath("/entry/author/uri[1]", entry) || string_from_xpath("/feed/author/uri[1]", doc)
     {:ok, actor} = find_or_make_user(uri)
 
-    context = string_from_xpath("/entry/ostatus:conversation[1]", entry) |> String.trim
+    context = (string_from_xpath("/entry/ostatus:conversation[1]", entry) || "") |> String.trim
     context = if String.length(context) > 0 do
       context
     else
