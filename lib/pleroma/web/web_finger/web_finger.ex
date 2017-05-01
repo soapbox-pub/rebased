@@ -47,6 +47,7 @@ defmodule Pleroma.Web.WebFinger do
     |> XmlBuilder.to_doc
   end
 
+  # This seems a better fit in Salmon
   def ensure_keys_present(user) do
     info = user.info || %{}
     if info["keys"] do

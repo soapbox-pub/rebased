@@ -1,5 +1,6 @@
 defmodule Pleroma.Web.Federator do
   alias Pleroma.User
+  alias Pleroma.Web.WebFinger
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
@@ -10,6 +11,7 @@ defmodule Pleroma.Web.Federator do
       Logger.debug("Sending #{activity.data["id"]} out via websub")
       Pleroma.Web.Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
+      {:ok, actor} = WebFinger.ensure_keys_present(actor)
       Logger.debug("Sending #{activity.data["id"]} out via salmon")
       Pleroma.Web.Salmon.publish(actor, activity)
     end
