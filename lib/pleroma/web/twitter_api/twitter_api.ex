@@ -316,16 +316,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def context_to_conversation_id(context) do
-    {:ok, id} = Repo.transaction(fn ->
-      with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
-        id
-      else _e ->
-        changeset = Object.context_mapping(context)
-        {:ok, %{id: id}} = Repo.insert(changeset)
-        id
-      end
-    end)
-    id
+    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
+      id
+    else _e ->
+      changeset = Object.context_mapping(context)
+      {:ok, %{id: id}} = Repo.insert(changeset)
+      id
+    end
   end
 
   def conversation_id_to_context(id) do
