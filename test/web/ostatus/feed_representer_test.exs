@@ -28,7 +28,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
       <updated>#{most_recent_update}</updated>
       <link rel="hub" href="#{OStatus.pubsub_path(user)}" />
       <link rel="salmon" href="#{OStatus.salmon_path(user)}" />
-      <link rel="self" href="#{OStatus.feed_path(user)}" />
+      <link rel="self" href="#{OStatus.feed_path(user)}" type="application/atom+xml" />
       <author>
         #{user_xml}
       </author>
