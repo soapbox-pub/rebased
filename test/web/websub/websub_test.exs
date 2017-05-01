@@ -167,4 +167,11 @@ defmodule Pleroma.Web.WebsubTest do
     {:error, websub} = Websub.request_subscription(websub, poster, 1000)
     assert websub.state == "rejected"
   end
+
+  test "sign a text" do
+    signed = Websub.sign("secret", "text")
+    assert signed == "B8392C23690CCF871F37EC270BE1582DEC57A503"
+
+    signed = Websub.sign("secret", [["て"], ['す']])
+  end
 end
