@@ -98,7 +98,7 @@ defmodule Pleroma.Web.Websub do
   end
 
   defp valid_topic(%{"hub.topic" => topic}, user) do
-    if topic == OStatus.feed_path(user) || topic == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname) do
+    if topic == OStatus.feed_path(user) do
       {:ok, OStatus.feed_path(user)}
     else
       {:error, "Wrong topic requested, expected #{OStatus.feed_path(user)}, got #{topic}"}
