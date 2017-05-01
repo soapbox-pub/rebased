@@ -4,7 +4,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.{User, Activity}
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Repo
+  alias Pleroma.Web.OStatus
   import Ecto.Query
+
+  def feed_redirect(conn, %{"nickname" => nickname}) do
+    user = User.get_cached_by_nickname(nickname)
+    redirect conn, external: OStatus.feed_path(user)
+  end
 
   def feed(conn, %{"nickname" => nickname}) do
     user = User.get_cached_by_nickname(nickname)

@@ -99,7 +99,7 @@ defmodule Pleroma.Web.Websub do
 
   defp valid_topic(%{"hub.topic" => topic}, user) do
     if topic == OStatus.feed_path(user) do
-      {:ok, topic}
+      {:ok, OStatus.feed_path(user)}
     else
       {:error, "Wrong topic requested, expected #{OStatus.feed_path(user)}, got #{topic}"}
     end
