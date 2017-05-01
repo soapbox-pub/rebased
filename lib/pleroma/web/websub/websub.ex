@@ -78,6 +78,9 @@ defmodule Pleroma.Web.Websub do
 
       {:ok, websub}
     else {:error, reason} ->
+      Logger.debug("Couldn't create subscription.")
+      Logger.debug(inspect(reason))
+
       {:error, reason}
     end
   end
