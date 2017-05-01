@@ -11,6 +11,22 @@ defmodule Pleroma.Web.WebFingerTest do
     end
   end
 
+  describe "incoming webfinger request" do
+    test "works for fqns" do
+      user = insert(:user)
+
+      {:ok, result} = WebFinger.webfinger("#{user.nickname}@#{Pleroma.Web.host}")
+      assert is_binary(result)
+    end
+
+    test "works for ap_ids" do
+      user = insert(:user)
+
+      {:ok, result} = WebFinger.webfinger(user.ap_id)
+      assert is_binary(result)
+    end
+  end
+
   describe "fingering" do
     test "returns the info for a user" do
       user = "shp@social.heldscal.la"
