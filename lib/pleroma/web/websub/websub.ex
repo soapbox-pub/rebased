@@ -89,6 +89,11 @@ defmodule Pleroma.Web.Websub do
     Repo.get_by(WebsubServerSubscription, topic: topic, callback: callback) || %WebsubServerSubscription{}
   end
 
+  # Temp hack for mastodon.
+  defp lease_time(%{"hub.lease_seconds" => ""}) do
+    {:ok, 60 * 60 * 24 * 3} # three days
+  end
+
   defp lease_time(%{"hub.lease_seconds" => lease_seconds}) do
     {:ok, String.to_integer(lease_seconds)}
   end
