@@ -74,6 +74,7 @@ defmodule Pleroma.Web.Router do
     pipe_through :ostatus
 
     get "/users/:nickname/feed", OStatus.OStatusController, :feed
+    get "/users/:nickname", OStatus.OStatusController, :feed
     post "/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming
     post "/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request
     get "/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation
