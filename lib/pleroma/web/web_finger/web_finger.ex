@@ -40,6 +40,7 @@ defmodule Pleroma.Web.WebFinger do
         {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.host}"},
         {:Alias, user.ap_id},
         {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: OStatus.feed_path(user)}},
+        {:Link, %{rel: "ttp://webfinger.net/rel/profile-page", type: "text/html", href: user.ap_id}},
         {:Link, %{rel: "salmon", href: OStatus.salmon_path(user)}},
         {:Link, %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}}
       ]
