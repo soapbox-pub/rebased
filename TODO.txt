@@ -1,5 +1,9 @@
-- Add cache for user fetching / representing. (mostly in TwitterAPI.activity_to_status)
-
 Unliking:
 
 - Add a proper undo activity, find out how to ignore those in twitter api.
+
+WEBSUB:
+
+- Add unsubscription
+- Add periodical renewal
+

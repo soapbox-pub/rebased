@@ -95,6 +95,7 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
+    # TODO: Make the test local.
     test "fetches an external user via ostatus if no user exists" do
       fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
       assert fetched_user.nickname == "shp@social.heldscal.la"
@@ -102,6 +103,11 @@ defmodule Pleroma.UserTest do
 
     test "returns nil if no user could be fetched" do
       fetched_user = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
+      assert fetched_user == nil
+    end
+
+    test "returns nil for nonexistant local user" do
+      fetched_user = User.get_or_fetch_by_nickname("nonexistant")
       assert fetched_user == nil
     end
   end

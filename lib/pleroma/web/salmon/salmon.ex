@@ -1,6 +1,9 @@
 defmodule Pleroma.Web.Salmon do
   use Bitwise
   alias Pleroma.Web.XML
+  alias Pleroma.Web.OStatus.ActivityRepresenter
+  alias Pleroma.User
+  require Logger
 
   def decode(salmon) do
     doc = XML.parse_document(salmon)
@@ -118,4 +121,37 @@ defmodule Pleroma.Web.Salmon do
 
     {:ok, salmon}
   end
+
+  def remote_users(%{data: %{"to" => to}}) do
+    to
+    |> Enum.map(fn(id) -> User.get_cached_by_ap_id(id) end)
+    |> Enum.filter(fn(user) -> user && !user.local end)
+  end
+
+  defp send_to_user(%{info: %{"salmon" => salmon}}, feed, poster) do
+    poster.(salmon, feed, [{"Content-Type", "application/magic-envelope+xml"}])
+  end
+
+  defp send_to_user(_,_,_), do: nil
+
+  def publish(user, activity, poster \\ &HTTPoison.post/3)
+  def publish(%{info: %{"keys" => keys}} = user, activity, poster) do
+    feed = ActivityRepresenter.to_simple_form(activity, user, true)
+    |> ActivityRepresenter.wrap_with_entry
+    |> :xmerl.export_simple(:xmerl_xml)
+    |> to_string
+
+    if feed do
+      {:ok, private, _} = keys_from_pem(keys)
+      {:ok, feed} = encode(private, feed)
+
+      remote_users(activity)
+      |> Enum.each(fn(remote_user) ->
+        Logger.debug("sending salmon to #{remote_user.ap_id}")
+        send_to_user(remote_user, feed, poster)
+      end)
+    end
+  end
+
+  def publish(%{id: id}, _, _), do: Logger.debug("Keys missing for user #{id}")
 end

@@ -25,6 +25,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <updated>#{updated_at}</updated>
     <ostatus:conversation>#{note_activity.data["context"]}</ostatus:conversation>
     <link href="#{note_activity.data["context"]}" rel="ostatus:conversation" />
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
 
     tuple = ActivityRepresenter.to_simple_form(note_activity, user)
@@ -61,6 +62,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <ostatus:conversation>#{answer.data["context"]}</ostatus:conversation>
     <link href="#{answer.data["context"]}" rel="ostatus:conversation" />
     <thr:in-reply-to ref="#{note.data["object"]["id"]}" />
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
 
     tuple = ActivityRepresenter.to_simple_form(answer, user)

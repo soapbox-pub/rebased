@@ -7,7 +7,11 @@ defmodule Pleroma.Web.Federator do
   def handle(:publish, activity) do
     Logger.debug("Running publish for #{activity.data["id"]}")
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
+      Logger.debug("Sending #{activity.data["id"]} out via websub")
       Pleroma.Web.Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
+
+      Logger.debug("Sending #{activity.data["id"]} out via salmon")
+      Pleroma.Web.Salmon.publish(actor, activity)
     end
   end
 

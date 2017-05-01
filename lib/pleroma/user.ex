@@ -121,7 +121,7 @@ defmodule Pleroma.User do
 
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
-    Cachex.get!(:user_cache, key, fallback: fn(_) -> Repo.get_by(User, nickname: nickname) end)
+    Cachex.get!(:user_cache, key, fallback: fn(_) -> get_or_fetch_by_nickname(nickname) end)
   end
 
   def get_by_nickname(nickname) do
@@ -137,7 +137,8 @@ defmodule Pleroma.User do
     with %User{} = user <- get_by_nickname(nickname)  do
       user
     else _e ->
-      with {:ok, user} <- OStatus.make_user(nickname) do
+      with [nick, domain] <- String.split(nickname, "@"),
+           {:ok, user} <- OStatus.make_user(nickname) do
         user
       else _e -> nil
       end
