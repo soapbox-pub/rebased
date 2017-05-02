@@ -73,14 +73,27 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.member?(get_in(reply.data, ["to"]), "some_cool_id")
   end
 
-  test "fetch public statuses" do
+  test "fetch public statuses, excluding remote ones." do
     %{ public: activity, user: user } = ActivityBuilder.public_and_non_public
+    insert(:note_activity, %{local: false})
 
     follower = insert(:user, following: [User.ap_followers(user)])
 
     statuses = TwitterAPI.fetch_public_statuses(follower)
 
     assert length(statuses) == 1
+    assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: user, for: follower})
+  end
+
+  test "fetch whole known network statuses" do
+    %{ public: activity, user: user } = ActivityBuilder.public_and_non_public
+    insert(:note_activity, %{local: false})
+
+    follower = insert(:user, following: [User.ap_followers(user)])
+
+    statuses = TwitterAPI.fetch_public_and_external_statuses(follower)
+
+    assert length(statuses) == 2
     assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: user, for: follower})
   end
 

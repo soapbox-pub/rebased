@@ -84,6 +84,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_public_statuses(user, opts \\ %{}) do
+    opts = Map.put(opts, "local_only", true)
+    ActivityPub.fetch_public_activities(opts)
+    |> activities_to_statuses(%{for: user})
+  end
+
+  def fetch_public_and_external_statuses(user, opts \\ %{}) do
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end

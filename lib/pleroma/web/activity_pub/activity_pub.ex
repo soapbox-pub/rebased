@@ -149,6 +149,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query = from activity in query,
       where: activity.id > ^since_id
 
+    query = if opts["local_only"] do
+      from activity in query, where: activity.local == true
+    else
+      query
+    end
+
     query = if opts["max_id"] do
       from activity in query, where: activity.id < ^opts["max_id"]
     else
