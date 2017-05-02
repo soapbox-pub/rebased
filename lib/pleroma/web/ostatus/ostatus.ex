@@ -44,13 +44,19 @@ defmodule Pleroma.Web.OStatus do
 
     [author] = :xmerl_xpath.string('//author[1]', doc)
     {:ok, actor} = find_make_or_update_user(author)
+    inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@ref", entry)
 
     context = (string_from_xpath("/entry/ostatus:conversation[1]", entry) || "") |> String.trim
-    context = if String.length(context) > 0 do
-      context
-    else
-      ActivityPub.generate_context_id
-    end
+
+    context = with %{data: %{"context" => context}} <- Object.get_cached_by_ap_id(inReplyTo) do
+                context
+              else _e ->
+                if String.length(context) > 0 do
+                  context
+                else
+                  ActivityPub.generate_context_id
+                end
+              end
 
     to = [
       "https://www.w3.org/ns/activitystreams#Public"
@@ -73,8 +79,6 @@ defmodule Pleroma.Web.OStatus do
       "context" => context,
       "actor" => actor.ap_id
     }
-
-    inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@ref", entry)
 
     object = if inReplyTo do
       Map.put(object, "inReplyTo", inReplyTo)

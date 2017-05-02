@@ -2,6 +2,7 @@ defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
+  alias Pleroma.{Object, Repo}
 
   test "don't insert create notes twice" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
@@ -30,6 +31,22 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
     assert activity.data["object"]["content"] == "Will it blend?"
+  end
+
+  test "handle incoming notes - Mastodon, salmon, reply" do
+    # It uses the context of the replied to object
+    Repo.insert!(%Object{
+          data: %{
+            "id" => "https://pleroma.soykaf.com/objects/c237d966-ac75-4fe3-a87a-d89d71a3a7a4",
+            "context" => "2hu"
+          }})
+    incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Create"
+    assert activity.data["object"]["type"] == "Note"
+    assert activity.data["object"]["actor"] == "https://mastodon.social/users/lambadalambda"
+    assert activity.data["context"] == "2hu"
   end
 
   test "handle incoming notes - GS, subscription, reply" do
