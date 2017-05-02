@@ -86,7 +86,7 @@ defmodule Pleroma.Web.OStatus do
     if Object.get_by_ap_id(id) do
       {:error, "duplicate activity"}
     else
-      ActivityPub.create(to, actor, context, object, %{}, date)
+      ActivityPub.create(to, actor, context, object, %{}, date, false)
     end
   end
 

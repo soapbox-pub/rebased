@@ -3,7 +3,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Object, Upload, User}
   import Ecto.Query
 
-  def insert(map) when is_map(map) do
+  def insert(map, local \\ true) when is_map(map) do
     map = map
     |> Map.put_new_lazy("id", &generate_activity_id/0)
     |> Map.put_new_lazy("published", &make_date/0)
@@ -16,10 +16,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       map
     end
 
-    Repo.insert(%Activity{data: map})
+    Repo.insert(%Activity{data: map, local: local})
   end
 
-  def create(to, actor, context, object, additional \\ %{}, published \\ nil) do
+  def create(to, actor, context, object, additional \\ %{}, published \\ nil, local \\ true) do
     published = published || make_date()
 
     activity = %{
@@ -32,7 +32,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     }
     |> Map.merge(additional)
 
-    with {:ok, activity} <- insert(activity) do
+    with {:ok, activity} <- insert(activity, local) do
       if actor.local do
         Pleroma.Web.Federator.enqueue(:publish, activity)
        end
