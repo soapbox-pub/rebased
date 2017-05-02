@@ -28,7 +28,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
       "profile_image_url_https" => image,
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
-      "rights" => %{}
+      "rights" => %{},
+      "statusnet_profile_url" => user.ap_id
     }
 
     map
