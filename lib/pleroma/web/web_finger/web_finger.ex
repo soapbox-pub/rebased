@@ -92,7 +92,7 @@ defmodule Pleroma.Web.WebFinger do
     response = with {:ok, result} <- getter.("https:" <> address, ["Accept": "application/xrd+xml"], [params: [resource: account]]) do
                  {:ok, result}
                else _ ->
-                 getter.("http:" <> address, ["Accept": "application/xrd+xml"], [params: [resource: account]])
+                 getter.("http:" <> address, ["Accept": "application/xrd+xml"], [params: [resource: account], follow_redirect: true])
                end
 
     with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
