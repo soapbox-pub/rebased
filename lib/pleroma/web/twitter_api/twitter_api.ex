@@ -32,11 +32,23 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def get_replied_to_activity(_), do: nil
 
+  def add_attachments(text, attachments) do
+    attachment_text = Enum.map(attachments, fn
+      (%{"url" => [%{"href" => href} | _]}) ->
+        "<a href='#{href}'>#{href}</a>"
+      _ -> ""
+    end)
+    Enum.join([text | attachment_text], "<br>")
+    end
+
   def create_status(user = %User{}, data = %{"status" => status}) do
     attachments = attachments_from_ids(data["media_ids"])
     context = ActivityPub.generate_context_id
     mentions = parse_mentions(status)
-    content_html = format_input(status, mentions)
+    content_html = status
+    |> format_input(mentions)
+    |> add_attachments(attachments)
+
     to = to_for_user_and_mentions(user, mentions)
     date = make_date()
 
