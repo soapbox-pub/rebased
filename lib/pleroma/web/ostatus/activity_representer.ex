@@ -10,11 +10,17 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   defp get_in_reply_to(_), do: []
 
   defp get_mentions(to) do
-    Enum.map(to, fn
-      ("https://www.w3.org/ns/activitystreams#Public") ->
-        {:link, [rel: "mentioned", "ostatus:object-type": "http://activitystrea.ms/schema/1.0/collection", href: "http://activityschema.org/collection/public"], []}
-      (id) ->
-        {:link, [rel: "mentioned", "ostatus:object-type": "http://activitystrea.ms/schema/1.0/person", href: id], []}
+    Enum.map(to, fn (id) ->
+      cond do
+        # Special handling for the AP/Ostatus public collections
+        "https://www.w3.org/ns/activitystreams#Public" == id ->
+          {:link, [rel: "mentioned", "ostatus:object-type": "http://activitystrea.ms/schema/1.0/collection", href: "http://activityschema.org/collection/public"], []}
+        # Ostatus doesn't handle follower collections, ignore these.
+        Regex.match?(~r/^#{Pleroma.Web.base_url}.+followers$/, id) ->
+          []
+        true ->
+          {:link, [rel: "mentioned", "ostatus:object-type": "http://activitystrea.ms/schema/1.0/person", href: id], []}
+      end
     end)
   end
 
@@ -47,6 +53,35 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:"ostatus:conversation", [], h.(activity.data["context"])},
       {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []}
     ] ++ attachments ++ in_reply_to ++ author ++ mentions
+  end
+
+  def to_simple_form(%{data: %{"type" => "Like"}} = activity, user, with_author) do
+    h = fn(str) -> [to_charlist(str)] end
+
+    updated_at = activity.updated_at
+    |> NaiveDateTime.to_iso8601
+    inserted_at = activity.inserted_at
+    |> NaiveDateTime.to_iso8601
+
+    in_reply_to = get_in_reply_to(activity.data)
+    author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
+    mentions = activity.data["to"] |> get_mentions
+
+    [
+      {:"activity:verb", ['http://activitystrea.ms/schema/1.0/favorite']},
+      {:id, h.(activity.data["id"])},
+      {:title, ['New favorite by #{user.nickname}']},
+      {:content, [type: 'html'], ['#{user.nickname} favorited something']},
+      {:published, h.(inserted_at)},
+      {:updated, h.(updated_at)},
+      {:"activity:object", [
+        {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
+        {:id, h.(activity.data["object"])}, # For notes, federate the object id.
+      ]},
+      {:"ostatus:conversation", [], h.(activity.data["context"])},
+      {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
+      {:"thr:in-reply-to", [ref: to_charlist(activity.data["object"])], []}
+    ] ++ author ++ mentions
   end
 
   def wrap_with_entry(simple_form) do

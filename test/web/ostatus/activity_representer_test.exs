@@ -3,6 +3,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
   alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.{User, Activity}
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
 
@@ -68,6 +69,41 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     tuple = ActivityRepresenter.to_simple_form(answer, user)
 
     res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+
+    assert clean(res) == clean(expected)
+  end
+
+  test "a like activity" do
+    note = insert(:note)
+    user = insert(:user)
+    {:ok, like, _note} = ActivityPub.like(user, note)
+
+    updated_at = like.updated_at
+    |> NaiveDateTime.to_iso8601
+    inserted_at = like.inserted_at
+    |> NaiveDateTime.to_iso8601
+
+    tuple = ActivityRepresenter.to_simple_form(like, user)
+    refute is_nil(tuple)
+
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+
+    expected = """
+    <activity:verb>http://activitystrea.ms/schema/1.0/favorite</activity:verb>
+    <id>#{like.data["id"]}</id>
+    <title>New favorite by #{user.nickname}</title>
+    <content type="html">#{user.nickname} favorited something</content>
+    <published>#{inserted_at}</published>
+    <updated>#{updated_at}</updated>
+    <activity:object>
+      <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
+      <id>#{note.data["id"]}</id>
+    </activity:object>
+    <ostatus:conversation>#{like.data["context"]}</ostatus:conversation>
+    <link href="#{like.data["context"]}" rel="ostatus:conversation" />
+    <thr:in-reply-to ref="#{note.data["id"]}" />
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{note.data["actor"]}"/>
+    """
 
     assert clean(res) == clean(expected)
   end
