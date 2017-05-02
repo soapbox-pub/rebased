@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
 
   test "don't insert create notes twice" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
@@ -70,6 +71,25 @@ defmodule Pleroma.Web.OStatusTest do
       {:ok, user_again} = OStatus.find_or_make_user(uri)
 
       assert user == user_again
+    end
+
+    test "find_make_or_update_user takes an author element and returns an updated user" do
+      # TODO make test local
+      uri = "https://social.heldscal.la/user/23211"
+
+      {:ok, user} = OStatus.find_or_make_user(uri)
+      change = Ecto.Changeset.change(user, %{avatar: nil})
+
+      {:ok, user} = Repo.update(change)
+      refute user.avatar
+
+      doc = XML.parse_document(File.read!("test/fixtures/23211.atom"))
+      [author] = :xmerl_xpath.string('//author[1]', doc)
+      {:ok, user} = OStatus.find_make_or_update_user(author)
+      assert user.avatar["type"] == "Image"
+
+      {:ok, user_again} = OStatus.find_make_or_update_user(author)
+      assert user_again == user
     end
   end
 

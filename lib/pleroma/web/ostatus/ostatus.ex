@@ -90,6 +90,19 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
+  def find_make_or_update_user(doc) do
+    uri = string_from_xpath("//author/uri[1]", doc)
+    with {:ok, user} <- find_or_make_user(uri) do
+      avatar = make_avatar_object(doc)
+      if user.avatar != avatar do
+        change = Ecto.Changeset.change(user, %{avatar: avatar})
+        Repo.update(change)
+      else
+        {:ok, user}
+      end
+    end
+  end
+
   def find_or_make_user(uri) do
     query = from user in User,
       where: user.local == false and fragment("? @> ?", user.info, ^%{uri: uri})
@@ -121,8 +134,8 @@ defmodule Pleroma.Web.OStatus do
 
   # TODO: Just takes the first one for now.
   def make_avatar_object(author_doc) do
-    href = string_from_xpath("/feed/author[1]/link[@rel=\"avatar\"]/@href", author_doc)
-    type = string_from_xpath("/feed/author[1]/link[@rel=\"avatar\"]/@type", author_doc)
+    href = string_from_xpath("//author[1]/link[@rel=\"avatar\"]/@href", author_doc)
+    type = string_from_xpath("//author[1]/link[@rel=\"avatar\"]/@type", author_doc)
 
     if href do
       %{
