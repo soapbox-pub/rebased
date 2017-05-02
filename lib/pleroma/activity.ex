@@ -5,6 +5,7 @@ defmodule Pleroma.Activity do
 
   schema "activities" do
     field :data, :map
+    field :local, :boolean, default: true
 
     timestamps()
   end
