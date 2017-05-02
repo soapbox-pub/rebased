@@ -55,7 +55,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "type" => "Like",
           "actor" => ap_id,
           "object" => id,
-          "to" => [User.ap_followers(user), object.data["actor"]]
+          "to" => [User.ap_followers(user), object.data["actor"]],
+          "context" => object.data["context"]
         }
 
         {:ok, activity} = insert(data)
@@ -177,7 +178,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "type" => "Announce",
       "actor" => ap_id,
       "object" => id,
-      "to" => [User.ap_followers(user), object.data["actor"]]
+      "to" => [User.ap_followers(user), object.data["actor"]],
+      "context" => object.data["context"]
     }
 
     {:ok, activity} = insert(data)
