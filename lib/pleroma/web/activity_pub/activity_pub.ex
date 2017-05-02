@@ -72,6 +72,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
         update_object_in_activities(object)
 
+        if user.local do
+          Pleroma.Web.Federator.enqueue(:publish, activity)
+        end
+
         {:ok, activity, object}
     end
   end
