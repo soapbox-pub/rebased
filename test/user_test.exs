@@ -111,5 +111,15 @@ defmodule Pleroma.UserTest do
       assert fetched_user == nil
     end
   end
+
+  test "returns an ap_id for a user" do
+    user = insert(:user)
+    assert User.ap_id(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname)
+  end
+
+  test "returns an ap_followers link for a user" do
+    user = insert(:user)
+    assert User.ap_followers(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname) <> "/followers"
+  end
 end
 

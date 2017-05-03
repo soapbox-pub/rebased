@@ -33,7 +33,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def salmon_incoming(conn, params) do
     {:ok, body, _conn} = read_body(conn)
-    magic_key = Pleroma.Web.Salmon.fetch_magic_key(body)
+    {:ok, magic_key} = Pleroma.Web.Salmon.fetch_magic_key(body)
     {:ok, doc} = Pleroma.Web.Salmon.decode_and_validate(magic_key, body)
 
     Pleroma.Web.OStatus.handle_incoming(doc)

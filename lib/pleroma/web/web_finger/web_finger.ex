@@ -16,7 +16,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def webfinger(resource) do
-    host = Pleroma.Web.host
+    host = Pleroma.Web.Endpoint.host
     regex = ~r/(acct:)?(?<username>\w+)@#{host}/
     with %{"username" => username} <- Regex.named_captures(regex, resource) do
       user = User.get_by_nickname(username)
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.WebFinger do
     {
       :XRD, %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
-        {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.host}"},
+        {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host}"},
         {:Alias, user.ap_id},
         {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: OStatus.feed_path(user)}},
         {:Link, %{rel: "http://webfinger.net/rel/profile-page", type: "text/html", href: user.ap_id}},
@@ -72,10 +72,10 @@ defmodule Pleroma.Web.WebFinger do
     subject = XML.string_from_xpath("//Subject", doc)
     salmon = XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc)
     data = %{
-      magic_key: magic_key,
-      topic: topic,
-      subject: subject,
-      salmon: salmon
+      "magic_key" => magic_key,
+      "topic" => topic,
+      "subject" => subject,
+      "salmon" => salmon
     }
     {:ok, data}
   end

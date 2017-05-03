@@ -33,6 +33,16 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["content"] == "Will it blend?"
   end
 
+  test "handle incoming notes with attachments - GS, subscription" do
+    incoming = File.read!("test/fixtures/incoming_websub_gnusocial_attachments.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Create"
+    assert activity.data["object"]["type"] == "Note"
+    assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
+    assert activity.data["object"]["attachment"] |> length == 2
+  end
+
   test "handle incoming notes - Mastodon, salmon, reply" do
     # It uses the context of the replied to object
     Repo.insert!(%Object{
@@ -118,17 +128,17 @@ defmodule Pleroma.Web.OStatusTest do
       {:ok, data} = OStatus.gather_user_info(user)
 
       expected = %{
-        hub: "https://social.heldscal.la/main/push/hub",
-        magic_key: "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
-        name: "shp",
-        nickname: "shp",
-        salmon: "https://social.heldscal.la/main/salmon/user/29191",
-        subject: "acct:shp@social.heldscal.la",
-        topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
-        uri: "https://social.heldscal.la/user/29191",
-        host: "social.heldscal.la",
-        fqn: user,
-        avatar: %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]}
+        "hub" => "https://social.heldscal.la/main/push/hub",
+        "magic_key" => "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
+        "name" => "shp",
+        "nickname" => "shp",
+        "salmon" => "https://social.heldscal.la/main/salmon/user/29191",
+        "subject" => "acct:shp@social.heldscal.la",
+        "topic" => "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
+        "uri" => "https://social.heldscal.la/user/29191",
+        "host" => "social.heldscal.la",
+        "fqn" => user,
+        "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]}
       }
       assert data == expected
     end
@@ -140,17 +150,17 @@ defmodule Pleroma.Web.OStatusTest do
       {:ok, data} = OStatus.gather_user_info(user)
 
       expected = %{
-        hub: "https://social.heldscal.la/main/push/hub",
-        magic_key: "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
-        name: "shp",
-        nickname: "shp",
-        salmon: "https://social.heldscal.la/main/salmon/user/29191",
-        subject: "https://social.heldscal.la/user/29191",
-        topic: "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
-        uri: "https://social.heldscal.la/user/29191",
-        host: "social.heldscal.la",
-        fqn: user,
-        avatar: %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]}
+        "hub" => "https://social.heldscal.la/main/push/hub",
+        "magic_key" => "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
+        "name" => "shp",
+        "nickname" => "shp",
+        "salmon" => "https://social.heldscal.la/main/salmon/user/29191",
+        "subject" => "https://social.heldscal.la/user/29191",
+        "topic" => "https://social.heldscal.la/api/statuses/user_timeline/29191.atom",
+        "uri" => "https://social.heldscal.la/user/29191",
+        "host" => "social.heldscal.la",
+        "fqn" => user,
+        "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]}
       }
       assert data == expected
     end

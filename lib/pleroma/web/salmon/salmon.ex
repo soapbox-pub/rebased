@@ -24,16 +24,13 @@ defmodule Pleroma.Web.Salmon do
     [data, type, encoding, alg, sig]
   end
 
-  # TODO rewrite in with-stile
-  # Make it fetch the key from the saved user if there is one
   def fetch_magic_key(salmon) do
-    [data, _, _, _, _] = decode(salmon)
-    doc = XML.parse_document(data)
-    uri = XML.string_from_xpath("/entry/author[1]/uri", doc)
-
-    {:ok, info} = Pleroma.Web.OStatus.gather_user_info(uri)
-
-    info.magic_key
+    with [data, _, _, _, _] <- decode(salmon),
+         doc <- XML.parse_document(data),
+         uri when not is_nil(uri) <- XML.string_from_xpath("/entry/author[1]/uri", doc),
+         {:ok, %{info: %{"magic_key" => magic_key}}} <- Pleroma.Web.OStatus.find_or_make_user(uri) do
+      {:ok, magic_key}
+    end
   end
 
   def decode_and_validate(magickey, salmon) do

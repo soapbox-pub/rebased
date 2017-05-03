@@ -146,12 +146,12 @@ defmodule Pleroma.Web.Websub do
       avatar = OStatus.make_avatar_object(doc)
 
       {:ok, %{
-        uri: uri,
-        hub: hub,
-        nickname: preferredUsername || name,
-        name: displayName || name,
-        host: URI.parse(uri).host,
-        avatar: avatar
+        "uri" => uri,
+        "hub" => hub,
+        "nickname" => preferredUsername || name,
+        "name" => displayName || name,
+        "host" => URI.parse(uri).host,
+        "avatar" => avatar
       }}
     else e ->
       {:error, e}

@@ -115,12 +115,12 @@ defmodule Pleroma.Web.WebsubTest do
 
     {:ok, discovered} = Websub.gather_feed_data(topic, getter)
     expected = %{
-      hub: "https://mastodon.social/api/push",
-      uri: "https://mastodon.social/users/lambadalambda",
-      nickname: "lambadalambda",
-      name: "Critical Value",
-      host: "mastodon.social",
-      avatar: %{"type" => "Image", "url" => [%{"href" => "https://files.mastodon.social/accounts/avatars/000/000/264/original/1429214160519.gif?1492379244", "mediaType" => "image/gif", "type" => "Link"}]}
+      "hub" => "https://mastodon.social/api/push",
+      "uri" => "https://mastodon.social/users/lambadalambda",
+      "nickname" => "lambadalambda",
+      "name" => "Critical Value",
+      "host" => "mastodon.social",
+      "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://files.mastodon.social/accounts/avatars/000/000/264/original/1429214160519.gif?1492379244", "mediaType" => "image/gif", "type" => "Link"}]}
     }
 
     assert expected == discovered

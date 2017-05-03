@@ -39,6 +39,24 @@ defmodule Pleroma.Web.OStatus do
     {:ok, activities}
   end
 
+  def get_attachments(entry) do
+    :xmerl_xpath.string('/entry/link[@rel="enclosure"]', entry)
+    |> Enum.map(fn (enclosure) ->
+      with href when not is_nil(href) <- string_from_xpath("/link/@href", enclosure),
+           type when not is_nil(type) <- string_from_xpath("/link/@type", enclosure) do
+        %{
+          "type" => "Attachment",
+          "url" => [%{
+                       "type" => "Link",
+                       "mediaType" => type,
+                       "href" => href
+                    }]
+        }
+      end
+    end)
+    |> Enum.filter(&(&1))
+  end
+
   def handle_note(entry, doc \\ nil) do
     content_html = string_from_xpath("/entry/content[1]", entry)
 
@@ -47,6 +65,8 @@ defmodule Pleroma.Web.OStatus do
     inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@ref", entry)
 
     context = (string_from_xpath("/entry/ostatus:conversation[1]", entry) || "") |> String.trim
+
+    attachments = get_attachments(entry)
 
     context = with %{data: %{"context" => context}} <- Object.get_cached_by_ap_id(inReplyTo) do
                 context
@@ -77,7 +97,8 @@ defmodule Pleroma.Web.OStatus do
       "content" => content_html,
       "published" => date,
       "context" => context,
-      "actor" => actor.ap_id
+      "actor" => actor.ap_id,
+      "attachment" => attachments
     }
 
     object = if inReplyTo do
@@ -124,11 +145,11 @@ defmodule Pleroma.Web.OStatus do
     with {:ok, info} <- gather_user_info(uri) do
       data = %{
         local: false,
-        name: info.name,
-        nickname: info.nickname <> "@" <> info.host,
-        ap_id: info.uri,
+        name: info["name"],
+        nickname: info["nickname"] <> "@" <> info["host"],
+        ap_id: info["uri"],
         info: info,
-        avatar: info.avatar
+        avatar: info["avatar"]
       }
       # TODO: Make remote user changeset
       # SHould enforce fqn nickname
@@ -158,8 +179,8 @@ defmodule Pleroma.Web.OStatus do
 
   def gather_user_info(username) do
     with {:ok, webfinger_data} <- WebFinger.finger(username),
-         {:ok, feed_data} <- Websub.gather_feed_data(webfinger_data.topic) do
-      {:ok, Map.merge(webfinger_data, feed_data) |> Map.put(:fqn, username)}
+         {:ok, feed_data} <- Websub.gather_feed_data(webfinger_data["topic"]) do
+      {:ok, Map.merge(webfinger_data, feed_data) |> Map.put("fqn", username)}
     else e ->
       Logger.debug("Couldn't gather info for #{username}")
       {:error, e}

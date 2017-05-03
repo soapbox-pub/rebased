@@ -55,7 +55,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
   test "it gets a magic key" do
     # TODO: Make test local
     salmon = File.read!("test/fixtures/salmon2.xml")
-    key = Salmon.fetch_magic_key(salmon)
+    {:ok, key} = Salmon.fetch_magic_key(salmon)
 
     assert key == "RSA.uzg6r1peZU0vXGADWxGJ0PE34WvmhjUmydbX5YYdOiXfODVLwCMi1umGoqUDm-mRu4vNEdFBVJU1CpFA7dKzWgIsqsa501i2XqElmEveXRLvNRWFB6nG03Q5OUY2as8eE54BJm0p20GkMfIJGwP6TSFb-ICp3QjzbatuSPJ6xCE=.AQAB"
   end
