@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.OStatus.ActivityRepresenter do
-  alias Pleroma.Activity
+  alias Pleroma.{Activity, User}
   alias Pleroma.Web.OStatus.UserRepresenter
   require Logger
 
@@ -82,6 +82,37 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
       {:"thr:in-reply-to", [ref: to_charlist(activity.data["object"])], []}
     ] ++ author ++ mentions
+  end
+
+  def to_simple_form(%{data: %{"type" => "Announce"}} = activity, user, with_author) do
+    h = fn(str) -> [to_charlist(str)] end
+
+    updated_at = activity.updated_at
+    |> NaiveDateTime.to_iso8601
+    inserted_at = activity.inserted_at
+    |> NaiveDateTime.to_iso8601
+
+    in_reply_to = get_in_reply_to(activity.data)
+    author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
+
+    retweeted_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    retweeted_user = User.get_cached_by_ap_id(retweeted_activity.data["actor"])
+
+    retweeted_xml = to_simple_form(retweeted_activity, retweeted_user)
+
+    mentions = activity.data["to"] |> get_mentions
+    [
+      {:"activity:verb", ['http://activitystrea.ms/schema/1.0/share']},
+      {:id, h.(activity.data["id"])},
+      {:title, ['#{user.nickname} repeated a notice']},
+      {:content, [type: 'html'], ['RT #{retweeted_activity.data["object"]["content"]}']},
+      {:published, h.(inserted_at)},
+      {:updated, h.(updated_at)},
+      {:"ostatus:conversation", [], h.(activity.data["context"])},
+      {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
+      {:"thr:in-reply-to", [ref: to_charlist(activity.data["object"])], []},
+      {:"activity:object", retweeted_xml}
+    ] ++ mentions ++ author
   end
 
   def wrap_with_entry(simple_form) do
