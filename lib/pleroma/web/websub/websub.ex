@@ -52,7 +52,7 @@ defmodule Pleroma.Web.Websub do
   end
 
   def sign(secret, doc) do
-    :crypto.hmac(:sha, secret, to_string(doc)) |> Base.encode16
+    :crypto.hmac(:sha, secret, to_string(doc)) |> Base.encode16 |> String.downcase
   end
 
   def incoming_subscription_request(user, %{"hub.mode" => "subscribe"} = params) do
