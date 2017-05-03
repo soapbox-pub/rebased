@@ -106,7 +106,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <ostatus:conversation>#{announce.data["context"]}</ostatus:conversation>
     <link href="#{announce.data["context"]}" rel="ostatus:conversation" />
     <link rel="self" type="application/atom+xml" href="#{announce.data["id"]}"/>
-    <thr:in-reply-to ref="#{note.data["object"]["id"]}" />
     <activity:object>
       #{note_xml}
     </activity:object>

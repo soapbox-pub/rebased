@@ -114,7 +114,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:"ostatus:conversation", [], h.(activity.data["context"])},
       {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
       {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
-      {:"thr:in-reply-to", [ref: to_charlist(activity.data["object"])], []},
       {:"activity:object", retweeted_xml}
     ] ++ mentions ++ author
   end
