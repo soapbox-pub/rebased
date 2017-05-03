@@ -17,7 +17,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     note_activity = insert(:note_activity)
     [_, uuid] = hd Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"])
     url = "/objects/#{uuid}"
-    |> IO.inspect
 
     conn = conn
     |> get(url)

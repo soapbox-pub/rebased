@@ -2,7 +2,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   use Pleroma.Web, :controller
 
   alias Pleroma.{User, Activity}
-  alias Pleroma.Web.OStatus.FeedRepresenter
+  alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
   alias Pleroma.Repo
   alias Pleroma.Web.OStatus
   import Ecto.Query
@@ -43,12 +43,12 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def object(conn, %{"uuid" => uuid}) do
-    IO.inspect(uuid)
     id = o_status_url(conn, :object, uuid)
     activity = Activity.get_create_activity_by_object_ap_id(id)
     user = User.get_cached_by_ap_id(activity.data["actor"])
 
-    response = FeedRepresenter.to_simple_form(user, [activity], [user])
+    response = ActivityRepresenter.to_simple_form(activity, user, true)
+    |> ActivityRepresenter.wrap_with_entry
     |> :xmerl.export_simple(:xmerl_xml)
     |> to_string
 
