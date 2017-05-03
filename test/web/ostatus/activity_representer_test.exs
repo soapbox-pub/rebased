@@ -84,9 +84,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
     note_user = User.get_cached_by_ap_id(note.data["actor"])
     note = Repo.get(Activity, note.id)
-    note_xml = ActivityRepresenter.to_simple_form(note, note_user)
+    note_xml = ActivityRepresenter.to_simple_form(note, note_user, true)
     |> :xmerl.export_simple_content(:xmerl_xml)
-    |> IO.iodata_to_binary
+    |> to_string
 
     updated_at = announce.updated_at
     |> NaiveDateTime.to_iso8601
@@ -111,7 +111,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
     announce_xml = ActivityRepresenter.to_simple_form(announce, user)
     |> :xmerl.export_simple_content(:xmerl_xml)
-    |> IO.iodata_to_binary
+    |> to_string
 
     assert clean(expected) == clean(announce_xml)
   end
