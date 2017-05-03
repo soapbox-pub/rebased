@@ -13,7 +13,7 @@ defmodule Pleroma.UserTest do
 
     user = UserBuilder.build
 
-    expected_ap_id = "https://#{host}/users/#{user.nickname}"
+    expected_ap_id = "#{Pleroma.Web.base_url}/users/#{user.nickname}"
 
     assert expected_ap_id == User.ap_id(user)
   end

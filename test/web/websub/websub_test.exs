@@ -170,7 +170,7 @@ defmodule Pleroma.Web.WebsubTest do
 
   test "sign a text" do
     signed = Websub.sign("secret", "text")
-    assert signed == "B8392C23690CCF871F37EC270BE1582DEC57A503"
+    assert signed == "B8392C23690CCF871F37EC270BE1582DEC57A503" |> String.downcase
 
     signed = Websub.sign("secret", [["て"], ['す']])
   end
