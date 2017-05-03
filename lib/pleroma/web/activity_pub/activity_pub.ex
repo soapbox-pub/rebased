@@ -126,7 +126,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def generate_object_id do
-    generate_id("objects")
+    Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :object, Ecto.UUID.generate)
   end
 
   def generate_id(type) do

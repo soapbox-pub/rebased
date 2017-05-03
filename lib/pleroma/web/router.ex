@@ -73,6 +73,8 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web do
     pipe_through :ostatus
 
+    get "/objects/:uuid", OStatus.OStatusController, :object
+
     get "/users/:nickname/feed", OStatus.OStatusController, :feed
     get "/users/:nickname", OStatus.OStatusController, :feed_redirect
     post "/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming
@@ -96,5 +98,5 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
-  def redirector(conn, _params), do: send_file(conn, 200, "priv/static/index.html")
+  def redirector(conn, _params), do: (if Mix.env != :test, do: send_file(conn, 200, "priv/static/index.html"))
 end

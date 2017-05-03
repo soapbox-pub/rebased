@@ -41,4 +41,19 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     conn
     |> send_resp(200, "")
   end
+
+  def object(conn, %{"uuid" => uuid}) do
+    IO.inspect(uuid)
+    id = o_status_url(conn, :object, uuid)
+    activity = Activity.get_create_activity_by_object_ap_id(id)
+    user = User.get_cached_by_ap_id(activity.data["actor"])
+
+    response = FeedRepresenter.to_simple_form(user, [activity], [user])
+    |> :xmerl.export_simple(:xmerl_xml)
+    |> to_string
+
+    conn
+    |> put_resp_content_type("application/atom+xml")
+    |> send_resp(200, response)
+  end
 end
