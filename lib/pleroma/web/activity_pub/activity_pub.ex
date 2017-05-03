@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     activity = %{
       "type" => "Create",
-      "to" => to,
+      "to" => to |> Enum.uniq,
       "actor" => actor.ap_id,
       "object" => object,
       "published" => published,
