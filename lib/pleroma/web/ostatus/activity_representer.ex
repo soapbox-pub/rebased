@@ -51,7 +51,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
-      {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []}
+      {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
+      {:link, [type: ['application/atom+xml'], href: h.(activity.data["object"]["id"]), rel: 'self'], []}
     ] ++ attachments ++ in_reply_to ++ author ++ mentions
   end
 
@@ -80,6 +81,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       ]},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
       {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
+      {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
       {:"thr:in-reply-to", [ref: to_charlist(activity.data["object"])], []}
     ] ++ author ++ mentions
   end
@@ -102,6 +104,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     mentions = activity.data["to"] |> get_mentions
     [
+      {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/share']},
       {:id, h.(activity.data["id"])},
       {:title, ['#{user.nickname} repeated a notice']},
@@ -110,6 +113,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
       {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
+      {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
       {:"thr:in-reply-to", [ref: to_charlist(activity.data["object"])], []},
       {:"activity:object", retweeted_xml}
     ] ++ mentions ++ author
