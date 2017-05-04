@@ -43,7 +43,7 @@ defmodule Pleroma.Web.Websub do
       |> :xmerl.export_simple(:xmerl_xml)
       |> to_string
 
-      signature = sign(sub.secret, response)
+      signature = sign(sub.secret || "", response)
       Logger.debug("Pushing to #{sub.callback}")
       HTTPoison.post(sub.callback, response, [
             {"Content-Type", "application/atom+xml"},
