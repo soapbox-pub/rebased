@@ -70,6 +70,32 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["inReplyTo"] == "tag:gs.archae.me,2017-04-30:noticeId=778260:objectType=note"
   end
 
+  test "handle incoming retweets - GS, subscription" do
+    incoming = File.read!("test/fixtures/share-gs.xml")
+    {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Announce"
+    assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
+    assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    refute activity.local
+    assert retweeted_activity.data["type"] == "Create"
+    assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
+    refute retweeted_activity.local
+  end
+
+  test "handle incoming retweets - Mastodon, salmon" do
+    incoming = File.read!("test/fixtures/share.xml")
+    {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Announce"
+    assert activity.data["actor"] == "https://mastodon.social/users/lambadalambda"
+    assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    refute activity.local
+    assert retweeted_activity.data["type"] == "Create"
+    assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
+    refute retweeted_activity.local
+  end
+
   test "handle incoming replies" do
     incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)

@@ -25,18 +25,42 @@ defmodule Pleroma.Web.OStatus do
 
     activities = Enum.map(entries, fn (entry) ->
       {:xmlObj, :string, object_type } = :xmerl_xpath.string('string(/entry/activity:object-type[1])', entry)
+      {:xmlObj, :string, verb } = :xmerl_xpath.string('string(/entry/activity:verb[1])', entry)
 
-      case object_type do
-        'http://activitystrea.ms/schema/1.0/note' ->
-          with {:ok, activity} <- handle_note(entry, doc), do: activity
-        'http://activitystrea.ms/schema/1.0/comment' ->
-          with {:ok, activity} <- handle_note(entry, doc), do: activity
+      case verb do
+        'http://activitystrea.ms/schema/1.0/share' ->
+          with {:ok, activity, retweeted_activity} <- handle_share(entry, doc), do: [activity, retweeted_activity]
         _ ->
-          Logger.error("Couldn't parse incoming document")
-          nil
+          case object_type do
+            'http://activitystrea.ms/schema/1.0/note' ->
+              with {:ok, activity} <- handle_note(entry, doc), do: activity
+            'http://activitystrea.ms/schema/1.0/comment' ->
+              with {:ok, activity} <- handle_note(entry, doc), do: activity
+            _ ->
+              Logger.error("Couldn't parse incoming document")
+              nil
+          end
       end
     end)
     {:ok, activities}
+  end
+
+  def make_share(entry, doc, retweeted_activity) do
+    with {:ok, actor} <- find_make_or_update_user(doc),
+         %Object{} = object <- Object.get_cached_by_ap_id(retweeted_activity.data["object"]["id"]),
+         {:ok, activity, object} = ActivityPub.announce(actor, object, false) do
+      {:ok, activity}
+    end
+  end
+
+  def handle_share(entry, doc) do
+    with [object] <- :xmerl_xpath.string('/entry/activity:object', entry),
+         {:ok, retweeted_activity} <-  handle_note(object, object),
+         {:ok, activity} <- make_share(entry, doc, retweeted_activity) do
+      {:ok, activity, retweeted_activity}
+    else
+      e -> {:error, e}
+    end
   end
 
   def get_attachments(entry) do
@@ -58,13 +82,13 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def handle_note(entry, doc \\ nil) do
-    content_html = string_from_xpath("/entry/content[1]", entry)
+    content_html = string_from_xpath("//content[1]", entry)
 
     [author] = :xmerl_xpath.string('//author[1]', doc)
     {:ok, actor} = find_make_or_update_user(author)
-    inReplyTo = string_from_xpath("/entry/thr:in-reply-to[1]/@ref", entry)
+    inReplyTo = string_from_xpath("//thr:in-reply-to[1]/@ref", entry)
 
-    context = (string_from_xpath("/entry/ostatus:conversation[1]", entry) || "") |> String.trim
+    context = (string_from_xpath("//ostatus:conversation[1]", entry) || "") |> String.trim
 
     attachments = get_attachments(entry)
 
@@ -82,13 +106,13 @@ defmodule Pleroma.Web.OStatus do
       "https://www.w3.org/ns/activitystreams#Public"
     ]
 
-    mentions = :xmerl_xpath.string('/entry/link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/person"]', entry)
+    mentions = :xmerl_xpath.string('//link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/person"]', entry)
     |> Enum.map(fn(person) -> string_from_xpath("@href", person) end)
 
     to = to ++ mentions
 
-    date = string_from_xpath("/entry/published", entry)
-    id = string_from_xpath("/entry/id", entry)
+    date = string_from_xpath("//published", entry)
+    id = string_from_xpath("//id", entry)
 
     object = %{
       "id" => id,

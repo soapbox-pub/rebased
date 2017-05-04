@@ -177,7 +177,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse
   end
 
-  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object) do
+  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, local \\ true) do
     data = %{
       "type" => "Announce",
       "actor" => ap_id,
@@ -186,7 +186,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "context" => object.data["context"]
     }
 
-    {:ok, activity} = insert(data)
+    {:ok, activity} = insert(data, local)
 
     announcements = [ap_id | (object.data["announcements"] || [])] |> Enum.uniq
 
