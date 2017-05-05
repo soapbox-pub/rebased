@@ -3,6 +3,7 @@ defmodule Pleroma.Web.OStatusTest do
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
   alias Pleroma.{Object, Repo}
+  import Pleroma.Factory
 
   test "don't insert create notes twice" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
@@ -98,16 +99,32 @@ defmodule Pleroma.Web.OStatusTest do
 
   test "handle incoming favorites - GS, websub" do
     incoming = File.read!("test/fixtures/favorite.xml")
-    {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+    {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
 
     assert activity.data["type"] == "Like"
     assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    assert activity.data["object"] == favorited_activity.data["object"]["id"]
     refute activity.local
-    assert retweeted_activity.data["type"] == "Create"
-    assert retweeted_activity.data["actor"] == "https://shitposter.club/user/1"
-    assert retweeted_activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
-    refute retweeted_activity.local
+    assert favorited_activity.data["type"] == "Create"
+    assert favorited_activity.data["actor"] == "https://shitposter.club/user/1"
+    assert favorited_activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+    refute favorited_activity.local
+  end
+
+  test "handle incoming favorites with locally available object - GS, websub" do
+    note_activity = insert(:note_activity)
+
+    incoming = File.read!("test/fixtures/favorite_with_local_note.xml")
+    |> String.replace("localid", note_activity.data["object"]["id"])
+
+    {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Like"
+    assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
+    assert activity.data["object"] == favorited_activity.data["object"]["id"]
+    refute activity.local
+    assert note_activity.id == favorited_activity.id
+    assert favorited_activity.local
   end
 
   test "handle incoming replies" do

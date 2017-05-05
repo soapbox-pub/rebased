@@ -5,7 +5,7 @@ defmodule Pleroma.Web.OStatus do
   import Pleroma.Web.XML
   require Logger
 
-  alias Pleroma.{Repo, User, Web, Object}
+  alias Pleroma.{Repo, User, Web, Object, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.{WebFinger, Websub}
 
@@ -75,9 +75,20 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
+  def get_or_try_fetching(entry) do
+    with id when not is_nil(id) <- string_from_xpath("//activity:object[1]/id", entry),
+         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+      {:ok, activity}
+    else _e ->
+        with href when not is_nil(href) <- string_from_xpath("//activity:object[1]/link[@type=\"text/html\"]/@href", entry),
+             {:ok, [favorited_activity]} <- fetch_activity_from_html_url(href) do
+          {:ok, favorited_activity}
+        end
+    end
+  end
+
   def handle_favorite(entry, doc) do
-    with href when not is_nil(href) <- string_from_xpath("//activity:object[1]/link[@type=\"text/html\"]/@href", entry),
-         {:ok, [favorited_activity]} <- fetch_activity_from_html_url(href),
+    with {:ok, favorited_activity} <- get_or_try_fetching(entry),
          {:ok, activity} <- make_favorite(entry, doc, favorited_activity) do
       {:ok, activity, favorited_activity}
     else
