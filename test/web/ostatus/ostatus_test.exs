@@ -96,6 +96,20 @@ defmodule Pleroma.Web.OStatusTest do
     refute retweeted_activity.local
   end
 
+  test "handle incoming favorites - GS, websub" do
+    incoming = File.read!("test/fixtures/favorite.xml")
+    {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Like"
+    assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
+    assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    refute activity.local
+    assert retweeted_activity.data["type"] == "Create"
+    assert retweeted_activity.data["actor"] == "https://shitposter.club/user/1"
+    assert retweeted_activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+    refute retweeted_activity.local
+  end
+
   test "handle incoming replies" do
     incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
@@ -190,5 +204,15 @@ defmodule Pleroma.Web.OStatusTest do
       }
       assert data == expected
     end
+  end
+
+  describe "fetching a status by it's HTML url" do
+    test "it builds a missing status from an html url" do
+      url = "https://shitposter.club/notice/2827873"
+      {:ok, [activity] } = OStatus.fetch_activity_from_html_url(url)
+
+      assert activity.data["actor"] == "https://shitposter.club/user/1"
+      assert activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+    end 
   end
 end

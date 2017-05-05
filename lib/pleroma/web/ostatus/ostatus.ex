@@ -1,4 +1,6 @@
 defmodule Pleroma.Web.OStatus do
+  @httpoison Application.get_env(:pleroma, :httpoison)
+
   import Ecto.Query
   import Pleroma.Web.XML
   require Logger
@@ -30,6 +32,8 @@ defmodule Pleroma.Web.OStatus do
       case verb do
         'http://activitystrea.ms/schema/1.0/share' ->
           with {:ok, activity, retweeted_activity} <- handle_share(entry, doc), do: [activity, retweeted_activity]
+        'http://activitystrea.ms/schema/1.0/favorite' ->
+          with {:ok, activity, favorited_activity} <- handle_favorite(entry, doc), do: [activity, favorited_activity]
         _ ->
           case object_type do
             'http://activitystrea.ms/schema/1.0/note' ->
@@ -58,6 +62,24 @@ defmodule Pleroma.Web.OStatus do
          {:ok, retweeted_activity} <-  handle_note(object, object),
          {:ok, activity} <- make_share(entry, doc, retweeted_activity) do
       {:ok, activity, retweeted_activity}
+    else
+      e -> {:error, e}
+    end
+  end
+
+  def make_favorite(_entry, doc, favorited_activity) do
+    with {:ok, actor} <- find_make_or_update_user(doc),
+         %Object{} = object <- Object.get_cached_by_ap_id(favorited_activity.data["object"]["id"]),
+         {:ok, activity, _object} = ActivityPub.like(actor, object, false) do
+      {:ok, activity}
+    end
+  end
+
+  def handle_favorite(entry, doc) do
+    with href when not is_nil(href) <- string_from_xpath("//activity:object[1]/link[@type=\"text/html\"]/@href", entry),
+         {:ok, [favorited_activity]} <- fetch_activity_from_html_url(href),
+         {:ok, activity} <- make_favorite(entry, doc, favorited_activity) do
+      {:ok, activity, favorited_activity}
     else
       e -> {:error, e}
     end
@@ -208,6 +230,32 @@ defmodule Pleroma.Web.OStatus do
     else e ->
       Logger.debug(fn -> "Couldn't gather info for #{username}" end)
       {:error, e}
+    end
+  end
+
+  # Regex-based 'parsing' so we don't have to pull in a full html parser
+  # It's a hack anyway. Maybe revisit this in the future
+  @mastodon_regex ~r/<link href='(.*)' rel='alternate' type='application\/atom\+xml'>/
+  @gs_regex ~r/<link title=.* href="(.*)" type="application\/atom\+xml" rel="alternate">/
+  def get_atom_url(body) do
+    cond do
+      Regex.match?(@mastodon_regex, body) ->
+        [[_, match]] = Regex.scan(@mastodon_regex, body)
+        {:ok, match}
+      Regex.match?(@gs_regex, body) ->
+        [[_, match]] = Regex.scan(@gs_regex, body)
+        {:ok, match}
+      true ->
+        Logger.debug(fn -> "Couldn't find atom link in #{inspect(body)}" end)
+        {:error, "Couldn't find the atom link"}
+    end
+  end
+
+  def fetch_activity_from_html_url(url) do
+    with {:ok, %{body: body}} <- @httpoison.get(url),
+         {:ok, atom_url} <- get_atom_url(body),
+         {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url) do
+      handle_incoming(body)
     end
   end
 end

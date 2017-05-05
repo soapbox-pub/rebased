@@ -38,6 +38,13 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://shitposter.club/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://shitposter.club/user/1"]]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___shitposter.club_user_1.xml")
+    }}
+  end
+
   def get("http://gs.example.org/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "http://gs.example.org:4040/index.php/user/1"], follow_redirect: true]) do
     {:ok, %Response{
       status_code: 200,
@@ -84,6 +91,27 @@ defmodule HTTPoisonMock do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/http__gs.example.org_index.php_api_statuses_user_timeline_1.atom.xml")
+    }}
+  end
+
+  def get("https://shitposter.club/notice/2827873", _body, _headers) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___shitposter.club_notice_2827873.html")
+    }}
+  end
+
+  def get("https://shitposter.club/api/statuses/show/2827873.atom", _body, _headers) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___shitposter.club_api_statuses_show_2827873.atom.xml")
+    }}
+  end
+
+  def get("https://shitposter.club/api/statuses/user_timeline/1.atom", _body, _headers) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___shitposter.club_api_statuses_user_timeline_1.atom.xml")
     }}
   end
 

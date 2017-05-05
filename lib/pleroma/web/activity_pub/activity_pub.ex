@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object) do
+  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, local \\ true) do
     cond do
       # There's already a like here, so return the original activity.
       ap_id in (object.data["likes"] || []) ->
@@ -59,7 +59,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "context" => object.data["context"]
         }
 
-        {:ok, activity} = insert(data)
+        {:ok, activity} = insert(data, local)
 
         likes = [ap_id | (object.data["likes"] || [])] |> Enum.uniq
 
