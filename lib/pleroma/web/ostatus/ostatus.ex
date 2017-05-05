@@ -121,6 +121,13 @@ defmodule Pleroma.Web.OStatus do
     {:ok, actor} = find_make_or_update_user(author)
     inReplyTo = string_from_xpath("//thr:in-reply-to[1]/@ref", entry)
 
+    if !Object.get_cached_by_ap_id(inReplyTo) do
+      inReplyToHref = string_from_xpath("//thr:in-reply-to[1]/@href", entry)
+      if inReplyToHref do
+        Task.start(fn -> fetch_activity_from_html_url(inReplyToHref) end)
+      end
+    end
+
     context = (string_from_xpath("//ostatus:conversation[1]", entry) || "") |> String.trim
 
     attachments = get_attachments(entry)
@@ -248,6 +255,7 @@ defmodule Pleroma.Web.OStatus do
   # It's a hack anyway. Maybe revisit this in the future
   @mastodon_regex ~r/<link href='(.*)' rel='alternate' type='application\/atom\+xml'>/
   @gs_regex ~r/<link title=.* href="(.*)" type="application\/atom\+xml" rel="alternate">/
+  @gs_classic_regex ~r/<link rel="alternate" href="(.*)" type="application\/atom\+xml" title=.*>/
   def get_atom_url(body) do
     cond do
       Regex.match?(@mastodon_regex, body) ->
@@ -255,6 +263,9 @@ defmodule Pleroma.Web.OStatus do
         {:ok, match}
       Regex.match?(@gs_regex, body) ->
         [[_, match]] = Regex.scan(@gs_regex, body)
+        {:ok, match}
+      Regex.match?(@gs_classic_regex, body) ->
+        [[_, match]] = Regex.scan(@gs_classic_regex, body)
         {:ok, match}
       true ->
         Logger.debug(fn -> "Couldn't find atom link in #{inspect(body)}" end)
