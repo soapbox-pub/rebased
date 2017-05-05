@@ -51,10 +51,12 @@ defmodule Pleroma.Web.Websub do
       signature = sign(sub.secret || "", response)
       Logger.debug(fn -> "Pushing to #{sub.callback}" end)
 
-      @httpoison.post(sub.callback, response, [
-            {"Content-Type", "application/atom+xml"},
-            {"X-Hub-Signature", "sha1=#{signature}"}
-          ])
+      Task.start(fn ->
+        @httpoison.post(sub.callback, response, [
+              {"Content-Type", "application/atom+xml"},
+              {"X-Hub-Signature", "sha1=#{signature}"}
+            ])
+      end)
     end)
   end
 
