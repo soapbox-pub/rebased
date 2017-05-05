@@ -18,7 +18,8 @@ defmodule Pleroma.Application do
                          default_ttl: 25000,
                          ttl_interval: 1000,
                          limit: 2500
-                       ]])
+                       ]]),
+      worker(Pleroma.Web.Federator, [])
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
