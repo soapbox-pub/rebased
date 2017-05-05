@@ -1,4 +1,6 @@
 defmodule Pleroma.Web.Salmon do
+  @httpoison Application.get_env(:pleroma, :httpoison)
+
   use Bitwise
   alias Pleroma.Web.XML
   alias Pleroma.Web.OStatus.ActivityRepresenter
@@ -135,7 +137,7 @@ defmodule Pleroma.Web.Salmon do
 
   defp send_to_user(_,_,_), do: nil
 
-  def publish(user, activity, poster \\ &HTTPoison.post/3)
+  def publish(user, activity, poster \\ &@httpoison.post/3)
   def publish(%{info: %{"keys" => keys}} = user, activity, poster) do
     feed = ActivityRepresenter.to_simple_form(activity, user, true)
     |> ActivityRepresenter.wrap_with_entry

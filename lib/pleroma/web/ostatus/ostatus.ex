@@ -45,10 +45,10 @@ defmodule Pleroma.Web.OStatus do
     {:ok, activities}
   end
 
-  def make_share(entry, doc, retweeted_activity) do
+  def make_share(_entry, doc, retweeted_activity) do
     with {:ok, actor} <- find_make_or_update_user(doc),
          %Object{} = object <- Object.get_cached_by_ap_id(retweeted_activity.data["object"]["id"]),
-         {:ok, activity, object} = ActivityPub.announce(actor, object, false) do
+         {:ok, activity, _object} = ActivityPub.announce(actor, object, false) do
       {:ok, activity}
     end
   end

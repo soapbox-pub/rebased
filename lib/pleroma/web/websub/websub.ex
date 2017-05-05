@@ -9,9 +9,9 @@ defmodule Pleroma.Web.Websub do
 
   import Ecto.Query
 
-  @websub_verifier Application.get_env(:pleroma, :websub_verifier)
+  @httpoison Application.get_env(:pleroma, :httpoison)
 
-  def verify(subscription, getter \\ &HTTPoison.get/3) do
+  def verify(subscription, getter \\ &@httpoison.get/3) do
     challenge = Base.encode16(:crypto.strong_rand_bytes(8))
     lease_seconds = NaiveDateTime.diff(subscription.valid_until, subscription.updated_at)
     lease_seconds = lease_seconds |> to_string
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.Websub do
       signature = sign(sub.secret || "", response)
       Logger.debug(fn -> "Pushing to #{sub.callback}" end)
 
-      HTTPoison.post(sub.callback, response, [
+      @httpoison.post(sub.callback, response, [
             {"Content-Type", "application/atom+xml"},
             {"X-Hub-Signature", "sha1=#{signature}"}
           ])
@@ -141,7 +141,7 @@ defmodule Pleroma.Web.Websub do
     requester.(subscription)
   end
 
-  def gather_feed_data(topic, getter \\ &HTTPoison.get/1) do
+  def gather_feed_data(topic, getter \\ &@httpoison.get/1) do
     with {:ok, response} <- getter.(topic),
          status_code when status_code in 200..299 <- response.status_code,
          body <- response.body,
@@ -167,7 +167,7 @@ defmodule Pleroma.Web.Websub do
     end
   end
 
-  def request_subscription(websub, poster \\ &HTTPoison.post/3, timeout \\ 10_000) do
+  def request_subscription(websub, poster \\ &@httpoison.post/3, timeout \\ 10_000) do
     data = [
       "hub.mode": "subscribe",
       "hub.topic": websub.topic,

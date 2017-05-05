@@ -1,4 +1,5 @@
 defmodule Pleroma.Web.WebFinger do
+  @httpoison Application.get_env(:pleroma, :httpoison)
 
   alias Pleroma.{Repo, User, XmlBuilder}
   alias Pleroma.Web
@@ -81,7 +82,7 @@ defmodule Pleroma.Web.WebFinger do
     {:ok, data}
   end
 
-  def finger(account, getter \\ &HTTPoison.get/3) do
+  def finger(account, getter \\ &@httpoison.get/3) do
     domain = with [_name, domain] <- String.split(account, "@") do
                domain
              else _e ->
