@@ -3,7 +3,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   alias Pleroma.Web.OStatus.UserRepresenter
   require Logger
 
-  defp get_in_reply_to(%{"object" => %{ "inReplyTo" => in_reply_to}}) do
+  defp get_in_reply_to(%{"object" => %{"inReplyTo" => in_reply_to}}) do
     [{:"thr:in-reply-to", [ref: to_charlist(in_reply_to)], []}]
   end
 

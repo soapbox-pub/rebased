@@ -49,7 +49,7 @@ defmodule Pleroma.Web.Websub do
       |> to_string
 
       signature = sign(sub.secret || "", response)
-      Logger.debug("Pushing to #{sub.callback}")
+      Logger.debug(fn -> "Pushing to #{sub.callback}" end)
 
       HTTPoison.post(sub.callback, response, [
             {"Content-Type", "application/atom+xml"},
@@ -196,8 +196,8 @@ defmodule Pleroma.Web.Websub do
       change = Ecto.Changeset.change(websub, %{state: "rejected"})
       {:ok, websub} = Repo.update(change)
 
-      Logger.debug("Couldn't confirm subscription: #{inspect(websub)}")
-      Logger.debug("error: #{inspect(e)}")
+      Logger.debug(fn -> "Couldn't confirm subscription: #{inspect(websub)}" end)
+      Logger.debug(fn -> "error: #{inspect(e)}" end)
 
       {:error, websub}
     end

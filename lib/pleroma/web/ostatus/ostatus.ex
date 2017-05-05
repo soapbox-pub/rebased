@@ -24,8 +24,8 @@ defmodule Pleroma.Web.OStatus do
     entries = :xmerl_xpath.string('//entry', doc)
 
     activities = Enum.map(entries, fn (entry) ->
-      {:xmlObj, :string, object_type } = :xmerl_xpath.string('string(/entry/activity:object-type[1])', entry)
-      {:xmlObj, :string, verb } = :xmerl_xpath.string('string(/entry/activity:verb[1])', entry)
+      {:xmlObj, :string, object_type} = :xmerl_xpath.string('string(/entry/activity:object-type[1])', entry)
+      {:xmlObj, :string, verb} = :xmerl_xpath.string('string(/entry/activity:verb[1])', entry)
 
       case verb do
         'http://activitystrea.ms/schema/1.0/share' ->
@@ -206,7 +206,7 @@ defmodule Pleroma.Web.OStatus do
          {:ok, feed_data} <- Websub.gather_feed_data(webfinger_data["topic"]) do
       {:ok, Map.merge(webfinger_data, feed_data) |> Map.put("fqn", username)}
     else e ->
-      Logger.debug("Couldn't gather info for #{username}")
+      Logger.debug(fn -> "Couldn't gather info for #{username}" end)
       {:error, e}
     end
   end

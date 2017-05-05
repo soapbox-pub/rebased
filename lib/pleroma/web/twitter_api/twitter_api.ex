@@ -41,7 +41,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     Enum.join([text | attachment_text], "<br>")
     end
 
-  def create_status(user = %User{}, data = %{"status" => status}) do
+  def create_status(%User{} = user, %{"status" => status} = data) do
     attachments = attachments_from_ids(data["media_ids"])
     context = ActivityPub.generate_context_id
     mentions = parse_mentions(status)
@@ -122,8 +122,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          statuses <- activities |> activities_to_statuses(%{for: user})
     do
       statuses
-    else e ->
-      IO.inspect(e)
+    else _e ->
       []
     end
   end
@@ -135,26 +134,26 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def follow(%User{} = follower, params) do
-    with { :ok, %User{} = followed } <- get_user(params),
-         { :ok, follower } <- User.follow(follower, followed),
-         { :ok, activity } <- ActivityPub.insert(%{
+    with {:ok, %User{} = followed} <- get_user(params),
+         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, activity} <- ActivityPub.insert(%{
            "type" => "Follow",
            "actor" => follower.ap_id,
            "object" => followed.ap_id,
            "published" => make_date()
          })
     do
-      { :ok, follower, followed, activity }
+      {:ok, follower, followed, activity}
     else
       err -> err
     end
   end
 
   def unfollow(%User{} = follower, params) do
-    with { :ok, %User{} = unfollowed } <- get_user(params),
-         { :ok, follower } <- User.unfollow(follower, unfollowed)
+    with {:ok, %User{} = unfollowed} <- get_user(params),
+         {:ok, follower} <- User.unfollow(follower, unfollowed)
     do
-      { :ok, follower, unfollowed}
+      {:ok, follower, unfollowed}
     else
       err -> err
     end
@@ -269,14 +268,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def get_user(user \\ nil, params) do
     case params do
-      %{ "user_id" => user_id } ->
+      %{"user_id" => user_id} ->
         case target = Repo.get(User, user_id) do
           nil ->
             {:error, "No user with such user_id"}
           _ ->
             {:ok, target}
         end
-      %{ "screen_name" => nickname } ->
+      %{"screen_name" => nickname} ->
         case target = Repo.get_by(User, nickname: nickname) do
           nil ->
             {:error, "No user with such screen_name"}

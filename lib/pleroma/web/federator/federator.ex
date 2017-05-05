@@ -6,24 +6,24 @@ defmodule Pleroma.Web.Federator do
   @websub Application.get_env(:pleroma, :websub)
 
   def handle(:publish, activity) do
-    Logger.debug("Running publish for #{activity.data["id"]}")
+    Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      Logger.debug("Sending #{activity.data["id"]} out via websub")
+      Logger.debug(fn -> "Sending #{activity.data["id"]} out via websub" end)
       Pleroma.Web.Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
-      Logger.debug("Sending #{activity.data["id"]} out via salmon")
+      Logger.debug(fn -> "Sending #{activity.data["id"]} out via salmon" end)
       Pleroma.Web.Salmon.publish(actor, activity)
     end
   end
 
   def handle(:verify_websub, websub) do
-    Logger.debug("Running websub verification for #{websub.id} (#{websub.topic}, #{websub.callback})")
+    Logger.debug(fn -> "Running websub verification for #{websub.id} (#{websub.topic}, #{websub.callback})" end)
     @websub.verify(websub)
   end
 
   def handle(type, payload) do
-    Logger.debug("Unknown task: #{type}")
+    Logger.debug(fn -> "Unknown task: #{type}" end)
     {:error, "Don't know what do do with this"}
   end
 

@@ -101,8 +101,13 @@ defmodule Pleroma.Web.Salmon do
     |> Enum.map(&Base.url_encode64/1)
     |> Enum.join(".")
 
-    signature = :public_key.sign(signed_text, :sha256, private_key) |> to_string |> Base.url_encode64
-    doc_base64= doc |> Base.url_encode64
+    signature = signed_text
+    |> :public_key.sign(:sha256, private_key)
+    |> to_string
+    |> Base.url_encode64
+
+    doc_base64 = doc
+    |> Base.url_encode64
 
     # Don't need proper xml building, these strings are safe to leave unescaped
     salmon = """
@@ -143,11 +148,11 @@ defmodule Pleroma.Web.Salmon do
 
       remote_users(activity)
       |> Enum.each(fn(remote_user) ->
-        Logger.debug("sending salmon to #{remote_user.ap_id}")
+        Logger.debug(fn -> "sending salmon to #{remote_user.ap_id}" end)
         send_to_user(remote_user, feed, poster)
       end)
     end
   end
 
-  def publish(%{id: id}, _, _), do: Logger.debug("Keys missing for user #{id}")
+  def publish(%{id: id}, _, _), do: Logger.debug(fn -> "Keys missing for user #{id}" end)
 end

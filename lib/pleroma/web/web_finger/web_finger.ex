@@ -102,8 +102,8 @@ defmodule Pleroma.Web.WebFinger do
       {:ok, data}
     else
       e ->
-        Logger.debug("Couldn't finger #{account}.")
-        Logger.debug(inspect(e))
+        Logger.debug(fn -> "Couldn't finger #{account}." end)
+        Logger.debug(fn -> inspect(e) end)
         {:error, e}
     end
   end

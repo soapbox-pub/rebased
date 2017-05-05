@@ -48,7 +48,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     activity = Activity.get_create_activity_by_object_ap_id(id)
     user = User.get_cached_by_ap_id(activity.data["actor"])
 
-    response = ActivityRepresenter.to_simple_form(activity, user, true)
+    response = activity
+    |> ActivityRepresenter.to_simple_form(user, true)
     |> ActivityRepresenter.wrap_with_entry
     |> :xmerl.export_simple(:xmerl_xml)
     |> to_string
