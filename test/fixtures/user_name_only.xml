@@ -1,0 +1,5 @@
+<author>
+  <activity:object-type>http://activitystrea.ms/schema/1.0/person</activity:object-type>
+  <uri>http://gs.example.org:4040/index.php/user/1</uri>
+  <name>lambda</name>
+</author>

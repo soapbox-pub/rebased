@@ -48,7 +48,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
       "following" => false,
-      "rights" => %{}
+      "rights" => %{},
+      "statusnet_profile_url" => user.ap_id
     }
 
     assert represented == UserRepresenter.to_map(user)
@@ -72,7 +73,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
       "following" => true,
-      "rights" => %{}
+      "rights" => %{},
+      "statusnet_profile_url" => user.ap_id
     }
 
     assert represented == UserRepresenter.to_map(user, %{for: follower})

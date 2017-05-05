@@ -42,6 +42,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def public_and_external_timeline(%{assigns: %{user: user}} = conn, params) do
+    statuses = TwitterAPI.fetch_public_and_external_statuses(user, params)
+    {:ok, json} = Poison.encode(statuses)
+
+    conn
+    |> json_reply(200, json)
+  end
+
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
     statuses = TwitterAPI.fetch_public_statuses(user, params)
     {:ok, json} = Poison.encode(statuses)

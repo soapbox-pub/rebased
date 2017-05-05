@@ -1,6 +1,9 @@
 defmodule Pleroma.Web.Websub.WebsubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
+  alias Pleroma.Web.Websub.WebsubClientSubscription
+  alias Pleroma.{Repo, Activity}
+  alias Pleroma.Web.Websub
 
   test "websub subscription request", %{conn: conn} do
     user = insert(:user)
@@ -19,5 +22,63 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
     |> post(path, data)
 
     assert response(conn, 202) == "Accepted"
+  end
+
+  test "websub subscription confirmation", %{conn: conn} do
+    websub = insert(:websub_client_subscription)
+
+    params = %{
+      "hub.mode" => "subscribe",
+      "hub.topic" => websub.topic,
+      "hub.challenge" => "some challenge",
+      "hub.lease_seconds" => 100
+    }
+
+    conn = conn
+    |> get("/push/subscriptions/#{websub.id}", params)
+
+    websub = Repo.get(WebsubClientSubscription, websub.id)
+
+    assert response(conn, 200) == "some challenge"
+    assert websub.state == "accepted"
+
+    # TODO valid_until
+  end
+
+  test "handles incoming feed updates", %{conn: conn} do
+    websub = insert(:websub_client_subscription)
+    doc = "some stuff"
+    signature = Websub.sign(websub.secret, doc)
+
+    conn = conn
+    |> put_req_header("x-hub-signature", "sha1=" <> signature)
+    |> put_req_header("content-type", "application/atom+xml")
+    |> post("/push/subscriptions/#{websub.id}", doc)
+
+    assert response(conn, 200) == "OK"
+
+    assert length(Repo.all(Activity)) == 1
+  end
+
+  test "rejects incoming feed updates with the wrong signature", %{conn: conn} do
+    websub = insert(:websub_client_subscription)
+    doc = "some stuff"
+    signature = Websub.sign("wrong secret", doc)
+
+    conn = conn
+    |> put_req_header("x-hub-signature", "sha1=" <> signature)
+    |> put_req_header("content-type", "application/atom+xml")
+    |> post("/push/subscriptions/#{websub.id}", doc)
+
+    assert response(conn, 500) == "Error"
+
+    assert length(Repo.all(Activity)) == 0
+  end
+end
+
+defmodule Pleroma.Web.OStatusMock do
+  import Pleroma.Factory
+  def handle_incoming(_doc) do
+    insert(:note_activity)
   end
 end

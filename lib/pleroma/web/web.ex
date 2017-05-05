@@ -58,28 +58,7 @@ defmodule Pleroma.Web do
     apply(__MODULE__, which, [])
   end
 
-  def host do
-    settings = Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-    settings
-    |> Keyword.fetch!(:url)
-    |> Keyword.fetch!(:host)
-  end
-
   def base_url do
-    settings = Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-
-    host = host()
-
-    protocol = settings |> Keyword.fetch!(:protocol)
-
-    port_fragment = with {:ok, protocol_info} <- settings
-                         |> Keyword.fetch(String.to_atom(protocol)),
-                         {:ok, port} <- protocol_info |> Keyword.fetch(:port)
-    do
-      ":#{port}"
-    else _e ->
-      ""
-    end
-    "#{protocol}://#{host}#{port_fragment}"
+    Pleroma.Web.Endpoint.url
   end
 end

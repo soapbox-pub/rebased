@@ -1,8 +1,10 @@
 defmodule Pleroma.User do
   use Ecto.Schema
+
   import Ecto.{Changeset, Query}
   alias Pleroma.{Repo, User, Object, Web}
   alias Comeonin.Pbkdf2
+  alias Pleroma.Web.OStatus
 
   schema "users" do
     field :bio, :string
@@ -15,6 +17,8 @@ defmodule Pleroma.User do
     field :following, {:array, :string}, default: []
     field :ap_id, :string
     field :avatar, :map
+    field :local, :boolean, default: true
+    field :info, :map, default: %{}
 
     timestamps()
   end
@@ -118,6 +122,27 @@ defmodule Pleroma.User do
 
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
-    Cachex.get!(:user_cache, key, fallback: fn(_) -> Repo.get_by(User, nickname: nickname) end)
+    Cachex.get!(:user_cache, key, fallback: fn(_) -> get_or_fetch_by_nickname(nickname) end)
+  end
+
+  def get_by_nickname(nickname) do
+    Repo.get_by(User, nickname: nickname)
+  end
+
+  def get_cached_user_info(user) do
+    key = "user_info:#{user.id}"
+    Cachex.get!(:user_cache, key, fallback: fn(_) -> user_info(user) end)
+  end
+
+  def get_or_fetch_by_nickname(nickname) do
+    with %User{} = user <- get_by_nickname(nickname)  do
+      user
+    else _e ->
+      with [nick, domain] <- String.split(nickname, "@"),
+           {:ok, user} <- OStatus.make_user(nickname) do
+        user
+      else _e -> nil
+      end
+    end
   end
 end

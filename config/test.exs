@@ -25,4 +25,5 @@ config :pleroma, Pleroma.Repo,
 # Reduce hash rounds for testing
 config :comeonin, :pbkdf2_rounds, 1
 
-config :pleroma, :websub_verifier, Pleroma.Web.WebsubMock
+config :pleroma, :websub, Pleroma.Web.WebsubMock
+config :pleroma, :ostatus, Pleroma.Web.OStatusMock

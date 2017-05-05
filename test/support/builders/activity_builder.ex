@@ -5,7 +5,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
   def build(data \\ %{}, opts \\ %{}) do
     user = opts[:user] || Pleroma.Factory.insert(:user)
     activity = %{
-      "id" => 1,
+      "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_object_id,
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
       "object" => %{
@@ -23,7 +23,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
 
   def insert_list(times, data \\ %{}, opts \\ %{}) do
     Enum.map(1..times, fn (n) ->
-      {:ok, activity} = insert(Map.merge(data, %{"id" => n}))
+      {:ok, activity} = insert(data)
       activity
     end)
   end

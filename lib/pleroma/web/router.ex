@@ -30,7 +30,7 @@ defmodule Pleroma.Web.Router do
     get "/statusnet/config", TwitterAPI.Controller, :config
 
     get "/statuses/public_timeline", TwitterAPI.Controller, :public_timeline
-    get "/statuses/public_and_external_timeline", TwitterAPI.Controller, :public_timeline
+    get "/statuses/public_and_external_timeline", TwitterAPI.Controller, :public_and_external_timeline
     get "/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
 
     get "/statuses/show/:id", TwitterAPI.Controller, :fetch_status
@@ -73,8 +73,14 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web do
     pipe_through :ostatus
 
+    get "/objects/:uuid", OStatus.OStatusController, :object
+
     get "/users/:nickname/feed", OStatus.OStatusController, :feed
+    get "/users/:nickname", OStatus.OStatusController, :feed_redirect
+    post "/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming
     post "/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request
+    get "/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation
+    post "/push/subscriptions/:id", Websub.WebsubController, :websub_incoming
   end
 
   scope "/.well-known", Pleroma.Web do
@@ -92,5 +98,5 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
-  def redirector(conn, _params), do: send_file(conn, 200, "priv/static/index.html")
+  def redirector(conn, _params), do: (if Mix.env != :test, do: send_file(conn, 200, "priv/static/index.html"))
 end

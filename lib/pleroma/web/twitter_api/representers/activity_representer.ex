@@ -3,6 +3,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ObjectRepresenter}
   alias Pleroma.{Activity, User}
   alias Calendar.Strftime
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   defp user_by_ap_id(user_list, ap_id) do
     Enum.find(user_list, fn (%{ap_id: user_id}) -> ap_id == user_id end)
@@ -81,6 +82,12 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     |> Enum.filter(&(&1))
     |> Enum.map(fn (user) -> UserRepresenter.to_map(user, opts) end)
 
+
+    conversation_id = with context when not is_nil(context) <- activity.data["context"] do
+      TwitterAPI.context_to_conversation_id(context)
+    else _e -> nil
+    end
+
     %{
       "id" => activity.id,
       "user" => UserRepresenter.to_map(user, opts),
@@ -91,7 +98,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "is_post_verb" => true,
       "created_at" => created_at,
       "in_reply_to_status_id" => object["inReplyToStatusId"],
-      "statusnet_conversation_id" => object["statusnetConversationId"],
+      "statusnet_conversation_id" => conversation_id,
       "attachments" => (object["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
       "fave_num" => like_count,

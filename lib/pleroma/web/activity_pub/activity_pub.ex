@@ -3,7 +3,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Ecto.{Changeset, UUID}
   import Ecto.Query
 
-  def insert(map) when is_map(map) do
+  def insert(map, local \\ true) when is_map(map) do
     map = map
     |> Map.put_new_lazy("id", &generate_activity_id/0)
     |> Map.put_new_lazy("published", &make_date/0)
@@ -16,7 +16,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       map
     end
 
-    Repo.insert(%Activity{data: map})
+    Repo.insert(%Activity{data: map, local: local})
+  end
+
+  def create(to, actor, context, object, additional \\ %{}, published \\ nil, local \\ true) do
+    published = published || make_date()
+
+    activity = %{
+      "type" => "Create",
+      "to" => to |> Enum.uniq,
+      "actor" => actor.ap_id,
+      "object" => object,
+      "published" => published,
+      "context" => context
+    }
+    |> Map.merge(additional)
+
+    with {:ok, activity} <- insert(activity, local) do
+      if actor.local do
+        Pleroma.Web.Federator.enqueue(:publish, activity)
+       end
+
+      {:ok, activity}
+    end
   end
 
   def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object) do
@@ -33,7 +55,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "type" => "Like",
           "actor" => ap_id,
           "object" => id,
-          "to" => [User.ap_followers(user), object.data["actor"]]
+          "to" => [User.ap_followers(user), object.data["actor"]],
+          "context" => object.data["context"]
         }
 
         {:ok, activity} = insert(data)
@@ -48,6 +71,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {:ok, object} = Repo.update(changeset)
 
         update_object_in_activities(object)
+
+        if user.local do
+          Pleroma.Web.Federator.enqueue(:publish, activity)
+        end
 
         {:ok, activity, object}
     end
@@ -99,7 +126,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def generate_object_id do
-    generate_id("objects")
+    Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :object, Ecto.UUID.generate)
   end
 
   def generate_id(type) do
@@ -127,6 +154,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query = from activity in query,
       where: activity.id > ^since_id
 
+    query = if opts["local_only"] do
+      from activity in query, where: activity.local == true
+    else
+      query
+    end
+
     query = if opts["max_id"] do
       from activity in query, where: activity.id < ^opts["max_id"]
     else
@@ -143,15 +176,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Enum.reverse(Repo.all(query))
   end
 
-  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object) do
+  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, local \\ true) do
     data = %{
       "type" => "Announce",
       "actor" => ap_id,
       "object" => id,
-      "to" => [User.ap_followers(user), object.data["actor"]]
+      "to" => [User.ap_followers(user), object.data["actor"]],
+      "context" => object.data["context"]
     }
 
-    {:ok, activity} = insert(data)
+    {:ok, activity} = insert(data, local)
 
     announcements = [ap_id | (object.data["announcements"] || [])] |> Enum.uniq
 
@@ -163,6 +197,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, object} = Repo.update(changeset)
 
     update_object_in_activities(object)
+
+    if user.local do
+      Pleroma.Web.Federator.enqueue(:publish, activity)
+    end
 
     {:ok, activity, object}
   end

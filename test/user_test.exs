@@ -13,7 +13,7 @@ defmodule Pleroma.UserTest do
 
     user = UserBuilder.build
 
-    expected_ap_id = "https://#{host}/users/#{user.nickname}"
+    expected_ap_id = "#{Pleroma.Web.base_url}/users/#{user.nickname}"
 
     assert expected_ap_id == User.ap_id(user)
   end
@@ -86,4 +86,40 @@ defmodule Pleroma.UserTest do
       assert changeset.changes[:following] == [User.ap_followers(%User{nickname: @full_user_data.nickname})]
     end
   end
+
+  describe "fetching a user from nickname or trying to build one" do
+    test "gets an existing user" do
+      user = insert(:user)
+      fetched_user = User.get_or_fetch_by_nickname(user.nickname)
+
+      assert user == fetched_user
+    end
+
+    # TODO: Make the test local.
+    test "fetches an external user via ostatus if no user exists" do
+      fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
+      assert fetched_user.nickname == "shp@social.heldscal.la"
+    end
+
+    test "returns nil if no user could be fetched" do
+      fetched_user = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
+      assert fetched_user == nil
+    end
+
+    test "returns nil for nonexistant local user" do
+      fetched_user = User.get_or_fetch_by_nickname("nonexistant")
+      assert fetched_user == nil
+    end
+  end
+
+  test "returns an ap_id for a user" do
+    user = insert(:user)
+    assert User.ap_id(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname)
+  end
+
+  test "returns an ap_followers link for a user" do
+    user = insert(:user)
+    assert User.ap_followers(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname) <> "/followers"
+  end
 end
+
