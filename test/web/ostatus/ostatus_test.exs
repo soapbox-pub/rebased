@@ -2,7 +2,7 @@ defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
-  alias Pleroma.{Object, Repo}
+  alias Pleroma.{Object, Repo, User}
   import Pleroma.Factory
 
   test "don't insert create notes twice" do
@@ -32,6 +32,8 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
     assert activity.data["object"]["content"] == "Will it blend?"
+    user = User.get_cached_by_ap_id(activity.data["actor"])
+    assert User.ap_followers(user) in activity.data["to"]
   end
 
   test "handle incoming notes with attachments - GS, subscription" do

@@ -143,7 +143,8 @@ defmodule Pleroma.Web.OStatus do
               end
 
     to = [
-      "https://www.w3.org/ns/activitystreams#Public"
+      "https://www.w3.org/ns/activitystreams#Public",
+      User.ap_followers(actor)
     ]
 
     mentions = :xmerl_xpath.string('//link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/person"]', entry)
