@@ -274,9 +274,9 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def fetch_activity_from_html_url(url) do
-    with {:ok, %{body: body}} <- @httpoison.get(url),
+    with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true),
          {:ok, atom_url} <- get_atom_url(body),
-         {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url) do
+         {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url, [], follow_redirect: true) do
       handle_incoming(body)
     end
   end
