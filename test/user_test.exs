@@ -1,9 +1,12 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.User
+  alias Pleroma.{User, Repo}
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Websub.WebsubClientSubscription
   use Pleroma.DataCase
 
   import Pleroma.Factory
+  import Ecto.Query
 
   test "ap_id returns the activity pub id for the user" do
     host =
@@ -30,11 +33,27 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
     followed = insert(:user)
 
-    {:ok, user } = User.follow(user, followed)
+    {:ok, user} = User.follow(user, followed)
 
     user = Repo.get(User, user.id)
 
     assert user.following == [User.ap_followers(followed)]
+  end
+
+  test "following a remote user will ensure a websub subscription is present" do
+    user = insert(:user)
+    {:ok, followed} = OStatus.make_user("shp@social.heldscal.la")
+
+    assert followed.local == false
+
+    {:ok, user} = User.follow(user, followed)
+    assert user.following == [User.ap_followers(followed)]
+
+    query = from w in WebsubClientSubscription,
+    where: w.topic == ^followed.info["topic"]
+    websub = Repo.one(query)
+
+    assert websub
   end
 
   test "unfollow takes a user and another user" do
@@ -95,7 +114,6 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
-    # TODO: Make the test local.
     test "fetches an external user via ostatus if no user exists" do
       fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
       assert fetched_user.nickname == "shp@social.heldscal.la"

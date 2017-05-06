@@ -126,7 +126,7 @@ defmodule Pleroma.Web.Websub do
     topic = subscribed.info["topic"]
     # FIXME: Race condition, use transactions
     {:ok, subscription} = with subscription when not is_nil(subscription) <- Repo.get_by(WebsubClientSubscription, topic: topic) do
-      subscribers = [subscriber.ap_id, subscription.subscribers] |> Enum.uniq
+      subscribers = [subscriber.ap_id | subscription.subscribers] |> Enum.uniq
       change = Ecto.Changeset.change(subscription, %{subscribers: subscribers})
       Repo.update(change)
     else _e ->

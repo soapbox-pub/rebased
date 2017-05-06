@@ -4,7 +4,7 @@ defmodule Pleroma.User do
   import Ecto.{Changeset, Query}
   alias Pleroma.{Repo, User, Object, Web}
   alias Comeonin.Pbkdf2
-  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.{OStatus, Websub}
 
   schema "users" do
     field :bio, :string
@@ -88,6 +88,10 @@ defmodule Pleroma.User do
       {:error,
        "Could not follow user: #{followed.nickname} is already on your list."}
     else
+      if !followed.local do
+        Websub.subscribe(follower, followed)
+      end
+
       following = [ap_followers | follower.following]
       |> Enum.uniq
 
