@@ -5,6 +5,7 @@ defmodule Pleroma.Web.Federator do
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
+  @ostatus Application.get_env(:pleroma, :ostatus)
   @max_jobs 10
 
   def start_link do
@@ -26,6 +27,11 @@ defmodule Pleroma.Web.Federator do
   def handle(:verify_websub, websub) do
     Logger.debug(fn -> "Running websub verification for #{websub.id} (#{websub.topic}, #{websub.callback})" end)
     @websub.verify(websub)
+  end
+
+  def handle(:incoming_doc, doc) do
+    Logger.debug("Got document, trying to parse")
+    @ostatus.handle_incoming(doc)
   end
 
   def handle(type, payload) do

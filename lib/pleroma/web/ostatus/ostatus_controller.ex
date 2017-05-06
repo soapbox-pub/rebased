@@ -4,7 +4,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.{User, Activity}
   alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
   alias Pleroma.Repo
-  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.{OStatus, Federator}
   import Ecto.Query
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     {:ok, magic_key} = Pleroma.Web.Salmon.fetch_magic_key(body)
     {:ok, doc} = Pleroma.Web.Salmon.decode_and_validate(magic_key, body)
 
-    Pleroma.Web.OStatus.handle_incoming(doc)
+    Federator.enqueue(:incoming_doc, doc)
 
     conn
     |> send_resp(200, "")

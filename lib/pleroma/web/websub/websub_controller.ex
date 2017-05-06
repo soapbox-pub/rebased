@@ -1,11 +1,9 @@
 defmodule Pleroma.Web.Websub.WebsubController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, User}
-  alias Pleroma.Web.Websub
+  alias Pleroma.Web.{Websub, Federator}
   alias Pleroma.Web.Websub.WebsubClientSubscription
   require Logger
-
-  @ostatus Application.get_env(:pleroma, :ostatus)
 
   def websub_subscription_request(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
@@ -38,7 +36,7 @@ defmodule Pleroma.Web.Websub.WebsubController do
          %WebsubClientSubscription{} = websub <- Repo.get(WebsubClientSubscription, id),
          {:ok, body, _conn} = read_body(conn),
          ^signature <- Websub.sign(websub.secret, body) do
-      @ostatus.handle_incoming(body)
+      Federator.enqueue(:incoming_doc, body)
       conn
       |> send_resp(200, "OK")
     else _e ->
