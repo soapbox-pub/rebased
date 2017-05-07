@@ -4,7 +4,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.{Activity, User}
   alias Calendar.Strftime
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Wi
 
   defp user_by_ap_id(user_list, ap_id) do
     Enum.find(user_list, fn (%{ap_id: user_id}) -> ap_id == user_id end)
