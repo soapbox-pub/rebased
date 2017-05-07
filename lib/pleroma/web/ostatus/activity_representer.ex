@@ -118,6 +118,34 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     ] ++ mentions ++ author
   end
 
+  def to_simple_form(%{data: %{"type" => "Follow"}} = activity, user, with_author) do
+    h = fn(str) -> [to_charlist(str)] end
+
+    updated_at = activity.updated_at
+    |> NaiveDateTime.to_iso8601
+    inserted_at = activity.inserted_at
+    |> NaiveDateTime.to_iso8601
+
+    author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
+
+    mentions = activity.data["to"] |> get_mentions
+    [
+      {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
+      {:"activity:verb", ['http://activitystrea.ms/schema/1.0/follow']},
+      {:id, h.(activity.data["id"])},
+      {:title, ['#{user.nickname} started following #{activity.data["object"]}']},
+      {:content, [type: 'html'], ['#{user.nickname} started following #{activity.data["object"]}']},
+      {:published, h.(inserted_at)},
+      {:updated, h.(updated_at)},
+      {:"activity:object", [
+        {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/person']},
+        {:id, h.(activity.data["object"])},
+        {:uri, h.(activity.data["object"])},
+      ]},
+      {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
+    ] ++ mentions ++ author
+  end
+
   def wrap_with_entry(simple_form) do
     [{
       :entry, [

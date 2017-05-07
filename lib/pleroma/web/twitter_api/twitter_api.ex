@@ -139,10 +139,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          {:ok, activity} <- ActivityPub.insert(%{
            "type" => "Follow",
            "actor" => follower.ap_id,
+           "to" => [followed.ap_id],
            "object" => followed.ap_id,
            "published" => make_date()
          })
     do
+      # TODO move all this to ActivityPub
+      Pleroma.Web.Federator.enqueue(:publish, activity)
       {:ok, follower, followed, activity}
     else
       err -> err

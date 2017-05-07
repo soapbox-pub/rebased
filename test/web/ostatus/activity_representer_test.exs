@@ -124,6 +124,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     user = insert(:user)
     {:ok, like, _note} = ActivityPub.like(user, note)
 
+    # TODO: Are these the correct dates?
     updated_at = like.updated_at
     |> NaiveDateTime.to_iso8601
     inserted_at = like.inserted_at
@@ -150,6 +151,49 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <link rel="self" type="application/atom+xml" href="#{like.data["id"]}"/>
     <thr:in-reply-to ref="#{note.data["id"]}" />
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{note.data["actor"]}"/>
+    """
+
+    assert clean(res) == clean(expected)
+  end
+
+  test "a follow activity" do
+    follower = insert(:user)
+    followed = insert(:user)
+    {:ok, activity} = ActivityPub.insert(%{
+          "type" => "Follow",
+          "actor" => follower.ap_id,
+          "object" => followed.ap_id,
+          "to" => [followed.ap_id]
+    })
+
+
+    # TODO: Are these the correct dates?
+    updated_at = activity.updated_at
+    |> NaiveDateTime.to_iso8601
+    inserted_at = activity.inserted_at
+    |> NaiveDateTime.to_iso8601
+
+    tuple = ActivityRepresenter.to_simple_form(activity, follower)
+
+    refute is_nil(tuple)
+
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+
+    expected = """
+    <activity:object-type>http://activitystrea.ms/schema/1.0/activity</activity:object-type>
+    <activity:verb>http://activitystrea.ms/schema/1.0/follow</activity:verb>
+    <id>#{activity.data["id"]}</id>
+    <title>#{follower.nickname} started following #{activity.data["object"]}</title>
+    <content type="html"> #{follower.nickname} started following #{activity.data["object"]}</content>
+    <published>#{inserted_at}</published>
+    <updated>#{updated_at}</updated>
+    <activity:object>
+      <activity:object-type>http://activitystrea.ms/schema/1.0/person</activity:object-type>
+      <id>#{activity.data["object"]}</id>
+      <uri>#{activity.data["object"]}</uri>
+    </activity:object>
+    <link rel="self" type="application/atom+xml" href="#{activity.data["id"]}"/>
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{activity.data["object"]}"/>
     """
 
     assert clean(res) == clean(expected)
