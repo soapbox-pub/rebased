@@ -2,6 +2,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Web}
   alias Ecto.{Changeset, UUID}
   import Ecto.Query
+  require Logger
 
   def insert(map, local \\ true) when is_map(map) do
     map = map
@@ -9,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Map.put_new_lazy("published", &make_date/0)
 
     with %Activity{} = activity <- Activity.get_by_ap_id(map["id"]) do
+      Logger.debug(fn -> "Already have activity, #{activity.id}, not inserting." end)
       {:ok, activity}
     else _e ->
       map = if is_map(map["object"]) do
