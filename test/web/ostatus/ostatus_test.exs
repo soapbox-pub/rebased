@@ -93,6 +93,8 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["type"] == "Announce"
     assert activity.data["actor"] == "https://mastodon.social/users/lambadalambda"
     assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    assert activity.data["id"] == "tag:mastodon.social,2017-05-03:objectId=4934452:objectType=Status"
+
     refute activity.local
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
@@ -106,6 +108,8 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["type"] == "Like"
     assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
     assert activity.data["object"] == favorited_activity.data["object"]["id"]
+    assert activity.data["id"] == "tag:social.heldscal.la,2017-05-05:fave:23211:comment:2061643:2017-05-05T09:12:50+00:00"
+
     refute activity.local
     assert favorited_activity.data["type"] == "Create"
     assert favorited_activity.data["actor"] == "https://shitposter.club/user/1"
@@ -137,6 +141,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["inReplyTo"] == "http://pleroma.example.org:4000/objects/55bce8fc-b423-46b1-af71-3759ab4670bc"
     assert "http://pleroma.example.org:4000/users/lain5" in activity.data["to"]
+    assert activity.data["object"]["id"] == "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
   end
 
   describe "new remote user creation" do

@@ -49,10 +49,11 @@ defmodule Pleroma.Web.OStatus do
     {:ok, activities}
   end
 
-  def make_share(_entry, doc, retweeted_activity) do
+  def make_share(entry, doc, retweeted_activity) do
     with {:ok, actor} <- find_make_or_update_user(doc),
          %Object{} = object <- Object.get_cached_by_ap_id(retweeted_activity.data["object"]["id"]),
-         {:ok, activity, _object} = ActivityPub.announce(actor, object, false) do
+         id when not is_nil(id) <- string_from_xpath("/entry/id", entry),
+         {:ok, activity, _object} = ActivityPub.announce(actor, object, id, false) do
       {:ok, activity}
     end
   end
@@ -67,10 +68,11 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
-  def make_favorite(_entry, doc, favorited_activity) do
+  def make_favorite(entry, doc, favorited_activity) do
     with {:ok, actor} <- find_make_or_update_user(doc),
          %Object{} = object <- Object.get_cached_by_ap_id(favorited_activity.data["object"]["id"]),
-         {:ok, activity, _object} = ActivityPub.like(actor, object, false) do
+         id when not is_nil(id) <- string_from_xpath("/entry/id", entry),
+         {:ok, activity, _object} = ActivityPub.like(actor, object, id, false) do
       {:ok, activity}
     end
   end

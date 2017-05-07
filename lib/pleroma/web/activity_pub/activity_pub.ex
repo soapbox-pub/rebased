@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, local \\ true) do
+  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, activity_id \\ nil, local \\ true) do
     cond do
       # There's already a like here, so return the original activity.
       ap_id in (object.data["likes"] || []) ->
@@ -58,6 +58,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "to" => [User.ap_followers(user), object.data["actor"]],
           "context" => object.data["context"]
         }
+
+        data = if activity_id, do: Map.put(data, "id", activity_id), else: data
 
         {:ok, activity} = insert(data, local)
 
@@ -81,7 +83,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp update_object_in_activities(%{data: %{"id" => id}} = object) do
+    # TODO
     # Update activities that already had this. Could be done in a seperate process.
+    # Alternatively, just don't do this and fetch the current object each time. Most
+    # could probably be taken from cache.
     relevant_activities = Activity.all_by_object_ap_id(id)
     Enum.map(relevant_activities, fn (activity) ->
       new_activity_data = activity.data |> Map.put("object", object.data)
@@ -176,7 +181,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Enum.reverse(Repo.all(query))
   end
 
-  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, local \\ true) do
+  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, activity_id \\ nil, local \\ true) do
     data = %{
       "type" => "Announce",
       "actor" => ap_id,
@@ -184,6 +189,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "to" => [User.ap_followers(user), object.data["actor"]],
       "context" => object.data["context"]
     }
+
+    data = if activity_id, do: Map.put(data, "id", activity_id), else: data
 
     {:ok, activity} = insert(data, local)
 
