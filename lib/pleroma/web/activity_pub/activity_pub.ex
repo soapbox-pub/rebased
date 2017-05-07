@@ -8,15 +8,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Map.put_new_lazy("id", &generate_activity_id/0)
     |> Map.put_new_lazy("published", &make_date/0)
 
-    map = if is_map(map["object"]) do
-      object = Map.put_new_lazy(map["object"], "id", &generate_object_id/0)
-      Repo.insert!(%Object{data: object})
-      Map.put(map, "object", object)
-    else
-      map
-    end
+    with %Activity{} = activity <- Activity.get_by_ap_id(map["id"]) do
+      {:ok, activity}
+    else _e ->
+      map = if is_map(map["object"]) do
+        object = Map.put_new_lazy(map["object"], "id", &generate_object_id/0)
+        Repo.insert!(%Object{data: object})
+        Map.put(map, "object", object)
+      else
+        map
+      end
 
-    Repo.insert(%Activity{data: map, local: local})
+      Repo.insert(%Activity{data: map, local: local})
+    end
   end
 
   def create(to, actor, context, object, additional \\ %{}, published \\ nil, local \\ true) do
