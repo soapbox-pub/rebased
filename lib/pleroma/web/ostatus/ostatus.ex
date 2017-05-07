@@ -195,7 +195,7 @@ defmodule Pleroma.Web.OStatus do
 
   def find_or_make_user(uri) do
     query = from user in User,
-      where: user.local == false and fragment("? @> ?", user.info, ^%{uri: uri})
+      where: user.ap_id == ^uri
 
     user = Repo.one(query)
 

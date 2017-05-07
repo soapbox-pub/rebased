@@ -140,8 +140,14 @@ defmodule Pleroma.Web.OStatusTest do
   end
 
   describe "new remote user creation" do
+    test "returns local users" do
+      local_user = insert(:user)
+      {:ok, user} = OStatus.find_or_make_user(local_user.ap_id)
+
+      assert user == local_user
+    end
+
     test "tries to use the information in poco fields" do
-      # TODO make test local
       uri = "https://social.heldscal.la/user/23211"
 
       {:ok, user} = OStatus.find_or_make_user(uri)
@@ -160,7 +166,6 @@ defmodule Pleroma.Web.OStatusTest do
     end
 
     test "find_make_or_update_user takes an author element and returns an updated user" do
-      # TODO make test local
       uri = "https://social.heldscal.la/user/23211"
 
       {:ok, user} = OStatus.find_or_make_user(uri)
