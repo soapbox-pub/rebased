@@ -40,6 +40,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "create activities" do
+    test "removes doubled 'to' recipients" do
+      {:ok, activity} = ActivityPub.create(["user1", "user1", "user2"], %User{ap_id: "1"}, "", %{})
+      assert activity.data["to"] == ["user1", "user2"]
+    end
+  end
+
   describe "fetch activities for recipients" do
     test "retrieve the activities for certain recipients" do
       {:ok, activity_one} = ActivityBuilder.insert(%{"to" => ["someone"]})
@@ -125,6 +132,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert like_activity.data["type"] == "Like"
       assert like_activity.data["object"] == object.data["id"]
       assert like_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
+      assert like_activity.data["context"] == object.data["context"]
       assert object.data["like_count"] == 1
       assert object.data["likes"] == [user.ap_id]
 
@@ -174,6 +182,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert announce_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
       assert announce_activity.data["object"] == object.data["id"]
       assert announce_activity.data["actor"] == user.ap_id
+      assert announce_activity.data["context"] == object.data["context"]
     end
   end
 
@@ -201,6 +210,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       followed = Repo.get_by(User, ap_id: activity.data["object"])
 
       assert activity == ActivityPub.fetch_latest_follow(follower, followed)
+    end
+  end
+
+  describe "following / unfollowing" do
+    test "creates a follow activity" do
+      follower = insert(:user)
+      followed = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(follower, followed)
+      assert activity.data["type"] == "Follow"
+      assert activity.data["actor"] == follower.ap_id
+      assert activity.data["object"] == followed.ap_id
+    end
+
+    test "creates an undo activity for the last follow" do
+      follower = insert(:user)
+      followed = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, activity} = ActivityPub.unfollow(follower, followed)
+
+      assert activity.data["type"] == "Undo"
+      assert activity.data["actor"] == follower.ap_id
+      assert activity.data["object"] == follow_activity.data["id"]
     end
   end
 

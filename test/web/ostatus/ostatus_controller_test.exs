@@ -12,4 +12,15 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
     assert response(conn, 200)
   end
+
+  test "gets an object", %{conn: conn} do
+    note_activity = insert(:note_activity)
+    [_, uuid] = hd Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"])
+    url = "/objects/#{uuid}"
+
+    conn = conn
+    |> get(url)
+
+    assert response(conn, 200)
+  end
 end

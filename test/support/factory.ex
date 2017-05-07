@@ -24,7 +24,8 @@ defmodule Pleroma.Factory do
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601,
       "likes" => [],
-      "like_count" => 0
+      "like_count" => 0,
+      "context" => "2hu"
     }
 
     %Pleroma.Object{
@@ -40,7 +41,8 @@ defmodule Pleroma.Factory do
       "actor" => note.data["actor"],
       "to" => note.data["to"],
       "object" => note.data,
-      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601
+      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601,
+      "context" => note.data["context"]
     }
 
     %Pleroma.Activity{
@@ -89,6 +91,16 @@ defmodule Pleroma.Factory do
       secret: "here's a secret",
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now, 100),
       state: "requested"
+    }
+  end
+
+  def websub_client_subscription_factory do
+    %Pleroma.Web.Websub.WebsubClientSubscription{
+      topic: "http://example.org",
+      secret: "here's a secret",
+      valid_until: nil,
+      state: "requested",
+      subscribers: []
     }
   end
 end

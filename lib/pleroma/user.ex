@@ -1,8 +1,10 @@
 defmodule Pleroma.User do
   use Ecto.Schema
-  import Ecto.Changeset
-  import Ecto.Query
-  alias Pleroma.{Repo, User, Object}
+
+  import Ecto.{Changeset, Query}
+  alias Pleroma.{Repo, User, Object, Web}
+  alias Comeonin.Pbkdf2
+  alias Pleroma.Web.{OStatus, Websub}
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   schema "users" do
@@ -13,9 +15,11 @@ defmodule Pleroma.User do
     field :password_hash, :string
     field :password, :string, virtual: true
     field :password_confirmation, :string, virtual: true
-    field :following, { :array, :string }, default: []
+    field :following, {:array, :string}, default: []
     field :ap_id, :string
     field :avatar, :map
+    field :local, :boolean, default: true
+    field :info, :map, default: %{}
 
     timestamps()
   end
@@ -28,7 +32,7 @@ defmodule Pleroma.User do
   end
 
   def ap_id(%User{nickname: nickname}) do
-    "#{Pleroma.Web.base_url}/users/#{nickname}"
+    "#{Web.base_url}/users/#{nickname}"
   end
 
   def ap_followers(%User{} = user) do
@@ -67,7 +71,7 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
 
     if changeset.valid? do
-      hashed = Comeonin.Pbkdf2.hashpwsalt(changeset.changes[:password])
+      hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
       ap_id = User.ap_id(%User{nickname: changeset.changes[:nickname]})
       followers = User.ap_followers(%User{nickname: changeset.changes[:nickname]})
       changeset
@@ -82,9 +86,13 @@ defmodule Pleroma.User do
   def follow(%User{} = follower, %User{} = followed) do
     ap_followers = User.ap_followers(followed)
     if following?(follower, followed) do
-      { :error,
-        "Could not follow user: #{followed.nickname} is already on your list." }
+      {:error,
+       "Could not follow user: #{followed.nickname} is already on your list."}
     else
+      if !followed.local do
+        Websub.subscribe(follower, followed)
+      end
+
       following = [ap_followers | follower.following]
       |> Enum.uniq
 
@@ -105,7 +113,7 @@ defmodule Pleroma.User do
       |> Repo.update
       { :ok, follower, ActivityPub.fetch_latest_follow(follower, followed)}
     else
-      { :error, "Not subscribed!" }
+      {:error, "Not subscribed!"}
     end
   end
 
@@ -120,6 +128,27 @@ defmodule Pleroma.User do
 
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
-    Cachex.get!(:user_cache, key, fallback: fn(_) -> Repo.get_by(User, nickname: nickname) end)
+    Cachex.get!(:user_cache, key, fallback: fn(_) -> get_or_fetch_by_nickname(nickname) end)
+  end
+
+  def get_by_nickname(nickname) do
+    Repo.get_by(User, nickname: nickname)
+  end
+
+  def get_cached_user_info(user) do
+    key = "user_info:#{user.id}"
+    Cachex.get!(:user_cache, key, fallback: fn(_) -> user_info(user) end)
+  end
+
+  def get_or_fetch_by_nickname(nickname) do
+    with %User{} = user <- get_by_nickname(nickname)  do
+      user
+    else _e ->
+      with [nick, domain] <- String.split(nickname, "@"),
+           {:ok, user} <- OStatus.make_user(nickname) do
+        user
+      else _e -> nil
+      end
+    end
   end
 end

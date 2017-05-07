@@ -22,12 +22,13 @@ defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
     |> :xmerl.export_simple_content(:xmerl_xml)
 
     expected = """
-    <feed xmlns="http://www.w3.org/2005/Atom" xmlns:activity="http://activitystrea.ms/spec/1.0/" xmlns:poco="http://portablecontacts.net/spec/1.0">
+    <feed xmlns="http://www.w3.org/2005/Atom" xmlns:thr="http://purl.org/syndication/thread/1.0" xmlns:activity="http://activitystrea.ms/spec/1.0/" xmlns:poco="http://portablecontacts.net/spec/1.0" xmlns:ostatus="http://ostatus.org/schema/1.0">
       <id>#{OStatus.feed_path(user)}</id>
       <title>#{user.nickname}'s timeline</title>
       <updated>#{most_recent_update}</updated>
       <link rel="hub" href="#{OStatus.pubsub_path(user)}" />
-      <link rel="self" href="#{OStatus.feed_path(user)}" />
+      <link rel="salmon" href="#{OStatus.salmon_path(user)}" />
+      <link rel="self" href="#{OStatus.feed_path(user)}" type="application/atom+xml" />
       <author>
         #{user_xml}
       </author>

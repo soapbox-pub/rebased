@@ -84,12 +84,13 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "GET /statusnet/conversation/:id.json" do
     test "returns the statuses in the conversation", %{conn: conn} do
       {:ok, _user} = UserBuilder.insert
-      {:ok, _activity} = ActivityBuilder.insert(%{"statusnetConversationId" => 1, "context" => "2hu"})
-      {:ok, _activity_two} = ActivityBuilder.insert(%{"statusnetConversationId" => 1,"context" => "2hu"})
+      {:ok, _activity} = ActivityBuilder.insert(%{"context" => "2hu"})
+      {:ok, _activity_two} = ActivityBuilder.insert(%{"context" => "2hu"})
       {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
 
+      {:ok, object} = Object.context_mapping("2hu") |> Repo.insert
       conn = conn
-      |> get("/api/statusnet/conversation/1.json")
+      |> get("/api/statusnet/conversation/#{object.id}.json")
 
       response = json_response(conn, 200)
 
@@ -244,6 +245,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       {:ok, current_user} = User.follow(current_user, followed)
       assert current_user.following == [User.ap_followers(followed)]
+      ActivityPub.follow(current_user, followed)
 
       conn = conn
       |> with_credentials(current_user.nickname, "test")
@@ -395,11 +397,5 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   defp with_credentials(conn, username, password) do
     header_content = "Basic " <> Base.encode64("#{username}:#{password}")
     put_req_header(conn, "authorization", header_content)
-  end
-
-  setup do
-    Supervisor.terminate_child(Pleroma.Supervisor, ConCache)
-    Supervisor.restart_child(Pleroma.Supervisor, ConCache)
-    :ok
   end
 end

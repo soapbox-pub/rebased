@@ -33,19 +33,18 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
 
-    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.<br>This is on another line."
+    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.<br>This is on another line.<br><a href='http://example.org/image.jpg'>http://example.org/image.jpg</a>"
     assert get_in(activity.data, ["object", "type"]) == "Note"
     assert get_in(activity.data, ["object", "actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
     assert Enum.member?(get_in(activity.data, ["to"]), User.ap_followers(user))
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
     assert Enum.member?(get_in(activity.data, ["to"]), "shp")
+    assert activity.local == true
 
-    # Add a context + 'statusnet_conversation_id'
+    # Add a context
     assert is_binary(get_in(activity.data, ["context"]))
     assert is_binary(get_in(activity.data, ["object", "context"]))
-    assert get_in(activity.data, ["object", "statusnetConversationId"]) == activity.id
-    assert get_in(activity.data, ["statusnetConversationId"]) == activity.id
 
     assert is_list(activity.data["object"]["attachment"])
 
@@ -69,21 +68,32 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert get_in(reply.data, ["context"]) == get_in(activity.data, ["context"])
     assert get_in(reply.data, ["object", "context"]) == get_in(activity.data, ["object", "context"])
-    assert get_in(reply.data, ["statusnetConversationId"]) == get_in(activity.data, ["statusnetConversationId"])
-    assert get_in(reply.data, ["object", "statusnetConversationId"]) == get_in(activity.data, ["object", "statusnetConversationId"])
     assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
     assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
     assert Enum.member?(get_in(reply.data, ["to"]), "some_cool_id")
   end
 
-  test "fetch public statuses" do
+  test "fetch public statuses, excluding remote ones." do
     %{ public: activity, user: user } = ActivityBuilder.public_and_non_public
+    insert(:note_activity, %{local: false})
 
     follower = insert(:user, following: [User.ap_followers(user)])
 
     statuses = TwitterAPI.fetch_public_statuses(follower)
 
     assert length(statuses) == 1
+    assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: user, for: follower})
+  end
+
+  test "fetch whole known network statuses" do
+    %{ public: activity, user: user } = ActivityBuilder.public_and_non_public
+    insert(:note_activity, %{local: false})
+
+    follower = insert(:user, following: [User.ap_followers(user)])
+
+    statuses = TwitterAPI.fetch_public_and_external_statuses(follower)
+
+    assert length(statuses) == 2
     assert Enum.at(statuses, 0) == ActivityRepresenter.to_map(activity, %{user: user, for: follower})
   end
 
@@ -180,6 +190,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "Unfollow another user using user_id" do
     unfollowed = insert(:user)
     user = insert(:user, %{following: [User.ap_followers(unfollowed)]})
+    ActivityPub.follow(user, unfollowed)
 
     {:ok, user, unfollowed } = TwitterAPI.unfollow(user, %{"user_id" => unfollowed.id})
     assert user.following == []
@@ -192,6 +203,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     unfollowed = insert(:user)
     user = insert(:user, %{following: [User.ap_followers(unfollowed)]})
 
+    ActivityPub.follow(user, unfollowed)
+
     {:ok, user, unfollowed } = TwitterAPI.unfollow(user, %{"screen_name" => unfollowed.nickname})
     assert user.following == []
 
@@ -201,11 +214,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "fetch statuses in a context using the conversation id" do
     {:ok, user} = UserBuilder.insert()
-    {:ok, activity} = ActivityBuilder.insert(%{"statusnetConversationId" => 1, "context" => "2hu"})
-    {:ok, activity_two} = ActivityBuilder.insert(%{"statusnetConversationId" => 1,"context" => "2hu"})
+    {:ok, activity} = ActivityBuilder.insert(%{"context" => "2hu"})
+    {:ok, activity_two} = ActivityBuilder.insert(%{"context" => "2hu"})
     {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
 
-    statuses = TwitterAPI.fetch_conversation(user, 1)
+    {:ok, object} = Object.context_mapping("2hu") |> Repo.insert
+
+    statuses = TwitterAPI.fetch_conversation(user, object.id)
 
     assert length(statuses) == 2
     assert Enum.at(statuses, 0)["id"] == activity.id
@@ -314,9 +329,33 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     refute Repo.get_by(User, nickname: "lain")
   end
 
+  test "it assigns an integer conversation_id" do
+    note_activity = insert(:note_activity)
+    user = User.get_cached_by_ap_id(note_activity.data["actor"])
+    status = ActivityRepresenter.to_map(note_activity, %{user: user})
+
+    assert is_number(status["statusnet_conversation_id"])
+  end
+
   setup do
     Supervisor.terminate_child(Pleroma.Supervisor, Cachex)
     Supervisor.restart_child(Pleroma.Supervisor, Cachex)
     :ok
+  end
+
+  describe "context_to_conversation_id" do
+    test "creates a mapping object" do
+      conversation_id = TwitterAPI.context_to_conversation_id("random context")
+      object = Object.get_by_ap_id("random context")
+
+      assert conversation_id == object.id
+    end
+
+    test "returns an existing mapping for an existing object" do
+      {:ok, object} = Object.context_mapping("random context") |> Repo.insert
+      conversation_id = TwitterAPI.context_to_conversation_id("random context")
+
+      assert conversation_id == object.id
+    end
   end
 end

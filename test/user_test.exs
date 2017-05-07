@@ -1,9 +1,12 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.User
+  alias Pleroma.{User, Repo}
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Websub.WebsubClientSubscription
   use Pleroma.DataCase
 
   import Pleroma.Factory
+  import Ecto.Query
 
   test "ap_id returns the activity pub id for the user" do
     host =
@@ -13,7 +16,7 @@ defmodule Pleroma.UserTest do
 
     user = UserBuilder.build
 
-    expected_ap_id = "https://#{host}/users/#{user.nickname}"
+    expected_ap_id = "#{Pleroma.Web.base_url}/users/#{user.nickname}"
 
     assert expected_ap_id == User.ap_id(user)
   end
@@ -30,11 +33,27 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
     followed = insert(:user)
 
-    {:ok, user } = User.follow(user, followed)
+    {:ok, user} = User.follow(user, followed)
 
     user = Repo.get(User, user.id)
 
     assert user.following == [User.ap_followers(followed)]
+  end
+
+  test "following a remote user will ensure a websub subscription is present" do
+    user = insert(:user)
+    {:ok, followed} = OStatus.make_user("shp@social.heldscal.la")
+
+    assert followed.local == false
+
+    {:ok, user} = User.follow(user, followed)
+    assert user.following == [User.ap_followers(followed)]
+
+    query = from w in WebsubClientSubscription,
+    where: w.topic == ^followed.info["topic"]
+    websub = Repo.one(query)
+
+    assert websub
   end
 
   test "unfollow takes a user and another user" do
@@ -86,4 +105,39 @@ defmodule Pleroma.UserTest do
       assert changeset.changes[:following] == [User.ap_followers(%User{nickname: @full_user_data.nickname})]
     end
   end
+
+  describe "fetching a user from nickname or trying to build one" do
+    test "gets an existing user" do
+      user = insert(:user)
+      fetched_user = User.get_or_fetch_by_nickname(user.nickname)
+
+      assert user == fetched_user
+    end
+
+    test "fetches an external user via ostatus if no user exists" do
+      fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
+      assert fetched_user.nickname == "shp@social.heldscal.la"
+    end
+
+    test "returns nil if no user could be fetched" do
+      fetched_user = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
+      assert fetched_user == nil
+    end
+
+    test "returns nil for nonexistant local user" do
+      fetched_user = User.get_or_fetch_by_nickname("nonexistant")
+      assert fetched_user == nil
+    end
+  end
+
+  test "returns an ap_id for a user" do
+    user = insert(:user)
+    assert User.ap_id(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname)
+  end
+
+  test "returns an ap_followers link for a user" do
+    user = insert(:user)
+    assert User.ap_followers(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname) <> "/followers"
+  end
 end
+

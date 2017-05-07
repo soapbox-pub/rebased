@@ -1,4 +1,5 @@
 defmodule Pleroma.Plugs.AuthenticationPlug do
+  alias Comeonin.Pbkdf2
   import Plug.Conn
 
   def init(options) do
@@ -25,12 +26,12 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   end
 
   defp verify(nil, _password, _user_id) do
-    Comeonin.Pbkdf2.dummy_checkpw
+    Pbkdf2.dummy_checkpw
     :error
   end
 
   defp verify(user, password, _user_id) do
-    if Comeonin.Pbkdf2.checkpw(password, user.password_hash) do
+    if Pbkdf2.checkpw(password, user.password_hash) do
       {:ok, user}
     else
       :error
@@ -42,7 +43,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
          {:ok, userinfo} <- Base.decode64(header),
          [username, password] <- String.split(userinfo, ":")
     do
-      { :ok, username, password }
+      {:ok, username, password}
     end
   end
 

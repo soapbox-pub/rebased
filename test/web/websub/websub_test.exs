@@ -3,11 +3,13 @@ defmodule Pleroma.Web.WebsubMock do
     {:ok, sub}
   end
 end
+
 defmodule Pleroma.Web.WebsubTest do
   use Pleroma.DataCase
   alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubServerSubscription
   import Pleroma.Factory
+  alias Pleroma.Web.Router.Helpers
 
   test "a verification of a request that is accepted" do
     sub = insert(:websub_subscription)
@@ -58,7 +60,6 @@ defmodule Pleroma.Web.WebsubTest do
       "hub.lease_seconds" => "100"
     }
 
-
     {:ok, subscription } = Websub.incoming_subscription_request(user, data)
     assert subscription.topic == Pleroma.Web.OStatus.feed_path(user)
     assert subscription.state == "requested"
@@ -78,7 +79,6 @@ defmodule Pleroma.Web.WebsubTest do
       "hub.lease_seconds" => "100"
     }
 
-
     {:ok, subscription } = Websub.incoming_subscription_request(user, data)
     assert subscription.topic == Pleroma.Web.OStatus.feed_path(user)
     assert subscription.state == sub.state
@@ -86,5 +86,92 @@ defmodule Pleroma.Web.WebsubTest do
     assert subscription.callback == sub.callback
     assert length(Repo.all(WebsubServerSubscription)) == 1
     assert subscription.id == sub.id
+  end
+
+  def accepting_verifier(subscription) do
+    {:ok, %{ subscription | state: "accepted" }}
+  end
+
+  test "initiate a subscription for a given user and topic" do
+    subscriber = insert(:user)
+    user = insert(:user, %{info: %{ "topic" =>  "some_topic", "hub" => "some_hub"}})
+
+    {:ok, websub} = Websub.subscribe(subscriber, user, &accepting_verifier/1)
+    assert websub.subscribers == [subscriber.ap_id]
+    assert websub.topic == "some_topic"
+    assert websub.hub == "some_hub"
+    assert is_binary(websub.secret)
+    assert websub.user == user
+    assert websub.state == "accepted"
+  end
+
+  test "discovers the hub and canonical url" do
+    topic = "https://mastodon.social/users/lambadalambda.atom"
+
+    getter = fn(^topic) ->
+      doc = File.read!("test/fixtures/lambadalambda.atom")
+      {:ok, %{status_code: 200, body: doc}}
+    end
+
+    {:ok, discovered} = Websub.gather_feed_data(topic, getter)
+    expected = %{
+      "hub" => "https://mastodon.social/api/push",
+      "uri" => "https://mastodon.social/users/lambadalambda",
+      "nickname" => "lambadalambda",
+      "name" => "Critical Value",
+      "host" => "mastodon.social",
+      "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://files.mastodon.social/accounts/avatars/000/000/264/original/1429214160519.gif?1492379244", "mediaType" => "image/gif", "type" => "Link"}]}
+    }
+
+    assert expected == discovered
+  end
+
+  test "calls the hub, requests topic" do
+    hub = "https://social.heldscal.la/main/push/hub"
+    topic = "https://social.heldscal.la/api/statuses/user_timeline/23211.atom"
+    websub = insert(:websub_client_subscription, %{hub: hub, topic: topic})
+
+    poster = fn (^hub, {:form, data}, _headers) ->
+      assert Keyword.get(data, :"hub.mode") == "subscribe"
+      assert Keyword.get(data, :"hub.callback") == Helpers.websub_url(Pleroma.Web.Endpoint, :websub_subscription_confirmation, websub.id)
+      {:ok, %{status_code: 202}}
+    end
+
+    task = Task.async(fn -> Websub.request_subscription(websub, poster) end)
+
+    change = Ecto.Changeset.change(websub, %{state: "accepted"})
+    {:ok, _} = Repo.update(change)
+
+    {:ok, websub} = Task.await(task)
+
+    assert websub.state == "accepted"
+  end
+
+  test "rejects the subscription if it can't be accepted" do
+    hub = "https://social.heldscal.la/main/push/hub"
+    topic = "https://social.heldscal.la/api/statuses/user_timeline/23211.atom"
+    websub = insert(:websub_client_subscription, %{hub: hub, topic: topic})
+
+    poster = fn (^hub, {:form, _data}, _headers) ->
+      {:ok, %{status_code: 202}}
+    end
+
+    {:error, websub} = Websub.request_subscription(websub, poster, 1000)
+    assert websub.state == "rejected"
+
+    websub = insert(:websub_client_subscription, %{hub: hub, topic: topic})
+    poster = fn (^hub, {:form, _data}, _headers) ->
+      {:ok, %{status_code: 400}}
+    end
+
+    {:error, websub} = Websub.request_subscription(websub, poster, 1000)
+    assert websub.state == "rejected"
+  end
+
+  test "sign a text" do
+    signed = Websub.sign("secret", "text")
+    assert signed == "B8392C23690CCF871F37EC270BE1582DEC57A503" |> String.downcase
+
+    signed = Websub.sign("secret", [["て"], ['す']])
   end
 end
