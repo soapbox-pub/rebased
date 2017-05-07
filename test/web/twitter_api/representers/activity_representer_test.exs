@@ -22,6 +22,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
     retweeted_status = ActivityRepresenter.to_map(note_activity, %{user: activity_actor, for: user})
     assert retweeted_status["repeated"] == true
+    assert retweeted_status["id"] == note_activity.id
+    assert status["statusnet_conversation_id"] == retweeted_status["statusnet_conversation_id"]
 
     assert status["retweeted_status"] == retweeted_status
   end

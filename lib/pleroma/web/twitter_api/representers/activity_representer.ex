@@ -27,7 +27,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "is_post_verb" => false,
       "uri" => "tag:#{activity.data["id"]}:objectType=note",
       "created_at" => created_at,
-      "retweeted_status" => retweeted_status
+      "retweeted_status" => retweeted_status,
+      "statusnet_conversation_id" => conversation_id(announced_activity)
     }
   end
 
@@ -82,11 +83,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     |> Enum.filter(&(&1))
     |> Enum.map(fn (user) -> UserRepresenter.to_map(user, opts) end)
 
-
-    conversation_id = with context when not is_nil(context) <- activity.data["context"] do
-      TwitterAPI.context_to_conversation_id(context)
-    else _e -> nil
-    end
+    conversation_id = conversation_id(activity)
 
     %{
       "id" => activity.id,
@@ -106,6 +103,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "favorited" => to_boolean(favorited),
       "repeated" => to_boolean(repeated),
     }
+  end
+
+  def conversation_id(activity) do
+    with context when not is_nil(context) <- activity.data["context"] do
+      TwitterAPI.context_to_conversation_id(context)
+    else _e -> nil
+    end
   end
 
   defp date_to_asctime(date) do
