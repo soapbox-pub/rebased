@@ -128,7 +128,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
-    mentions = activity.data["to"] |> get_mentions
+    mentions = (activity.data["to"] || []) |> get_mentions
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/follow']},
