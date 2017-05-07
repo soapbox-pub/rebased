@@ -77,6 +77,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       id: 1,
       data: %{
         "type" => "Create",
+        "id" => "id",
         "to" => [
           User.ap_followers(user),
           "https://www.w3.org/ns/activitystreams#Public",
@@ -121,7 +122,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "fave_num" => 5,
       "repeat_num" => 3,
       "favorited" => false,
-      "repeated" => false
+      "repeated" => false,
+      "external_url" => activity.data["id"]
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status
