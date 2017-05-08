@@ -14,7 +14,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => status_text} = status_data) do
-    if status_text |> String.trim |> String.length != 0 do
+    l = status_text |> String.trim |> String.length
+    if l > 0 && l < 5000 do
       media_ids = extract_media_ids(status_data)
       {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids))
       conn
