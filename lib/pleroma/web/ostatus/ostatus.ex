@@ -176,7 +176,7 @@ defmodule Pleroma.Web.OStatus do
 
     # TODO: Bail out sooner and use transaction.
     if Object.get_by_ap_id(id) do
-      {:error, "duplicate activity"}
+      {:ok, Activity.get_create_activity_by_object_ap_id(id)}
     else
       ActivityPub.create(to, actor, context, object, %{}, date, false)
     end

@@ -2,13 +2,13 @@ defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
-  alias Pleroma.{Object, Repo, User}
+  alias Pleroma.{Object, Repo, User, Activity}
   import Pleroma.Factory
 
   test "don't insert create notes twice" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
-    {:ok, [_activity]} = OStatus.handle_incoming(incoming)
-    assert {:ok, [{:error, "duplicate activity"}]} == OStatus.handle_incoming(incoming)
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    assert {:ok, [activity]} == OStatus.handle_incoming(incoming)
   end
 
   test "handle incoming note - GS, Salmon" do
@@ -80,10 +80,38 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["type"] == "Announce"
     assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
     assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    assert "https://pleroma.soykaf.com/users/lain" in activity.data["to"]
     refute activity.local
+
+    retweeted_activity = Repo.get(Activity, retweeted_activity.id)
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
     refute retweeted_activity.local
+    assert retweeted_activity.data["object"]["announcement_count"] == 1
+  end
+
+  test "handle incoming retweets - GS, subscription - local message" do
+    incoming = File.read!("test/fixtures/share-gs-local.xml")
+    note_activity = insert(:note_activity)
+    user = User.get_cached_by_ap_id(note_activity.data["actor"])
+    incoming = incoming
+    |> String.replace("LOCAL_ID", note_activity.data["object"]["id"])
+    |> String.replace("LOCAL_USER", user.ap_id)
+
+    {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Announce"
+    assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
+    assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    assert user.ap_id in activity.data["to"]
+    refute activity.local
+
+    retweeted_activity = Repo.get(Activity, retweeted_activity.id)
+    assert note_activity.id == retweeted_activity.id
+    assert retweeted_activity.data["type"] == "Create"
+    assert retweeted_activity.data["actor"] == user.ap_id
+    assert retweeted_activity.local
+    assert retweeted_activity.data["object"]["announcement_count"] == 1
   end
 
   test "handle incoming retweets - Mastodon, salmon" do
