@@ -1,12 +1,19 @@
 defmodule Pleroma.Object do
   use Ecto.Schema
   alias Pleroma.{Repo, Object}
-  import Ecto.Query
+  import Ecto.{Query, Changeset}
 
   schema "objects" do
     field :data, :map
 
     timestamps()
+  end
+
+  def change(struct, params \\ %{}) do
+    changeset = struct
+    |> cast(params, [:data])
+    |> validate_required([:data])
+    |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
   end
 
   def get_by_ap_id(ap_id) do

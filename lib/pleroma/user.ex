@@ -61,6 +61,17 @@ defmodule Pleroma.User do
     }
   end
 
+  @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+  def remote_user_creation(params) do
+    changeset = %User{}
+    |> cast(params, [:bio, :name, :ap_id, :nickname, :info])
+    |> validate_required([:bio, :name, :ap_id, :nickname])
+    |> unique_constraint(:nickname)
+    |> validate_format(:nickname, @email_regex)
+    |> validate_length(:bio, max: 1000)
+    |> validate_length(:name, max: 100)
+  end
+
   def register_changeset(struct, params \\ %{}) do
     changeset = struct
     |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
@@ -69,6 +80,9 @@ defmodule Pleroma.User do
     |> unique_constraint(:email)
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
+    |> validate_format(:email, @email_regex)
+    |> validate_length(:bio, max: 1000)
+    |> validate_length(:name, max: 100)
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])

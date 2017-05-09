@@ -139,5 +139,46 @@ defmodule Pleroma.UserTest do
     user = insert(:user)
     assert User.ap_followers(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname) <> "/followers"
   end
+
+  describe "remote user creation changeset" do
+    @valid_remote %{
+      bio: "hello",
+      name: "Someone",
+      nickname: "a@b.de",
+      ap_id: "http...",
+      info: %{ some: "info" }
+    }
+
+    test "it confirms validity" do
+      cs = User.remote_user_creation(@valid_remote)
+      assert cs.valid?
+    end
+
+    test "it enforces the fqn format for nicknames" do
+      cs = User.remote_user_creation(%{@valid_remote | nickname: "bla"})
+      refute cs.valid?
+    end
+
+    test "it has required fields" do
+      [:bio, :name, :nickname, :ap_id]
+      |> Enum.each(fn (field) ->
+        cs = User.remote_user_creation(Map.delete(@valid_remote, field))
+        refute cs.valid?
+      end)
+    end
+
+    test "it restricts some sizes" do
+      [bio: 1000, name: 100]
+      |> Enum.each(fn ({field, size}) ->
+        string = String.pad_leading(".", size)
+        cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
+        assert cs.valid?
+
+        string = String.pad_leading(".", size + 1)
+        cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
+        refute cs.valid?
+      end)
+    end
+  end
 end
 
