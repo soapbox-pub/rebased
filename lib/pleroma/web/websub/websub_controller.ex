@@ -24,7 +24,7 @@ defmodule Pleroma.Web.Websub.WebsubController do
       String.to_integer(params["hub.lease_seconds"])
     else
       # Guess 3 days
-      60 * 24 * 3
+      60 * 60 * 24 * 3
     end
 
     with %WebsubClientSubscription{} = websub <- Repo.get_by(WebsubClientSubscription, id: id, topic: topic) do
