@@ -218,7 +218,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, activity, object}
   end
 
-  def follow(%User{ap_id: follower_id, local: actor_local}, %User{ap_id: followed_id}, local \\ true) do
+  def follow(%User{ap_id: follower_id, local: actor_local}, %User{ap_id: followed_id}, activity_id \\ nil, local \\ true) do
     data = %{
       "type" => "Follow",
       "actor" => follower_id,
@@ -226,6 +226,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "object" => followed_id,
       "published" => make_date()
     }
+
+    data = if activity_id, do: Map.put(data, "id", activity_id), else: data
 
     with {:ok, activity} <- insert(data, local) do
       if actor_local do
