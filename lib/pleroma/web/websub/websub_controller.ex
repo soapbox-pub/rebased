@@ -19,9 +19,16 @@ defmodule Pleroma.Web.Websub.WebsubController do
   end
 
   # TODO: Extract this into the Websub module
-  def websub_subscription_confirmation(conn, %{"id" => id, "hub.mode" => "subscribe", "hub.challenge" => challenge, "hub.topic" => topic, "hub.lease_seconds" => lease_seconds}) do
+  def websub_subscription_confirmation(conn, %{"id" => id, "hub.mode" => "subscribe", "hub.challenge" => challenge, "hub.topic" => topic} = params) do
+    lease_seconds = if params["hub.lease_seconds"] do
+      String.to_integer(params["hub.lease_seconds"])
+    else
+      # Guess 3 days
+      60 * 24 * 3
+    end
+
     with %WebsubClientSubscription{} = websub <- Repo.get_by(WebsubClientSubscription, id: id, topic: topic) do
-      valid_until = NaiveDateTime.add(NaiveDateTime.utc_now, String.to_integer(lease_seconds))
+      valid_until = NaiveDateTime.add(NaiveDateTime.utc_now, lease_seconds)
       change = Ecto.Changeset.change(websub, %{state: "accepted", valid_until: valid_until})
       {:ok, _websub} = Repo.update(change)
       conn
