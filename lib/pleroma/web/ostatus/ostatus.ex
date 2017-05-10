@@ -120,10 +120,10 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def get_content(entry) do
-    base_content = string_from_xpath("/entry/content", entry)
+    base_content = string_from_xpath("//content", entry)
 
     with scope when not is_nil(scope) <- string_from_xpath("//mastodon:scope", entry),
-         cw when not is_nil(cw) <- string_from_xpath("/entry/summary", entry) do
+         cw when not is_nil(cw) <- string_from_xpath("//summary", entry) do
       "<span class='mastodon-cw'>#{cw}</span><br>#{base_content}"
     else _e -> base_content
     end

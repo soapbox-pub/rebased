@@ -98,6 +98,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
     refute retweeted_activity.local
     assert retweeted_activity.data["object"]["announcement_count"] == 1
+    assert String.contains?(retweeted_activity.data["object"]["content"], "mastodon")
   end
 
   test "handle incoming retweets - GS, subscription - local message" do
