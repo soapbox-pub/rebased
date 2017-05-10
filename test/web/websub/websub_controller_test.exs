@@ -31,7 +31,7 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
       "hub.mode" => "subscribe",
       "hub.topic" => websub.topic,
       "hub.challenge" => "some challenge",
-      "hub.lease_seconds" => 100
+      "hub.lease_seconds" => "100"
     }
 
     conn = conn
@@ -41,8 +41,7 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
 
     assert response(conn, 200) == "some challenge"
     assert websub.state == "accepted"
-
-    # TODO valid_until
+    assert_in_delta NaiveDateTime.diff(websub.valid_until, NaiveDateTime.utc_now), 100, 5
   end
 
   test "handles incoming feed updates", %{conn: conn} do
