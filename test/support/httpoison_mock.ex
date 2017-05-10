@@ -16,7 +16,7 @@ defmodule HTTPoisonMock do
       body: File.read!("test/fixtures/httpoison_mock/shp@social.heldscal.la.xml")
     }}
   end
-  
+
   def get("https://social.heldscal.la/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://social.heldscal.la/user/23211"]]) do
     {:ok, %Response{
       status_code: 200,
@@ -115,8 +115,28 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def post("https://social.heldscal.la/main/push/hub", {:form, data}, ["Content-type": "application/x-www-form-urlencoded"]) do
+    {:ok, %Response{
+      status_code: 202
+    }}
+  end
+
+  def get("https://pawoo.net/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://pawoo.net/users/pekorino"]]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___pawoo.net_users_pekorino.xml")
+    }}
+  end
+
+  def get("https://pawoo.net/users/pekorino.atom", _, _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___pawoo.net_users_pekorino.atom")
+    }}
+  end
+
   def get(url, body, headers) do
-    {:error, "Not implemented the mock response for get #{inspect(url)}"}
+    {:error, "Not implemented the mock response for get #{inspect(url)}, #{inspect(body)}, #{inspect(headers)}"}
   end
 
   def post(url, body, headers) do

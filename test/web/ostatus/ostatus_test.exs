@@ -62,6 +62,16 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["context"] == "2hu"
   end
 
+  test "handle incoming notes - Mastodon, with CW" do
+    incoming = File.read!("test/fixtures/mastodon-note-cw.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Create"
+    assert activity.data["object"]["type"] == "Note"
+    assert activity.data["object"]["actor"] == "https://mastodon.social/users/lambadalambda"
+    assert String.contains?(activity.data["object"]["content"], "technologic")
+  end
+
   test "handle incoming notes - GS, subscription, reply" do
     incoming = File.read!("test/fixtures/ostatus_incoming_reply.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
@@ -172,6 +182,21 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["id"] == "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
   end
 
+  test "handle incoming follows" do
+    incoming = File.read!("test/fixtures/follow.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    assert activity.data["type"] == "Follow"
+    assert activity.data["id"] == "tag:social.heldscal.la,2017-05-07:subscription:23211:person:44803:2017-05-07T09:54:48+00:00"
+    assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
+    assert activity.data["object"] == "https://pawoo.net/users/pekorino"
+    refute activity.local
+
+    follower = User.get_cached_by_ap_id(activity.data["actor"])
+    followed = User.get_cached_by_ap_id(activity.data["object"])
+
+    assert User.following?(follower, followed)
+  end
+
   describe "new remote user creation" do
     test "returns local users" do
       local_user = insert(:user)
@@ -270,6 +295,6 @@ defmodule Pleroma.Web.OStatusTest do
 
       assert activity.data["actor"] == "https://shitposter.club/user/1"
       assert activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
-    end 
+    end
   end
 end

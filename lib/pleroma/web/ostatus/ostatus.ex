@@ -8,6 +8,7 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.{Repo, User, Web, Object, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.{WebFinger, Websub}
+  alias Pleroma.Web.OStatus.FollowHandler
 
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
@@ -30,6 +31,8 @@ defmodule Pleroma.Web.OStatus do
       {:xmlObj, :string, verb} = :xmerl_xpath.string('string(/entry/activity:verb[1])', entry)
 
       case verb do
+        'http://activitystrea.ms/schema/1.0/follow' ->
+          with {:ok, activity} <- FollowHandler.handle(entry, doc), do: activity
         'http://activitystrea.ms/schema/1.0/share' ->
           with {:ok, activity, retweeted_activity} <- handle_share(entry, doc), do: [activity, retweeted_activity]
         'http://activitystrea.ms/schema/1.0/favorite' ->
@@ -116,8 +119,18 @@ defmodule Pleroma.Web.OStatus do
     |> Enum.filter(&(&1))
   end
 
+  def get_content(entry) do
+    base_content = string_from_xpath("/entry/content", entry)
+
+    with scope when not is_nil(scope) <- string_from_xpath("//mastodon:scope", entry),
+         cw when not is_nil(cw) <- string_from_xpath("/entry/summary", entry) do
+      "<span class='mastodon-cw'>#{cw}</span><br>#{base_content}"
+    else _e -> base_content
+    end
+  end
+
   def handle_note(entry, doc \\ nil) do
-    content_html = string_from_xpath("//content[1]", entry)
+    content_html = get_content(entry)
 
     [author] = :xmerl_xpath.string('//author[1]', doc)
     {:ok, actor} = find_make_or_update_user(author)
