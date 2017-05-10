@@ -211,16 +211,14 @@ defmodule Pleroma.Web.OStatus do
   def make_user(uri) do
     with {:ok, info} <- gather_user_info(uri) do
       data = %{
-        local: false,
         name: info["name"],
         nickname: info["nickname"] <> "@" <> info["host"],
         ap_id: info["uri"],
         info: info,
         avatar: info["avatar"]
       }
-      # TODO: Make remote user changeset
-      # SHould enforce fqn nickname
-      Repo.insert(Ecto.Changeset.change(%User{}, data))
+      cs = User.remote_user_creation(data)
+      Repo.insert(cs)
     end
   end
 

@@ -146,7 +146,8 @@ defmodule Pleroma.UserTest do
       name: "Someone",
       nickname: "a@b.de",
       ap_id: "http...",
-      info: %{ some: "info" }
+      info: %{some: "info"},
+      avatar: %{some: "avatar"}
     }
 
     test "it confirms validity" do
@@ -156,11 +157,13 @@ defmodule Pleroma.UserTest do
 
     test "it enforces the fqn format for nicknames" do
       cs = User.remote_user_creation(%{@valid_remote | nickname: "bla"})
+      assert cs.changes.local == false
+      assert cs.changes.avatar
       refute cs.valid?
     end
 
     test "it has required fields" do
-      [:bio, :name, :nickname, :ap_id]
+      [:name, :nickname, :ap_id]
       |> Enum.each(fn (field) ->
         cs = User.remote_user_creation(Map.delete(@valid_remote, field))
         refute cs.valid?
