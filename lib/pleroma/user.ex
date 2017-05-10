@@ -104,7 +104,7 @@ defmodule Pleroma.User do
       {:error,
        "Could not follow user: #{followed.nickname} is already on your list."}
     else
-      if !followed.local do
+      if !followed.local && follower.local do
         Websub.subscribe(follower, followed)
       end
 
