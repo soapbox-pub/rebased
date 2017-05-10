@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Federator do
 
   def start_link do
     spawn(fn ->
-      Process.sleep(1000 * 60 * 1) # 10 minutes
+      Process.sleep(1000 * 60 * 1) # 1 minute
       enqueue(:refresh_subscriptions, nil)
     end)
     GenServer.start_link(__MODULE__, {:sets.new(), :queue.new()}, name: __MODULE__)
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.Federator do
     Logger.debug("Federator running refresh subscriptions")
     Websub.refresh_subscriptions()
     spawn(fn ->
-      Process.sleep(1000 * 60 * 60) # 60 minutes
+      Process.sleep(1000 * 60 * 60 * 6) # 6 hours
       enqueue(:refresh_subscriptions, nil)
     end)
   end
