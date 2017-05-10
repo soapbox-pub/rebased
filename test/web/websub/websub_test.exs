@@ -7,7 +7,7 @@ end
 defmodule Pleroma.Web.WebsubTest do
   use Pleroma.DataCase
   alias Pleroma.Web.Websub
-  alias Pleroma.Web.Websub.WebsubServerSubscription
+  alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   import Pleroma.Factory
   alias Pleroma.Web.Router.Helpers
 
@@ -173,5 +173,19 @@ defmodule Pleroma.Web.WebsubTest do
     assert signed == "B8392C23690CCF871F37EC270BE1582DEC57A503" |> String.downcase
 
     signed = Websub.sign("secret", [["て"], ['す']])
+  end
+
+  describe "renewing subscriptions" do
+    test "it renews subscriptions that have less than a day of time left" do
+      day = 60 * 60 * 24
+      now = NaiveDateTime.utc_now
+      still_good = insert(:websub_client_subscription, %{valid_until: NaiveDateTime.add(now, 2 * day), topic: "http://example.org/still_good", state: "active"})
+      needs_refresh = insert(:websub_client_subscription, %{valid_until: NaiveDateTime.add(now, day - 100), topic: "http://example.org/needs_refresh", state: "active"})
+
+      refresh = Websub.refresh_subscriptions()
+
+      assert still_good == Repo.get(WebsubClientSubscription, still_good.id)
+      refute needs_refresh == Repo.get(WebsubClientSubscription, needs_refresh.id)
+    end
   end
 end

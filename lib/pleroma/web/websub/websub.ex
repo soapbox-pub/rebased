@@ -204,4 +204,19 @@ defmodule Pleroma.Web.Websub do
       {:error, websub}
     end
   end
+
+  def refresh_subscriptions(delta \\ 60 * 60 * 24) do
+    Logger.debug("Refreshing subscriptions")
+
+    cut_off = NaiveDateTime.add(NaiveDateTime.utc_now, delta)
+
+    query = from sub in WebsubClientSubscription,
+      where: sub.valid_until < ^cut_off and sub.state == "active"
+
+    subs = Repo.all(query)
+
+    Enum.map(subs, fn (sub) ->
+      request_subscription(sub)
+    end)
+  end
 end

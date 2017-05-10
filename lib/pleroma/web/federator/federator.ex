@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.Federator do
   use GenServer
   alias Pleroma.User
-  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.{WebFinger, Websub}
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
@@ -9,14 +9,27 @@ defmodule Pleroma.Web.Federator do
   @max_jobs 10
 
   def start_link do
+    spawn(fn ->
+      Process.sleep(1000 * 60 * 1) # 10 minutes
+      enqueue(:refresh_subscriptions, nil)
+    end)
     GenServer.start_link(__MODULE__, {:sets.new(), :queue.new()}, name: __MODULE__)
+  end
+
+  def handle(:refresh_subscriptions, _) do
+    Logger.debug("Federator running refresh subscriptions")
+    Websub.refresh_subscriptions()
+    spawn(fn ->
+      Process.sleep(1000 * 60 * 60) # 60 minutes
+      enqueue(:refresh_subscriptions, nil)
+    end)
   end
 
   def handle(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
       Logger.debug(fn -> "Sending #{activity.data["id"]} out via websub" end)
-      Pleroma.Web.Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
+      Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
       Logger.debug(fn -> "Sending #{activity.data["id"]} out via salmon" end)
