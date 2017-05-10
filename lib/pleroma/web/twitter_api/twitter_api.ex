@@ -350,4 +350,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       {:error, "No such conversation"}
     end
   end
+
+  def get_external_profile(for_user, uri) do
+    with %User{} = user <- User.get_cached_by_ap_id(uri) do
+      {:ok, UserRepresenter.to_map(user, %{for: for_user})}
+    else _e ->
+      {:error, "Couldn't find user"}
+    end
+  end
 end

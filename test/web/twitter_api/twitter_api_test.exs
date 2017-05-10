@@ -358,4 +358,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       assert conversation_id == object.id
     end
   end
+
+  describe "fetching a user by uri" do
+    test "fetches a user by uri" do
+      user = insert(:user)
+
+      {:ok, represented} = TwitterAPI.get_external_profile(user, user.ap_id)
+      assert represented = UserRepresenter.to_map(user, %{for: user})
+    end
+  end
 end

@@ -207,6 +207,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, response)
   end
 
+  def external_profile(%{assigns: %{user: current_user}} = conn, %{"profileurl" => uri}) do
+    with {:ok, user_map} <- TwitterAPI.get_external_profile(current_user, uri),
+         response <- Poison.encode!(user_map) do
+      conn
+      |> json_reply(200, response)
+    end
+  end
+
   defp bad_request_reply(conn, error_message) do
     json = error_json(conn, error_message)
     json_reply(conn, 400, json)

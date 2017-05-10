@@ -38,6 +38,8 @@ defmodule Pleroma.Web.Router do
     get "/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation
 
     post "/account/register", TwitterAPI.Controller, :register
+
+    get "/externalprofile/show", TwitterAPI.Controller, :external_profile
   end
 
   scope "/api", Pleroma.Web do
