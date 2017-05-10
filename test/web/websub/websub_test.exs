@@ -179,8 +179,8 @@ defmodule Pleroma.Web.WebsubTest do
     test "it renews subscriptions that have less than a day of time left" do
       day = 60 * 60 * 24
       now = NaiveDateTime.utc_now
-      still_good = insert(:websub_client_subscription, %{valid_until: NaiveDateTime.add(now, 2 * day), topic: "http://example.org/still_good", state: "active"})
-      needs_refresh = insert(:websub_client_subscription, %{valid_until: NaiveDateTime.add(now, day - 100), topic: "http://example.org/needs_refresh", state: "active"})
+      still_good = insert(:websub_client_subscription, %{valid_until: NaiveDateTime.add(now, 2 * day), topic: "http://example.org/still_good", state: "accepted"})
+      needs_refresh = insert(:websub_client_subscription, %{valid_until: NaiveDateTime.add(now, day - 100), topic: "http://example.org/needs_refresh", state: "accepted"})
 
       refresh = Websub.refresh_subscriptions()
 

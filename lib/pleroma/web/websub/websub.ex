@@ -211,7 +211,7 @@ defmodule Pleroma.Web.Websub do
     cut_off = NaiveDateTime.add(NaiveDateTime.utc_now, delta)
 
     query = from sub in WebsubClientSubscription,
-      where: sub.valid_until < ^cut_off and sub.state == "active"
+      where: sub.valid_until < ^cut_off and sub.state == "accepted"
 
     subs = Repo.all(query)
 
