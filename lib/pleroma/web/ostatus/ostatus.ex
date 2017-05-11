@@ -81,13 +81,16 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def get_or_try_fetching(entry) do
+    Logger.debug("Trying to fetch entry")
     with id when not is_nil(id) <- string_from_xpath("//activity:object[1]/id", entry),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       {:ok, activity}
     else _e ->
+        Logger.debug("Couldn't get, will try to fetch")
         with href when not is_nil(href) <- string_from_xpath("//activity:object[1]/link[@type=\"text/html\"]/@href", entry),
              {:ok, [favorited_activity]} <- fetch_activity_from_html_url(href) do
           {:ok, favorited_activity}
+        else e -> Logger.debug("Couldn't find href: #{inspect(e)}")
         end
     end
   end
