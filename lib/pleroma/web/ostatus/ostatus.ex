@@ -136,7 +136,7 @@ defmodule Pleroma.Web.OStatus do
     {:ok, actor} = find_make_or_update_user(author)
     inReplyTo = string_from_xpath("//thr:in-reply-to[1]/@ref", entry)
 
-    if !Object.get_cached_by_ap_id(inReplyTo) do
+    if inReplyTo && !Object.get_cached_by_ap_id(inReplyTo) do
       inReplyToHref = string_from_xpath("//thr:in-reply-to[1]/@href", entry)
       if inReplyToHref do
         fetch_activity_from_html_url(inReplyToHref)
