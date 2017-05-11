@@ -39,6 +39,7 @@ defmodule Pleroma.Web.Websub do
   end
 
   def publish(topic, user, activity) do
+    # TODO: Only send to still valid subscriptions.
     query = from sub in WebsubServerSubscription,
     where: sub.topic == ^topic and sub.state == "active"
     subscriptions = Repo.all(query)

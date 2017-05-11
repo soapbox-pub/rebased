@@ -140,6 +140,8 @@ defmodule Pleroma.Web.OStatus do
       inReplyToHref = string_from_xpath("//thr:in-reply-to[1]/@href", entry)
       if inReplyToHref do
         fetch_activity_from_html_url(inReplyToHref)
+      else
+        Logger.debug("Couldn't find a href link to #{inReplyTo}")
       end
     end
 
@@ -288,10 +290,13 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def fetch_activity_from_html_url(url) do
+    Logger.debug("Trying to fetch #{url}")
     with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true),
          {:ok, atom_url} <- get_atom_url(body),
          {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url, [], follow_redirect: true) do
+      Logger.debug("Got #{url}, handling...")
       handle_incoming(body)
+    else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
     end
   end
 end
