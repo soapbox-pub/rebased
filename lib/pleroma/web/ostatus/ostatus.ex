@@ -81,11 +81,11 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def get_or_try_fetching(entry) do
-    Logger.debug("Trying to fetch entry")
+    Logger.debug("Trying to get entry from db")
     with id when not is_nil(id) <- string_from_xpath("//activity:object[1]/id", entry),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       {:ok, activity}
-    else _e ->
+    else e ->
         Logger.debug("Couldn't get, will try to fetch")
         with href when not is_nil(href) <- string_from_xpath("//activity:object[1]/link[@type=\"text/html\"]/@href", entry),
              {:ok, [favorited_activity]} <- fetch_activity_from_html_url(href) do
@@ -126,7 +126,7 @@ defmodule Pleroma.Web.OStatus do
     base_content = string_from_xpath("//content", entry)
 
     with scope when not is_nil(scope) <- string_from_xpath("//mastodon:scope", entry),
-         cw when not is_nil(cw) <- string_from_xpath("//summary", entry) do
+         cw when not is_nil(cw) <- string_from_xpath("/*/summary", entry) do
       "<span class='mastodon-cw'>#{cw}</span><br>#{base_content}"
     else _e -> base_content
     end
@@ -297,7 +297,7 @@ defmodule Pleroma.Web.OStatus do
     with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true),
          {:ok, atom_url} <- get_atom_url(body),
          {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url, [], follow_redirect: true) do
-      Logger.debug("Got #{url}, handling...")
+      Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body)
     else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
     end

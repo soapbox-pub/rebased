@@ -72,6 +72,13 @@ defmodule Pleroma.Web.OStatusTest do
     assert String.contains?(activity.data["object"]["content"], "technologic")
   end
 
+  test "handle incoming retweets - Mastodon, with CW" do
+    incoming = File.read!("test/fixtures/cw_retweet.xml")
+    {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+
+    assert String.contains?(retweeted_activity.data["object"]["content"], "Hey.")
+  end
+
   test "handle incoming notes - GS, subscription, reply" do
     incoming = File.read!("test/fixtures/ostatus_incoming_reply.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
@@ -99,6 +106,7 @@ defmodule Pleroma.Web.OStatusTest do
     refute retweeted_activity.local
     assert retweeted_activity.data["object"]["announcement_count"] == 1
     assert String.contains?(retweeted_activity.data["object"]["content"], "mastodon")
+    refute String.contains?(retweeted_activity.data["object"]["content"], "Test account")
   end
 
   test "handle incoming retweets - GS, subscription - local message" do
@@ -138,6 +146,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
     refute retweeted_activity.local
+    refute String.contains?(retweeted_activity.data["object"]["content"], "Test account")
   end
 
   test "handle incoming favorites - GS, websub" do
@@ -192,8 +201,8 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"] == "https://pawoo.net/users/pekorino"
     refute activity.local
 
-    follower = User.get_cached_by_ap_id(activity.data["actor"])
-    followed = User.get_cached_by_ap_id(activity.data["object"])
+    follower = User.get_by_ap_id(activity.data["actor"])
+    followed = User.get_by_ap_id(activity.data["object"])
 
     assert User.following?(follower, followed)
   end

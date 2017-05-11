@@ -135,6 +135,20 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://mamot.fr/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://mamot.fr/users/Skruyb"]]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/skruyb@mamot.fr.atom")
+    }}
+  end
+
+  def get("https://mamot.fr/users/Skruyb.atom", _, _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___mamot.fr_users_Skruyb.atom")
+    }}
+  end
+
   def get(url, body, headers) do
     {:error, "Not implemented the mock response for get #{inspect(url)}, #{inspect(body)}, #{inspect(headers)}"}
   end

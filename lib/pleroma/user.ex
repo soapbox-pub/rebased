@@ -136,9 +136,13 @@ defmodule Pleroma.User do
     Enum.member?(follower.following, User.ap_followers(followed))
   end
 
+  def get_by_ap_id(ap_id) do
+    Repo.get_by(User, ap_id: ap_id)
+  end
+
   def get_cached_by_ap_id(ap_id) do
     key = "ap_id:#{ap_id}"
-    Cachex.get!(:user_cache, key, fallback: fn(_) -> Repo.get_by(User, ap_id: ap_id) end)
+    Cachex.get!(:user_cache, key, fallback: fn(_) -> get_by_ap_id(ap_id) end)
   end
 
   def get_cached_by_nickname(nickname) do
