@@ -235,8 +235,12 @@ defmodule Pleroma.Web.OStatus do
         info: info,
         avatar: info["avatar"]
       }
-      cs = User.remote_user_creation(data)
-      Repo.insert(cs)
+      with %User{} = user <- User.get_by_ap_id(data.ap_id) do
+        {:ok, user}
+      else _e ->
+        cs = User.remote_user_creation(data)
+        Repo.insert(cs)
+      end
     end
   end
 
