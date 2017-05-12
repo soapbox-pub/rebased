@@ -2,6 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.{User, Activity, Repo, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
+  alias Pleroma.Web.OStatus
 
   import Ecto.Query
 
@@ -352,10 +353,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def get_external_profile(for_user, uri) do
-    with %User{} = user <- User.get_cached_by_ap_id(uri) do
+    with {:ok, %User{} = user} <- OStatus.find_or_make_user(uri) do
       {:ok, UserRepresenter.to_map(user, %{for: for_user})}
     else _e ->
-      {:error, "Couldn't find user"}
+        {:error, "Couldn't find user"}
     end
   end
 end
