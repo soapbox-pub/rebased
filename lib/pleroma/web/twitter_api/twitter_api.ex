@@ -243,7 +243,21 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def add_user_links(text, mentions) do
-    Enum.reduce(mentions, text, fn ({match, %User{ap_id: ap_id}}, text) -> String.replace(text, match, "<a href='#{ap_id}'>#{match}</a>") end)
+    mentions = mentions
+    |> Enum.sort_by(fn ({name, _}) -> -String.length(name) end)
+    |> Enum.map(fn({name, user}) -> {name, user, Ecto.UUID.generate} end)
+
+    # This replaces the mention with a unique reference first so it doesn't
+    # contain parts of other replaced mentions. There probably is a better
+    # solution for this...
+    step_one = mentions
+    |> Enum.reduce(text, fn ({match, _user, uuid}, text) ->
+      String.replace(text, match, uuid)
+    end)
+
+    Enum.reduce(mentions, step_one, fn ({match, %User{ap_id: ap_id}, uuid}, text) ->
+      String.replace(text, uuid, "<a href='#{ap_id}'>#{match}</a>")
+    end)
   end
 
   def register_user(params) do
