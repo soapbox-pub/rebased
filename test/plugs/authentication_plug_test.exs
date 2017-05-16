@@ -2,12 +2,13 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Plugs.AuthenticationPlug
+  alias Pleroma.User
 
   defp fetch_nil(_name) do
     {:ok, nil}
   end
 
-  @user %{
+  @user %User{
     id: 1,
     name: "dude",
     password_hash: Comeonin.Pbkdf2.hashpwsalt("guy")
@@ -129,6 +130,7 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
       assert conn.halted == false
     end
   end
+
   describe "with a user_id in the session for an existing user" do
     test "it assigns the user", %{conn: conn} do
       opts = %{
@@ -148,6 +150,17 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
       assert %{ user: @user } == conn.assigns
       assert get_session(conn, :user_id) == @user.id
       assert conn.halted == false
+    end
+  end
+
+  describe "with an assigned user" do
+    test "it does nothing, returning the incoming conn", %{conn: conn} do
+      conn = conn
+      |> assign(:user, @user)
+
+      conn_result = AuthenticationPlug.call(conn, %{})
+
+      assert conn == conn_result
     end
   end
 end

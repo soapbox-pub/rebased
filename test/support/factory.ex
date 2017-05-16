@@ -19,7 +19,7 @@ defmodule Pleroma.Factory do
     data = %{
       "type" => "Note",
       "content" => text,
-      "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_object_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id,
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601,
@@ -36,7 +36,7 @@ defmodule Pleroma.Factory do
   def note_activity_factory do
     note = insert(:note)
     data = %{
-      "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_activity_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id,
       "type" => "Create",
       "actor" => note.data["actor"],
       "to" => note.data["to"],
@@ -55,7 +55,7 @@ defmodule Pleroma.Factory do
     user = insert(:user)
 
     data = %{
-      "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_activity_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id,
       "actor" => user.ap_id,
       "type" => "Like",
       "object" => note_activity.data["object"]["id"],
@@ -72,7 +72,7 @@ defmodule Pleroma.Factory do
     followed = insert(:user)
 
     data = %{
-      "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_activity_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id,
       "actor" => follower.ap_id,
       "type" => "Follow",
       "object" => followed.ap_id,

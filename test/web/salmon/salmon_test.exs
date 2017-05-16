@@ -71,7 +71,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     mentioned_user = insert(:user, user_data)
     note = insert(:note)
     activity_data = %{
-      "id" => Pleroma.Web.ActivityPub.ActivityPub.generate_activity_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id,
       "type" => "Create",
       "actor" => note.data["actor"],
       "to" => note.data["to"] ++ [mentioned_user.ap_id],

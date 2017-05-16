@@ -1,10 +1,13 @@
 defmodule Pleroma.Plugs.AuthenticationPlug do
   alias Comeonin.Pbkdf2
   import Plug.Conn
+  alias Pleroma.User
 
   def init(options) do
     options
   end
+
+  def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
 
   def call(conn, opts) do
     with {:ok, username, password} <- decode_header(conn),

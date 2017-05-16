@@ -6,6 +6,7 @@ defmodule Pleroma.User do
   alias Comeonin.Pbkdf2
   alias Pleroma.Web.{OStatus, Websub}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
 
   schema "users" do
     field :bio, :string
@@ -126,7 +127,7 @@ defmodule Pleroma.User do
       { :ok, follower } = follower
       |> follow_changeset(%{following: following})
       |> Repo.update
-      { :ok, follower, ActivityPub.fetch_latest_follow(follower, followed)}
+      { :ok, follower, Utils.fetch_latest_follow(follower, followed)}
     else
       {:error, "Not subscribed!"}
     end

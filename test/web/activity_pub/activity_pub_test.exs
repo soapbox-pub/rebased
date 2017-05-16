@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.{Activity, Object, User}
   alias Pleroma.Builders.ActivityBuilder
 
@@ -216,7 +217,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       follower = Repo.get_by(User, ap_id: activity.data["actor"])
       followed = Repo.get_by(User, ap_id: activity.data["object"])
 
-      assert activity == ActivityPub.fetch_latest_follow(follower, followed)
+      assert activity == Utils.fetch_latest_follow(follower, followed)
     end
   end
 

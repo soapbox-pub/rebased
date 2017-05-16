@@ -7,6 +7,7 @@ defmodule Pleroma.Web.OStatus do
 
   alias Pleroma.{Repo, User, Web, Object, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.OStatus.FollowHandler
 
@@ -158,7 +159,7 @@ defmodule Pleroma.Web.OStatus do
                 if String.length(context) > 0 do
                   context
                 else
-                  ActivityPub.generate_context_id
+                  Utils.generate_context_id
                 end
               end
 

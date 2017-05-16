@@ -9,6 +9,11 @@ defmodule Pleroma.Object do
     timestamps()
   end
 
+  def create(data) do
+    Object.change(%Object{}, %{data: data})
+    |> Repo.insert
+  end
+
   def change(struct, params \\ %{}) do
     changeset = struct
     |> cast(params, [:data])

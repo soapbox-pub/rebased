@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.{User, Activity, Repo, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
   alias Pleroma.Web.OStatus
 
@@ -44,7 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def create_status(%User{} = user, %{"status" => status} = data) do
     attachments = attachments_from_ids(data["media_ids"])
-    context = ActivityPub.generate_context_id
+    context = Utils.generate_context_id
     mentions = parse_mentions(status)
     content_html = status
     |> format_input(mentions)
