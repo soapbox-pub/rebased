@@ -2,6 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
   alias Pleroma.Builders.{UserBuilder, ActivityBuilder}
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.Utils
   alias Pleroma.{Activity, User, Object, Repo}
   alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -261,7 +262,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     mentions = TwitterAPI.parse_mentions(text)
     expected_text = "<a href='#{gsimg.ap_id}'>@gsimg</a> According to <a href='#{archaeme.ap_id}'>@archaeme</a>, that is @daggsy. Also hello <a href='#{archaeme_remote.ap_id}'>@archaeme@archae.me</a>"
 
-    assert TwitterAPI.add_user_links(text, mentions) == expected_text
+    assert Utils.add_user_links(text, mentions) == expected_text
   end
 
   test "it favorites a status, returns the updated status" do

@@ -4,28 +4,23 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
   alias Pleroma.Web.OStatus
+  alias Pleroma.Formatter
 
   import Ecto.Query
+  import Pleroma.Web.TwitterAPI.Utils
 
-  def to_for_user_and_mentions(user, mentions) do
+  def to_for_user_and_mentions(user, mentions, inReplyTo) do
     default_to = [
       User.ap_followers(user),
       "https://www.w3.org/ns/activitystreams#Public"
     ]
 
-    default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
-  end
-
-  def format_input(text, mentions) do
-    HtmlSanitizeEx.strip_tags(text)
-    |> String.replace("\n", "<br>")
-    |> add_user_links(mentions)
-  end
-
-  def attachments_from_ids(ids) do
-    Enum.map(ids || [], fn (media_id) ->
-      Repo.get(Object, media_id).data
-    end)
+    to = default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
+    if inReplyTo do
+      Enum.uniq([inReplyTo.data["actor"] | to])
+    else
+      to
+    end
   end
 
   def get_replied_to_activity(id) when not is_nil(id) do
@@ -34,62 +29,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def get_replied_to_activity(_), do: nil
 
-  def add_attachments(text, attachments) do
-    attachment_text = Enum.map(attachments, fn
-      (%{"url" => [%{"href" => href} | _]}) ->
-        "<a href='#{href}' class='attachment'>#{href}</a>"
-      _ -> ""
-    end)
-    Enum.join([text | attachment_text], "<br>")
-    end
-
   def create_status(%User{} = user, %{"status" => status} = data) do
-    attachments = attachments_from_ids(data["media_ids"])
-    context = Utils.generate_context_id
-    mentions = parse_mentions(status)
-    content_html = status
-    |> format_input(mentions)
-    |> add_attachments(attachments)
-
-    to = to_for_user_and_mentions(user, mentions)
-    date = make_date()
-
-    inReplyTo = get_replied_to_activity(data["in_reply_to_status_id"])
-
-    # Wire up reply info.
-    [to, context, object, additional] =
-      if inReplyTo do
-      context = inReplyTo.data["context"]
-      to = to ++ [inReplyTo.data["actor"]]
-
-      object = %{
-        "type" => "Note",
-        "to" => to,
-        "content" => content_html,
-        "published" => date,
-        "context" => context,
-        "attachment" => attachments,
-        "actor" => user.ap_id,
-        "inReplyTo" => inReplyTo.data["object"]["id"],
-        "inReplyToStatusId" => inReplyTo.id,
-      }
-      additional = %{}
-
-      [to, context, object, additional]
-      else
-      object = %{
-        "type" => "Note",
-        "to" => to,
-        "content" => content_html,
-        "published" => date,
-        "context" => context,
-        "attachment" => attachments,
-        "actor" => user.ap_id
-      }
-      [to, context, object, %{}]
+    with attachments <- attachments_from_ids(data["media_ids"]),
+         mentions <- parse_mentions(status),
+         inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
+         to <- to_for_user_and_mentions(user, mentions, inReplyTo),
+         content_html <- make_content_html(status, mentions, attachments),
+         context <- make_context(inReplyTo),
+         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo) do
+      ActivityPub.create(to, user, context, object)
     end
-
-    ActivityPub.create(to, user, context, object, additional, data)
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do
@@ -241,24 +190,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     |> Enum.uniq
     |> Enum.map(fn ("@" <> match = full_match) -> {full_match, User.get_cached_by_nickname(match)} end)
     |> Enum.filter(fn ({_match, user}) -> user end)
-  end
-
-  def add_user_links(text, mentions) do
-    mentions = mentions
-    |> Enum.sort_by(fn ({name, _}) -> -String.length(name) end)
-    |> Enum.map(fn({name, user}) -> {name, user, Ecto.UUID.generate} end)
-
-    # This replaces the mention with a unique reference first so it doesn't
-    # contain parts of other replaced mentions. There probably is a better
-    # solution for this...
-    step_one = mentions
-    |> Enum.reduce(text, fn ({match, _user, uuid}, text) ->
-      String.replace(text, match, uuid)
-    end)
-
-    Enum.reduce(mentions, step_one, fn ({match, %User{ap_id: ap_id}, uuid}, text) ->
-      String.replace(text, uuid, "<a href='#{ap_id}'>#{match}</a>")
-    end)
   end
 
   def register_user(params) do
