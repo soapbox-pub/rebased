@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ObjectRepresenter}
-  alias Pleroma.{Activity, User}
+  alias Pleroma.{Activity, User, Formatter}
   alias Calendar.Strftime
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
@@ -72,6 +72,18 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
+  def content_with_tags(content, tags) do
+    tags = tags || []
+    text_content = HtmlSanitizeEx.strip_tags(content)
+    found_tags = Formatter.parse_tags(text_content)
+    |> Enum.map(fn ({_, tag}) -> tag end)
+
+    missing_tags = tags -- found_tags
+    |> Enum.map(&"##{&1}")
+
+    Enum.join([content | missing_tags], "<br>\n")
+  end
+
   def to_map(%Activity{data: %{"object" => %{"content" => content} = object}} = activity, %{user: user} = opts) do
     created_at = object["published"] |> date_to_asctime
     like_count = object["like_count"] || 0
@@ -87,6 +99,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     |> Enum.map(fn (user) -> UserRepresenter.to_map(user, opts) end)
 
     conversation_id = conversation_id(activity)
+
+    content = content_with_tags(content, object["tag"])
 
     %{
       "id" => activity.id,

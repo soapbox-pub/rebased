@@ -23,7 +23,7 @@ defmodule HTTPoisonMock do
       body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_user_23211.xml")
     }}
   end
-  
+
   def get("https://social.heldscal.la/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://social.heldscal.la/user/29191"]]) do
     {:ok, %Response{
       status_code: 200,

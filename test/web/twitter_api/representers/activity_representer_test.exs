@@ -67,7 +67,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       }
     }
 
-    content_html = "Some content mentioning <a href='#{mentioned_user.ap_id}'>@shp</shp>"
+    content_html = "Some #content mentioning <a href='#{mentioned_user.ap_id}'>@shp</shp>"
     content = HtmlSanitizeEx.strip_tags(content_html)
     date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601
 
@@ -94,7 +94,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           ],
           "like_count" => 5,
           "announcement_count" => 3,
-          "context" => "2hu"
+          "context" => "2hu",
+          "tag" => ["nsfw", "content"]
         },
         "published" => date,
         "context" => "2hu"
@@ -107,8 +108,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "user" => UserRepresenter.to_map(user, %{for: follower}),
       "is_local" => true,
       "attentions" => [],
-      "statusnet_html" => content_html,
-      "text" => content,
+      "statusnet_html" => content_html <> "<br>\n#nsfw",
+      "text" => content <> "\n#nsfw",
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",
       "in_reply_to_status_id" => 213123,
