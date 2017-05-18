@@ -196,7 +196,15 @@ defmodule Pleroma.Web.OStatus do
     }
 
     object = if inReplyTo do
-      Map.put(object, "inReplyTo", inReplyTo)
+      replied_to_object = Object.get_cached_by_ap_id(inReplyTo)
+      if replied_to_object do
+        object
+        |> Map.put("inReplyTo", inReplyTo)
+        |> Map.put("inReplyToStatusId", replied_to_object.id)
+      else
+        object
+        |> Map.put("inReplyTo", inReplyTo)
+      end
     else
       object
     end
