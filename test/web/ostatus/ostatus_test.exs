@@ -46,6 +46,13 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["attachment"] |> length == 2
   end
 
+  test "handle incoming notes with tags" do
+    incoming = File.read!("test/fixtures/ostatus_incoming_post_tag.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["object"]["tag"] == ["nsfw"]
+  end
+
   test "handle incoming notes - Mastodon, salmon, reply" do
     # It uses the context of the replied to object
     Repo.insert!(%Object{

@@ -133,6 +133,11 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
+  def get_tags(entry) do
+    :xmerl_xpath.string('//category', entry)
+    |> Enum.map(fn (category) -> string_from_xpath("/category/@term", category) end)
+  end
+
   def handle_note(entry, doc \\ nil) do
     content_html = get_content(entry)
 
@@ -163,6 +168,8 @@ defmodule Pleroma.Web.OStatus do
                 end
               end
 
+    tags = get_tags(entry)
+
     to = [
       "https://www.w3.org/ns/activitystreams#Public",
       User.ap_followers(actor)
@@ -184,7 +191,8 @@ defmodule Pleroma.Web.OStatus do
       "published" => date,
       "context" => context,
       "actor" => actor.ap_id,
-      "attachment" => attachments
+      "attachment" => attachments,
+      "tag" => tags
     }
 
     object = if inReplyTo do
