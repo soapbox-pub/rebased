@@ -36,7 +36,7 @@ defmodule Pleroma.Mixfile do
      {:cowboy, "~> 1.0", override: true},
      {:comeonin, "~> 3.0"},
      {:trailing_format_plug, "~> 0.0.5" },
-     {:html_sanitize_ex, "~> 1.0.0"},
+     {:html_sanitize_ex, "~> 1.3.0-rc1"},
      {:calendar, "~> 0.16.1"},
      {:cachex, "~> 2.1"},
      {:httpoison, "~> 0.11.1"},
