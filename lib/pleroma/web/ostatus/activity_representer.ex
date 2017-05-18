@@ -42,6 +42,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
     mentions = activity.data["to"] |> get_mentions
 
+    categories = (activity.data["object"]["tag"] || [])
+    |> Enum.map(fn (tag) -> {:category, [term: to_charlist(tag)], []} end)
+
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/post']},
@@ -53,7 +56,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:"ostatus:conversation", [], h.(activity.data["context"])},
       {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
       {:link, [type: ['application/atom+xml'], href: h.(activity.data["object"]["id"]), rel: 'self'], []}
-    ] ++ attachments ++ in_reply_to ++ author ++ mentions
+    ] ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions
   end
 
   def to_simple_form(%{data: %{"type" => "Like"}} = activity, user, with_author) do

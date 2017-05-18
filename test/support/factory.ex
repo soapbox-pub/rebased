@@ -25,7 +25,8 @@ defmodule Pleroma.Factory do
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601,
       "likes" => [],
       "like_count" => 0,
-      "context" => "2hu"
+      "context" => "2hu",
+      "tag" => ["2hu"]
     }
 
     %Pleroma.Object{
