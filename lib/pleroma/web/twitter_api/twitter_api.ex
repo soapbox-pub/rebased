@@ -36,7 +36,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          to <- to_for_user_and_mentions(user, mentions, inReplyTo),
          content_html <- make_content_html(status, mentions, attachments),
          context <- make_context(inReplyTo),
-         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo) do
+         tags <- Formatter.parse_tags(status),
+         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags) do
       ActivityPub.create(to, user, context, object)
     end
   end

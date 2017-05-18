@@ -11,7 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
   def add_attachments(text, attachments) do
     attachment_text = Enum.map(attachments, fn
       (%{"url" => [%{"href" => href} | _]}) ->
-        "<a href='#{href}' class='attachment'>#{href}</a>"
+        "<a href='#{href}' class='attachment'>#{Path.basename(href)}</a>"
       _ -> ""
     end)
     Enum.join([text | attachment_text], "<br>")
@@ -51,14 +51,15 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id
 
-  def make_note_data(actor, to, context, content_html, attachments, inReplyTo) do
+  def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags) do
       object = %{
         "type" => "Note",
         "to" => to,
         "content" => content_html,
         "context" => context,
         "attachment" => attachments,
-        "actor" => actor
+        "actor" => actor,
+        "tag" => tags |> Enum.map(fn ({_, tag}) -> tag end)
       }
 
     if inReplyTo do
