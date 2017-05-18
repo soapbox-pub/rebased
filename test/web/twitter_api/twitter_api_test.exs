@@ -34,7 +34,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
 
-    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.<br>This is on another line. #2hu #epic #phantasmagoric<br><a href='http://example.org/image.jpg' class='attachment'>image.jpg</a>"
+    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.<br>\nThis is on another line. #2hu #epic #phantasmagoric<br>\n<a href='http://example.org/image.jpg' class='attachment'>image.jpg</a>"
     assert get_in(activity.data, ["object", "type"]) == "Note"
     assert get_in(activity.data, ["object", "actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
