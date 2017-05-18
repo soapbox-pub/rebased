@@ -65,6 +65,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <ostatus:conversation>#{answer.data["context"]}</ostatus:conversation>
     <link href="#{answer.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />
+    <category term="2hu"/>
     <thr:in-reply-to ref="#{note.data["object"]["id"]}" />
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
