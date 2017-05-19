@@ -44,10 +44,22 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def object(conn, %{"uuid" => uuid}) do
-    id = o_status_url(conn, :object, uuid)
-    activity = Activity.get_create_activity_by_object_ap_id(id)
-    user = User.get_cached_by_ap_id(activity.data["actor"])
+    with id <- o_status_url(conn, :object, uuid),
+         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
+         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+      represent_activity(conn, activity, user)
+    end
+  end
 
+  def activity(conn, %{"uuid" => uuid}) do
+    with id <- o_status_url(conn, :activity, uuid),
+         %Activity{} = activity <- Activity.get_by_ap_id(id),
+         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+      represent_activity(conn, activity, user)
+    end
+  end
+
+  defp represent_activity(conn, activity, user) do
     response = activity
     |> ActivityRepresenter.to_simple_form(user, true)
     |> ActivityRepresenter.wrap_with_entry

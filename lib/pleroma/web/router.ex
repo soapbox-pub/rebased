@@ -77,6 +77,7 @@ defmodule Pleroma.Web.Router do
     pipe_through :ostatus
 
     get "/objects/:uuid", OStatus.OStatusController, :object
+    get "/activities/:uuid", OStatus.OStatusController, :activity
 
     get "/users/:nickname/feed", OStatus.OStatusController, :feed
     get "/users/:nickname", OStatus.OStatusController, :feed_redirect
