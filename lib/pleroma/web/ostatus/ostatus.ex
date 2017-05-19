@@ -63,8 +63,7 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def handle_share(entry, doc) do
-    with [object] <- :xmerl_xpath.string('/entry/activity:object', entry),
-         {:ok, retweeted_activity} <-  handle_note(object, object),
+    with {:ok, retweeted_activity} <- get_or_build_object(entry),
          {:ok, activity} <- make_share(entry, doc, retweeted_activity) do
       {:ok, activity, retweeted_activity}
     else
@@ -80,6 +79,18 @@ defmodule Pleroma.Web.OStatus do
       {:ok, activity}
     end
   end
+
+  def get_or_build_object(entry) do
+    with {:ok, activity} <- get_or_try_fetching(entry) do
+      {:ok, activity}
+    else
+      _e ->
+        with [object] <- :xmerl_xpath.string('/entry/activity:object', entry) do
+          handle_note(object, object)
+        end
+    end
+  end
+
 
   def get_or_try_fetching(entry) do
     Logger.debug("Trying to get entry from db")
