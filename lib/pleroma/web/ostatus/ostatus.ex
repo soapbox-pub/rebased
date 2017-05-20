@@ -9,7 +9,7 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.{WebFinger, Websub}
-  alias Pleroma.Web.OStatus.FollowHandler
+  alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler}
 
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
@@ -41,9 +41,9 @@ defmodule Pleroma.Web.OStatus do
         _ ->
           case object_type do
             'http://activitystrea.ms/schema/1.0/note' ->
-              with {:ok, activity} <- handle_note(entry, doc), do: activity
+              with {:ok, activity} <- NoteHandler.handle_note(entry, doc), do: activity
             'http://activitystrea.ms/schema/1.0/comment' ->
-              with {:ok, activity} <- handle_note(entry, doc), do: activity
+              with {:ok, activity} <- NoteHandler.handle_note(entry, doc), do: activity
             _ ->
               Logger.error("Couldn't parse incoming document")
               nil
@@ -86,11 +86,10 @@ defmodule Pleroma.Web.OStatus do
     else
       _e ->
         with [object] <- :xmerl_xpath.string('/entry/activity:object', entry) do
-          handle_note(object, object)
+          NoteHandler.handle_note(object, object)
         end
     end
   end
-
 
   def get_or_try_fetching(entry) do
     Logger.debug("Trying to get entry from db")
@@ -134,6 +133,10 @@ defmodule Pleroma.Web.OStatus do
     |> Enum.filter(&(&1))
   end
 
+  @doc """
+    Gets the content from a an entry. Will add the cw text to the body for cw'd
+    Mastodon notes.
+  """
   def get_content(entry) do
     base_content = string_from_xpath("//content", entry)
 
@@ -147,85 +150,6 @@ defmodule Pleroma.Web.OStatus do
   def get_tags(entry) do
     :xmerl_xpath.string('//category', entry)
     |> Enum.map(fn (category) -> string_from_xpath("/category/@term", category) end)
-  end
-
-  def handle_note(entry, doc \\ nil) do
-    content_html = get_content(entry)
-
-    [author] = :xmerl_xpath.string('//author[1]', doc)
-    {:ok, actor} = find_make_or_update_user(author)
-    inReplyTo = string_from_xpath("//thr:in-reply-to[1]/@ref", entry)
-
-    if inReplyTo && !Object.get_cached_by_ap_id(inReplyTo) do
-      inReplyToHref = string_from_xpath("//thr:in-reply-to[1]/@href", entry)
-      if inReplyToHref do
-        fetch_activity_from_html_url(inReplyToHref)
-      else
-        Logger.debug("Couldn't find a href link to #{inReplyTo}")
-      end
-    end
-
-    context = (string_from_xpath("//ostatus:conversation[1]", entry) || "") |> String.trim
-
-    attachments = get_attachments(entry)
-
-    context = with %{data: %{"context" => context}} <- Object.get_cached_by_ap_id(inReplyTo) do
-                context
-              else _e ->
-                if String.length(context) > 0 do
-                  context
-                else
-                  Utils.generate_context_id
-                end
-              end
-
-    tags = get_tags(entry)
-
-    to = [
-      "https://www.w3.org/ns/activitystreams#Public",
-      User.ap_followers(actor)
-    ]
-
-    mentions = :xmerl_xpath.string('//link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/person"]', entry)
-    |> Enum.map(fn(person) -> string_from_xpath("@href", person) end)
-
-    to = to ++ mentions
-
-    date = string_from_xpath("//published", entry)
-    id = string_from_xpath("//id", entry)
-
-    object = %{
-      "id" => id,
-      "type" => "Note",
-      "to" => to,
-      "content" => content_html,
-      "published" => date,
-      "context" => context,
-      "actor" => actor.ap_id,
-      "attachment" => attachments,
-      "tag" => tags
-    }
-
-    object = if inReplyTo do
-      replied_to_activity = Activity.get_create_activity_by_object_ap_id(inReplyTo)
-      if replied_to_activity do
-        object
-        |> Map.put("inReplyTo", inReplyTo)
-        |> Map.put("inReplyToStatusId", replied_to_activity.id)
-      else
-        object
-        |> Map.put("inReplyTo", inReplyTo)
-      end
-    else
-      object
-    end
-
-    # TODO: Bail out sooner and use transaction.
-    if Object.get_by_ap_id(id) do
-      {:ok, Activity.get_create_activity_by_object_ap_id(id)}
-    else
-      ActivityPub.create(to, actor, context, object, %{}, date, false)
-    end
   end
 
   def find_make_or_update_user(doc) do

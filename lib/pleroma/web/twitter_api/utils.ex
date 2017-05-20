@@ -51,6 +51,7 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id
 
+  # TODO: Move this to a more fitting space
   def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags) do
       object = %{
         "type" => "Note",
