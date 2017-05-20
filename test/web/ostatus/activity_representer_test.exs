@@ -25,7 +25,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <published>#{inserted_at}</published>
     <updated>#{updated_at}</updated>
     <ostatus:conversation>#{note_activity.data["context"]}</ostatus:conversation>
-    <link href="#{note_activity.data["context"]}" rel="ostatus:conversation" />
+    <link ref="#{note_activity.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{note_activity.data["object"]["id"]}" rel="self" />
     <category term="2hu"/>
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <published>#{inserted_at}</published>
     <updated>#{updated_at}</updated>
     <ostatus:conversation>#{answer.data["context"]}</ostatus:conversation>
-    <link href="#{answer.data["context"]}" rel="ostatus:conversation" />
+    <link ref="#{answer.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />
     <category term="2hu"/>
     <thr:in-reply-to ref="#{note.data["object"]["id"]}" />
@@ -106,7 +106,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <published>#{inserted_at}</published>
     <updated>#{updated_at}</updated>
     <ostatus:conversation>#{announce.data["context"]}</ostatus:conversation>
-    <link href="#{announce.data["context"]}" rel="ostatus:conversation" />
+    <link ref="#{announce.data["context"]}" rel="ostatus:conversation" />
     <link rel="self" type="application/atom+xml" href="#{announce.data["id"]}"/>
     <activity:object>
       #{note_xml}
@@ -149,7 +149,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
       <id>#{note.data["id"]}</id>
     </activity:object>
     <ostatus:conversation>#{like.data["context"]}</ostatus:conversation>
-    <link href="#{like.data["context"]}" rel="ostatus:conversation" />
+    <link ref="#{like.data["context"]}" rel="ostatus:conversation" />
     <link rel="self" type="application/atom+xml" href="#{like.data["id"]}"/>
     <thr:in-reply-to ref="#{note.data["id"]}" />
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{note.data["actor"]}"/>

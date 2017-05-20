@@ -54,7 +54,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
-      {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
+      {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
       {:link, [type: ['application/atom+xml'], href: h.(activity.data["object"]["id"]), rel: 'self'], []}
     ] ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions
   end
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
         {:id, h.(activity.data["object"])}, # For notes, federate the object id.
       ]},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
-      {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
+      {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
       {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
       {:"thr:in-reply-to", [ref: to_charlist(activity.data["object"])], []}
     ] ++ author ++ mentions
@@ -115,7 +115,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
-      {:link, [href: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
+      {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
       {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
       {:"activity:object", retweeted_xml}
     ] ++ mentions ++ author
