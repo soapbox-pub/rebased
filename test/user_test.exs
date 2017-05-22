@@ -114,6 +114,13 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
+    test "gets an existing user, case insensitive" do
+      user = insert(:user, nickname: "nick")
+      fetched_user = User.get_or_fetch_by_nickname("NICK")
+
+      assert user == fetched_user
+    end
+
     test "fetches an external user via ostatus if no user exists" do
       fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
       assert fetched_user.nickname == "shp@social.heldscal.la"
