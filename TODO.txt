@@ -5,5 +5,8 @@ Unliking:
 WEBSUB:
 
 - Add unsubscription
-- Add periodical renewal
+
+OSTATUS:
+
+- Save and output 'updated'
 

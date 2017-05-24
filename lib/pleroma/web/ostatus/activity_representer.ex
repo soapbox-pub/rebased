@@ -28,10 +28,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   def to_simple_form(%{data: %{"object" => %{"type" => "Note"}}} = activity, user, with_author) do
     h = fn(str) -> [to_charlist(str)] end
 
-    updated_at = activity.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = activity.inserted_at
-    |> NaiveDateTime.to_iso8601
+    updated_at = activity.data["published"]
+    inserted_at = activity.data["published"]
 
     attachments = Enum.map(activity.data["object"]["attachment"] || [], fn(attachment) ->
       url = hd(attachment["url"])
@@ -62,10 +60,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   def to_simple_form(%{data: %{"type" => "Like"}} = activity, user, with_author) do
     h = fn(str) -> [to_charlist(str)] end
 
-    updated_at = activity.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = activity.inserted_at
-    |> NaiveDateTime.to_iso8601
+    updated_at = activity.data["published"]
+    inserted_at = activity.data["published"]
 
     in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
@@ -92,10 +88,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   def to_simple_form(%{data: %{"type" => "Announce"}} = activity, user, with_author) do
     h = fn(str) -> [to_charlist(str)] end
 
-    updated_at = activity.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = activity.inserted_at
-    |> NaiveDateTime.to_iso8601
+    updated_at = activity.data["published"]
+    inserted_at = activity.data["published"]
 
     in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
@@ -124,10 +118,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   def to_simple_form(%{data: %{"type" => "Follow"}} = activity, user, with_author) do
     h = fn(str) -> [to_charlist(str)] end
 
-    updated_at = activity.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = activity.inserted_at
-    |> NaiveDateTime.to_iso8601
+    updated_at = activity.data["published"]
+    inserted_at = activity.data["published"]
 
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
@@ -153,10 +145,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   def to_simple_form(%{data: %{"type" => "Undo"}} = activity, user, with_author) do
     h = fn(str) -> [to_charlist(str)] end
 
-    updated_at = activity.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = activity.inserted_at
-    |> NaiveDateTime.to_iso8601
+    updated_at = activity.data["published"]
+    inserted_at = activity.data["published"]
 
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
     follow_activity = Activity.get_by_ap_id(activity.data["object"])

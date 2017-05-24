@@ -9,10 +9,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
   test "a note activity" do
     note_activity = insert(:note_activity)
-    updated_at = note_activity.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = note_activity.inserted_at
-    |> NaiveDateTime.to_iso8601
 
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
@@ -22,8 +18,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <id>#{note_activity.data["object"]["id"]}</id>
     <title>New note by #{user.nickname}</title>
     <content type="html">#{note_activity.data["object"]["content"]}</content>
-    <published>#{inserted_at}</published>
-    <updated>#{updated_at}</updated>
+    <published>#{note_activity.data["published"]}</published>
+    <updated>#{note_activity.data["published"]}</updated>
     <ostatus:conversation>#{note_activity.data["context"]}</ostatus:conversation>
     <link href="#{note_activity.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{note_activity.data["object"]["id"]}" rel="self" />
@@ -47,11 +43,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     data = %{answer.data | "object" => object}
     answer = %{answer | data: data}
 
-    updated_at = answer.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = answer.inserted_at
-    |> NaiveDateTime.to_iso8601
-
     user = User.get_cached_by_ap_id(answer.data["actor"])
 
     expected = """
@@ -60,8 +51,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <id>#{answer.data["object"]["id"]}</id>
     <title>New note by #{user.nickname}</title>
     <content type="html">#{answer.data["object"]["content"]}</content>
-    <published>#{inserted_at}</published>
-    <updated>#{updated_at}</updated>
+    <published>#{answer.data["published"]}</published>
+    <updated>#{answer.data["published"]}</updated>
     <ostatus:conversation>#{answer.data["context"]}</ostatus:conversation>
     <link href="#{answer.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />
@@ -92,19 +83,14 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     |> :xmerl.export_simple_content(:xmerl_xml)
     |> to_string
 
-    updated_at = announce.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = announce.inserted_at
-    |> NaiveDateTime.to_iso8601
-
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/activity</activity:object-type>
     <activity:verb>http://activitystrea.ms/schema/1.0/share</activity:verb>
     <id>#{announce.data["id"]}</id>
     <title>#{user.nickname} repeated a notice</title>
     <content type="html">RT #{note.data["object"]["content"]}</content>
-    <published>#{inserted_at}</published>
-    <updated>#{updated_at}</updated>
+    <published>#{announce.data["published"]}</published>
+    <updated>#{announce.data["published"]}</updated>
     <ostatus:conversation>#{announce.data["context"]}</ostatus:conversation>
     <link href="#{announce.data["context"]}" rel="ostatus:conversation" />
     <link rel="self" type="application/atom+xml" href="#{announce.data["id"]}"/>
@@ -126,12 +112,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     user = insert(:user)
     {:ok, like, _note} = ActivityPub.like(user, note)
 
-    # TODO: Are these the correct dates?
-    updated_at = like.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = like.inserted_at
-    |> NaiveDateTime.to_iso8601
-
     tuple = ActivityRepresenter.to_simple_form(like, user)
     refute is_nil(tuple)
 
@@ -142,8 +122,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <id>#{like.data["id"]}</id>
     <title>New favorite by #{user.nickname}</title>
     <content type="html">#{user.nickname} favorited something</content>
-    <published>#{inserted_at}</published>
-    <updated>#{updated_at}</updated>
+    <published>#{like.data["published"]}</published>
+    <updated>#{like.data["published"]}</updated>
     <activity:object>
       <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
       <id>#{note.data["id"]}</id>
@@ -168,13 +148,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
           "to" => [followed.ap_id]
     })
 
-
-    # TODO: Are these the correct dates?
-    updated_at = activity.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = activity.inserted_at
-    |> NaiveDateTime.to_iso8601
-
     tuple = ActivityRepresenter.to_simple_form(activity, follower)
 
     refute is_nil(tuple)
@@ -187,8 +160,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <id>#{activity.data["id"]}</id>
     <title>#{follower.nickname} started following #{activity.data["object"]}</title>
     <content type="html"> #{follower.nickname} started following #{activity.data["object"]}</content>
-    <published>#{inserted_at}</published>
-    <updated>#{updated_at}</updated>
+    <published>#{activity.data["published"]}</published>
+    <updated>#{activity.data["published"]}</updated>
     <activity:object>
       <activity:object-type>http://activitystrea.ms/schema/1.0/person</activity:object-type>
       <id>#{activity.data["object"]}</id>
@@ -207,12 +180,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     {:ok, _activity} = ActivityPub.follow(follower, followed)
     {:ok, activity} = ActivityPub.unfollow(follower, followed)
 
-    # TODO: Are these the correct dates?
-    updated_at = activity.updated_at
-    |> NaiveDateTime.to_iso8601
-    inserted_at = activity.inserted_at
-    |> NaiveDateTime.to_iso8601
-
     tuple = ActivityRepresenter.to_simple_form(activity, follower)
 
     refute is_nil(tuple)
@@ -225,8 +192,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <id>#{activity.data["id"]}</id>
     <title>#{follower.nickname} stopped following #{followed.ap_id}</title>
     <content type="html"> #{follower.nickname} stopped following #{followed.ap_id}</content>
-    <published>#{inserted_at}</published>
-    <updated>#{updated_at}</updated>
+    <published>#{activity.data["published"]}</published>
+    <updated>#{activity.data["published"]}</updated>
     <activity:object>
       <activity:object-type>http://activitystrea.ms/schema/1.0/person</activity:object-type>
       <id>#{followed.ap_id}</id>
