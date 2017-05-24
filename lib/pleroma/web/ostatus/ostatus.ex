@@ -228,16 +228,30 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
+  def maybe_update(doc, user) do
+    old_data = %{
+      avatar: user.avatar,
+      bio: user.bio,
+      name: user.name
+    }
+
+    with false <- user.local,
+         avatar <- make_avatar_object(doc),
+         bio when not is_nil(bio) <- string_from_xpath("//author[1]/summary", doc),
+         name when not is_nil(name) <- string_from_xpath("//author[1]/poco:displayName", doc),
+         new_data <- %{avatar: avatar, name: name, bio: bio},
+         false <- new_data == old_data do
+      change = Ecto.Changeset.change(user, new_data)
+      Repo.update(change)
+    else e ->
+      {:ok, user}
+    end
+  end
+
   def find_make_or_update_user(doc) do
     uri = string_from_xpath("//author/uri[1]", doc)
     with {:ok, user} <- find_or_make_user(uri) do
-      avatar = make_avatar_object(doc)
-      if !user.local && user.avatar != avatar do
-        change = Ecto.Changeset.change(user, %{avatar: avatar})
-        Repo.update(change)
-      else
-        {:ok, user}
-      end
+      maybe_update(doc, user)
     end
   end
 
@@ -261,7 +275,8 @@ defmodule Pleroma.Web.OStatus do
         nickname: info["nickname"] <> "@" <> info["host"],
         ap_id: info["uri"],
         info: info,
-        avatar: info["avatar"]
+        avatar: info["avatar"],
+        bio: info["bio"]
       }
       with %User{} = user <- User.get_by_ap_id(data.ap_id) do
         {:ok, user}
