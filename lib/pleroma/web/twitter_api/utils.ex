@@ -38,7 +38,8 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
     end)
 
     Enum.reduce(mentions, step_one, fn ({match, %User{ap_id: ap_id}, uuid}, text) ->
-      String.replace(text, uuid, "<a href='#{ap_id}'>#{match}</a>")
+      short_match = String.split(match, "@") |> tl() |> hd()
+      String.replace(text, uuid, "<a href='#{ap_id}'>@#{short_match}</a>")
     end)
   end
 
