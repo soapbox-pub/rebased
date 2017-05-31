@@ -341,9 +341,9 @@ defmodule Pleroma.Web.OStatus do
 
   def fetch_activity_from_html_url(url) do
     Logger.debug("Trying to fetch #{url}")
-    with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true),
+    with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
          {:ok, atom_url} <- get_atom_url(body),
-         {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url, [], follow_redirect: true) do
+         {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
       Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body)
     else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
