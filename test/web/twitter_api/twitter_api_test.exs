@@ -263,7 +263,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
 
     mentions = TwitterAPI.parse_mentions(text)
-    expected_text = "<a href='#{gsimg.ap_id}'>@gsimg</a> According to <a href='#{archaeme.ap_id}'>@archaeme</a>, that is @daggsy. Also hello <a href='#{archaeme_remote.ap_id}'>@archaeme@archae.me</a>"
+    expected_text = "<a href='#{gsimg.ap_id}'>@gsimg</a> According to <a href='#{archaeme.ap_id}'>@archaeme</a>, that is @daggsy. Also hello <a href='#{archaeme_remote.ap_id}'>@archaeme</a>"
 
     assert Utils.add_user_links(text, mentions) == expected_text
   end

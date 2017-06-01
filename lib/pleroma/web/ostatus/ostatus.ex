@@ -152,16 +152,30 @@ defmodule Pleroma.Web.OStatus do
     |> Enum.map(fn (category) -> string_from_xpath("/category/@term", category) end)
   end
 
+  def maybe_update(doc, user) do
+    old_data = %{
+      avatar: user.avatar,
+      bio: user.bio,
+      name: user.name
+    }
+
+    with false <- user.local,
+         avatar <- make_avatar_object(doc),
+         bio when not is_nil(bio) <- string_from_xpath("//author[1]/summary", doc),
+         name when not is_nil(name) <- string_from_xpath("//author[1]/poco:displayName", doc),
+         new_data <- %{avatar: avatar, name: name, bio: bio},
+         false <- new_data == old_data do
+      change = Ecto.Changeset.change(user, new_data)
+      Repo.update(change)
+    else e ->
+      {:ok, user}
+    end
+  end
+
   def find_make_or_update_user(doc) do
     uri = string_from_xpath("//author/uri[1]", doc)
     with {:ok, user} <- find_or_make_user(uri) do
-      avatar = make_avatar_object(doc)
-      if !user.local && user.avatar != avatar do
-        change = Ecto.Changeset.change(user, %{avatar: avatar})
-        Repo.update(change)
-      else
-        {:ok, user}
-      end
+      maybe_update(doc, user)
     end
   end
 
@@ -185,7 +199,8 @@ defmodule Pleroma.Web.OStatus do
         nickname: info["nickname"] <> "@" <> info["host"],
         ap_id: info["uri"],
         info: info,
-        avatar: info["avatar"]
+        avatar: info["avatar"],
+        bio: info["bio"]
       }
       with %User{} = user <- User.get_by_ap_id(data.ap_id) do
         {:ok, user}
@@ -250,9 +265,9 @@ defmodule Pleroma.Web.OStatus do
 
   def fetch_activity_from_html_url(url) do
     Logger.debug("Trying to fetch #{url}")
-    with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true),
+    with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
          {:ok, atom_url} <- get_atom_url(body),
-         {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url, [], follow_redirect: true) do
+         {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
       Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body)
     else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")

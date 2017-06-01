@@ -47,7 +47,10 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     with id <- o_status_url(conn, :object, uuid),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      represent_activity(conn, activity, user)
+      case get_format(conn) do
+        "html" -> redirect(conn, to: "/notice/#{activity.id}")
+        _ -> represent_activity(conn, activity, user)
+      end
     end
   end
 
@@ -55,7 +58,10 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     with id <- o_status_url(conn, :activity, uuid),
          %Activity{} = activity <- Activity.get_by_ap_id(id),
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      represent_activity(conn, activity, user)
+      case get_format(conn) do
+        "html" -> redirect(conn, to: "/notice/#{activity.id}")
+        _ -> represent_activity(conn, activity, user)
+      end
     end
   end
 

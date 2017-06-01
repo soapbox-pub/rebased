@@ -70,7 +70,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :ostatus do
-    plug :accepts, ["xml", "atom"]
+    plug :accepts, ["xml", "atom", "html"]
   end
 
   scope "/", Pleroma.Web do
@@ -97,7 +97,6 @@ defmodule Pleroma.Web.Router do
   scope "/", Fallback do
     get "/*path", RedirectController, :redirector
   end
-
 end
 
 defmodule Fallback.RedirectController do

@@ -233,6 +233,7 @@ defmodule Pleroma.Web.OStatusTest do
       assert user.local == false
       assert user.info["uri"] == uri
       assert user.ap_id == uri
+      assert user.bio == "Call me Deacon Blues."
       assert user.avatar["type"] == "Image"
 
       {:ok, user_again} = OStatus.find_or_make_user(uri)
@@ -244,7 +245,9 @@ defmodule Pleroma.Web.OStatusTest do
       uri = "https://social.heldscal.la/user/23211"
 
       {:ok, user} = OStatus.find_or_make_user(uri)
-      change = Ecto.Changeset.change(user, %{avatar: nil})
+      old_name = user.name
+      old_bio = user.bio
+      change = Ecto.Changeset.change(user, %{avatar: nil, bio: nil, old_name: nil})
 
       {:ok, user} = Repo.update(change)
       refute user.avatar
@@ -253,6 +256,8 @@ defmodule Pleroma.Web.OStatusTest do
       [author] = :xmerl_xpath.string('//author[1]', doc)
       {:ok, user} = OStatus.find_make_or_update_user(author)
       assert user.avatar["type"] == "Image"
+      assert user.name == old_name
+      assert user.bio == old_bio
 
       {:ok, user_again} = OStatus.find_make_or_update_user(author)
       assert user_again == user
@@ -277,6 +282,7 @@ defmodule Pleroma.Web.OStatusTest do
         "uri" => "https://social.heldscal.la/user/29191",
         "host" => "social.heldscal.la",
         "fqn" => user,
+        "bio" => "cofe",
         "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]}
       }
       assert data == expected
@@ -299,6 +305,7 @@ defmodule Pleroma.Web.OStatusTest do
         "uri" => "https://social.heldscal.la/user/29191",
         "host" => "social.heldscal.la",
         "fqn" => user,
+        "bio" => "cofe",
         "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]}
       }
       assert data == expected
