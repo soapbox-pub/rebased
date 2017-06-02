@@ -18,8 +18,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <id>#{note_activity.data["object"]["id"]}</id>
     <title>New note by #{user.nickname}</title>
     <content type="html">#{note_activity.data["object"]["content"]}</content>
-    <published>#{note_activity.data["published"]}</published>
-    <updated>#{note_activity.data["published"]}</updated>
+    <published>#{note_activity.data["object"]["published"]}</published>
+    <updated>#{note_activity.data["object"]["published"]}</updated>
     <ostatus:conversation>#{note_activity.data["context"]}</ostatus:conversation>
     <link ref="#{note_activity.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{note_activity.data["object"]["id"]}" rel="self" />
@@ -51,8 +51,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <id>#{answer.data["object"]["id"]}</id>
     <title>New note by #{user.nickname}</title>
     <content type="html">#{answer.data["object"]["content"]}</content>
-    <published>#{answer.data["published"]}</published>
-    <updated>#{answer.data["published"]}</updated>
+    <published>#{answer.data["object"]["published"]}</published>
+    <updated>#{answer.data["object"]["published"]}</updated>
     <ostatus:conversation>#{answer.data["context"]}</ostatus:conversation>
     <link ref="#{answer.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />

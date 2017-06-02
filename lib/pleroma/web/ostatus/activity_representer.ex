@@ -28,8 +28,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   def to_simple_form(%{data: %{"object" => %{"type" => "Note"}}} = activity, user, with_author) do
     h = fn(str) -> [to_charlist(str)] end
 
-    updated_at = activity.data["published"]
-    inserted_at = activity.data["published"]
+    updated_at = activity.data["object"]["published"]
+    inserted_at = activity.data["object"]["published"]
 
     attachments = Enum.map(activity.data["object"]["attachment"] || [], fn(attachment) ->
       url = hd(attachment["url"])
