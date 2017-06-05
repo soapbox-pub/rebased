@@ -2,7 +2,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
   alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ObjectRepresenter}
   alias Pleroma.{Activity, User, Formatter}
-  alias Calendar.Strftime
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   defp user_by_ap_id(user_list, ap_id) do
@@ -127,14 +126,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     with context when not is_nil(context) <- activity.data["context"] do
       TwitterAPI.context_to_conversation_id(context)
     else _e -> nil
-    end
-  end
-
-  defp date_to_asctime(date) do
-    with {:ok, date, _offset} <- date |> DateTime.from_iso8601 do
-      Strftime.strftime!(date, "%a %b %d %H:%M:%S %z %Y")
-    else _e ->
-      ""
     end
   end
 

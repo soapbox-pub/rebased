@@ -33,11 +33,14 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
 
     image = "https://placehold.it/48x48"
 
+    created_at = user.inserted_at |> DateTime.from_naive!("Etc/UTC") |> UserRepresenter.format_asctime
+
     represented = %{
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
       "description" => user.bio,
+      "created_at" => created_at,
       # Fake fields
       "favourites_count" => 0,
       "statuses_count" => 1,
@@ -58,11 +61,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
   test "A user for a given other follower", %{user: user} do
     {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
     image = "https://placehold.it/48x48"
+    created_at = user.inserted_at |> DateTime.from_naive!("Etc/UTC") |> UserRepresenter.format_asctime
     represented = %{
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
       "description" => user.bio,
+      "created_at" => created_at,
       # Fake fields
       "favourites_count" => 0,
       "statuses_count" => 0,

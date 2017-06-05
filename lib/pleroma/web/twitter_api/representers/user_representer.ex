@@ -12,6 +12,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
     end
 
     user_info = User.get_cached_user_info(user)
+    created_at = user.inserted_at |> DateTime.from_naive!("Etc/UTC") |> format_asctime
 
     map = %{
       "id" => user.id,
@@ -19,6 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
       "screen_name" => user.nickname,
       "description" => user.bio,
       "following" => following,
+      "created_at" => created_at,
       # Fake fields
       "favourites_count" => 0,
       "statuses_count" => user_info[:note_count],
