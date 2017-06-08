@@ -66,6 +66,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          date <- XML.string_from_xpath("//published", entry),
          note <- TwitterAPI.Utils.make_note_data(actor.ap_id, to, context, content_html, attachments, inReplyToActivity, []),
          note <- note |> Map.put("id", id) |> Map.put("tag", tags),
+         note <- note |> Map.put("published", date),
          # TODO: Handle this case in make_note_data
          note <- (if inReplyTo && !inReplyToActivity, do: note |> Map.put("inReplyTo", inReplyTo), else: note)
       do
