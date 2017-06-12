@@ -9,7 +9,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
     user = User.get_cached_by_nickname(nickname)
-    redirect conn, external: OStatus.feed_path(user)
+
+    case get_format(conn) do
+      "html" -> Fallback.RedirectController.redirector(conn, nil)
+      _ -> redirect conn, external: OStatus.feed_path(user)
+    end
   end
 
   def feed(conn, %{"nickname" => nickname}) do
