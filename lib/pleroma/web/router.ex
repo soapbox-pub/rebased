@@ -33,6 +33,7 @@ defmodule Pleroma.Web.Router do
     get "/statuses/public_and_external_timeline", TwitterAPI.Controller, :public_and_external_timeline
     get "/statuses/networkpublic_timeline", TwitterAPI.Controller, :public_and_external_timeline
     get "/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
+    get "/qvitter/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
 
     get "/statuses/show/:id", TwitterAPI.Controller, :fetch_status
     get "/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation

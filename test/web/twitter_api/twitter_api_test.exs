@@ -133,6 +133,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert {:error, "You need to specify screen_name or user_id"} == TwitterAPI.get_user(nil, nil)
     assert user1_result == TwitterAPI.get_user(nil, %{"user_id" => user1.id})
+    assert user1_result == TwitterAPI.get_user(nil, %{"user_id" => user1.nickname})
     assert user1_result == TwitterAPI.get_user(nil, %{"screen_name" => user1.nickname})
     assert user1_result == TwitterAPI.get_user(user1, nil)
     assert user1_result == TwitterAPI.get_user(user2, %{"user_id" => user1.id})
