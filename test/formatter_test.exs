@@ -2,6 +2,8 @@ defmodule Pleroma.FormatterTest do
   alias Pleroma.Formatter
   use Pleroma.DataCase
 
+  import Pleroma.Factory
+
   describe ".linkify" do
     test "turning urls into links" do
       text = "Hey, check out https://www.youtube.com/watch?v=8Zg1-TufFzY."
@@ -24,5 +26,21 @@ defmodule Pleroma.FormatterTest do
 
       assert Formatter.parse_tags(text) == expected
     end
+  end
+
+  test "it can parse mentions and return the relevant users" do
+    text = "@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me"
+
+    gsimg = insert(:user, %{nickname: "gsimg"})
+    archaeme = insert(:user, %{nickname: "archaeme"})
+    archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
+
+    expected_result = [
+      {"@gsimg", gsimg},
+      {"@archaeme", archaeme},
+      {"@archaeme@archae.me", archaeme_remote},
+    ]
+
+    assert Formatter.parse_mentions(text) == expected_result
   end
 end

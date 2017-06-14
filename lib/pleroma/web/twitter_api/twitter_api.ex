@@ -31,7 +31,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def create_status(%User{} = user, %{"status" => status} = data) do
     with attachments <- attachments_from_ids(data["media_ids"]),
-         mentions <- parse_mentions(status),
+         mentions <- Formatter.parse_mentions(status),
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
          to <- to_for_user_and_mentions(user, mentions, inReplyTo),
          content_html <- make_content_html(status, mentions, attachments),
@@ -180,17 +180,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           size: 0
         } |> Poison.encode!
     end
-  end
-
-  def parse_mentions(text) do
-    # Modified from https://www.w3.org/TR/html5/forms.html#valid-e-mail-address
-    regex = ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/
-
-    Regex.scan(regex, text)
-    |> List.flatten
-    |> Enum.uniq
-    |> Enum.map(fn ("@" <> match = full_match) -> {full_match, User.get_cached_by_nickname(match)} end)
-    |> Enum.filter(fn ({_match, user}) -> user end)
   end
 
   def register_user(params) do
