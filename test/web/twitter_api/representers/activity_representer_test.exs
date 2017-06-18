@@ -124,7 +124,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "repeat_num" => 3,
       "favorited" => false,
       "repeated" => false,
-      "external_url" => activity.data["id"]
+      "external_url" => activity.data["id"],
+      "tags" => ["content", "mentioning", "nsfw"]
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status
