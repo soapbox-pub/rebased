@@ -67,7 +67,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       }
     }
 
-    content_html = "Some #content #mentioning <a href='#{mentioned_user.ap_id}'>@shp</shp>"
+    content_html = "<script>alert('YAY')</script>Some #content #mentioning <a href='#{mentioned_user.ap_id}'>@shp</a>"
     content = HtmlSanitizeEx.strip_tags(content_html)
     date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601
 
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "user" => UserRepresenter.to_map(user, %{for: follower}),
       "is_local" => true,
       "attentions" => [],
-      "statusnet_html" => content_html <> "<br>\n#nsfw",
+      "statusnet_html" => HtmlSanitizeEx.basic_html(content_html) <> "<br />\n#nsfw",
       "text" => content <> "\n#nsfw",
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",
