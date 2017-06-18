@@ -16,9 +16,9 @@ defmodule Pleroma.FormatterTest do
 
   describe ".parse_tags" do
     test "parses tags in the text" do
-      text = "Here's a #test. Maybe these are #working or not. What about #漢字? And #は｡"
+      text = "Here's a #Test. Maybe these are #working or not. What about #漢字? And #は｡"
       expected = [
-        {"#test", "test"},
+        {"#Test", "test"},
         {"#working", "working"},
         {"#漢字", "漢字"},
         {"#は", "は"}

@@ -9,7 +9,7 @@ defmodule Pleroma.Formatter do
   @tag_regex ~r/\#\w+/u
   def parse_tags(text) do
     Regex.scan(@tag_regex, text)
-    |> Enum.map(fn (["#" <> tag = full_tag]) -> {full_tag, tag} end)
+    |> Enum.map(fn (["#" <> tag = full_tag]) -> {full_tag, String.downcase(tag)} end)
   end
 
   def parse_mentions(text) do
