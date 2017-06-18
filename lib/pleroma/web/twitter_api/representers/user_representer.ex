@@ -18,7 +18,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenter do
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
-      "description" => user.bio,
+      "description" => HtmlSanitizeEx.strip_tags(user.bio),
       "following" => following,
       "created_at" => created_at,
       # Fake fields

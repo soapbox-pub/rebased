@@ -8,7 +8,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
   import Pleroma.Factory
 
   setup do
-    user = insert(:user)
+    user = insert(:user, bio: "<span>Here's some html</span>")
     [user: user]
   end
 
@@ -39,7 +39,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
-      "description" => user.bio,
+      "description" => HtmlSanitizeEx.strip_tags(user.bio),
       "created_at" => created_at,
       # Fake fields
       "favourites_count" => 0,
@@ -66,7 +66,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
-      "description" => user.bio,
+      "description" => HtmlSanitizeEx.strip_tags(user.bio),
       "created_at" => created_at,
       # Fake fields
       "favourites_count" => 0,
