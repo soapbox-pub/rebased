@@ -353,10 +353,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   describe "fetching a user by uri" do
     test "fetches a user by uri" do
+      id = "https://mastodon.social/users/lambadalambda"
       user = insert(:user)
+      {:ok, represented} = TwitterAPI.get_external_profile(user, id)
+      remote = User.get_by_ap_id(id)
 
-      {:ok, represented} = TwitterAPI.get_external_profile(user, user.ap_id)
-      assert represented = UserRepresenter.to_map(user, %{for: user})
+      assert represented == UserRepresenter.to_map(remote, %{for: user})
+
+      # Also fetches the feed.
+      assert Activity.get_create_activity_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")
     end
   end
 end

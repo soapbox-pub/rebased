@@ -9,6 +9,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   import Ecto.Query
   import Pleroma.Web.TwitterAPI.Utils
 
+  @httpoison Application.get_env(:pleroma, :httpoison)
+
   def to_for_user_and_mentions(user, mentions, inReplyTo) do
     default_to = [
       User.ap_followers(user),
@@ -298,6 +300,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def get_external_profile(for_user, uri) do
     with {:ok, %User{} = user} <- OStatus.find_or_make_user(uri) do
+      with url <- user.info["topic"],
+           {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
+        OStatus.handle_incoming(body)
+      end
       {:ok, UserRepresenter.to_map(user, %{for: for_user})}
     else _e ->
         {:error, "Couldn't find user"}
