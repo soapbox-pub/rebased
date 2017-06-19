@@ -1,8 +1,8 @@
-defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
+defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.User
-  alias Pleroma.Web.TwitterAPI.Representers.UserRepresenter
+  alias Pleroma.Web.TwitterAPI.{UserView, Utils}
   alias Pleroma.Builders.UserBuilder
 
   import Pleroma.Factory
@@ -15,7 +15,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
   test "A user with an avatar object", %{user: user} do
     image = "image"
     user = %{ user | avatar: %{ "url" => [%{"href" => image}] }}
-    represented = UserRepresenter.to_map(user)
+    represented = UserView.render("show.json", %{user: user})
     assert represented["profile_image_url"] == image
   end
 
@@ -33,15 +33,12 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
 
     image = "https://placehold.it/48x48"
 
-    created_at = user.inserted_at |> DateTime.from_naive!("Etc/UTC") |> UserRepresenter.format_asctime
-
     represented = %{
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
-      "created_at" => created_at,
-      # Fake fields
+      "created_at" => user.inserted_at |> Utils.format_naive_asctime,
       "favourites_count" => 0,
       "statuses_count" => 1,
       "friends_count" => 1,
@@ -55,20 +52,18 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
       "statusnet_profile_url" => user.ap_id
     }
 
-    assert represented == UserRepresenter.to_map(user)
+    assert represented == UserView.render("show.json", %{user: user})
   end
 
   test "A user for a given other follower", %{user: user} do
     {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
     image = "https://placehold.it/48x48"
-    created_at = user.inserted_at |> DateTime.from_naive!("Etc/UTC") |> UserRepresenter.format_asctime
     represented = %{
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
-      "created_at" => created_at,
-      # Fake fields
+      "created_at" => user.inserted_at |> Utils.format_naive_asctime,
       "favourites_count" => 0,
       "statuses_count" => 0,
       "friends_count" => 0,
@@ -82,6 +77,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.UserRepresenterTest do
       "statusnet_profile_url" => user.ap_id
     }
 
-    assert represented == UserRepresenter.to_map(user, %{for: follower})
+    assert represented == UserView.render("show.json", %{user: user, for: follower})
   end
 end

@@ -1,12 +1,11 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.{User, Activity, Repo, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
+  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.OStatus
   alias Pleroma.Formatter
 
-  import Ecto.Query
   import Pleroma.Web.TwitterAPI.Utils
 
   @httpoison Application.get_env(:pleroma, :httpoison)
@@ -197,7 +196,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     changeset = User.register_changeset(%User{}, params)
 
     with {:ok, user} <- Repo.insert(changeset) do
-      {:ok, UserRepresenter.to_map(user)}
+      {:ok, user}
     else
       {:error, changeset} ->
         errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
@@ -304,7 +303,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
            {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
         OStatus.handle_incoming(body)
       end
-      {:ok, UserRepresenter.to_map(user, %{for: for_user})}
+      {:ok, UserView.render("show.json", %{user: user, for: for_user})}
     else _e ->
         {:error, "Couldn't find user"}
     end

@@ -1,9 +1,10 @@
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   use Pleroma.DataCase
   alias Pleroma.{User, Activity, Object}
-  alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter, ObjectRepresenter}
+  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, ObjectRepresenter}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Web.TwitterAPI.UserView
   import Pleroma.Factory
 
   test "an announce activity" do
@@ -18,7 +19,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     status = ActivityRepresenter.to_map(announce_activity, %{users: [user, activity_actor], announced_activity: note_activity, for: user})
 
     assert status["id"] == announce_activity.id
-    assert status["user"] == UserRepresenter.to_map(user, %{for: user})
+    assert status["user"] == UserView.render("show.json", %{user: user, for: user})
 
     retweeted_status = ActivityRepresenter.to_map(note_activity, %{user: activity_actor, for: user})
     assert retweeted_status["repeated"] == true
@@ -105,9 +106,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
     expected_status = %{
       "id" => activity.id,
-      "user" => UserRepresenter.to_map(user, %{for: follower}),
+      "user" => UserView.render("show.json", %{user: user, for: follower}),
       "is_local" => true,
-      "attentions" => [],
       "statusnet_html" => HtmlSanitizeEx.basic_html(content_html),
       "text" => content,
       "is_post_verb" => true,
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         ObjectRepresenter.to_map(object)
       ],
       "attentions" => [
-        UserRepresenter.to_map(mentioned_user, %{for: follower})
+        UserView.render("show.json", %{user: mentioned_user, for: follower})
       ],
       "fave_num" => 5,
       "repeat_num" => 3,

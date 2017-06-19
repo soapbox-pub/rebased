@@ -1,10 +1,9 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
   alias Pleroma.Builders.{UserBuilder, ActivityBuilder}
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.Utils
+  alias Pleroma.Web.TwitterAPI.{TwitterAPI,UserView,Utils}
   alias Pleroma.{Activity, User, Object, Repo}
-  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, UserRepresenter}
+  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
@@ -303,7 +302,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user} = TwitterAPI.register_user(data)
 
     fetched_user = Repo.get_by(User, nickname: "lain")
-    assert user == UserRepresenter.to_map(fetched_user)
+    assert UserView.render("show.json", %{user: user}) == UserView.render("show.json", %{user: fetched_user})
   end
 
   test "it returns the error on registration problems" do
@@ -358,7 +357,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:ok, represented} = TwitterAPI.get_external_profile(user, id)
       remote = User.get_by_ap_id(id)
 
-      assert represented == UserRepresenter.to_map(remote, %{for: user})
+      assert represented == UserView.render("show.json", %{user: remote, for: user})
 
       # Also fetches the feed.
       assert Activity.get_create_activity_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")

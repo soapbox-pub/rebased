@@ -1,16 +1,13 @@
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ActivityRepresenter}
+  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
+  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.{Web, Repo, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Ecto.Changeset
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
-    response = user |> UserRepresenter.to_json(%{for: user})
-
-    conn
-    |> json_reply(200, response)
+    render(conn, UserView, "show.json", %{user: user})
   end
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => status_text} = status_data) do
@@ -90,9 +87,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def follow(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.follow(user, params) do
       {:ok, user, followed, _activity} ->
-        response = followed |> UserRepresenter.to_json(%{for: user})
-        conn
-        |> json_reply(200, response)
+        render(conn, UserView, "show.json", %{user: followed, for: user})
       {:error, msg} -> forbidden_json_reply(conn, msg)
     end
   end
@@ -100,9 +95,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def unfollow(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.unfollow(user, params) do
       {:ok, user, unfollowed} ->
-        response = unfollowed |> UserRepresenter.to_json(%{for: user})
-        conn
-        |> json_reply(200, response)
+        render(conn, UserView, "show.json", %{user: unfollowed, for: user})
       {:error, msg} -> forbidden_json_reply(conn, msg)
     end
   end
@@ -187,8 +180,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def register(conn, params) do
     with {:ok, user} <- TwitterAPI.register_user(params) do
-      conn
-      |> json_reply(200, Poison.encode!(user))
+
+      render(conn, UserView, "show.json", %{user: user})
     else
       {:error, errors} ->
       conn
@@ -201,10 +194,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     change = Changeset.change(user, %{avatar: object.data})
     {:ok, user} = Repo.update(change)
 
-    response = Poison.encode!(UserRepresenter.to_map(user, %{for: user}))
-
-    conn
-    |> json_reply(200, response)
+    render(conn, UserView, "show.json", %{user: user, for: user})
   end
 
   def external_profile(%{assigns: %{user: current_user}} = conn, %{"profileurl" => uri}) do

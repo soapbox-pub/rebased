@@ -1,9 +1,8 @@
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
-  alias Pleroma.Web.TwitterAPI.Representers.{UserRepresenter, ObjectRepresenter}
+  alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.{Activity, User}
-  alias Calendar.Strftime
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, Utils}
   alias Pleroma.Formatter
 
   defp user_by_ap_id(user_list, ap_id) do
@@ -13,7 +12,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   def to_map(%Activity{data: %{"type" => "Announce", "actor" => actor, "published" => created_at}} = activity,
              %{users: users, announced_activity: announced_activity} = opts) do
     user = user_by_ap_id(users, actor)
-    created_at = created_at |> date_to_asctime
+    created_at = created_at |> Utils.date_to_asctime
 
     text = "#{user.nickname} retweeted a status."
 
@@ -21,7 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     retweeted_status = to_map(announced_activity, Map.merge(%{user: announced_user}, opts))
     %{
       "id" => activity.id,
-      "user" => UserRepresenter.to_map(user, opts),
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => text,
       "text" => text,
       "is_local" => true,
@@ -36,13 +35,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
   def to_map(%Activity{data: %{"type" => "Like", "published" => created_at}} = activity,
              %{user: user, liked_activity: liked_activity} = opts) do
-    created_at = created_at |> date_to_asctime
+    created_at = created_at |> Utils.date_to_asctime
 
     text = "#{user.nickname} favorited a status."
 
     %{
       "id" => activity.id,
-      "user" => UserRepresenter.to_map(user, opts),
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => text,
       "text" => text,
       "is_local" => true,
@@ -55,13 +54,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   end
 
   def to_map(%Activity{data: %{"type" => "Follow", "published" => created_at, "object" => followed_id}} = activity, %{user: user} = opts) do
-    created_at = created_at |> date_to_asctime
+    created_at = created_at |> Utils.date_to_asctime
 
     followed = User.get_cached_by_ap_id(followed_id)
     text = "#{user.nickname} started following #{followed.nickname}"
     %{
       "id" => activity.id,
-      "user" => UserRepresenter.to_map(user, opts),
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "attentions" => [],
       "statusnet_html" => text,
       "text" => text,
@@ -74,7 +73,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   end
 
   def to_map(%Activity{data: %{"object" => %{"content" => content} = object}} = activity, %{user: user} = opts) do
-    created_at = object["published"] |> date_to_asctime
+    created_at = object["published"] |> Utils.date_to_asctime
     like_count = object["like_count"] || 0
     announcement_count = object["announcement_count"] || 0
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
@@ -85,14 +84,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     attentions = activity.data["to"]
     |> Enum.map(fn (ap_id) -> Enum.find(mentions, fn(user) -> ap_id == user.ap_id end) end)
     |> Enum.filter(&(&1))
-    |> Enum.map(fn (user) -> UserRepresenter.to_map(user, opts) end)
+    |> Enum.map(fn (user) -> UserView.render("show.json", %{user: user, for: opts[:for]}) end)
 
     conversation_id = conversation_id(activity)
 
     %{
       "id" => activity.id,
-      "user" => UserRepresenter.to_map(user, opts),
-      "attentions" => [],
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => HtmlSanitizeEx.basic_html(content) |> Formatter.finmojifiy,
       "text" => HtmlSanitizeEx.strip_tags(content),
       "is_local" => true,

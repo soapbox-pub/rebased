@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.Utils do
   alias Pleroma.{Repo, Object, Formatter, User, Activity}
   alias Pleroma.Web.ActivityPub.Utils
+  alias Calendar.Strftime
 
   def attachments_from_ids(ids) do
     Enum.map(ids || [], fn (media_id) ->
@@ -70,6 +71,22 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
       |> Map.put("inReplyToStatusId", inReplyTo.id)
     else
       object
+    end
+  end
+
+  def format_naive_asctime(date) do
+    date |> DateTime.from_naive!("Etc/UTC") |> format_asctime
+  end
+
+  def format_asctime(date) do
+    Strftime.strftime!(date, "%a %b %d %H:%M:%S %z %Y")
+  end
+
+  def date_to_asctime(date) do
+    with {:ok, date, _offset} <- date |> DateTime.from_iso8601 do
+      format_asctime(date)
+    else _e ->
+        ""
     end
   end
 end
