@@ -4,6 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.{Activity, User}
   alias Calendar.Strftime
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Formatter
 
   defp user_by_ap_id(user_list, ap_id) do
     Enum.find(user_list, fn (%{ap_id: user_id}) -> ap_id == user_id end)
@@ -92,7 +93,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "id" => activity.id,
       "user" => UserRepresenter.to_map(user, opts),
       "attentions" => [],
-      "statusnet_html" => HtmlSanitizeEx.basic_html(content),
+      "statusnet_html" => HtmlSanitizeEx.basic_html(content) |> Formatter.finmojifiy,
       "text" => HtmlSanitizeEx.strip_tags(content),
       "is_local" => true,
       "is_post_verb" => true,

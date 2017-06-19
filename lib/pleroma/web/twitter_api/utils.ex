@@ -22,7 +22,6 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
     |> Formatter.linkify
     |> String.replace("\n", "<br>\n")
     |> add_user_links(mentions)
-    |> Formatter.finmojifiy
   end
 
   def add_user_links(text, mentions) do
