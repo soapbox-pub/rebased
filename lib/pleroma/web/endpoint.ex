@@ -11,7 +11,7 @@ defmodule Pleroma.Web.Endpoint do
     at: "/media", from: "uploads", gzip: false
   plug Plug.Static,
     at: "/", from: :pleroma,
-    only: ~w(index.html static)
+    only: ~w(index.html static finmoji)
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
