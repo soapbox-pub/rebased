@@ -2,7 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
-  alias Pleroma.{Web, Repo, Activity}
+  alias Pleroma.{Repo, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Ecto.Changeset
 
@@ -122,26 +122,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> send_resp(200, response)
   end
 
-  def help_test(conn, _params) do
-    conn |> json_reply(200, Poison.encode!("ok"))
-  end
-
   def upload_json(conn, %{"media" => media}) do
     response = TwitterAPI.upload(media, "json")
-    conn
-    |> json_reply(200, response)
-  end
-
-  def config(conn, _params) do
-    response = %{
-      site: %{
-        name: Web.base_url,
-        server: Web.base_url,
-        textlimit: -1
-      }
-    }
-    |> Poison.encode!
-
     conn
     |> json_reply(200, response)
   end

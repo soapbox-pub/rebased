@@ -26,8 +26,8 @@ defmodule Pleroma.Web.Router do
   scope "/api", Pleroma.Web do
     pipe_through :api
 
-    get "/help/test", TwitterAPI.Controller, :help_test
-    get "/statusnet/config", TwitterAPI.Controller, :config
+    get "/help/test", TwitterAPI.UtilController, :help_test
+    get "/statusnet/config", TwitterAPI.UtilController, :config
 
     get "/statuses/public_timeline", TwitterAPI.Controller, :public_timeline
     get "/statuses/public_and_external_timeline", TwitterAPI.Controller, :public_and_external_timeline
