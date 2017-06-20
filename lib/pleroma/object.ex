@@ -43,6 +43,6 @@ defmodule Pleroma.Object do
   end
 
   def context_mapping(context) do
-    %Object{data: %{"id" => context}}
+    Object.change(%Object{}, %{data: %{"id" => context}})
   end
 end

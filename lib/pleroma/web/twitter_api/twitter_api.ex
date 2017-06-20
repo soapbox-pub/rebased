@@ -283,10 +283,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   def context_to_conversation_id(context) do
     with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
       id
-    else _e ->
-      changeset = Object.context_mapping(context)
-      {:ok, %{id: id}} = Repo.insert(changeset)
-      id
+      else _e ->
+        changeset = Object.context_mapping(context)
+        case Repo.insert(changeset) do
+          {:ok, %{id: id}} -> id
+          # This should be solved by an upsert, but it seems ecto
+          # has problems accessing the constraint inside the jsonb.
+          {:error, _} -> Object.get_cached_by_ap_id(context).id
+        end
     end
   end
 
