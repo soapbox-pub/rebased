@@ -50,7 +50,7 @@ defmodule Pleroma.Web.Websub do
       |> to_string
 
       signature = sign(sub.secret || "", response)
-      Logger.debug(fn -> "Pushing to #{sub.callback}" end)
+      Logger.debug(fn -> "Pushing #{topic} to #{sub.callback}" end)
 
       Task.start(fn ->
         with {:ok, %{status_code: code}} <- @httpoison.post(sub.callback, response, [
