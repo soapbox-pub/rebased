@@ -12,7 +12,7 @@ defmodule Pleroma.Activity do
 
   def get_by_ap_id(ap_id) do
     Repo.one(from activity in Activity,
-      where: fragment("? @> ?", activity.data, ^%{id: ap_id}))
+      where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id)))
   end
 
   def all_by_object_ap_id(ap_id) do
