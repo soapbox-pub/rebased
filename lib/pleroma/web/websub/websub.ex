@@ -54,9 +54,9 @@ defmodule Pleroma.Web.Websub do
 
       Task.start(fn ->
         with {:ok, %{status_code: code}} <- @httpoison.post(sub.callback, response, [
-              {"Content-Type", "application/atom+xml"},
-              {"X-Hub-Signature", "sha1=#{signature}"}
-                    ]) do
+          {"Content-Type", "application/atom+xml"},
+          {"X-Hub-Signature", "sha1=#{signature}"}
+        ], timeout: 10000, recv_timeout: 20000) do
           Logger.debug(fn -> "Pushed to #{sub.callback}, code #{code}" end)
         else e ->
             Logger.debug(fn -> "Couldn't push to #{sub.callback}, #{inspect(e)}" end)

@@ -132,7 +132,7 @@ defmodule Pleroma.Web.Salmon do
   end
 
   defp send_to_user(%{info: %{"salmon" => salmon}}, feed, poster) do
-    poster.(salmon, feed, [{"Content-Type", "application/magic-envelope+xml"}])
+    poster.(salmon, feed, [{"Content-Type", "application/magic-envelope+xml"}], timeout: 10000, recv_timeout: 20000)
   end
 
   defp send_to_user(_,_,_), do: nil

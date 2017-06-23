@@ -84,7 +84,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     user = Repo.get_by(User, ap_id: activity.data["actor"])
     {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
 
-    poster = fn (url, data, headers) ->
+    poster = fn (url, data, headers, options) ->
       assert url == "http://example.org/salmon"
     end
     Salmon.publish(user, activity, poster)
