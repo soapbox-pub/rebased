@@ -49,19 +49,13 @@ defmodule Pleroma.Web.Websub do
       |> :xmerl.export_simple(:xmerl_xml)
       |> to_string
 
-      signature = sign(sub.secret || "", response)
-      Logger.debug(fn -> "Pushing #{topic} to #{sub.callback}" end)
-
-      Task.start(fn ->
-        with {:ok, %{status_code: code}} <- @httpoison.post(sub.callback, response, [
-          {"Content-Type", "application/atom+xml"},
-          {"X-Hub-Signature", "sha1=#{signature}"}
-        ], timeout: 10000, recv_timeout: 20000) do
-          Logger.debug(fn -> "Pushed to #{sub.callback}, code #{code}" end)
-        else e ->
-            Logger.debug(fn -> "Couldn't push to #{sub.callback}, #{inspect(e)}" end)
-        end
-      end)
+      data = %{
+        xml: response,
+        topic: topic,
+        callback: sub.callback,
+        secret: sub.secret
+      }
+      Pleroma.Web.Federator.enqueue(:publish_single_websub, data)
     end)
   end
 

@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Federator do
 
   @websub Application.get_env(:pleroma, :websub)
   @ostatus Application.get_env(:pleroma, :ostatus)
+  @httpoison Application.get_env(:pleroma, :httpoison)
   @max_jobs 10
 
   def start_link do
@@ -45,6 +46,20 @@ defmodule Pleroma.Web.Federator do
   def handle(:incoming_doc, doc) do
     Logger.debug("Got document, trying to parse")
     @ostatus.handle_incoming(doc)
+  end
+
+  def handle(:publish_single_websub, %{xml: xml, topic: topic, callback: callback, secret: secret}) do
+    signature = @websub.sign(secret || "", xml)
+    Logger.debug(fn -> "Pushing #{topic} to #{callback}" end)
+
+    with {:ok, %{status_code: code}} <- @httpoison.post(callback, xml, [
+                  {"Content-Type", "application/atom+xml"},
+                  {"X-Hub-Signature", "sha1=#{signature}"}
+                ], timeout: 10000, recv_timeout: 20000) do
+      Logger.debug(fn -> "Pushed to #{callback}, code #{code}" end)
+    else e ->
+        Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)
+    end
   end
 
   def handle(type, payload) do
