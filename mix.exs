@@ -39,7 +39,7 @@ defmodule Pleroma.Mixfile do
      {:html_sanitize_ex, "~> 1.3.0-rc1"},
      {:calendar, "~> 0.16.1"},
      {:cachex, "~> 2.1"},
-     {:httpoison, "~> 0.11.1"},
+     {:httpoison, "~> 0.11.2"},
      {:ex_machina, "~> 2.0", only: :test},
      {:credo, "~> 0.7", only: [:dev, :test]},
      {:mix_test_watch, "~> 0.2", only: :dev}]
