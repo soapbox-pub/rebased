@@ -322,4 +322,11 @@ defmodule Pleroma.Web.OStatusTest do
       assert activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
     end
   end
+
+  test "insert or update a user from given data" do
+    user = insert(:user, %{nickname: "nick@name.de"})
+    data = %{ ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname }
+
+    assert {:ok, %User{}} = OStatus.insert_or_update_user(data)
+  end
 end
