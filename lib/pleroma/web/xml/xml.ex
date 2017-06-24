@@ -1,4 +1,7 @@
 defmodule Pleroma.Web.XML do
+  require Logger
+
+  def string_from_xpath(xpath, :error), do: nil
   def string_from_xpath(xpath, doc) do
     {:xmlObj, :string, res} = :xmerl_xpath.string('string(#{xpath})', doc)
 
@@ -10,10 +13,16 @@ defmodule Pleroma.Web.XML do
   end
 
   def parse_document(text) do
-    {doc, _rest} = text
-    |> :binary.bin_to_list
-    |> :xmerl_scan.string
+    try do
+      {doc, _rest} = text
+      |> :binary.bin_to_list
+      |> :xmerl_scan.string
 
-    doc
+      doc
+    catch
+      :exit, error ->
+        Logger.debug("Couldn't parse xml: #{inspect(text)}")
+        :error
+    end
   end
 end

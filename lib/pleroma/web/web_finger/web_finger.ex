@@ -98,7 +98,7 @@ defmodule Pleroma.Web.WebFinger do
                end
 
     with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
-         doc <- XML.parse_document(body),
+         doc when doc != :error<- XML.parse_document(body),
          {:ok, data} <- webfinger_from_xml(doc) do
       {:ok, data}
     else

@@ -30,6 +30,7 @@ defmodule Pleroma.Web.OStatus do
     activities = Enum.map(entries, fn (entry) ->
       {:xmlObj, :string, object_type} = :xmerl_xpath.string('string(/entry/activity:object-type[1])', entry)
       {:xmlObj, :string, verb} = :xmerl_xpath.string('string(/entry/activity:verb[1])', entry)
+      Logger.debug("Handling #{verb}")
 
       case verb do
         'http://activitystrea.ms/schema/1.0/follow' ->
