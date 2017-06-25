@@ -93,6 +93,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "attachment" => [
             object
           ],
+          "external_url" => "some url",
           "like_count" => 5,
           "announcement_count" => 3,
           "context" => "2hu",
@@ -100,14 +101,15 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         },
         "published" => date,
         "context" => "2hu"
-      }
+      },
+      local: false
     }
 
 
     expected_status = %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: follower}),
-      "is_local" => true,
+      "is_local" => false,
       "statusnet_html" => HtmlSanitizeEx.basic_html(content_html),
       "text" => content,
       "is_post_verb" => true,
@@ -124,7 +126,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "repeat_num" => 3,
       "favorited" => false,
       "repeated" => false,
-      "external_url" => activity.data["id"],
+      "external_url" => "some url",
       "tags" => ["content", "mentioning", "nsfw"]
     }
 
