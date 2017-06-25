@@ -45,6 +45,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
     assert activity.data["object"]["attachment"] |> length == 2
+    assert activity.data["object"]["external_url"] == "https://social.heldscal.la/notice/2020923"
   end
 
   test "handle incoming notes with tags" do

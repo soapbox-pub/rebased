@@ -49,6 +49,11 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     ] ++ mentions
   end
 
+  def add_external_url(note, entry) do
+    url = XML.string_from_xpath("//link[@rel='alternate' and @type='text/html']/@href", entry)
+    Map.put(note, "external_url", url)
+  end
+
   def handle_note(entry, doc \\ nil) do
     with id <- XML.string_from_xpath("//id", entry),
          activity when is_nil(activity) <- Activity.get_create_activity_by_object_ap_id(id),
@@ -67,6 +72,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          note <- TwitterAPI.Utils.make_note_data(actor.ap_id, to, context, content_html, attachments, inReplyToActivity, []),
          note <- note |> Map.put("id", id) |> Map.put("tag", tags),
          note <- note |> Map.put("published", date),
+         note <- add_external_url(note, entry),
          # TODO: Handle this case in make_note_data
          note <- (if inReplyTo && !inReplyToActivity, do: note |> Map.put("inReplyTo", inReplyTo), else: note)
       do
