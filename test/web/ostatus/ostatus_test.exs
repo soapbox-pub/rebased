@@ -35,6 +35,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["content"] == "Will it blend?"
     user = User.get_cached_by_ap_id(activity.data["actor"])
     assert User.ap_followers(user) in activity.data["to"]
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming notes with attachments - GS, subscription" do
@@ -46,6 +47,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
     assert activity.data["object"]["attachment"] |> length == 2
     assert activity.data["object"]["external_url"] == "https://social.heldscal.la/notice/2020923"
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming notes with tags" do
@@ -53,6 +55,7 @@ defmodule Pleroma.Web.OStatusTest do
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
     assert activity.data["object"]["tag"] == ["nsfw"]
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming notes - Mastodon, salmon, reply" do
@@ -69,6 +72,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["actor"] == "https://mastodon.social/users/lambadalambda"
     assert activity.data["context"] == "2hu"
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming notes - Mastodon, with CW" do
@@ -79,6 +83,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["actor"] == "https://mastodon.social/users/lambadalambda"
     assert String.contains?(activity.data["object"]["content"], "technologic")
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming retweets - Mastodon, with CW" do
@@ -97,6 +102,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
     assert activity.data["object"]["content"] == "@<a href=\"https://gs.archae.me/user/4687\" class=\"h-card u-url p-nickname mention\" title=\"shpbot\">shpbot</a> why not indeed."
     assert activity.data["object"]["inReplyTo"] == "tag:gs.archae.me,2017-04-30:noticeId=778260:objectType=note"
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming retweets - GS, subscription" do
@@ -199,6 +205,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["object"]["inReplyTo"] == "http://pleroma.example.org:4000/objects/55bce8fc-b423-46b1-af71-3759ab4670bc"
     assert "http://pleroma.example.org:4000/users/lain5" in activity.data["to"]
     assert activity.data["object"]["id"] == "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming follows" do
