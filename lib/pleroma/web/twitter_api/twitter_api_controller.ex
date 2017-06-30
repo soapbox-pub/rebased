@@ -128,8 +128,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, response)
   end
 
+  def get_by_id_or_ap_id(id) do
+    Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
+  end
+
   def favorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    activity = Repo.get(Activity, id)
+    activity = get_by_id_or_ap_id(id)
     {:ok, status} = TwitterAPI.favorite(user, activity)
     response = Poison.encode!(status)
 
@@ -138,7 +142,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def unfavorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    activity = Repo.get(Activity, id)
+    activity = get_by_id_or_ap_id(id)
     {:ok, status} = TwitterAPI.unfavorite(user, activity)
     response = Poison.encode!(status)
 
@@ -147,7 +151,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    activity = Repo.get(Activity, id)
+    activity = get_by_id_or_ap_id(id)
     if activity.data["actor"] == user.ap_id do
       bad_request_reply(conn, "You cannot repeat your own notice.")
     else
