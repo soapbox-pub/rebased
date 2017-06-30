@@ -75,7 +75,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities = ActivityPub.fetch_activities_for_context("2hu")
 
-      assert activities == [activity, activity_two]
+      assert activities == [activity_two, activity]
     end
   end
 

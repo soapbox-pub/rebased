@@ -227,8 +227,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     statuses = TwitterAPI.fetch_conversation(user, object.id)
 
     assert length(statuses) == 2
-    assert Enum.at(statuses, 0)["id"] == activity.id
-    assert Enum.at(statuses, 1)["id"] == activity_two.id
+    assert Enum.at(statuses, 1)["id"] == activity.id
+    assert Enum.at(statuses, 0)["id"] == activity_two.id
   end
 
   test "upload a file" do
