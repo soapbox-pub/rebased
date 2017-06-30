@@ -218,9 +218,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "fetch statuses in a context using the conversation id" do
     {:ok, user} = UserBuilder.insert()
-    {:ok, activity} = ActivityBuilder.insert(%{"context" => "2hu"})
-    {:ok, activity_two} = ActivityBuilder.insert(%{"context" => "2hu"})
-    {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
+    {:ok, activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
+    {:ok, activity_two} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
+    {:ok, _activity_three} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
 
     {:ok, object} = Object.context_mapping("2hu") |> Repo.insert
 

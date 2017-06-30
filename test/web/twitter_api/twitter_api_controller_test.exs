@@ -85,9 +85,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "GET /statusnet/conversation/:id.json" do
     test "returns the statuses in the conversation", %{conn: conn} do
       {:ok, _user} = UserBuilder.insert
-      {:ok, _activity} = ActivityBuilder.insert(%{"context" => "2hu"})
-      {:ok, _activity_two} = ActivityBuilder.insert(%{"context" => "2hu"})
-      {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
+      {:ok, _activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
+      {:ok, _activity_two} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
+      {:ok, _activity_three} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
 
       {:ok, object} = Object.context_mapping("2hu") |> Repo.insert
       conn = conn

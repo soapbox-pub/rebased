@@ -77,7 +77,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_activities_for_context(context) do
     query = from activity in Activity,
-      where: fragment("? @> ?", activity.data, ^%{ context: context }),
+      where: fragment("? @> ?", activity.data, ^%{ type: "Create", context: context }),
       order_by: [desc: :inserted_at]
     Repo.all(query)
   end

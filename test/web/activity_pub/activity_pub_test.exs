@@ -69,9 +69,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "fetch activities in context" do
     test "retrieves activities that have a given context" do
-      {:ok, activity} = ActivityBuilder.insert(%{"context" => "2hu"})
-      {:ok, activity_two} = ActivityBuilder.insert(%{"context" => "2hu"})
-      {:ok, _activity_three} = ActivityBuilder.insert(%{"context" => "3hu"})
+      {:ok, activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
+      {:ok, activity_two} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
+      {:ok, _activity_three} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
+      {:ok, _activity_four} = ActivityBuilder.insert(%{"type" => "Announce", "context" => "2hu"})
 
       activities = ActivityPub.fetch_activities_for_context("2hu")
 
