@@ -37,14 +37,30 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     end
   end
 
-  def get_mentions(entry) do
+  def get_people_mentions(entry) do
     :xmerl_xpath.string('//link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/person"]', entry)
     |> Enum.map(fn(person) -> XML.string_from_xpath("@href", person) end)
   end
 
+  def get_collection_mentions(entry) do
+    transmogrify = fn
+      ("http://activityschema.org/collection/public") ->
+        "https://www.w3.org/ns/activitystreams#Public"
+      (group) ->
+        group
+    end
+
+    :xmerl_xpath.string('//link[@rel="mentioned" and @ostatus:object-type="http://activitystrea.ms/schema/1.0/collection"]', entry)
+    |> Enum.map(fn(collection) -> XML.string_from_xpath("@href", collection) |> transmogrify.() end)
+  end
+
+  def get_mentions(entry) do
+    get_people_mentions(entry)
+    ++ get_collection_mentions(entry)
+  end
+
   def make_to_list(actor, mentions) do
     [
-      "https://www.w3.org/ns/activitystreams#Public",
       User.ap_followers(actor)
     ] ++ mentions
   end
