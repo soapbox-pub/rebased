@@ -178,7 +178,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts some sizes" do
-      [bio: 1000, name: 100]
+      [bio: 5000, name: 100]
       |> Enum.each(fn ({field, size}) ->
         string = String.pad_leading(".", size)
         cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
