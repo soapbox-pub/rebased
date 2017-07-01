@@ -112,7 +112,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_actor(query, %{"actor_id" => actor_id}) do
     from activity in query,
-      where: fragment("? @> ?", activity.data, ^%{actor: actor_id})
+      where: fragment("?->>'actor' = ?", activity.data, ^actor_id)
   end
   defp restrict_actor(query, _), do: query
 

@@ -19,7 +19,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   def feed(conn, %{"nickname" => nickname}) do
     user = User.get_cached_by_nickname(nickname)
     query = from activity in Activity,
-      where: fragment("? @> ?", activity.data, ^%{actor: user.ap_id}),
+      where: fragment("?->>'actor' = ?", activity.data, ^user.ap_id),
       limit: 20,
       order_by: [desc: :inserted_at]
 
