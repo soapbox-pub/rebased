@@ -69,7 +69,7 @@ defmodule Pleroma.User do
     |> validate_required([:name, :ap_id, :nickname])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, @email_regex)
-    |> validate_length(:bio, max: 1000)
+    |> validate_length(:bio, max: 5000)
     |> validate_length(:name, max: 100)
     |> put_change(:local, false)
   end
