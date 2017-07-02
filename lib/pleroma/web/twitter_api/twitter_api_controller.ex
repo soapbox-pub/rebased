@@ -2,7 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
-  alias Pleroma.{Repo, Activity}
+  alias Pleroma.{Repo, Activity, User}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Ecto.Changeset
 
@@ -193,6 +193,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          response <- Poison.encode!(user_map) do
       conn
       |> json_reply(200, response)
+    end
+  end
+
+  def update_most_recent_notification(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with id when is_number(id) <- String.to_integer(id),
+         info <- user.info,
+         mrn <- max(id, user.info["most_recent_notification"] || 0),
+         updated_info <- Map.put(info, "most_recent_notification", mrn),
+         changeset <- User.info_changeset(user, %{info: updated_info}),
+         {:ok, user} <- Repo.update(changeset) do
+      conn
+      |> json_reply(200, Poison.encode!(mrn))
+    else
+      _e -> bad_request_reply(conn, "Can't update.")
     end
   end
 

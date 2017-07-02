@@ -49,6 +49,8 @@ defmodule Pleroma.Web.Router do
     get "/account/verify_credentials", TwitterAPI.Controller, :verify_credentials
     post "/account/verify_credentials", TwitterAPI.Controller, :verify_credentials
 
+    post "/account/most_recent_notification", TwitterAPI.Controller, :update_most_recent_notification
+
     get "/statuses/home_timeline", TwitterAPI.Controller, :friends_timeline
     get "/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline
     get "/statuses/mentions", TwitterAPI.Controller, :mentions_timeline

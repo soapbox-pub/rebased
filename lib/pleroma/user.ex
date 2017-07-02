@@ -46,6 +46,12 @@ defmodule Pleroma.User do
     |> validate_required([:following])
   end
 
+  def info_changeset(struct, params \\ %{}) do
+    struct
+    |> cast(params, [:info])
+    |> validate_required([:info])
+  end
+
   def user_info(%User{} = user) do
     note_count_query = from a in Object,
       where: fragment("? @> ?", a.data, ^%{actor: user.ap_id, type: "Note"}),
