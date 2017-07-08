@@ -132,4 +132,15 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status
   end
+
+  test "an undo for a follow" do
+    follower = insert(:user)
+    followed = insert(:user)
+
+    {:ok, follow} = ActivityPub.follow(follower, followed)
+    {:ok, unfollow} = ActivityPub.unfollow(follower, followed)
+
+    map = ActivityRepresenter.to_map(unfollow, %{user: follower})
+    assert map["is_post_verb"] == false
+  end
 end
