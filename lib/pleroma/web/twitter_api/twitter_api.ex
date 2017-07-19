@@ -12,7 +12,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def to_for_user_and_mentions(user, mentions, inReplyTo) do
     default_to = [
-      User.ap_followers(user),
+      user.follower_address,
       "https://www.w3.org/ns/activitystreams#Public"
     ]
 

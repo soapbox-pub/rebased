@@ -61,7 +61,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
 
   def make_to_list(actor, mentions) do
     [
-      User.ap_followers(actor)
+      actor.follower_address
     ] ++ mentions
   end
 

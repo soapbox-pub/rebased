@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "type" => "Like",
       "actor" => ap_id,
       "object" => id,
-      "to" => [User.ap_followers(actor), object.data["actor"]],
+      "to" => [actor.follower_address, object.data["actor"]],
       "context" => object.data["context"]
     }
 
@@ -167,7 +167,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "type" => "Announce",
       "actor" => ap_id,
       "object" => id,
-      "to" => [User.ap_followers(user), object.data["actor"]],
+      "to" => [user.follower_address, object.data["actor"]],
       "context" => object.data["context"]
     }
 

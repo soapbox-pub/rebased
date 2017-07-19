@@ -9,7 +9,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   import Pleroma.Factory
 
   test "create a status" do
-    user = UserBuilder.build(%{ap_id: "142344"})
+    # user = UserBuilder.build(%{ap_id: "142344"})
+    user = insert(:user, %{ap_id: "142344"})
     _mentioned_user = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
 
     object_data = %{
