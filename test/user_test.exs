@@ -103,6 +103,7 @@ defmodule Pleroma.UserTest do
       assert is_binary(changeset.changes[:password_hash])
       assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
       assert changeset.changes[:following] == [User.ap_followers(%User{nickname: @full_user_data.nickname})]
+      assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
   end
 
@@ -160,6 +161,12 @@ defmodule Pleroma.UserTest do
     test "it confirms validity" do
       cs = User.remote_user_creation(@valid_remote)
       assert cs.valid?
+    end
+
+    test "it sets the follower_adress" do
+      cs = User.remote_user_creation(@valid_remote)
+      # remote users get a fake local follower address
+      assert cs.changes.follower_address == User.ap_followers(%User{ nickname: @valid_remote[:nickname] })
     end
 
     test "it enforces the fqn format for nicknames" do

@@ -9,7 +9,7 @@ defmodule Pleroma.Factory do
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}"),
     }
-    %{ user | ap_id: Pleroma.User.ap_id(user) }
+    %{ user | ap_id: Pleroma.User.ap_id(user), follower_address: Pleroma.User.ap_followers(user) }
   end
 
   def note_factory do

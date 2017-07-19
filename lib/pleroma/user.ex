@@ -21,6 +21,7 @@ defmodule Pleroma.User do
     field :avatar, :map
     field :local, :boolean, default: true
     field :info, :map, default: %{}
+    field :follower_address, :string
 
     timestamps()
   end
@@ -58,7 +59,7 @@ defmodule Pleroma.User do
       select: count(a.id)
 
     follower_count_query = from u in User,
-      where: fragment("? @> ?", u.following, ^User.ap_followers(user)),
+      where: fragment("? @> ?", u.following, ^user.follower_address),
       select: count(u.id)
 
     %{
@@ -70,7 +71,7 @@ defmodule Pleroma.User do
 
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
   def remote_user_creation(params) do
-    %User{}
+    changes = %User{}
     |> cast(params, [:bio, :name, :ap_id, :nickname, :info, :avatar])
     |> validate_required([:name, :ap_id, :nickname])
     |> unique_constraint(:nickname)
@@ -78,6 +79,13 @@ defmodule Pleroma.User do
     |> validate_length(:bio, max: 5000)
     |> validate_length(:name, max: 100)
     |> put_change(:local, false)
+    if changes.valid? do
+      followers = User.ap_followers(%User{nickname: changes.changes[:nickname]})
+      changes
+      |> put_change(:follower_address, followers)
+    else
+      changes
+    end
   end
 
   def register_changeset(struct, params \\ %{}) do
@@ -100,13 +108,14 @@ defmodule Pleroma.User do
       |> put_change(:password_hash, hashed)
       |> put_change(:ap_id, ap_id)
       |> put_change(:following, [followers])
+      |> put_change(:follower_address, followers)
     else
       changeset
     end
   end
 
   def follow(%User{} = follower, %User{} = followed) do
-    ap_followers = User.ap_followers(followed)
+    ap_followers = followed.follower_address
     if following?(follower, followed) do
       {:error,
        "Could not follow user: #{followed.nickname} is already on your list."}
@@ -125,7 +134,7 @@ defmodule Pleroma.User do
   end
 
   def unfollow(%User{} = follower, %User{} = followed) do
-    ap_followers = User.ap_followers(followed)
+    ap_followers = followed.follower_address
     if following?(follower, followed) do
       following = follower.following
       |> List.delete(ap_followers)
@@ -140,7 +149,7 @@ defmodule Pleroma.User do
   end
 
   def following?(%User{} = follower, %User{} = followed) do
-    Enum.member?(follower.following, User.ap_followers(followed))
+    Enum.member?(follower.following, followed.follower_address)
   end
 
   def get_by_ap_id(ap_id) do
