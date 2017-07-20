@@ -70,6 +70,8 @@ defmodule Pleroma.Web.Router do
     post "/favorites/destroy/:id", TwitterAPI.Controller, :unfavorite
 
     post "/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar
+
+    get "/statuses/followers", TwitterAPI.Controller, :followers
   end
 
   pipeline :ostatus do

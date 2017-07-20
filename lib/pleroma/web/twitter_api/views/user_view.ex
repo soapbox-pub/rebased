@@ -4,6 +4,14 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
   alias Pleroma.Web.TwitterAPI.Utils
 
   def render("show.json", %{user: user = %User{}} = assigns) do
+    render_one(user, Pleroma.Web.TwitterAPI.UserView, "user.json", assigns)
+  end
+
+  def render("index.json", %{users: users, for: user}) do
+    render_many(users, Pleroma.Web.TwitterAPI.UserView, "user.json", for: user)
+  end
+
+  def render("user.json", %{user: user = %User{}} = assigns) do
     image = User.avatar_url(user)
     following = if assigns[:for] do
       User.following?(assigns[:for], user)

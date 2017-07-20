@@ -210,6 +210,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def followers(%{assigns: %{user: user}} = conn, _params) do
+    with {:ok, followers} <- User.get_followers(user) do
+      render(conn, UserView, "index.json", %{users: followers, for: user})
+    else
+      _e -> bad_request_reply(conn, "Can't get followers")
+    end
+  end
+
   defp bad_request_reply(conn, error_message) do
     json = error_json(conn, error_message)
     json_reply(conn, 400, json)

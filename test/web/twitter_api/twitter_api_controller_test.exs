@@ -419,6 +419,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /api/statuses/followers" do
+    test "it returns a user's followers", %{conn: conn} do
+      user = insert(:user)
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> get("/api/statuses/followers")
+
+      assert json_response(conn, 200) == UserView.render("index.json", %{users: [follower_one, follower_two], for: user})
+    end
+  end
+
   defp valid_user(_context) do
     user = insert(:user)
     [user: user]
