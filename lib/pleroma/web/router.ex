@@ -72,6 +72,7 @@ defmodule Pleroma.Web.Router do
     post "/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar
 
     get "/statuses/followers", TwitterAPI.Controller, :followers
+    get "/statuses/friends", TwitterAPI.Controller, :friends
   end
 
   pipeline :ostatus do

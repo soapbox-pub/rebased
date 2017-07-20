@@ -218,6 +218,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def friends(%{assigns: %{user: user}} = conn, _params) do
+    with {:ok, friends} <- User.get_friends(user) do
+      render(conn, UserView, "index.json", %{users: friends, for: user})
+    else
+      _e -> bad_request_reply(conn, "Can't get friends")
+    end
+  end
+
   defp bad_request_reply(conn, error_message) do
     json = error_json(conn, error_message)
     json_reply(conn, 400, json)
