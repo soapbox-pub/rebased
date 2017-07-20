@@ -197,5 +197,35 @@ defmodule Pleroma.UserTest do
       end)
     end
   end
+
+  describe "followers and friends" do
+    test "gets all followers for a given user" do
+      user = insert(:user)
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      {:ok, res} = User.get_followers(user)
+
+      assert res == [follower_one, follower_two]
+    end
+
+    test "gets all friends (followed users) for a given user" do
+      user = insert(:user)
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      {:ok, res} = User.get_friends(user)
+
+      assert res == [followed_one, followed_two]
+    end
+  end
 end
 
