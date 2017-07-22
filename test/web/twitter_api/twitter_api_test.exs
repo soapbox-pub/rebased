@@ -9,8 +9,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   import Pleroma.Factory
 
   test "create a status" do
-    # user = UserBuilder.build(%{ap_id: "142344"})
-    user = insert(:user, %{ap_id: "142344"})
+    user = insert(:user)
     _mentioned_user = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
 
     object_data = %{
@@ -53,10 +52,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert is_list(activity.data["object"]["attachment"])
 
     assert activity.data["object"] == Object.get_by_ap_id(activity.data["object"]["id"]).data
+
+    user = User.get_by_ap_id(user.ap_id)
+
+    assert user.info["note_count"] == 1
   end
 
   test "create a status that is a reply" do
-    user = UserBuilder.build(%{ap_id: "some_cool_id"})
+    user = insert(:user)
     input = %{
       "status" => "Hello again."
     }
@@ -74,7 +77,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert get_in(reply.data, ["object", "context"]) == get_in(activity.data, ["object", "context"])
     assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
     assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
-    assert Enum.member?(get_in(reply.data, ["to"]), "some_cool_id")
+    assert Enum.member?(get_in(reply.data, ["to"]), user.ap_id)
   end
 
   test "fetch public statuses, excluding remote ones." do
@@ -187,6 +190,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user, followed, _activity } = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
     assert user.following == [User.ap_followers(followed)]
+
+    followed = User.get_by_ap_id(followed.ap_id)
+    assert followed.info["follower_count"] == 1
 
     { :error, msg } = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
     assert msg == "Could not follow user: #{followed.nickname} is already on your list."

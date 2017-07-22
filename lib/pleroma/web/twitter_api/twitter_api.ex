@@ -39,7 +39,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          context <- make_context(inReplyTo),
          tags <- Formatter.parse_tags(status),
          object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags) do
-      ActivityPub.create(to, user, context, object)
+      res = ActivityPub.create(to, user, context, object)
+      User.update_note_count(user)
+      res
     end
   end
 

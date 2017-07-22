@@ -22,6 +22,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   test "A user" do
     note_activity = insert(:note_activity)
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
+    {:ok, user} = User.update_note_count(user)
     follower = insert(:user)
     second_follower = insert(:user)
 
@@ -57,6 +58,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
 
   test "A user for a given other follower", %{user: user} do
     {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+    {:ok, user} = User.update_follower_count(user)
     image = "https://placehold.it/48x48"
     represented = %{
       "id" => user.id,

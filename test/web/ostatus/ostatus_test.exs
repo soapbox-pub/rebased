@@ -15,6 +15,8 @@ defmodule Pleroma.Web.OStatusTest do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
+    user = User.get_by_ap_id(activity.data["actor"])
+    assert user.info["note_count"] == 1
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["id"] == "tag:gs.example.org:4040,2017-04-23:noticeId=29:objectType=note"

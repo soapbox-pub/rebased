@@ -54,18 +54,10 @@ defmodule Pleroma.User do
   end
 
   def user_info(%User{} = user) do
-    note_count_query = from a in Object,
-      where: fragment("? @> ?", a.data, ^%{actor: user.ap_id, type: "Note"}),
-      select: count(a.id)
-
-    follower_count_query = from u in User,
-      where: fragment("? @> ?", u.following, ^user.follower_address),
-      select: count(u.id)
-
     %{
       following_count: length(user.following),
-      note_count: Repo.one(note_count_query),
-      follower_count: Repo.one(follower_count_query)
+      note_count: user.info["note_count"] || 0,
+      follower_count: user.info["follower_count"] || 0
     }
   end
 
@@ -127,9 +119,13 @@ defmodule Pleroma.User do
       following = [ap_followers | follower.following]
       |> Enum.uniq
 
-      follower
+      follower = follower
       |> follow_changeset(%{following: following})
       |> Repo.update
+
+      {:ok, followed} = update_follower_count(followed)
+
+      follower
     end
   end
 
@@ -142,7 +138,10 @@ defmodule Pleroma.User do
       { :ok, follower } = follower
       |> follow_changeset(%{following: following})
       |> Repo.update
-      { :ok, follower, Utils.fetch_latest_follow(follower, followed)}
+
+      {:ok, followed} = update_follower_count(followed)
+
+      {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
     else
       {:error, "Not subscribed!"}
     end
@@ -202,5 +201,33 @@ defmodule Pleroma.User do
       where: u.id != ^id
 
     {:ok, Repo.all(q)}
+  end
+
+  def update_note_count(%User{} = user) do
+    note_count_query = from a in Object,
+      where: fragment("? @> ?", a.data, ^%{actor: user.ap_id, type: "Note"}),
+      select: count(a.id)
+
+    note_count = Repo.one(note_count_query)
+
+    new_info = Map.put(user.info, "note_count", note_count)
+
+    cs = info_changeset(user, %{info: new_info})
+
+    Repo.update(cs)
+  end
+
+  def update_follower_count(%User{} = user) do
+    follower_count_query = from u in User,
+      where: fragment("? @> ?", u.following, ^user.follower_address),
+      select: count(u.id)
+
+    follower_count = Repo.one(follower_count_query)
+
+    new_info = Map.put(user.info, "follower_count", follower_count)
+
+    cs = info_changeset(user, %{info: new_info})
+
+    Repo.update(cs)
   end
 end

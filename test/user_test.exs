@@ -37,6 +37,9 @@ defmodule Pleroma.UserTest do
 
     user = Repo.get(User, user.id)
 
+    followed = User.get_by_ap_id(followed.ap_id)
+    assert followed.info["follower_count"] == 1
+
     assert user.following == [User.ap_followers(followed)]
   end
 
@@ -224,7 +227,36 @@ defmodule Pleroma.UserTest do
 
       {:ok, res} = User.get_friends(user)
 
+      followed_one = User.get_by_ap_id(followed_one.ap_id)
+      followed_two = User.get_by_ap_id(followed_two.ap_id)
       assert res == [followed_one, followed_two]
+    end
+  end
+
+  describe "updating note and follower count" do
+    test "it sets the info->note_count property" do
+      note = insert(:note)
+
+      user = User.get_by_ap_id(note.data["actor"])
+
+      assert user.info["note_count"] == nil
+
+      {:ok, user} = User.update_note_count(user)
+
+      assert user.info["note_count"] == 1
+    end
+
+    test "it sets the info->follower_count property" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      User.follow(follower, user)
+
+      assert user.info["follower_count"] == nil
+
+      {:ok, user} = User.update_follower_count(user)
+
+      assert user.info["follower_count"] == 1
     end
   end
 end
