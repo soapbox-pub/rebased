@@ -23,6 +23,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <ostatus:conversation>#{note_activity.data["context"]}</ostatus:conversation>
     <link ref="#{note_activity.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{note_activity.data["object"]["id"]}" rel="self" />
+    <link type="text/html" href="#{note_activity.data["object"]["id"]}" rel="alternate" />
     <category term="2hu"/>
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
@@ -56,6 +57,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <ostatus:conversation>#{answer.data["context"]}</ostatus:conversation>
     <link ref="#{answer.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />
+    <link type="text/html" href="#{answer.data["object"]["id"]}" rel="alternate" />
     <category term="2hu"/>
     <thr:in-reply-to ref="#{note.data["object"]["id"]}" />
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>

@@ -53,7 +53,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
-      {:link, [type: ['application/atom+xml'], href: h.(activity.data["object"]["id"]), rel: 'self'], []}
+      {:link, [type: ['application/atom+xml'], href: h.(activity.data["object"]["id"]), rel: 'self'], []},
+      {:link, [type: ['text/html'], href: h.(activity.data["object"]["id"]), rel: 'alternate'], []}
     ] ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions
   end
 
