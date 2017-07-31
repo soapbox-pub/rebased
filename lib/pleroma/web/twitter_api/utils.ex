@@ -15,13 +15,13 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
         "<a href=\"#{URI.encode(href)}\" class='attachment'>#{Path.basename(href)}</a>"
       _ -> ""
     end)
-    Enum.join([text | attachment_text], "<br />\n")
+    Enum.join([text | attachment_text], "<br />")
   end
 
   def format_input(text, mentions) do
     HtmlSanitizeEx.strip_tags(text)
     |> Formatter.linkify
-    |> String.replace("\n", "<br />\n")
+    |> String.replace("\n", "<br />")
     |> add_user_links(mentions)
   end
 
