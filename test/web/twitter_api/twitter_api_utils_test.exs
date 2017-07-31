@@ -9,6 +9,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilsTest do
 
     res = Utils.add_attachments("", [attachment])
 
-    assert res == "<br /><a href=\"http://heise.de/i%22m%20a%20boy.png\" class='attachment'>i\"m a boy.png</a>"
+    assert res == "<br />\n<a href=\"http://heise.de/i%22m%20a%20boy.png\" class='attachment'>i\"m a boy.png</a>"
   end
 end
