@@ -48,7 +48,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/post']},
       {:id, h.(activity.data["object"]["id"])}, # For notes, federate the object id.
       {:title, ['New note by #{user.nickname}']},
-      {:content, [type: 'html'], h.(activity.data["object"]["content"])},
+      {:content, [type: 'html'], h.(activity.data["object"]["content"] |> String.replace(~r/[\n\r]/, ""))},
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
