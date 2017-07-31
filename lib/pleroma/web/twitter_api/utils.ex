@@ -44,13 +44,10 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
     end)
   end
 
-  def wrap_in_p(text), do: "<p>#{text}</p>"
-
   def make_content_html(status, mentions, attachments) do
     status
     |> format_input(mentions)
     |> add_attachments(attachments)
-    |> wrap_in_p
   end
 
   def make_context(%Activity{data: %{"context" => context}}), do: context
