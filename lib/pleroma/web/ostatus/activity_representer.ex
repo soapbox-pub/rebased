@@ -24,6 +24,29 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     end)
   end
 
+  defp get_links(%{local: true, data: data}) do
+    h = fn(str) -> [to_charlist(str)] end
+    [
+      {:link, [type: ['application/atom+xml'], href: h.(data["object"]["id"]), rel: 'self'], []},
+      {:link, [type: ['text/html'], href: h.(data["object"]["id"]), rel: 'alternate'], []}
+    ]
+  end
+
+  defp get_links(%{local: false,
+                   data: %{
+                     "object" => %{
+                       "external_url" => external_url
+                     }
+                   }}) do
+
+    h = fn(str) -> [to_charlist(str)] end
+    [
+      {:link, [type: ['text/html'], href: h.(external_url), rel: 'alternate'], []}
+    ]
+  end
+
+  defp get_links(_activity), do: []
+
   def to_simple_form(activity, user, with_author \\ false)
   def to_simple_form(%{data: %{"object" => %{"type" => "Note"}}} = activity, user, with_author) do
     h = fn(str) -> [to_charlist(str)] end
@@ -53,9 +76,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [], h.(activity.data["context"])},
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
-      {:link, [type: ['application/atom+xml'], href: h.(activity.data["object"]["id"]), rel: 'self'], []},
-      {:link, [type: ['text/html'], href: h.(activity.data["object"]["id"]), rel: 'alternate'], []}
-    ] ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions
+    ] ++ get_links(activity) ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions
   end
 
   def to_simple_form(%{data: %{"type" => "Like"}} = activity, user, with_author) do

@@ -4,8 +4,22 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
   alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.OStatus
 
   import Pleroma.Factory
+
+  test "an external note activity" do
+    incoming = File.read!("test/fixtures/mastodon-note-cw.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    user = User.get_cached_by_ap_id(activity.data["actor"])
+
+    tuple = ActivityRepresenter.to_simple_form(activity, user)
+
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+
+    assert String.contains?(res, ~s{<link type="text/html" href="https://mastodon.social/users/lambadalambda/updates/2314748" rel="alternate"/>})
+  end
 
   test "a note activity" do
     note_activity = insert(:note_activity)
