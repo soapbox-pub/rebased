@@ -1,10 +1,18 @@
 defmodule Pleroma.Web.OStatus.ActivityRepresenter do
-  alias Pleroma.{Activity, User}
+  alias Pleroma.{Activity, User, Object}
   alias Pleroma.Web.OStatus.UserRepresenter
   require Logger
 
+  defp get_href(id) do
+    with %Object{data: %{ "external_url" => external_url } }<- Object.get_cached_by_ap_id(id) do
+      external_url
+    else
+      _e -> id
+    end
+  end
+
   defp get_in_reply_to(%{"object" => %{"inReplyTo" => in_reply_to}}) do
-    [{:"thr:in-reply-to", [ref: to_charlist(in_reply_to)], []}]
+    [{:"thr:in-reply-to", [ref: to_charlist(in_reply_to), href: to_charlist(get_href(in_reply_to))], []}]
   end
 
   defp get_in_reply_to(_), do: []

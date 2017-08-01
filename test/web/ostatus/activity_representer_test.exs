@@ -58,6 +58,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     data = %{answer.data | "object" => object}
     answer = %{answer | data: data}
 
+    note_object = Object.get_by_ap_id(note.data["object"]["id"])
+    Repo.update!(Object.change(note_object, %{ data: Map.put(note_object.data, "external_url", "someurl") }))
+
     user = User.get_cached_by_ap_id(answer.data["actor"])
 
     expected = """
@@ -73,7 +76,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />
     <link type="text/html" href="#{answer.data["object"]["id"]}" rel="alternate" />
     <category term="2hu"/>
-    <thr:in-reply-to ref="#{note.data["object"]["id"]}" />
+    <thr:in-reply-to ref="#{note.data["object"]["id"]}" href="someurl" />
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
 
