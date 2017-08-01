@@ -9,7 +9,7 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.{WebFinger, Websub}
-  alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler}
+  alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler, DeleteHandler}
 
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
@@ -34,6 +34,8 @@ defmodule Pleroma.Web.OStatus do
 
       try do
         case verb do
+          'http://activitystrea.ms/schema/1.0/delete' ->
+            with {:ok, activity} <- DeleteHandler.handle_delete(entry, doc), do: activity
           'http://activitystrea.ms/schema/1.0/follow' ->
             with {:ok, activity} <- FollowHandler.handle(entry, doc), do: activity
           'http://activitystrea.ms/schema/1.0/share' ->

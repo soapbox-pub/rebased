@@ -15,9 +15,13 @@ defmodule Pleroma.Activity do
       where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id)))
   end
 
+  def all_by_object_ap_id_q(ap_id) do
+    from activity in Activity,
+      where: fragment("(?)->'object'->>'id' = ?", activity.data, ^to_string(ap_id))
+  end
+
   def all_by_object_ap_id(ap_id) do
-    Repo.all(from activity in Activity,
-      where: fragment("(?)->'object'->>'id' = ?", activity.data, ^to_string(ap_id)))
+    Repo.all(all_by_object_ap_id_q(ap_id))
   end
 
   def get_create_activity_by_object_ap_id(ap_id) do
