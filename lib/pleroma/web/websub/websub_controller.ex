@@ -20,6 +20,8 @@ defmodule Pleroma.Web.Websub.WebsubController do
 
   # TODO: Extract this into the Websub module
   def websub_subscription_confirmation(conn, %{"id" => id, "hub.mode" => "subscribe", "hub.challenge" => challenge, "hub.topic" => topic} = params) do
+    Logger.debug("Got websub confirmation")
+    Logger.debug(inspect(params))
     lease_seconds = if params["hub.lease_seconds"] do
       String.to_integer(params["hub.lease_seconds"])
     else
