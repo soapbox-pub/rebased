@@ -26,6 +26,15 @@ defmodule Pleroma.Web.Federator do
     end)
   end
 
+  def handle(:request_subscription, websub) do
+    Logger.debug("Refreshing #{websub.topic}")
+    with {:ok, websub } <- Websub.request_subscription(websub) do
+      Logger.debug("Successfully refreshed #{websub.topic}")
+    else
+      _e -> Logger.debug("Couldn't refresh #{websub.topic}")
+    end
+  end
+
   def handle(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do

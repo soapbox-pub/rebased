@@ -216,8 +216,8 @@ defmodule Pleroma.Web.Websub do
 
     subs = Repo.all(query)
 
-    Enum.map(subs, fn (sub) ->
-      request_subscription(sub)
+    Enum.each(subs, fn (sub) ->
+      Pleroma.Web.Federator.enqueue(:request_subscription, sub)
     end)
   end
 end
