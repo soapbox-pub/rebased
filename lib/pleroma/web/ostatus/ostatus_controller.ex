@@ -8,11 +8,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   import Ecto.Query
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
-    user = User.get_cached_by_nickname(nickname)
-
-    case get_format(conn) do
-      "html" -> Fallback.RedirectController.redirector(conn, nil)
-      _ -> redirect conn, external: OStatus.feed_path(user)
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+      case get_format(conn) do
+        "html" -> Fallback.RedirectController.redirector(conn, nil)
+        _ -> redirect conn, external: OStatus.feed_path(user)
+      end
+    else
+      _e -> send_resp(conn, 404, "No user found")
     end
   end
 
