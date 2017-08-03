@@ -12,10 +12,12 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
   end
 
   def webfinger(conn, %{"resource" => resource}) do
-    {:ok, response} = WebFinger.webfinger(resource)
-
-    conn
-    |> put_resp_content_type("application/xrd+xml")
-    |> send_resp(200, response)
+    with {:ok, response} <- WebFinger.webfinger(resource) do
+      conn
+      |> put_resp_content_type("application/xrd+xml")
+      |> send_resp(200, response)
+    else
+      _e -> send_resp(conn, 404, "Couldn't find user")
+    end
   end
 end
