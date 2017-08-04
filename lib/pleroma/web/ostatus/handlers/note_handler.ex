@@ -10,7 +10,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     if inReplyTo && !Object.get_cached_by_ap_id(inReplyTo) do
       inReplyToHref = XML.string_from_xpath("//thr:in-reply-to[1]/@href", entry)
       if inReplyToHref do
-        OStatus.fetch_activity_from_html_url(inReplyToHref)
+        OStatus.fetch_activity_from_url(inReplyToHref)
       else
         Logger.debug("Couldn't find a href link to #{inReplyTo}")
       end

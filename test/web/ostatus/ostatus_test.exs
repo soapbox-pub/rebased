@@ -326,10 +326,17 @@ defmodule Pleroma.Web.OStatusTest do
   describe "fetching a status by it's HTML url" do
     test "it builds a missing status from an html url" do
       url = "https://shitposter.club/notice/2827873"
-      {:ok, [activity] } = OStatus.fetch_activity_from_html_url(url)
+      {:ok, [activity] } = OStatus.fetch_activity_from_url(url)
 
       assert activity.data["actor"] == "https://shitposter.club/user/1"
       assert activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+    end
+
+    test "it works for atom notes, too" do
+      url = "https://social.sakamoto.gq/objects/0ccc1a2c-66b0-4305-b23a-7f7f2b040056"
+      {:ok, [activity] } = OStatus.fetch_activity_from_url(url)
+      assert activity.data["actor"] == "https://social.sakamoto.gq/users/eal"
+      assert activity.data["object"]["id"] == url
     end
   end
 

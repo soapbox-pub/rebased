@@ -87,6 +87,13 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://social.sakamoto.gq/users/eal/feed.atom", _body, _headers) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/sakamoto_eal_feed.atom")
+    }}
+  end
+
   def get("http://gs.example.org/index.php/api/statuses/user_timeline/1.atom", _body, _headers) do
     {:ok, %Response{
       status_code: 200,
@@ -142,11 +149,26 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://social.sakamoto.gq/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://social.sakamoto.gq/users/eal"]]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/eal_sakamoto.xml")
+    }}
+  end
+
   def get("https://mamot.fr/users/Skruyb.atom", _, _) do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/https___mamot.fr_users_Skruyb.atom")
     }}
+  end
+
+  def get("https://social.sakamoto.gq/objects/0ccc1a2c-66b0-4305-b23a-7f7f2b040056", [Accept: "application/atom+xml"], _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/sakamoto.atom")
+    }}
+
   end
 
   def get(url, body, headers) do

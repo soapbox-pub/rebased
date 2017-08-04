@@ -24,45 +24,48 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def handle_incoming(xml_string) do
-    doc = parse_document(xml_string)
-    entries = :xmerl_xpath.string('//entry', doc)
+    with doc when doc != :error <- parse_document(xml_string) do
+      entries = :xmerl_xpath.string('//entry', doc)
 
-    activities = Enum.map(entries, fn (entry) ->
-      {:xmlObj, :string, object_type} = :xmerl_xpath.string('string(/entry/activity:object-type[1])', entry)
-      {:xmlObj, :string, verb} = :xmerl_xpath.string('string(/entry/activity:verb[1])', entry)
-      Logger.debug("Handling #{verb}")
+      activities = Enum.map(entries, fn (entry) ->
+        {:xmlObj, :string, object_type} = :xmerl_xpath.string('string(/entry/activity:object-type[1])', entry)
+        {:xmlObj, :string, verb} = :xmerl_xpath.string('string(/entry/activity:verb[1])', entry)
+        Logger.debug("Handling #{verb}")
 
-      try do
-        case verb do
-          'http://activitystrea.ms/schema/1.0/delete' ->
-            with {:ok, activity} <- DeleteHandler.handle_delete(entry, doc), do: activity
-          'http://activitystrea.ms/schema/1.0/follow' ->
-            with {:ok, activity} <- FollowHandler.handle(entry, doc), do: activity
-          'http://activitystrea.ms/schema/1.0/share' ->
-            with {:ok, activity, retweeted_activity} <- handle_share(entry, doc), do: [activity, retweeted_activity]
-          'http://activitystrea.ms/schema/1.0/favorite' ->
-            with {:ok, activity, favorited_activity} <- handle_favorite(entry, doc), do: [activity, favorited_activity]
-          _ ->
-            case object_type do
-              'http://activitystrea.ms/schema/1.0/note' ->
-                with {:ok, activity} <- NoteHandler.handle_note(entry, doc), do: activity
-              'http://activitystrea.ms/schema/1.0/comment' ->
-                with {:ok, activity} <- NoteHandler.handle_note(entry, doc), do: activity
-              _ ->
-                Logger.error("Couldn't parse incoming document")
-                nil
-            end
-        end
-      rescue
-        e ->
-          Logger.error("Error occured while handling activity")
+        try do
+          case verb do
+            'http://activitystrea.ms/schema/1.0/delete' ->
+              with {:ok, activity} <- DeleteHandler.handle_delete(entry, doc), do: activity
+            'http://activitystrea.ms/schema/1.0/follow' ->
+              with {:ok, activity} <- FollowHandler.handle(entry, doc), do: activity
+            'http://activitystrea.ms/schema/1.0/share' ->
+              with {:ok, activity, retweeted_activity} <- handle_share(entry, doc), do: [activity, retweeted_activity]
+            'http://activitystrea.ms/schema/1.0/favorite' ->
+              with {:ok, activity, favorited_activity} <- handle_favorite(entry, doc), do: [activity, favorited_activity]
+            _ ->
+              case object_type do
+                'http://activitystrea.ms/schema/1.0/note' ->
+                  with {:ok, activity} <- NoteHandler.handle_note(entry, doc), do: activity
+                'http://activitystrea.ms/schema/1.0/comment' ->
+                  with {:ok, activity} <- NoteHandler.handle_note(entry, doc), do: activity
+                _ ->
+                  Logger.error("Couldn't parse incoming document")
+                  nil
+              end
+          end
+        rescue
+          e ->
+            Logger.error("Error occured while handling activity")
           Logger.error(inspect(e))
           nil
-      end
-    end)
-    |> Enum.filter(&(&1))
+        end
+      end)
+      |> Enum.filter(&(&1))
 
-    {:ok, activities}
+      {:ok, activities}
+    else
+      _e -> {:error, []}
+    end
   end
 
   def make_share(entry, doc, retweeted_activity) do
@@ -111,7 +114,7 @@ defmodule Pleroma.Web.OStatus do
     else e ->
         Logger.debug("Couldn't get, will try to fetch")
         with href when not is_nil(href) <- string_from_xpath("//activity:object[1]/link[@type=\"text/html\"]/@href", entry),
-             {:ok, [favorited_activity]} <- fetch_activity_from_html_url(href) do
+             {:ok, [favorited_activity]} <- fetch_activity_from_url(href) do
           {:ok, favorited_activity}
         else e -> Logger.debug("Couldn't find href: #{inspect(e)}")
         end
@@ -278,14 +281,30 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
-  def fetch_activity_from_html_url(url) do
-    Logger.debug("Trying to fetch #{url}")
-    with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
-         {:ok, atom_url} <- get_atom_url(body),
-         {:ok, %{status_code: code, body: body}} when code in 200..299 <- @httpoison.get(atom_url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
+  def fetch_activity_from_atom_url(url) do
+    with {:ok, %{body: body, status_code: code}} when code in 200..299 <- @httpoison.get(url, [Accept: "application/atom+xml"], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
       Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body)
     else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+    end
+  end
+
+  def fetch_activity_from_html_url(url) do
+    Logger.debug("Trying to fetch #{url}")
+    with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
+         {:ok, atom_url} <- get_atom_url(body) do
+        fetch_activity_from_atom_url(atom_url)
+    else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+    end
+  end
+
+  def fetch_activity_from_url(url) do
+    with {:ok, activities} <- fetch_activity_from_atom_url(url) do
+      {:ok, activities}
+    else
+      _e -> with {:ok, activities} <- fetch_activity_from_html_url(url) do
+              {:ok, activities}
+            end
     end
   end
 end
