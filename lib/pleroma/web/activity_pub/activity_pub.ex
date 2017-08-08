@@ -119,7 +119,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def fetch_activities(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
-      order_by: [desc: :inserted_at]
+      order_by: [desc: :id]
 
     base_query
     |> restrict_recipients(recipients)
