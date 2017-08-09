@@ -12,7 +12,7 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
   def add_attachments(text, attachments) do
     attachment_text = Enum.map(attachments, fn
       (%{"url" => [%{"href" => href} | _]}) ->
-        "<a href=\"#{URI.encode(href)}\" class='attachment'>#{Path.basename(href)}</a>"
+        "<a href=\"#{href}\" class='attachment'>#{Path.basename(href)}</a>"
       _ -> ""
     end)
     Enum.join([text | attachment_text], "<br>\n")
