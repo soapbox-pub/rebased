@@ -13,7 +13,7 @@ defmodule Pleroma.Upload do
       "url" => [%{
         "type" => "Link",
         "mediaType" => file.content_type,
-        "href" => url_for(Path.join(uuid, URI.encode(file.filename)))
+        "href" => url_for(Path.join(uuid, :cow_uri.urlencode(file.filename)))
       }],
       "name" => file.filename,
       "uuid" => uuid
@@ -38,7 +38,7 @@ defmodule Pleroma.Upload do
       "url" => [%{
         "type" => "Link",
         "mediaType" => content_type,
-        "href" => url_for(Path.join(uuid, URI.encode(filename)))
+        "href" => url_for(Path.join(uuid, :cow_uri.urlencode(filename)))
       }],
       "name" => filename,
       "uuid" => uuid
