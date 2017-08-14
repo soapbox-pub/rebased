@@ -1,7 +1,7 @@
 defmodule Pleroma.Formatter do
   alias Pleroma.User
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&]+[\w]/
+  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&]+[\w]/u
   def linkify(text) do
     Regex.replace(@link_regex, text, "<a href='\\0'>\\0</a>")
   end
@@ -14,7 +14,7 @@ defmodule Pleroma.Formatter do
 
   def parse_mentions(text) do
     # Modified from https://www.w3.org/TR/html5/forms.html#valid-e-mail-address
-    regex = ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/
+    regex = ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/u
 
     Regex.scan(regex, text)
     |> List.flatten
