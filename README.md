@@ -46,6 +46,7 @@ NodeJS is available as `nodejs` package on debian. `apt install nodejs`. Debian 
   * You most likely don't want having some application accessing database as superuser, so you need to create separate user for that. Right now it must be done manually (issue #27).
      * Open psql shell as postgres user: (as root) `su postgres -c psql`
      * Create a new PostgreSQL user: 
+
      ```sql
      \c pleroma_dev
      CREATE user pleroma;
@@ -53,6 +54,7 @@ NodeJS is available as `nodejs` package on debian. `apt install nodejs`. Debian 
      GRANT ALL ON ALL tables IN SCHEMA public TO pleroma;
      GRANT ALL ON ALL sequences IN SCHEMA public TO pleroma;
      ```
+
      * Again, change password in `config/dev.exs`, and change user to `"pleroma"` (line like `username: "postgres"`)
 
 ### Some additional configuration
