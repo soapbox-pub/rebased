@@ -32,10 +32,10 @@ NodeJS is available as `nodejs` package on Debian. `apt install nodejs`. Debian 
         * There, enter following: 
 
         ```sql
-        ALTER USER postgres with encrypted password '<PASSWORD>';
+        ALTER USER postgres with encrypted password '[PASSWORD]';
         ``` 
 
-        where <PASSWORD> is any string, no need to manually encrypt it - postgres will encrypt it automatically for you.
+        where [PASSWORD] is any string, no need to manually encrypt it - postgres will encrypt it automatically for you.
         * Replace password in file `config/dev.exs` with password you supplied in previous step (look for line like `password: "postgres"`)
      
      * Edit `/etc/postgresql/9.6/main/pg_hba.conf` (Assuming you have the 9.6 version) and change the line:
@@ -60,7 +60,7 @@ NodeJS is available as `nodejs` package on Debian. `apt install nodejs`. Debian 
      ```sql
      \c pleroma_dev
      CREATE user pleroma;
-     ALTER user pleroma with encrypted password '<your password>';
+     ALTER user pleroma with encrypted password '[your password]';
      GRANT ALL ON ALL tables IN SCHEMA public TO pleroma;
      GRANT ALL ON ALL sequences IN SCHEMA public TO pleroma;
      ```
