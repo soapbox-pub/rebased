@@ -87,7 +87,7 @@ NodeJS is available as `nodejs` package on Debian. `apt install nodejs`. Debian 
 
 ## Running
 
-By default, it listens on port 4000 (TCP), so you can access it on http://localhost:4000/ (if you it on same machine). In case of an error it will restart automatically.
+By default, it listens on port 4000 (TCP), so you can access it on http://localhost:4000/ (if you are on the same machine). In case of an error it will restart automatically.
 
 ### As systemd service (with provided .service file)
 Running `service pleroma start`
