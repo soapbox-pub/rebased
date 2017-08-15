@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>README.html</title>
+
+</head>
+
+<body>
+
+<h1>Pleroma</h1>
+
+<h2>Installation</h2>
+
+<h3>Dependencies</h3>
+
+<ul>
+<li>Postgresql version 9.5 or newer</li>
+<li>Elixir version 1.4 or newer</li>
+<li>NodeJS LTS </li>
+</ul>
+
+<h4>Installing dependencies on Debian system</h4>
+
+<p>PostgreSQL 9.6 should be available on debian stable (Jessie) from "main" area. Install it using apt: <code>apt install postgresql-9.6</code>. Make sure that <code>postgresql-9.5</code> or older is not installed, for some strange reason debian allows multiple versions to coexist, what effect it has - i don't know.</p>
+
+<p>You must install elixir 1.4+ from elixir-lang.org, because Debian repos only have 1.3.x version. You will need to add apt repo to sources.list(.d) and import GPG key. Follow instructions here: https://elixir-lang.org/install.html#unix-and-unix-like (See "Ubuntu or Debian 7"). This should be valid until Debian updates elixir in their repositories. Package you want is named <code>elixir</code>, so install it using <code>apt install elixir</code></p>
+
+<p>NodeJS is available as <code>nodejs</code> package on debian. <code>apt install nodejs</code>. Debian stable has 4.8.x version. If that does not work, use nodesource's repo https://github.com/nodesource/distributions#deb - version 5.x confirmed to work.</p>
+
+<h3>Preparation</h3>
+
+<ul>
+<li>You probably want application to run as separte user - so create a new one: <code>adduser pleroma</code></li>
+<li>Clone the git repository into new user's dir (clone as the user to avoid permissions errors)</li>
+<li>Again, as new user, install dependencies with <code>mix deps.get</code> if it asks you to install "hex" - agree to that.</li>
+</ul>
+
+<h3>Database preparation</h3>
+
+<ul>
+<li><p>You'll need to allow password-based authorisation for <code>postgres</code> superuser</p>
+
+<ul>
+<li><p>changing default password for superuser is probably a good idea:</p>
+
+<ul>
+<li>Open psql shell as postgres user: (as root) <code>su postgres -c psql</code></li>
+<li>There, enter following: <code>ALTER USER postgres with encrypted password '&lt;YOUR SECURE PASSWORD&gt;';</code></li>
+<li>Replace password in file <code>config/dev.exs</code> with password you supplied in previous step (look for line like <code>password: "postgres"</code>)</li>
+</ul></li>
+<li><p>edit <code>/etc/postgresql/9.6/main/pg_hba.conf</code> (Assuming you have 9.6 version) and change the line:
+<code>
+local   all             postgres                                peer
+</code>
+to
+<code>
+local   all             postgres                                md5
+</code></p></li>
+</ul></li>
+<li>Create and migrate your database with <code>mix ecto.create &amp;&amp; mix ecto.migrate</code>. If it gives errors, try running again, it should be ok.</li>
+<li>You most likely don't want having some application accessing database as superuser, so we need to create separate user for that. For now it's done manually (issue #27).
+<ul>
+<li>Revert <code>/etc/postgresql/9.6/main/pg_hba.conf</code> to previous state (replace <code>md5</code> with <code>peer</code>)</li>
+<li>Open psql shell as postgres user: (as root) <code>su postgres -c psql</code></li>
+<li>Create a new PostgreSQL user: 
+<code>sql
+\c pleroma_dev
+CREATE user pleroma;
+ALTER user pleroma with encrypted password '&lt;your password&gt;';
+GRANT ALL ON ALL tables IN SCHEMA public TO pleroma;
+GRANT ALL ON ALL sequences IN SCHEMA public TO pleroma;
+</code></li>
+<li>Again, change password in <code>config/dev.exs</code>, and change user too to <code>"pleroma"</code> (like like <code>username: "postgres"</code>)</li>
+</ul></li>
+</ul>
+
+<h3>Some additional configuration</h3>
+
+<ul>
+<li><p>You will need to let pleroma instance to know what hostname/url it's running on.</p>
+
+<p>In file <code>config/dev.exs</code>, add these lines at the end of the file:</p>
+
+<p><code>elixir
+config :pleroma, Pleroma.Web.Endpoint,
+url: [host: "example.tld", scheme: "https", port: 443]
+</code></p>
+
+<p>replacing <code>example.tld</code> with your (sub)domain</p></li>
+<li><p>Start Phoenix endpoint with <code>mix phx.server</code></p></li>
+</ul>
+
+<p>Now you can visit <a href="http://localhost:4000"><code>localhost:4000</code></a> from your browser.</p>
+
+<p>Ready to run in production? Please <a href="http://www.phoenixframework.org/docs/deployment">check our deployment guides</a>.</p>
+
+<h2>Learn more</h2>
+
+<ul>
+<li>Official website: http://www.phoenixframework.org/</li>
+<li>Guides: http://phoenixframework.org/docs/overview</li>
+<li>Docs: https://hexdocs.pm/phoenix</li>
+<li>Mailing list: http://groups.google.com/group/phoenix-talk</li>
+<li>Source: https://github.com/phoenixframework/phoenix</li>
+</ul>
+
+</body>
+</html>
