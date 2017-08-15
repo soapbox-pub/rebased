@@ -33,13 +33,17 @@ NodeJS is available as `nodejs` package on debian. `apt install nodejs`. Debian 
         * Replace password in file `config/dev.exs` with password you supplied in previous step (look for line like `password: "postgres"`)
      
      * edit `/etc/postgresql/9.6/main/pg_hba.conf` (Assuming you have 9.6 version) and change the line:
+
      ```
      local   all             postgres                                peer
      ```
+
      to
+
      ```
      local   all             postgres                                md5
      ```
+
      don't forget to revert it in the later step so you won't have to enter password when accessing psql console.
   * Create and update your database with `mix ecto.create && mix ecto.migrate`. If it gives errors, try running again, this is a known issue.
   * Undo changes you made in `/etc/postgresql/9.6/main/pg_hba.conf` (replace `md5` with `peer`)
