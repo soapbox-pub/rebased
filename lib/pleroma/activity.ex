@@ -15,9 +15,15 @@ defmodule Pleroma.Activity do
       where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id)))
   end
 
+  # Wrong name, only returns create activities
   def all_by_object_ap_id_q(ap_id) do
     from activity in Activity,
       where: fragment("(?)->'object'->>'id' = ?", activity.data, ^to_string(ap_id))
+  end
+
+  def all_non_create_by_object_ap_id_q(ap_id) do
+    from activity in Activity,
+      where: fragment("(?)->>'object' = ?", activity.data, ^to_string(ap_id))
   end
 
   def all_by_object_ap_id(ap_id) do

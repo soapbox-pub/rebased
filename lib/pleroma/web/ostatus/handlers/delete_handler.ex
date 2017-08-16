@@ -7,6 +7,7 @@ defmodule Pleroma.Web.OStatus.DeleteHandler do
     with id <- XML.string_from_xpath("//id", entry),
          object when not is_nil(object) <- Object.get_by_ap_id(id) do
       Repo.delete(object)
+      Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id))
       Repo.delete_all(Activity.all_by_object_ap_id_q(id))
       nil
     end
