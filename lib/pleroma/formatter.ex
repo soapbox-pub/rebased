@@ -91,7 +91,7 @@ defmodule Pleroma.Formatter do
     ]
 
     Enum.reduce(emoji_list, text, fn (emoji, text) ->
-      String.replace(text, ":#{String.replace(emoji, "_", "")}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{Pleroma.Web.Endpoint.static_url}/finmoji/128px/#{emoji}-128.png' />")
+      String.replace(text, ":#{String.replace(emoji, "_", "")}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{String.replace(emoji, "_", "")}' src='#{Pleroma.Web.Endpoint.static_url}/finmoji/128px/#{emoji}-128.png' />")
     end)
   end
 end
