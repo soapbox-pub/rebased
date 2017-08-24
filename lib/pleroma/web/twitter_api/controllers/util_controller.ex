@@ -49,7 +49,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       uri: Web.base_url,
       title: Web.base_url,
       description: "A Pleroma instance, an alternative fediverse server",
-      email: "example@example.org",
       version: "dev"
     }
 
