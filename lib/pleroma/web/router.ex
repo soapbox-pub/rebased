@@ -23,12 +23,21 @@ defmodule Pleroma.Web.Router do
     plug :accepts, ["xml", "xrd+xml"]
   end
 
+  pipeline :config do
+    plug :accepts, ["json", "xml"]
+  end
+
   scope "/api", Pleroma.Web do
-    pipe_through :api
+    pipe_through :config
 
     get "/help/test", TwitterAPI.UtilController, :help_test
     post "/help/test", TwitterAPI.UtilController, :help_test
     get "/statusnet/config", TwitterAPI.UtilController, :config
+    get "/statusnet/version", TwitterAPI.UtilController, :version
+  end
+
+  scope "/api", Pleroma.Web do
+    pipe_through :api
 
     get "/statuses/public_timeline", TwitterAPI.Controller, :public_timeline
     get "/statuses/public_and_external_timeline", TwitterAPI.Controller, :public_and_external_timeline
