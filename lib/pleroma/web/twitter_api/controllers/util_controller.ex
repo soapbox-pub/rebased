@@ -11,7 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           site: %{
             name: Web.base_url,
             server: Web.base_url,
-            textlimit: -1
+            textlimit: 5000
           }
     })
   end
