@@ -55,8 +55,9 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   end
 
   def get_mentions(entry) do
-    get_people_mentions(entry)
-    ++ get_collection_mentions(entry)
+    (get_people_mentions(entry)
+      ++ get_collection_mentions(entry))
+    |> Enum.filter(&(&1))
   end
 
   def make_to_list(actor, mentions) do
