@@ -270,7 +270,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     user = User.get_cached_by_ap_id(actor)
     # mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
     mentioned_users = Enum.map(activity.data["to"] || [], fn (ap_id) ->
-      User.get_cached_by_ap_id(ap_id)
+      if ap_id do
+        User.get_cached_by_ap_id(ap_id)
+      else
+        nil
+      end
     end)
     |> Enum.filter(&(&1))
 

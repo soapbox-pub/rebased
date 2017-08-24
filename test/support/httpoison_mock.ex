@@ -10,6 +10,13 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://social.heldscal.la/.well-known/webfinger?resource=shp@social.heldscal.la", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/shp@social.heldscal.la.xml")
+    }}
+  end
+
   def get("https://social.heldscal.la/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "shp@social.heldscal.la"]]) do
     {:ok, %Response{
       status_code: 200,
@@ -23,8 +30,22 @@ defmodule HTTPoisonMock do
       body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_user_23211.xml")
     }}
   end
-  
+
+  def get("https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/23211", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_user_23211.xml")
+    }}
+  end
+
   def get("https://social.heldscal.la/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://social.heldscal.la/user/29191"]]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_user_29191.xml")
+    }}
+  end
+
+  def get("https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/29191", [Accept: "application/xrd+xml"], []) do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_user_29191.xml")
@@ -38,7 +59,21 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://mastodon.social/.well-known/webfinger?resource=https://mastodon.social/users/lambadalambda", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___mastodon.social_users_lambadalambda.xml")
+    }}
+  end
+
   def get("https://shitposter.club/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://shitposter.club/user/1"]]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___shitposter.club_user_1.xml")
+    }}
+  end
+
+  def get("https://shitposter.club/.well-known/webfinger?resource=https://shitposter.club/user/1", [Accept: "application/xrd+xml"], []) do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/https___shitposter.club_user_1.xml")
@@ -52,7 +87,28 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("http://gs.example.org/.well-known/webfinger?resource=http://gs.example.org:4040/index.php/user/1", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/http___gs.example.org_4040_index.php_user_1.xml")
+    }}
+  end
+
+  def get("https://social.stopwatchingus-heidelberg.de/.well-known/webfinger?resource=https://social.stopwatchingus-heidelberg.de/user/18330", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/atarifrosch_webfinger.xml")
+    }}
+  end
+
   def get("https://pleroma.soykaf.com/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://pleroma.soykaf.com/users/lain"]]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___pleroma.soykaf.com_users_lain.xml")
+    }}
+  end
+
+  def get("https://pleroma.soykaf.com/.well-known/webfinger?resource=https://pleroma.soykaf.com/users/lain", [Accept: "application/xrd+xml"], []) do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/https___pleroma.soykaf.com_users_lain.xml")
@@ -77,6 +133,13 @@ defmodule HTTPoisonMock do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/https___mastodon.social_users_lambadalambda.atom")
+    }}
+  end
+
+  def get("https://social.stopwatchingus-heidelberg.de/api/statuses/user_timeline/18330.atom", _body, _headers) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/atarifrosch_feed.xml")
     }}
   end
 
@@ -135,6 +198,13 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://pawoo.net/.well-known/webfinger?resource=https://pawoo.net/users/pekorino", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/https___pawoo.net_users_pekorino.xml")
+    }}
+  end
+
   def get("https://pawoo.net/users/pekorino.atom", _, _) do
     {:ok, %Response{
       status_code: 200,
@@ -149,10 +219,31 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://mamot.fr/.well-known/webfinger?resource=https://mamot.fr/users/Skruyb", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/skruyb@mamot.fr.atom")
+    }}
+  end
+
   def get("https://social.sakamoto.gq/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "https://social.sakamoto.gq/users/eal"]]) do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/eal_sakamoto.xml")
+    }}
+  end
+
+  def get("https://social.sakamoto.gq/.well-known/webfinger?resource=https://social.sakamoto.gq/users/eal", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/eal_sakamoto.xml")
+    }}
+  end
+
+  def get("https://squeet.me/xrd/?uri=lain@squeet.me", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/lain_squeet.me_webfinger.xml")
     }}
   end
 
@@ -169,6 +260,97 @@ defmodule HTTPoisonMock do
       body: File.read!("test/fixtures/httpoison_mock/sakamoto.atom")
     }}
 
+  end
+
+  def get("http://social.heldscal.la/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/social.heldscal.la_host_meta")
+    }}
+  end
+
+  def get("http://macgirvin.com/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/macgirvin.com_host_meta")
+    }}
+  end
+
+  def get("http://mastodon.social/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/mastodon.social_host_meta")
+    }}
+  end
+
+  def get("http://shitposter.club/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/shitposter.club_host_meta")
+    }}
+  end
+
+  def get("http://pleroma.soykaf.com/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/pleroma.soykaf.com_host_meta")
+    }}
+  end
+
+  def get("http://social.sakamoto.gq/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/social.sakamoto.gq_host_meta")
+    }}
+  end
+
+  def get("http://gs.example.org/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/gs.example.org_host_meta")
+    }}
+  end
+
+  def get("http://pawoo.net/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/pawoo.net_host_meta")
+    }}
+  end
+
+  def get("http://mamot.fr/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/mamot.fr_host_meta")
+    }}
+  end
+
+  def get("http://mastodon.xyz/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/mastodon.xyz_host_meta")
+    }}
+  end
+
+  def get("http://social.wxcafe.net/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/social.wxcafe.net_host_meta")
+    }}
+  end
+
+  def get("http://squeet.me/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/squeet.me_host_meta")
+    }}
+  end
+
+  def get("http://social.stopwatchingus-heidelberg.de/.well-known/host-meta", [], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/social.stopwatchingus-heidelberg.de_host_meta")
+    }}
   end
 
   def get(url, body, headers) do

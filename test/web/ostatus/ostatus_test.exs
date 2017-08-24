@@ -346,4 +346,11 @@ defmodule Pleroma.Web.OStatusTest do
 
     assert {:ok, %User{}} = OStatus.insert_or_update_user(data)
   end
+
+  test "it doesn't add nil in the do field" do
+    incoming = File.read!("test/fixtures/nil_mention_entry.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["to"] == ["http://localhost:4001/users/atarifrosch@social.stopwatchingus-heidelberg.de/followers", "https://www.w3.org/ns/activitystreams#Public"]
+  end
 end
