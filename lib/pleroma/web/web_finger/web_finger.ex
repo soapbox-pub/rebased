@@ -82,20 +82,34 @@ defmodule Pleroma.Web.WebFinger do
     {:ok, data}
   end
 
-  def finger(account, getter \\ &@httpoison.get/3) do
+  def get_template_from_xml(body) do
+    xpath = "//Link[@rel='lrdd' and @type='application/xrd+xml']/@template"
+    with doc when doc != :error <- XML.parse_document(body),
+      template when template != nil <- XML.string_from_xpath(xpath, doc) do
+      {:ok, template}
+    end
+  end
+
+  def find_lrdd_template(domain) do
+    with {:ok, %{status_code: status_code, body: body}} <- @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
+      get_template_from_xml(body)
+    else
+      e -> {:error, "Can't find lrdd template: #{inspect(e)}"}
+    end
+  end
+
+  def finger(account) do
     domain = with [_name, domain] <- String.split(account, "@") do
                domain
              else _e ->
                URI.parse(account).host
              end
-    address = webfinger_address(domain)
 
-    # try https first
-    response = with {:ok, result} <- getter.("https:" <> address, ["Accept": "application/xrd+xml"], [params: [resource: account]]) do
-                 {:ok, result}
-               else _ ->
-                 getter.("http:" <> address, ["Accept": "application/xrd+xml"], [params: [resource: account], follow_redirect: true])
-               end
+    {:ok, template} = find_lrdd_template(domain)
+
+    address = String.replace(template, "{uri}", URI.encode(account))
+
+    response = @httpoison.get(address, ["Accept": "application/xrd+xml"])
 
     with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
          doc when doc != :error<- XML.parse_document(body),
