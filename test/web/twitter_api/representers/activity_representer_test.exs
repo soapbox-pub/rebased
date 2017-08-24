@@ -27,6 +27,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     assert status["statusnet_conversation_id"] == retweeted_status["statusnet_conversation_id"]
 
     assert status["retweeted_status"] == retweeted_status
+    assert status["activity_type"] == "repeat"
   end
 
   test "a like activity" do
@@ -44,6 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     activity_actor = Repo.get_by(User, ap_id: note_activity.data["actor"])
     liked_status = ActivityRepresenter.to_map(note_activity, %{user: activity_actor, for: user})
     assert liked_status["favorited"] == true
+    assert status["activity_type"] == "like"
   end
 
   test "an activity" do
@@ -127,7 +129,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "favorited" => false,
       "repeated" => false,
       "external_url" => "some url",
-      "tags" => ["content", "mentioning", "nsfw"]
+      "tags" => ["content", "mentioning", "nsfw"],
+      "activity_type" => "post"
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status
@@ -142,5 +145,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
     map = ActivityRepresenter.to_map(unfollow, %{user: follower})
     assert map["is_post_verb"] == false
+    assert map["activity_type"] == "undo"
   end
 end

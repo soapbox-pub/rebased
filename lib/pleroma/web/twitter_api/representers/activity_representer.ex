@@ -29,7 +29,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "created_at" => created_at,
       "retweeted_status" => retweeted_status,
       "statusnet_conversation_id" => conversation_id(announced_activity),
-      "external_url" => activity.data["id"]
+      "external_url" => activity.data["id"],
+      "activity_type" => "repeat"
     }
   end
 
@@ -49,7 +50,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "uri" => "tag:#{activity.data["id"]}:objectType=Favourite",
       "created_at" => created_at,
       "in_reply_to_status_id" => liked_activity.id,
-      "external_url" => activity.data["id"]
+      "external_url" => activity.data["id"],
+      "activity_type" => "like"
     }
   end
 
@@ -68,7 +70,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "is_post_verb" => false,
       "created_at" => created_at,
       "in_reply_to_status_id" => nil,
-      "external_url" => activity.data["id"]
+      "external_url" => activity.data["id"],
+      "activity_type" => "follow"
     }
   end
 
@@ -88,7 +91,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "is_post_verb" => false,
       "created_at" => created_at,
       "in_reply_to_status_id" => nil,
-      "external_url" => activity.data["id"]
+      "external_url" => activity.data["id"],
+      "activity_type" => "undo"
     }
   end
 
@@ -125,7 +129,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "favorited" => to_boolean(favorited),
       "repeated" => to_boolean(repeated),
       "external_url" => object["external_url"],
-      "tags" => activity.data["object"]["tag"] || []
+      "tags" => activity.data["object"]["tag"] || [],
+      "activity_type" => "post"
     }
   end
 
