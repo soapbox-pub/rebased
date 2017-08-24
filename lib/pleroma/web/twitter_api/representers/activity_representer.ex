@@ -112,6 +112,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     conversation_id = conversation_id(activity)
 
+    tags = activity.data["object"]["tag"] || []
+    possibly_sensitive = Enum.member?(tags, "nsfw")
+
     %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
@@ -129,8 +132,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "favorited" => to_boolean(favorited),
       "repeated" => to_boolean(repeated),
       "external_url" => object["external_url"],
-      "tags" => activity.data["object"]["tag"] || [],
-      "activity_type" => "post"
+      "tags" => tags,
+      "activity_type" => "post",
+      "possibly_sensitive" => possibly_sensitive
     }
   end
 
