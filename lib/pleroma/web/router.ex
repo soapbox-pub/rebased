@@ -27,6 +27,16 @@ defmodule Pleroma.Web.Router do
     plug :accepts, ["json", "xml"]
   end
 
+  pipeline :masto_config do
+    plug :accepts, ["json"]
+  end
+
+  scope "/api/v1", Pleroma.Web do
+    pipe_through :masto_config
+    # TODO: Move this
+    get "/instance", TwitterAPI.UtilController, :masto_instance
+  end
+
   scope "/api", Pleroma.Web do
     pipe_through :config
 
