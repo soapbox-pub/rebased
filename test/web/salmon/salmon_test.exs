@@ -8,6 +8,8 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
 
   @wrong_magickey "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwQhh-1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAA"
 
+  @magickey_friendica "RSA.AMwa8FUs2fWEjX0xN7yRQgegQffhBpuKNC6fa5VNSVorFjGZhRrlPMn7TQOeihlc9lBz2OsHlIedbYn2uJ7yCs0.AQAB"
+
   test "decodes a salmon" do
     {:ok, salmon} = File.read("test/fixtures/salmon.xml")
     {:ok, doc} = Salmon.decode_and_validate(@magickey, salmon)
@@ -30,6 +32,10 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     magic_key = Salmon.encode_key(key)
 
     assert @magickey == magic_key
+  end
+
+  test "it decodes a friendica public key" do
+    key = Salmon.decode_key(@magickey_friendica)
   end
 
   test "returns a public and private key from a pem" do

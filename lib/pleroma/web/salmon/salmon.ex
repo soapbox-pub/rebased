@@ -60,7 +60,7 @@ defmodule Pleroma.Web.Salmon do
 
     [modulus, exponent] = magickey
     |> String.split(".")
-    |> Enum.map(&Base.url_decode64!/1)
+    |> Enum.map(fn (n) -> Base.url_decode64!(n, padding: false) end)
     |> Enum.map(make_integer)
 
     {:RSAPublicKey, modulus, exponent}
