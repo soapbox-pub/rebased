@@ -9,10 +9,19 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
     end)
   end
 
+  defp shortname(name) do
+    if String.length(name) < 30 do
+      name
+    else
+      String.slice(name, 0..30) <> "…"
+    end
+  end
+
   def add_attachments(text, attachments) do
     attachment_text = Enum.map(attachments, fn
       (%{"url" => [%{"href" => href} | _]}) ->
-        "<a href=\"#{href}\" class='attachment'>#{Path.basename(href)}</a>"
+        name = URI.decode(Path.basename(href))
+        "<a href=\"#{href}\" class='attachment'>#{shortname(name)}</a>"
       _ -> ""
     end)
     Enum.join([text | attachment_text], "<br>\n")
