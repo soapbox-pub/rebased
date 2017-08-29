@@ -70,6 +70,8 @@ defmodule Pleroma.Web.Router do
     post "/account/verify_credentials", TwitterAPI.Controller, :verify_credentials
 
     post "/account/update_profile", TwitterAPI.Controller, :update_profile
+    post "/account/update_profile_banner", TwitterAPI.Controller, :update_banner
+    post "/qvitter/update_background_image", TwitterAPI.Controller, :update_background
 
     post "/account/most_recent_notification", TwitterAPI.Controller, :update_most_recent_notification
 

@@ -190,6 +190,30 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     render(conn, UserView, "show.json", %{user: user, for: user})
   end
 
+  def update_banner(%{assigns: %{user: user}} = conn, params) do
+    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}),
+         new_info <- Map.put(user.info, "banner", object.data),
+         change <- User.info_changeset(user, %{info: new_info}),
+         {:ok, user} <- Repo.update(change) do
+      %{"url" => [ %{ "href" => href } | t ]} = object.data
+      response = %{ url: href } |> Poison.encode!
+      conn
+      |> json_reply(200, response)
+    end
+  end
+
+  def update_background(%{assigns: %{user: user}} = conn, params) do
+    with {:ok, object} <- ActivityPub.upload(params),
+         new_info <- Map.put(user.info, "background", object.data),
+         change <- User.info_changeset(user, %{info: new_info}),
+         {:ok, user} <- Repo.update(change) do
+      %{"url" => [ %{ "href" => href } | t ]} = object.data
+      response = %{ url: href } |> Poison.encode!
+      conn
+      |> json_reply(200, response)
+    end
+  end
+
   def external_profile(%{assigns: %{user: current_user}} = conn, %{"profileurl" => uri}) do
     with {:ok, user_map} <- TwitterAPI.get_external_profile(current_user, uri),
          response <- Poison.encode!(user_map) do
@@ -229,8 +253,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def update_profile(%{assigns: %{user: user}} = conn, params) do
-    if bio = params["description"] do
-      params = Map.put(params, "bio", bio)
+    params = if bio = params["description"] do
+      Map.put(params, "bio", bio)
+    else
+      params
     end
 
     with changeset <- User.update_changeset(user, params),
