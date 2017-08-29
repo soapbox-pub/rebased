@@ -6,6 +6,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Ecto.Changeset
 
+  require Logger
+
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
     render(conn, UserView, "show.json", %{user: user})
   end
@@ -223,6 +225,21 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       render(conn, UserView, "index.json", %{users: friends, for: user})
     else
       _e -> bad_request_reply(conn, "Can't get friends")
+    end
+  end
+
+  def update_profile(%{assigns: %{user: user}} = conn, params) do
+    if bio = params["description"] do
+      params = Map.put(params, "bio", bio)
+    end
+
+    with changeset <- User.update_changeset(user, params),
+         {:ok, user} <- Repo.update(changeset) do
+      render(conn, UserView, "user.json", %{user: user, for: user})
+    else
+      error ->
+        Logger.debug("Can't update user: #{inspect(error)}")
+        bad_request_reply(conn, "Can't update user")
     end
   end
 

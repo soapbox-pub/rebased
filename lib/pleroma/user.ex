@@ -80,6 +80,15 @@ defmodule Pleroma.User do
     end
   end
 
+  def update_changeset(struct, params \\ %{}) do
+    changeset = struct
+    |> cast(params, [:bio, :name])
+    |> unique_constraint(:nickname)
+    |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
+    |> validate_length(:bio, min: 1, max: 1000)
+    |> validate_length(:name, min: 1, max: 100)
+  end
+
   def register_changeset(struct, params \\ %{}) do
     changeset = struct
     |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
@@ -89,8 +98,8 @@ defmodule Pleroma.User do
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
     |> validate_format(:email, @email_regex)
-    |> validate_length(:bio, max: 1000)
-    |> validate_length(:name, max: 100)
+    |> validate_length(:bio, min: 1, max: 1000)
+    |> validate_length(:name, min: 1, max: 100)
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
