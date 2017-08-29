@@ -50,7 +50,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "profile_image_url_original" => image,
       "following" => false,
       "rights" => %{},
-      "statusnet_profile_url" => user.ap_id
+      "statusnet_profile_url" => user.ap_id,
+      "cover_photo" => nil,
+      "background_image" => nil
     }
 
     assert represented == UserView.render("show.json", %{user: user})
@@ -76,7 +78,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "profile_image_url_original" => image,
       "following" => true,
       "rights" => %{},
-      "statusnet_profile_url" => user.ap_id
+      "statusnet_profile_url" => user.ap_id,
+      "cover_photo" => nil,
+      "background_image" => nil
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
