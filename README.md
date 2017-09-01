@@ -1,12 +1,17 @@
 # Pleroma
 
+## About Pleroma
+
+Pleroma is an OStatus-compatible social networking server written in Elixir, compatible with GNU Social and Mastodon. It is high-performance and can run on small devices like a Raspberry Pi.
+
+No release has been made yet, but several servers have been online for months already. If you want to run your own server, feel free to contact us at @lain@pleroma.soykaf.com or in our dev chat at https://matrix.heldscal.la/#/room/#pleromafe:matrix.heldscal.la.
+
 ## Installation
 
 ### Dependencies
 
 * Postgresql version 9.6 or newer
 * Elixir version 1.4 or newer
-* NodeJS LTS 
 * Build-essential tools
 
 #### Installing dependencies on Debian system
@@ -16,8 +21,6 @@ You must install elixir 1.4+ from elixir-lang.org, because Debian repos only hav
 
 Elixir will also require `make` and probably other related software for building dependencies - in case you don't have them, get them via `apt install build-essential`
 
-NodeJS is available as `nodejs` package on Debian. `apt install nodejs`. Debian stable has 4.8.x version. If that does not work, use nodesource's repo https://github.com/nodesource/distributions#deb - version 5.x confirmed to work.
-
 ### Preparation
 
   * You probably want application to run as separte user - so create a new one: `adduser pleroma`, you can login as it via `su pleroma`
@@ -26,36 +29,9 @@ NodeJS is available as `nodejs` package on Debian. `apt install nodejs`. Debian 
 
 ### Database setup
 
-  * You'll need to allow password-based authorisation for `postgres` superuser
-     * Changing default password for superuser is probably a good idea:
-        * Open psql shell as postgres user - while being root run `su postgres -c psql`
-        * There, enter following: 
-
-        ```sql
-        ALTER USER postgres with encrypted password '<PASSWORD>';
-        ``` 
-
-        where `<PASSWORD>` is any string, no need to manually encrypt it - postgres will encrypt it automatically for you.
-        * Replace password in file `config/dev.exs` with password you supplied in previous step (look for line like `password: "postgres"`)
-     
-     * Edit `/etc/postgresql/9.6/main/pg_hba.conf` (Assuming you have the 9.6 version) and change the line:
-
-     ```
-     local   all             postgres                                peer
-     ```
-
-     to
-
-     ```
-     local   all             postgres                                md5
-     ```
-
-     don't forget to revert it in the later step so you won't have to enter password when accessing psql console.
-  * Create and update your database with `mix ecto.create && mix ecto.migrate`. If it gives errors, try running again, this is a known issue.
-  * Undo changes you made in `/etc/postgresql/9.6/main/pg_hba.conf` (replace `md5` with `peer`)
-  * You most likely don't want having some application accessing database as a superuser, so you should create separate user for Pleroma. Right now it must be done manually (issue #27).
+  * Create a database user and database for pleroma
      * Open psql shell as postgres user: (as root) `su postgres -c psql`
-     * Create a new PostgreSQL user: 
+     * Create a new PostgreSQL user:
 
      ```sql
      \c pleroma_dev
@@ -65,21 +41,22 @@ NodeJS is available as `nodejs` package on Debian. `apt install nodejs`. Debian 
      GRANT ALL ON ALL sequences IN SCHEMA public TO pleroma;
      ```
 
-     * Again, change password in `config/dev.exs`, and change user to `"pleroma"` (line like `username: "postgres"`)
+     * Change password in `config/dev.exs`, and change user to `"pleroma"` (line like `username: "postgres"`)
+     * Create and update your database with `mix ecto.create && mix ecto.migrate`. If it gives errors, try running again, this is a known issue.
 
 ### Some additional configuration
 
-  * You will need to let pleroma instance to know what hostname/url it's running on.
+  * You will need to let pleroma instance to know what hostname/url it's running on. _THIS IS THE MOST IMPORTANT STEP. GET THIS WRONG AND YOU'LL HAVE TO RESET YOUR DATABASE_.
 
     In file `config/dev.exs`, add these lines at the end of the file:
 
     ```elixir
     config :pleroma, Pleroma.Web.Endpoint,
-    url: [host: "example.tld", scheme: "https", port: 443] 
+    url: [host: "example.tld", scheme: "https", port: 443]
     ```
 
     replacing `example.tld` with your (sub)domain
-    
+
   * The common and convenient way for adding HTTPS is by using Nginx as a reverse proxy. You can look at example Nginx configuration in `installation/pleroma.nginx`. If you need TLS/SSL certificates for HTTPS, you can look get some for free with letsencrypt: https://letsencrypt.org/
   On Debian you can use `certbot` package and command to manage letsencrypt certificates.
 
@@ -95,15 +72,3 @@ Logs can be watched by using `journalctl -fu pleroma.service`
 
 ### Standalone/run by other means
 Run `mix phx.server` in repository's root, it will output log into stdout/stderr
-
-# Phoenix info
-
-Ready to run in production? Please [check our deployment guides](http://www.phoenixframework.org/docs/deployment).
-
-## Learn more
-
-  * Official website: http://www.phoenixframework.org/
-  * Guides: http://phoenixframework.org/docs/overview
-  * Docs: https://hexdocs.pm/phoenix
-  * Mailing list: http://groups.google.com/group/phoenix-talk
-  * Source: https://github.com/phoenixframework/phoenix
