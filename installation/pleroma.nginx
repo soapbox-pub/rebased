@@ -1,0 +1,26 @@
+server {
+       listen         80;
+       server_name    example.tld;
+       return         301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443;
+    ssl on;
+    ssl_session_timeout 5m;
+
+    ssl_certificate           /etc/letsencrypt/live/exmaple.tld/fullchain.pem;
+    ssl_certificate_key       /etc/letsencrypt/live/example.tld/privkey.pem;
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers "HIGH:!aNULL:!MD5 or HIGH:!aNULL:!MD5:!3DES";
+    ssl_prefer_server_ciphers on;
+
+    server_name example.tld;
+
+    location / {
+        proxy_pass http://localhost:4000;
+    }
+    include snippets/well-known.conf;
+
+}

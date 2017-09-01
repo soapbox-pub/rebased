@@ -1,0 +1,16 @@
+[Unit]
+Description=Pleroma social network
+After=network.target postgresql.service
+
+[Service]
+User=pleroma
+WorkingDirectory=/home/pleroma/pleroma
+Environment="HOME=/home/pleroma"
+ExecStart=/usr/local/bin/mix phx.server
+ExecReload=/bin/kill $MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=pleroma.service
