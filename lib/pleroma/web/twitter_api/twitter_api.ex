@@ -265,6 +265,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     ActivityRepresenter.to_map(activity, Map.merge(opts, %{users: [user, announced_actor], announced_activity: announced_activity}))
   end
 
+  defp activity_to_status(%Activity{data: %{"type" => "Delete"}} = activity, opts) do
+    actor = get_in(activity.data, ["actor"])
+    user = User.get_cached_by_ap_id(actor)
+    ActivityRepresenter.to_map(activity, Map.merge(opts, %{user: user}))
+  end
+
   defp activity_to_status(activity, opts) do
     actor = get_in(activity.data, ["actor"])
     user = User.get_cached_by_ap_id(actor)

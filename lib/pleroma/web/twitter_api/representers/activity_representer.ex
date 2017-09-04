@@ -100,7 +100,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     created_at = created_at |> Utils.date_to_asctime
 
     %{
-      "id" => activity.data["object"],
+      "id" => activity.id,
+      "uri" => activity.data["object"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "attentions" => [],
       "statusnet_html" => "deleted notice {{tag",
@@ -135,6 +136,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     %{
       "id" => activity.id,
+      "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => HtmlSanitizeEx.basic_html(content) |> Formatter.finmojifiy,
       "text" => HtmlSanitizeEx.strip_tags(content),
