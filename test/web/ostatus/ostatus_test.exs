@@ -182,6 +182,13 @@ defmodule Pleroma.Web.OStatusTest do
     refute favorited_activity.local
   end
 
+  test "handle conversation references" do
+    incoming = File.read!("test/fixtures/mastodon_conversation.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["context"] == "tag:mastodon.social,2017-08-28:objectId=7876885:objectType=Conversation"
+  end
+
   test "handle incoming favorites with locally available object - GS, websub" do
     note_activity = insert(:note_activity)
 

@@ -24,7 +24,10 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   3. A newly generated context id.
   """
   def get_context(entry, inReplyTo) do
-    context = (XML.string_from_xpath("//ostatus:conversation[1]", entry) || "") |> String.trim
+    context = (
+      XML.string_from_xpath("//ostatus:conversation[1]", entry)
+      || XML.string_from_xpath("//ostatus:conversation[1]/@ref", entry)
+      || "") |> String.trim
 
     with %{data: %{"context" => context}} <- Object.get_cached_by_ap_id(inReplyTo) do
       context
