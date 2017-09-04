@@ -75,6 +75,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
+    user = User.get_cached_by_ap_id(actor)
+    data = %{
+      "type" => "Delete",
+      "actor" => actor,
+      "object" => id,
+      "to" => [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
+    }
+    with {:ok, activity} <- insert(data, local),
+         :ok <- maybe_federate(activity) do
+      Repo.delete(object)
+      Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id))
+      Repo.delete_all(Activity.all_by_object_ap_id_q(id))
+      {:ok, activity}
+    end
+  end
+
   def fetch_activities_for_context(context) do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{ type: "Create", context: context }),
