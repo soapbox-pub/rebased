@@ -82,6 +82,7 @@ defmodule Pleroma.Web.Router do
 
     post "/statuses/update", TwitterAPI.Controller, :status_update
     post "/statuses/retweet/:id", TwitterAPI.Controller, :retweet
+    post "/statuses/destroy/:id", TwitterAPI.Controller, :delete_post
 
     post "/friendships/create", TwitterAPI.Controller, :follow
     post "/friendships/destroy", TwitterAPI.Controller, :unfollow

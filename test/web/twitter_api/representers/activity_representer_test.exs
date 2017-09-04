@@ -148,4 +148,17 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     assert map["is_post_verb"] == false
     assert map["activity_type"] == "undo"
   end
+
+  test "a delete activity" do
+    object = insert(:note)
+    user = User.get_by_ap_id(object.data["actor"])
+
+    {:ok, delete} = ActivityPub.delete(object)
+
+    map = ActivityRepresenter.to_map(delete, %{user: user})
+
+    assert map["is_post_verb"] == false
+    assert map["activity_type"] == "delete"
+    assert map["id"] == object.data["id"]
+  end
 end

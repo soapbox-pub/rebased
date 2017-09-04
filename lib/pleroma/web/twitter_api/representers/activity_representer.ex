@@ -96,6 +96,25 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
+  def to_map(%Activity{data: %{"type" => "Delete", "published" => created_at, "object" => deleted_object }} = activity, %{user: user} = opts) do
+    created_at = created_at |> Utils.date_to_asctime
+
+    %{
+      "id" => activity.id,
+      "uri" => activity.data["object"],
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
+      "attentions" => [],
+      "statusnet_html" => "deleted notice {{tag",
+      "text" => "deleted notice {{tag" ,
+      "is_local" => activity.local,
+      "is_post_verb" => false,
+      "created_at" => created_at,
+      "in_reply_to_status_id" => nil,
+      "external_url" => activity.data["id"],
+      "activity_type" => "delete"
+    }
+  end
+
   def to_map(%Activity{data: %{"object" => %{"content" => content} = object}} = activity, %{user: user} = opts) do
     created_at = object["published"] |> Utils.date_to_asctime
     like_count = object["like_count"] || 0
@@ -117,6 +136,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     %{
       "id" => activity.id,
+      "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => HtmlSanitizeEx.basic_html(content) |> Formatter.finmojifiy,
       "text" => HtmlSanitizeEx.strip_tags(content),
