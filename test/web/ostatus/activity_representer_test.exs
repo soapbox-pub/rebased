@@ -34,7 +34,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <content type="html">#{note_activity.data["object"]["content"]}</content>
     <published>#{note_activity.data["object"]["published"]}</published>
     <updated>#{note_activity.data["object"]["published"]}</updated>
-    <ostatus:conversation>#{note_activity.data["context"]}</ostatus:conversation>
+    <ostatus:conversation ref="#{note_activity.data["context"]}">#{note_activity.data["context"]}</ostatus:conversation>
     <link ref="#{note_activity.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{note_activity.data["object"]["id"]}" rel="self" />
     <link type="text/html" href="#{note_activity.data["object"]["id"]}" rel="alternate" />
@@ -71,7 +71,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <content type="html">#{answer.data["object"]["content"]}</content>
     <published>#{answer.data["object"]["published"]}</published>
     <updated>#{answer.data["object"]["published"]}</updated>
-    <ostatus:conversation>#{answer.data["context"]}</ostatus:conversation>
+    <ostatus:conversation ref="#{answer.data["context"]}">#{answer.data["context"]}</ostatus:conversation>
     <link ref="#{answer.data["context"]}" rel="ostatus:conversation" />
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />
     <link type="text/html" href="#{answer.data["object"]["id"]}" rel="alternate" />
@@ -110,7 +110,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <content type="html">RT #{note.data["object"]["content"]}</content>
     <published>#{announce.data["published"]}</published>
     <updated>#{announce.data["published"]}</updated>
-    <ostatus:conversation>#{announce.data["context"]}</ostatus:conversation>
+    <ostatus:conversation ref="#{announce.data["context"]}">#{announce.data["context"]}</ostatus:conversation>
     <link ref="#{announce.data["context"]}" rel="ostatus:conversation" />
     <link rel="self" type="application/atom+xml" href="#{announce.data["id"]}"/>
     <activity:object>
@@ -147,7 +147,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
       <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
       <id>#{note.data["id"]}</id>
     </activity:object>
-    <ostatus:conversation>#{like.data["context"]}</ostatus:conversation>
+    <ostatus:conversation ref="#{like.data["context"]}">#{like.data["context"]}</ostatus:conversation>
     <link ref="#{like.data["context"]}" rel="ostatus:conversation" />
     <link rel="self" type="application/atom+xml" href="#{like.data["id"]}"/>
     <thr:in-reply-to ref="#{note.data["id"]}" />

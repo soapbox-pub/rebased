@@ -82,7 +82,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:content, [type: 'html'], h.(activity.data["object"]["content"] |> String.replace(~r/[\n\r]/, ""))},
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)},
-      {:"ostatus:conversation", [], h.(activity.data["context"])},
+      {:"ostatus:conversation", [ref: h.(activity.data["context"])], h.(activity.data["context"])},
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
     ] ++ get_links(activity) ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions
   end
@@ -108,7 +108,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
         {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
         {:id, h.(activity.data["object"])}, # For notes, federate the object id.
       ]},
-      {:"ostatus:conversation", [], h.(activity.data["context"])},
+      {:"ostatus:conversation", [ref: h.(activity.data["context"])], h.(activity.data["context"])},
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
       {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
       {:"thr:in-reply-to", [ref: to_charlist(activity.data["object"])], []}
@@ -138,7 +138,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:content, [type: 'html'], ['RT #{retweeted_activity.data["object"]["content"]}']},
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)},
-      {:"ostatus:conversation", [], h.(activity.data["context"])},
+      {:"ostatus:conversation", [ref: h.(activity.data["context"])], h.(activity.data["context"])},
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
       {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []},
       {:"activity:object", retweeted_xml}
