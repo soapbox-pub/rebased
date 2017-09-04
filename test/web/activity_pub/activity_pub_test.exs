@@ -256,6 +256,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert delete.data["actor"] == note.data["actor"]
       assert delete.data["object"] == note.data["object"]["id"]
 
+      assert Repo.get(Activity, delete.id) != nil
+
       assert Repo.get(Object, object.id) == nil
     end
   end
