@@ -199,6 +199,25 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     ] ++ mentions ++ author
   end
 
+  def to_simple_form(%{data: %{"type" => "Delete"}} = activity, user, with_author) do
+    h = fn(str) -> [to_charlist(str)] end
+
+    updated_at = activity.data["published"]
+    inserted_at = activity.data["published"]
+
+    author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
+
+    [
+      {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
+      {:"activity:verb", ['http://activitystrea.ms/schema/1.0/delete']},
+      {:id, h.(activity.data["object"])},
+      {:title, ['An object was deleted']},
+      {:content, [type: 'html'], ['An object was deleted']},
+      {:published, h.(inserted_at)},
+      {:updated, h.(updated_at)}
+    ]  ++ author
+  end
+
   def wrap_with_entry(simple_form) do
     [{
       :entry, [

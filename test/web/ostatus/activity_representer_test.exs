@@ -225,6 +225,29 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     assert clean(res) == clean(expected)
   end
 
+  test "a delete" do
+    user = insert(:user)
+    activity = %Activity{data: %{ "id" => "ap_id", "type" => "Delete", "actor" => user.ap_id, "object" => "some_id", "published" => "2017-06-18T12:00:18+00:00" }}
+
+    tuple = ActivityRepresenter.to_simple_form(activity, nil)
+
+    refute is_nil(tuple)
+
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+
+    expected = """
+    <activity:object-type>http://activitystrea.ms/schema/1.0/activity</activity:object-type>
+    <activity:verb>http://activitystrea.ms/schema/1.0/delete</activity:verb>
+    <id>#{activity.data["object"]}</id>
+    <title>An object was deleted</title>
+    <content type="html">An object was deleted</content>
+    <published>#{activity.data["published"]}</published>
+    <updated>#{activity.data["published"]}</updated>
+    """
+
+    assert clean(res) == clean(expected)
+  end
+
   test "an unknown activity" do
     tuple = ActivityRepresenter.to_simple_form(%Activity{}, nil)
     assert is_nil(tuple)
