@@ -131,7 +131,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "external_url" => "some url",
       "tags" => ["content", "mentioning", "nsfw"],
       "activity_type" => "post",
-      "possibly_sensitive" => true
+      "possibly_sensitive" => true,
+      "uri" => activity.data["object"]["id"]
     }
 
     assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status
@@ -159,6 +160,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
     assert map["is_post_verb"] == false
     assert map["activity_type"] == "delete"
-    assert map["id"] == object.data["id"]
+    assert map["uri"] == object.data["id"]
   end
 end
