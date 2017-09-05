@@ -177,8 +177,8 @@ defmodule Pleroma.Web.OStatus do
     with false <- user.local,
          avatar <- make_avatar_object(doc),
          bio <- string_from_xpath("//author[1]/summary", doc),
-         name when not is_nil(name) <- string_from_xpath("//author[1]/poco:displayName", doc),
-         new_data <- %{avatar: avatar, name: name, bio: bio},
+         name <- string_from_xpath("//author[1]/poco:displayName", doc),
+         new_data <- %{avatar: avatar || old_data.avatar, name: name || old_data.name, bio: bio || old_data.bio},
          false <- new_data == old_data do
       change = Ecto.Changeset.change(user, new_data)
       Repo.update(change)
