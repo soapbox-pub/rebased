@@ -6,17 +6,6 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.TwitterAPI
 
-  def fetch_replied_to_activity(entry, inReplyTo) do
-    if inReplyTo && !Object.get_cached_by_ap_id(inReplyTo) do
-      inReplyToHref = XML.string_from_xpath("//thr:in-reply-to[1]/@href", entry)
-      if inReplyToHref do
-        OStatus.fetch_activity_from_url(inReplyToHref)
-      else
-        Logger.debug("Couldn't find a href link to #{inReplyTo}")
-      end
-    end
-  end
-
   @doc """
   Get the context for this note. Uses this:
   1. The context of the parent activity
@@ -74,6 +63,20 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     Map.put(note, "external_url", url)
   end
 
+  def fetch_replied_to_activity(entry, inReplyTo) do
+    with %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(inReplyTo) do
+      activity
+    else
+      _e ->
+        with inReplyToHref when not is_nil(inReplyToHref) <- XML.string_from_xpath("//thr:in-reply-to[1]/@href", entry),
+             {:ok, [activity | _]} <- OStatus.fetch_activity_from_url(inReplyToHref) do
+          activity
+        else
+          _e -> nil
+        end
+    end
+  end
+
   def handle_note(entry, doc \\ nil) do
     with id <- XML.string_from_xpath("//id", entry),
          activity when is_nil(activity) <- Activity.get_create_activity_by_object_ap_id(id),
@@ -81,8 +84,8 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          {:ok, actor} <- OStatus.find_make_or_update_user(author),
          content_html <- OStatus.get_content(entry),
          inReplyTo <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
-         _inReplyToActivity <- fetch_replied_to_activity(entry, inReplyTo),
-         inReplyToActivity <- Activity.get_create_activity_by_object_ap_id(inReplyTo),
+         inReplyToActivity <- fetch_replied_to_activity(entry, inReplyTo),
+         inReplyTo <- (inReplyToActivity && inReplyToActivity.data["object"]["id"]) || inReplyTo,
          attachments <- OStatus.get_attachments(entry),
          context <- get_context(entry, inReplyTo),
          tags <- OStatus.get_tags(entry),
