@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=utf-8 />
+    <title>Pleroma</title>
+  </head>
+  <body>
+    <h1>Welcome to Pleroma</h1>
+    <%= render @view_module, @view_template, assigns %>
+  </body>
+</html>

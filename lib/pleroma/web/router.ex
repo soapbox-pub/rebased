@@ -16,6 +16,7 @@ defmodule Pleroma.Web.Router do
   pipeline :authenticated_api do
     plug :accepts, ["json"]
     plug :fetch_session
+    plug Pleroma.Plugs.OAuthPlug
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1}
   end
 
@@ -31,10 +32,27 @@ defmodule Pleroma.Web.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :oauth do
+    plug :accepts, ["html", "json"]
+  end
+
+  scope "/oauth", Pleroma.Web.OAuth do
+    get "/authorize", OAuthController, :authorize
+    post "/authorize", OAuthController, :create_authorization
+    post "/token", OAuthController, :token_exchange
+  end
+
   scope "/api/v1", Pleroma.Web do
     pipe_through :masto_config
     # TODO: Move this
     get "/instance", TwitterAPI.UtilController, :masto_instance
+    post "/apps", MastodonAPI.MastodonAPIController, :create_app
+  end
+
+  scope "/api/v1", Pleroma.Web.MastodonAPI do
+    pipe_through :authenticated_api
+
+    get "/accounts/verify_credentials", MastodonAPIController, :verify_credentials
   end
 
   scope "/api", Pleroma.Web do
