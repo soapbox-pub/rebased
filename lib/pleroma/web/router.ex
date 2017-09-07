@@ -28,10 +28,6 @@ defmodule Pleroma.Web.Router do
     plug :accepts, ["json", "xml"]
   end
 
-  pipeline :masto_config do
-    plug :accepts, ["json"]
-  end
-
   pipeline :oauth do
     plug :accepts, ["html", "json"]
   end
@@ -42,11 +38,10 @@ defmodule Pleroma.Web.Router do
     post "/token", OAuthController, :token_exchange
   end
 
-  scope "/api/v1", Pleroma.Web do
-    pipe_through :masto_config
-    # TODO: Move this
-    get "/instance", TwitterAPI.UtilController, :masto_instance
-    post "/apps", MastodonAPI.MastodonAPIController, :create_app
+  scope "/api/v1", Pleroma.Web.MastodonAPI do
+    pipe_through :api
+    get "/instance", MastodonAPO.Controller, :masto_instance
+    post "/apps", MastodonAPIController, :create_app
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

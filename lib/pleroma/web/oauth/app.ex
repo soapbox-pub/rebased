@@ -1,4 +1,4 @@
-defmodule Pleroma.App do
+defmodule Pleroma.Web.OAuth.App do
   use Ecto.Schema
   import Ecto.{Changeset}
 

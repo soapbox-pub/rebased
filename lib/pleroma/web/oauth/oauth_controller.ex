@@ -1,8 +1,8 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Web.OAuth.{Authorization, Token}
-  alias Pleroma.{Repo, User, App}
+  alias Pleroma.Web.OAuth.{Authorization, Token, App}
+  alias Pleroma.{Repo, User}
   alias Comeonin.Pbkdf2
 
   def authorize(conn, params) do
@@ -17,7 +17,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   def create_authorization(conn, %{"authorization" => %{"name" => name, "password" => password, "client_id" => client_id}} = params) do
     with %User{} = user <- User.get_cached_by_nickname(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
-         %App{} = app <- Pleroma.Repo.get_by(Pleroma.App, client_id: client_id),
+         %App{} = app <- Repo.get_by(App, client_id: client_id),
          {:ok, auth} <- Authorization.create_authorization(app, user) do
       render conn, "results.html", %{
         auth: auth

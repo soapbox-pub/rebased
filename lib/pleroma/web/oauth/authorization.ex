@@ -1,8 +1,8 @@
 defmodule Pleroma.Web.OAuth.Authorization do
   use Ecto.Schema
 
-  alias Pleroma.{App, User, Repo}
-  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.{User, Repo}
+  alias Pleroma.Web.OAuth.{Authorization, App}
 
   schema "oauth_authorizations" do
     field :token, :string

@@ -1,6 +1,9 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
-  alias Pleroma.{Repo, App}
+  alias Pleroma.{Repo}
+  alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web
+  alias Pleroma.Web.MastodonAPI.AccountView
 
   def create_app(conn, params) do
     with cs <- App.register_changeset(%App{}, params) |> IO.inspect,
@@ -16,17 +19,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def verify_credentials(%{assigns: %{user: user}} = conn, params) do
-    account = %{
-      id: user.id,
-      username: user.nickname,
-      acct: user.nickname,
-      display_name: user.name,
-      locked: false,
-      created_at: user.inserted_at,
-      note: user.bio,
-      url: ""
+    account = AccountView.render("account.json", %{user: user})
+    json(conn, account)
+  end
+
+  def masto_instance(conn, _params) do
+    response = %{
+      uri: Web.base_url,
+      title: Web.base_url,
+      description: "A Pleroma instance, an alternative fediverse server",
+      version: "Pleroma Dev"
     }
 
-    json(conn, account)
+    json(conn, response)
   end
 end
