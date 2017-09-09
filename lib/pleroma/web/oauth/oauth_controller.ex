@@ -25,12 +25,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  # TODO CRITICAL
-  # - Check validity of auth token
+  # TODO
+  # - proper scope handling
   def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
     with %App{} = app <- Repo.get_by(App, client_id: params["client_id"], client_secret: params["client_secret"]),
          %Authorization{} = auth <- Repo.get_by(Authorization, token: params["code"], app_id: app.id),
-         {:ok, token} <- Token.create_token(app, Repo.get(User, auth.user_id)) do
+         {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
         token_type: "Bearer",
         access_token: token.token,
