@@ -133,6 +133,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_actor(query, _), do: query
 
+  defp restrict_type(query, %{"type" => type}) do
+    from activity in query,
+      where: fragment("?->>'type' = ?", activity.data, ^type)
+  end
+  defp restrict_type(query, _), do: query
+
   def fetch_activities(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
@@ -144,6 +150,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_local(opts)
     |> restrict_max(opts)
     |> restrict_actor(opts)
+    |> restrict_type(opts)
     |> Repo.all
     |> Enum.reverse
   end
