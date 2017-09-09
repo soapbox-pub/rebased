@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.CommonAPI
+  import Logger
 
   def create_app(conn, params) do
     with cs <- App.register_changeset(%App{}, params) |> IO.inspect,
@@ -100,5 +101,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}
     end
+  end
+
+  def empty_array(conn, _) do
+    Logger.debug("Unimplemented, returning an empty array")
+    json(conn, [])
   end
 end

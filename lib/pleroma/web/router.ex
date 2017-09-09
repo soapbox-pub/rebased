@@ -61,6 +61,8 @@ defmodule Pleroma.Web.Router do
     post "/statuses/:id/reblog", MastodonAPIController, :reblog_status
     post "/statuses/:id/favourite", MastodonAPIController, :fav_status
     post "/statuses/:id/unfavourite", MastodonAPIController, :unfav_status
+
+    get "/notifications", MastodonAPIController, :empty_array
   end
 
   scope "/api", Pleroma.Web do
