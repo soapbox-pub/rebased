@@ -135,4 +135,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert activity.id == id
     end
   end
+
+  describe "favoriting" do
+    test "favs a status and returns it", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses/#{activity.id}/favourite")
+
+      assert %{"id" => id, "favourites_count" => 1, "favourited" => true} = json_response(conn, 200)
+      assert activity.id == id
+    end
+  end
 end

@@ -59,6 +59,7 @@ defmodule Pleroma.Web.Router do
     delete "/statuses/:id", MastodonAPIController, :delete_status
 
     post "/statuses/:id/reblog", MastodonAPIController, :reblog_status
+    post "/statuses/:id/favourite", MastodonAPIController, :fav_status
   end
 
   scope "/api", Pleroma.Web do

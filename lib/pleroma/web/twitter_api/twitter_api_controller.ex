@@ -149,12 +149,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def favorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    activity = get_by_id_or_ap_id(id)
-    {:ok, status} = TwitterAPI.favorite(user, activity)
-    response = Poison.encode!(status)
-
-    conn
-    |> json_reply(200, response)
+    with {:ok, status} <- TwitterAPI.fav(user, id) do
+      json(conn, status)
+    end
   end
 
   def unfavorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do

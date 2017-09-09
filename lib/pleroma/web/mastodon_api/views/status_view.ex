@@ -22,6 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Enum.map(fn (user) -> AccountView.render("mention.json", %{user: user}) end)
 
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
+    favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
 
     %{
       id: activity.id,
@@ -36,7 +37,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogs_count: announcement_count,
       favourites_count: like_count,
       reblogged: !!repeated,
-      favourited: false, # fix
+      favourited: !!favorited,
       muted: false,
       sensitive: sensitive,
       spoiler_text: "",
