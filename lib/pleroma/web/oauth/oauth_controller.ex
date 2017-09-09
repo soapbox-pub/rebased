@@ -14,14 +14,19 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     }
   end
 
-  def create_authorization(conn, %{"authorization" => %{"name" => name, "password" => password, "client_id" => client_id}} = params) do
+  def create_authorization(conn, %{"authorization" => %{"name" => name, "password" => password, "client_id" => client_id, "redirect_uri" => redirect_uri}} = params) do
     with %User{} = user <- User.get_cached_by_nickname(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          {:ok, auth} <- Authorization.create_authorization(app, user) do
-      render conn, "results.html", %{
-        auth: auth
-      }
+      if redirect_uri == "urn:ietf:wg:oauth:2.0:oob" do
+        render conn, "results.html", %{
+          auth: auth
+        }
+      else
+        url = "#{redirect_uri}?code=#{auth.token}"
+        redirect(conn, external: url)
+      end
     end
   end
 
