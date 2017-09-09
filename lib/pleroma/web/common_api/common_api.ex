@@ -33,6 +33,17 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def unfavorite(id_or_ap_id, user) do
+    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         false <- activity.data["actor"] == user.ap_id,
+         object <- Object.get_by_ap_id(activity.data["object"]["id"]) do
+      ActivityPub.unlike(user, object)
+    else
+      _ ->
+        {:error, "Could not unfavorite"}
+    end
+  end
+
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
     activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)

@@ -89,7 +89,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def fav_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.favorite(ap_id_or_id, user),
+    with {:ok, _fav, %{data: %{"id" => id}}} = CommonAPI.favorite(ap_id_or_id, user),
+         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+      render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}
+    end
+  end
+
+  def unfav_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
+    with {:ok, %{data: %{"id" => id}}} = CommonAPI.unfavorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}
     end

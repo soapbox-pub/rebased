@@ -3,7 +3,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.{Repo, User, Activity}
-  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.{OStatus, CommonAPI}
 
   import Pleroma.Factory
 
@@ -146,6 +146,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/statuses/#{activity.id}/favourite")
 
       assert %{"id" => id, "favourites_count" => 1, "favourited" => true} = json_response(conn, 200)
+      assert activity.id == id
+    end
+  end
+
+  describe "unfavoriting" do
+    test "unfavorites a status and returns it", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user)
+
+      {:ok, _, _} = CommonAPI.favorite(activity.id, user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses/#{activity.id}/unfavourite")
+
+      assert %{"id" => id, "favourites_count" => 0, "favourited" => false} = json_response(conn, 200)
       assert activity.id == id
     end
   end
