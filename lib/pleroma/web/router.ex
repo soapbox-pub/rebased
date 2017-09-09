@@ -10,6 +10,7 @@ defmodule Pleroma.Web.Router do
   pipeline :api do
     plug :accepts, ["json"]
     plug :fetch_session
+    plug Pleroma.Plugs.OAuthPlug
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true}
   end
 
@@ -40,14 +41,21 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through :api
-    get "/instance", MastodonAPO.Controller, :masto_instance
+    get "/instance", MastodonAPIController, :masto_instance
     post "/apps", MastodonAPIController, :create_app
+
+    get "/timelines/public", MastodonAPIController, :public_timeline
+
+    get "/statuses/:id", MastodonAPIController, :get_status
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through :authenticated_api
 
     get "/accounts/verify_credentials", MastodonAPIController, :verify_credentials
+    get "/timelines/home", MastodonAPIController, :home_timeline
+
+    post "/statuses", MastodonAPIController, :post_status
   end
 
   scope "/api", Pleroma.Web do
