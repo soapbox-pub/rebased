@@ -93,4 +93,32 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"id" => id} = json_response(conn, 200)
     assert id == activity.id
   end
+
+  describe "deleting a status" do
+    test "when you created it", %{conn: conn} do
+      activity = insert(:note_activity)
+      author = User.get_by_ap_id(activity.data["actor"])
+
+      conn = conn
+      |> assign(:user, author)
+      |> delete("/api/v1/statuses/#{activity.id}")
+
+      assert %{} = json_response(conn, 200)
+
+      assert Repo.get(Activity, activity.id) == nil
+    end
+
+    test "when you didn't create it", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> delete("/api/v1/statuses/#{activity.id}")
+
+      assert %{"error" => _} = json_response(conn, 403)
+
+      assert Repo.get(Activity, activity.id) == activity
+    end
+  end
 end

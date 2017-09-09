@@ -2,6 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.{Repo, Activity, User, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Ecto.Changeset
@@ -95,10 +96,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def delete_post(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, id),
-         %Object{} = object <- Object.get_by_ap_id(object_id),
-         true <- user.ap_id == object.data["actor"],
-         {:ok, delete} <- ActivityPub.delete(object) |> IO.inspect do
+    with {:ok, delete} <- CommonAPI.delete(id, user) do
       json = ActivityRepresenter.to_json(delete, %{user: user, for: user})
       conn
       |> json_reply(200, json)

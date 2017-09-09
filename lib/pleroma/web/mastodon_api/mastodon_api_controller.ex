@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.CommonAPI
 
   def create_app(conn, params) do
     with cs <- App.register_changeset(%App{}, params) |> IO.inspect,
@@ -66,6 +67,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     if l > 0 && l < 5000 do
       {:ok, activity} = TwitterAPI.create_status(user, params)
       render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}
+    end
+  end
+
+  def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
+      json(conn, %{})
+    else
+      _e ->
+        conn
+        |> put_status(403)
+        |> json(%{error: "Can't delete this post"})
     end
   end
 end

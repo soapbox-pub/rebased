@@ -56,6 +56,7 @@ defmodule Pleroma.Web.Router do
     get "/timelines/home", MastodonAPIController, :home_timeline
 
     post "/statuses", MastodonAPIController, :post_status
+    delete "/statuses/:id", MastodonAPIController, :delete_status
   end
 
   scope "/api", Pleroma.Web do
