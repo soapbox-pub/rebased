@@ -121,4 +121,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert Repo.get(Activity, activity.id) == activity
     end
   end
+
+  describe "reblogging" do
+    test "reblogs and returns the reblogged status", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses/#{activity.id}/reblog")
+
+      assert %{"id" => id, "reblogged" => true, "reblogs_count" => 1} = json_response(conn, 200)
+      assert activity.id == id
+    end
+  end
 end

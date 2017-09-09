@@ -167,22 +167,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    activity = get_by_id_or_ap_id(id)
-    if activity.data["actor"] == user.ap_id do
-      bad_request_reply(conn, "You cannot repeat your own notice.")
-    else
-      {:ok, status} = TwitterAPI.retweet(user, activity)
-      response = Poison.encode!(status)
-
-      conn
-
-      |> json_reply(200, response)
+    with {:ok, status} <- TwitterAPI.repeat(user, id) do
+      json(conn, status)
     end
   end
 
   def register(conn, params) do
     with {:ok, user} <- TwitterAPI.register_user(params) do
-
       render(conn, UserView, "show.json", %{user: user})
     else
       {:error, errors} ->

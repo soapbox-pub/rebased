@@ -80,4 +80,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> json(%{error: "Can't delete this post"})
     end
   end
+
+  def reblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
+    with {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(ap_id_or_id, user),
+         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+      render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}
+    end
+  end
 end

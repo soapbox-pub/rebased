@@ -354,13 +354,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       request_path = "/api/statuses/retweet/#{note_activity.id}.json"
 
-      user = Repo.get_by(User, ap_id: note_activity.data["actor"])
-      response = conn
-      |> with_credentials(user.nickname, "test")
-      |> post(request_path)
-      assert json_response(response, 400) == %{"error" => "You cannot repeat your own notice.",
-                                               "request" => request_path}
-
       response = conn
       |> with_credentials(current_user.nickname, "test")
       |> post(request_path)

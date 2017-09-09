@@ -3,7 +3,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.{OStatus, CommonAPI}
   alias Pleroma.Formatter
 
   import Pleroma.Web.TwitterAPI.Utils
@@ -141,17 +141,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     {:ok, status}
   end
 
-  def retweet(%User{} = user, %Activity{data: %{"object" => object}} = activity) do
-    object = Object.get_by_ap_id(object["id"])
-
-    {:ok, _announce_activity, object} = ActivityPub.announce(user, object)
-    new_data = activity.data
-    |> Map.put("object", object.data)
-
-    status = %{activity | data: new_data}
-    |> activity_to_status(%{for: user})
-
-    {:ok, status}
+  def repeat(%User{} = user, ap_id_or_id) do
+    with {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(ap_id_or_id, user),
+         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
+         status <- activity_to_status(activity, %{for: user}) do
+      {:ok, status}
+    end
   end
 
   def upload(%Plug.Upload{} = file, format \\ "xml") do

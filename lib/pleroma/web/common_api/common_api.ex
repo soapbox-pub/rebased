@@ -10,4 +10,25 @@ defmodule Pleroma.Web.CommonAPI do
       {:ok, delete}
     end
   end
+
+  def repeat(id_or_ap_id, user) do
+    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         false <- activity.data["actor"] == user.ap_id,
+         object <- Object.get_by_ap_id(activity.data["object"]["id"]) do
+      ActivityPub.announce(user, object)
+    else
+      _ ->
+        {:error, "Could not repeat"}
+    end
+  end
+
+  # This is a hack for twidere.
+  def get_by_id_or_ap_id(id) do
+    activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
+    if activity.data["type"] == "Create" do
+      activity
+    else
+      Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    end
+  end
 end

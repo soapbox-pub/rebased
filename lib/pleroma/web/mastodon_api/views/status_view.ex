@@ -7,7 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     render_many(opts.activities, StatusView, "status.json", opts)
   end
 
-  def render("status.json", %{activity: %{data: %{"object" => object}} = activity}) do
+  def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
     user = User.get_cached_by_ap_id(activity.data["actor"])
 
     like_count = object["like_count"] || 0
@@ -21,6 +21,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Enum.filter(&(&1))
     |> Enum.map(fn (user) -> AccountView.render("mention.json", %{user: user}) end)
 
+    repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
+
     %{
       id: activity.id,
       uri: object["id"],
@@ -33,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       created_at: object["published"],
       reblogs_count: announcement_count,
       favourites_count: like_count,
-      reblogged: false,
+      reblogged: !!repeated,
       favourited: false, # fix
       muted: false,
       sensitive: sensitive,
