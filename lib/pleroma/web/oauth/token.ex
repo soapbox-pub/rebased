@@ -2,7 +2,7 @@ defmodule Pleroma.Web.OAuth.Token do
   use Ecto.Schema
 
   alias Pleroma.{User, Repo}
-  alias Pleroma.Web.OAuth.{Token, App}
+  alias Pleroma.Web.OAuth.{Token, App, Authorization}
 
   schema "oauth_tokens" do
     field :token, :string
@@ -12,6 +12,13 @@ defmodule Pleroma.Web.OAuth.Token do
     belongs_to :app, Pleroma.App
 
     timestamps()
+  end
+
+  def exchange_token(app, auth) do
+    with {:ok, auth} <- Authorization.use_token(auth),
+         true <- auth.app_id == app.id do
+      create_token(app, Repo.get(User, auth.user_id))
+    end
   end
 
   def create_token(%App{} = app, %User{} = user) do

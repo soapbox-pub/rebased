@@ -4,6 +4,8 @@ defmodule Pleroma.Web.OAuth.Authorization do
   alias Pleroma.{User, Repo}
   alias Pleroma.Web.OAuth.{Authorization, App}
 
+  import Ecto.{Changeset}
+
   schema "oauth_authorizations" do
     field :token, :string
     field :valid_until, :naive_datetime
@@ -27,4 +29,19 @@ defmodule Pleroma.Web.OAuth.Authorization do
 
     Repo.insert(authorization)
   end
+
+  def use_changeset(%Authorization{} = auth, params) do
+    auth
+    |> cast(params, [:used])
+    |> validate_required([:used])
+  end
+
+  def use_token(%Authorization{used: false, valid_until: valid_until} = auth) do
+    if NaiveDateTime.diff(NaiveDateTime.utc_now, valid_until) < 0 do
+      Repo.update(use_changeset(auth, %{used: true}))
+    else
+      {:error, "token expired"}
+    end
+  end
+  def use_token(%Authorization{used: true}), do: {:error, "already used"}
 end
