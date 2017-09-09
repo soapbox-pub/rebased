@@ -24,4 +24,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       header_static: ""
     }
   end
+
+  def render("mention.json", %{user: user}) do
+    %{
+      id: user.id,
+      acct: user.nickname,
+      username: user.nickname,
+      url: user.ap_id
+    }
+  end
 end
