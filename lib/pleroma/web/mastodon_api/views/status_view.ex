@@ -24,6 +24,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
 
+    attachments = render_many(object["attachment"] || [], StatusView, "attachment.json", as: :attachment)
+
     %{
       id: activity.id,
       uri: object["id"],
@@ -42,11 +44,29 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       sensitive: sensitive,
       spoiler_text: "",
       visibility: "public",
-      media_attachments: [], # fix
+      media_attachments: attachments,
       mentions: mentions,
       tags: [], # fix,
       application: nil,
       language: nil
+    }
+  end
+
+  def render("attachment.json", %{attachment: attachment}) do
+    [%{"mediaType" => media_type, "href" => href} | _] = attachment["url"]
+
+    type = cond do
+      String.contains?(media_type, "image") -> "image"
+      String.contains?(media_type, "video") -> "video"
+      true -> "unknown"
+    end
+
+    %{
+      id: attachment["uuid"],
+      url: href,
+      remote_url: href,
+      preview_url: href,
+      type: type
     }
   end
 end

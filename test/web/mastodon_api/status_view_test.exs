@@ -2,7 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
-  alias Pleroma.User
+  alias Pleroma.{User, Object}
   alias Pleroma.Web.OStatus
   import Pleroma.Factory
 
@@ -49,5 +49,29 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("status.json", %{activity: activity})
 
     assert status.mentions == [AccountView.render("mention.json", %{user: user})]
+  end
+
+  test "attachments" do
+    incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
+    object = %{
+      "type" => "Image",
+      "url" => [
+        %{
+          "mediaType" => "image/png",
+          "href" => "someurl"
+        }
+      ],
+      "uuid" => 6
+    }
+
+    expected = %{
+      id: 6,
+      type: "image",
+      url: "someurl",
+      remote_url: "someurl",
+      preview_url: "someurl"
+    }
+
+    assert expected == StatusView.render("attachment.json", %{attachment: object})
   end
 end
