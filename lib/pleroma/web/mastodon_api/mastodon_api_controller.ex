@@ -61,6 +61,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def get_context(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         activities <- ActivityPub.fetch_activities_for_context(activity.data["object"]["context"]),
+         %{true: ancestors, false: descendants} <- Enum.group_by(activities, fn (%{id: id}) -> id < activity.id end) do
+      result = %{
+        ancestors: StatusView.render("index.json", for: user, activities: ancestors, as: :activity) |> Enum.reverse,
+        descendants: StatusView.render("index.json", for: user, activities: descendants, as: :activity) |> Enum.reverse,
+      }
+
+      json(conn, result)
+    end
+  end
+
   def post_status(%{assigns: %{user: user}} = conn, %{"status" => status} = params) do
     l = status |> String.trim |> String.length
 

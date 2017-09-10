@@ -47,6 +47,7 @@ defmodule Pleroma.Web.Router do
     get "/timelines/public", MastodonAPIController, :public_timeline
 
     get "/statuses/:id", MastodonAPIController, :get_status
+    get "/statuses/:id/context", MastodonAPIController, :get_context
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
