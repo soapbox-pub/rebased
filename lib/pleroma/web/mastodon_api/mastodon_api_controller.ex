@@ -40,6 +40,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def home_timeline(%{assigns: %{user: user}} = conn, params) do
     activities = ActivityPub.fetch_activities([user.ap_id | user.following], Map.put(params, "type", "Create"))
+    |> Enum.reverse
     render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
   end
 
@@ -49,6 +50,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> Map.put("local_only", !!params["local"])
 
     activities = ActivityPub.fetch_public_activities(params)
+    |> Enum.reverse
 
     render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
   end
