@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
-  alias Pleroma.{Repo, Activity}
+  alias Pleroma.{Repo, Activity, User}
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
@@ -53,6 +53,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> Enum.reverse
 
     render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
+  end
+
+  def user_statuses(%{assigns: %{user: user}} = conn, params) do
+    with %User{ap_id: ap_id} <- Repo.get(User, params["id"]) do
+      params = params
+      |> Map.put("type", "Create")
+      |> Map.put("actor_id", ap_id)
+
+      activities = ActivityPub.fetch_activities([], params)
+      |> Enum.reverse
+
+      render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
+    end
   end
 
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do

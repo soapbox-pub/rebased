@@ -48,6 +48,8 @@ defmodule Pleroma.Web.Router do
 
     get "/statuses/:id", MastodonAPIController, :get_status
     get "/statuses/:id/context", MastodonAPIController, :get_context
+
+    get "/accounts/:id/statuses", MastodonAPIController, :user_statuses
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

@@ -165,4 +165,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert activity.id == id
     end
   end
+
+  describe "user timelines" do
+    test "gets a users statuses", %{conn: conn} do
+      _note = insert(:note_activity)
+      note_two = insert(:note_activity)
+
+      user = User.get_by_ap_id(note_two.data["actor"])
+
+      conn = conn
+      |> get("/api/v1/accounts/#{user.id}/statuses")
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+
+      assert id == note_two.id
+    end
+  end
 end
