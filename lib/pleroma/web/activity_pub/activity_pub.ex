@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.{Activity, Repo, Object, Upload, User, Web}
+  alias Pleroma.{Activity, Repo, Object, Upload, User, Web, Notification}
   alias Ecto.{Changeset, UUID}
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
@@ -9,7 +9,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
          :ok <- insert_full_object(map) do
-      Repo.insert(%Activity{data: map, local: local})
+      {:ok, activity} = Repo.insert(%Activity{data: map, local: local})
+      Notification.create_notifications(activity)
+      {:ok, activity}
     else
       %Activity{} = activity -> {:ok, activity}
       error -> {:error, error}
@@ -133,6 +135,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_actor(query, _), do: query
 
+  defp restrict_type(query, %{"type" => type}) do
+    from activity in query,
+      where: fragment("?->>'type' = ?", activity.data, ^type)
+  end
+  defp restrict_type(query, _), do: query
+
   def fetch_activities(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
@@ -144,6 +152,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_local(opts)
     |> restrict_max(opts)
     |> restrict_actor(opts)
+    |> restrict_type(opts)
     |> Repo.all
     |> Enum.reverse
   end

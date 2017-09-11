@@ -1,0 +1,14 @@
+<h2>OAuth Authorization</h2>
+<%= form_for @conn, o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
+<%= label f, :name, "Name" %>
+<%= text_input f, :name %>
+<br>
+<%= label f, :password, "Password" %>
+<%= password_input f, :password %>
+<br>
+<%= hidden_input f, :client_id, value: @client_id %>
+<%= hidden_input f, :response_type, value: @response_type %>
+<%= hidden_input f, :redirect_uri, value: @redirect_uri %>
+<%= hidden_input f, :scope, value: @scope %>
+<%= submit "Authorize" %>
+<% end %>

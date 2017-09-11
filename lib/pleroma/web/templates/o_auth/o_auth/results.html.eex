@@ -1,0 +1,2 @@
+<h1>Successfully authorized</h1>
+<h2>Token code is <%= @auth.token %></h2>

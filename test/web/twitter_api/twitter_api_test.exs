@@ -264,7 +264,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     note_activity = insert(:note_activity)
     activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
 
-    {:ok, status} = TwitterAPI.favorite(user, note_activity)
+    {:ok, status} = TwitterAPI.fav(user, note_activity.id)
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
 
     assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})
@@ -280,7 +280,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
     assert ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})["fave_num"] == 1
 
-    {:ok, status} = TwitterAPI.unfavorite(user, note_activity)
+    {:ok, status} = TwitterAPI.unfav(user, note_activity.id)
 
     assert status["fave_num"] == 0
   end
@@ -290,7 +290,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     note_activity = insert(:note_activity)
     activity_user = Repo.get_by!(User, ap_id: note_activity.data["actor"])
 
-    {:ok, status} = TwitterAPI.retweet(user, note_activity)
+    {:ok, status} = TwitterAPI.repeat(user, note_activity.id)
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
 
     assert status == ActivityRepresenter.to_map(updated_activity, %{user: activity_user, for: user})

@@ -42,16 +42,4 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       _ -> json(conn, "Pleroma Dev")
     end
   end
-
-  # TODO: Move this
-  def masto_instance(conn, _params) do
-    response = %{
-      uri: Web.base_url,
-      title: Web.base_url,
-      description: "A Pleroma instance, an alternative fediverse server",
-      version: "dev"
-    }
-
-    json(conn, response)
-  end
 end

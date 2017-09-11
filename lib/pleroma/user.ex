@@ -2,7 +2,7 @@ defmodule Pleroma.User do
   use Ecto.Schema
 
   import Ecto.{Changeset, Query}
-  alias Pleroma.{Repo, User, Object, Web}
+  alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
   alias Comeonin.Pbkdf2
   alias Pleroma.Web.{OStatus, Websub}
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -22,6 +22,7 @@ defmodule Pleroma.User do
     field :local, :boolean, default: true
     field :info, :map, default: %{}
     field :follower_address, :string
+    has_many :notifications, Notification
 
     timestamps()
   end
@@ -238,5 +239,13 @@ defmodule Pleroma.User do
     cs = info_changeset(user, %{info: new_info})
 
     Repo.update(cs)
+  end
+
+  def get_notified_from_activity(%Activity{data: %{"to" => to}} = activity) do
+    query = from u in User,
+      where: u.ap_id in ^to,
+      where: u.local == true
+
+    Repo.all(query)
   end
 end

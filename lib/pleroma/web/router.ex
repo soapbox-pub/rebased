@@ -10,12 +10,14 @@ defmodule Pleroma.Web.Router do
   pipeline :api do
     plug :accepts, ["json"]
     plug :fetch_session
+    plug Pleroma.Plugs.OAuthPlug
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true}
   end
 
   pipeline :authenticated_api do
     plug :accepts, ["json"]
     plug :fetch_session
+    plug Pleroma.Plugs.OAuthPlug
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1}
   end
 
@@ -27,14 +29,43 @@ defmodule Pleroma.Web.Router do
     plug :accepts, ["json", "xml"]
   end
 
-  pipeline :masto_config do
-    plug :accepts, ["json"]
+  pipeline :oauth do
+    plug :accepts, ["html", "json"]
   end
 
-  scope "/api/v1", Pleroma.Web do
-    pipe_through :masto_config
-    # TODO: Move this
-    get "/instance", TwitterAPI.UtilController, :masto_instance
+  scope "/oauth", Pleroma.Web.OAuth do
+    get "/authorize", OAuthController, :authorize
+    post "/authorize", OAuthController, :create_authorization
+    post "/token", OAuthController, :token_exchange
+  end
+
+  scope "/api/v1", Pleroma.Web.MastodonAPI do
+    pipe_through :api
+    get "/instance", MastodonAPIController, :masto_instance
+    post "/apps", MastodonAPIController, :create_app
+
+    get "/timelines/public", MastodonAPIController, :public_timeline
+
+    get "/statuses/:id", MastodonAPIController, :get_status
+    get "/statuses/:id/context", MastodonAPIController, :get_context
+
+    get "/accounts/:id/statuses", MastodonAPIController, :user_statuses
+  end
+
+  scope "/api/v1", Pleroma.Web.MastodonAPI do
+    pipe_through :authenticated_api
+
+    get "/accounts/verify_credentials", MastodonAPIController, :verify_credentials
+    get "/timelines/home", MastodonAPIController, :home_timeline
+
+    post "/statuses", MastodonAPIController, :post_status
+    delete "/statuses/:id", MastodonAPIController, :delete_status
+
+    post "/statuses/:id/reblog", MastodonAPIController, :reblog_status
+    post "/statuses/:id/favourite", MastodonAPIController, :fav_status
+    post "/statuses/:id/unfavourite", MastodonAPIController, :unfav_status
+
+    get "/notifications", MastodonAPIController, :notifications
   end
 
   scope "/api", Pleroma.Web do

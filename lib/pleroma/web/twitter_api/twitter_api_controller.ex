@@ -2,6 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.{Repo, Activity, User, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Ecto.Changeset
@@ -95,10 +96,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def delete_post(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, id),
-         %Object{} = object <- Object.get_by_ap_id(object_id),
-         true <- user.ap_id == object.data["actor"],
-         {:ok, delete} <- ActivityPub.delete(object) |> IO.inspect do
+    with {:ok, delete} <- CommonAPI.delete(id, user) do
       json = ActivityRepresenter.to_json(delete, %{user: user, for: user})
       conn
       |> json_reply(200, json)
@@ -151,40 +149,25 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def favorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    activity = get_by_id_or_ap_id(id)
-    {:ok, status} = TwitterAPI.favorite(user, activity)
-    response = Poison.encode!(status)
-
-    conn
-    |> json_reply(200, response)
+    with {:ok, status} <- TwitterAPI.fav(user, id) do
+      json(conn, status)
+    end
   end
 
   def unfavorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    activity = get_by_id_or_ap_id(id)
-    {:ok, status} = TwitterAPI.unfavorite(user, activity)
-    response = Poison.encode!(status)
-
-    conn
-    |> json_reply(200, response)
+    with {:ok, status} <- TwitterAPI.unfav(user, id) do
+      json(conn, status)
+    end
   end
 
   def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    activity = get_by_id_or_ap_id(id)
-    if activity.data["actor"] == user.ap_id do
-      bad_request_reply(conn, "You cannot repeat your own notice.")
-    else
-      {:ok, status} = TwitterAPI.retweet(user, activity)
-      response = Poison.encode!(status)
-
-      conn
-
-      |> json_reply(200, response)
+    with {:ok, status} <- TwitterAPI.repeat(user, id) do
+      json(conn, status)
     end
   end
 
   def register(conn, params) do
     with {:ok, user} <- TwitterAPI.register_user(params) do
-
       render(conn, UserView, "show.json", %{user: user})
     else
       {:error, errors} ->
