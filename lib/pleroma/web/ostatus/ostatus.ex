@@ -56,6 +56,7 @@ defmodule Pleroma.Web.OStatus do
         rescue
           e ->
             Logger.error("Error occured while handling activity")
+            Logger.error(xml_string)
           Logger.error(inspect(e))
           nil
         end
