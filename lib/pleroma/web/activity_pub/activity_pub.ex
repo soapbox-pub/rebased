@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.{Activity, Repo, Object, Upload, User, Web}
+  alias Pleroma.{Activity, Repo, Object, Upload, User, Web, Notification}
   alias Ecto.{Changeset, UUID}
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
@@ -9,7 +9,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
          :ok <- insert_full_object(map) do
-      Repo.insert(%Activity{data: map, local: local})
+      {:ok, activity} = Repo.insert(%Activity{data: map, local: local})
+      Notification.create_notifications(activity)
+      {:ok, activity}
     else
       %Activity{} = activity -> {:ok, activity}
       error -> {:error, error}

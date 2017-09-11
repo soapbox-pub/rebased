@@ -1,11 +1,12 @@
 defmodule Pleroma.Activity do
   use Ecto.Schema
-  alias Pleroma.{Repo, Activity}
+  alias Pleroma.{Repo, Activity, Notification}
   import Ecto.Query
 
   schema "activities" do
     field :data, :map
     field :local, :boolean, default: true
+    has_many :notifications, Notification
 
     timestamps()
   end
