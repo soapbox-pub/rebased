@@ -20,7 +20,7 @@ defmodule Pleroma.Notification do
     Repo.all(query)
   end
 
-  def create_notifications(%Activity{id: id, data: %{"to" => to, "type" => type}} = activity) when type in ["Create", "Like"] do
+  def create_notifications(%Activity{id: id, data: %{"to" => to, "type" => type}} = activity) when type in ["Create", "Like", "Announce"] do
     users = User.get_notified_from_activity(activity)
 
     notifications = Enum.map(users, fn (user) -> create_notification(activity, user) end)

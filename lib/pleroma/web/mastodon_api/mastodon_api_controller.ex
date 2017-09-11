@@ -142,6 +142,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         "Like" ->
           liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
           %{id: id, type: "favourite", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: liked_activity})}
+        "Announce" ->
+          announced_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+          %{id: id, type: "reblog", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: announced_activity})}
         _ -> nil
       end
     end)
