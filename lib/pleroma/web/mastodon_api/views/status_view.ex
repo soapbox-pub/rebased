@@ -61,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       true -> "unknown"
     end
 
-    << hash_id::32, _rest::binary >> = :crypto.hash(:md5, href)
+    << hash_id::signed-32, _rest::binary >> = :crypto.hash(:md5, href)
 
     %{
       id: attachment["id"] || hash_id,
