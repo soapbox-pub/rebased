@@ -26,6 +26,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     attachments = render_many(object["attachment"] || [], StatusView, "attachment.json", as: :attachment)
 
+    created_at = (object["published"] || "")
+    |> String.replace(~r/\.\d+/, "")
+
     %{
       id: activity.id,
       uri: object["id"],
@@ -35,7 +38,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       in_reply_to_account_id: nil,
       reblog: nil,
       content: HtmlSanitizeEx.basic_html(object["content"]),
-      created_at: object["published"],
+      created_at: created_at,
       reblogs_count: announcement_count,
       favourites_count: like_count,
       reblogged: !!repeated,

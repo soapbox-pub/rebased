@@ -12,6 +12,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("status.json", %{activity: note})
 
+    created_at = (note.data["object"]["published"] || "")
+    |> String.replace(~r/\.\d+/, "")
+
     expected = %{
       id: note.id,
       uri: note.data["object"]["id"],
@@ -21,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       in_reply_to_account_id: nil,
       reblog: nil,
       content: HtmlSanitizeEx.basic_html(note.data["object"]["content"]),
-      created_at: note.data["object"]["published"],
+      created_at: created_at,
       reblogs_count: 0,
       favourites_count: 0,
       reblogged: false,
