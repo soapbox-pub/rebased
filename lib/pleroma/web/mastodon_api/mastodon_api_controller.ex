@@ -38,10 +38,28 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, response)
   end
 
+  defp add_link_headers(conn, activities) do
+    last = List.last(activities)
+    first = List.first(activities)
+    if last do
+      min = last.id
+      max = first.id
+      next_url = mastodon_api_url(Pleroma.Web.Endpoint, :home_timeline, max_id: min)
+      prev_url = mastodon_api_url(Pleroma.Web.Endpoint, :home_timeline, since_id: max)
+      conn
+      |> put_resp_header("link", "<#{next_url}>; rel=\"next\", <#{prev_url}>; rel=\"prev\"")
+    else
+      conn
+    end
+  end
+
   def home_timeline(%{assigns: %{user: user}} = conn, params) do
     activities = ActivityPub.fetch_activities([user.ap_id | user.following], Map.put(params, "type", "Create"))
     |> Enum.reverse
-    render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
+
+    conn
+    |> add_link_headers(activities)
+    |> render StatusView, "index.json", %{activities: activities, for: user, as: :activity}
   end
 
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
