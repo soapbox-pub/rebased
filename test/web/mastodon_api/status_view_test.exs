@@ -65,7 +65,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     }
 
     expected = %{
-      id: 6,
+      id: 1638338801,
       type: "image",
       url: "someurl",
       remote_url: "someurl",
