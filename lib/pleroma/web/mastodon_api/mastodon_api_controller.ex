@@ -59,7 +59,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     conn
     |> add_link_headers(activities)
-    |> render StatusView, "index.json", %{activities: activities, for: user, as: :activity}
+    |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
