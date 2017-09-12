@@ -38,14 +38,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, response)
   end
 
-  defp add_link_headers(conn, activities) do
+  defp add_link_headers(conn, method, activities) do
     last = List.last(activities)
     first = List.first(activities)
     if last do
       min = last.id
       max = first.id
-      next_url = mastodon_api_url(Pleroma.Web.Endpoint, :home_timeline, max_id: min)
-      prev_url = mastodon_api_url(Pleroma.Web.Endpoint, :home_timeline, since_id: max)
+      next_url = mastodon_api_url(Pleroma.Web.Endpoint, method, max_id: min)
+      prev_url = mastodon_api_url(Pleroma.Web.Endpoint, method, since_id: max)
       conn
       |> put_resp_header("link", "<#{next_url}>; rel=\"next\", <#{prev_url}>; rel=\"prev\"")
     else
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> Enum.reverse
 
     conn
-    |> add_link_headers(activities)
+    |> add_link_headers(:home_timeline, activities)
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
@@ -70,7 +70,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     activities = ActivityPub.fetch_public_activities(params)
     |> Enum.reverse
 
-    render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
+    conn
+    |> add_link_headers(:public_timeline, activities)
+    |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
   def user_statuses(%{assigns: %{user: user}} = conn, params) do
@@ -170,7 +172,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end)
     |> Enum.filter(&(&1))
 
-    json(conn, result)
+    conn
+    |> add_link_headers(:notifications, notifications)
+    |> json(result)
   end
 
   def empty_array(conn, _) do
