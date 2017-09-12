@@ -4,11 +4,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   alias Pleroma.Web.MastodonAPI.AccountView
 
   test "Represent a user account" do
-    user = insert(:user, %{info: %{"note_count" => 5, "follower_count" => 3}})
+    user = insert(:user, %{info: %{"note_count" => 5, "follower_count" => 3}, nickname: "shp@shitposter.club"})
 
     expected = %{
       id: user.id,
-      username: user.nickname,
+      username: "shp",
       acct: user.nickname,
       display_name: user.name,
       locked: false,

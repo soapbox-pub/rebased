@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
     %{
       id: user.id,
-      username: user.nickname,
+      username: hd(String.split(user.nickname, "@")),
       acct: user.nickname,
       display_name: user.name,
       locked: false,
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     %{
       id: user.id,
       acct: user.nickname,
-      username: user.nickname,
+      username: hd(String.split(user.nickname, "@")),
       url: user.ap_id
     }
   end
