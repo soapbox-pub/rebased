@@ -11,12 +11,28 @@ defmodule Pleroma.Notification do
     timestamps()
   end
 
+  # TODO: Make generic and unify (see activity_pub.ex)
+  defp restrict_max(query, %{"max_id" => max_id}) do
+    from activity in query, where: activity.id < ^max_id
+  end
+  defp restrict_max(query, _), do: query
+
+  defp restrict_since(query, %{"since_id" => since_id}) do
+    from activity in query, where: activity.id > ^since_id
+  end
+  defp restrict_since(query, _), do: query
+
   def for_user(user, opts \\ %{}) do
     query = from n in Notification,
       where: n.user_id == ^user.id,
       order_by: [desc: n.id],
       preload: [:activity],
       limit: 20
+
+    query = query
+    |> restrict_since(opts)
+    |> restrict_max(opts)
+
     Repo.all(query)
   end
 
