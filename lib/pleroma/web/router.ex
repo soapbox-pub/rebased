@@ -40,19 +40,6 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
-    pipe_through :api
-    get "/instance", MastodonAPIController, :masto_instance
-    post "/apps", MastodonAPIController, :create_app
-
-    get "/timelines/public", MastodonAPIController, :public_timeline
-
-    get "/statuses/:id", MastodonAPIController, :get_status
-    get "/statuses/:id/context", MastodonAPIController, :get_context
-
-    get "/accounts/:id/statuses", MastodonAPIController, :user_statuses
-  end
-
-  scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through :authenticated_api
 
     get "/accounts/verify_credentials", MastodonAPIController, :verify_credentials
@@ -68,6 +55,20 @@ defmodule Pleroma.Web.Router do
     post "/statuses/:id/unfavourite", MastodonAPIController, :unfav_status
 
     get "/notifications", MastodonAPIController, :notifications
+  end
+
+  scope "/api/v1", Pleroma.Web.MastodonAPI do
+    pipe_through :api
+    get "/instance", MastodonAPIController, :masto_instance
+    post "/apps", MastodonAPIController, :create_app
+
+    get "/timelines/public", MastodonAPIController, :public_timeline
+
+    get "/statuses/:id", MastodonAPIController, :get_status
+    get "/statuses/:id/context", MastodonAPIController, :get_context
+
+    get "/accounts/:id/statuses", MastodonAPIController, :user_statuses
+    get "/accounts/:id", MastodonAPIController, :user
   end
 
   scope "/api", Pleroma.Web do

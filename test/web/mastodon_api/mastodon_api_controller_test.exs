@@ -198,4 +198,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert other_user.id == relationship["id"]
     end
   end
+
+  test "account fetching", %{conn: conn} do
+    user = insert(:user)
+
+    conn = conn
+    |> get("/api/v1/accounts/#{user.id}")
+
+    assert %{"id" => id} = json_response(conn, 200)
+    assert id == user.id
+
+    conn = build_conn()
+    |> get("/api/v1/accounts/-1")
+
+    assert %{"error" => "Can't find user"} = json_response(conn, 404)
+  end
 end

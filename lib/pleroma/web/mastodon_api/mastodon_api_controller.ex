@@ -28,6 +28,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, account)
   end
 
+  def user(conn, %{"id" => id}) do
+    with %User{} = user <- Repo.get(User, id) do
+      account = AccountView.render("account.json", %{user: user})
+      json(conn, account)
+    else
+      _e -> conn
+      |> put_status(404)
+      |> json(%{error: "Can't find user"})
+    end
+  end
+
   def masto_instance(conn, _params) do
     response = %{
       uri: Web.base_url,
