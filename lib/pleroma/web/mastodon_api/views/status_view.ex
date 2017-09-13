@@ -29,7 +29,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     created_at = (object["published"] || "")
     |> NaiveDateTime.from_iso8601!
     |> NaiveDateTime.to_iso8601
-    |> String.replace(~r/\.\d+$/, ".000Z")
+    |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
 
     %{
       id: activity.id,
