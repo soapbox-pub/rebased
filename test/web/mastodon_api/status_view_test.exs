@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("status.json", %{activity: note})
 
     created_at = (note.data["object"]["published"] || "")
-    |> String.replace(~r/\.\d+/, "")
+    |> String.replace(~r/\.\d+Z/, ".000Z")
 
     expected = %{
       id: note.id,
