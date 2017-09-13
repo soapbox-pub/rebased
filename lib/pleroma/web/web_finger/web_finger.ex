@@ -62,11 +62,6 @@ defmodule Pleroma.Web.WebFinger do
     end
   end
 
-  # FIXME: Make this call the host-meta to find the actual address.
-  defp webfinger_address(domain) do
-    "//#{domain}/.well-known/webfinger"
-  end
-
   defp webfinger_from_xml(doc) do
     magic_key = XML.string_from_xpath(~s{//Link[@rel="magic-public-key"]/@href}, doc)
     "data:application/magic-public-key," <> magic_key = magic_key
@@ -91,10 +86,15 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def find_lrdd_template(domain) do
-    with {:ok, %{status_code: status_code, body: body}} <- @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
+    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
       get_template_from_xml(body)
     else
-      e -> {:error, "Can't find lrdd template: #{inspect(e)}"}
+      e ->
+        with {:ok, %{body: body}} <- @httpoison.get("https://#{domain}/.well-known/host-meta", []) do
+          get_template_from_xml(body)
+        else
+          e -> {:error, "Can't find lrdd template: #{inspect(e)}"}
+        end
     end
   end
 
