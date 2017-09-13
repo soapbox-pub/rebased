@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
   alias Pleroma.User
+  alias Pleroma.Web.MastodonAPI.AccountView
 
   defp image_url(%{"url" => [ %{ "href" => href } | t ]}), do: href
   defp image_url(_), do: nil
@@ -37,5 +38,21 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       username: hd(String.split(user.nickname, "@")),
       url: user.ap_id
     }
+  end
+
+  def render("relationship.json", %{user: user, target: target}) do
+    %{
+      id: target.id,
+      following: User.following?(target, user),
+      followed_by: User.following?(user, target),
+      blocking: false,
+      muting: false,
+      requested: false,
+      domain_blocking: false
+    }
+  end
+
+  def render("relationships.json", %{user: user, targets: targets}) do
+    render_many(targets, AccountView, "relationship.json", user: user, as: :target)
   end
 end

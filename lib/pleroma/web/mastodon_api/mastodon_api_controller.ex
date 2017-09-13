@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.CommonAPI
+  import Ecto.Query
   import Logger
 
   def create_app(conn, params) do
@@ -175,6 +176,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     conn
     |> add_link_headers(:notifications, notifications)
     |> json(result)
+  end
+
+  def relationships(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    id = List.wrap(id)
+    q = from u in User,
+      where: u.id in ^id
+    targets = Repo.all(q)
+    render conn, AccountView, "relationships.json", %{user: user, targets: targets}
   end
 
   def empty_array(conn, _) do

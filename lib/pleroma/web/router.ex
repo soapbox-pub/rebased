@@ -56,6 +56,8 @@ defmodule Pleroma.Web.Router do
     pipe_through :authenticated_api
 
     get "/accounts/verify_credentials", MastodonAPIController, :verify_credentials
+    get "/accounts/relationships", MastodonAPIController, :relationships
+
     get "/timelines/home", MastodonAPIController, :home_timeline
 
     post "/statuses", MastodonAPIController, :post_status

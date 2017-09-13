@@ -181,4 +181,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert id == note_two.id
     end
   end
+
+  describe "user relationships" do
+    test "returns the relationships for the current user", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, user} = User.follow(user, other_user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> get("/api/v1/accounts/relationships", %{"id" => [other_user.id]})
+
+      assert [relationship] = json_response(conn, 200)
+
+      assert other_user.id == relationship["id"]
+    end
+  end
 end

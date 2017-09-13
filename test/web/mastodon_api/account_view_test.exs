@@ -2,6 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.User
 
   test "Represent a user account" do
     user = insert(:user, %{info: %{"note_count" => 5, "follower_count" => 3}, nickname: "shp@shitposter.club"})
@@ -38,5 +39,24 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     }
 
     assert expected == AccountView.render("mention.json", %{user: user})
+  end
+
+  test "represent a relationship" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.follow(user, other_user)
+
+    expected = %{
+      id: other_user.id,
+      following: false,
+      followed_by: true,
+      blocking: false,
+      muting: false,
+      requested: false,
+      domain_blocking: false
+    }
+
+    assert expected == AccountView.render("relationship.json", %{user: user, target: other_user})
   end
 end
