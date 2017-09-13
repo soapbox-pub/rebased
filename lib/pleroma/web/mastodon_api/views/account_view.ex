@@ -43,8 +43,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   def render("relationship.json", %{user: user, target: target}) do
     %{
       id: target.id,
-      following: User.following?(target, user),
-      followed_by: User.following?(user, target),
+      following: User.following?(user, target),
+      followed_by: User.following?(target, user),
       blocking: false,
       muting: false,
       requested: false,
