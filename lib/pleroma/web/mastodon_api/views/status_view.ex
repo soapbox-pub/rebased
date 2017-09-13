@@ -27,7 +27,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     attachments = render_many(object["attachment"] || [], StatusView, "attachment.json", as: :attachment)
 
     created_at = (object["published"] || "")
-    |> String.replace(~r/\.\d+Z/, ".000Z")
+    |> NaiveDateTime.from_iso8601!
+    |> NaiveDateTime.to_iso8601
+    |> String.replace(~r/\.\d+$/, ".000Z")
 
     %{
       id: activity.id,
