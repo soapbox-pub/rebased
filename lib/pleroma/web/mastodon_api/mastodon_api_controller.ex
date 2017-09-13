@@ -157,6 +157,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     notifications = Notification.for_user(user, params)
     result = Enum.map(notifications, fn (%{id: id, activity: activity, inserted_at: created_at}) ->
       actor = User.get_cached_by_ap_id(activity.data["actor"])
+      created_at = NaiveDateTime.to_iso8601(created_at)
       case activity.data["type"] do
         "Create" ->
           %{id: id, type: "mention", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: activity})}
