@@ -76,5 +76,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     }
 
     assert expected == StatusView.render("attachment.json", %{attachment: object})
+
+    # If theres a "id", use that instead of the generated one
+    object = Map.put(object, "id", 2)
+    assert %{id: 2} = StatusView.render("attachment.json", %{attachment: object})
   end
 end

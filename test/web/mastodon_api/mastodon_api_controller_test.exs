@@ -213,4 +213,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"error" => "Can't find user"} = json_response(conn, 404)
   end
+
+  test "media upload", %{conn: conn} do
+    file = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+
+    user = insert(:user)
+
+    conn = conn
+    |> assign(:user, user)
+    |> post("/api/v1/media", %{"file" => file})
+
+    assert media = json_response(conn, 200)
+
+    assert media["type"] == "image"
+  end
 end

@@ -55,6 +55,8 @@ defmodule Pleroma.Web.Router do
     post "/statuses/:id/unfavourite", MastodonAPIController, :unfav_status
 
     get "/notifications", MastodonAPIController, :notifications
+
+    post "/media", MastodonAPIController, :upload
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

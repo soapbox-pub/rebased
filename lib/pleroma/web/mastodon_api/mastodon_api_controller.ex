@@ -199,6 +199,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     render conn, AccountView, "relationships.json", %{user: user, targets: targets}
   end
 
+  def upload(%{assigns: %{user: user}} = conn, %{"file" => file}) do
+    with {:ok, object} <- ActivityPub.upload(file) do
+      data = object.data
+      |> Map.put("id", object.id)
+
+      render conn, StatusView, "attachment.json", %{attachment: data}
+    end
+  end
+
   def empty_array(conn, _) do
     Logger.debug("Unimplemented, returning an empty array")
     json(conn, [])
