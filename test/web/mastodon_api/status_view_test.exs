@@ -36,7 +36,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       media_attachments: [],
       mentions: [],
       tags: [],
-      application: nil,
+      application: %{
+        name: "Web",
+        website: nil
+      },
       language: nil
     }
 
