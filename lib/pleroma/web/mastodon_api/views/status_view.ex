@@ -73,6 +73,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       url: href,
       remote_url: href,
       preview_url: href,
+      text_url: href,
       type: type
     }
   end

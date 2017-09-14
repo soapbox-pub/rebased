@@ -71,7 +71,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       type: "image",
       url: "someurl",
       remote_url: "someurl",
-      preview_url: "someurl"
+      preview_url: "someurl",
+      text_url: "someurl"
     }
 
     assert expected == StatusView.render("attachment.json", %{attachment: object})
