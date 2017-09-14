@@ -87,6 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
+  # TODO: Link headers
   def user_statuses(%{assigns: %{user: user}} = conn, params) do
     with %User{ap_id: ap_id} <- Repo.get(User, params["id"]) do
       params = params
@@ -230,6 +231,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  # TODO: Link headers
   def hashtag_timeline(%{assigns: %{user: user}} = conn, params) do
     params = params
     |> Map.put("type", "Create")
@@ -240,6 +242,49 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     conn
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
+  end
+
+  # TODO: Pagination
+  def followers(conn, %{"id" => id}) do
+    with %User{} = user <- Repo.get(User, id),
+         {:ok, followers} <- User.get_followers(user) do
+      render conn, AccountView, "accounts.json", %{users: followers, as: :user}
+    end
+  end
+
+  def following(conn, %{"id" => id}) do
+    with %User{} = user <- Repo.get(User, id),
+         {:ok, followers} <- User.get_friends(user) do
+      render conn, AccountView, "accounts.json", %{users: followers, as: :user}
+    end
+  end
+
+  def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
+    with %User{} = followed <- Repo.get(User, id),
+       {:ok, follower} <- User.follow(follower, followed),
+       {:ok, activity} <- ActivityPub.follow(follower, followed) do
+      render conn, AccountView, "relationship.json", %{user: follower, target: followed}
+    end
+  end
+
+  # TODO: Clean up and unify
+  def unfollow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
+    with %User{} = followed <- Repo.get(User, id),
+         { :ok, follower, follow_activity } <- User.unfollow(follower, followed),
+         { :ok, _activity } <- ActivityPub.insert(%{
+           "type" => "Undo",
+           "actor" => follower.ap_id,
+           "object" => follow_activity.data["id"] # get latest Follow for these users
+         }) do
+      render conn, AccountView, "relationship.json", %{user: follower, target: followed}
+    end
+  end
+
+  def relationship_noop(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    Logger.debug("Unimplemented, returning unmodified relationship")
+    with %User{} = target <- Repo.get(User, id) do
+      render conn, AccountView, "relationship.json", %{user: user, target: target}
+    end
   end
 
   def empty_array(conn, _) do

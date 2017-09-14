@@ -44,6 +44,17 @@ defmodule Pleroma.Web.Router do
 
     get "/accounts/verify_credentials", MastodonAPIController, :verify_credentials
     get "/accounts/relationships", MastodonAPIController, :relationships
+    post "/accounts/:id/follow", MastodonAPIController, :follow
+    post "/accounts/:id/unfollow", MastodonAPIController, :unfollow
+    post "/accounts/:id/block", MastodonAPIController, :relationship_noop
+    post "/accounts/:id/unblock", MastodonAPIController, :relationship_noop
+    post "/accounts/:id/mute", MastodonAPIController, :relationship_noop
+    post "/accounts/:id/unmute", MastodonAPIController, :relationship_noop
+
+    get "/blocks", MastodonAPIController, :empty_array
+    get "/domain_blocks", MastodonAPIController, :empty_array
+    get "/follow_requests", MastodonAPIController, :empty_array
+    get "/mutes", MastodonAPIController, :empty_array
 
     get "/timelines/home", MastodonAPIController, :home_timeline
 
@@ -73,6 +84,8 @@ defmodule Pleroma.Web.Router do
     get "/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by
 
     get "/accounts/:id/statuses", MastodonAPIController, :user_statuses
+    get "/accounts/:id/followers", MastodonAPIController, :followers
+    get "/accounts/:id/following", MastodonAPIController, :following
     get "/accounts/:id", MastodonAPIController, :user
   end
 

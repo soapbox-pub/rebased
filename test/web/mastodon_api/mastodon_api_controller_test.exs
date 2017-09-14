@@ -240,4 +240,74 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert id == activity.id
   end
+
+  test "getting followers", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+    {:ok, user} = User.follow(user, other_user)
+
+    conn = conn
+    |> get("/api/v1/accounts/#{other_user.id}/followers")
+
+    assert [%{"id" => id}] = json_response(conn, 200)
+    assert id = user.id
+  end
+
+  test "getting following", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+    {:ok, user} = User.follow(user, other_user)
+
+    conn = conn
+    |> get("/api/v1/accounts/#{user.id}/following")
+
+    assert [%{"id" => id}] = json_response(conn, 200)
+    assert id = other_user.id
+  end
+
+  test "following / unfollowing a user", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    conn = conn
+    |> assign(:user, user)
+    |> post("/api/v1/accounts/#{other_user.id}/follow")
+
+    assert %{"id" => id, "following" => true} = json_response(conn, 200)
+
+    user = Repo.get(User, user.id)
+    conn = build_conn()
+    |> assign(:user, user)
+    |> post("/api/v1/accounts/#{other_user.id}/unfollow")
+
+    assert %{"id" => id, "following" => false} = json_response(conn, 200)
+  end
+
+  test "unimplemented block/mute endpoints" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    ["block", "unblock", "mute", "unmute"]
+    |> Enum.each(fn(endpoint) ->
+      conn = build_conn()
+      |> assign(:user, user)
+      |> post("/api/v1/accounts/#{other_user.id}/#{endpoint}")
+
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == other_user.id
+    end)
+  end
+
+  test "unimplemented mutes, follow_requests, blocks, domain blocks" do
+    user = insert(:user)
+
+    ["blocks", "domain_blocks", "mutes", "follow_requests"]
+    |> Enum.each(fn(endpoint) ->
+      conn = build_conn()
+      |> assign(:user, user)
+      |> get("/api/v1/#{endpoint}")
+
+      assert [] = json_response(conn, 200)
+    end)
+  end
 end
