@@ -10,7 +10,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       response_type: params["response_type"],
       client_id: params["client_id"],
       scope: params["scope"],
-      redirect_uri: params["redirect_uri"]
+      redirect_uri: params["redirect_uri"],
+      state: params["state"]
     }
   end
 
@@ -25,6 +26,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         }
       else
         url = "#{redirect_uri}?code=#{auth.token}"
+        url = if params["state"] do
+          url <> "&state=#{params["state"]}"
+        else
+          url
+        end
         redirect(conn, external: url)
       end
     end
