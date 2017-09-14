@@ -111,6 +111,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_since(query, _), do: query
 
+  defp restrict_tag(query, %{"tag" => tag}) do
+    from activity in query,
+      where: fragment("? <@ (? #> '{\"object\",\"tag\"}')", ^tag, activity.data)
+  end
+  defp restrict_tag(query, _), do: query
+
   defp restrict_recipients(query, recipients) do
     Enum.reduce(recipients, query, fn (recipient, q) ->
       map = %{ to: [recipient] }
@@ -148,6 +154,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     base_query
     |> restrict_recipients(recipients)
+    |> restrict_tag(opts)
     |> restrict_since(opts)
     |> restrict_local(opts)
     |> restrict_max(opts)

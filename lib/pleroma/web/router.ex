@@ -65,6 +65,7 @@ defmodule Pleroma.Web.Router do
     post "/apps", MastodonAPIController, :create_app
 
     get "/timelines/public", MastodonAPIController, :public_timeline
+    get "/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline
 
     get "/statuses/:id", MastodonAPIController, :get_status
     get "/statuses/:id/context", MastodonAPIController, :get_context

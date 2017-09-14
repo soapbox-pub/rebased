@@ -230,6 +230,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def hashtag_timeline(%{assigns: %{user: user}} = conn, params) do
+    params = params
+    |> Map.put("type", "Create")
+    |> Map.put("local_only", !!params["local"])
+
+    activities = ActivityPub.fetch_public_activities(params)
+    |> Enum.reverse
+
+    conn
+    |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
+  end
+
   def empty_array(conn, _) do
     Logger.debug("Unimplemented, returning an empty array")
     json(conn, [])

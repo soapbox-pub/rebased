@@ -186,7 +186,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     test "returns the relationships for the current user", %{conn: conn} do
       user = insert(:user)
       other_user = insert(:user)
-
       {:ok, user} = User.follow(user, other_user)
 
       conn = conn
@@ -226,5 +225,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert media = json_response(conn, 200)
 
     assert media["type"] == "image"
+  end
+
+  test "hashtag timeline", %{conn: conn} do
+    following = insert(:user)
+
+    {:ok, activity} = TwitterAPI.create_status(following, %{"status" => "test #2hu"})
+    {:ok, [_activity]} = OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
+
+    conn = conn
+    |> get("/api/v1/timelines/tag/2hu")
+
+    assert [%{"id" => id}] = json_response(conn, 200)
+
+    assert id == activity.id
   end
 end
