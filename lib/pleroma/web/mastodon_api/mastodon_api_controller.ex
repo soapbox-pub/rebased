@@ -208,6 +208,28 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def favourited_by(conn, %{"id" => id}) do
+    with %Activity{data: %{"object" => %{"likes" => likes} = data}} <- Repo.get(Activity, id) do
+      q = from u in User,
+        where: u.ap_id in ^likes
+      users = Repo.all(q)
+      render conn, AccountView, "accounts.json", %{users: users, as: :user}
+    else
+      _ -> json(conn, [])
+    end
+  end
+
+  def reblogged_by(conn, %{"id" => id}) do
+    with %Activity{data: %{"object" => %{"announcements" => announces}}} <- Repo.get(Activity, id) do
+      q = from u in User,
+        where: u.ap_id in ^announces
+      users = Repo.all(q)
+      render conn, AccountView, "accounts.json", %{users: users, as: :user}
+    else
+      _ -> json(conn, [])
+    end
+  end
+
   def empty_array(conn, _) do
     Logger.debug("Unimplemented, returning an empty array")
     json(conn, [])

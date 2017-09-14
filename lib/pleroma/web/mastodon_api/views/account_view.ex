@@ -6,6 +6,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp image_url(%{"url" => [ %{ "href" => href } | t ]}), do: href
   defp image_url(_), do: nil
 
+  def render("accounts.json", %{users: users} = opts) do
+    render_many(users, AccountView, "account.json", opts)
+  end
+
   def render("account.json", %{user: user}) do
     image = User.avatar_url(user)
     user_info = User.user_info(user)
