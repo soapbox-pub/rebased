@@ -2,7 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
-  alias Pleroma.{User, Object}
+  alias Pleroma.User
   alias Pleroma.Web.OStatus
   import Pleroma.Factory
 
@@ -55,7 +55,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   end
 
   test "attachments" do
-    incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
     object = %{
       "type" => "Image",
       "url" => [
