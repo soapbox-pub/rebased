@@ -1,6 +1,9 @@
 defmodule Pleroma.Web.CommonAPI do
-  alias Pleroma.{Repo, Activity, Object}
+  alias Pleroma.{Repo, Activity, Object, User}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Formatter
+
+  import Pleroma.Web.CommonAPI.Utils
 
   def delete(activity_id, user) do
     with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, activity_id),
@@ -44,13 +47,22 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  # This is a hack for twidere.
-  def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
-    if activity.data["type"] == "Create" do
-      activity
-    else
-      Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+  @instance Application.get_env(:pleroma, :instance)
+  @limit Keyword.get(@instance, :limit)
+  def post(user, %{"status" => status} = data) do
+    with status <- String.trim(status),
+         length when length in 1..@limit <- String.length(status),
+         attachments <- attachments_from_ids(data["media_ids"]),
+         mentions <- Formatter.parse_mentions(status),
+         inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
+         to <- to_for_user_and_mentions(user, mentions, inReplyTo),
+         content_html <- make_content_html(status, mentions, attachments),
+         context <- make_context(inReplyTo),
+         tags <- Formatter.parse_tags(status),
+         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags) do
+      res = ActivityPub.create(to, user, context, object)
+      User.update_note_count(user)
+      res
     end
   end
 end

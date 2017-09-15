@@ -43,7 +43,8 @@ version = with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
 config :pleroma, :instance,
   version: version,
   name: "Pleroma",
-  email: "example@example.com"
+  email: "example@example.com",
+  limit: 5000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

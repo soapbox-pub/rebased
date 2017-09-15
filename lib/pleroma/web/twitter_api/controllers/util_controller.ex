@@ -6,15 +6,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     json(conn, "ok")
   end
 
+  @instance Application.get_env(:pleroma, :instance)
   def config(conn, _params) do
     case get_format(conn) do
       "xml" ->
         response = """
         <config>
           <site>
-            <name>#{Web.base_url}</name>
+            <name>#{Keyword.get(@instance, :name)}</name>
             <site>#{Web.base_url}</site>
-            <textlimit>5000</textlimit>
+            <textlimit>#{Keyword.get(@instance, :limit)}</textlimit>
           </site>
         </config>
         """
@@ -24,22 +25,23 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       _ ->
         json(conn, %{
               site: %{
-                name: Web.base_url,
+                name: Keyword.get(@instance, :name),
                 server: Web.base_url,
-                textlimit: 5000
+                textlimit: Keyword.get(@instance, :limit)
               }
              })
     end
   end
 
   def version(conn, _params) do
+    version = Keyword.get(@instance, :version)
     case get_format(conn) do
       "xml" ->
-        response = "<version>Pleroma Dev</version>"
+        response = "<version>#{version}</version>"
         conn
         |> put_resp_content_type("application/xml")
         |> send_resp(200, response)
-      _ -> json(conn, "Pleroma Dev")
+      _ -> json(conn, version)
     end
   end
 end

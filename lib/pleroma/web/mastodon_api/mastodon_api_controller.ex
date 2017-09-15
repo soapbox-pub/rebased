@@ -133,15 +133,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def post_status(%{assigns: %{user: user}} = conn, %{"status" => status} = params) do
-    l = status |> String.trim |> String.length
-
     params = params
     |> Map.put("in_reply_to_status_id", params["in_reply_to_id"])
 
-    if l > 0 && l < 5000 do
-      {:ok, activity} = TwitterAPI.create_status(user, params)
-      render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}
-    end
+    {:ok, activity} = CommonAPI.post(user, params)
+    render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}
   end
 
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do

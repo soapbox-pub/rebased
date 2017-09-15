@@ -2,7 +2,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.{Activity, User}
-  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, Utils}
+  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
+  alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Formatter
 
   defp user_by_ap_id(user_list, ap_id) do

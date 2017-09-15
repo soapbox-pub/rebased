@@ -1,5 +1,5 @@
-defmodule Pleroma.Web.TwitterAPI.UtilsTest do
-  alias Pleroma.Web.TwitterAPI.Utils
+defmodule Pleroma.Web.CommonAPI.UtilsTest do
+  alias Pleroma.Web.CommonAPI.Utils
   use Pleroma.DataCase
 
   test "it adds attachment links to a given text and attachment set" do

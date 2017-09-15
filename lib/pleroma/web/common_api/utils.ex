@@ -1,7 +1,22 @@
-defmodule Pleroma.Web.TwitterAPI.Utils do
+defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.{Repo, Object, Formatter, User, Activity}
   alias Pleroma.Web.ActivityPub.Utils
   alias Calendar.Strftime
+
+  # This is a hack for twidere.
+  def get_by_id_or_ap_id(id) do
+    activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
+    if activity.data["type"] == "Create" do
+      activity
+    else
+      Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    end
+  end
+
+  def get_replied_to_activity(id) when not is_nil(id) do
+    Repo.get(Activity, id)
+  end
+  def get_replied_to_activity(_), do: nil
 
   def attachments_from_ids(ids) do
     Enum.map(ids || [], fn (media_id) ->
@@ -9,13 +24,28 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
     end)
   end
 
-  defp shortname(name) do
-    if String.length(name) < 30 do
-      name
+  def to_for_user_and_mentions(user, mentions, inReplyTo) do
+    default_to = [
+      user.follower_address,
+      "https://www.w3.org/ns/activitystreams#Public"
+    ]
+
+    to = default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
+    if inReplyTo do
+      Enum.uniq([inReplyTo.data["actor"] | to])
     else
-      String.slice(name, 0..30) <> "…"
+      to
     end
   end
+
+  def make_content_html(status, mentions, attachments) do
+    status
+    |> format_input(mentions)
+    |> add_attachments(attachments)
+  end
+
+  def make_context(%Activity{data: %{"context" => context}}), do: context
+  def make_context(_), do: Utils.generate_context_id
 
   def add_attachments(text, attachments) do
     attachment_text = Enum.map(attachments, fn
@@ -53,16 +83,6 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
     end)
   end
 
-  def make_content_html(status, mentions, attachments) do
-    status
-    |> format_input(mentions)
-    |> add_attachments(attachments)
-  end
-
-  def make_context(%Activity{data: %{"context" => context}}), do: context
-  def make_context(_), do: Utils.generate_context_id
-
-  # TODO: Move this to a more fitting space
   def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags) do
       object = %{
         "type" => "Note",
@@ -96,6 +116,14 @@ defmodule Pleroma.Web.TwitterAPI.Utils do
       format_asctime(date)
     else _e ->
         ""
+    end
+  end
+
+  defp shortname(name) do
+    if String.length(name) < 30 do
+      name
+    else
+      String.slice(name, 0..30) <> "…"
     end
   end
 end

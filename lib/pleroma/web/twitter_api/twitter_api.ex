@@ -6,43 +6,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.{OStatus, CommonAPI}
   alias Pleroma.Formatter
 
-  import Pleroma.Web.TwitterAPI.Utils
-
   @httpoison Application.get_env(:pleroma, :httpoison)
 
-  def to_for_user_and_mentions(user, mentions, inReplyTo) do
-    default_to = [
-      user.follower_address,
-      "https://www.w3.org/ns/activitystreams#Public"
-    ]
-
-    to = default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
-    if inReplyTo do
-      Enum.uniq([inReplyTo.data["actor"] | to])
-    else
-      to
-    end
-  end
-
-  def get_replied_to_activity(id) when not is_nil(id) do
-    Repo.get(Activity, id)
-  end
-
-  def get_replied_to_activity(_), do: nil
-
   def create_status(%User{} = user, %{"status" => status} = data) do
-    with attachments <- attachments_from_ids(data["media_ids"]),
-         mentions <- Formatter.parse_mentions(status),
-         inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
-         to <- to_for_user_and_mentions(user, mentions, inReplyTo),
-         content_html <- make_content_html(status, mentions, attachments),
-         context <- make_context(inReplyTo),
-         tags <- Formatter.parse_tags(status),
-         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags) do
-      res = ActivityPub.create(to, user, context, object)
-      User.update_note_count(user)
-      res
-    end
+    CommonAPI.post(user, data)
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do

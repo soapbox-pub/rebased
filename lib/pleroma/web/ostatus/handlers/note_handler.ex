@@ -4,7 +4,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   alias Pleroma.{Object, User, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.TwitterAPI
+  alias Pleroma.Web.CommonAPI
 
   @doc """
   Get the context for this note. Uses this:
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          mentions <- get_mentions(entry),
          to <- make_to_list(actor, mentions),
          date <- XML.string_from_xpath("//published", entry),
-         note <- TwitterAPI.Utils.make_note_data(actor.ap_id, to, context, content_html, attachments, inReplyToActivity, []),
+         note <- CommonAPI.Utils.make_note_data(actor.ap_id, to, context, content_html, attachments, inReplyToActivity, []),
          note <- note |> Map.put("id", id) |> Map.put("tag", tags),
          note <- note |> Map.put("published", date),
          note <- add_external_url(note, entry),

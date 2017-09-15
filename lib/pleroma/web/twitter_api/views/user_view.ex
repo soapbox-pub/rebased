@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.UserView do
   use Pleroma.Web, :view
   alias Pleroma.User
-  alias Pleroma.Web.TwitterAPI.Utils
+  alias Pleroma.Web.CommonAPI.Utils
 
   def render("show.json", %{user: user = %User{}} = assigns) do
     render_one(user, Pleroma.Web.TwitterAPI.UserView, "user.json", assigns)
