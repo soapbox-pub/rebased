@@ -39,12 +39,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  @instance Application.get_env(:pleroma, :instance)
+
   def masto_instance(conn, _params) do
     response = %{
       uri: Web.base_url,
-      title: Web.base_url,
+      title: Keyword.get(@instance, :name),
       description: "A Pleroma instance, an alternative fediverse server",
-      version: "Pleroma Dev"
+      version: Keyword.get(@instance, :version),
+      email: Keyword.get(@instance, :email),
+      urls: %{
+        streaming_api: String.replace(Web.base_url, ["http","https"], "wss")
+      },
+      stats: %{
+        user_count: 1,
+        status_count: 2,
+        domain_count: 3
+      }
     }
 
     json(conn, response)

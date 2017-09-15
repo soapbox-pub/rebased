@@ -34,6 +34,17 @@ config :pleroma, :websub, Pleroma.Web.Websub
 config :pleroma, :ostatus, Pleroma.Web.OStatus
 config :pleroma, :httpoison, HTTPoison
 
+version = with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
+            "Pleroma #{String.trim(version)}"
+          else
+            _ -> "Pleroma dev"
+          end
+
+config :pleroma, :instance,
+  version: version,
+  name: "Pleroma",
+  email: "example@example.com"
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env}.exs"

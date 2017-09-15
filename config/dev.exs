@@ -45,3 +45,9 @@ config :pleroma, Pleroma.Repo,
   database: "pleroma_dev",
   hostname: "localhost",
   pool_size: 10
+
+try do
+  import_config "dev.secret.exs"
+rescue
+  _-> nil
+end
