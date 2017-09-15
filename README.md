@@ -41,14 +41,15 @@ Elixir will also require `make` and probably other related software for building
      GRANT ALL ON ALL sequences IN SCHEMA public TO pleroma;
      ```
 
-     * Change password in `config/dev.exs`, and change user to `"pleroma"` (line like `username: "postgres"`)
+     * Create `config/dev.secret.exs` and copy the database settings from `dev.exs` there.
+     * Change password in `config/dev.secret.exs`, and change user to `"pleroma"` (line like `username: "postgres"`)
      * Create and update your database with `mix ecto.create && mix ecto.migrate`. If it gives errors, try running again, this is a known issue.
 
 ### Some additional configuration
 
   * You will need to let pleroma instance to know what hostname/url it's running on. _THIS IS THE MOST IMPORTANT STEP. GET THIS WRONG AND YOU'LL HAVE TO RESET YOUR DATABASE_.
 
-    In file `config/dev.exs`, add these lines at the end of the file:
+    Create the file `config/dev.secret.exs`, add these lines at the end of the file:
 
     ```elixir
     config :pleroma, Pleroma.Web.Endpoint,
@@ -56,6 +57,14 @@ Elixir will also require `make` and probably other related software for building
     ```
 
     replacing `example.tld` with your (sub)domain
+
+  * You should also setup your site name and admin email address. Look at config.exs for more available options.
+
+    ```elixir
+    config :pleroma, :instance,
+      name: "My great instance",
+      email: "someone@example.com"
+    ```
 
   * The common and convenient way for adding HTTPS is by using Nginx as a reverse proxy. You can look at example Nginx configuration in `installation/pleroma.nginx`. If you need TLS/SSL certificates for HTTPS, you can look get some for free with letsencrypt: https://letsencrypt.org/
   On Debian you can use `certbot` package and command to manage letsencrypt certificates.
