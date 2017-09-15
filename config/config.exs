@@ -44,7 +44,8 @@ config :pleroma, :instance,
   version: version,
   name: "Pleroma",
   email: "example@example.com",
-  limit: 5000
+  limit: 5000,
+  registrations_open: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

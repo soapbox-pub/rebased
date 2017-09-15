@@ -98,6 +98,9 @@ defmodule Pleroma.Web.Router do
     get "/statusnet/version", TwitterAPI.UtilController, :version
   end
 
+  @instance Application.get_env(:pleroma, :instance)
+  @registrations_open Keyword.get(@instance, :registrations_open)
+
   scope "/api", Pleroma.Web do
     pipe_through :api
 
@@ -110,7 +113,9 @@ defmodule Pleroma.Web.Router do
     get "/statuses/show/:id", TwitterAPI.Controller, :fetch_status
     get "/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation
 
-    post "/account/register", TwitterAPI.Controller, :register
+    if @registrations_open do
+      post "/account/register", TwitterAPI.Controller, :register
+    end
 
     get "/externalprofile/show", TwitterAPI.Controller, :external_profile
   end
