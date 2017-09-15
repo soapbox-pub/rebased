@@ -119,6 +119,23 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
+  def to_masto_date(%NaiveDateTime{} = date) do
+    date
+    |> NaiveDateTime.to_iso8601
+    |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
+  end
+
+  def to_masto_date(date) do
+    try do
+      date
+      |> NaiveDateTime.from_iso8601!
+      |> NaiveDateTime.to_iso8601
+      |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
+    rescue
+      _e -> ""
+    end
+  end
+
   defp shortname(name) do
     if String.length(name) < 30 do
       name
