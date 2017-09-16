@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   alias Pleroma.{Activity, User, Object}
   alias Pleroma.Web.OStatus.UserRepresenter
+  alias Pleroma.Formatter
   require Logger
 
   defp get_href(id) do
@@ -55,6 +56,12 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
   defp get_links(_activity), do: []
 
+  defp get_emoji_links(content) do
+    Enum.map(Formatter.get_emoji(content), fn({emoji, file}) ->
+      {:link, [name: to_charlist(emoji), rel: 'emoji', href: to_charlist("#{Pleroma.Web.Endpoint.static_url}#{file}")], []}
+    end)
+  end
+
   def to_simple_form(activity, user, with_author \\ false)
   def to_simple_form(%{data: %{"object" => %{"type" => "Note"}}} = activity, user, with_author) do
     h = fn(str) -> [to_charlist(str)] end
@@ -74,6 +81,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     categories = (activity.data["object"]["tag"] || [])
     |> Enum.map(fn (tag) -> {:category, [term: to_charlist(tag)], []} end)
 
+    emoji_links = get_emoji_links(activity.data["object"]["content"] || "")
+
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/post']},
@@ -84,7 +93,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [ref: h.(activity.data["context"])], h.(activity.data["context"])},
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
-    ] ++ get_links(activity) ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions
+    ] ++ get_links(activity) ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions ++ emoji_links
   end
 
   def to_simple_form(%{data: %{"type" => "Like"}} = activity, user, with_author) do

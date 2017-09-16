@@ -49,6 +49,12 @@ defmodule Pleroma.FormatterTest do
 
     expected_result = "I love <img height='32px' width='32px' alt='moominmamma' title='moominmamma' src='/finmoji/128px/moominmamma-128.png' />"
 
-    assert Formatter.finmojifiy(text) == expected_result
+    assert Formatter.emojify(text) == expected_result
+  end
+
+  test "it returns the emoji used in the text" do
+    text = "I love :moominmamma:"
+
+    assert Formatter.get_emoji(text) == [{"moominmamma", "/finmoji/128px/moominmamma-128.png"}]
   end
 end

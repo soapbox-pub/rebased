@@ -95,9 +95,13 @@ defmodule Pleroma.Formatter do
 
   @emoji @finmoji_with_filenames
 
-  def finmojifiy(text) do
+  def emojify(text) do
     Enum.reduce(@emoji, text, fn ({emoji, file}, text) ->
       String.replace(text, ":#{emoji}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{file}' />")
     end)
+  end
+
+  def get_emoji(text) do
+    Enum.filter(@emoji, fn ({emoji, _}) -> String.contains?(text, ":#{emoji}:") end)
   end
 end

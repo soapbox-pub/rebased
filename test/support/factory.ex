@@ -13,7 +13,7 @@ defmodule Pleroma.Factory do
   end
 
   def note_factory do
-    text = sequence(:text, &"This is note #{&1}")
+    text = sequence(:text, &"This is :moominmamma: note #{&1}")
 
     user = insert(:user)
     data = %{
