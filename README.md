@@ -52,7 +52,7 @@ Elixir will also require `make` and probably other related software for building
 
      * Create `config/dev.secret.exs` and copy the database settings from `dev.exs` there.
      * Change password in `config/dev.secret.exs`, and change user to `"pleroma"` (line like `username: "postgres"`)
-     * Create and update your database with `mix ecto.create && mix ecto.migrate`. If it gives errors, try running again, this is a known issue.
+     * Create and update your database with `mix ecto.create && mix ecto.migrate`.
 
 ### Some additional configuration
 
