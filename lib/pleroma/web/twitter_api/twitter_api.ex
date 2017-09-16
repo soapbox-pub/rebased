@@ -5,6 +5,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.{OStatus, CommonAPI}
   alias Pleroma.Formatter
+  import Ecto.Query
 
   @httpoison Application.get_env(:pleroma, :httpoison)
 
@@ -190,6 +191,32 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           {:error, "You need to specify screen_name or user_id"}
         end
     end
+  end
+
+  defp parse_int(string, default \\ nil)
+  defp parse_int(string, default) when is_binary(string) do
+    with {n, _} <- Integer.parse(string) do
+      n
+    else
+      _e -> default
+    end
+  end
+  defp parse_int(_, default), do: default
+
+  def search(user, %{"q" => query} = params) do
+    limit = parse_int(params["rpp"], 20)
+    page = parse_int(params["page"], 1)
+    offset = (page - 1) * limit
+
+    q = from a in Activity,
+      where: fragment("?->>'type' = 'Create'", a.data),
+      where: fragment("to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)", a.data, ^query),
+      limit: ^limit,
+      offset: ^offset,
+      order_by: [desc: :id]
+
+    activities = Repo.all(q)
+    activities_to_statuses(activities, %{for: user})
   end
 
   defp activities_to_statuses(activities, opts) do

@@ -263,6 +263,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+    conn
+    |> json(TwitterAPI.search(user, params))
+  end
+
   defp bad_request_reply(conn, error_message) do
     json = error_json(conn, error_message)
     json_reply(conn, 400, json)

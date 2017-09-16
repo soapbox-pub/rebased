@@ -119,6 +119,7 @@ defmodule Pleroma.Web.Router do
       post "/account/register", TwitterAPI.Controller, :register
     end
 
+    get "/search", TwitterAPI.Controller, :search
     get "/externalprofile/show", TwitterAPI.Controller, :external_profile
   end
 

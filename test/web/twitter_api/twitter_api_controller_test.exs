@@ -5,6 +5,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.{Repo, Activity, User, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 
@@ -472,5 +473,21 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   defp with_credentials(conn, username, password) do
     header_content = "Basic " <> Base.encode64("#{username}:#{password}")
     put_req_header(conn, "authorization", header_content)
+  end
+
+  describe "GET /api/search.json" do
+    test "it returns search results", %{conn: conn} do
+      user = insert(:user)
+      user_two = insert(:user, %{nickname: "shp@shitposter.club"})
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
+      {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
+
+      conn = conn
+      |> get("/api/search.json", %{"q" => "2hu", "page" => "1", "rpp" => "1"})
+
+      assert [status] = json_response(conn, 200)
+      assert status["id"] == activity.id
+    end
   end
 end
