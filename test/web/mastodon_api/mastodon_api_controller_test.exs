@@ -332,4 +332,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     [status] = results["statuses"]
     assert status["id"] == activity.id
   end
+
+  test "search fetches remote accounts", %{conn: conn} do
+    conn = conn
+    |> get("/api/v1/search", %{"q" => "shp@social.heldscal.la", "resolve" => "true"})
+
+    assert results = json_response(conn, 200)
+    [account] = results["accounts"]
+    assert account["acct"] == "shp@social.heldscal.la"
+  end
 end

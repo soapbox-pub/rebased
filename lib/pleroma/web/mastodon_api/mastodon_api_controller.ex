@@ -287,7 +287,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def search(%{assigns: %{user: user}} = conn, %{"q" => query}) do
+  def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+    if params["resolve"] == "true" do
+      User.get_or_fetch_by_nickname(query)
+    end
+
     q = from u in User,
       where: fragment("(to_tsvector('english', ?) || to_tsvector('english', ?)) @@ plainto_tsquery('english', ?)", u.nickname, u.name, ^query),
       limit: 20
