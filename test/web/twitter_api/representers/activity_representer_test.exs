@@ -70,7 +70,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       }
     }
 
-    content_html = "<script>alert('YAY')</script>Some content mentioning <a href='#{mentioned_user.ap_id}'>@shp</shp>"
+    content_html = "<script>alert('YAY')</script>Some :2hu: content mentioning <a href='#{mentioned_user.ap_id}'>@shp</shp>"
     content = HtmlSanitizeEx.strip_tags(content_html)
     date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601
 
@@ -99,7 +99,10 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "like_count" => 5,
           "announcement_count" => 3,
           "context" => "2hu",
-          "tag" => ["content", "mentioning", "nsfw"]
+          "tag" => ["content", "mentioning", "nsfw"],
+          "emoji" => %{
+            "2hu" => "corndog.png"
+          }
         },
         "published" => date,
         "context" => "2hu"
@@ -107,12 +110,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       local: false
     }
 
+    expected_html = "alert('YAY')Some <img height='32px' width='32px' alt='2hu' title='2hu' src='corndog.png' /> content mentioning <a href=\"#{mentioned_user.ap_id}\">@shp</a>"
 
     expected_status = %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: follower}),
       "is_local" => false,
-      "statusnet_html" => HtmlSanitizeEx.basic_html(content_html),
+      "statusnet_html" => expected_html,
       "text" => content,
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",

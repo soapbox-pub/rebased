@@ -135,11 +135,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     tags = activity.data["object"]["tag"] || []
     possibly_sensitive = Enum.member?(tags, "nsfw")
 
+    html = HtmlSanitizeEx.basic_html(content) |> Formatter.emojify(object["emoji"])
+
     %{
       "id" => activity.id,
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
-      "statusnet_html" => HtmlSanitizeEx.basic_html(content) |> Formatter.emojify,
+      "statusnet_html" => html,
       "text" => HtmlSanitizeEx.strip_tags(content),
       "is_local" => activity.local,
       "is_post_verb" => true,
