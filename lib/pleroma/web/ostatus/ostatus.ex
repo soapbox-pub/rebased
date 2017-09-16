@@ -180,7 +180,7 @@ defmodule Pleroma.Web.OStatus do
          avatar <- make_avatar_object(doc),
          bio <- string_from_xpath("//author[1]/summary", doc),
          name <- string_from_xpath("//author[1]/poco:displayName", doc),
-         info <- Map.put(user.info, "banner", string_from_xpath("//author[1]/link[@rel=\"avatar\"]/@href" || user.info["banner"], doc)),
+         info <- Map.put(user.info, "banner", make_avatar_object(doc, "header") || user.info["banner"]),
          new_data <- %{avatar: avatar || old_data.avatar, name: name || old_data.name, bio: bio || old_data.bio, info: info || old_data.info},
          false <- new_data == old_data do
       change = Ecto.Changeset.change(user, new_data)
@@ -233,9 +233,9 @@ defmodule Pleroma.Web.OStatus do
   end
 
   # TODO: Just takes the first one for now.
-  def make_avatar_object(author_doc) do
-    href = string_from_xpath("//author[1]/link[@rel=\"avatar\"]/@href", author_doc)
-    type = string_from_xpath("//author[1]/link[@rel=\"avatar\"]/@type", author_doc)
+  def make_avatar_object(author_doc, rel \\ "avatar") do
+    href = string_from_xpath("//author[1]/link[@rel=\"#{rel}\"]/@href", author_doc)
+    type = string_from_xpath("//author[1]/link[@rel=\"#{rel}\"]/@type", author_doc)
 
     if href do
       %{
