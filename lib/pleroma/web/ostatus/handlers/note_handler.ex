@@ -52,6 +52,17 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     |> Enum.filter(&(&1))
   end
 
+  def get_emoji(entry) do
+    try do
+      :xmerl_xpath.string('//link[@rel="emoji"]', entry)
+      |> Enum.reduce(%{}, fn(emoji, acc) ->
+        Map.put(acc, XML.string_from_xpath("@name", emoji), XML.string_from_xpath("@href", emoji))
+      end)
+    rescue
+      _e -> nil
+    end
+  end
+
   def make_to_list(actor, mentions) do
     [
       actor.follower_address
@@ -95,6 +106,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          note <- CommonAPI.Utils.make_note_data(actor.ap_id, to, context, content_html, attachments, inReplyToActivity, []),
          note <- note |> Map.put("id", id) |> Map.put("tag", tags),
          note <- note |> Map.put("published", date),
+         note <- note |> Map.put("emoji", get_emoji(entry)),
          note <- add_external_url(note, entry),
          # TODO: Handle this case in make_note_data
          note <- (if inReplyTo && !inReplyToActivity, do: note |> Map.put("inReplyTo", inReplyTo), else: note)

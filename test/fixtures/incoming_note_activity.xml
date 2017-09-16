@@ -4,6 +4,8 @@
  <title>New note by lambda</title>
  <content type="html">@&lt;a href=&quot;http://pleroma.example.org:4000/users/lain3&quot; class=&quot;h-card mention&quot;&gt;lain3&lt;/a&gt;</content>
  <link rel="alternate" type="text/html" href="http://gs.example.org:4040/index.php/notice/29"/>
+ <link name="marko" rel="emoji" href="marko.png" />
+ <link name="reimu" rel="emoji" href="reimu.png" />
  <status_net notice_id="29"></status_net>
  <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
  <published>2017-04-23T14:51:03+00:00</published>
