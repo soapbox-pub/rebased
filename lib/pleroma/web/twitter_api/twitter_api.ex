@@ -212,7 +212,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       where: fragment("?->>'type' = 'Create'", a.data),
       where: fragment("to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)", a.data, ^query),
       limit: ^limit,
-      offset: ^offset
+      offset: ^offset,
+      order_by: [desc: :updated_at] # this one isn't indexed so psql won't take the wrong index.
 
     activities = Repo.all(q)
     activities_to_statuses(activities, %{for: user})
