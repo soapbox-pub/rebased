@@ -22,7 +22,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       avatar: "https://placehold.it/48x48",
       avatar_static: "https://placehold.it/48x48",
       header: "https://placehold.it/700x335",
-      header_static: "https://placehold.it/700x335"
+      header_static: "https://placehold.it/700x335",
+      source: %{
+        note: "",
+        privacy: "public",
+        sensitive: "false"
+      }
     }
 
     assert expected == AccountView.render("account.json", %{user: user})
