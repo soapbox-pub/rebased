@@ -289,13 +289,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => query}) do
     q = from u in User,
-      where: fragment("(to_tsvector(?) || to_tsvector(?)) @@ plainto_tsquery(?)", u.nickname, u.name, ^query),
+      where: fragment("(to_tsvector('english', ?) || to_tsvector('english', ?)) @@ plainto_tsquery('english', ?)", u.nickname, u.name, ^query),
       limit: 20
     accounts = Repo.all(q)
 
     q = from a in Activity,
       where: fragment("?->>'type' = 'Create'", a.data),
-      where: fragment("to_tsvector(?->'object'->>'content') @@ plainto_tsquery(?)", a.data, ^query),
+      where: fragment("to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)", a.data, ^query),
       limit: 20
     statuses = Repo.all(q)
 
