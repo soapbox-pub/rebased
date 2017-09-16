@@ -47,7 +47,7 @@ defmodule Pleroma.FormatterTest do
   test "it adds cool emoji" do
     text = "I love :moominmamma:"
 
-    expected_result = "I love <img height='32px' width='32px' alt='moominmamma' title='moominmamma' src='#{Pleroma.Web.Endpoint.static_url}/finmoji/128px/moominmamma-128.png' />"
+    expected_result = "I love <img height='32px' width='32px' alt='moominmamma' title='moominmamma' src='/finmoji/128px/moominmamma-128.png' />"
 
     assert Formatter.finmojifiy(text) == expected_result
   end
