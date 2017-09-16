@@ -6,6 +6,12 @@ defmodule Pleroma.Web.OStatus.UserRepresenter do
     name = to_charlist(user.name)
     bio = to_charlist(user.bio)
     avatar_url = to_charlist(User.avatar_url(user))
+    banner = if banner_url = User.banner_url(user) do
+      [{:link, [rel: 'header', href: banner_url], []}]
+    else
+      []
+    end
+
     [
       {:id, [ap_id]},
       {:"activity:object", ['http://activitystrea.ms/schema/1.0/person']},
@@ -15,6 +21,6 @@ defmodule Pleroma.Web.OStatus.UserRepresenter do
       {:"poco:note", [bio]},
       {:name, [nickname]},
       {:link, [rel: 'avatar', href: avatar_url], []}
-    ]
+    ] ++ banner
   end
 end

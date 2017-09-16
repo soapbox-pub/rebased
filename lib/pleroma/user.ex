@@ -34,6 +34,13 @@ defmodule Pleroma.User do
     end
   end
 
+  def banner_url(user) do
+    case user.info["banner"] do
+      %{"url" => [%{"href" => href} | _]} -> href
+      _ -> nil
+    end
+  end
+
   def ap_id(%User{nickname: nickname}) do
     "#{Web.base_url}/users/#{nickname}"
   end
