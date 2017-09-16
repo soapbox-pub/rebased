@@ -93,7 +93,19 @@ defmodule Pleroma.Formatter do
     {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
   end)
 
-  @emoji @finmoji_with_filenames
+  @emoji_from_file (with {:ok, file} <- File.read("config/emoji.txt") do
+                     file
+                     |> String.trim
+                     |> String.split("\n")
+                     |> Enum.map(fn(line) ->
+                       [name, file] = String.split(line, ", ")
+                       {name, file}
+                     end)
+                    else
+                      _ -> []
+                   end)
+
+  @emoji @finmoji_with_filenames ++ @emoji_from_file
 
   def emojify(text, additional \\ nil) do
     all_emoji = if additional do

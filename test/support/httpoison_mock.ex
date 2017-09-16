@@ -240,6 +240,13 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://pleroma.soykaf.com/.well-known/webfinger?resource=https://pleroma.soykaf.com/users/shp", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/shp@pleroma.soykaf.com.webfigner")
+    }}
+  end
+
   def get("https://squeet.me/xrd/?uri=lain@squeet.me", [Accept: "application/xrd+xml"], []) do
     {:ok, %Response{
       status_code: 200,
@@ -259,7 +266,13 @@ defmodule HTTPoisonMock do
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/sakamoto.atom")
     }}
+  end
 
+  def get("https://pleroma.soykaf.com/users/shp/feed.atom", _, _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/shp@pleroma.soykaf.com.feed")
+    }}
   end
 
   def get("http://social.heldscal.la/.well-known/host-meta", [], [follow_redirect: true]) do
