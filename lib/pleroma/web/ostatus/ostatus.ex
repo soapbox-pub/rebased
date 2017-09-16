@@ -172,14 +172,16 @@ defmodule Pleroma.Web.OStatus do
     old_data = %{
       avatar: user.avatar,
       bio: user.bio,
-      name: user.name
+      name: user.name,
+      info: user.info
     }
 
     with false <- user.local,
          avatar <- make_avatar_object(doc),
          bio <- string_from_xpath("//author[1]/summary", doc),
          name <- string_from_xpath("//author[1]/poco:displayName", doc),
-         new_data <- %{avatar: avatar || old_data.avatar, name: name || old_data.name, bio: bio || old_data.bio},
+         info <- Map.put(user.info, "banner", string_from_xpath("//author[1]/link[@rel=\"avatar\"]/@href" || user.info["banner"], doc)),
+         new_data <- %{avatar: avatar || old_data.avatar, name: name || old_data.name, bio: bio || old_data.bio, info: info || old_data.info},
          false <- new_data == old_data do
       change = Ecto.Changeset.change(user, new_data)
       Repo.update(change)
