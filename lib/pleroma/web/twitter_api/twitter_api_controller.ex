@@ -14,14 +14,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => status_text} = status_data) do
-    l = status_text |> String.trim |> String.length
-    if l > 0 && l < 5000 do
-      media_ids = extract_media_ids(status_data)
-      {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids))
+    with media_ids <- extract_media_ids(status_data),
+         {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids)) do
       conn
-      |> json_reply(200, ActivityRepresenter.to_json(activity, %{user: user}))
+      |> json(ActivityRepresenter.to_map(activity, %{user: user}))
     else
-      empty_status_reply(conn)
+      _ -> empty_status_reply(conn)
     end
   end
 
