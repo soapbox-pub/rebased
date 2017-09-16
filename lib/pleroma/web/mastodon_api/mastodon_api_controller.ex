@@ -287,6 +287,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def search(%{assigns: %{user: user}} = conn, %{"q" => query}) do
+    q = from u in User,
+      where: fragment("(to_tsvector(?) || to_tsvector(?)) @@ plainto_tsquery(?)", u.nickname, u.name, ^query),
+      limit: 20
+    accounts = Repo.all(q)
+
+    q = from a in Activity,
+      where: fragment("?->>'type' = 'Create'", a.data),
+      where: fragment("to_tsvector(?->'object'->>'content') @@ plainto_tsquery(?)", a.data, ^query),
+      limit: 20
+    statuses = Repo.all(q)
+
+    res = %{
+      "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
+      "statuses" => StatusView.render("index.json", activities: statuses, for: user, as: :activity),
+      "hashtags" => []
+    }
+
+    json(conn, res)
+  end
+
   def relationship_noop(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     Logger.debug("Unimplemented, returning unmodified relationship")
     with %User{} = target <- Repo.get(User, id) do

@@ -310,4 +310,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert [] = json_response(conn, 200)
     end)
   end
+
+  test "search", %{conn: conn} do
+    user = insert(:user)
+    user_two = insert(:user, %{nickname: "shp@shitposter.club"})
+    user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
+    {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
+
+    conn = conn
+    |> get("/api/v1/search", %{"q" => "2hu"})
+
+    assert results = json_response(conn, 200)
+
+    [account] = results["accounts"]
+    assert account["id"] == user_three.id
+
+    assert results["hashtags"] == []
+
+    [status] = results["statuses"]
+    assert status["id"] == activity.id
+  end
 end
