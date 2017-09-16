@@ -15,7 +15,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     }
   end
 
-  def create_authorization(conn, %{"authorization" => %{"name" => name, "password" => password, "client_id" => client_id, "redirect_uri" => redirect_uri}} = params) do
+  def create_authorization(conn, %{"authorization" => %{"name" => name, "password" => password, "client_id" => client_id, "redirect_uri" => redirect_uri} = params}) do
     with %User{} = user <- User.get_cached_by_nickname(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          %App{} = app <- Repo.get_by(App, client_id: client_id),
