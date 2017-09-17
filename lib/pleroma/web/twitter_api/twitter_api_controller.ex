@@ -15,7 +15,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => status_text} = status_data) do
     with media_ids <- extract_media_ids(status_data),
-         {:ok, activity} = TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids)) do
+         {:ok, activity} <- TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids)) do
       conn
       |> json(ActivityRepresenter.to_map(activity, %{user: user}))
     else
