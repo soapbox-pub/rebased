@@ -490,4 +490,20 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert status["id"] == activity.id
     end
   end
+
+  describe "GET /api/statusnet/tags/timeline/:tag.json" do
+    test "it returns the tags timeline" do
+      user = insert(:user)
+      user_two = insert(:user, %{nickname: "shp@shitposter.club"})
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "This is about #2hu"})
+      {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
+
+      conn = conn
+      |> get("/api/statusnet/tags/2hu.json")
+
+      assert [status] = json_response(conn, 200)
+      assert status["id"] == activity.id
+    end
+  end
 end
