@@ -56,9 +56,9 @@ defmodule Pleroma.Web.CommonAPI do
          mentions <- Formatter.parse_mentions(status),
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
          to <- to_for_user_and_mentions(user, mentions, inReplyTo),
-         content_html <- make_content_html(status, mentions, attachments),
-         context <- make_context(inReplyTo),
          tags <- Formatter.parse_tags(status),
+         content_html <- make_content_html(status, mentions, attachments, tags),
+         context <- make_context(inReplyTo),
          object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags) do
       res = ActivityPub.create(to, user, context, object)
       User.update_note_count(user)
