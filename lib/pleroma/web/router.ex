@@ -120,7 +120,7 @@ defmodule Pleroma.Web.Router do
     end
 
     get "/search", TwitterAPI.Controller, :search
-    get "/statusnet/tags/:tag", TwitterAPI.Controller, :public_and_external_timeline
+    get "/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline
     get "/externalprofile/show", TwitterAPI.Controller, :external_profile
   end
 

@@ -500,7 +500,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       {:ok, _} = CommonAPI.post(user_two, %{"status" => "This isn't"})
 
       conn = conn
-      |> get("/api/statusnet/tags/2hu.json")
+      |> get("/api/statusnet/tags/timeline/2hu.json")
 
       assert [status] = json_response(conn, 200)
       assert status["id"] == activity.id
