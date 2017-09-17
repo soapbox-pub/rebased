@@ -147,6 +147,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_type(query, _), do: query
 
+  defp restrict_favorited_by(query, %{"favorited_by" => ap_id}) do
+    from activity in query,
+      where: fragment("? <@ (? #> '{\"object\",\"likes\"}')", ^ap_id, activity.data)
+  end
+  defp restrict_favorited_by(query, _), do: query
+
   def fetch_activities(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
@@ -160,6 +166,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_max(opts)
     |> restrict_actor(opts)
     |> restrict_type(opts)
+    |> restrict_favorited_by(opts)
     |> Repo.all
     |> Enum.reverse
   end

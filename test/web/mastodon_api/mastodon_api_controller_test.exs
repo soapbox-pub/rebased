@@ -341,4 +341,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     [account] = results["accounts"]
     assert account["acct"] == "shp@social.heldscal.la"
   end
+
+  test "returns the favorites of a user", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _} = CommonAPI.post(other_user, %{"status" => "bla"})
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "traps are happy"})
+
+    {:ok, _, _} = CommonAPI.favorite(activity.id, user)
+
+    conn = conn
+    |> assign(:user, user)
+    |> get("/api/v1/favourites")
+
+    assert [status] = json_response(conn, 200)
+    assert status["id"] == activity.id
+  end
 end

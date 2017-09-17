@@ -312,6 +312,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, res)
   end
 
+  def favourites(%{assigns: %{user: user}} = conn, params) do
+    params = conn
+    |> Map.put("type", "Create")
+    |> Map.put("favorited_by", user.ap_id)
+
+    activities = ActivityPub.fetch_activities([], params)
+    |> Enum.reverse
+
+    conn
+    |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
+  end
+
   def relationship_noop(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     Logger.debug("Unimplemented, returning unmodified relationship")
     with %User{} = target <- Repo.get(User, id) do
