@@ -8,6 +8,13 @@
   animation: spin 2s infinite linear;
   display: inline-block;
 }
+.animate-spin-slow {
+  -moz-animation: spin 4s infinite linear;
+  -o-animation: spin 4s infinite linear;
+  -webkit-animation: spin 4s infinite linear;
+  animation: spin 4s infinite linear;
+  display: inline-block;
+}
 @-moz-keyframes spin {
   0% {
     -moz-transform: rotate(0deg);
