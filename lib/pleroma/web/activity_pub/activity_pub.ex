@@ -141,9 +141,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_actor(query, _), do: query
 
+  defp restrict_type(query, %{"type" => type}) when is_binary(type) do
+    restrict_type(query, %{"type" => [type]})
+  end
   defp restrict_type(query, %{"type" => type}) do
     from activity in query,
-      where: fragment("?->>'type' = ?", activity.data, ^type)
+      where: fragment("?->>'type' = ANY(?)", activity.data, ^type)
   end
   defp restrict_type(query, _), do: query
 

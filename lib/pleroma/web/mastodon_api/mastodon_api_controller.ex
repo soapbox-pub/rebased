@@ -77,7 +77,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def home_timeline(%{assigns: %{user: user}} = conn, params) do
-    activities = ActivityPub.fetch_activities([user.ap_id | user.following], Map.put(params, "type", "Create"))
+    params = params
+    |> Map.put("type", ["Create", "Announce"])
+
+    activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
     |> Enum.reverse
 
     conn
@@ -87,7 +90,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
     params = params
-    |> Map.put("type", "Create")
+    |> Map.put("type", ["Create", "Announce"])
     |> Map.put("local_only", !!params["local"])
 
     activities = ActivityPub.fetch_public_activities(params)
@@ -102,7 +105,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def user_statuses(%{assigns: %{user: user}} = conn, params) do
     with %User{ap_id: ap_id} <- Repo.get(User, params["id"]) do
       params = params
-      |> Map.put("type", "Create")
+      |> Map.put("type", ["Create", "Announce"])
       |> Map.put("actor_id", ap_id)
 
       activities = ActivityPub.fetch_activities([], params)
