@@ -109,7 +109,7 @@ defmodule Pleroma.Formatter do
 
   def emojify(text, additional \\ nil) do
     all_emoji = if additional do
-      @emoji ++ Map.to_list(additional)
+      Map.to_list(additional) ++ @emoji
     else
       @emoji
     end
