@@ -152,7 +152,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     query = from activity in Activity,
       where: fragment("? @> ?", activity.data, ^%{type: "Follow", actor: follower_id,
                                                   object: followed_id}),
-      order_by: [desc: :inserted_at],
+      order_by: [desc: :id],
       limit: 1
     Repo.one(query)
   end

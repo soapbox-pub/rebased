@@ -21,7 +21,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     query = from activity in Activity,
       where: fragment("?->>'actor' = ?", activity.data, ^user.ap_id),
       limit: 20,
-      order_by: [desc: :inserted_at]
+      order_by: [desc: :id]
 
     activities = query
     |> Repo.all
