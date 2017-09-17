@@ -4,6 +4,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
   alias Pleroma.User
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
   test "a note activity" do
@@ -83,5 +84,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     # If theres a "id", use that instead of the generated one
     object = Map.put(object, "id", 2)
     assert %{id: 2} = StatusView.render("attachment.json", %{attachment: object})
+  end
+
+  test "a reblog" do
+    user = insert(:user)
+    activity = insert(:note_activity)
+
+    {:ok, reblog, _} = CommonAPI.repeat(activity.id, user)
+
+    represented = StatusView.render("status.json", %{for: user, activity: reblog})
+
+    assert represented[:id] == reblog.id
+    assert represented[:reblog][:id] == activity.id
   end
 end

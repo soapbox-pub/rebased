@@ -8,6 +8,47 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     render_many(opts.activities, StatusView, "status.json", opts)
   end
 
+  def render("status.json", %{activity: %{data: %{"type" => "Announce", "object" => object}} = activity} = opts) do
+    user = User.get_cached_by_ap_id(activity.data["actor"])
+    created_at = Utils.to_masto_date(activity.data["published"])
+
+    reblogged = Activity.get_create_activity_by_object_ap_id(object)
+    reblogged = render("status.json", Map.put(opts, :activity, reblogged))
+
+    mentions = activity.data["to"]
+    |> Enum.map(fn (ap_id) -> User.get_cached_by_ap_id(ap_id) end)
+    |> Enum.filter(&(&1))
+    |> Enum.map(fn (user) -> AccountView.render("mention.json", %{user: user}) end)
+
+    %{
+      id: activity.id,
+      uri: object,
+      url: nil,
+      account: AccountView.render("account.json", %{user: user}),
+      in_reply_to_id: nil,
+      in_reply_to_account_id: nil,
+      reblog: reblogged,
+      content: reblogged[:content],
+      created_at: created_at,
+      reblogs_count: 0,
+      favourites_count: 0,
+      reblogged: 0,
+      favourited: 0,
+      muted: false,
+      sensitive: false,
+      spoiler_text: "",
+      visibility: "public",
+      media_attachments: [],
+      mentions: mentions,
+      tags: [],
+      application: %{
+        name: "Web",
+        website: nil
+      },
+      language: nil
+    }
+  end
+
   def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
     user = User.get_cached_by_ap_id(activity.data["actor"])
 
