@@ -62,7 +62,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.linkify
     |> String.replace("\n", "<br>\n")
     |> add_user_links(mentions)
-    |> add_tag_links(tags)
+    # |> add_tag_links(tags)
   end
 
   def add_tag_links(text, tags) do
