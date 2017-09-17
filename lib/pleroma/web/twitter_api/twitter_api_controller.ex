@@ -211,6 +211,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          response <- Poison.encode!(user_map) do
       conn
       |> json_reply(200, response)
+    else
+      _e ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Can't find user"})
     end
   end
 

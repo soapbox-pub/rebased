@@ -105,13 +105,10 @@ defmodule Pleroma.Web.WebFinger do
                URI.parse(account).host
              end
 
-    {:ok, template} = find_lrdd_template(domain)
-
-    address = String.replace(template, "{uri}", URI.encode(account))
-
-    response = @httpoison.get(address, ["Accept": "application/xrd+xml"])
-
-    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
+    with {:ok, template} <- find_lrdd_template(domain),
+         address <- String.replace(template, "{uri}", URI.encode(account)),
+         response <- @httpoison.get(address, ["Accept": "application/xrd+xml"]),
+         {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
          doc when doc != :error<- XML.parse_document(body),
          {:ok, data} <- webfinger_from_xml(doc) do
       {:ok, data}
