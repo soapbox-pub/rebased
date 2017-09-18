@@ -1,9 +1,9 @@
 # https://tools.ietf.org/html/draft-cavage-http-signatures-08
 defmodule Pleroma.Web.HTTPSignatures do
   def split_signature(sig) do
-    default = %{"headers" => ["date"]}
+    default = %{"headers" => "date"}
 
-    sig
+    sig = sig
     |> String.trim()
     |> String.split(",")
     |> Enum.reduce(default, fn(part, acc) ->
@@ -11,6 +11,8 @@ defmodule Pleroma.Web.HTTPSignatures do
       value = Enum.join(rest, "=")
       Map.put(acc, key, String.trim(value, "\""))
     end)
+
+    Map.put(sig, "headers", String.split(sig["headers"], ~r/\s/))
   end
 
   def validate(headers, signature, public_key) do
