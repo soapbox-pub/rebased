@@ -31,9 +31,9 @@ defmodule Pleroma.Web.Websub do
     do
       changeset = Changeset.change(subscription, %{state: "active"})
       Repo.update(changeset)
-    else _e ->
-      changeset = Changeset.change(subscription, %{state: "rejected"})
-      {:ok, subscription} = Repo.update(changeset)
+    else e ->
+      Logger.debug("Couldn't verify subscription")
+      Logger.debug(inspect(e))
       {:error, subscription}
     end
   end
