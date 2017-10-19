@@ -97,6 +97,25 @@ defmodule Pleroma.User do
     |> validate_length(:name, min: 1, max: 100)
   end
 
+  def password_update_changeset(struct, params) do
+    changeset = struct
+    |> cast(params, [:password, :password_confirmation])
+    |> validate_required([:password, :password_confirmation])
+    |> validate_confirmation(:password)
+
+    if changeset.valid? do
+      hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
+      changeset
+      |> put_change(:password_hash, hashed)
+    else
+      changeset
+    end
+  end
+
+  def reset_password(user, data) do
+    Repo.update(password_update_changeset(user, data))
+  end
+
   def register_changeset(struct, params \\ %{}) do
     changeset = struct
     |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
