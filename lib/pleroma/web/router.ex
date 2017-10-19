@@ -33,14 +33,15 @@ defmodule Pleroma.Web.Router do
     plug :accepts, ["html", "json"]
   end
 
-  pipeline :password_reset do
-    plug :accepts, ["html"]
+  pipeline :pleroma_api do
+    plug :accepts, ["html", "json"]
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
-    pipe_through :password_reset
+    pipe_through :pleroma_api
     get "/password_reset/:token", UtilController, :show_password_reset
     post "/password_reset", UtilController, :password_reset
+    get "/emoji", UtilController, :emoji
   end
 
   scope "/oauth", Pleroma.Web.OAuth do

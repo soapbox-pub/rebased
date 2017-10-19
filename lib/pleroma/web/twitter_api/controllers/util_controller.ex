@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.UtilController do
   use Pleroma.Web, :controller
   alias Pleroma.Web
+  alias Pleroma.Formatter
 
   alias Pleroma.{Repo, PasswordResetToken, User}
 
@@ -67,5 +68,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         |> send_resp(200, response)
       _ -> json(conn, version)
     end
+  end
+
+  def emoji(conn, _params) do
+    json conn, Formatter.get_custom_emoji()
   end
 end
