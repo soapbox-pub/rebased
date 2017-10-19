@@ -118,8 +118,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_tag(query, _), do: query
 
   defp restrict_recipients(query, recipients) do
-    from activity in query,
-      where: fragment("?->'to' \\\?| ? ", activity.data, ^recipients)
+    Enum.reduce(recipients, query, fn (recipient, q) ->
+      map = %{ to: [recipient] }
+      from activity in q,
+      or_where: fragment(~s(? @> ?), activity.data, ^map)
+    end)
   end
 
   defp restrict_local(query, %{"local_only" => true}) do
