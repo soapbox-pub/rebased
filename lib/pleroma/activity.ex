@@ -38,7 +38,7 @@ defmodule Pleroma.Activity do
 
   def get_create_activity_by_object_ap_id(ap_id) do
     Repo.one(from activity in Activity,
-      where: fragment("(?)->'object'->>'id' = ?", activity.data, ^to_string(ap_id))
-             and fragment("(?)->>'type' = 'Create'", activity.data))
+      where: fragment("coalesce((?)->'object'->>'id', (?)->>'object') = ?", activity.data, activity.data, ^to_string(ap_id)),
+      where: fragment("(?)->>'type' = 'Create'", activity.data))
   end
 end
