@@ -16,17 +16,22 @@ defmodule Pleroma.Activity do
       where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id)))
   end
 
+  # TODO:
+  # Go through these and fix them everywhere.
   # Wrong name, only returns create activities
   def all_by_object_ap_id_q(ap_id) do
     from activity in Activity,
-      where: fragment("(?)->'object'->>'id' = ?", activity.data, ^to_string(ap_id))
+      where: fragment("coalesce((?)->'object'->>'id', (?)->>'object') = ?", activity.data, activity.data, ^to_string(ap_id)),
+      where: fragment("(?)->>'type' = 'Create'", activity.data)
   end
 
+  # Wrong name, returns all.
   def all_non_create_by_object_ap_id_q(ap_id) do
     from activity in Activity,
-      where: fragment("(?)->>'object' = ?", activity.data, ^to_string(ap_id))
+      where: fragment("coalesce((?)->'object'->>'id', (?)->>'object') = ?", activity.data, activity.data, ^to_string(ap_id))
   end
 
+  # Wrong name plz fix thx
   def all_by_object_ap_id(ap_id) do
     Repo.all(all_by_object_ap_id_q(ap_id))
   end

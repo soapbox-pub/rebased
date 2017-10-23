@@ -87,7 +87,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     }
     with Repo.delete(object),
          Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
-         Repo.delete_all(Activity.all_by_object_ap_id_q(id)),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
