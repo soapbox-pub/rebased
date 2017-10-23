@@ -41,7 +41,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         name: "Web",
         website: nil
       },
-      language: nil
+      language: nil,
+      emojis: [
+        %{
+          shortcode: "2hu",
+          url: "corndog.png",
+          static_url: "corndog.png"
+        }
+      ]
     }
 
     assert status == expected
