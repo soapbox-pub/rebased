@@ -241,7 +241,7 @@ defmodule Pleroma.User do
 
   def update_note_count(%User{} = user) do
     note_count_query = from a in Object,
-      where: fragment("? @> ?", a.data, ^%{actor: user.ap_id, type: "Note"}),
+      where: fragment("?->>'actor' = ? and ?->>'type' = 'Note'", a.data, ^user.ap_id, a.data),
       select: count(a.id)
 
     note_count = Repo.one(note_count_query)
