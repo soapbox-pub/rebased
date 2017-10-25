@@ -275,7 +275,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          {:ok, activity} <- ActivityPub.follow(follower, followed) do
       render conn, AccountView, "relationship.json", %{user: follower, target: followed}
     else
-      err -> err
+      {:error, message} = err ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{"error" => message}))
     end
   end
 
