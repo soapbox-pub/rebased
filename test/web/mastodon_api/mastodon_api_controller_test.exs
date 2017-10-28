@@ -281,6 +281,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> post("/api/v1/accounts/#{other_user.id}/unfollow")
 
     assert %{"id" => id, "following" => false} = json_response(conn, 200)
+
+    user = Repo.get(User, user.id)
+    conn = build_conn()
+    |> assign(:user, user)
+    |> post("/api/v1/follows", %{"uri" => other_user.nickname})
+
+    assert %{"id" => id, "following" => true} = json_response(conn, 200)
   end
 
   test "unimplemented block/mute endpoints" do

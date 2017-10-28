@@ -269,11 +269,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
-    with %User{} = followed <- Repo.get(User, id),
-       {:ok, follower} <- User.follow(follower, followed),
-       {:ok, activity} <- ActivityPub.follow(follower, followed) do
+  def follow(%{assigns: %{user: follower}} = conn, params) do
+    with {:ok, %User{} = followed} <- get_user(params),
+         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, activity} <- ActivityPub.follow(follower, followed) do
       render conn, AccountView, "relationship.json", %{user: follower, target: followed}
+    else
+      {:error, message} = err ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{"error" => message}))
     end
   end
 
@@ -337,5 +342,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def empty_array(conn, _) do
     Logger.debug("Unimplemented, returning an empty array")
     json(conn, [])
+  end
+
+  defp get_user(params) do
+    case params do
+      %{"uri" => uri} ->
+        case target = Repo.get_by(User, nickname: uri) do
+          nil ->
+            {:error, "No user with such nickname"}
+          _ ->
+            {:ok, target}
+        end
+      %{"id" => id} ->
+        case target = Repo.get(User, id) do
+          nil ->
+            {:error, "No user with such id"}
+          _ ->
+            {:ok, target}
+        end
+      _ ->
+        {:error, "You need to specify uri or id"}
+    end
   end
 end

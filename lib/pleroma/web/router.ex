@@ -62,6 +62,8 @@ defmodule Pleroma.Web.Router do
     post "/accounts/:id/mute", MastodonAPIController, :relationship_noop
     post "/accounts/:id/unmute", MastodonAPIController, :relationship_noop
 
+    post "/follows", MastodonAPIController, :follow
+
     get "/blocks", MastodonAPIController, :empty_array
     get "/domain_blocks", MastodonAPIController, :empty_array
     get "/follow_requests", MastodonAPIController, :empty_array
