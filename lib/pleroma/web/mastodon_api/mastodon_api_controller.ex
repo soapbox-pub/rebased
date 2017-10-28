@@ -282,10 +282,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def follows(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
+  def follow(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
     with %User{} = followed <- Repo.get_by(User, nickname: uri),
-       {:ok, follower} <- User.follow(follower, followed),
-       {:ok, activity} <- ActivityPub.follow(follower, followed) do
+         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, activity} <- ActivityPub.follow(follower, followed) do
       render conn, AccountView, "account.json", %{user: followed}
     else
       {:error, message} = err ->
