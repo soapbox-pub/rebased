@@ -287,7 +287,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> assign(:user, user)
     |> post("/api/v1/follows", %{"uri" => other_user.nickname})
 
-    assert other_user = json_response(conn, 200)
+    assert %{"id" => id} = json_response(conn, 200)
+    assert id == other_user.id
   end
 
   test "unimplemented block/mute endpoints" do
