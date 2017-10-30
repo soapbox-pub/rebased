@@ -55,12 +55,15 @@ defmodule Pleroma.Web.Router do
 
     get "/accounts/verify_credentials", MastodonAPIController, :verify_credentials
     get "/accounts/relationships", MastodonAPIController, :relationships
+    get "/accounts/search", MastodonAPIController, :account_search
     post "/accounts/:id/follow", MastodonAPIController, :follow
     post "/accounts/:id/unfollow", MastodonAPIController, :unfollow
     post "/accounts/:id/block", MastodonAPIController, :relationship_noop
     post "/accounts/:id/unblock", MastodonAPIController, :relationship_noop
     post "/accounts/:id/mute", MastodonAPIController, :relationship_noop
     post "/accounts/:id/unmute", MastodonAPIController, :relationship_noop
+
+    post "/follows", MastodonAPIController, :follow
 
     get "/blocks", MastodonAPIController, :empty_array
     get "/domain_blocks", MastodonAPIController, :empty_array

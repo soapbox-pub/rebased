@@ -90,7 +90,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def get_existing_like(actor, %{data: %{"id" => id}} = object) do
     query = from activity in Activity,
-      where: fragment("? @> ?", activity.data, ^%{actor: actor, object: id, type: "Like"})
+      where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
+      # this is to use the index
+      where: fragment("coalesce((?)->'object'->>'id', (?)->>'object') = ?", activity.data, activity.data, ^id),
+      where: fragment("(?)->>'type' = 'Like'", activity.data)
+
     Repo.one(query)
   end
 

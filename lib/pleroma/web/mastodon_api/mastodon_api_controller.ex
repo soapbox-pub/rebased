@@ -271,9 +271,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
-       {:ok, follower} <- User.follow(follower, followed),
-       {:ok, activity} <- ActivityPub.follow(follower, followed) do
+         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, activity} <- ActivityPub.follow(follower, followed) do
       render conn, AccountView, "relationship.json", %{user: follower, target: followed}
+    else
+      {:error, message} = err ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{"error" => message}))
+    end
+  end
+
+  def follow(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
+    with %User{} = followed <- Repo.get_by(User, nickname: uri),
+         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, activity} <- ActivityPub.follow(follower, followed) do
+      render conn, AccountView, "account.json", %{user: followed}
+    else
+      {:error, message} = err ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{"error" => message}))
     end
   end
 
@@ -291,14 +309,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    if params["resolve"] == "true" do
-      User.get_or_fetch_by_nickname(query)
-    end
-
-    q = from u in User,
-      where: fragment("(to_tsvector('english', ?) || to_tsvector('english', ?)) @@ plainto_tsquery('english', ?)", u.nickname, u.name, ^query),
-      limit: 20
-    accounts = Repo.all(q)
+    accounts = User.search(query, params["resolve"] == "true")
 
     q = from a in Activity,
       where: fragment("?->>'type' = 'Create'", a.data),
@@ -311,6 +322,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       "statuses" => StatusView.render("index.json", activities: statuses, for: user, as: :activity),
       "hashtags" => []
     }
+
+    json(conn, res)
+  end
+
+  def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+    accounts = User.search(query, params["resolve"] == "true")
+
+    res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
 
     json(conn, res)
   end

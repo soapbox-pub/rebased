@@ -241,7 +241,7 @@ defmodule Pleroma.User do
 
   def update_note_count(%User{} = user) do
     note_count_query = from a in Object,
-      where: fragment("? @> ?", a.data, ^%{actor: user.ap_id, type: "Note"}),
+      where: fragment("?->>'actor' = ? and ?->>'type' = 'Note'", a.data, ^user.ap_id, a.data),
       select: count(a.id)
 
     note_count = Repo.one(note_count_query)
@@ -273,5 +273,15 @@ defmodule Pleroma.User do
       where: u.local == true
 
     Repo.all(query)
+  end
+
+  def search(query, resolve) do
+    if resolve do
+      User.get_or_fetch_by_nickname(query)
+    end
+    q = from u in User,
+      where: fragment("(to_tsvector('english', ?) || to_tsvector('english', ?)) @@ plainto_tsquery('english', ?)", u.nickname, u.name, ^query),
+      limit: 20
+    Repo.all(q)
   end
 end
