@@ -55,6 +55,7 @@ defmodule Pleroma.Web.Router do
 
     get "/accounts/verify_credentials", MastodonAPIController, :verify_credentials
     get "/accounts/relationships", MastodonAPIController, :relationships
+    get "/accounts/search", MastodonAPIController, :accountsearch
     post "/accounts/:id/follow", MastodonAPIController, :follow
     post "/accounts/:id/unfollow", MastodonAPIController, :unfollow
     post "/accounts/:id/block", MastodonAPIController, :relationship_noop

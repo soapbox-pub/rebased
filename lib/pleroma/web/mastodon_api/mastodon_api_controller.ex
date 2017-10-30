@@ -308,7 +308,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+  def dousersearch(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     if params["resolve"] == "true" do
       User.get_or_fetch_by_nickname(query)
     end
@@ -317,6 +317,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       where: fragment("(to_tsvector('english', ?) || to_tsvector('english', ?)) @@ plainto_tsquery('english', ?)", u.nickname, u.name, ^query),
       limit: 20
     accounts = Repo.all(q)
+  end
+
+  def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+    accounts = Pleroma.Web.MastodonAPI.MastodonAPIController.dousersearch(conn, params)
 
     q = from a in Activity,
       where: fragment("?->>'type' = 'Create'", a.data),
@@ -329,6 +333,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       "statuses" => StatusView.render("index.json", activities: statuses, for: user, as: :activity),
       "hashtags" => []
     }
+
+    json(conn, res)
+  end
+
+  def accountsearch(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+    accounts = Pleroma.Web.MastodonAPI.MastodonAPIController.dousersearch(conn, params)
+
+    res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
 
     json(conn, res)
   end
