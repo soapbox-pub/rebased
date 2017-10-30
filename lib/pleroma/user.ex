@@ -274,4 +274,14 @@ defmodule Pleroma.User do
 
     Repo.all(query)
   end
+
+  def search(query, resolve) do
+    if resolve do
+      User.get_or_fetch_by_nickname(query)
+    end
+    q = from u in User,
+      where: fragment("(to_tsvector('english', ?) || to_tsvector('english', ?)) @@ plainto_tsquery('english', ?)", u.nickname, u.name, ^query),
+      limit: 20
+    Repo.all(q)
+  end
 end
