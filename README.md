@@ -57,7 +57,7 @@ Elixir will also require `make` and probably other related software for building
 
 ### Some additional configuration
 
-  * You will need to let pleroma instance to know what hostname/url it's running on. _THIS IS THE MOST IMPORTANT STEP. GET THIS WRONG AND YOU'LL HAVE TO RESET YOUR DATABASE_.
+  * You will need to let pleroma instance to know what hostname/url it's running on. _THIS IS THE MOST IMPORTANT STEP. GET THIS WRONG AND YOU'LL HAVE TO RESET YOUR DATABASE_. We _ONLY_ support _HTTPS_ deployments in production. You can use basic http for local dev, but _NEVER USE IT_ on an actual instance.
 
     Create the file `config/dev.secret.exs`, add these lines at the end of the file:
 
