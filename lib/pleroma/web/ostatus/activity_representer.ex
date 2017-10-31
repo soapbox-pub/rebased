@@ -83,6 +83,12 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     emoji_links = get_emoji_links(activity.data["object"]["content"] || "")
 
+    summary = if activity.data["object"]["summary"] do
+      [{:summary, [], h.(activity.data["object"]["summary"])}]
+    else
+      []
+    end
+
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/post']},
@@ -93,7 +99,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [ref: h.(activity.data["context"])], h.(activity.data["context"])},
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
-    ] ++ get_links(activity) ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions ++ emoji_links
+    ] ++ summary ++ get_links(activity) ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions ++ emoji_links
   end
 
   def to_simple_form(%{data: %{"type" => "Like"}} = activity, user, with_author) do

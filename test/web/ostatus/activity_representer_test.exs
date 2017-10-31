@@ -36,6 +36,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <updated>#{note_activity.data["object"]["published"]}</updated>
     <ostatus:conversation ref="#{note_activity.data["context"]}">#{note_activity.data["context"]}</ostatus:conversation>
     <link ref="#{note_activity.data["context"]}" rel="ostatus:conversation" />
+    <summary>#{note_activity.data["object"]["summary"]}</summary>
     <link type="application/atom+xml" href="#{note_activity.data["object"]["id"]}" rel="self" />
     <link type="text/html" href="#{note_activity.data["object"]["id"]}" rel="alternate" />
     <category term="2hu"/>
@@ -74,6 +75,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <updated>#{answer.data["object"]["published"]}</updated>
     <ostatus:conversation ref="#{answer.data["context"]}">#{answer.data["context"]}</ostatus:conversation>
     <link ref="#{answer.data["context"]}" rel="ostatus:conversation" />
+    <summary>2hu</summary>
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />
     <link type="text/html" href="#{answer.data["object"]["id"]}" rel="alternate" />
     <category term="2hu"/>
