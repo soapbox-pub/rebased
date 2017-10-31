@@ -17,7 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     |> String.replace(~r/\.\d+Z/, ".000Z")
 
     expected = %{
-      id: note.id,
+      id: to_string(note.id),
       uri: note.data["object"]["id"],
       url: note.data["object"]["id"],
       account: AccountView.render("account.json", %{user: user}),
@@ -101,7 +101,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     represented = StatusView.render("status.json", %{for: user, activity: reblog})
 
-    assert represented[:id] == reblog.id
-    assert represented[:reblog][:id] == activity.id
+    assert represented[:id] == to_string(reblog.id)
+    assert represented[:reblog][:id] == to_string(activity.id)
   end
 end

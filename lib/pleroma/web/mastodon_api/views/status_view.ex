@@ -21,9 +21,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Enum.map(fn (user) -> AccountView.render("mention.json", %{user: user}) end)
 
     %{
-      id: activity.id,
+      id: to_string(activity.id),
       uri: object,
-      url: nil,
+      url: nil, # TODO: This might be wrong, check with mastodon.
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -78,7 +78,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Enum.map(fn {name, url} -> %{ shortcode: name, url: url, static_url: url } end)
 
     %{
-      id: activity.id,
+      id: to_string(activity.id),
       uri: object["id"],
       url: object["external_url"] || object["id"],
       account: AccountView.render("account.json", %{user: user}),
