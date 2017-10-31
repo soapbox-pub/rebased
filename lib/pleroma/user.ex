@@ -239,6 +239,15 @@ defmodule Pleroma.User do
     {:ok, Repo.all(q)}
   end
 
+  def increase_note_count(%User{} = user) do
+    note_count = (user.info["note_count"] || 0) + 1
+    new_info = Map.put(user.info, "note_count", note_count)
+
+    cs = info_changeset(user, %{info: new_info})
+
+    Repo.update(cs)
+  end
+
   def update_note_count(%User{} = user) do
     note_count_query = from a in Object,
       where: fragment("?->>'actor' = ? and ?->>'type' = 'Note'", a.data, ^user.ap_id, a.data),
