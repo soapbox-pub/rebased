@@ -150,16 +150,20 @@ defmodule Pleroma.Web.OStatus do
   end
 
   @doc """
-    Gets the content from a an entry. Will add the cw text to the body for cw'd
-    Mastodon notes.
+    Gets the content from a an entry.
   """
   def get_content(entry) do
-    base_content = string_from_xpath("//content", entry)
+    string_from_xpath("//content", entry)
+  end
 
+  @doc """
+    Get the cw that mastodon uses.
+  """
+  def get_cw(entry) do
     with scope when not is_nil(scope) <- string_from_xpath("//mastodon:scope", entry),
          cw when not is_nil(cw) <- string_from_xpath("/*/summary", entry) do
-      "<span class='mastodon-cw'>#{cw}</span><br>#{base_content}"
-    else _e -> base_content
+      cw
+    else _e -> nil
     end
   end
 

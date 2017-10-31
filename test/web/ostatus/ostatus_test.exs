@@ -85,7 +85,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["actor"] == "https://mastodon.social/users/lambadalambda"
-    assert String.contains?(activity.data["object"]["content"], "technologic")
+    assert activity.data["object"]["summary"] == "technologic"
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.OStatusTest do
     incoming = File.read!("test/fixtures/cw_retweet.xml")
     {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
 
-    assert String.contains?(retweeted_activity.data["object"]["content"], "Hey.")
+    assert retweeted_activity.data["object"]["summary"] == "Hey."
   end
 
   test "handle incoming notes - GS, subscription, reply" do

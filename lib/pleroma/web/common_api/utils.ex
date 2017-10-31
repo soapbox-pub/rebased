@@ -94,11 +94,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end)
   end
 
-  def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags) do
+  def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags, cw \\ nil) do
       object = %{
         "type" => "Note",
         "to" => to,
         "content" => content_html,
+        "summary" => cw,
         "context" => context,
         "attachment" => attachments,
         "actor" => actor,
