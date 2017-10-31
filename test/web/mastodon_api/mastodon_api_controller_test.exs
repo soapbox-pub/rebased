@@ -319,7 +319,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end)
   end
 
-  test "account seach", %{conn: conn} do
+  test "account search", %{conn: conn} do
     user = insert(:user)
     user_two = insert(:user, %{nickname: "shp@shitposter.club"})
     user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
