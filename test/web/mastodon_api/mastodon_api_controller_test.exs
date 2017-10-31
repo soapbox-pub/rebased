@@ -50,9 +50,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     conn = conn
     |> assign(:user, user)
-    |> post("/api/v1/statuses", %{"status" => "cofe"})
+    |> post("/api/v1/statuses", %{"status" => "cofe", "spoiler_text" => "2hu"})
 
-    assert %{"content" => "cofe", "id" => id} = json_response(conn, 200)
+    assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu"} = json_response(conn, 200)
     assert Repo.get(Activity, id)
   end
 

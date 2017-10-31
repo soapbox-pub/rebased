@@ -59,7 +59,8 @@ defmodule Pleroma.Web.CommonAPI do
          tags <- Formatter.parse_tags(status),
          content_html <- make_content_html(status, mentions, attachments, tags),
          context <- make_context(inReplyTo),
-         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags) do
+         cw <- data["spoiler_text"],
+         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags, cw) do
       res = ActivityPub.create(to, user, context, object)
       User.increase_note_count(user)
       res
