@@ -91,6 +91,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "published" => date,
           "type" => "Note",
           "content" => content_html,
+          "summary" => "2hu",
           "inReplyToStatusId" => 213123,
           "attachment" => [
             object
@@ -110,14 +111,14 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       local: false
     }
 
-    expected_html = "alert('YAY')Some <img height='32px' width='32px' alt='2hu' title='2hu' src='corndog.png' /> content mentioning <a href=\"#{mentioned_user.ap_id}\">@shp</a>"
+    expected_html = "<span>2hu</span><br />alert('YAY')Some <img height='32px' width='32px' alt='2hu' title='2hu' src='corndog.png' /> content mentioning <a href=\"#{mentioned_user.ap_id}\">@shp</a>"
 
     expected_status = %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: follower}),
       "is_local" => false,
       "statusnet_html" => expected_html,
-      "text" => content,
+      "text" => "2hu" <> content,
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",
       "in_reply_to_status_id" => 213123,

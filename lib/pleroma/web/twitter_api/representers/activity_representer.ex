@@ -135,6 +135,12 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     tags = activity.data["object"]["tag"] || []
     possibly_sensitive = Enum.member?(tags, "nsfw")
 
+    content = if activity.data["object"]["summary"] do
+      "<span>#{activity.data["object"]["summary"]}</span><br>#{content}</span>"
+    else
+      content
+    end
+
     html = HtmlSanitizeEx.basic_html(content) |> Formatter.emojify(object["emoji"])
 
     %{
