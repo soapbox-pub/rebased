@@ -155,6 +155,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_favorited_by(query, _), do: query
 
+  # Only search through last 100_000 activities by default
+  defp restrict_recent(query, _) do
+    since = Repo.aggregate(Activity, :max, :id) - 100_000
+
+    from activity in query,
+      where: activity.id > ^since
+  end
+
   def fetch_activities(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
@@ -169,6 +177,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_actor(opts)
     |> restrict_type(opts)
     |> restrict_favorited_by(opts)
+    |> restrict_recent(opts)
     |> Repo.all
     |> Enum.reverse
   end
