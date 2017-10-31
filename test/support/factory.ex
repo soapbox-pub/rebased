@@ -26,6 +26,7 @@ defmodule Pleroma.Factory do
       "likes" => [],
       "like_count" => 0,
       "context" => "2hu",
+      "summary" => "2hu",
       "tag" => ["2hu"],
       "emoji" => %{
         "2hu" => "corndog.png"

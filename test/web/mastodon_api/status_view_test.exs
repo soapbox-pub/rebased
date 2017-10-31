@@ -32,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       favourited: false,
       muted: false,
       sensitive: false,
-      spoiler_text: "",
+      spoiler_text: note.data["object"]["summary"],
       visibility: "public",
       media_attachments: [],
       mentions: [],

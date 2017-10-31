@@ -93,7 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourited: !!favorited,
       muted: false,
       sensitive: sensitive,
-      spoiler_text: "",
+      spoiler_text: object["summary"] || "",
       visibility: "public",
       media_attachments: attachments,
       mentions: mentions,
