@@ -365,7 +365,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:ok, represented} = TwitterAPI.get_external_profile(user, id)
       remote = User.get_by_ap_id(id)
 
-      assert represented == UserView.render("show.json", %{user: remote, for: user})
+      assert represented["id"] == UserView.render("show.json", %{user: remote, for: user})["id"]
 
       # Also fetches the feed.
       assert Activity.get_create_activity_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")

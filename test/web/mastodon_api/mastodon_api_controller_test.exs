@@ -91,7 +91,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> get("/api/v1/statuses/#{activity.id}")
 
     assert %{"id" => id} = json_response(conn, 200)
-    assert id == activity.id
+    assert id == to_string(activity.id)
   end
 
   describe "deleting a status" do
@@ -132,7 +132,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/statuses/#{activity.id}/reblog")
 
       assert %{"id" => id, "reblogged" => true, "reblogs_count" => 1} = json_response(conn, 200)
-      assert activity.id == id
+      assert to_string(activity.id) == id
     end
   end
 
@@ -146,7 +146,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/statuses/#{activity.id}/favourite")
 
       assert %{"id" => id, "favourites_count" => 1, "favourited" => true} = json_response(conn, 200)
-      assert activity.id == id
+      assert to_string(activity.id) == id
     end
   end
 
@@ -162,7 +162,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/statuses/#{activity.id}/unfavourite")
 
       assert %{"id" => id, "favourites_count" => 0, "favourited" => false} = json_response(conn, 200)
-      assert activity.id == id
+      assert to_string(activity.id) == id
     end
   end
 
@@ -178,7 +178,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert [%{"id" => id}] = json_response(conn, 200)
 
-      assert id == note_two.id
+      assert id == to_string(note_two.id)
     end
   end
 
@@ -238,7 +238,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert [%{"id" => id}] = json_response(conn, 200)
 
-    assert id == activity.id
+    assert id == to_string(activity.id)
   end
 
   test "getting followers", %{conn: conn} do
@@ -351,7 +351,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert results["hashtags"] == []
 
     [status] = results["statuses"]
-    assert status["id"] == activity.id
+    assert status["id"] == to_string(activity.id)
   end
 
   test "search fetches remote accounts", %{conn: conn} do
@@ -377,6 +377,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> get("/api/v1/favourites")
 
     assert [status] = json_response(conn, 200)
-    assert status["id"] == activity.id
+    assert status["id"] == to_string(activity.id)
   end
 end
