@@ -10,7 +10,7 @@ Mobile clients that are known to work well:
 
 * Twidere
 * Tusky
-* Pawoo (Android)
+* Pawoo (Android + iOS)
 * Subway Tooter
 * Amaroq (iOS)
 
