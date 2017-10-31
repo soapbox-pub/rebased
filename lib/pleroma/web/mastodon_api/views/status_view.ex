@@ -80,7 +80,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     %{
       id: activity.id,
       uri: object["id"],
-      url: object["external_url"],
+      url: object["external_url"] || object["id"],
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: reply_to && reply_to.id,
       in_reply_to_account_id: reply_to_user && reply_to_user.id,

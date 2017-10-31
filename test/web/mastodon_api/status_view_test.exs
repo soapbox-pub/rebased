@@ -19,7 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     expected = %{
       id: note.id,
       uri: note.data["object"]["id"],
-      url: note.data["object"]["external_id"],
+      url: note.data["object"]["id"],
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
