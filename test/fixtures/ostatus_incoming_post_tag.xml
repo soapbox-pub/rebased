@@ -43,6 +43,7 @@
  <title>New note by lambadalambda</title>
  <content type="html">Will it blend?</content>
  <category term="Nsfw"/>
+ <category term=""/>
  <link rel="alternate" type="text/html" href="https://social.heldscal.la/notice/1967725"/>
  <status_net notice_id="1967725"></status_net>
  <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>

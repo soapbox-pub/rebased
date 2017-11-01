@@ -169,7 +169,9 @@ defmodule Pleroma.Web.OStatus do
 
   def get_tags(entry) do
     :xmerl_xpath.string('//category', entry)
-    |> Enum.map(fn (category) -> string_from_xpath("/category/@term", category) |> String.downcase end)
+    |> Enum.map(fn (category) -> string_from_xpath("/category/@term", category) end)
+    |> Enum.filter(&(&1))
+    |> Enum.map(&String.downcase/1)
   end
 
   def maybe_update(doc, user) do
