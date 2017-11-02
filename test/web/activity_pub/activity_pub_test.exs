@@ -80,6 +80,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  test "doesn't return blocked activities" do
+    activity_one = insert(:note_activity)
+    activity_two = insert(:note_activity)
+    user = insert(:user)
+    {:ok, user} = User.block(user, %{ap_id: activity_one.data["actor"]})
+
+    activities = ActivityPub.fetch_activities([], %{"blocking_user" => user})
+
+    assert Enum.member?(activities, activity_two)
+    refute Enum.member?(activities, activity_one)
+
+    {:ok, user} = User.unblock(user, %{ap_id: activity_one.data["actor"]})
+
+    activities = ActivityPub.fetch_activities([], %{"blocking_user" => user})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_one)
+  end
+
   describe "public fetch activities" do
     test "retrieves public activities" do
       %{public: public} = ActivityBuilder.public_and_non_public

@@ -163,6 +163,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       where: activity.id > ^since
   end
 
+  defp restrict_blocked(query, %{"blocking_user" => user}) do
+    blocks = user.info["blocks"] || []
+    from activity in query,
+      where: fragment("not (?->>'actor' = ANY(?))", activity.data, ^blocks)
+  end
+  defp restrict_blocked(query, _), do: query
+
   def fetch_activities(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
@@ -178,6 +185,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_type(opts)
     |> restrict_favorited_by(opts)
     |> restrict_recent(opts)
+    |> restrict_blocked(opts)
     |> Repo.all
     |> Enum.reverse
   end
