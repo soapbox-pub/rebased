@@ -100,6 +100,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_one)
+
+    activities = ActivityPub.fetch_activities([], %{"blocking_user" => nil})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_one)
   end
 
   describe "public fetch activities" do
