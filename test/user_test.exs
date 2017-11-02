@@ -273,5 +273,28 @@ defmodule Pleroma.UserTest do
       assert user.info["follower_count"] == 1
     end
   end
+
+  describe "blocks" do
+    test "it blocks people" do
+      user = insert(:user)
+      blocked_user = insert(:user)
+
+      refute User.blocks?(user, blocked_user)
+
+      {:ok, user} = User.block(user, blocked_user)
+
+      assert User.blocks?(user, blocked_user)
+    end
+
+    test "it unblocks users" do
+      user = insert(:user)
+      blocked_user = insert(:user)
+
+      {:ok, user} = User.block(user, blocked_user)
+      {:ok, user} = User.unblock(user, blocked_user)
+
+      refute User.blocks?(user, blocked_user)
+    end
+  end
 end
 
