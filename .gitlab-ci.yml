@@ -5,8 +5,8 @@ services:
 
 variables:
   POSTGRES_DB: pleroma_test
-  POSTGRES_USER: pleroma
-  POSTGRES_PASSWORD: pleroma
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
 
 stages:
   - test
