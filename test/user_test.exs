@@ -9,11 +9,6 @@ defmodule Pleroma.UserTest do
   import Ecto.Query
 
   test "ap_id returns the activity pub id for the user" do
-    host =
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-      |> Keyword.fetch!(:url)
-      |> Keyword.fetch!(:host)
-
     user = UserBuilder.build
 
     expected_ap_id = "#{Pleroma.Web.base_url}/users/#{user.nickname}"
@@ -213,7 +208,9 @@ defmodule Pleroma.UserTest do
 
       {:ok, res} = User.get_followers(user)
 
-      assert res == [follower_one, follower_two]
+      assert Enum.member?(res, follower_one)
+      assert Enum.member?(res, follower_two)
+      refute Enum.member?(res, not_follower)
     end
 
     test "gets all friends (followed users) for a given user" do
@@ -229,7 +226,9 @@ defmodule Pleroma.UserTest do
 
       followed_one = User.get_by_ap_id(followed_one.ap_id)
       followed_two = User.get_by_ap_id(followed_two.ap_id)
-      assert res == [followed_one, followed_two]
+      assert Enum.member?(res, followed_one)
+      assert Enum.member?(res, followed_two)
+      refute Enum.member?(res, not_followed)
     end
   end
 
