@@ -79,6 +79,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def home_timeline(%{assigns: %{user: user}} = conn, params) do
     params = params
     |> Map.put("type", ["Create", "Announce"])
+    |> Map.put("blocking_user", user)
 
     activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
     |> Enum.reverse
@@ -92,6 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     params = params
     |> Map.put("type", ["Create", "Announce"])
     |> Map.put("local_only", !!params["local"])
+    |> Map.put("blocking_user", user)
 
     activities = ActivityPub.fetch_public_activities(params)
     |> Enum.reverse
@@ -123,7 +125,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def get_context(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
-         activities <- ActivityPub.fetch_activities_for_context(activity.data["object"]["context"]),
+         activities <- ActivityPub.fetch_activities_for_context(activity.data["object"]["context"], %{"blocking_user" => user}),
          activities <- activities |> Enum.filter(fn (%{id: aid}) -> to_string(aid) != to_string(id) end),
          grouped_activities <- Enum.group_by(activities, fn (%{id: id}) -> id < activity.id end) do
       result = %{
@@ -246,6 +248,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     params = params
     |> Map.put("type", "Create")
     |> Map.put("local_only", !!params["local"])
+    |> Map.put("blocking_user", user)
 
     activities = ActivityPub.fetch_public_activities(params)
     |> Enum.reverse
@@ -338,6 +341,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     params = conn
     |> Map.put("type", "Create")
     |> Map.put("favorited_by", user.ap_id)
+    |> Map.put("blocking_user", user)
 
     activities = ActivityPub.fetch_activities([], params)
     |> Enum.reverse
