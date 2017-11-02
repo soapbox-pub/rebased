@@ -73,9 +73,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, activity_two} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
       {:ok, _activity_three} = ActivityBuilder.insert(%{"type" => "Create", "context" => "3hu"})
       {:ok, _activity_four} = ActivityBuilder.insert(%{"type" => "Announce", "context" => "2hu"})
+      activity_five = insert(:note_activity)
+      user = insert(:user)
 
-      activities = ActivityPub.fetch_activities_for_context("2hu")
+      {:ok, user} = User.block(user, %{ap_id: activity_five.data["actor"]})
 
+      activities = ActivityPub.fetch_activities_for_context("2hu", %{"blocking_user" => user})
       assert activities == [activity_two, activity]
     end
   end

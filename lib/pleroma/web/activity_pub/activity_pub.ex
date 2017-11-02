@@ -93,10 +93,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_activities_for_context(context) do
+  def fetch_activities_for_context(context, opts \\ %{}) do
     query = from activity in Activity,
       where: fragment("?->>'type' = ? and ?->>'context' = ?", activity.data, "Create", activity.data, ^context),
       order_by: [desc: :id]
+    query = restrict_blocked(query, opts)
     Repo.all(query)
   end
 
