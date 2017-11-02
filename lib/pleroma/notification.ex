@@ -46,9 +46,11 @@ defmodule Pleroma.Notification do
 
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user) do
-    notification = %Notification{user_id: user.id, activity_id: activity.id}
-    {:ok, notification} = Repo.insert(notification)
-    notification
+    unless User.blocks?(user, %{ap_id: activity.data["actor"]}) do
+      notification = %Notification{user_id: user.id, activity_id: activity.id}
+      {:ok, notification} = Repo.insert(notification)
+      notification
+    end
   end
 end
 
