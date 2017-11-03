@@ -58,8 +58,8 @@ defmodule Pleroma.Web.Router do
     get "/accounts/search", MastodonAPIController, :account_search
     post "/accounts/:id/follow", MastodonAPIController, :follow
     post "/accounts/:id/unfollow", MastodonAPIController, :unfollow
-    post "/accounts/:id/block", MastodonAPIController, :relationship_noop
-    post "/accounts/:id/unblock", MastodonAPIController, :relationship_noop
+    post "/accounts/:id/block", MastodonAPIController, :block
+    post "/accounts/:id/unblock", MastodonAPIController, :unblock
     post "/accounts/:id/mute", MastodonAPIController, :relationship_noop
     post "/accounts/:id/unmute", MastodonAPIController, :relationship_noop
 

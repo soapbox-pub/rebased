@@ -311,6 +311,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def block(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
+    with %User{} = blocked <- Repo.get(User, id),
+         {:ok, blocker} <- User.block(blocker, blocked) do
+      render conn, AccountView, "relationship.json", %{user: blocker, target: blocked}
+    else
+      {:error, message} = err ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{"error" => message}))
+    end
+  end
+
+  def unblock(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
+    with %User{} = blocked <- Repo.get(User, id),
+         {:ok, blocker} <- User.unblock(blocker, blocked) do
+      render conn, AccountView, "relationship.json", %{user: blocker, target: blocked}
+    else
+      {:error, message} = err ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{"error" => message}))
+    end
+  end
+
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, params["resolve"] == "true")
 

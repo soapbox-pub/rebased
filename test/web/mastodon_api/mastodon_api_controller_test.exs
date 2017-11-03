@@ -291,11 +291,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == other_user.id
   end
 
-  test "unimplemented block/mute endpoints" do
+  test "blocking / unblocking a user", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
 
-    ["block", "unblock", "mute", "unmute"]
+    conn = conn
+    |> assign(:user, user)
+    |> post("/api/v1/accounts/#{other_user.id}/block")
+
+    assert %{"id" => id, "blocking" => true} = json_response(conn, 200)
+
+    user = Repo.get(User, user.id)
+    conn = build_conn()
+    |> assign(:user, user)
+    |> post("/api/v1/accounts/#{other_user.id}/unblock")
+
+    assert %{"id" => id, "blocking" => false} = json_response(conn, 200)
+  end
+
+  test "unimplemented mute endpoints" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    ["mute", "unmute"]
     |> Enum.each(fn(endpoint) ->
       conn = build_conn()
       |> assign(:user, user)
