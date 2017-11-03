@@ -65,7 +65,8 @@ defmodule Pleroma.Web.Router do
 
     post "/follows", MastodonAPIController, :follow
 
-    get "/blocks", MastodonAPIController, :empty_array
+    get "/blocks", MastodonAPIController, :blocks
+
     get "/domain_blocks", MastodonAPIController, :empty_array
     get "/follow_requests", MastodonAPIController, :empty_array
     get "/mutes", MastodonAPIController, :empty_array
