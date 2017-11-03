@@ -183,13 +183,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
       case activity.data["type"] do
         "Create" ->
-          %{id: id, type: "mention", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: activity})}
+          %{id: id, type: "mention", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: activity, for: user})}
         "Like" ->
           liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
-          %{id: id, type: "favourite", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: liked_activity})}
+          %{id: id, type: "favourite", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: liked_activity, for: user})}
         "Announce" ->
           announced_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
-          %{id: id, type: "reblog", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: announced_activity})}
+          %{id: id, type: "reblog", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: announced_activity, for: user})}
         "Follow" ->
           %{id: id, type: "follow", created_at: created_at, account: AccountView.render("account.json", %{user: actor})}
         _ -> nil
