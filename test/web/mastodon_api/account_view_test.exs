@@ -51,12 +51,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     other_user = insert(:user)
 
     {:ok, user} = User.follow(user, other_user)
+    {:ok, user} = User.block(user, other_user)
 
     expected = %{
       id: other_user.id,
       following: true,
       followed_by: false,
-      blocking: false,
+      blocking: true,
       muting: false,
       requested: false,
       domain_blocking: false
