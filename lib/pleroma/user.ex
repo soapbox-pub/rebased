@@ -293,4 +293,28 @@ defmodule Pleroma.User do
       limit: 20
     Repo.all(q)
   end
+
+  def block(user, %{ap_id: ap_id}) do
+    blocks = user.info["blocks"] || []
+    new_blocks = Enum.uniq([ap_id | blocks])
+    new_info = Map.put(user.info, "blocks", new_blocks)
+
+    cs = User.info_changeset(user, %{info: new_info})
+    Repo.update(cs)
+  end
+
+  def unblock(user, %{ap_id: ap_id}) do
+    blocks = user.info["blocks"] || []
+    new_blocks = List.delete(blocks, ap_id)
+    new_info = Map.put(user.info, "blocks", new_blocks)
+
+    cs = User.info_changeset(user, %{info: new_info})
+    Repo.update(cs)
+  end
+
+  def blocks?(user, %{ap_id: ap_id}) do
+    blocks = user.info["blocks"] || []
+    Enum.member?(blocks, ap_id)
+  end
+
 end

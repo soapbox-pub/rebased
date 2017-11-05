@@ -14,17 +14,20 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do
+    opts = Map.put(opts, "blocking_user", user)
     ActivityPub.fetch_activities([user.ap_id | user.following], opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_public_statuses(user, opts \\ %{}) do
     opts = Map.put(opts, "local_only", true)
+    opts = Map.put(opts, "blocking_user", user)
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_public_and_external_statuses(user, opts \\ %{}) do
+    opts = Map.put(opts, "blocking_user", user)
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
@@ -41,7 +44,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def fetch_conversation(user, id) do
     with context when is_binary(context) <- conversation_id_to_context(id),
-         activities <- ActivityPub.fetch_activities_for_context(context),
+         activities <- ActivityPub.fetch_activities_for_context(context, %{"blocking_user" => user}),
          statuses <- activities |> activities_to_statuses(%{for: user})
     do
       statuses

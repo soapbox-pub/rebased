@@ -55,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       id: target.id,
       following: User.following?(user, target),
       followed_by: User.following?(target, user),
-      blocking: false,
+      blocking: User.blocks?(user, target),
       muting: false,
       requested: false,
       domain_blocking: false
