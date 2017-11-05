@@ -157,7 +157,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   # Only search through last 100_000 activities by default
   defp restrict_recent(query, _) do
-    since = Repo.aggregate(Activity, :max, :id) - 100_000
+    since = (Repo.aggregate(Activity, :max, :id) || 0) - 100_000
 
     from activity in query,
       where: activity.id > ^since
