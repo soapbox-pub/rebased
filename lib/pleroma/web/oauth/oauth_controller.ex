@@ -40,7 +40,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   # - proper scope handling
   def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
     with %App{} = app <- Repo.get_by(App, client_id: params["client_id"], client_secret: params["client_secret"]),
-         %Authorization{} = auth <- Repo.get_by(Authorization, token: params["code"], app_id: app.id),
+         fixed_token = fix_padding(params["code"]),
+         %Authorization{} = auth <- Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
         token_type: "Bearer",
@@ -50,6 +51,14 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         scope: "read write follow"
       }
       json(conn, response)
+    else
+      _error -> json(conn, %{error: "Invalid credentials"})
     end
+  end
+
+  defp fix_padding(token) do
+    token
+    |> Base.url_decode64!(padding: false)
+    |> Base.url_encode64
   end
 end
