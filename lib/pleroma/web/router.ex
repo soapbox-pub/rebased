@@ -138,7 +138,6 @@ defmodule Pleroma.Web.Router do
 
     get "/search", TwitterAPI.Controller, :search
     get "/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline
-    get "/externalprofile/show", TwitterAPI.Controller, :external_profile
   end
 
   scope "/api", Pleroma.Web do
@@ -176,6 +175,8 @@ defmodule Pleroma.Web.Router do
 
     get "/statuses/followers", TwitterAPI.Controller, :followers
     get "/statuses/friends", TwitterAPI.Controller, :friends
+
+    get "/externalprofile/show", TwitterAPI.Controller, :external_profile
   end
 
   pipeline :ostatus do
