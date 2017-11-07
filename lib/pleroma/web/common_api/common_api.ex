@@ -16,7 +16,6 @@ defmodule Pleroma.Web.CommonAPI do
 
   def repeat(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         false <- activity.data["actor"] == user.ap_id,
          object <- Object.get_by_ap_id(activity.data["object"]["id"]) do
       ActivityPub.announce(user, object)
     else
