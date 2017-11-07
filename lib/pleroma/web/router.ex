@@ -91,6 +91,7 @@ defmodule Pleroma.Web.Router do
     pipe_through :api
     get "/instance", MastodonAPIController, :masto_instance
     post "/apps", MastodonAPIController, :create_app
+    get "/custom_emojis", MastodonAPIController, :custom_emojis
 
     get "/timelines/public", MastodonAPIController, :public_timeline
     get "/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline

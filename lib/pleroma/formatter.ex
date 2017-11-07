@@ -125,6 +125,5 @@ defmodule Pleroma.Formatter do
 
   def get_custom_emoji() do
     @emoji
-    |> Enum.into %{}
   end
 end

@@ -61,6 +61,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, response)
   end
 
+  def custom_emojis(conn, _params) do
+    mastodon_emoji = Pleroma.Formatter.get_custom_emoji()
+    |> Enum.map(fn {shortcode, relative_url} ->
+      url = to_string URI.merge(Web.base_url(), relative_url)
+      %{
+        "shortcode" => shortcode,
+        "static_url" => url,
+        "url" => url
+      }
+    end)
+    json conn, mastodon_emoji
+  end
+
   defp add_link_headers(conn, method, activities) do
     last = List.last(activities)
     first = List.first(activities)

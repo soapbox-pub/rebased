@@ -71,6 +71,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def emoji(conn, _params) do
-    json conn, Formatter.get_custom_emoji()
+    json conn, Enum.into(Formatter.get_custom_emoji(), %{})
   end
 end
