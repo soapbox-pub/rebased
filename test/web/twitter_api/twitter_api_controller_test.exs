@@ -277,6 +277,49 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "POST /blocks/create.json" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      conn = post conn, "/api/blocks/create.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      blocked = insert(:user)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/blocks/create.json", %{user_id: blocked.id})
+
+      current_user = Repo.get(User, current_user.id)
+      assert User.blocks?(current_user, blocked)
+      assert json_response(conn, 200) == UserView.render("show.json", %{user: blocked, for: current_user})
+    end
+  end
+
+  describe "POST /blocks/destroy.json" do
+    setup [:valid_user]
+    test "without valid credentials", %{conn: conn} do
+      conn = post conn, "/api/blocks/destroy.json"
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      blocked = insert(:user)
+
+      {:ok, current_user} = User.block(current_user, blocked)
+      assert User.blocks?(current_user, blocked)
+
+      conn = conn
+      |> with_credentials(current_user.nickname, "test")
+      |> post("/api/blocks/destroy.json", %{user_id: blocked.id})
+
+      current_user = Repo.get(User, current_user.id)
+      assert current_user.info["blocks"] == []
+      assert json_response(conn, 200) == UserView.render("show.json", %{user: blocked, for: current_user})
+    end
+  end
+
   describe "GET /help/test.json" do
     test "returns \"ok\"", %{conn: conn} do
       conn = get conn, "/api/help/test.json"

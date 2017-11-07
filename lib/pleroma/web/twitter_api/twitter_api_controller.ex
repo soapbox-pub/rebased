@@ -93,6 +93,22 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def block(%{assigns: %{user: user}} = conn, params) do
+    case TwitterAPI.block(user, params) do
+      {:ok, user, blocked} ->
+        render conn, UserView, "show.json", %{user: blocked, for: user}
+      {:error, msg} -> forbidden_json_reply(conn, msg)
+    end
+  end
+
+  def unblock(%{assigns: %{user: user}} = conn, params) do
+    case TwitterAPI.unblock(user, params) do
+      {:ok, user, blocked} ->
+        render conn, UserView, "show.json", %{user: blocked, for: user}
+      {:error, msg} -> forbidden_json_reply(conn, msg)
+    end
+  end
+
   def delete_post(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with {:ok, delete} <- CommonAPI.delete(id, user) do
       json = ActivityRepresenter.to_json(delete, %{user: user, for: user})

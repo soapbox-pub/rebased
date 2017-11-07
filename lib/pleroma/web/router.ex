@@ -164,6 +164,8 @@ defmodule Pleroma.Web.Router do
 
     post "/friendships/create", TwitterAPI.Controller, :follow
     post "/friendships/destroy", TwitterAPI.Controller, :unfollow
+    post "/blocks/create", TwitterAPI.Controller, :block
+    post "/blocks/destroy", TwitterAPI.Controller, :unblock
 
     post "/statusnet/media/upload", TwitterAPI.Controller, :upload
     post "/media/upload", TwitterAPI.Controller, :upload_json

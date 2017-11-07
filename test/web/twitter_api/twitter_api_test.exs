@@ -224,6 +224,40 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert msg == "Not subscribed!"
   end
 
+  test "Block another user using user_id" do
+    user = insert(:user)
+    blocked = insert(:user)
+
+    {:ok, user, blocked} = TwitterAPI.block(user, %{"user_id" => blocked.id})
+    assert User.blocks?(user, blocked)
+  end
+
+  test "Block another user using screen_name" do
+    user = insert(:user)
+    blocked = insert(:user)
+
+    {:ok, user, blocked} = TwitterAPI.block(user, %{"screen_name" => blocked.nickname})
+    assert User.blocks?(user, blocked)
+  end
+
+  test "Unblock another user using user_id" do
+    unblocked = insert(:user)
+    user = insert(:user)
+    User.block(user, unblocked)
+
+    {:ok, user, unblocked} = TwitterAPI.unblock(user, %{"user_id" => unblocked.id})
+    assert user.info["blocks"] == []
+  end
+
+  test "Unblock another user using screen_name" do
+    unblocked = insert(:user)
+    user = insert(:user)
+    User.block(user, unblocked)
+
+    {:ok, user, unblocked} = TwitterAPI.unblock(user, %{"screen_name" => unblocked.nickname})
+    assert user.info["blocks"] == []
+  end
+
   test "fetch statuses in a context using the conversation id" do
     {:ok, user} = UserBuilder.insert()
     {:ok, activity} = ActivityBuilder.insert(%{"type" => "Create", "context" => "2hu"})
