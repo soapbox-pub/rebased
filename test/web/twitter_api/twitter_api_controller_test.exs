@@ -405,11 +405,13 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "GET /api/externalprofile/show" do
     test "it returns the user", %{conn: conn} do
       user = insert(:user)
+      other_user = insert(:user)
 
       conn = conn
-      |> get("/api/externalprofile/show", %{profileurl: user.ap_id})
+      |> assign(:user, user)
+      |> get("/api/externalprofile/show", %{profileurl: other_user.ap_id})
 
-      assert json_response(conn, 200) == UserView.render("show.json", %{user: user})
+      assert json_response(conn, 200) == UserView.render("show.json", %{user: other_user})
     end
   end
 
