@@ -142,11 +142,7 @@ defmodule Pleroma.Web.Websub do
     requester.(subscription)
   end
 
-  def long_get(url) do
-    @httpoison.get(url, [], timeout: 10_000, recv_timeout: 20_000)
-  end
-
-  def gather_feed_data(topic, getter \\ &long_get/1) do
+  def gather_feed_data(topic, getter \\ &@httpoison.get/1) do
     with {:ok, response} <- getter.(topic),
          status_code when status_code in 200..299 <- response.status_code,
          body <- response.body,

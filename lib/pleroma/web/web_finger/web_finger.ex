@@ -86,7 +86,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def find_lrdd_template(domain) do
-    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true, timeout: 10_000, recv_timeout: 20_000) do
+    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
       get_template_from_xml(body)
     else
       e ->
@@ -107,7 +107,7 @@ defmodule Pleroma.Web.WebFinger do
 
     with {:ok, template} <- find_lrdd_template(domain),
          address <- String.replace(template, "{uri}", URI.encode(account)),
-         response <- @httpoison.get(address, ["Accept": "application/xrd+xml"], timeout: 10_000, recv_timeout: 20_000),
+         response <- @httpoison.get(address, ["Accept": "application/xrd+xml"]),
          {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
          doc when doc != :error<- XML.parse_document(body),
          {:ok, data} <- webfinger_from_xml(doc) do
