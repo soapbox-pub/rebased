@@ -7,8 +7,22 @@ defmodule Pleroma.FormatterTest do
   describe ".linkify" do
     test "turning urls into links" do
       text = "Hey, check out https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla."
-
       expected = "Hey, check out <a href='https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla'>https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla</a>."
+
+      assert Formatter.linkify(text) == expected
+
+      text = "https://mastodon.social/@lambadalambda"
+      expected = "<a href='https://mastodon.social/@lambadalambda'>https://mastodon.social/@lambadalambda</a>"
+
+      assert Formatter.linkify(text) == expected
+
+      text = "@lambadalambda"
+      expected = "@lambadalambda"
+
+      assert Formatter.linkify(text) == expected
+
+      text = "http://www.cs.vu.nl/~ast/intel/"
+      expected = "<a href='http://www.cs.vu.nl/~ast/intel/'>http://www.cs.vu.nl/~ast/intel/</a>"
 
       assert Formatter.linkify(text) == expected
     end

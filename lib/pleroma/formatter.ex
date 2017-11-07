@@ -1,7 +1,7 @@
 defmodule Pleroma.Formatter do
   alias Pleroma.User
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&]+[\w]/u
+  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&@~]+[\w\/]/u
   def linkify(text) do
     Regex.replace(@link_regex, text, "<a href='\\0'>\\0</a>")
   end
