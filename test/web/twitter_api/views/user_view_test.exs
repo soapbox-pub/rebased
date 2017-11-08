@@ -50,6 +50,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
       "following" => false,
+      "follows_you" => false,
       "statusnet_blocking" => false,
       "rights" => %{},
       "statusnet_profile_url" => user.ap_id,
@@ -79,6 +80,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
       "following" => true,
+      "follows_you" => false,
       "statusnet_blocking" => false,
       "rights" => %{},
       "statusnet_profile_url" => user.ap_id,
@@ -87,6 +89,36 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
+  end
+
+  test "A user that follows you", %{user: user} do
+    {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+    {:ok, user} = User.update_follower_count(user)
+    image = "https://placehold.it/48x48"
+    represented = %{
+      "id" => follower.id,
+      "name" => follower.name,
+      "screen_name" => follower.nickname,
+      "description" => HtmlSanitizeEx.strip_tags(follower.bio),
+      "created_at" => follower.inserted_at |> Utils.format_naive_asctime,
+      "favourites_count" => 0,
+      "statuses_count" => 0,
+      "friends_count" => 1,
+      "followers_count" => 0,
+      "profile_image_url" => image,
+      "profile_image_url_https" => image,
+      "profile_image_url_profile_size" => image,
+      "profile_image_url_original" => image,
+      "following" => false,
+      "follows_you" => true,
+      "statusnet_blocking" => false,
+      "rights" => %{},
+      "statusnet_profile_url" => follower.ap_id,
+      "cover_photo" => nil,
+      "background_image" => nil
+    }
+
+    assert represented == UserView.render("show.json", %{user: follower, for: user})
   end
 
   test "A blocked user for the blocker", %{user: user} do
@@ -109,6 +141,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
       "following" => false,
+      "follows_you" => false,
       "statusnet_blocking" => true,
       "rights" => %{},
       "statusnet_profile_url" => user.ap_id,
