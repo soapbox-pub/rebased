@@ -16,15 +16,14 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
 
   def render("user.json", %{user: user = %User{}} = assigns) do
     image = User.avatar_url(user)
-    following = if assigns[:for] do
-      User.following?(assigns[:for], user)
+    {following, follows_you, statusnet_blocking} = if assigns[:for] do
+      {
+        User.following?(assigns[:for], user),
+        User.following?(user, assigns[:for]),
+        User.blocks?(assigns[:for], user)
+      }
     else
-      false
-    end
-    statusnet_blocking = if assigns[:for] do
-      User.blocks?(assigns[:for], user)
-    else
-      false
+      {false, false, false}
     end
 
     user_info = User.get_cached_user_info(user)
@@ -35,6 +34,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "favourites_count" => 0,
       "followers_count" => user_info[:follower_count],
       "following" => following,
+      "follows_you" => follows_you,
       "statusnet_blocking" => statusnet_blocking,
       "friends_count" => user_info[:following_count],
       "id" => user.id,
