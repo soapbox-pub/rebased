@@ -21,6 +21,11 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     else
       false
     end
+    statusnet_blocking = if assigns[:for] do
+      User.blocks?(assigns[:for], user)
+    else
+      false
+    end
 
     user_info = User.get_cached_user_info(user)
 
@@ -30,6 +35,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "favourites_count" => 0,
       "followers_count" => user_info[:follower_count],
       "following" => following,
+      "statusnet_blocking" => statusnet_blocking,
       "friends_count" => user_info[:following_count],
       "id" => user.id,
       "name" => user.name,
