@@ -122,6 +122,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       params = params
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("actor_id", ap_id)
+      |> Map.put("whole_db", true)
 
       activities = ActivityPub.fetch_activities([], params)
       |> Enum.reverse

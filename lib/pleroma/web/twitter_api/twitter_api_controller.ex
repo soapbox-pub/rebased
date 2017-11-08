@@ -68,7 +68,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def user_timeline(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.get_user(user, params) do
       {:ok, target_user} ->
-        params = Map.merge(params, %{"actor_id" => target_user.ap_id})
+        params = Map.merge(params, %{"actor_id" => target_user.ap_id, "whole_db" => true})
         statuses  = TwitterAPI.fetch_user_statuses(user, params)
         conn
         |> json_reply(200, statuses |> Poison.encode!)
