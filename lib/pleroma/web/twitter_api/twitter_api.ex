@@ -86,6 +86,26 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
+  def block(%User{} = blocker, params) do
+    with {:ok, %User{} = blocked} <- get_user(params),
+         {:ok, blocker} <- User.block(blocker, blocked)
+    do
+      {:ok, blocker, blocked}
+    else
+      err -> err
+    end
+  end
+
+  def unblock(%User{} = blocker, params) do
+    with {:ok, %User{} = blocked} <- get_user(params),
+         {:ok, blocker} <- User.unblock(blocker, blocked)
+    do
+      {:ok, blocker, blocked}
+    else
+      err -> err
+    end
+  end
+
   def repeat(%User{} = user, ap_id_or_id) do
     with {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
