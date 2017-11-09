@@ -8,11 +8,19 @@ defmodule Pleroma.Upload do
     result_file = Path.join(upload_folder, file.filename)
     File.cp!(file.path, result_file)
 
+    # fix content type on some image uploads
+    matches = Regex.named_captures(~r/\.(?<ext>(jpg|jpeg|png|gif))$/i, file.filename)
+    content_type = if file.content_type == "application/octet-stream" and matches do
+      if matches["ext"] == "jpg", do: "image/jpeg", else: "image/#{matches["ext"]}"
+    else
+      file.content_type
+    end
+
     %{
       "type" => "Image",
       "url" => [%{
         "type" => "Link",
-        "mediaType" => file.content_type,
+        "mediaType" => content_type,
         "href" => url_for(Path.join(uuid, :cow_uri.urlencode(file.filename)))
       }],
       "name" => file.filename,
