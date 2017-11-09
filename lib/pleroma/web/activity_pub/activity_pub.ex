@@ -9,7 +9,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
          :ok <- insert_full_object(map) do
-      {:ok, activity} = Repo.insert(%Activity{data: map, local: local})
+      {:ok, activity} = Repo.insert(%Activity{data: map, local: local, actor: map["actor"]})
       Notification.create_notifications(activity)
       {:ok, activity}
     else
@@ -137,7 +137,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_actor(query, %{"actor_id" => actor_id}) do
     from activity in query,
-      where: fragment("?->>'actor' = ?", activity.data, ^actor_id)
+      where: activity.actor == ^actor_id
   end
   defp restrict_actor(query, _), do: query
 
@@ -168,14 +168,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
     blocks = info["blocks"] || []
     from activity in query,
-      where: fragment("not (?->>'actor' = ANY(?))", activity.data, ^blocks)
+      where: fragment("not (? = ANY(?))", activity.actor, ^blocks)
   end
   defp restrict_blocked(query, _), do: query
 
   def fetch_activities(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
-      order_by: [desc: :id]
+      order_by: [fragment("? desc nulls last", activity.id)]
 
     base_query
     |> restrict_recipients(recipients)

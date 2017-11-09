@@ -6,6 +6,7 @@ defmodule Pleroma.Activity do
   schema "activities" do
     field :data, :map
     field :local, :boolean, default: true
+    field :actor, :string
     has_many :notifications, Notification
 
     timestamps()

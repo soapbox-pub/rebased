@@ -51,7 +51,8 @@ defmodule Pleroma.Factory do
     }
 
     %Pleroma.Activity{
-      data: data
+      data: data,
+      actor: data["actor"]
     }
   end
 
