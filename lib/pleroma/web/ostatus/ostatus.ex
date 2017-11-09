@@ -221,7 +221,7 @@ defmodule Pleroma.Web.OStatus do
     Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
 
-  def make_user(uri) do
+  def make_user(uri, update \\ false) do
     with {:ok, info} <- gather_user_info(uri) do
       data = %{
         name: info["name"],
@@ -231,7 +231,8 @@ defmodule Pleroma.Web.OStatus do
         avatar: info["avatar"],
         bio: info["bio"]
       }
-      with %User{} = user <- User.get_by_ap_id(data.ap_id) do
+      with false <- update,
+           %User{} = user <- User.get_by_ap_id(data.ap_id) do
         {:ok, user}
       else _e -> insert_or_update_user(data)
       end

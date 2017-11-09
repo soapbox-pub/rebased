@@ -5,6 +5,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
   alias Pleroma.Repo
   alias Pleroma.Web.{OStatus, Federator}
+  alias Pleroma.Web.XML
   import Ecto.Query
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
@@ -36,10 +37,26 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> send_resp(200, response)
   end
 
+  defp decode_or_retry(body) do
+    with {:ok, magic_key} <- Pleroma.Web.Salmon.fetch_magic_key(body),
+         {:ok, doc} <- Pleroma.Web.Salmon.decode_and_validate(magic_key, body) do
+      {:ok, doc}
+    else
+      _e ->
+        with [decoded | _] <- Pleroma.Web.Salmon.decode(body),
+             doc <- XML.parse_document(decoded),
+             uri when not is_nil(uri) <- XML.string_from_xpath("/entry/author[1]/uri", doc),
+             {:ok, user} <- Pleroma.Web.OStatus.make_user(uri, true),
+             {:ok, magic_key} <- Pleroma.Web.Salmon.fetch_magic_key(body),
+             {:ok, doc} <- Pleroma.Web.Salmon.decode_and_validate(magic_key, body) do
+          {:ok, doc}
+        end
+    end
+  end
+
   def salmon_incoming(conn, params) do
     {:ok, body, _conn} = read_body(conn)
-    {:ok, magic_key} = Pleroma.Web.Salmon.fetch_magic_key(body)
-    {:ok, doc} = Pleroma.Web.Salmon.decode_and_validate(magic_key, body)
+    {:ok, doc} = decode_or_retry(body)
 
     Federator.enqueue(:incoming_doc, doc)
 
