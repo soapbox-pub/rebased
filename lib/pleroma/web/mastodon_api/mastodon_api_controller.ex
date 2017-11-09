@@ -6,7 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.{CommonAPI, OStatus}
   import Ecto.Query
   import Logger
 
@@ -361,11 +361,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, params["resolve"] == "true")
 
+    fetched = if Regex.match?(~r/https?:/, query) do
+      with {:ok, activities} <- OStatus.fetch_activity_from_url(query) do
+        activities
+      else
+        _e -> []
+      end
+    end || []
+
     q = from a in Activity,
       where: fragment("?->>'type' = 'Create'", a.data),
       where: fragment("to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)", a.data, ^query),
       limit: 20
-    statuses = Repo.all(q)
+    statuses = Repo.all(q) ++ fetched
 
     res = %{
       "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),

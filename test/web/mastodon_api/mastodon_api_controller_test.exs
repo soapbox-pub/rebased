@@ -386,6 +386,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert status["id"] == to_string(activity.id)
   end
 
+  test "search fetches remote statuses", %{conn: conn} do
+    conn = conn
+    |> get("/api/v1/search", %{"q" => "https://shitposter.club/notice/2827873"})
+    assert results = json_response(conn, 200)
+
+    [status] = results["statuses"]
+    assert status["uri"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+  end
+
   test "search fetches remote accounts", %{conn: conn} do
     conn = conn
     |> get("/api/v1/search", %{"q" => "shp@social.heldscal.la", "resolve" => "true"})
