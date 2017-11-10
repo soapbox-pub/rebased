@@ -8,10 +8,6 @@ defmodule Pleroma.Repo.Migrations.AddActorToActivity do
       add :actor, :string
     end
 
-    execute """
-      update activities set actor = data->>'actor';
-    """
-
     create index(:activities, [:actor, "id DESC NULLS LAST"], concurrently: true)
   end
 
