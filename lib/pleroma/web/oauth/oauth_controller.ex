@@ -25,7 +25,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
           auth: auth
         }
       else
-        url = "#{redirect_uri}?code=#{auth.token}"
+        connector = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
+        url = "#{redirect_uri}#{connector}code=#{auth.token}"
         url = if params["state"] do
           url <> "&state=#{params["state"]}"
         else
