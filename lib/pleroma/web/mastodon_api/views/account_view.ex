@@ -18,7 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     header = image_url(user.info["banner"]) || "https://placehold.it/700x335"
 
     %{
-      id: user.id,
+      id: to_string(user.id),
       username: hd(String.split(user.nickname, "@")),
       acct: user.nickname,
       display_name: user.name,
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   def render("mention.json", %{user: user}) do
     %{
-      id: user.id,
+      id: to_string(user.id),
       acct: user.nickname,
       username: hd(String.split(user.nickname, "@")),
       url: user.ap_id
@@ -52,7 +52,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   def render("relationship.json", %{user: user, target: target}) do
     %{
-      id: target.id,
+      id: to_string(target.id),
       following: User.following?(user, target),
       followed_by: User.following?(target, user),
       blocking: User.blocks?(user, target),

@@ -81,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> get("/api/v1/accounts/verify_credentials")
 
     assert %{"id" => id} = json_response(conn, 200)
-    assert id == user.id
+    assert id == to_string(user.id)
   end
 
   test "get a status", %{conn: conn} do
@@ -194,7 +194,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert [relationship] = json_response(conn, 200)
 
-      assert other_user.id == relationship["id"]
+      assert to_string(other_user.id) == relationship["id"]
     end
   end
 
@@ -205,7 +205,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> get("/api/v1/accounts/#{user.id}")
 
     assert %{"id" => id} = json_response(conn, 200)
-    assert id == user.id
+    assert id == to_string(user.id)
 
     conn = build_conn()
     |> get("/api/v1/accounts/-1")
@@ -250,7 +250,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> get("/api/v1/accounts/#{other_user.id}/followers")
 
     assert [%{"id" => id}] = json_response(conn, 200)
-    assert id = user.id
+    assert id == to_string(user.id)
   end
 
   test "getting following", %{conn: conn} do
@@ -262,7 +262,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> get("/api/v1/accounts/#{user.id}/following")
 
     assert [%{"id" => id}] = json_response(conn, 200)
-    assert id = other_user.id
+    assert id == to_string(other_user.id)
   end
 
   test "following / unfollowing a user", %{conn: conn} do
@@ -288,7 +288,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> post("/api/v1/follows", %{"uri" => other_user.nickname})
 
     assert %{"id" => id} = json_response(conn, 200)
-    assert id == other_user.id
+    assert id == to_string(other_user.id)
   end
 
   test "blocking / unblocking a user", %{conn: conn} do
@@ -319,7 +319,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> assign(:user, user)
     |> get("/api/v1/blocks")
 
-    other_user_id = other_user.id
+    other_user_id = to_string(other_user.id)
     assert [%{"id" => ^other_user_id}] = json_response(conn, 200)
   end
 
@@ -334,7 +334,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/accounts/#{other_user.id}/#{endpoint}")
 
       assert %{"id" => id} = json_response(conn, 200)
-      assert id == other_user.id
+      assert id == to_string(other_user.id)
     end)
   end
 
@@ -361,7 +361,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> get("/api/v1/accounts/search", %{"q" => "2hu"})
 
     assert [account] = json_response(conn, 200)
-    assert account["id"] == user_three.id
+    assert account["id"] == to_string(user_three.id)
   end
 
   test "search", %{conn: conn} do
@@ -378,7 +378,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert results = json_response(conn, 200)
 
     [account] = results["accounts"]
-    assert account["id"] == user_three.id
+    assert account["id"] == to_string(user_three.id)
 
     assert results["hashtags"] == []
 

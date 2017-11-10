@@ -45,7 +45,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         name: "Web",
         website: nil
       },
-      language: nil
+      language: nil,
+      emoji: []
     }
   end
 

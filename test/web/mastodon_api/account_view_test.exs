@@ -8,7 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     user = insert(:user, %{info: %{"note_count" => 5, "follower_count" => 3}, nickname: "shp@shitposter.club", inserted_at: ~N[2017-08-15 15:47:06.597036]})
 
     expected = %{
-      id: user.id,
+      id: to_string(user.id),
       username: "shp",
       acct: user.nickname,
       display_name: user.name,
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     user = insert(:user)
 
     expected = %{
-      id: user.id,
+      id: to_string(user.id),
       acct: user.nickname,
       username: user.nickname,
       url: user.ap_id
@@ -54,7 +54,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     {:ok, user} = User.block(user, other_user)
 
     expected = %{
-      id: other_user.id,
+      id: to_string(other_user.id),
       following: true,
       followed_by: false,
       blocking: true,
