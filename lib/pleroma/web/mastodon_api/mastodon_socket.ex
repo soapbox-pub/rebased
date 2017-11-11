@@ -1,12 +1,18 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
   use Phoenix.Socket
 
-  transport :streaming, Phoenix.Transports.WebSocket.Raw
+  transport :streaming, Phoenix.Transports.WebSocket.Raw,
+    timeout: :infinity # We never receive data.
 
   def connect(params, socket) do
-    IO.inspect(params)
-    Pleroma.Web.Streamer.add_socket(params["stream"], socket)
-    {:ok, socket}
+    if params["stream"] == "public" do
+      socket = socket
+      |> assign(:topic, params["stream"])
+      Pleroma.Web.Streamer.add_socket(params["stream"], socket)
+      {:ok, socket}
+    else
+      :error
+    end
   end
 
   def id(socket), do: nil
@@ -21,7 +27,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
     {:text, message}
   end
 
-  def handle(:closed, reason, _state) do
-    IO.inspect reason
+  def handle(:closed, reason, %{socket: socket}) do
+    topic = socket.assigns[:topic]
+    Pleroma.Web.Streamer.remove_socket(topic, socket)
   end
 end
