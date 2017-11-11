@@ -22,6 +22,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with create_data <- make_create_data(%{to: to, actor: actor, published: published, context: context, object: object}, additional),
          {:ok, activity} <- insert(create_data, local),
          :ok <- maybe_federate(activity) do
+      if activity.data["type"] == "Create" and Enum.member?(activity.data["to"], "https://www.w3.org/ns/activitystreams#Public") do
+        Pleroma.Web.Streamer.stream("public", activity)
+      end
       {:ok, activity}
     end
   end

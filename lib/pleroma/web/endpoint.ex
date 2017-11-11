@@ -2,6 +2,7 @@ defmodule Pleroma.Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :pleroma
 
   socket "/socket", Pleroma.Web.UserSocket
+  socket "/api/v1", Pleroma.Web.MastodonAPI.MastodonSocket
 
   # Serve at "/" the static files from "priv/static" directory.
   #
