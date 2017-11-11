@@ -103,5 +103,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     assert represented[:id] == to_string(reblog.id)
     assert represented[:reblog][:id] == to_string(activity.id)
+    assert represented[:emojis] == []
   end
 end
