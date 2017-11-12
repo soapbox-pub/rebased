@@ -2,7 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Activity}
+  alias Pleroma.{Repo, User, Activity, Notification}
   alias Pleroma.Web.{OStatus, CommonAPI}
 
   import Pleroma.Factory
@@ -119,6 +119,75 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert %{"error" => _} = json_response(conn, 403)
 
       assert Repo.get(Activity, activity.id) == activity
+    end
+  end
+
+  describe "notifications" do
+    test "list of notifications", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      conn = conn
+      |> assign(:user, user)
+      |> get("/api/v1/notifications")
+
+      expected_response = "hi <a href=\"#{user.ap_id}\">@#{user.nickname}</a>"
+      assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
+      assert response == expected_response
+    end
+
+    test "getting a single notification", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      conn = conn
+      |> assign(:user, user)
+      |> get("/api/v1/notifications/#{notification.id}")
+
+      expected_response = "hi <a href=\"#{user.ap_id}\">@#{user.nickname}</a>"
+      assert %{"status" => %{"content" => response}} = json_response(conn, 200)
+      assert response == expected_response
+    end
+
+    test "dismissing a single notification", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      conn = conn
+      |> assign(:user, user)
+      |> post("/api/v1/notifications/dismiss", %{"id" => notification.id})
+
+      assert %{} = json_response(conn, 200)
+    end
+
+    test "clearing all notifications", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      conn = conn
+      |> assign(:user, user)
+      |> post("/api/v1/notifications/clear")
+
+      assert %{} = json_response(conn, 200)
+
+      conn = build_conn()
+      |> assign(:user, user)
+      |> get("/api/v1/notifications")
+
+      assert all = json_response(conn, 200)
+      assert all == []
     end
   end
 
@@ -419,5 +488,55 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert [status] = json_response(conn, 200)
     assert status["id"] == to_string(activity.id)
+  end
+
+  describe "updating credentials" do
+    test "updates the user's bio" do
+      user = insert(:user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_credentials", %{"note" => "I drink #cofe"})
+
+      assert user = json_response(conn, 200)
+      assert user["note"] == "I drink #cofe"
+    end
+
+    test "updates the user's name" do
+      user = insert(:user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_credentials", %{"display_name" => "markorepairs"})
+
+      assert user = json_response(conn, 200)
+      assert user["display_name"] == "markorepairs"
+    end
+
+    test "updates the user's avatar" do
+      user = insert(:user)
+
+      new_avatar = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+
+      conn = conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
+
+      assert user = json_response(conn, 200)
+      assert user["avatar"] != "https://placehold.it/48x48"
+    end
+
+    test "updates the user's banner" do
+      user = insert(:user)
+
+      new_header = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+
+      conn = conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_credentials", %{"header" => new_header})
+
+      assert user = json_response(conn, 200)
+      assert user["header"] != "https://placehold.it/700x335"
+    end
   end
 end

@@ -36,6 +36,37 @@ defmodule Pleroma.Notification do
     Repo.all(query)
   end
 
+  def get(%{id: user_id} = _user, id) do
+    query = from n in Notification,
+      where: n.id == ^id,
+      preload: [:activity]
+
+    notification = Repo.one(query)
+    case notification do
+      %{user_id: ^user_id} ->
+        {:ok, notification}
+      _ ->
+        {:error, "Cannot get notification"}
+    end
+  end
+
+  def clear(user) do
+    query = from n in Notification,
+      where: n.user_id == ^user.id
+
+    Repo.delete_all(query)
+  end
+
+  def dismiss(%{id: user_id} = _user, id) do
+    notification = Repo.get(Notification, id)
+    case notification do
+      %{user_id: ^user_id} ->
+        Repo.delete(notification)
+      _ ->
+        {:error, "Cannot dismiss notification"}
+    end
+  end
+
   def create_notifications(%Activity{id: id, data: %{"to" => to, "type" => type}} = activity) when type in ["Create", "Like", "Announce", "Follow"] do
     users = User.get_notified_from_activity(activity)
 
