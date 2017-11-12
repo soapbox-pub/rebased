@@ -31,4 +31,65 @@ defmodule Pleroma.NotificationTest do
       assert nil == Notification.create_notification(activity, user)
     end
   end
+
+  describe "get notification" do
+    test "it gets a notification that belongs to the user" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(user, %{"status" => "hey @#{other_user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+      {:ok, notification} = Notification.get(other_user, notification.id)
+
+      assert notification.user_id == other_user.id
+    end
+
+    test "it returns error if the notification doesn't belong to the user" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(user, %{"status" => "hey @#{other_user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+      {:error, notification} = Notification.get(user, notification.id)
+    end
+  end
+
+  describe "dismiss notification" do
+    test "it dismisses a notification that belongs to the user" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(user, %{"status" => "hey @#{other_user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+      {:ok, notification} = Notification.dismiss(other_user, notification.id)
+
+      assert notification.user_id == other_user.id
+    end
+
+    test "it returns error if the notification doesn't belong to the user" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(user, %{"status" => "hey @#{other_user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+      {:error, notification} = Notification.dismiss(user, notification.id)
+    end
+  end
+
+  describe "clear notification" do
+    test "it clears all notifications belonging to the user" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(user, %{"status" => "hey @#{other_user.nickname} and @#{third_user.nickname} !"})
+      {:ok, _notifs} = Notification.create_notifications(activity)
+      {:ok, activity} = TwitterAPI.create_status(user, %{"status" => "hey again @#{other_user.nickname} and @#{third_user.nickname} !"})
+      {:ok, _notifs} = Notification.create_notifications(activity)
+      Notification.clear(other_user)
+
+      assert Notification.for_user(other_user) == []
+      assert Notification.for_user(third_user) != []
+    end
+  end
 end

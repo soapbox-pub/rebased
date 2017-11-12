@@ -244,29 +244,41 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def notifications(%{assigns: %{user: user}} = conn, params) do
     notifications = Notification.for_user(user, params)
-    result = Enum.map(notifications, fn (%{id: id, activity: activity, inserted_at: created_at}) ->
-      actor = User.get_cached_by_ap_id(activity.data["actor"])
-      created_at = NaiveDateTime.to_iso8601(created_at)
-      |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
-      case activity.data["type"] do
-        "Create" ->
-          %{id: id, type: "mention", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: activity, for: user})}
-        "Like" ->
-          liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
-          %{id: id, type: "favourite", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: liked_activity, for: user})}
-        "Announce" ->
-          announced_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
-          %{id: id, type: "reblog", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: announced_activity, for: user})}
-        "Follow" ->
-          %{id: id, type: "follow", created_at: created_at, account: AccountView.render("account.json", %{user: actor})}
-        _ -> nil
-      end
+    result = Enum.map(notifications, fn x ->
+      render_notification(user, x)
     end)
     |> Enum.filter(&(&1))
 
     conn
     |> add_link_headers(:notifications, notifications)
     |> json(result)
+  end
+
+  def get_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
+    with {:ok, notification} <- Notification.get(user, id) do
+      json(conn, render_notification(user, notification))
+    else
+      {:error, reason} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{"error" => reason}))
+    end
+  end
+
+  def clear_notifications(%{assigns: %{user: user}} = conn, _params) do
+    Notification.clear(user)
+    json(conn, %{})
+  end
+
+  def dismiss_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
+    with {:ok, _notif} <- Notification.dismiss(user, id) do
+      json(conn, %{})
+    else
+      {:error, reason} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{"error" => reason}))
+    end
   end
 
   def relationships(%{assigns: %{user: user}} = conn, %{"id" => id}) do
@@ -466,5 +478,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def empty_array(conn, _) do
     Logger.debug("Unimplemented, returning an empty array")
     json(conn, [])
+  end
+
+  defp render_notification(user, %{id: id, activity: activity, inserted_at: created_at} = _params) do
+    actor = User.get_cached_by_ap_id(activity.data["actor"])
+    created_at = NaiveDateTime.to_iso8601(created_at)
+    |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
+    case activity.data["type"] do
+      "Create" ->
+        %{id: id, type: "mention", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: activity, for: user})}
+      "Like" ->
+        liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+        %{id: id, type: "favourite", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: liked_activity, for: user})}
+      "Announce" ->
+        announced_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+        %{id: id, type: "reblog", created_at: created_at, account: AccountView.render("account.json", %{user: actor}), status: StatusView.render("status.json", %{activity: announced_activity, for: user})}
+      "Follow" ->
+        %{id: id, type: "follow", created_at: created_at, account: AccountView.render("account.json", %{user: actor})}
+      _ -> nil
+    end
   end
 end

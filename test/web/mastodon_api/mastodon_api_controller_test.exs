@@ -2,7 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Activity}
+  alias Pleroma.{Repo, User, Activity, Notification}
   alias Pleroma.Web.{OStatus, CommonAPI}
 
   import Pleroma.Factory
@@ -119,6 +119,75 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert %{"error" => _} = json_response(conn, 403)
 
       assert Repo.get(Activity, activity.id) == activity
+    end
+  end
+
+  describe "notifications" do
+    test "list of notifications", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      conn = conn
+      |> assign(:user, user)
+      |> get("/api/v1/notifications")
+
+      expected_response = "hi <a href=\"#{user.ap_id}\">@#{user.nickname}</a>"
+      assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
+      assert response == expected_response
+    end
+
+    test "getting a single notification", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      conn = conn
+      |> assign(:user, user)
+      |> get("/api/v1/notifications/#{notification.id}")
+
+      expected_response = "hi <a href=\"#{user.ap_id}\">@#{user.nickname}</a>"
+      assert %{"status" => %{"content" => response}} = json_response(conn, 200)
+      assert response == expected_response
+    end
+
+    test "dismissing a single notification", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      conn = conn
+      |> assign(:user, user)
+      |> post("/api/v1/notifications/dismiss", %{"id" => notification.id})
+
+      assert %{} = json_response(conn, 200)
+    end
+
+    test "clearing all notifications", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, [notification]} = Notification.create_notifications(activity)
+
+      conn = conn
+      |> assign(:user, user)
+      |> post("/api/v1/notifications/clear")
+
+      assert %{} = json_response(conn, 200)
+
+      conn = build_conn()
+      |> assign(:user, user)
+      |> get("/api/v1/notifications")
+
+      assert all = json_response(conn, 200)
+      assert all == []
     end
   end
 
