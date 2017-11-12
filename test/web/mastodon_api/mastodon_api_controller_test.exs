@@ -420,4 +420,54 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert [status] = json_response(conn, 200)
     assert status["id"] == to_string(activity.id)
   end
+
+  describe "updating credentials" do
+    test "updates the user's bio" do
+      user = insert(:user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_credentials", %{"note" => "I drink #cofe"})
+
+      assert user = json_response(conn, 200)
+      assert user["note"] == "I drink #cofe"
+    end
+
+    test "updates the user's name" do
+      user = insert(:user)
+
+      conn = conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_credentials", %{"display_name" => "markorepairs"})
+
+      assert user = json_response(conn, 200)
+      assert user["display_name"] == "markorepairs"
+    end
+
+    test "updates the user's avatar" do
+      user = insert(:user)
+
+      new_avatar = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+
+      conn = conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
+
+      assert user = json_response(conn, 200)
+      assert user["avatar"] != "https://placehold.it/48x48"
+    end
+
+    test "updates the user's banner" do
+      user = insert(:user)
+
+      new_header = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+
+      conn = conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_credentials", %{"header" => new_header})
+
+      assert user = json_response(conn, 200)
+      assert user["header"] != "https://placehold.it/700x335"
+    end
+  end
 end

@@ -23,6 +23,57 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def update_credentials(%{assigns: %{user: user}} = conn, params) do
+    params = if bio = params["note"] do
+      Map.put(params, "bio", bio)
+    else
+      params
+    end
+
+    params = if name = params["display_name"] do
+      Map.put(params, "name", name)
+    else
+      params
+    end
+
+    user = if avatar = params["avatar"] do
+      with %Plug.Upload{} <- avatar,
+           {:ok, object} <- ActivityPub.upload(avatar),
+           change = Ecto.Changeset.change(user, %{avatar: object.data}),
+           {:ok, user} = Repo.update(change) do
+        user
+      else
+        _e -> user
+      end
+    else
+      user
+    end
+
+    user = if banner = params["header"] do
+      with %Plug.Upload{} <- banner,
+           {:ok, object} <- ActivityPub.upload(banner),
+           new_info <- Map.put(user.info, "banner", object.data),
+           change <- User.info_changeset(user, %{info: new_info}),
+           {:ok, user} <- Repo.update(change) do
+        user
+      else
+        _e -> user
+      end
+    else
+      user
+    end
+
+    with changeset <- User.update_changeset(user, params),
+         {:ok, user} <- Repo.update(changeset) do
+      json conn, AccountView.render("account.json", %{user: user})
+    else
+      _e ->
+        conn
+        |> put_status(403)
+        |> json(%{error: "Invalid request"})
+    end
+  end
+
   def verify_credentials(%{assigns: %{user: user}} = conn, params) do
     account = AccountView.render("account.json", %{user: user})
     json(conn, account)
