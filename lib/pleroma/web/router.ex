@@ -21,6 +21,13 @@ defmodule Pleroma.Web.Router do
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1}
   end
 
+  pipeline :mastodon_html do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug Pleroma.Plugs.OAuthPlug
+    plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true}
+  end
+
   pipeline :well_known do
     plug :accepts, ["xml", "xrd+xml"]
   end
@@ -205,6 +212,14 @@ defmodule Pleroma.Web.Router do
 
     get "/host-meta", WebFinger.WebFingerController, :host_meta
     get "/webfinger", WebFinger.WebFingerController, :webfinger
+  end
+
+  scope "/web", Pleroma.Web.MastodonAPI do
+    pipe_through :mastodon_html
+
+    get "/login", MastodonAPIController, :login
+    post "/login", MastodonAPIController, :login_post
+    get "/*path", MastodonAPIController, :index
   end
 
   scope "/", Fallback do

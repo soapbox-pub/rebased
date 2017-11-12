@@ -10,8 +10,12 @@ defmodule Pleroma.Plugs.OAuthPlug do
 
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
   def call(conn, opts) do
-    with ["Bearer " <> header] <- get_req_header(conn, "authorization"),
-         %Token{user_id: user_id} <- Repo.get_by(Token, token: header),
+    token = case get_req_header(conn, "authorization") do
+              ["Bearer " <> header] -> header
+              _ -> get_session(conn, :oauth_token)
+            end
+    with token when not is_nil(token) <- token,
+         %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
          %User{} = user <- Repo.get(User, user_id) do
       conn
       |> assign(:user, user)

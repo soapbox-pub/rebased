@@ -1,12 +1,13 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Activity, User, Notification}
-  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web
-  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
+  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.{CommonAPI, OStatus}
+  alias Pleroma.Web.OAuth.{Authorization, Token, App}
+  alias Comeonin.Pbkdf2
   import Ecto.Query
   import Logger
 
@@ -403,6 +404,116 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     conn
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
+  end
+
+  def index(%{assigns: %{user: user}} = conn, _params) do
+    token = conn
+    |> get_session(:oauth_token)
+
+    if user && token do
+      accounts = Map.put(%{}, user.id, AccountView.render("account.json", %{user: user}))
+      initial_state = %{
+        meta: %{
+          streaming_api_base_url: String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws"),
+          access_token: token,
+          locale: "en",
+          domain: Pleroma.Web.Endpoint.host(),
+          admin: "1",
+          me: "#{user.id}",
+          unfollow_modal: false,
+          boost_modal: false,
+          delete_modal: true,
+          auto_play_gif: false,
+          reduce_motion: false
+        },
+        compose: %{
+          me: "#{user.id}",
+          default_privacy: "public",
+          default_sensitive: false
+        },
+        media_attachments: %{
+          accept_content_types: [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".gif",
+            ".webm",
+            ".mp4",
+            ".m4v",
+            "image\/jpeg",
+            "image\/png",
+            "image\/gif",
+            "video\/webm",
+            "video\/mp4"
+          ]
+        },
+        settings: %{
+          onboarded: true,
+          home: %{
+            shows: %{
+              reblog: true,
+              reply: true
+            }
+          },
+          notifications: %{
+            alerts: %{
+              follow: true,
+              favourite: true,
+              reblog: true,
+              mention: true
+            },
+            shows: %{
+              follow: true,
+              favourite: true,
+              reblog: true,
+              mention: true
+            },
+            sounds: %{
+              follow: true,
+              favourite: true,
+              reblog: true,
+              mention: true
+            }
+          }
+        },
+        push_subscription: nil,
+        accounts: accounts,
+        custom_emojis: %{}
+      } |> Poison.encode!
+      conn
+      |> put_layout(false)
+      |> render(MastodonView, "index.html", %{initial_state: initial_state})
+    else
+      conn
+      |> redirect(to: "/web/login")
+    end
+  end
+
+  def login(conn, params) do
+    conn
+    |> render(MastodonView, "login.html")
+  end
+
+  defp get_or_make_app() do
+    with %App{} = app <- Repo.get_by(App, client_name: "Mastodon-Local") do
+      {:ok, app}
+    else
+      _e ->
+        cs = App.register_changeset(%App{}, %{client_name: "Mastodon-Local", redirect_uris: ".", scopes: "read,write,follow"})
+        Repo.insert(cs)
+    end
+  end
+
+  def login_post(conn, %{"authorization" => %{ "name" => name, "password" => password}}) do
+    with %User{} = user <- User.get_cached_by_nickname(name),
+         true <- Pbkdf2.checkpw(password, user.password_hash),
+         {:ok, app} <- get_or_make_app(),
+         {:ok, auth} <- Authorization.create_authorization(app, user),
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      conn
+      |> put_session(:oauth_token, token.token)
+      |> redirect(to: "/web/timelines/public")
+    end
   end
 
   def relationship_noop(%{assigns: %{user: user}} = conn, %{"id" => id}) do
