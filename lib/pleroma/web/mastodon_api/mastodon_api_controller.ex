@@ -223,9 +223,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def reblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
-      render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}
+    with {:ok, announce, _activity} = CommonAPI.repeat(ap_id_or_id, user) do
+      render conn, StatusView, "status.json", %{activity: announce, for: user, as: :activity}
     end
   end
 

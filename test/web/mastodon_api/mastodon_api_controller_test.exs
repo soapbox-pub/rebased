@@ -200,7 +200,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> post("/api/v1/statuses/#{activity.id}/reblog")
 
-      assert %{"id" => id, "reblogged" => true, "reblogs_count" => 1} = json_response(conn, 200)
+      assert %{"reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 1}} = json_response(conn, 200)
       assert to_string(activity.id) == id
     end
   end
