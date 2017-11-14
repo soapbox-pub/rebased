@@ -159,6 +159,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_favorited_by(query, _), do: query
 
+  defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
+    from activity in query,
+      where: fragment("not (? #> '{\"object\",\"attachment\"}' = ?)", activity.data, ^[])
+  end
+  defp restrict_media(query, _), do: query
+
   # Only search through last 100_000 activities by default
   defp restrict_recent(query, %{"whole_db" => true}), do: query
   defp restrict_recent(query, _) do
@@ -191,6 +197,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_favorited_by(opts)
     |> restrict_recent(opts)
     |> restrict_blocked(opts)
+    |> restrict_media(opts)
     |> Repo.all
     |> Enum.reverse
   end
