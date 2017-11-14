@@ -4,7 +4,7 @@
 
 Pleroma is an OStatus-compatible social networking server written in Elixir, compatible with GNU Social and Mastodon. It is high-performance and can run on small devices like a Raspberry Pi.
 
-For clients it supports both the GNU Social API with Qvitter extensions and the Mastodon client API.
+For clients it supports both the [GNU Social API with Qvitter extensions](https://twitter-api.readthedocs.io/en/latest/index.html) and the [Mastodon client API](https://github.com/tootsuite/documentation/blob/master/Using-the-API/API.md).
 
 Mobile clients that are known to work well:
 
