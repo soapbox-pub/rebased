@@ -6,6 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   import Pleroma.Factory
 
@@ -98,6 +99,45 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert response == ActivityRepresenter.to_map(activity, %{user: actor})
+    end
+  end
+
+  describe "GET /users/show.json" do
+    test "gets user with screen_name", %{conn: conn} do
+      user = insert(:user)
+
+      conn = conn
+      |> get("/api/users/show.json", %{"screen_name" => user.nickname})
+
+      response = json_response(conn, 200)
+
+      assert response["id"] == user.id
+    end
+
+    test "gets user with user_id", %{conn: conn} do
+      user = insert(:user)
+
+      conn = conn
+      |> get("/api/users/show.json", %{"user_id" => user.id})
+
+      response = json_response(conn, 200)
+
+      assert response["id"] == user.id
+    end
+
+    test "gets a user for a logged in user", %{conn: conn} do
+      user = insert(:user)
+      logged_in = insert(:user)
+
+      {:ok, logged_in, user, _activity} = TwitterAPI.follow(logged_in, %{"user_id" => user.id})
+
+      conn = conn
+      |> with_credentials(logged_in.nickname, "test")
+      |> get("/api/users/show.json", %{"user_id" => user.id})
+
+      response = json_response(conn, 200)
+
+      assert response["following"] == true
     end
   end
 

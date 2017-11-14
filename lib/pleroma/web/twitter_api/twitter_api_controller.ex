@@ -65,6 +65,19 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, json)
   end
 
+  def show_user(conn, params) do
+    with {:ok, shown} <- TwitterAPI.get_user(params) do
+      if user = conn.assigns.user do
+        render conn, UserView, "show.json", %{user: shown, for: user}
+      else
+        render conn, UserView, "show.json", %{user: shown}
+      end
+    else
+      {:error, msg} ->
+        bad_request_reply(conn, msg)
+    end
+  end
+
   def user_timeline(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.get_user(user, params) do
       {:ok, target_user} ->
