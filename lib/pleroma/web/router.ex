@@ -192,6 +192,8 @@ defmodule Pleroma.Web.Router do
     get "/friends/ids", TwitterAPI.Controller, :friends_ids
     get "/friendships/no_retweets/ids", TwitterAPI.Controller, :empty_array
 
+    get "/mutes/users/ids", TwitterAPI.Controller, :empty_array
+
     get "/externalprofile/show", TwitterAPI.Controller, :external_profile
   end
 
