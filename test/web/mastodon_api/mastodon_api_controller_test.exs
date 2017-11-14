@@ -249,6 +249,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert id == to_string(note_two.id)
     end
+
+    test "gets an users media", %{conn: conn} do
+      note = insert(:note_activity)
+      user = User.get_by_ap_id(note.data["actor"])
+
+      file = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+      media = TwitterAPI.upload(file, "json")
+      |> Poison.decode!
+
+      {:ok, image_post} = TwitterAPI.create_status(user, %{"status" => "cofe", "media_ids" => [media["media_id"]]})
+
+      conn = conn
+      |> get("/api/v1/accounts/#{user.id}/statuses", %{"only_media" => true})
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+      assert id == to_string(image_post.id)
+    end
   end
 
   describe "user relationships" do
