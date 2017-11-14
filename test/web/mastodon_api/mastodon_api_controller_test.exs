@@ -261,7 +261,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       {:ok, image_post} = TwitterAPI.create_status(user, %{"status" => "cofe", "media_ids" => [media["media_id"]]})
 
       conn = conn
-      |> get("/api/v1/accounts/#{user.id}/statuses", %{"only_media" => true})
+      |> get("/api/v1/accounts/#{user.id}/statuses", %{"only_media" => "true"})
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+      assert id == to_string(image_post.id)
+
+      conn = build_conn()
+      |> get("/api/v1/accounts/#{user.id}/statuses", %{"only_media" => "1"})
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(image_post.id)

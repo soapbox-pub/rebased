@@ -159,7 +159,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_favorited_by(query, _), do: query
 
-  defp restrict_media(query, %{"only_media" => true}) do
+  defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
     from activity in query,
       where: fragment("not (? #> '{\"object\",\"attachment\"}' = ?)", activity.data, ^[])
   end
