@@ -265,6 +265,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def friends_ids(%{assigns: %{user: user}} = conn, _params) do
+    with {:ok, friends} <- User.get_friends(user) do
+      ids = friends
+      |> Enum.map(fn x -> x.id end)
+      |> Poison.encode!
+      json(conn, ids)
+    else
+      _e -> bad_request_reply(conn, "Can't get friends")
+    end
+  end
+
+
   def update_profile(%{assigns: %{user: user}} = conn, params) do
     params = if bio = params["description"] do
       Map.put(params, "bio", bio)

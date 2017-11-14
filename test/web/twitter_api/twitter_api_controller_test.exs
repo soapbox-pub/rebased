@@ -494,6 +494,25 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /friends/ids" do
+    test "it returns a user's friends", %{conn: conn} do
+      user = insert(:user)
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      conn = conn
+      |> assign(:user, user)
+      |> get("/api/friends/ids")
+
+      expected = Poison.encode!([followed_one.id, followed_two.id])
+      assert json_response(conn, 200) == expected
+    end
+  end
+
   describe "POST /api/account/update_profile.json" do
     test "it updates a user's profile" do
       user = insert(:user)

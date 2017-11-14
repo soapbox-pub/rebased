@@ -189,6 +189,7 @@ defmodule Pleroma.Web.Router do
 
     get "/statuses/followers", TwitterAPI.Controller, :followers
     get "/statuses/friends", TwitterAPI.Controller, :friends
+    get "/friends/ids", TwitterAPI.Controller, :friends_ids
 
     get "/externalprofile/show", TwitterAPI.Controller, :external_profile
   end
