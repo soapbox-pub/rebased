@@ -120,7 +120,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     << hash_id::signed-32, _rest::binary >> = :crypto.hash(:md5, href)
 
     %{
-      id: attachment["id"] || hash_id,
+      id: to_string(attachment["id"] || hash_id),
       url: href,
       remote_url: href,
       preview_url: href,
