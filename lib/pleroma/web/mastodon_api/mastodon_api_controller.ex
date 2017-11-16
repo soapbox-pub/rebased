@@ -579,7 +579,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          {:ok, token} <- Token.exchange_token(app, auth) do
       conn
       |> put_session(:oauth_token, token.token)
-      |> redirect(to: "/web/timelines/public")
+      |> redirect(to: "/web/getting-started")
     end
   end
 
