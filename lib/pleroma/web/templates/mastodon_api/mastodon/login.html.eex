@@ -1,10 +1,8 @@
 <h2>Login in to Mastodon Frontend</h2>
 <%= form_for @conn, mastodon_api_path(@conn, :login), [as: "authorization"], fn f -> %>
-<%= label f, :name, "Name" %>
-<%= text_input f, :name %>
+<%= text_input f, :name, placeholder: "Username" %>
 <br>
-<%= label f, :password, "Password" %>
-<%= password_input f, :password %>
+<%= password_input f, :password, placeholder: "Password" %>
 <br>
-<%= submit "Authorize" %>
+<%= submit "Log in" %>
 <% end %>
