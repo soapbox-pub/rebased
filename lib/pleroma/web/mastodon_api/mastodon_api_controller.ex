@@ -113,8 +113,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, response)
   end
 
-  def custom_emojis(conn, _params) do
-    mastodon_emoji = Pleroma.Formatter.get_custom_emoji()
+  defp mastodonized_emoji do
+    Pleroma.Formatter.get_custom_emoji()
     |> Enum.map(fn {shortcode, relative_url} ->
       url = to_string URI.merge(Web.base_url(), relative_url)
       %{
@@ -123,6 +123,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         "url" => url
       }
     end)
+  end
+
+  def custom_emojis(conn, _params) do
+    mastodon_emoji = mastodonized_emoji()
     json conn, mastodon_emoji
   end
 
@@ -473,6 +477,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> get_session(:oauth_token)
 
     if user && token do
+      mastodon_emoji = mastodonized_emoji()
       accounts = Map.put(%{}, user.id, AccountView.render("account.json", %{user: user}))
       initial_state = %{
         meta: %{
@@ -540,7 +545,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         },
         push_subscription: nil,
         accounts: accounts,
-        custom_emojis: %{}
+        custom_emojis: mastodon_emoji
       } |> Poison.encode!
       conn
       |> put_layout(false)
