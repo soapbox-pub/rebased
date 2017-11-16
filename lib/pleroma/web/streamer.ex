@@ -43,7 +43,7 @@ defmodule Pleroma.Web.Streamer do
     Enum.each(topics[topic] || [], fn (socket) ->
       json = %{
         event: "update",
-        payload: Pleroma.Web.MastodonAPI.StatusView.render("status.json", activity: item) |> Poison.encode!
+        payload: Pleroma.Web.MastodonAPI.StatusView.render("status.json", activity: item, for: socket.assigns[:user]) |> Poison.encode!
       } |> Poison.encode!
 
       send socket.transport_pid, {:text, json}
