@@ -284,6 +284,17 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
+  def get_recipients_from_activity(%Activity{data: %{"to" => to}} = activity) do
+    query = from u in User,
+      where: u.local == true
+
+    query = from u in query,
+      where: u.ap_id in ^to,
+      or_where: fragment("? \\\?| ?", u.following, ^to)
+
+    Repo.all(query)
+  end
+
   def search(query, resolve) do
     if resolve do
       User.get_or_fetch_by_nickname(query)

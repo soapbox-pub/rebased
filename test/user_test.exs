@@ -3,6 +3,7 @@ defmodule Pleroma.UserTest do
   alias Pleroma.{User, Repo}
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Websub.WebsubClientSubscription
+  alias Pleroma.Web.CommonAPI
   use Pleroma.DataCase
 
   import Pleroma.Factory
@@ -295,6 +296,23 @@ defmodule Pleroma.UserTest do
 
       refute User.blocks?(user, blocked_user)
     end
+  end
+
+  test "get recipients from activity" do
+    actor = insert(:user)
+    user = insert(:user, local: true)
+    user_two = insert(:user, local: false)
+    addressed = insert(:user, local: true)
+    addressed_remote = insert(:user, local: false)
+    {:ok, activity} = CommonAPI.post(actor, %{"status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"})
+
+    assert [addressed] == User.get_recipients_from_activity(activity)
+
+    {:ok, user} = User.follow(user, actor)
+    recipients = User.get_recipients_from_activity(activity)
+    assert length(recipients) == 2
+    assert user in recipients
+    assert addressed in recipients
   end
 end
 
