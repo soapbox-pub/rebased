@@ -8,6 +8,7 @@
         background-color: #282c37;
         font-family: sans-serif;
         color:white;
+        text-align: center;
       }
 
       .container {
@@ -35,7 +36,7 @@
       }
 
       input {
-        box-sizing: padding-box;
+        box-sizing: border-box;
         width: 100%;
         padding: 10px;
         margin-top: 20px;
@@ -51,6 +52,7 @@
       }
 
       button {
+        box-sizing: border-box;
         width: 100%;
         color: white;
         background-color: #419bdd;
