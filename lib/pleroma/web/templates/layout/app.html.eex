@@ -3,9 +3,73 @@
   <head>
     <meta charset=utf-8 />
     <title>Pleroma</title>
+    <style>
+      body {
+        background-color: #282c37;
+        font-family: sans-serif;
+        color:white;
+        text-align: center;
+      }
+
+      .container {
+        margin: 50px auto;
+        max-width: 320px;
+        padding: 0;
+        padding: 40px 40px 40px 40px;
+        background-color: #313543;
+        border-radius: 4px;
+      }
+
+      h1 {
+        margin: 0;
+      }
+
+      h2 {
+        color: #9baec8;
+        font-weight: normal;
+        font-size: 20px;
+        margin-bottom: 40px;
+      }
+
+      form {
+        width: 100%;
+      }
+
+      input {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 10px;
+        margin-top: 20px;
+        background-color: rgba(0,0,0,.1);
+        color: white;
+        border: 0;
+        border-bottom: 2px solid #9baec8;
+        font-size: 14px;
+      }
+
+      input:focus {
+        border-bottom: 2px solid #4b8ed8;
+      }
+
+      button {
+        box-sizing: border-box;
+        width: 100%;
+        color: white;
+        background-color: #419bdd;
+        border-radius: 4px;
+        border: none;
+        padding: 10px;
+        margin-top: 30px;
+        text-transform: uppercase;
+        font-weight: 500;
+        font-size: 16px;
+      }
+    </style>
   </head>
   <body>
-    <h1>Welcome to Pleroma</h1>
-    <%= render @view_module, @view_template, assigns %>
+    <div class="container">
+      <h1>Pleroma</h1>
+      <%= render @view_module, @view_template, assigns %>
+    </div>
   </body>
 </html>
