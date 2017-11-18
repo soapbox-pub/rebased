@@ -56,6 +56,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert Repo.get(Activity, id)
   end
 
+  test "posting a sensitive status", %{conn: conn} do
+    user = insert(:user)
+
+    conn = conn
+    |> assign(:user, user)
+    |> post("/api/v1/statuses", %{"status" => "cofe", "sensitive" => true})
+
+    assert %{"content" => "cofe", "id" => id, "sensitive" => true} = json_response(conn, 200)
+    assert Repo.get(Activity, id)
+  end
+
   test "replying to a status", %{conn: conn} do
     user = insert(:user)
 
