@@ -55,7 +55,7 @@ defmodule Pleroma.Web.CommonAPI do
          mentions <- Formatter.parse_mentions(status),
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
          to <- to_for_user_and_mentions(user, mentions, inReplyTo),
-         tags <- Formatter.parse_tags(status),
+         tags <- Formatter.parse_tags(status, data),
          content_html <- make_content_html(status, mentions, attachments, tags),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
