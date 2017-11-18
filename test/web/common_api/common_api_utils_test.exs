@@ -11,6 +11,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     res = Utils.add_attachments("", [attachment])
 
-    assert res == "<br>\n<a href=\"#{name}\" class='attachment'>Sakura Mana – Turned on by a Se…</a>"
+    assert res == "<br><a href=\"#{name}\" class='attachment'>Sakura Mana – Turned on by a Se…</a>"
   end
 end
