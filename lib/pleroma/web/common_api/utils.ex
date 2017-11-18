@@ -54,14 +54,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         "<a href=\"#{href}\" class='attachment'>#{shortname(name)}</a>"
       _ -> ""
     end)
-    Enum.join([text | attachment_text], "<br>\n")
+    Enum.join([text | attachment_text], "<br>")
   end
 
   def format_input(text, mentions, tags) do
     Phoenix.HTML.html_escape(text)
     |> elem(1)
     |> Formatter.linkify
-    |> String.replace("\n", "<br>\n")
+    |> String.replace("\n", "<br>")
     |> add_user_links(mentions)
     # |> add_tag_links(tags)
   end
