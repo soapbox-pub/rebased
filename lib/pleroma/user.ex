@@ -61,8 +61,9 @@ defmodule Pleroma.User do
   end
 
   def user_info(%User{} = user) do
+    oneself = if user.local, do: 1, else: 0
     %{
-      following_count: length(user.following),
+      following_count: length(user.following) - oneself,
       note_count: user.info["note_count"] || 0,
       follower_count: user.info["follower_count"] || 0
     }
