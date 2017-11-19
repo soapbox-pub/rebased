@@ -530,7 +530,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> assign(:user, user)
       |> get("/api/statuses/friends")
 
-      assert json_response(conn, 200) == UserView.render("index.json", %{users: [followed_one, followed_two], for: user})
+      assert MapSet.equal?(MapSet.new(json_response(conn, 200)), MapSet.new(UserView.render("index.json", %{users: [followed_one, followed_two], for: user})))
     end
   end
 
