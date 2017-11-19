@@ -66,6 +66,15 @@ defmodule Pleroma.UserTest do
     assert user.following == []
   end
 
+  test "unfollow doesn't unfollow yourself" do
+    user = insert(:user)
+
+    {:error, _} = User.unfollow(user, user)
+
+    assert user.following == [user.ap_id]
+  end
+
+
   test "test if a user is following another user" do
     followed = insert(:user)
     user = insert(:user, %{following: [User.ap_followers(followed)]})

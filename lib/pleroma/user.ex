@@ -167,7 +167,7 @@ defmodule Pleroma.User do
 
   def unfollow(%User{} = follower, %User{} = followed) do
     ap_followers = followed.follower_address
-    if following?(follower, followed) do
+    if following?(follower, followed) and follower.ap_id != followed.ap_id do
       following = follower.following
       |> List.delete(ap_followers)
 
