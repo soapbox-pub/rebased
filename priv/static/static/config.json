@@ -1,6 +1,6 @@
 {
-  "name": "Pleroma/Soykaf BETA",
-  "theme": "base16-pleroma-light.css",
+  "name": "Pleroma FE",
+  "theme": "pleroma-dark",
   "background": "/static/bg.jpg",
   "logo": "/static/logo.png",
   "registrationOpen": true

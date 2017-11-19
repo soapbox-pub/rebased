@@ -1,0 +1,9 @@
+{
+  "pleroma-dark": [ "Pleroma Dark", "#121a24", "#182230", "#b9b9ba", "#d8a070" ],
+  "pleroma-light": [ "Pleroma Light", "#f2f4f6", "#dbe0e8", "#304055", "#f86f0f" ],
+  "classic-dark": [ "Classic Dark", "#161c20", "#282e32", "#b9b9b9", "#baaa9c" ],
+  "bird": [ "Bird", "#f8fafd", "#e6ecf0", "#14171a", "#0084b8"],
+  "ir-black": [ "Ir Black", "#000000", "#242422", "#b5b3aa", "#ff6c60" ],
+  "monokai": [ "Monokai", "#272822", "#383830", "#f8f8f2", "#f92672" ],
+  "mammal": [ "Mammal", "#272c37", "#444b5d", "#f8f8f8", "#9bacc8" ]
+}
