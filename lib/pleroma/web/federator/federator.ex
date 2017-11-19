@@ -14,7 +14,10 @@ defmodule Pleroma.Web.Federator do
       Process.sleep(1000 * 60 * 1) # 1 minute
       enqueue(:refresh_subscriptions, nil)
     end)
-    GenServer.start_link(__MODULE__, {:sets.new(), :queue.new()}, name: __MODULE__)
+    GenServer.start_link(__MODULE__, %{
+          in: {:sets.new(), :queue.new()},
+          out: {:sets.new(), :queue.new()}
+                         }, name: __MODULE__)
   end
 
   def handle(:refresh_subscriptions, _) do
@@ -95,10 +98,18 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle_cast({:enqueue, type, payload}, {running_jobs, queue}) do
-    queue = :queue.in({type, payload}, queue)
-    {running_jobs, queue} = maybe_start_job(running_jobs, queue)
-    {:noreply, {running_jobs, queue}}
+  def handle_cast({:enqueue, type, payload}, state) when type in [:incoming_doc] do
+    %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
+    i_queue = :queue.in({type, payload}, i_queue)
+    {i_running_jobs, i_queue} = maybe_start_job(i_running_jobs, i_queue)
+    {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
+  end
+
+  def handle_cast({:enqueue, type, payload}, state) do
+    %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
+    o_queue = :queue.in({type, payload}, o_queue)
+    {o_running_jobs, o_queue} = maybe_start_job(o_running_jobs, o_queue)
+    {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
 
   def handle_cast(m, state) do
@@ -106,9 +117,13 @@ defmodule Pleroma.Web.Federator do
     {:noreply, state}
   end
 
-  def handle_info({:DOWN, ref, :process, _pid, _reason}, {running_jobs, queue}) do
-    running_jobs = :sets.del_element(ref, running_jobs)
-    {running_jobs, queue} = maybe_start_job(running_jobs, queue)
-    {:noreply, {running_jobs, queue}}
+  def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
+    %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
+    i_running_jobs = :sets.del_element(ref, i_running_jobs)
+    o_running_jobs = :sets.del_element(ref, o_running_jobs)
+    {i_running_jobs, i_queue} = maybe_start_job(i_running_jobs, i_queue)
+    {o_running_jobs, o_queue} = maybe_start_job(o_running_jobs, o_queue)
+
+    {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
 end
