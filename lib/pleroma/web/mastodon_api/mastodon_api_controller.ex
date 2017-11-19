@@ -583,6 +583,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def logout(conn, _) do
+    conn
+    |> clear_session
+    |> redirect(to: "/")
+  end
+
   def relationship_noop(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     Logger.debug("Unimplemented, returning unmodified relationship")
     with %User{} = target <- Repo.get(User, id) do

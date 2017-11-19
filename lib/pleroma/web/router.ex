@@ -223,12 +223,13 @@ defmodule Pleroma.Web.Router do
     get "/webfinger", WebFinger.WebFingerController, :webfinger
   end
 
-  scope "/web", Pleroma.Web.MastodonAPI do
+  scope "/", Pleroma.Web.MastodonAPI do
     pipe_through :mastodon_html
 
-    get "/login", MastodonAPIController, :login
-    post "/login", MastodonAPIController, :login_post
-    get "/*path", MastodonAPIController, :index
+    get "/web/login", MastodonAPIController, :login
+    post "/web/login", MastodonAPIController, :login_post
+    get "/web/*path", MastodonAPIController, :index
+    delete "/auth/sign_out", MastodonAPIController, :logout
   end
 
   scope "/", Fallback do
