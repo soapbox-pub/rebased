@@ -5,7 +5,6 @@ defmodule Pleroma.User do
   alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
   alias Comeonin.Pbkdf2
   alias Pleroma.Web.{OStatus, Websub}
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
 
   schema "users" do
@@ -89,7 +88,7 @@ defmodule Pleroma.User do
   end
 
   def update_changeset(struct, params \\ %{}) do
-    changeset = struct
+    struct
     |> cast(params, [:bio, :name])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
@@ -159,7 +158,7 @@ defmodule Pleroma.User do
       |> follow_changeset(%{following: following})
       |> Repo.update
 
-      {:ok, followed} = update_follower_count(followed)
+      {:ok, _} = update_follower_count(followed)
 
       follower
     end
@@ -214,7 +213,7 @@ defmodule Pleroma.User do
     with %User{} = user <- get_by_nickname(nickname)  do
       user
     else _e ->
-      with [nick, domain] <- String.split(nickname, "@"),
+      with [_nick, _domain] <- String.split(nickname, "@"),
            {:ok, user} <- OStatus.make_user(nickname) do
         user
       else _e -> nil
@@ -276,7 +275,7 @@ defmodule Pleroma.User do
     Repo.update(cs)
   end
 
-  def get_notified_from_activity(%Activity{data: %{"to" => to}} = activity) do
+  def get_notified_from_activity(%Activity{data: %{"to" => to}}) do
     query = from u in User,
       where: u.ap_id in ^to,
       where: u.local == true
@@ -284,7 +283,7 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def get_recipients_from_activity(%Activity{data: %{"to" => to}} = activity) do
+  def get_recipients_from_activity(%Activity{data: %{"to" => to}}) do
     query = from u in User,
       where: u.local == true
 

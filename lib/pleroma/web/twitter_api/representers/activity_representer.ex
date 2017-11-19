@@ -97,7 +97,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
-  def to_map(%Activity{data: %{"type" => "Delete", "published" => created_at, "object" => deleted_object }} = activity, %{user: user} = opts) do
+  def to_map(%Activity{data: %{"type" => "Delete", "published" => created_at, "object" => _ }} = activity, %{user: user} = opts) do
     created_at = created_at |> Utils.date_to_asctime
 
     %{

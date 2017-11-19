@@ -64,7 +64,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Inserts a full object if it is contained in an activity.
   """
   def insert_full_object(%{"object" => object_data}) when is_map(object_data) do
-    with {:ok, object} <- Object.create(object_data) do
+    with {:ok, _} <- Object.create(object_data) do
       :ok
     end
   end
@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Returns an existing like if a user already liked an object
   """
-  def get_existing_like(actor, %{data: %{"id" => id}} = object) do
+  def get_existing_like(actor, %{data: %{"id" => id}}) do
     query = from activity in Activity,
       where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
       # this is to use the index
@@ -201,7 +201,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def make_create_data(params, additional) do
     published = params.published || make_date()
 
-    activity = %{
+    %{
       "type" => "Create",
       "to" => params.to |> Enum.uniq,
       "actor" => params.actor.ap_id,

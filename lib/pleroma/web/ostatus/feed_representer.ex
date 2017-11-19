@@ -2,7 +2,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.OStatus.{UserRepresenter, ActivityRepresenter}
 
-  def to_simple_form(user, activities, users) do
+  def to_simple_form(user, activities, _users) do
     most_recent_update = (List.first(activities) || user).updated_at
     |> NaiveDateTime.to_iso8601
 

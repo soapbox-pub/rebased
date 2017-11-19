@@ -1,7 +1,7 @@
 defmodule Pleroma.PasswordResetToken do
   use Ecto.Schema
 
-  import Ecto.{Changeset, Query}
+  import Ecto.Changeset
 
   alias Pleroma.{User, PasswordResetToken, Repo}
 
@@ -26,7 +26,7 @@ defmodule Pleroma.PasswordResetToken do
   end
 
   def used_changeset(struct) do
-    changeset = struct
+    struct
     |> cast(%{}, [])
     |> put_change(:used, true)
   end
@@ -34,7 +34,7 @@ defmodule Pleroma.PasswordResetToken do
   def reset_password(token, data) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
          %User{} = user <- Repo.get(User, token.user_id),
-         {:ok, user} <- User.reset_password(user, data),
+         {:ok, _user} <- User.reset_password(user, data),
          {:ok, token} <- Repo.update(used_changeset(token)) do
       {:ok, token}
     else

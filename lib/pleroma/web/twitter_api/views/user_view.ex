@@ -11,9 +11,6 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     render_many(users, Pleroma.Web.TwitterAPI.UserView, "user.json", for: user)
   end
 
-  defp image_url(%{"url" => [ %{ "href" => href } | t ]}), do: href
-  defp image_url(_), do: nil
-
   def render("user.json", %{user: user = %User{}} = assigns) do
     image = User.avatar_url(user)
     {following, follows_you, statusnet_blocking} = if assigns[:for] do
@@ -63,4 +60,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "screen_name" => nickname
     }
   end
+
+  defp image_url(%{"url" => [ %{ "href" => href } | _ ]}), do: href
+  defp image_url(_), do: nil
 end

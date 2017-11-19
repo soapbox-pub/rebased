@@ -7,7 +7,6 @@ defmodule Pleroma.Web.OStatus do
 
   alias Pleroma.{Repo, User, Web, Object, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler, DeleteHandler}
 
@@ -112,7 +111,7 @@ defmodule Pleroma.Web.OStatus do
     with id when not is_nil(id) <- string_from_xpath("//activity:object[1]/id", entry),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       {:ok, activity}
-    else e ->
+    else _ ->
         Logger.debug("Couldn't get, will try to fetch")
         with href when not is_nil(href) <- string_from_xpath("//activity:object[1]/link[@type=\"text/html\"]/@href", entry),
              {:ok, [favorited_activity]} <- fetch_activity_from_url(href) do
@@ -191,7 +190,7 @@ defmodule Pleroma.Web.OStatus do
          false <- new_data == old_data do
       change = Ecto.Changeset.change(user, new_data)
       Repo.update(change)
-    else e ->
+    else _ ->
       {:ok, user}
     end
   end

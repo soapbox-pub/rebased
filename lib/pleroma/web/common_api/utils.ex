@@ -57,7 +57,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.join([text | attachment_text], "<br>")
   end
 
-  def format_input(text, mentions, tags) do
+  def format_input(text, mentions, _tags) do
     Phoenix.HTML.html_escape(text)
     |> elem(1)
     |> Formatter.linkify
