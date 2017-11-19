@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- insert_full_object(map) do
       {:ok, activity} = Repo.insert(%Activity{data: map, local: local, actor: map["actor"]})
       Notification.create_notifications(activity)
+      stream_out(activity)
       {:ok, activity}
     else
       %Activity{} = activity -> {:ok, activity}
@@ -17,17 +18,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def stream_out(activity) do
+    if activity.data["type"] in ["Create", "Announce"] do
+      Pleroma.Web.Streamer.stream("user", activity)
+      if Enum.member?(activity.data["to"], "https://www.w3.org/ns/activitystreams#Public") do
+        Pleroma.Web.Streamer.stream("public", activity)
+        if activity.local do
+          Pleroma.Web.Streamer.stream("public:local", activity)
+        end
+      end
+    end
+  end
+
   def create(to, actor, context, object, additional \\ %{}, published \\ nil, local \\ true) do
     with create_data <- make_create_data(%{to: to, actor: actor, published: published, context: context, object: object}, additional),
          {:ok, activity} <- insert(create_data, local),
          :ok <- maybe_federate(activity) do
-      if activity.data["type"] == "Create" and Enum.member?(activity.data["to"], "https://www.w3.org/ns/activitystreams#Public") do
-        Pleroma.Web.Streamer.stream("public", activity)
-        Pleroma.Web.Streamer.stream("user", activity)
-        if local do
-          Pleroma.Web.Streamer.stream("public:local", activity)
-        end
-      end
       {:ok, activity}
     end
   end
