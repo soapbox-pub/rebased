@@ -61,7 +61,7 @@ defmodule Phoenix.Transports.WebSocket.Raw do
     end
   end
 
-  def ws_info({op, data} = tuple, state) do
+  def ws_info({_,_} = tuple, state) do
     {:reply, tuple, state}
   end
 

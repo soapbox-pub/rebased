@@ -4,12 +4,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.{OStatus, CommonAPI}
-  alias Pleroma.Formatter
   import Ecto.Query
 
   @httpoison Application.get_env(:pleroma, :httpoison)
 
-  def create_status(%User{} = user, %{"status" => status} = data) do
+  def create_status(%User{} = user, %{"status" => _} = data) do
     CommonAPI.post(user, data)
   end
 
@@ -216,7 +215,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  defp parse_int(string, default \\ nil)
+  defp parse_int(string, default)
   defp parse_int(string, default) when is_binary(string) do
     with {n, _} <- Integer.parse(string) do
       n

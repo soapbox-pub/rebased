@@ -1,7 +1,6 @@
 defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
-  import Plug.Conn
   alias Pleroma.{User, Notification}
 
   def start_link do
@@ -38,17 +37,6 @@ defmodule Pleroma.Web.Streamer do
     {:noreply, topics}
   end
 
-  def push_to_socket(topics, topic, item) do
-    Enum.each(topics[topic] || [], fn (socket) ->
-      json = %{
-        event: "update",
-        payload: Pleroma.Web.MastodonAPI.StatusView.render("status.json", activity: item, for: socket.assigns[:user]) |> Poison.encode!
-      } |> Poison.encode!
-
-      send socket.transport_pid, {:text, json}
-    end)
-  end
-
   def handle_cast(%{action: :stream, topic: "user", item: %Notification{} = item}, topics) do
     topic = "user:#{item.user_id}"
     Enum.each(topics[topic] || [], fn (socket) ->
@@ -80,11 +68,6 @@ defmodule Pleroma.Web.Streamer do
     {:noreply, topics}
   end
 
-  defp internal_topic("user", socket) do
-    "user:#{socket.assigns[:user].id}"
-  end
-  defp internal_topic(topic, socket), do: topic
-
   def handle_cast(%{action: :add, topic: topic, socket: socket}, sockets) do
     topic = internal_topic(topic, socket)
     sockets_for_topic = sockets[topic] || []
@@ -109,4 +92,21 @@ defmodule Pleroma.Web.Streamer do
     IO.inspect("Unknown: #{inspect(m)}, #{inspect(state)}")
     {:noreply, state}
   end
+
+  def push_to_socket(topics, topic, item) do
+    Enum.each(topics[topic] || [], fn (socket) ->
+      json = %{
+        event: "update",
+        payload: Pleroma.Web.MastodonAPI.StatusView.render("status.json", activity: item, for: socket.assigns[:user]) |> Poison.encode!
+      } |> Poison.encode!
+
+      send socket.transport_pid, {:text, json}
+    end)
+  end
+
+  defp internal_topic("user", socket) do
+    "user:#{socket.assigns[:user].id}"
+  end
+
+  defp internal_topic(topic, _), do: topic
 end

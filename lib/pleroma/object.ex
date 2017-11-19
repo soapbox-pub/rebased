@@ -15,7 +15,7 @@ defmodule Pleroma.Object do
   end
 
   def change(struct, params \\ %{}) do
-    changeset = struct
+    struct
     |> cast(params, [:data])
     |> validate_required([:data])
     |> unique_constraint(:ap_id, name: :objects_unique_apid_index)

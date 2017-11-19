@@ -1,6 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.{Activity, Repo, Object, Upload, User, Web, Notification}
-  alias Ecto.{Changeset, UUID}
+  alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   require Logger
@@ -34,7 +33,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
-  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, activity_id \\ nil, local \\ true) do
+  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => _}} = object, activity_id \\ nil, local \\ true) do
     with nil <- get_existing_like(ap_id, object),
          like_data <- make_like_data(user, object, activity_id),
          {:ok, activity} <- insert(like_data, local),
@@ -56,7 +55,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, activity_id \\ nil, local \\ true) do
+  def announce(%User{ap_id: _} = user, %Object{data: %{"id" => _}} = object, activity_id \\ nil, local \\ true) do
     with announce_data <- make_announce_data(user, object, activity_id),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),

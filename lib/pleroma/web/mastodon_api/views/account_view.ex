@@ -4,7 +4,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.CommonAPI.Utils
 
-  defp image_url(%{"url" => [ %{ "href" => href } | t ]}), do: href
+  defp image_url(%{"url" => [ %{ "href" => href } | _ ]}), do: href
   defp image_url(_), do: nil
 
   def render("accounts.json", %{users: users} = opts) do

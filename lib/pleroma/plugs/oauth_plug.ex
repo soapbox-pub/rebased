@@ -9,7 +9,7 @@ defmodule Pleroma.Plugs.OAuthPlug do
   end
 
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
-  def call(conn, opts) do
+  def call(conn, _) do
     token = case get_req_header(conn, "authorization") do
               ["Bearer " <> header] -> header
               _ -> get_session(conn, :oauth_token)

@@ -71,7 +71,7 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle(type, payload) do
+  def handle(type, _) do
     Logger.debug(fn -> "Unknown task: #{type}" end)
     {:error, "Don't know what do do with this"}
   end
@@ -101,14 +101,14 @@ defmodule Pleroma.Web.Federator do
     {:noreply, {running_jobs, queue}}
   end
 
+  def handle_cast(m, state) do
+    IO.inspect("Unknown: #{inspect(m)}, #{inspect(state)}")
+    {:noreply, state}
+  end
+
   def handle_info({:DOWN, ref, :process, _pid, _reason}, {running_jobs, queue}) do
     running_jobs = :sets.del_element(ref, running_jobs)
     {running_jobs, queue} = maybe_start_job(running_jobs, queue)
     {:noreply, {running_jobs, queue}}
-  end
-
-  def handle_cast(m, state) do
-    IO.inspect("Unknown: #{inspect(m)}, #{inspect(state)}")
-    {:noreply, state}
   end
 end

@@ -37,6 +37,6 @@ defmodule Pleroma.XmlBuilder do
       "#{attribute}=\"#{value}\""
     end |> Enum.join(" ")
 
-    [tag, attributes_string] |> Enum.join(" ") |> String.strip
+    [tag, attributes_string] |> Enum.join(" ") |> String.trim
   end
 end

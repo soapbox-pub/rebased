@@ -22,9 +22,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
     end
   end
 
-  def id(socket), do: nil
+  def id(_), do: nil
 
-  def handle(:text, message, state) do
+  def handle(:text, message, _state) do
     IO.inspect message
     #| :ok
     #| state
@@ -34,7 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
     {:text, message}
   end
 
-  def handle(:closed, reason, %{socket: socket}) do
+  def handle(:closed, _, %{socket: socket}) do
     topic = socket.assigns[:topic]
     Pleroma.Web.Streamer.remove_socket(topic, socket)
   end

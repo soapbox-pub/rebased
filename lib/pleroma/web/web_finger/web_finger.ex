@@ -89,7 +89,7 @@ defmodule Pleroma.Web.WebFinger do
     with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
       get_template_from_xml(body)
     else
-      e ->
+      _ ->
         with {:ok, %{body: body}} <- @httpoison.get("https://#{domain}/.well-known/host-meta", []) do
           get_template_from_xml(body)
         else

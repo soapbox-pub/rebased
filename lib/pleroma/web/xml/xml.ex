@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.XML do
   require Logger
 
-  def string_from_xpath(xpath, :error), do: nil
+  def string_from_xpath(_, :error), do: nil
   def string_from_xpath(xpath, doc) do
     {:xmlObj, :string, res} = :xmerl_xpath.string('string(#{xpath})', doc)
 
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.XML do
 
       doc
     catch
-      :exit, error ->
+      :exit, _error ->
         Logger.debug("Couldn't parse xml: #{inspect(text)}")
         :error
     end
