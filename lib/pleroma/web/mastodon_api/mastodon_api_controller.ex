@@ -106,7 +106,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         user_count: 1,
         status_count: 2,
         domain_count: 3
-      }
+      },
+      max_toot_chars: Keyword.get(@instance, :limit)
     }
 
     json(conn, response)
