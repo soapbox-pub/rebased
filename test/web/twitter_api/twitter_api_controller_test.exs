@@ -548,8 +548,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> assign(:user, user)
       |> get("/api/friends/ids")
 
-      expected = Poison.encode!([followed_one.id, followed_two.id])
-      assert json_response(conn, 200) == expected
+      expected = [followed_one.id, followed_two.id]
+      assert MapSet.equal?(MapSet.new(Poison.decode!(json_response(conn, 200))), MapSet.new(expected))
     end
   end
 
