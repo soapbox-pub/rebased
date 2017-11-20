@@ -120,7 +120,7 @@
 
 .compose-form__buttons {
     background-color: #182230;
-    color: #b9b9ba;
+    color: #d8a070;
 }
 
 .text-icon-button {
@@ -133,4 +133,7 @@
 .notification__message{
     background-color: #121a24;    
 
+}
+a.status-link{
+    color: #d8a070;
 }
