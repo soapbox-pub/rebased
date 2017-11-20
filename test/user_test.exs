@@ -36,7 +36,7 @@ defmodule Pleroma.UserTest do
     followed = User.get_by_ap_id(followed.ap_id)
     assert followed.info["follower_count"] == 1
 
-    assert user.following == [User.ap_followers(followed)]
+    assert User.ap_followers(followed) in user.following
   end
 
   test "following a remote user will ensure a websub subscription is present" do
@@ -46,7 +46,7 @@ defmodule Pleroma.UserTest do
     assert followed.local == false
 
     {:ok, user} = User.follow(user, followed)
-    assert user.following == [User.ap_followers(followed)]
+    assert User.ap_followers(followed) in user.following
 
     query = from w in WebsubClientSubscription,
     where: w.topic == ^followed.info["topic"]
@@ -65,6 +65,15 @@ defmodule Pleroma.UserTest do
 
     assert user.following == []
   end
+
+  test "unfollow doesn't unfollow yourself" do
+    user = insert(:user)
+
+    {:error, _} = User.unfollow(user, user)
+
+    assert user.following == [user.ap_id]
+  end
+
 
   test "test if a user is following another user" do
     followed = insert(:user)
@@ -309,6 +318,7 @@ defmodule Pleroma.UserTest do
     assert [addressed] == User.get_recipients_from_activity(activity)
 
     {:ok, user} = User.follow(user, actor)
+    {:ok, user_two} = User.follow(user_two, actor)
     recipients = User.get_recipients_from_activity(activity)
     assert length(recipients) == 2
     assert user in recipients

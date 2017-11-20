@@ -61,8 +61,9 @@ defmodule Pleroma.User do
   end
 
   def user_info(%User{} = user) do
+    oneself = if user.local, do: 1, else: 0
     %{
-      following_count: length(user.following),
+      following_count: length(user.following) - oneself,
       note_count: user.info["note_count"] || 0,
       follower_count: user.info["follower_count"] || 0
     }
@@ -166,7 +167,7 @@ defmodule Pleroma.User do
 
   def unfollow(%User{} = follower, %User{} = followed) do
     ap_followers = followed.follower_address
-    if following?(follower, followed) do
+    if following?(follower, followed) and follower.ap_id != followed.ap_id do
       following = follower.following
       |> List.delete(ap_followers)
 
@@ -285,11 +286,11 @@ defmodule Pleroma.User do
 
   def get_recipients_from_activity(%Activity{data: %{"to" => to}}) do
     query = from u in User,
-      where: u.local == true
-
-    query = from u in query,
       where: u.ap_id in ^to,
       or_where: fragment("? \\\?| ?", u.following, ^to)
+
+    query = from u in query,
+      where: u.local == true
 
     Repo.all(query)
   end

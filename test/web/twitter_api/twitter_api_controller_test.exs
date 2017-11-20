@@ -288,7 +288,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> post("/api/friendships/create.json", %{user_id: followed.id})
 
       current_user = Repo.get(User, current_user.id)
-      assert current_user.following == [User.ap_followers(followed)]
+      assert User.ap_followers(followed) in current_user.following
       assert json_response(conn, 200) == UserView.render("show.json", %{user: followed, for: current_user})
     end
   end
@@ -304,7 +304,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       followed = insert(:user)
 
       {:ok, current_user} = User.follow(current_user, followed)
-      assert current_user.following == [User.ap_followers(followed)]
+      assert User.ap_followers(followed) in current_user.following
       ActivityPub.follow(current_user, followed)
 
       conn = conn
@@ -312,7 +312,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> post("/api/friendships/destroy.json", %{user_id: followed.id})
 
       current_user = Repo.get(User, current_user.id)
-      assert current_user.following == []
+      assert current_user.following == [current_user.ap_id]
       assert json_response(conn, 200) == UserView.render("show.json", %{user: followed, for: current_user})
     end
   end
