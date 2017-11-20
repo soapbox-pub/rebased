@@ -318,6 +318,7 @@ defmodule Pleroma.UserTest do
     assert [addressed] == User.get_recipients_from_activity(activity)
 
     {:ok, user} = User.follow(user, actor)
+    {:ok, user_two} = User.follow(user_two, actor)
     recipients = User.get_recipients_from_activity(activity)
     assert length(recipients) == 2
     assert user in recipients

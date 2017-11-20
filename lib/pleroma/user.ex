@@ -286,11 +286,11 @@ defmodule Pleroma.User do
 
   def get_recipients_from_activity(%Activity{data: %{"to" => to}}) do
     query = from u in User,
-      where: u.local == true
-
-    query = from u in query,
       where: u.ap_id in ^to,
       or_where: fragment("? \\\?| ?", u.following, ^to)
+
+    query = from u in query,
+      where: u.local == true
 
     Repo.all(query)
   end
