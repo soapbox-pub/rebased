@@ -71,6 +71,7 @@ defmodule Pleroma.UserTest do
 
     {:error, _} = User.unfollow(user, user)
 
+    user = Repo.get(User, user.id)
     assert user.following == [user.ap_id]
   end
 
