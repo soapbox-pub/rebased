@@ -56,9 +56,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
   defp get_links(_activity), do: []
 
-  defp get_emoji_links(content) do
-    Enum.map(Formatter.get_emoji(content), fn({emoji, file}) ->
-      {:link, [name: to_charlist(emoji), rel: 'emoji', href: to_charlist("#{Pleroma.Web.Endpoint.static_url}#{file}")], []}
+  defp get_emoji_links(emojis) do
+    Enum.map(emojis, fn({emoji, file}) ->
+      {:link, [name: to_charlist(emoji), rel: 'emoji', href: to_charlist(file)], []}
     end)
   end
 
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     categories = (activity.data["object"]["tag"] || [])
     |> Enum.map(fn (tag) -> {:category, [term: to_charlist(tag)], []} end)
 
-    emoji_links = get_emoji_links(activity.data["object"]["content"] || "")
+    emoji_links = get_emoji_links(activity.data["object"]["emoji"] || %{})
 
     summary = if activity.data["object"]["summary"] do
       [{:summary, [], h.(activity.data["object"]["summary"])}]

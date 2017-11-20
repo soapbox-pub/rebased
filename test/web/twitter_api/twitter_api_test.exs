@@ -28,13 +28,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     object = Repo.insert!(%Object{data: object_data})
 
     input = %{
-      "status" => "Hello again, @shp.<script></script>\nThis is on another line. #2hu #epic #phantasmagoric",
+      "status" => "Hello again, @shp.<script></script>\nThis is on another :moominmamma: line. #2hu #epic #phantasmagoric",
       "media_ids" => [object.id]
     }
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
 
-    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.&lt;script&gt;&lt;/script&gt;<br>This is on another line. #2hu #epic #phantasmagoric<br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. #2hu #epic #phantasmagoric<br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
     assert get_in(activity.data, ["object", "type"]) == "Note"
     assert get_in(activity.data, ["object", "actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
@@ -42,6 +42,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
     assert Enum.member?(get_in(activity.data, ["to"]), "shp")
     assert activity.local == true
+
+    assert %{"moominmamma" => "http://localhost:4001/finmoji/128px/moominmamma-128.png"} = activity.data["object"]["emoji"]
 
     # hashtags
     assert activity.data["object"]["tag"] == ["2hu", "epic", "phantasmagoric"]

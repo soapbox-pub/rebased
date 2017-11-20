@@ -41,7 +41,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <link type="text/html" href="#{note_activity.data["object"]["id"]}" rel="alternate" />
     <category term="2hu"/>
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
-    <link name="moominmamma" rel="emoji" href="#{Pleroma.Web.Endpoint.static_url}/finmoji/128px/moominmamma-128.png" />
+    <link name="2hu" rel="emoji" href="corndog.png" />
     """
 
     tuple = ActivityRepresenter.to_simple_form(note_activity, user)
@@ -81,7 +81,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <category term="2hu"/>
     <thr:in-reply-to ref="#{note.data["object"]["id"]}" href="someurl" />
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
-    <link name="moominmamma" rel="emoji" href="#{Pleroma.Web.Endpoint.static_url}/finmoji/128px/moominmamma-128.png" />
+    <link name="2hu" rel="emoji" href="corndog.png" />
     """
 
     tuple = ActivityRepresenter.to_simple_form(answer, user)
