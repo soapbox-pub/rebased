@@ -15,7 +15,7 @@
     background-color: #182230;
 }
 
-.notification.notification-favourite.focusable {
+.notification {
     background-color: #121a24;
 }
 
@@ -44,7 +44,7 @@
 }
 
 .icon-button {
-    color: #d8a070;
+    color: #d8a070 !important;
 }
 
 .status__content.status__content--with-action {
@@ -108,7 +108,12 @@
 .detailed-status__action-bar {
     background-color: #121a24;
 }
-
+.status__action-bar-button{
+    background-color: #121a24;
+}
+.status__action-bar{
+    color:#d8a070;
+}
 .navigation-bar__profile-edit span {
     color: #d8a070;
 }
