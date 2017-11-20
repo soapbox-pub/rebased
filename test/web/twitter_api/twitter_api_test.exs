@@ -179,7 +179,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     followed = insert(:user)
 
     {:ok, user, followed, _activity } = TwitterAPI.follow(user, %{"user_id" => followed.id})
-    assert user.following == [User.ap_followers(followed)]
+    assert User.ap_followers(followed) in user.following
 
     { :error, msg } = TwitterAPI.follow(user, %{"user_id" => followed.id})
     assert msg == "Could not follow user: #{followed.nickname} is already on your list."
@@ -190,7 +190,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     followed = insert(:user)
 
     {:ok, user, followed, _activity } = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
-    assert user.following == [User.ap_followers(followed)]
+    assert User.ap_followers(followed) in user.following
 
     followed = User.get_by_ap_id(followed.ap_id)
     assert followed.info["follower_count"] == 1

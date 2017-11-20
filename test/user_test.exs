@@ -36,7 +36,7 @@ defmodule Pleroma.UserTest do
     followed = User.get_by_ap_id(followed.ap_id)
     assert followed.info["follower_count"] == 1
 
-    assert user.following == [User.ap_followers(followed)]
+    assert User.ap_followers(followed) in user.following
   end
 
   test "following a remote user will ensure a websub subscription is present" do
@@ -46,7 +46,7 @@ defmodule Pleroma.UserTest do
     assert followed.local == false
 
     {:ok, user} = User.follow(user, followed)
-    assert user.following == [User.ap_followers(followed)]
+    assert User.ap_followers(followed) in user.following
 
     query = from w in WebsubClientSubscription,
     where: w.topic == ^followed.info["topic"]

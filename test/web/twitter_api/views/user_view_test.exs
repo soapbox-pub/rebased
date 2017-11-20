@@ -92,7 +92,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   end
 
   test "A user that follows you", %{user: user} do
-    {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+    follower = insert(:user)
+    {:ok, follower} = User.follow(follower, user)
     {:ok, user} = User.update_follower_count(user)
     image = "https://placehold.it/48x48"
     represented = %{
