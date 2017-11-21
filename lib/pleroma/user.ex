@@ -265,6 +265,7 @@ defmodule Pleroma.User do
   def update_follower_count(%User{} = user) do
     follower_count_query = from u in User,
       where: fragment("? @> ?", u.following, ^user.follower_address),
+      where: u.id != ^user.id,
       select: count(u.id)
 
     follower_count = Repo.one(follower_count_query)
