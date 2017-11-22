@@ -15,7 +15,7 @@ Mobile clients that are known to work well:
 * Amaroq (iOS)
 * Tootdon (Android + iOS)
 
-No release has been made yet, but several servers have been online for months already. If you want to run your own server, feel free to contact us at @lain@pleroma.soykaf.com or in our dev chat at https://matrix.heldscal.la/#/room/#pleromafe:matrix.heldscal.la.
+No release has been made yet, but several servers have been online for months already. If you want to run your own server, feel free to contact us at @lain@pleroma.soykaf.com or in our dev chat at #pleroma on freenode or via matrix at https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org.
 
 ## Installation
 
