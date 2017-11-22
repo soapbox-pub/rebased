@@ -3,7 +3,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   require Logger
 
   def remote(conn, %{"sig" => sig, "url" => url}) do
-    {:ok, url} = Pleroma.MediaProxy.decode_url(sig, url)
+    {:ok, url} = Pleroma.Web.MediaProxy.decode_url(sig, url)
     url = url |> URI.encode()
     case proxy_request(url) do
       {:ok, content_type, body} ->
@@ -19,7 +19,6 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   end
 
   defp proxy_request(link) do
-    instance = )
     headers = [{"user-agent", "Pleroma/MediaProxy; #{Pleroma.Web.base_url()} <#{Application.get_env(:pleroma, :instance)[:email]}>"}]
     options = [:insecure, {:follow_redirect, true}]
     case :hackney.request(:get, link, headers, "", options) do
