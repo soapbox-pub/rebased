@@ -3,6 +3,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.{AccountView, StatusView}
   alias Pleroma.{User, Activity}
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MediaProxy
 
   def render("index.json", opts) do
     render_many(opts.activities, StatusView, "status.json", opts)
@@ -121,9 +122,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     %{
       id: to_string(attachment["id"] || hash_id),
-      url: href,
+      url: MediaProxy.url(href),
       remote_url: href,
-      preview_url: href,
+      preview_url: MediaProxy.url(href),
       text_url: href,
       type: type
     }

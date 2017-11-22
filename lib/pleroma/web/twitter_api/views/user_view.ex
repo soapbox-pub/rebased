@@ -2,6 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
   use Pleroma.Web, :view
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MediaProxy
 
   def render("show.json", %{user: user = %User{}} = assigns) do
     render_one(user, Pleroma.Web.TwitterAPI.UserView, "user.json", assigns)
@@ -12,7 +13,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
   end
 
   def render("user.json", %{user: user = %User{}} = assigns) do
-    image = User.avatar_url(user)
+    image = User.avatar_url(user) |> MediaProxy.url()
     {following, follows_you, statusnet_blocking} = if assigns[:for] do
       {
         User.following?(assigns[:for], user),
@@ -44,8 +45,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "screen_name" => user.nickname,
       "statuses_count" => user_info[:note_count],
       "statusnet_profile_url" => user.ap_id,
-      "cover_photo" => image_url(user.info["banner"]),
-      "background_image" => image_url(user.info["background"])
+      "cover_photo" => image_url(user.info["banner"]) |> MediaProxy.url(),
+      "background_image" => image_url(user.info["background"]) |> MediaProxy.url(),
     }
   end
 
