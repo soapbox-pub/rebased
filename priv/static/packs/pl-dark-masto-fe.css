@@ -7,6 +7,12 @@
     background-color: #182230;
 }
 
+.reply-indicator,
+.reply-indicator__content {
+    background-color: #182230;
+    color: #b9b9ba;
+}
+
 .status.status-public {
     background-color: #121a24;
 }
@@ -18,7 +24,7 @@
 .notification {
     background-color: #121a24;
 }
-
+.display-name__html,
 .display-name__account {
     color: #d8a070;
 }
@@ -136,4 +142,7 @@
 }
 a.status-link{
     color: #d8a070;
+}
+.column { 
+flex: 1 1 auto !important;
 }
