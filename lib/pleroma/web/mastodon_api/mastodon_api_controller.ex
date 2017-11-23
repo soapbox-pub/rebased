@@ -559,7 +559,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def login(conn, _) do
     conn
-    |> render(MastodonView, "login.html")
+    |> render(MastodonView, "login.html", %{error: false})
   end
 
   defp get_or_make_app() do
@@ -581,6 +581,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       conn
       |> put_session(:oauth_token, token.token)
       |> redirect(to: "/web/getting-started")
+    else
+      _e ->
+        conn
+        |> render(MastodonView, "login.html", %{error: "Wrong username or password"})
     end
   end
 

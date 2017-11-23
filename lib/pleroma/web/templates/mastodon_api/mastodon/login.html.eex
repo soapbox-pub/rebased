@@ -1,4 +1,7 @@
 <h2>Login in to Mastodon Frontend</h2>
+<%= if @error do %>
+  <h2><%= @error %></h2>
+<% end %>
 <%= form_for @conn, mastodon_api_path(@conn, :login), [as: "authorization"], fn f -> %>
 <%= text_input f, :name, placeholder: "Username" %>
 <br>
