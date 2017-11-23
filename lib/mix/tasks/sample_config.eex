@@ -1,0 +1,20 @@
+use Mix.Config
+
+config :pleroma, Pleroma.Web.Endpoint,
+   url: [host: "<%= domain %>", scheme: "https", port: 443],
+   secret_key_base: "<%= secret %>"
+
+config :pleroma, :instance,
+  name: "<%= name %>",
+  email: "<%= email %>",
+  limit: 5000,
+  registrations_open: true
+
+# Configure your database
+config :pleroma, Pleroma.Repo,
+  adapter: Ecto.Adapters.Postgres,
+  username: "postgres",
+  password: "postgres",
+  database: "pleroma_dev",
+  hostname: "localhost",
+  pool_size: 10

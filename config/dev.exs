@@ -49,5 +49,5 @@ config :pleroma, Pleroma.Repo,
 try do
   import_config "dev.secret.exs"
 rescue
-  _-> nil
+  _-> IO.puts("!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs")
 end

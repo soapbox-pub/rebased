@@ -25,57 +25,9 @@ No release has been made yet, but several servers have been online for months al
 * Elixir version 1.4 or newer
 * Build-essential tools
 
-#### Installing dependencies on Debian system
-PostgreSQL 9.6 should be available on Debian stable (Jessie) from "main" area. Install it using apt: `apt install postgresql-9.6`. Make sure that older versions are not installed since Debian allows multiple versions to coexist but still runs only one version.
+### Configuration
 
-You must install elixir 1.4+ from elixir-lang.org, because Debian repos only have 1.3.x version. You will need to add apt repo to sources.list(.d) and import GPG key. Follow instructions here: https://elixir-lang.org/install.html#unix-and-unix-like (See "Ubuntu or Debian 7"). This should be valid until Debian updates elixir in their repositories. Package you want is named `elixir`, so install it using `apt install elixir`
-
-Elixir will also require `make` and probably other related software for building dependencies - in case you don't have them, get them via `apt install build-essential`
-
-### Preparation
-
-  * You probably want application to run as separte user - so create a new one: `adduser pleroma`, you can login as it via `su pleroma`
-  * Clone the git repository into new user's dir (clone as the pleroma user to avoid permissions errors)
-  * Again, as new user, install dependencies with `mix deps.get` if it asks you to install "hex" - agree to that.
-
-### Database setup
-
-  * Create a database user and database for pleroma
-     * Open psql shell as postgres user: (as root) `su postgres -c psql`
-     * Create a new PostgreSQL user:
-
-     ```sql
-     \c pleroma_dev
-     CREATE user pleroma;
-     ALTER user pleroma with encrypted password '<your password>';
-     GRANT ALL ON ALL tables IN SCHEMA public TO pleroma;
-     GRANT ALL ON ALL sequences IN SCHEMA public TO pleroma;
-     ```
-
-     * Create `config/dev.secret.exs` and copy the database settings from `dev.exs` there.
-     * Change password in `config/dev.secret.exs`, and change user to `"pleroma"` (line like `username: "postgres"`)
-     * Create and update your database with `mix ecto.create && mix ecto.migrate`.
-
-### Some additional configuration
-
-  * You will need to let pleroma instance to know what hostname/url it's running on. _THIS IS THE MOST IMPORTANT STEP. GET THIS WRONG AND YOU'LL HAVE TO RESET YOUR DATABASE_. We _ONLY_ support _HTTPS_ deployments in production. You can use basic http for local dev, but _NEVER USE IT_ on an actual instance.
-
-    Create the file `config/dev.secret.exs`, add these lines at the end of the file:
-
-    ```elixir
-    config :pleroma, Pleroma.Web.Endpoint,
-    url: [host: "example.tld", scheme: "https", port: 443]
-    ```
-
-    replacing `example.tld` with your (sub)domain
-
-  * You should also setup your site name and admin email address. Look at config.exs for more available options.
-
-    ```elixir
-    config :pleroma, :instance,
-      name: "My great instance",
-      email: "someone@example.com"
-    ```
+  * Run `mix generate_config`. This will ask you a few questions about your instance and generate a configuration file in `config/generated_config.exs`. Check that and copy it to either `config/dev.secret.exs` or `config/prod.secret.exs`. You can check if your instance is configured correctly by running it with `mix phx.serve` and checking the instance info endpoint at `/api/v1/instance`. If it shows your uri, name and email correctly, you are configured correctly. If it shows something like `localhost:4000`, your configuration is probably wrong, unless you are running a local development setup.
 
   * The common and convenient way for adding HTTPS is by using Nginx as a reverse proxy. You can look at example Nginx configuration in `installation/pleroma.nginx`. If you need TLS/SSL certificates for HTTPS, you can look get some for free with letsencrypt: https://letsencrypt.org/
   On Debian you can use `certbot` package and command to manage letsencrypt certificates.
