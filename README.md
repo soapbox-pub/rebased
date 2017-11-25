@@ -35,7 +35,7 @@ No release has been made yet, but several servers have been online for months al
 
   * Run `mix ecto.migrate` to run the database migrations. You will have to do this again after certain updates.
 
-  * You can check if your instance is configured correctly by running it with `mix phx.serve` and checking the instance info endpoint at `/api/v1/instance`. If it shows your uri, name and email correctly, you are configured correctly. If it shows something like `localhost:4000`, your configuration is probably wrong, unless you are running a local development setup.
+  * You can check if your instance is configured correctly by running it with `mix phx.server` and checking the instance info endpoint at `/api/v1/instance`. If it shows your uri, name and email correctly, you are configured correctly. If it shows something like `localhost:4000`, your configuration is probably wrong, unless you are running a local development setup.
 
   * The common and convenient way for adding HTTPS is by using Nginx as a reverse proxy. You can look at example Nginx configuration in `installation/pleroma.nginx`. If you need TLS/SSL certificates for HTTPS, you can look get some for free with letsencrypt: https://letsencrypt.org/
   On Debian you can use `certbot` package and command to manage letsencrypt certificates.
