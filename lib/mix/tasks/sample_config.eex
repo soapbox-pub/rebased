@@ -13,8 +13,8 @@ config :pleroma, :instance,
 # Configure your database
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: "postgres",
-  password: "postgres",
+  username: "pleroma",
+  password: "<%= dbpass %>",
   database: "pleroma_dev",
   hostname: "localhost",
   pool_size: 10
