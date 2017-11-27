@@ -73,6 +73,16 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
     assert response(conn, 200)
   end
+
+  test "gets a notice", %{conn: conn} do
+    note_activity = insert(:note_activity)
+    url = "/notice/#{note_activity.id}"
+
+    conn = conn
+    |> get(url)
+
+    assert response(conn, 200)
+  end
 end
 
 defmodule Pleroma.Web.OStatusMock do

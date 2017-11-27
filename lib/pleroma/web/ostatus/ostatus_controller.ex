@@ -86,6 +86,19 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
+  def notice(conn, %{"id" => id}) do
+     with %Activity{} = activity <- Repo.get(Activity, id),
+          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+      case get_format(conn) do
+        "html" ->
+          conn
+          |> put_resp_content_type("text/html")
+          |> send_file(200, "priv/static/index.html")
+        _ -> represent_activity(conn, activity, user)
+      end
+    end
+  end
+
   defp represent_activity(conn, activity, user) do
     response = activity
     |> ActivityRepresenter.to_simple_form(user, true)
