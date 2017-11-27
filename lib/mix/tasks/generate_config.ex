@@ -14,7 +14,7 @@ defmodule Mix.Tasks.GenerateConfig do
     resultSql = EEx.eval_file("lib/mix/tasks/sample_psql.eex", [dbpass: dbpass])
     result = EEx.eval_file("lib/mix/tasks/sample_config.eex", [domain: domain, email: email, name: name, secret: secret, dbpass: dbpass])
     IO.puts("\nWriting config to config/dev.secret.exs and config/prod.secret.exs")
-    IO.puts("\nWriting setup_db.psql, please run it as postgre superuser, i.e. su - postgre -c 'psql -f setup_db.psql'")
+    IO.puts("\nWriting setup_db.psql, please run it as postgre superuser, i.e. su - postgres -c 'psql -f config/setup_db.psql'")
     File.write("config/dev.secret.exs", result)
     File.write("config/prod.secret.exs", result)
     File.write("config/setup_db.psql", resultSql)
