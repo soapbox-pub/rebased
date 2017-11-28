@@ -47,6 +47,11 @@ config :pleroma, :instance,
   limit: 5000,
   registrations_open: true
 
+config :pleroma, :media_proxy,
+  enabled: false,
+  redirect_on_failure: true
+  #base_url: "https://cache.pleroma.social"
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env}.exs"

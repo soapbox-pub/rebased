@@ -2,19 +2,27 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   use Pleroma.Web, :controller
   require Logger
 
+  @cache_control %{
+    default: "public, max-age=1209600",
+    error:   "public, must-revalidate, max-age=160",
+  }
+
   def remote(conn, %{"sig" => sig, "url" => url}) do
-    {:ok, url} = Pleroma.Web.MediaProxy.decode_url(sig, url)
-    url = url |> URI.encode()
-    case proxy_request(url) do
-      {:ok, content_type, body} ->
-        conn
-        |> put_resp_content_type(content_type)
-        |> set_cache_header(:default)
-        |> send_resp(200, body)
-      other ->
-        conn
-        |> set_cache_header(:error)
-        |> redirect(external: url)
+    config = Application.get_env(:pleroma, :media_proxy, [])
+    with \
+      true <- Keyword.get(config, :enabled, false),
+      {:ok, url} <- Pleroma.Web.MediaProxy.decode_url(sig, url),
+      url = URI.encode(url),
+      {:ok, content_type, body} <- proxy_request(url)
+    do
+      conn
+      |> put_resp_content_type(content_type)
+      |> set_cache_header(:default)
+      |> send_resp(200, body)
+    else
+      false -> send_error(conn, 404)
+      {:error, :invalid_signature} -> send_error(conn, 403)
+      {:error, {:http, _, url}} -> redirect_or_error(conn, url, Keyword.get(config, :redirect_on_failure, true))
     end
   end
 
@@ -28,21 +36,24 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
         {:ok, headers["Content-Type"], body}
       {:ok, status, _, _} ->
         Logger.warn "MediaProxy: request failed, status #{status}, link: #{link}"
-        {:error, :bad_status}
+        {:error, {:http, :bad_status, link}}
       {:error, error} ->
         Logger.warn "MediaProxy: request failed, error #{inspect error}, link: #{link}"
-        {:error, error}
+        {:error, {:http, error, link}}
     end
   end
 
-  @cache_control %{
-    default: "public, max-age=1209600",
-    error:   "public, must-revalidate, max-age=160",
-  }
+  defp set_cache_header(conn, key) do
+    Plug.Conn.put_resp_header(conn, "cache-control", @cache_control[key])
+  end
 
-  defp set_cache_header(conn, true), do: set_cache_header(conn, :default)
-  defp set_cache_header(conn, false), do: set_cache_header(conn, :error)
-  defp set_cache_header(conn, key) when is_atom(key), do: set_cache_header(conn, @cache_control[key])
-  defp set_cache_header(conn, value) when is_binary(value), do: Plug.Conn.put_resp_header(conn, "cache-control", value)
+  defp redirect_or_error(conn, url, true), do: redirect(conn, external: url)
+  defp redirect_or_error(conn, url, _), do: send_error(conn, 502, "Media proxy error: " <> url)
+
+  defp send_error(conn, code, body \\ "") do
+    conn
+    |> set_cache_header(:error)
+    |> send_resp(code, body)
+  end
 
 end
