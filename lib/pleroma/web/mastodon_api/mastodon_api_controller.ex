@@ -93,6 +93,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   @instance Application.get_env(:pleroma, :instance)
 
   def masto_instance(conn, _params) do
+    user_count = Repo.aggregate(User.local_user_query, :count, :id)
     response = %{
       uri: Web.base_url,
       title: Keyword.get(@instance, :name),
@@ -103,8 +104,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         streaming_api: String.replace(Web.base_url, ["http","https"], "wss")
       },
       stats: %{
-        user_count: 1,
         status_count: 2,
+        user_count: user_count,
         domain_count: 3
       },
       max_toot_chars: Keyword.get(@instance, :limit)
