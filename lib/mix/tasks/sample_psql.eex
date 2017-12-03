@@ -1,6 +1,8 @@
-CREATE USER pleroma WITH ENCRYPTED PASSWORD '<%= dbpass %>' CREATEDB;
-CREATE DATABASE pleroma_dev;
+CREATE USER IF NOT EXISTS pleroma WITH ENCRYPTED PASSWORD '<%= dbpass %>' CREATEDB;
+-- in case someone runs this second time accidentally
+ALTER USER pleroma WITH ENCRYPTED PASSWORD '<%= dbpass %>' CREATEDB;
+CREATE DATABASE IF NOT EXISTS pleroma_dev;
 ALTER DATABASE pleroma_dev OWNER TO pleroma;
 \c pleroma_dev;
 --Extensions made by ecto.migrate that need superuser access
-CREATE EXTENSION citext;
+CREATE EXTENSION IF NOT EXISTS citext;
