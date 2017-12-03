@@ -19,6 +19,7 @@ defmodule Pleroma.Web.OStatus.UserRepresenter do
       {:"poco:preferredUsername", [nickname]},
       {:"poco:displayName", [name]},
       {:"poco:note", [bio]},
+      {:summary, [bio]},
       {:name, [nickname]},
       {:link, [rel: 'avatar', href: avatar_url], []}
     ] ++ banner
