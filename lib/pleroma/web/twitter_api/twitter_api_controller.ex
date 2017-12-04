@@ -10,7 +10,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   require Logger
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
-    render(conn, UserView, "show.json", %{user: user})
+    token = Phoenix.Token.sign(conn, "user socket", user.id)
+    render(conn, UserView, "show.json", %{user: user, token: token})
   end
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => _} = status_data) do

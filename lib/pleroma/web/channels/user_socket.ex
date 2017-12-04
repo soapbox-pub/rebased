@@ -1,8 +1,11 @@
 defmodule Pleroma.Web.UserSocket do
   use Phoenix.Socket
+  alias Pleroma.User
+  alias Comeonin.Pbkdf2
 
   ## Channels
   # channel "room:*", Pleroma.Web.RoomChannel
+  channel "chat:*", Pleroma.Web.ChatChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
@@ -19,8 +22,13 @@ defmodule Pleroma.Web.UserSocket do
   #
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
-  def connect(_params, socket) do
-    {:ok, socket}
+  def connect(%{"token" => token}, socket) do
+    with {:ok, user_id} <- Phoenix.Token.verify(socket, "user socket", token, max_age: 84600),
+         %User{} = user <- Pleroma.Repo.get(User, user_id) do
+      {:ok, assign(socket, :user, user)}
+    else
+      _e -> :error
+    end
   end
 
   # Socket id's are topics that allow you to identify all sockets for a given user:

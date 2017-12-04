@@ -25,7 +25,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
 
     user_info = User.get_cached_user_info(user)
 
-    %{
+    data = %{
       "created_at" => user.inserted_at |> Utils.format_naive_asctime,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
       "favourites_count" => 0,
@@ -47,6 +47,12 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "cover_photo" => image_url(user.info["banner"]),
       "background_image" => image_url(user.info["background"])
     }
+
+    if assigns[:token] do
+      Map.put(data, "token", assigns[:token])
+    else
+      data
+    end
   end
 
   def render("short.json", %{user: %User{
