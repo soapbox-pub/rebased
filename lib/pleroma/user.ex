@@ -329,4 +329,9 @@ defmodule Pleroma.User do
     Enum.member?(blocks, ap_id)
   end
 
+  def local_user_query() do
+    from u in User,
+      where: u.local == true
+  end
+
 end

@@ -573,4 +573,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["header"] != "https://placehold.it/700x335"
     end
   end
+
+  test "get instance information" do
+    insert(:user, %{local: true})
+    user = insert(:user, %{local: true})
+    insert(:user, %{local: false})
+
+    {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
+
+    conn = conn
+    |> get("/api/v1/instance")
+
+    assert result = json_response(conn, 200)
+
+    assert result["stats"]["user_count"] == 2
+  end
 end
