@@ -15,8 +15,8 @@ defmodule Pleroma.Web.Federator do
       enqueue(:refresh_subscriptions, nil)
     end)
     GenServer.start_link(__MODULE__, %{
-          in: {:sets.new(), :queue.new()},
-          out: {:sets.new(), :queue.new()}
+          in: {:sets.new(), [],
+          out: {:sets.new(), []}
                          }, name: __MODULE__)
   end
 
@@ -88,8 +88,8 @@ defmodule Pleroma.Web.Federator do
   end
 
   def maybe_start_job(running_jobs, queue) do
-    if (:sets.size(running_jobs) < @max_jobs) && !:queue.is_empty(queue) do
-      {{:value, {type, payload}}, queue} = :queue.out(queue)
+    if (:sets.size(running_jobs) < @max_jobs) && queue != [] do
+      {{:value, {type, payload}}, queue} = queue_pop(queue)
       {:ok, pid} = Task.start(fn -> handle(type, payload) end)
       mref = Process.monitor(pid)
       {:sets.add_element(mref, running_jobs), queue}
@@ -100,14 +100,14 @@ defmodule Pleroma.Web.Federator do
 
   def handle_cast({:enqueue, type, payload}, state) when type in [:incoming_doc] do
     %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
-    i_queue = :queue.in({type, payload}, i_queue)
+    i_queue = enqueue_sorted(i_queue, {type, payload}, 1)
     {i_running_jobs, i_queue} = maybe_start_job(i_running_jobs, i_queue)
     {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
 
   def handle_cast({:enqueue, type, payload}, state) do
     %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
-    o_queue = :queue.in({type, payload}, o_queue)
+    o_queue = enqueue_sorted(o_queue, {type, payload}, 1)
     {o_running_jobs, o_queue} = maybe_start_job(o_running_jobs, o_queue)
     {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
@@ -125,5 +125,14 @@ defmodule Pleroma.Web.Federator do
     {o_running_jobs, o_queue} = maybe_start_job(o_running_jobs, o_queue)
 
     {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
+  end
+
+  def enqueue_sorted(queue, element, priority) do
+    [%{item: element, priority: priority} | queue]
+    |> Enum.sort_by(fn (%{priority: priority}) -> priority end)
+  end
+
+  def queue_pop([%{item: element} | queue]) do
+    {element, queue}
   end
 end
