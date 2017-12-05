@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ChatChannel do
   use Phoenix.Channel
   alias Pleroma.Web.ChatChannel.ChatChannelState
+  alias Pleroma.User
 
   def join("chat:public", _message, socket) do
     send(self(), :after_join)
@@ -12,10 +13,10 @@ defmodule Pleroma.Web.ChatChannel do
     {:noreply, socket}
   end
 
-  def handle_in("new_msg", %{"text" => text}, socket) do
-    author = socket.assigns[:user]
+  def handle_in("new_msg", %{"text" => text}, %{assigns: %{user_name: user_name}} = socket) do
+    author = User.get_cached_by_nickname(user_name)
     author = Pleroma.Web.MastodonAPI.AccountView.render("account.json", user: author)
-    message= ChatChannelState.add_message(%{text: text, author: author})
+    message = ChatChannelState.add_message(%{text: text, author: author})
 
     broadcast! socket, "new_msg", message
     {:noreply, socket}
