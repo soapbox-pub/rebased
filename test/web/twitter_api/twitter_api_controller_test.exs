@@ -22,7 +22,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(user.nickname, "test")
         |> post("/api/account/verify_credentials.json")
 
-      assert json_response(conn, 200) == UserView.render("show.json", %{user: user})
+      assert response = json_response(conn, 200)
+      assert response == UserView.render("show.json", %{user: user, token: response["token"]})
     end
   end
 
