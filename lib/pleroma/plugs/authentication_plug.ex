@@ -44,7 +44,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   defp decode_header(conn) do
     with ["Basic " <> header] <- get_req_header(conn, "authorization"),
          {:ok, userinfo} <- Base.decode64(header),
-         [username, password] <- String.split(userinfo, ":")
+         [username, password] <- String.split(userinfo, ":", parts: 2)
     do
       {:ok, username, password}
     end
