@@ -29,7 +29,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Enqueues an activity for federation if it's local
   """
   def maybe_federate(%Activity{local: true} = activity) do
-    Pleroma.Web.Federator.enqueue(:publish, activity)
+    priority = case activity.data["type"] do
+                 "Delete" -> 10
+                 "Create" -> 1
+                 _ -> 5
+               end
+    Pleroma.Web.Federator.enqueue(:publish, activity, priority)
     :ok
   end
   def maybe_federate(_), do: :ok
