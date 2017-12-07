@@ -334,4 +334,9 @@ defmodule Pleroma.User do
       where: u.local == true
   end
 
+  def deactivate (%User{} = user) do
+    new_info = Map.put(user.info, "deactivated", true)
+    cs = User.info_changeset(user, %{info: new_info})
+    Repo.update(cs)
+  end
 end

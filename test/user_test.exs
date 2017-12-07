@@ -325,5 +325,11 @@ defmodule Pleroma.UserTest do
     assert user in recipients
     assert addressed in recipients
   end
-end
 
+  test ".deactivate deactivates a user" do
+    user = insert(:user)
+    assert false == !!user.info["deactivated"]
+    {:ok, user} = User.deactivate(user)
+    assert true == user.info["deactivated"]
+  end
+end
