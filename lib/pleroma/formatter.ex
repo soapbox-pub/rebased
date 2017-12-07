@@ -24,6 +24,15 @@ defmodule Pleroma.Formatter do
     |> Enum.filter(fn ({_match, user}) -> user end)
   end
 
+  def html_escape(text) do
+    Regex.split(@link_regex, text, include_captures: true)
+    |> Enum.map_every(2, fn chunk ->
+      {:safe, part} = Phoenix.HTML.html_escape(chunk)
+      part
+    end)
+    |> Enum.join("")
+  end
+
   @finmoji [
     "a_trusted_friend",
     "alandislands",

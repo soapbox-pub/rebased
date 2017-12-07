@@ -58,8 +58,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def format_input(text, mentions, _tags) do
-    Phoenix.HTML.html_escape(text)
-    |> elem(1)
+    text
+    |> Formatter.html_escape
     |> Formatter.linkify
     |> String.replace("\n", "<br>")
     |> add_user_links(mentions)
