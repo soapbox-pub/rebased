@@ -14,6 +14,13 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     password_hash: Comeonin.Pbkdf2.hashpwsalt("guy")
   }
 
+  @deactivated %User{
+    id: 1,
+    name: "dude",
+    password_hash: Comeonin.Pbkdf2.hashpwsalt("guy"),
+    info: %{"deactivated" => true}
+  }
+
   @session_opts [
     store: :cookie,
     key: "_test",
@@ -128,6 +135,26 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
       assert %{ user: @user } == conn.assigns
       assert get_session(conn, :user_id) == @user.id
       assert conn.halted == false
+    end
+  end
+
+  describe "with a correct authorization header for an deactiviated user" do
+    test "it halts the appication", %{conn: conn} do
+      opts = %{
+        optional: false,
+        fetcher: fn _ -> @deactivated end
+      }
+
+      header = basic_auth_enc("dude", "guy")
+
+      conn = conn
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
+        |> put_req_header("authorization", header)
+        |> AuthenticationPlug.call(opts)
+
+      assert conn.status == 403
+      assert conn.halted == true
     end
   end
 
