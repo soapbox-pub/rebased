@@ -56,7 +56,7 @@ defmodule Pleroma.Web.CommonAPI do
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
          to <- to_for_user_and_mentions(user, mentions, inReplyTo),
          tags <- Formatter.parse_tags(status, data),
-         content_html <- make_content_html(status, mentions, attachments, tags),
+         content_html <- make_content_html(status, mentions, attachments, tags, data["no_attachment_links"]),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
          object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags, cw),
