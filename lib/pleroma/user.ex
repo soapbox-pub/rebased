@@ -142,9 +142,9 @@ defmodule Pleroma.User do
     end
   end
 
-  def follow(%User{} = follower, %User{} = followed) do
+  def follow(%User{} = follower, %User{info: info} = followed) do
     ap_followers = followed.follower_address
-    if following?(follower, followed) do
+    if following?(follower, followed) or info["deactivated"] do
       {:error,
        "Could not follow user: #{followed.nickname} is already on your list."}
     else

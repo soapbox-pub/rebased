@@ -39,6 +39,13 @@ defmodule Pleroma.UserTest do
     assert User.ap_followers(followed) in user.following
   end
 
+  test "can't follow a deactivated users" do
+    user = insert(:user)
+    followed = insert(:user, info: %{"deactivated" => true})
+
+    {:error, _} = User.follow(user, followed)
+  end
+
   test "following a remote user will ensure a websub subscription is present" do
     user = insert(:user)
     {:ok, followed} = OStatus.make_user("shp@social.heldscal.la")
