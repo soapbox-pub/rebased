@@ -339,4 +339,19 @@ defmodule Pleroma.User do
     cs = User.info_changeset(user, %{info: new_info})
     Repo.update(cs)
   end
+
+  def delete (%User{} = user) do
+    {:ok, user} = User.deactivate(user)
+
+    # Remove all relationships
+    {:ok, followers } = User.get_followers(user)
+    followers
+    |> Enum.each(fn (follower) -> User.unfollow(follower, user) end)
+
+    {:ok, friends} = User.get_friends(user)
+    friends
+    |> Enum.each(fn (followed) -> User.unfollow(user, followed) end)
+
+    :ok
+  end
 end

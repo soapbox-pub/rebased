@@ -339,4 +339,33 @@ defmodule Pleroma.UserTest do
     {:ok, user} = User.deactivate(user)
     assert true == user.info["deactivated"]
   end
+
+  test ".delete deactivates a user, all follow relationships and all create activities" do
+    user = insert(:user)
+    followed = insert(:user)
+    follower = insert(:user)
+
+    {:ok, user} = User.follow(user, followed)
+    {:ok, follower} = User.follow(follower, user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
+    {:ok, activity_two} = CommonAPI.post(follower, %{"status" => "3hu"})
+
+    {:ok, _, _} = CommonAPI.favorite(activity_two.id, user)
+    {:ok, _, _} = CommonAPI.favorite(activity.id, follower)
+    {:ok, _, _} = CommonAPI.repeat(activity.id, follower)
+
+    :ok = User.delete(user)
+
+    followed = Repo.get(User, followed.id)
+    follower = Repo.get(User, follower.id)
+    user = Repo.get(User, user.id)
+
+    assert user.info["deactivated"]
+
+    refute User.following?(user, followed)
+    refute User.following?(followed, follower)
+
+    # TODO: check for activities.
+  end
 end
