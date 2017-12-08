@@ -38,15 +38,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def make_content_html(status, mentions, attachments, tags) do
+  def make_content_html(status, mentions, attachments, tags, no_attachment_links \\ false) do
     status
     |> format_input(mentions, tags)
-    |> add_attachments(attachments)
+    |> maybe_add_attachments(attachments, no_attachment_links)
   end
 
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id
 
+  def maybe_add_attachments(text, attachments, _no_links = true), do: text
+  def maybe_add_attachments(text, attachments, _no_links) do
+    add_attachments(text, attachments)
+  end
   def add_attachments(text, attachments) do
     attachment_text = Enum.map(attachments, fn
       (%{"url" => [%{"href" => href} | _]}) ->
