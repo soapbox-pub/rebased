@@ -1,6 +1,6 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.{User, Repo}
+  alias Pleroma.{User, Repo, Activity}
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Websub.WebsubClientSubscription
   alias Pleroma.Web.CommonAPI
@@ -366,6 +366,8 @@ defmodule Pleroma.UserTest do
     refute User.following?(user, followed)
     refute User.following?(followed, follower)
 
-    # TODO: check for activities.
+    # TODO: Remove favorites, repeats, delete activities.
+
+    refute Repo.get(Activity, activity.id)
   end
 end
