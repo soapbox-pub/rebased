@@ -22,16 +22,14 @@ No release has been made yet, but several servers have been online for months al
 ### Dependencies
 
 * Postgresql version 9.6 or newer
-* Elixir version 1.4 or newer
+* Elixir version 1.4 or newer (you will also need erlang-dev, erlang-parsetools, erlang-xmerl packages)
 * Build-essential tools
 
 ### Configuration
 
   * Run `mix deps.get` to install elixir dependencies.
 
-  * Run `mix generate_config`. This will ask you a few questions about your instance and generate a configuration file in `config/generated_config.exs`. Check that and copy it to either `config/dev.secret.exs` or `config/prod.secret.exs`.
-
-  * Configure your database settings in `{dev,prod}.secret.exs` and either create the database with psql or run `mix ecto.create`.
+  * Run `mix generate_config`. This will ask you a few questions about your instance and generate a configuration file in `config/generated_config.exs`. Check that and copy it to either `config/dev.secret.exs` or `config/prod.secret.exs`. It will also create a `config/setup_db.psql`, which you need to run as PostgreSQL superuser (i.e. `sudo su postgres -c "psql -f config/setup_db.psql"`). It will setup a pleroma db user, database and will setup needed extensions that need to be set up once as superuser.
 
   * Run `mix ecto.migrate` to run the database migrations. You will have to do this again after certain updates.
 
