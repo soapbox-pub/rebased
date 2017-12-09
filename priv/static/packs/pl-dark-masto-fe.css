@@ -1,0 +1,148 @@
+.column-header {
+    background-color: #182230;
+    color: #d8a070;
+}
+
+.column-header__button {
+    background-color: #182230;
+}
+
+.reply-indicator,
+.reply-indicator__content {
+    background-color: #182230;
+    color: #b9b9ba;
+}
+
+.status.status-public {
+    background-color: #121a24;
+}
+
+.column-header__button.active {
+    background-color: #182230;
+}
+
+.notification {
+    background-color: #121a24;
+}
+.display-name__html,
+.display-name__account {
+    color: #d8a070;
+}
+
+.status__relative-time {
+    color: #d8a070;
+}
+
+.status__wrapper.status__wrapper-public.focusable {
+    background-color: #121a24;
+}
+
+.status__prepend {
+    background-color: #121a24;
+}
+
+.status-link {
+    color: #d8a070;
+}
+
+.fa {
+    color: #d8a070;
+}
+
+.icon-button {
+    color: #d8a070 !important;
+}
+
+.status__content.status__content--with-action {
+    color: #b9b9ba;
+}
+
+.drawer__inner {
+    background-color: #121a24;
+}
+
+.drawer__tab {
+    background-color: #182230;
+    color: #d8a070;
+}
+
+.column-header {
+    background-color: #182230;
+}
+
+.column-link {
+    background-color: #121a24;
+}
+
+.column-subheading {
+    background-color: #182230;
+    color: #b9b9ba;
+}
+
+.static-content.getting-started {
+    display: none;
+    height: 0px;
+}
+
+.column-header__collapsible-inner {
+    background-color: #182230;
+    color: #b9b9ba;
+}
+
+.button.button--block {
+    background-color: #d8a070;
+}
+
+.column-header__back-button {
+    background-color: #182230;
+    color: #d8a070;
+}
+
+.column-back-button {
+    background-color: #182230;
+    color: #d8a070;
+}
+
+.scrollable.detailed-status__wrapper {
+    background-color: #121a24;
+}
+
+.detailed-status {
+    background-color: #121a24;
+}
+
+.detailed-status__action-bar {
+    background-color: #121a24;
+}
+.status__action-bar-button{
+    background-color: #121a24;
+}
+.status__action-bar{
+    color:#d8a070;
+}
+.navigation-bar__profile-edit span {
+    color: #d8a070;
+}
+
+.compose-form__buttons {
+    background-color: #182230;
+    color: #d8a070;
+}
+
+.text-icon-button {
+    color: #d8a070;
+}
+
+.getting-started__footer {
+    background-color: #121a24;
+}
+.notification__message{
+    background-color: #121a24;    
+
+}
+a.status-link{
+    color: #d8a070;
+}
+.column { 
+flex: 1 1 auto !important;
+}

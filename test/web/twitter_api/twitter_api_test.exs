@@ -28,13 +28,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     object = Repo.insert!(%Object{data: object_data})
 
     input = %{
-      "status" => "Hello again, @shp.<script></script>\nThis is on another line. #2hu #epic #phantasmagoric",
+      "status" => "Hello again, @shp.<script></script>\nThis is on another :moominmamma: line. #2hu #epic #phantasmagoric",
       "media_ids" => [object.id]
     }
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
 
-    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.<br>\nThis is on another line. #2hu #epic #phantasmagoric<br>\n<a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. #2hu #epic #phantasmagoric<br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
     assert get_in(activity.data, ["object", "type"]) == "Note"
     assert get_in(activity.data, ["object", "actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
@@ -42,6 +42,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
     assert Enum.member?(get_in(activity.data, ["to"]), "shp")
     assert activity.local == true
+
+    assert %{"moominmamma" => "http://localhost:4001/finmoji/128px/moominmamma-128.png"} = activity.data["object"]["emoji"]
 
     # hashtags
     assert activity.data["object"]["tag"] == ["2hu", "epic", "phantasmagoric"]
@@ -179,7 +181,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     followed = insert(:user)
 
     {:ok, user, followed, _activity } = TwitterAPI.follow(user, %{"user_id" => followed.id})
-    assert user.following == [User.ap_followers(followed)]
+    assert User.ap_followers(followed) in user.following
 
     { :error, msg } = TwitterAPI.follow(user, %{"user_id" => followed.id})
     assert msg == "Could not follow user: #{followed.nickname} is already on your list."
@@ -190,7 +192,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     followed = insert(:user)
 
     {:ok, user, followed, _activity } = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
-    assert user.following == [User.ap_followers(followed)]
+    assert User.ap_followers(followed) in user.following
 
     followed = User.get_by_ap_id(followed.ap_id)
     assert followed.info["follower_count"] == 1
@@ -222,6 +224,40 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     { :error, msg } = TwitterAPI.unfollow(user, %{"screen_name" => unfollowed.nickname})
     assert msg == "Not subscribed!"
+  end
+
+  test "Block another user using user_id" do
+    user = insert(:user)
+    blocked = insert(:user)
+
+    {:ok, user, blocked} = TwitterAPI.block(user, %{"user_id" => blocked.id})
+    assert User.blocks?(user, blocked)
+  end
+
+  test "Block another user using screen_name" do
+    user = insert(:user)
+    blocked = insert(:user)
+
+    {:ok, user, blocked} = TwitterAPI.block(user, %{"screen_name" => blocked.nickname})
+    assert User.blocks?(user, blocked)
+  end
+
+  test "Unblock another user using user_id" do
+    unblocked = insert(:user)
+    user = insert(:user)
+    User.block(user, unblocked)
+
+    {:ok, user, unblocked} = TwitterAPI.unblock(user, %{"user_id" => unblocked.id})
+    assert user.info["blocks"] == []
+  end
+
+  test "Unblock another user using screen_name" do
+    unblocked = insert(:user)
+    user = insert(:user)
+    User.block(user, unblocked)
+
+    {:ok, user, unblocked} = TwitterAPI.unblock(user, %{"screen_name" => unblocked.nickname})
+    assert user.info["blocks"] == []
   end
 
   test "fetch statuses in a context using the conversation id" do
@@ -365,7 +401,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:ok, represented} = TwitterAPI.get_external_profile(user, id)
       remote = User.get_by_ap_id(id)
 
-      assert represented == UserView.render("show.json", %{user: remote, for: user})
+      assert represented["id"] == UserView.render("show.json", %{user: remote, for: user})["id"]
 
       # Also fetches the feed.
       assert Activity.get_create_activity_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")

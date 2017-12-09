@@ -36,11 +36,12 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <updated>#{note_activity.data["object"]["published"]}</updated>
     <ostatus:conversation ref="#{note_activity.data["context"]}">#{note_activity.data["context"]}</ostatus:conversation>
     <link ref="#{note_activity.data["context"]}" rel="ostatus:conversation" />
+    <summary>#{note_activity.data["object"]["summary"]}</summary>
     <link type="application/atom+xml" href="#{note_activity.data["object"]["id"]}" rel="self" />
     <link type="text/html" href="#{note_activity.data["object"]["id"]}" rel="alternate" />
     <category term="2hu"/>
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
-    <link name="moominmamma" rel="emoji" href="#{Pleroma.Web.Endpoint.static_url}/finmoji/128px/moominmamma-128.png" />
+    <link name="2hu" rel="emoji" href="corndog.png" />
     """
 
     tuple = ActivityRepresenter.to_simple_form(note_activity, user)
@@ -74,12 +75,13 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <updated>#{answer.data["object"]["published"]}</updated>
     <ostatus:conversation ref="#{answer.data["context"]}">#{answer.data["context"]}</ostatus:conversation>
     <link ref="#{answer.data["context"]}" rel="ostatus:conversation" />
+    <summary>2hu</summary>
     <link type="application/atom+xml" href="#{answer.data["object"]["id"]}" rel="self" />
     <link type="text/html" href="#{answer.data["object"]["id"]}" rel="alternate" />
     <category term="2hu"/>
     <thr:in-reply-to ref="#{note.data["object"]["id"]}" href="someurl" />
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
-    <link name="moominmamma" rel="emoji" href="#{Pleroma.Web.Endpoint.static_url}/finmoji/128px/moominmamma-128.png" />
+    <link name="2hu" rel="emoji" href="corndog.png" />
     """
 
     tuple = ActivityRepresenter.to_simple_form(answer, user)

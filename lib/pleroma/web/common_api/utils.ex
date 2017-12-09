@@ -38,15 +38,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def make_content_html(status, mentions, attachments, tags) do
+  def make_content_html(status, mentions, attachments, tags, no_attachment_links \\ false) do
     status
     |> format_input(mentions, tags)
-    |> add_attachments(attachments)
+    |> maybe_add_attachments(attachments, no_attachment_links)
   end
 
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id
 
+  def maybe_add_attachments(text, attachments, _no_links = true), do: text
+  def maybe_add_attachments(text, attachments, _no_links) do
+    add_attachments(text, attachments)
+  end
   def add_attachments(text, attachments) do
     attachment_text = Enum.map(attachments, fn
       (%{"url" => [%{"href" => href} | _]}) ->
@@ -54,15 +58,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         "<a href=\"#{href}\" class='attachment'>#{shortname(name)}</a>"
       _ -> ""
     end)
-    Enum.join([text | attachment_text], "<br>\n")
+    Enum.join([text | attachment_text], "<br>")
   end
 
-  def format_input(text, mentions, tags) do
-    HtmlSanitizeEx.strip_tags(text)
+  def format_input(text, mentions, _tags) do
+    text
+    |> Formatter.html_escape
     |> Formatter.linkify
-    |> String.replace("\n", "<br>\n")
+    |> String.replace("\n", "<br>")
     |> add_user_links(mentions)
-    |> add_tag_links(tags)
+    # |> add_tag_links(tags)
   end
 
   def add_tag_links(text, tags) do
@@ -94,11 +99,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end)
   end
 
-  def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags) do
+  def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags, cw \\ nil) do
       object = %{
         "type" => "Note",
         "to" => to,
         "content" => content_html,
+        "summary" => cw,
         "context" => context,
         "attachment" => attachments,
         "actor" => actor,

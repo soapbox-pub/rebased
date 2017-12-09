@@ -2,6 +2,7 @@ defmodule Pleroma.Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :pleroma
 
   socket "/socket", Pleroma.Web.UserSocket
+  socket "/api/v1", Pleroma.Web.MastodonAPI.MastodonSocket
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -11,7 +12,7 @@ defmodule Pleroma.Web.Endpoint do
     at: "/media", from: "uploads", gzip: false
   plug Plug.Static,
     at: "/", from: :pleroma,
-    only: ~w(index.html static finmoji emoji)
+    only: ~w(index.html static finmoji emoji packs sounds sw.js)
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.

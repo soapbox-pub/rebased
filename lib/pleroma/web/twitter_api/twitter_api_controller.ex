@@ -3,17 +3,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.{Repo, Activity, User, Object}
+  alias Pleroma.{Repo, Activity, User}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Ecto.Changeset
 
   require Logger
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
-    render(conn, UserView, "show.json", %{user: user})
+    token = Phoenix.Token.sign(conn, "user socket", user.id)
+    render(conn, UserView, "show.json", %{user: user, token: token})
   end
 
-  def status_update(%{assigns: %{user: user}} = conn, %{"status" => status_text} = status_data) do
+  def status_update(%{assigns: %{user: user}} = conn, %{"status" => _} = status_data) do
     with media_ids <- extract_media_ids(status_data),
          {:ok, activity} <- TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids)) do
       conn
@@ -65,10 +66,23 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> json_reply(200, json)
   end
 
+  def show_user(conn, params) do
+    with {:ok, shown} <- TwitterAPI.get_user(params) do
+      if user = conn.assigns.user do
+        render conn, UserView, "show.json", %{user: shown, for: user}
+      else
+        render conn, UserView, "show.json", %{user: shown}
+      end
+    else
+      {:error, msg} ->
+        bad_request_reply(conn, msg)
+    end
+  end
+
   def user_timeline(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.get_user(user, params) do
       {:ok, target_user} ->
-        params = Map.merge(params, %{"actor_id" => target_user.ap_id})
+        params = Map.merge(params, %{"actor_id" => target_user.ap_id, "whole_db" => true})
         statuses  = TwitterAPI.fetch_user_statuses(user, params)
         conn
         |> json_reply(200, statuses |> Poison.encode!)
@@ -89,6 +103,22 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     case TwitterAPI.follow(user, params) do
       {:ok, user, followed, _activity} ->
         render(conn, UserView, "show.json", %{user: followed, for: user})
+      {:error, msg} -> forbidden_json_reply(conn, msg)
+    end
+  end
+
+  def block(%{assigns: %{user: user}} = conn, params) do
+    case TwitterAPI.block(user, params) do
+      {:ok, user, blocked} ->
+        render conn, UserView, "show.json", %{user: blocked, for: user}
+      {:error, msg} -> forbidden_json_reply(conn, msg)
+    end
+  end
+
+  def unblock(%{assigns: %{user: user}} = conn, params) do
+    case TwitterAPI.unblock(user, params) do
+      {:ok, user, blocked} ->
+        render conn, UserView, "show.json", %{user: blocked, for: user}
       {:error, msg} -> forbidden_json_reply(conn, msg)
     end
   end
@@ -186,8 +216,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}),
          new_info <- Map.put(user.info, "banner", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, user} <- Repo.update(change) do
-      %{"url" => [ %{ "href" => href } | t ]} = object.data
+         {:ok, _user} <- Repo.update(change) do
+      %{"url" => [ %{ "href" => href } | _ ]} = object.data
       response = %{ url: href } |> Poison.encode!
       conn
       |> json_reply(200, response)
@@ -198,8 +228,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     with {:ok, object} <- ActivityPub.upload(params),
          new_info <- Map.put(user.info, "background", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, user} <- Repo.update(change) do
-      %{"url" => [ %{ "href" => href } | t ]} = object.data
+         {:ok, _user} <- Repo.update(change) do
+      %{"url" => [ %{ "href" => href } | _ ]} = object.data
       response = %{ url: href } |> Poison.encode!
       conn
       |> json_reply(200, response)
@@ -225,7 +255,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          mrn <- max(id, user.info["most_recent_notification"] || 0),
          updated_info <- Map.put(info, "most_recent_notification", mrn),
          changeset <- User.info_changeset(user, %{info: updated_info}),
-         {:ok, user} <- Repo.update(changeset) do
+         {:ok, _user} <- Repo.update(changeset) do
       conn
       |> json_reply(200, Poison.encode!(mrn))
     else
@@ -249,6 +279,22 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def friends_ids(%{assigns: %{user: user}} = conn, _params) do
+    with {:ok, friends} <- User.get_friends(user) do
+      ids = friends
+      |> Enum.map(fn x -> x.id end)
+      |> Poison.encode!
+
+      json(conn, ids)
+    else
+      _e -> bad_request_reply(conn, "Can't get friends")
+    end
+  end
+
+  def empty_array(conn, _params) do
+    json(conn, Poison.encode!([]))
+  end
+
   def update_profile(%{assigns: %{user: user}} = conn, params) do
     params = if bio = params["description"] do
       Map.put(params, "bio", bio)
@@ -266,7 +312,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+  def search(%{assigns: %{user: user}} = conn, %{"q" => _query} = params) do
     conn
     |> json(TwitterAPI.search(user, params))
   end

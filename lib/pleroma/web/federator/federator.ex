@@ -14,7 +14,10 @@ defmodule Pleroma.Web.Federator do
       Process.sleep(1000 * 60 * 1) # 1 minute
       enqueue(:refresh_subscriptions, nil)
     end)
-    GenServer.start_link(__MODULE__, {:sets.new(), :queue.new()}, name: __MODULE__)
+    GenServer.start_link(__MODULE__, %{
+          in: {:sets.new(), []},
+          out: {:sets.new(), []}
+                         }, name: __MODULE__)
   end
 
   def handle(:refresh_subscriptions, _) do
@@ -71,22 +74,22 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle(type, payload) do
+  def handle(type, _) do
     Logger.debug(fn -> "Unknown task: #{type}" end)
     {:error, "Don't know what do do with this"}
   end
 
-  def enqueue(type, payload) do
+  def enqueue(type, payload, priority \\ 1) do
     if Mix.env == :test do
       handle(type, payload)
     else
-      GenServer.cast(__MODULE__, {:enqueue, type, payload})
+      GenServer.cast(__MODULE__, {:enqueue, type, payload, priority})
     end
   end
 
   def maybe_start_job(running_jobs, queue) do
-    if (:sets.size(running_jobs) < @max_jobs) && !:queue.is_empty(queue) do
-      {{:value, {type, payload}}, queue} = :queue.out(queue)
+    if (:sets.size(running_jobs) < @max_jobs) && queue != [] do
+      {{type, payload}, queue} = queue_pop(queue)
       {:ok, pid} = Task.start(fn -> handle(type, payload) end)
       mref = Process.monitor(pid)
       {:sets.add_element(mref, running_jobs), queue}
@@ -95,20 +98,41 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle_cast({:enqueue, type, payload}, {running_jobs, queue}) do
-    queue = :queue.in({type, payload}, queue)
-    {running_jobs, queue} = maybe_start_job(running_jobs, queue)
-    {:noreply, {running_jobs, queue}}
+  def handle_cast({:enqueue, type, payload, priority}, state) when type in [:incoming_doc] do
+    %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
+    i_queue = enqueue_sorted(i_queue, {type, payload}, 1)
+    {i_running_jobs, i_queue} = maybe_start_job(i_running_jobs, i_queue)
+    {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
 
-  def handle_info({:DOWN, ref, :process, _pid, _reason}, {running_jobs, queue}) do
-    running_jobs = :sets.del_element(ref, running_jobs)
-    {running_jobs, queue} = maybe_start_job(running_jobs, queue)
-    {:noreply, {running_jobs, queue}}
+  def handle_cast({:enqueue, type, payload, priority}, state) do
+    %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
+    o_queue = enqueue_sorted(o_queue, {type, payload}, 1)
+    {o_running_jobs, o_queue} = maybe_start_job(o_running_jobs, o_queue)
+    {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
 
   def handle_cast(m, state) do
     IO.inspect("Unknown: #{inspect(m)}, #{inspect(state)}")
     {:noreply, state}
+  end
+
+  def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
+    %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
+    i_running_jobs = :sets.del_element(ref, i_running_jobs)
+    o_running_jobs = :sets.del_element(ref, o_running_jobs)
+    {i_running_jobs, i_queue} = maybe_start_job(i_running_jobs, i_queue)
+    {o_running_jobs, o_queue} = maybe_start_job(o_running_jobs, o_queue)
+
+    {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
+  end
+
+  def enqueue_sorted(queue, element, priority) do
+    [%{item: element, priority: priority} | queue]
+    |> Enum.sort_by(fn (%{priority: priority}) -> priority end)
+  end
+
+  def queue_pop([%{item: element} | queue]) do
+    {element, queue}
   end
 end

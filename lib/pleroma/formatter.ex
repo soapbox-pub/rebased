@@ -1,15 +1,16 @@
 defmodule Pleroma.Formatter do
   alias Pleroma.User
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&]+[\w]/u
+  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&@~\(\)]+[\w\/]/u
   def linkify(text) do
     Regex.replace(@link_regex, text, "<a href='\\0'>\\0</a>")
   end
 
   @tag_regex ~r/\#\w+/u
-  def parse_tags(text) do
+  def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
     |> Enum.map(fn (["#" <> tag = full_tag]) -> {full_tag, String.downcase(tag)} end)
+    |> (fn map -> if data["sensitive"], do: [{"#nsfw", "nsfw"}] ++ map, else: map end).()
   end
 
   def parse_mentions(text) do
@@ -21,6 +22,15 @@ defmodule Pleroma.Formatter do
     |> Enum.uniq
     |> Enum.map(fn ("@" <> match = full_match) -> {full_match, User.get_cached_by_nickname(match)} end)
     |> Enum.filter(fn ({_match, user}) -> user end)
+  end
+
+  def html_escape(text) do
+    Regex.split(@link_regex, text, include_captures: true)
+    |> Enum.map_every(2, fn chunk ->
+      {:safe, part} = Phoenix.HTML.html_escape(chunk)
+      part
+    end)
+    |> Enum.join("")
   end
 
   @finmoji [
@@ -121,5 +131,9 @@ defmodule Pleroma.Formatter do
 
   def get_emoji(text) do
     Enum.filter(@emoji, fn ({emoji, _}) -> String.contains?(text, ":#{emoji}:") end)
+  end
+
+  def get_custom_emoji() do
+    @emoji
   end
 end

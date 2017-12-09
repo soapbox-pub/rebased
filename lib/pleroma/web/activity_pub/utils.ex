@@ -29,7 +29,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Enqueues an activity for federation if it's local
   """
   def maybe_federate(%Activity{local: true} = activity) do
-    Pleroma.Web.Federator.enqueue(:publish, activity)
+    priority = case activity.data["type"] do
+                 "Delete" -> 10
+                 "Create" -> 1
+                 _ -> 5
+               end
+    Pleroma.Web.Federator.enqueue(:publish, activity, priority)
     :ok
   end
   def maybe_federate(_), do: :ok
@@ -64,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Inserts a full object if it is contained in an activity.
   """
   def insert_full_object(%{"object" => object_data}) when is_map(object_data) do
-    with {:ok, object} <- Object.create(object_data) do
+    with {:ok, _} <- Object.create(object_data) do
       :ok
     end
   end
@@ -88,9 +93,13 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Returns an existing like if a user already liked an object
   """
-  def get_existing_like(actor, %{data: %{"id" => id}} = object) do
+  def get_existing_like(actor, %{data: %{"id" => id}}) do
     query = from activity in Activity,
-      where: fragment("? @> ?", activity.data, ^%{actor: actor, object: id, type: "Like"})
+      where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
+      # this is to use the index
+      where: fragment("coalesce((?)->'object'->>'id', (?)->>'object') = ?", activity.data, activity.data, ^id),
+      where: fragment("(?)->>'type' = 'Like'", activity.data)
+
     Repo.one(query)
   end
 
@@ -197,7 +206,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def make_create_data(params, additional) do
     published = params.published || make_date()
 
-    activity = %{
+    %{
       "type" => "Create",
       "to" => params.to |> Enum.uniq,
       "actor" => params.actor.ap_id,

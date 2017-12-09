@@ -56,9 +56,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
   defp get_links(_activity), do: []
 
-  defp get_emoji_links(content) do
-    Enum.map(Formatter.get_emoji(content), fn({emoji, file}) ->
-      {:link, [name: to_charlist(emoji), rel: 'emoji', href: to_charlist("#{Pleroma.Web.Endpoint.static_url}#{file}")], []}
+  defp get_emoji_links(emojis) do
+    Enum.map(emojis, fn({emoji, file}) ->
+      {:link, [name: to_charlist(emoji), rel: 'emoji', href: to_charlist(file)], []}
     end)
   end
 
@@ -81,7 +81,13 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     categories = (activity.data["object"]["tag"] || [])
     |> Enum.map(fn (tag) -> {:category, [term: to_charlist(tag)], []} end)
 
-    emoji_links = get_emoji_links(activity.data["object"]["content"] || "")
+    emoji_links = get_emoji_links(activity.data["object"]["emoji"] || %{})
+
+    summary = if activity.data["object"]["summary"] do
+      [{:summary, [], h.(activity.data["object"]["summary"])}]
+    else
+      []
+    end
 
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/note']},
@@ -93,7 +99,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [ref: h.(activity.data["context"])], h.(activity.data["context"])},
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []},
-    ] ++ get_links(activity) ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions ++ emoji_links
+    ] ++ summary ++ get_links(activity) ++ categories ++ attachments ++ in_reply_to ++ author ++ mentions ++ emoji_links
   end
 
   def to_simple_form(%{data: %{"type" => "Like"}} = activity, user, with_author) do
@@ -102,7 +108,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     updated_at = activity.data["published"]
     inserted_at = activity.data["published"]
 
-    in_reply_to = get_in_reply_to(activity.data)
+    _in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
     mentions = activity.data["to"] |> get_mentions
 
@@ -130,7 +136,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     updated_at = activity.data["published"]
     inserted_at = activity.data["published"]
 
-    in_reply_to = get_in_reply_to(activity.data)
+    _in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
     retweeted_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
@@ -227,6 +233,8 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     ]  ++ author
   end
 
+  def to_simple_form(_, _, _), do: nil
+
   def wrap_with_entry(simple_form) do
     [{
       :entry, [
@@ -238,6 +246,4 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       ], simple_form
     }]
   end
-
-  def to_simple_form(_, _, _), do: nil
 end

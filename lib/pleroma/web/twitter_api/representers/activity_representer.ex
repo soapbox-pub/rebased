@@ -97,7 +97,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
-  def to_map(%Activity{data: %{"type" => "Delete", "published" => created_at, "object" => deleted_object }} = activity, %{user: user} = opts) do
+  def to_map(%Activity{data: %{"type" => "Delete", "published" => created_at, "object" => _ }} = activity, %{user: user} = opts) do
     created_at = created_at |> Utils.date_to_asctime
 
     %{
@@ -134,6 +134,13 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     tags = activity.data["object"]["tag"] || []
     possibly_sensitive = Enum.member?(tags, "nsfw")
+
+    summary = activity.data["object"]["summary"]
+    content = if !!summary and summary != "" do
+      "<span>#{activity.data["object"]["summary"]}</span><br />#{content}</span>"
+    else
+      content
+    end
 
     html = HtmlSanitizeEx.basic_html(content) |> Formatter.emojify(object["emoji"])
 

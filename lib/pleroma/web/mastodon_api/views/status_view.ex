@@ -21,9 +21,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Enum.map(fn (user) -> AccountView.render("mention.json", %{user: user}) end)
 
     %{
-      id: activity.id,
+      id: to_string(activity.id),
       uri: object,
-      url: nil,
+      url: nil, # TODO: This might be wrong, check with mastodon.
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -45,7 +45,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         name: "Web",
         website: nil
       },
-      language: nil
+      language: nil,
+      emojis: []
     }
   end
 
@@ -74,10 +75,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     reply_to = Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
     reply_to_user = reply_to && User.get_cached_by_ap_id(reply_to.data["actor"])
 
+    emojis = (activity.data["object"]["emoji"] || [])
+    |> Enum.map(fn {name, url} -> %{ shortcode: name, url: url, static_url: url } end)
+
     %{
-      id: activity.id,
+      id: to_string(activity.id),
       uri: object["id"],
-      url: object["external_url"],
+      url: object["external_url"] || object["id"],
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: reply_to && reply_to.id,
       in_reply_to_account_id: reply_to_user && reply_to_user.id,
@@ -90,16 +94,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourited: !!favorited,
       muted: false,
       sensitive: sensitive,
-      spoiler_text: "",
+      spoiler_text: object["summary"] || "",
       visibility: "public",
-      media_attachments: attachments,
+      media_attachments: attachments |> Enum.take(4),
       mentions: mentions,
       tags: [], # fix,
       application: %{
         name: "Web",
         website: nil
       },
-      language: nil
+      language: nil,
+      emojis: emojis
     }
   end
 
@@ -115,7 +120,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     << hash_id::signed-32, _rest::binary >> = :crypto.hash(:md5, href)
 
     %{
-      id: attachment["id"] || hash_id,
+      id: to_string(attachment["id"] || hash_id),
       url: href,
       remote_url: href,
       preview_url: href,

@@ -4,27 +4,29 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.{OStatus, CommonAPI}
-  alias Pleroma.Formatter
   import Ecto.Query
 
   @httpoison Application.get_env(:pleroma, :httpoison)
 
-  def create_status(%User{} = user, %{"status" => status} = data) do
+  def create_status(%User{} = user, %{"status" => _} = data) do
     CommonAPI.post(user, data)
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do
+    opts = Map.put(opts, "blocking_user", user)
     ActivityPub.fetch_activities([user.ap_id | user.following], opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_public_statuses(user, opts \\ %{}) do
     opts = Map.put(opts, "local_only", true)
+    opts = Map.put(opts, "blocking_user", user)
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_public_and_external_statuses(user, opts \\ %{}) do
+    opts = Map.put(opts, "blocking_user", user)
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
@@ -41,7 +43,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def fetch_conversation(user, id) do
     with context when is_binary(context) <- conversation_id_to_context(id),
-         activities <- ActivityPub.fetch_activities_for_context(context),
+         activities <- ActivityPub.fetch_activities_for_context(context, %{"blocking_user" => user}),
          statuses <- activities |> activities_to_statuses(%{for: user})
     do
       statuses
@@ -78,6 +80,26 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          })
     do
       { :ok, follower, unfollowed }
+    else
+      err -> err
+    end
+  end
+
+  def block(%User{} = blocker, params) do
+    with {:ok, %User{} = blocked} <- get_user(params),
+         {:ok, blocker} <- User.block(blocker, blocked)
+    do
+      {:ok, blocker, blocked}
+    else
+      err -> err
+    end
+  end
+
+  def unblock(%User{} = blocker, params) do
+    with {:ok, %User{} = blocked} <- get_user(params),
+         {:ok, blocker} <- User.unblock(blocker, blocked)
+    do
+      {:ok, blocker, blocked}
     else
       err -> err
     end
@@ -193,7 +215,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  defp parse_int(string, default \\ nil)
+  defp parse_int(string, default)
   defp parse_int(string, default) when is_binary(string) do
     with {n, _} <- Integer.parse(string) do
       n

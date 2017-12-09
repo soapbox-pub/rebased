@@ -17,9 +17,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     |> String.replace(~r/\.\d+Z/, ".000Z")
 
     expected = %{
-      id: note.id,
+      id: to_string(note.id),
       uri: note.data["object"]["id"],
-      url: note.data["object"]["external_id"],
+      url: note.data["object"]["id"],
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -32,7 +32,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       favourited: false,
       muted: false,
       sensitive: false,
-      spoiler_text: "",
+      spoiler_text: note.data["object"]["summary"],
       visibility: "public",
       media_attachments: [],
       mentions: [],
@@ -41,7 +41,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         name: "Web",
         website: nil
       },
-      language: nil
+      language: nil,
+      emojis: [
+        %{
+          shortcode: "2hu",
+          url: "corndog.png",
+          static_url: "corndog.png"
+        }
+      ]
     }
 
     assert status == expected
@@ -71,7 +78,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     }
 
     expected = %{
-      id: 1638338801,
+      id: "1638338801",
       type: "image",
       url: "someurl",
       remote_url: "someurl",
@@ -83,7 +90,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     # If theres a "id", use that instead of the generated one
     object = Map.put(object, "id", 2)
-    assert %{id: 2} = StatusView.render("attachment.json", %{attachment: object})
+    assert %{id: "2"} = StatusView.render("attachment.json", %{attachment: object})
   end
 
   test "a reblog" do
@@ -94,7 +101,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     represented = StatusView.render("status.json", %{for: user, activity: reblog})
 
-    assert represented[:id] == reblog.id
-    assert represented[:reblog][:id] == activity.id
+    assert represented[:id] == to_string(reblog.id)
+    assert represented[:reblog][:id] == to_string(activity.id)
+    assert represented[:emojis] == []
   end
 end

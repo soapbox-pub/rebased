@@ -36,7 +36,38 @@ defmodule Pleroma.Notification do
     Repo.all(query)
   end
 
-  def create_notifications(%Activity{id: id, data: %{"to" => to, "type" => type}} = activity) when type in ["Create", "Like", "Announce", "Follow"] do
+  def get(%{id: user_id} = _user, id) do
+    query = from n in Notification,
+      where: n.id == ^id,
+      preload: [:activity]
+
+    notification = Repo.one(query)
+    case notification do
+      %{user_id: ^user_id} ->
+        {:ok, notification}
+      _ ->
+        {:error, "Cannot get notification"}
+    end
+  end
+
+  def clear(user) do
+    query = from n in Notification,
+      where: n.user_id == ^user.id
+
+    Repo.delete_all(query)
+  end
+
+  def dismiss(%{id: user_id} = _user, id) do
+    notification = Repo.get(Notification, id)
+    case notification do
+      %{user_id: ^user_id} ->
+        Repo.delete(notification)
+      _ ->
+        {:error, "Cannot dismiss notification"}
+    end
+  end
+
+  def create_notifications(%Activity{id: _, data: %{"to" => _, "type" => type}} = activity) when type in ["Create", "Like", "Announce", "Follow"] do
     users = User.get_notified_from_activity(activity)
 
     notifications = Enum.map(users, fn (user) -> create_notification(activity, user) end)
@@ -46,9 +77,12 @@ defmodule Pleroma.Notification do
 
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user) do
-    notification = %Notification{user_id: user.id, activity_id: activity.id}
-    {:ok, notification} = Repo.insert(notification)
-    notification
+    unless User.blocks?(user, %{ap_id: activity.data["actor"]}) do
+      notification = %Notification{user_id: user.id, activity: activity}
+      {:ok, notification} = Repo.insert(notification)
+      Pleroma.Web.Streamer.stream("user", notification)
+      notification
+    end
   end
 end
 

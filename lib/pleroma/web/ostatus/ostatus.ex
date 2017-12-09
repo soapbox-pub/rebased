@@ -7,7 +7,6 @@ defmodule Pleroma.Web.OStatus do
 
   alias Pleroma.{Repo, User, Web, Object, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler, DeleteHandler}
 
@@ -112,7 +111,7 @@ defmodule Pleroma.Web.OStatus do
     with id when not is_nil(id) <- string_from_xpath("//activity:object[1]/id", entry),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       {:ok, activity}
-    else e ->
+    else _ ->
         Logger.debug("Couldn't get, will try to fetch")
         with href when not is_nil(href) <- string_from_xpath("//activity:object[1]/link[@type=\"text/html\"]/@href", entry),
              {:ok, [favorited_activity]} <- fetch_activity_from_url(href) do
@@ -150,22 +149,28 @@ defmodule Pleroma.Web.OStatus do
   end
 
   @doc """
-    Gets the content from a an entry. Will add the cw text to the body for cw'd
-    Mastodon notes.
+    Gets the content from a an entry.
   """
   def get_content(entry) do
-    base_content = string_from_xpath("//content", entry)
+    string_from_xpath("//content", entry)
+  end
 
+  @doc """
+    Get the cw that mastodon uses.
+  """
+  def get_cw(entry) do
     with scope when not is_nil(scope) <- string_from_xpath("//mastodon:scope", entry),
          cw when not is_nil(cw) <- string_from_xpath("/*/summary", entry) do
-      "<span class='mastodon-cw'>#{cw}</span><br>#{base_content}"
-    else _e -> base_content
+      cw
+    else _e -> nil
     end
   end
 
   def get_tags(entry) do
     :xmerl_xpath.string('//category', entry)
-    |> Enum.map(fn (category) -> string_from_xpath("/category/@term", category) |> String.downcase end)
+    |> Enum.map(fn (category) -> string_from_xpath("/category/@term", category) end)
+    |> Enum.filter(&(&1))
+    |> Enum.map(&String.downcase/1)
   end
 
   def maybe_update(doc, user) do
@@ -185,7 +190,7 @@ defmodule Pleroma.Web.OStatus do
          false <- new_data == old_data do
       change = Ecto.Changeset.change(user, new_data)
       Repo.update(change)
-    else e ->
+    else _ ->
       {:ok, user}
     end
   end
@@ -215,7 +220,7 @@ defmodule Pleroma.Web.OStatus do
     Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
 
-  def make_user(uri) do
+  def make_user(uri, update \\ false) do
     with {:ok, info} <- gather_user_info(uri) do
       data = %{
         name: info["name"],
@@ -225,7 +230,8 @@ defmodule Pleroma.Web.OStatus do
         avatar: info["avatar"],
         bio: info["bio"]
       }
-      with %User{} = user <- User.get_by_ap_id(data.ap_id) do
+      with false <- update,
+           %User{} = user <- User.get_by_ap_id(data.ap_id) do
         {:ok, user}
       else _e -> insert_or_update_user(data)
       end

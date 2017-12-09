@@ -1,6 +1,29 @@
 defmodule Pleroma.Web.TwitterAPI.UtilController do
   use Pleroma.Web, :controller
   alias Pleroma.Web
+  alias Pleroma.Formatter
+
+  alias Pleroma.{Repo, PasswordResetToken, User}
+
+  def show_password_reset(conn, %{"token" => token}) do
+    with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
+      %User{} = user <- Repo.get(User, token.user_id) do
+      render conn, "password_reset.html", %{
+        token: token,
+        user: user
+      }
+    else
+      _e -> render conn, "invalid_token.html"
+    end
+  end
+
+  def password_reset(conn, %{"data" => data}) do
+    with {:ok, _} <- PasswordResetToken.reset_password(data["token"], data) do
+      render conn, "password_reset_success.html"
+    else
+      _e -> render conn, "password_reset_failed.html"
+    end
+  end
 
   def help_test(conn, _params) do
     json(conn, "ok")
@@ -45,5 +68,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         |> send_resp(200, response)
       _ -> json(conn, version)
     end
+  end
+
+  def emoji(conn, _params) do
+    json conn, Enum.into(Formatter.get_custom_emoji(), %{})
   end
 end

@@ -46,7 +46,8 @@ defmodule Pleroma.Web.WebsubTest do
     end
 
     {:error, sub} = Websub.verify(sub, getter)
-    assert sub.state == "rejected"
+    # Keep the current state.
+    assert sub.state == "requested"
   end
 
   test "an incoming subscription request" do

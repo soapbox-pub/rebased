@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta content='width=device-width, initial-scale=1' name='viewport'>
+<link rel="stylesheet" media="all" href="/packs/common.css" />
+<link rel="stylesheet" media="all" href="/packs/default.css" />
+<link rel="stylesheet" media="all" href="/packs/pl-dark-masto-fe.css" />
+
+<script src="/packs/common.js"></script>
+<script src="/packs/locale_en.js"></script>
+<script id='initial-state' type='application/json'><%= raw @initial_state %></script>
+<script src="/packs/application.js"></script>
+</head>
+<body class='app-body'>
+  <div class='app-holder' data-props='{&quot;locale&quot;:&quot;en&quot;}' id='mastodon'>
+  </div>
+</body>
+</html>

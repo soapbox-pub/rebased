@@ -1,6 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.{Activity, Repo, Object, Upload, User, Web, Notification}
-  alias Ecto.{Changeset, UUID}
+  alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   require Logger
@@ -9,12 +8,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
          :ok <- insert_full_object(map) do
-      {:ok, activity} = Repo.insert(%Activity{data: map, local: local})
+      {:ok, activity} = Repo.insert(%Activity{data: map, local: local, actor: map["actor"]})
       Notification.create_notifications(activity)
+      stream_out(activity)
       {:ok, activity}
     else
       %Activity{} = activity -> {:ok, activity}
       error -> {:error, error}
+    end
+  end
+
+  def stream_out(activity) do
+    if activity.data["type"] in ["Create", "Announce"] do
+      Pleroma.Web.Streamer.stream("user", activity)
+      if Enum.member?(activity.data["to"], "https://www.w3.org/ns/activitystreams#Public") do
+        Pleroma.Web.Streamer.stream("public", activity)
+        if activity.local do
+          Pleroma.Web.Streamer.stream("public:local", activity)
+        end
+      end
     end
   end
 
@@ -27,7 +39,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
-  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, activity_id \\ nil, local \\ true) do
+  def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => _}} = object, activity_id \\ nil, local \\ true) do
     with nil <- get_existing_like(ap_id, object),
          like_data <- make_like_data(user, object, activity_id),
          {:ok, activity} <- insert(like_data, local),
@@ -49,7 +61,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def announce(%User{ap_id: ap_id} = user, %Object{data: %{"id" => id}} = object, activity_id \\ nil, local \\ true) do
+  def announce(%User{ap_id: _} = user, %Object{data: %{"id" => _}} = object, activity_id \\ nil, local \\ true) do
     with announce_data <- make_announce_data(user, object, activity_id),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),
@@ -87,17 +99,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     }
     with Repo.delete(object),
          Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
-         Repo.delete_all(Activity.all_by_object_ap_id_q(id)),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
 
-  def fetch_activities_for_context(context) do
+  def fetch_activities_for_context(context, opts \\ %{}) do
     query = from activity in Activity,
       where: fragment("?->>'type' = ? and ?->>'context' = ?", activity.data, "Create", activity.data, ^context),
       order_by: [desc: :id]
+    query = restrict_blocked(query, opts)
     Repo.all(query)
   end
 
@@ -137,7 +149,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_actor(query, %{"actor_id" => actor_id}) do
     from activity in query,
-      where: fragment("?->>'actor' = ?", activity.data, ^actor_id)
+      where: activity.actor == ^actor_id
   end
   defp restrict_actor(query, _), do: query
 
@@ -156,10 +168,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_favorited_by(query, _), do: query
 
+  defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
+    from activity in query,
+      where: fragment("not (? #> '{\"object\",\"attachment\"}' = ?)", activity.data, ^[])
+  end
+  defp restrict_media(query, _), do: query
+
+  # Only search through last 100_000 activities by default
+  defp restrict_recent(query, %{"whole_db" => true}), do: query
+  defp restrict_recent(query, _) do
+    since = (Repo.aggregate(Activity, :max, :id) || 0) - 100_000
+
+    from activity in query,
+      where: activity.id > ^since
+  end
+
+  defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
+    blocks = info["blocks"] || []
+    from activity in query,
+      where: fragment("not (? = ANY(?))", activity.actor, ^blocks)
+  end
+  defp restrict_blocked(query, _), do: query
+
   def fetch_activities(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
-      order_by: [desc: :id]
+      order_by: [fragment("? desc nulls last", activity.id)]
 
     base_query
     |> restrict_recipients(recipients)
@@ -170,6 +204,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_actor(opts)
     |> restrict_type(opts)
     |> restrict_favorited_by(opts)
+    |> restrict_recent(opts)
+    |> restrict_blocked(opts)
+    |> restrict_media(opts)
     |> Repo.all
     |> Enum.reverse
   end

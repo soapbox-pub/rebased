@@ -9,7 +9,7 @@ defmodule Pleroma.Factory do
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}")
     }
-    %{ user | ap_id: Pleroma.User.ap_id(user), follower_address: Pleroma.User.ap_followers(user) }
+    %{ user | ap_id: Pleroma.User.ap_id(user), follower_address: Pleroma.User.ap_followers(user), following: [Pleroma.User.ap_id(user)] }
   end
 
   def note_factory do
@@ -26,7 +26,11 @@ defmodule Pleroma.Factory do
       "likes" => [],
       "like_count" => 0,
       "context" => "2hu",
-      "tag" => ["2hu"]
+      "summary" => "2hu",
+      "tag" => ["2hu"],
+      "emoji" => %{
+        "2hu" => "corndog.png"
+      }
     }
 
     %Pleroma.Object{
@@ -47,7 +51,8 @@ defmodule Pleroma.Factory do
     }
 
     %Pleroma.Activity{
-      data: data
+      data: data,
+      actor: data["actor"]
     }
   end
 

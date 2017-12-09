@@ -18,6 +18,7 @@ defmodule Pleroma.Web.OStatus.UserRepresenterTest do
     <poco:preferredUsername>#{user.nickname}</poco:preferredUsername>
     <poco:displayName>#{user.name}</poco:displayName>
     <poco:note>#{user.bio}</poco:note>
+    <summary>#{user.bio}</summary>
     <name>#{user.nickname}</name>
     <link rel="avatar" href="#{User.avatar_url(user)}" />
     """
