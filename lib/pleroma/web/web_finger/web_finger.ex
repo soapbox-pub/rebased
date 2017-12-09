@@ -44,7 +44,8 @@ defmodule Pleroma.Web.WebFinger do
         {:Link, %{rel: "http://schemas.google.com/g/2010#updates-from", type: "application/atom+xml", href: OStatus.feed_path(user)}},
         {:Link, %{rel: "http://webfinger.net/rel/profile-page", type: "text/html", href: user.ap_id}},
         {:Link, %{rel: "salmon", href: OStatus.salmon_path(user)}},
-        {:Link, %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}}
+        {:Link, %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}},
+        {:Link, %{rel: "self", type: "application/activity+json", href: user.ap_id}}
       ]
     }
     |> XmlBuilder.to_doc
