@@ -91,7 +91,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     Enum.reduce(mentions, step_one, fn ({match, %User{ap_id: ap_id}, uuid}, text) ->
       short_match = String.split(match, "@") |> tl() |> hd()
-      String.replace(text, uuid, "<a href='#{ap_id}'>@#{short_match}</a>")
+      String.replace(text, uuid, "<span><a href='#{ap_id}'>@<span>#{short_match}</span></a></span>")
     end)
   end
 
