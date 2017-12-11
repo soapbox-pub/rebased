@@ -30,8 +30,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     User.follow(follower, user)
     User.follow(second_follower, user)
     User.follow(user, follower)
-
-    user = Repo.get!(User, user.id)
+    {:ok, user} = User.update_follower_count(user)
+    Cachex.set(:user_cache, "user_info:#{user.id}", User.user_info(Repo.get!(User, user.id)))
 
     image = "https://placehold.it/48x48"
 
