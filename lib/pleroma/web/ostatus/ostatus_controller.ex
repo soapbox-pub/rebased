@@ -6,13 +6,15 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Repo
   alias Pleroma.Web.{OStatus, Federator}
   alias Pleroma.Web.XML
+  alias Pleroma.Web.ActivityPub.ActivityPubController
   import Ecto.Query
 
-  def feed_redirect(conn, %{"nickname" => nickname}) do
+  def feed_redirect(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
 
     case get_format(conn) do
       "html" -> Fallback.RedirectController.redirector(conn, nil)
+      "activity+json" -> ActivityPubController.user(conn, params)
       _ -> redirect conn, external: OStatus.feed_path(user)
     end
   end
