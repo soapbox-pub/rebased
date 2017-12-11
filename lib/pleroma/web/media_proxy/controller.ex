@@ -2,6 +2,8 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   use Pleroma.Web, :controller
   require Logger
 
+  @max_body_length 25 * 1048576
+
   @cache_control %{
     default: "public, max-age=1209600",
     error:   "public, must-revalidate, max-age=160",
@@ -29,11 +31,13 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   defp proxy_request(link) do
     headers = [{"user-agent", "Pleroma/MediaProxy; #{Pleroma.Web.base_url()} <#{Application.get_env(:pleroma, :instance)[:email]}>"}]
     options = [:insecure, {:follow_redirect, true}]
-    case :hackney.request(:get, link, headers, "", options) do
-      {:ok, 200, headers, client} ->
-        headers = Enum.into(headers, Map.new)
-        {:ok, body} = :hackney.body(client)
-        {:ok, headers["Content-Type"], body}
+    with \
+      {:ok, 200, headers, client} <- :hackney.request(:get, link, headers, "", options),
+      {:ok, body} <- proxy_request_body(client)
+    do
+      headers = Enum.into(headers, Map.new)
+      {:ok, headers["Content-Type"], body}
+    else
       {:ok, status, _, _} ->
         Logger.warn "MediaProxy: request failed, status #{status}, link: #{link}"
         {:error, {:http, :bad_status, link}}
@@ -55,5 +59,19 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     |> set_cache_header(:error)
     |> send_resp(code, body)
   end
+
+  defp proxy_request_body(client), do: proxy_request_body(client, <<>>)
+  defp proxy_request_body(client, body) when byte_size(body) < @max_body_length do
+    case :hackney.stream_body(client) do
+      {:ok, data} -> proxy_request_body(client, <<body :: binary, data :: binary>>)
+      :done -> {:ok, body}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+  defp proxy_request_body(client, _) do
+    :hackney.close(client)
+    {:error, :body_too_large}
+  end
+
 
 end
