@@ -63,4 +63,27 @@ defmodule Pleroma.Web.HTTPSignaturesTest do
     expected = "date: Thu, 05 Jan 2014 21:31:40 GMT\ncontent-length: 18"
     assert expected == HTTPSignatures.build_signing_string(@headers, ["date", "content-length"])
   end
+
+  test "it validates a conn" do
+    public_key_pem = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnGb42rPZIapY4Hfhxrgn\nxKVJczBkfDviCrrYaYjfGxawSw93dWTUlenCVTymJo8meBlFgIQ70ar4rUbzl6GX\nMYvRdku072d1WpglNHXkjKPkXQgngFDrh2sGKtNB/cEtJcAPRO8OiCgPFqRtMiNM\nc8VdPfPdZuHEIZsJ/aUM38EnqHi9YnVDQik2xxDe3wPghOhqjxUM6eLC9jrjI+7i\naIaEygUdyst9qVg8e2FGQlwAeS2Eh8ygCxn+bBlT5OyV59jSzbYfbhtF2qnWHtZy\nkL7KOOwhIfGs7O9SoR2ZVpTEQ4HthNzainIe/6iCR5HGrao/T8dygweXFYRv+k5A\nPQIDAQAB\n-----END PUBLIC KEY-----\n"
+    [public_key] = :public_key.pem_decode(public_key_pem)
+
+    public_key = public_key
+    |> :public_key.pem_entry_decode()
+
+    conn = %{
+      req_headers: [
+        {"host", "localtesting.pleroma.lol"},
+        {"connection", "close"},
+        {"content-length", "2316"},
+        {"user-agent", "http.rb/2.2.2 (Mastodon/2.1.0.rc3; +http://mastodon.example.org/)"},
+        {"date", "Sun, 10 Dec 2017 14:23:49 GMT"},
+        {"digest", "SHA-256=x/bHADMW8qRrq2NdPb5P9fl0lYpKXXpe5h5maCIL0nM="},
+        {"content-type", "application/activity+json"},
+        {"(request-target)", "post /users/demiurge/inbox"},
+        {"signature", "keyId=\"http://mastodon.example.org/users/admin#main-key\",algorithm=\"rsa-sha256\",headers=\"(request-target) user-agent host date digest content-type\",signature=\"i0FQvr51sj9BoWAKydySUAO1RDxZmNY6g7M62IA7VesbRSdFZZj9/fZapLp6YSuvxUF0h80ZcBEq9GzUDY3Chi9lx6yjpUAS2eKb+Am/hY3aswhnAfYd6FmIdEHzsMrpdKIRqO+rpQ2tR05LwiGEHJPGS0p528NvyVxrxMT5H5yZS5RnxY5X2HmTKEgKYYcvujdv7JWvsfH88xeRS7Jlq5aDZkmXvqoR4wFyfgnwJMPLel8P/BUbn8BcXglH/cunR0LUP7sflTxEz+Rv5qg+9yB8zgBsB4C0233WpcJxjeD6Dkq0EcoJObBR56F8dcb7NQtUDu7x6xxzcgSd7dHm5w==\""}]
+    }
+
+    assert HTTPSignatures.validate_conn(conn, public_key)
+  end
 end

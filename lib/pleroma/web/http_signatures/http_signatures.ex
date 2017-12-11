@@ -21,6 +21,12 @@ defmodule Pleroma.Web.HTTPSignatures do
     verify = :public_key.verify(sigstring, :sha256, sig, public_key)
   end
 
+  def validate_conn(conn, public_key) do
+    headers = Enum.into(conn.req_headers, %{})
+    signature = split_signature(headers["signature"])
+    validate(headers, signature, public_key)
+  end
+
   def build_signing_string(headers, used_headers) do
     used_headers
     |> Enum.map(fn (header) -> "#{header}: #{headers[header]}" end)
