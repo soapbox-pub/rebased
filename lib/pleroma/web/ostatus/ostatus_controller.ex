@@ -66,13 +66,17 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> send_resp(200, "")
   end
 
-  def object(conn, %{"uuid" => uuid}) do
-    with id <- o_status_url(conn, :object, uuid),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
-         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      case get_format(conn) do
-        "html" -> redirect(conn, to: "/notice/#{activity.id}")
-        _ -> represent_activity(conn, activity, user)
+  def object(conn, %{"uuid" => uuid} = params) do
+    if get_format(conn) == "activity+json" do
+      ActivityPubController.object(conn, params)
+    else
+      with id <- o_status_url(conn, :object, uuid),
+           %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
+             %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+        case get_format(conn) do
+          "html" -> redirect(conn, to: "/notice/#{activity.id}")
+          _ -> represent_activity(conn, activity, user)
+        end
       end
     end
   end
