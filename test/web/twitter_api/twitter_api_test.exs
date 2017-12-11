@@ -34,7 +34,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
 
-    assert get_in(activity.data, ["object", "content"]) == "Hello again, <a href='shp'>@shp</a>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. #2hu #epic #phantasmagoric<br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+    assert get_in(activity.data, ["object", "content"]) == "Hello again, <span><a href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. #2hu #epic #phantasmagoric<br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
     assert get_in(activity.data, ["object", "type"]) == "Note"
     assert get_in(activity.data, ["object", "actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
@@ -291,7 +291,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
 
     mentions = Pleroma.Formatter.parse_mentions(text)
-    expected_text = "<a href='#{gsimg.ap_id}'>@gsimg</a> According to <a href='#{archaeme.ap_id}'>@archaeme</a>, that is @daggsy. Also hello <a href='#{archaeme_remote.ap_id}'>@archaeme</a>"
+    expected_text = "<span><a href='#{gsimg.ap_id}'>@<span>gsimg</span></a></span> According to <span><a href='#{archaeme.ap_id}'>@<span>archaeme</span></a></span>, that is @daggsy. Also hello <span><a href='#{archaeme_remote.ap_id}'>@<span>archaeme</span></a></span>"
 
     assert Utils.add_user_links(text, mentions) == expected_text
   end

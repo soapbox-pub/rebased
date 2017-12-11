@@ -145,7 +145,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/notifications")
 
-      expected_response = "hi <a href=\"#{user.ap_id}\">@#{user.nickname}</a>"
+      expected_response = "hi <span><a href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
       assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
       assert response == expected_response
     end
@@ -161,7 +161,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/notifications/#{notification.id}")
 
-      expected_response = "hi <a href=\"#{user.ap_id}\">@#{user.nickname}</a>"
+      expected_response = "hi <span><a href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
       assert %{"status" => %{"content" => response}} = json_response(conn, 200)
       assert response == expected_response
     end
