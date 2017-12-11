@@ -1,7 +1,7 @@
 defmodule Pleroma.Formatter do
   alias Pleroma.User
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&@~]+[\w\/]/u
+  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&@~\(\)]+[\w\/]/u
   def linkify(text) do
     Regex.replace(@link_regex, text, "<a href='\\0'>\\0</a>")
   end
@@ -22,6 +22,15 @@ defmodule Pleroma.Formatter do
     |> Enum.uniq
     |> Enum.map(fn ("@" <> match = full_match) -> {full_match, User.get_cached_by_nickname(match)} end)
     |> Enum.filter(fn ({_match, user}) -> user end)
+  end
+
+  def html_escape(text) do
+    Regex.split(@link_regex, text, include_captures: true)
+    |> Enum.map_every(2, fn chunk ->
+      {:safe, part} = Phoenix.HTML.html_escape(chunk)
+      part
+    end)
+    |> Enum.join("")
   end
 
   @finmoji [

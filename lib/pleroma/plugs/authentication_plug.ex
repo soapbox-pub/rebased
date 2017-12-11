@@ -12,6 +12,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   def call(conn, opts) do
     with {:ok, username, password} <- decode_header(conn),
          {:ok, user} <- opts[:fetcher].(username),
+         false <- !!user.info["deactivated"],
          saved_user_id <- get_session(conn, :user_id),
          {:ok, verified_user} <- verify(user, password, saved_user_id)
     do

@@ -212,6 +212,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def post_status(%{assigns: %{user: user}} = conn, %{"status" => _} = params) do
     params = params
     |> Map.put("in_reply_to_status_id", params["in_reply_to_id"])
+    |> Map.put("no_attachment_links", true)
 
     {:ok, activity} = CommonAPI.post(user, params)
     render conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity}

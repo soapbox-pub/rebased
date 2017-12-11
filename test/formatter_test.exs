@@ -25,6 +25,16 @@ defmodule Pleroma.FormatterTest do
       expected = "<a href='http://www.cs.vu.nl/~ast/intel/'>http://www.cs.vu.nl/~ast/intel/</a>"
 
       assert Formatter.linkify(text) == expected
+
+      text = "https://forum.zdoom.org/viewtopic.php?f=44&t=57087"
+      expected = "<a href='https://forum.zdoom.org/viewtopic.php?f=44&t=57087'>https://forum.zdoom.org/viewtopic.php?f=44&t=57087</a>"
+
+      assert Formatter.linkify(text) == expected
+
+      text = "https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul"
+      expected = "<a href='https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul'>https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul</a>"
+
+      assert Formatter.linkify(text) == expected
     end
   end
 
