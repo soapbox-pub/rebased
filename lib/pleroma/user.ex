@@ -376,4 +376,14 @@ defmodule Pleroma.User do
 
     :ok
   end
+
+  def get_public_key_for_ap_id(ap_id) do
+    with %User{} = user <- get_cached_by_ap_id(ap_id),
+         %{info: %{"magic_key" => magic_key}} <- user,
+         public_key <- Pleroma.Web.Salmon.decode_key(magic_key) do
+      {:ok, public_key}
+    else
+      _ -> :error
+    end
+  end
 end
