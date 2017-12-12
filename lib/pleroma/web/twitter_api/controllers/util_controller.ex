@@ -74,6 +74,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     json conn, Enum.into(Formatter.get_custom_emoji(), %{})
   end
 
+  def follow_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
+    follow_import(conn, %{"list" => File.read!(listfile.path)})
+  end
   def follow_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
     errors = list
     |> String.split()
