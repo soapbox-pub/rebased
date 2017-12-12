@@ -219,9 +219,11 @@ defmodule Pleroma.Web.Router do
 
   pipeline :activitypub do
     plug :accepts, ["activity+json"]
+    plug Pleroma.Web.Plugs.HTTPSignaturePlug
   end
 
   scope "/", Pleroma.Web.ActivityPub do
+    pipe_through :activitypub
     post "/users/:nickname/inbox", ActivityPubController, :inbox
   end
 
