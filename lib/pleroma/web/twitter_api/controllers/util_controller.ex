@@ -1,5 +1,6 @@
 defmodule Pleroma.Web.TwitterAPI.UtilController do
   use Pleroma.Web, :controller
+  require Logger
   alias Pleroma.Web
   alias Pleroma.Formatter
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -78,20 +79,19 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     follow_import(conn, %{"list" => File.read!(listfile.path)})
   end
   def follow_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
-    errors = list
-    |> String.split()
+    Task.start_link(fn ->
+    String.split(list)
     |> Enum.map(fn nick ->
-      with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
-      %User{} = followed <- User.get_or_fetch_by_nickname(nick),
-      {:ok, follower} <- User.follow(follower, followed),
-      {:ok, _activity} <- ActivityPub.follow(follower, followed) do
-        :ok
-      else
-        _e -> nick
-      end
+        with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
+        %User{} = followed <- User.get_or_fetch_by_nickname(nick),
+        {:ok, follower} <- User.follow(follower, followed) do
+          ActivityPub.follow(follower, followed)
+        else
+          _e -> Logger.debug "follow_import: following #{nick} failed"
+        end
+      end)
     end)
-    |> Enum.reject(fn x -> x == :ok end)
 
-    json conn, %{"failed follows" => errors}
+    json conn, "job started"
   end
 end
