@@ -3,6 +3,8 @@ defmodule Pleroma.Web.MediaProxy do
 
   def url(nil), do: nil
 
+  def url(url = "/" <> _), do: url
+
   def url(url) do
     config = Application.get_env(:pleroma, :media_proxy, [])
     if !Keyword.get(config, :enabled, false) or String.starts_with?(url, Pleroma.Web.base_url) do

@@ -1,5 +1,6 @@
 defmodule Pleroma.Formatter do
   alias Pleroma.User
+  alias Pleroma.Web.MediaProxy
 
   @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&@~\(\)]+[\w\/]/u
   def linkify(text) do
@@ -125,7 +126,7 @@ defmodule Pleroma.Formatter do
     end
 
     Enum.reduce(all_emoji, text, fn ({emoji, file}, text) ->
-      String.replace(text, ":#{emoji}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{file}' />")
+      String.replace(text, ":#{emoji}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{MediaProxy.url(file)}' />")
     end)
   end
 
