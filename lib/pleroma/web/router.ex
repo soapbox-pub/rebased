@@ -51,6 +51,11 @@ defmodule Pleroma.Web.Router do
     get "/emoji", UtilController, :emoji
   end
 
+  scope "/api/pleroma", Pleroma.Web.TwitterAPI do
+    pipe_through :authenticated_api
+    post "/follow_import", UtilController, :follow_import
+  end
+
   scope "/oauth", Pleroma.Web.OAuth do
     get "/authorize", OAuthController, :authorize
     post "/authorize", OAuthController, :create_authorization
