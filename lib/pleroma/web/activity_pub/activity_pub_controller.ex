@@ -20,7 +20,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   # TODO: Move signature failure halt into plug
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
-    {:ok, activity} = ActivityPub.insert(params, false)
-    json(conn, "ok")
+    with {:ok, data} <- ActivityPub.prepare_incoming(params),
+         {:ok, activity} <- ActivityPub.insert(data, false) do
+      json(conn, "ok")
+    end
   end
 end

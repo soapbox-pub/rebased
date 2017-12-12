@@ -53,6 +53,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, activity} = ActivityPub.create(["user1", "user1", "user2"], %User{ap_id: "1"}, "", %{})
       assert activity.data["to"] == ["user1", "user2"]
       assert activity.actor == "1"
+      assert activity.recipients == ["user1", "user2"]
     end
   end
 

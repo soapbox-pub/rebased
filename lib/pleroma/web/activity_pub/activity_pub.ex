@@ -1,14 +1,19 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
+  alias Pleroma.Web.OStatus
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   require Logger
+
+  def get_recipients(data) do
+    (data["to"] || []) ++ (data["cc"] || [])
+  end
 
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
          :ok <- insert_full_object(map) do
-      {:ok, activity} = Repo.insert(%Activity{data: map, local: local, actor: map["actor"]})
+      {:ok, activity} = Repo.insert(%Activity{data: map, local: local, actor: map["actor"], recipients: get_recipients(map)})
       Notification.create_notifications(activity)
       stream_out(activity)
       {:ok, activity}
@@ -214,5 +219,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def upload(file) do
     data = Upload.store(file)
     Repo.insert(%Object{data: data})
+  end
+
+  def prepare_incoming(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
+    with {:ok, user} <- OStatus.find_or_make_user(data["actor"]) do
+      data
+    else
+      _e -> :error
+    end
+  end
+
+  def prepare_incoming(_) do
+    :error
   end
 end

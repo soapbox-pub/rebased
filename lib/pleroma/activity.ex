@@ -7,6 +7,7 @@ defmodule Pleroma.Activity do
     field :data, :map
     field :local, :boolean, default: true
     field :actor, :string
+    field :recipients, {:array, :string}
     has_many :notifications, Notification, on_delete: :delete_all
 
     timestamps()
