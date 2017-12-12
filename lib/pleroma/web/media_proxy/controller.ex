@@ -33,10 +33,11 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     options = [:insecure, {:follow_redirect, true}]
     with \
       {:ok, 200, headers, client} <- :hackney.request(:get, link, headers, "", options),
-      {:ok, body} <- proxy_request_body(client)
+      headers = Enum.into(headers, Map.new),
+      {:ok, body} <- proxy_request_body(client),
+      content_type <- proxy_request_content_type(headers, body)
     do
-      headers = Enum.into(headers, Map.new)
-      {:ok, headers["Content-Type"], body}
+      {:ok, content_type, body}
     else
       {:ok, status, _, _} ->
         Logger.warn "MediaProxy: request failed, status #{status}, link: #{link}"
@@ -73,5 +74,10 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     {:error, :body_too_large}
   end
 
+  # TODO: the body is passed here as well because some hosts do not provide a content-type.
+  # At some point we may want to use magic numbers to discover the content-type and reply a proper one.
+  defp proxy_request_content_type(headers, _body) do
+    headers["Content-Type"] || headers["content-type"] || "image/jpeg"
+  end
 
 end
