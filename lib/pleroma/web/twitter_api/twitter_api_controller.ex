@@ -263,16 +263,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def followers(%{assigns: %{user: user}} = conn, _params) do
-    with {:ok, followers} <- User.get_followers(user) do
+  def followers(conn, params) do
+    with {:ok, user} <- TwitterAPI.get_user(conn.assigns.user, params),
+         {:ok, followers} <- User.get_followers(user) do
       render(conn, UserView, "index.json", %{users: followers, for: user})
     else
       _e -> bad_request_reply(conn, "Can't get followers")
     end
   end
 
-  def friends(%{assigns: %{user: user}} = conn, _params) do
-    with {:ok, friends} <- User.get_friends(user) do
+  def friends(conn, params) do
+    with {:ok, user} <- TwitterAPI.get_user(conn.assigns.user, params),
+         {:ok, friends} <- User.get_friends(user) do
       render(conn, UserView, "index.json", %{users: friends, for: user})
     else
       _e -> bad_request_reply(conn, "Can't get friends")
