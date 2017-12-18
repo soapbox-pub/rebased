@@ -142,6 +142,8 @@ defmodule Pleroma.Web.Router do
     get "/qvitter/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
     get "/users/show", TwitterAPI.Controller, :show_user
 
+    get "/statuses/followers", TwitterAPI.Controller, :followers
+    get "/statuses/friends", TwitterAPI.Controller, :friends
     get "/statuses/show/:id", TwitterAPI.Controller, :fetch_status
     get "/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation
 
@@ -188,8 +190,6 @@ defmodule Pleroma.Web.Router do
 
     post "/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar
 
-    get "/statuses/followers", TwitterAPI.Controller, :followers
-    get "/statuses/friends", TwitterAPI.Controller, :friends
     get "/friends/ids", TwitterAPI.Controller, :friends_ids
     get "/friendships/no_retweets/ids", TwitterAPI.Controller, :empty_array
 
