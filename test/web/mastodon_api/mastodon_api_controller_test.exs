@@ -35,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, [_activity]} = OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
 
     conn = conn
-    |> get("/api/v1/timelines/public")
+    |> get("/api/v1/timelines/public", %{"local" => "False"})
 
     assert length(json_response(conn, 200)) == 2
 
@@ -50,9 +50,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     conn = conn
     |> assign(:user, user)
-    |> post("/api/v1/statuses", %{"status" => "cofe", "spoiler_text" => "2hu"})
+    |> post("/api/v1/statuses", %{"status" => "cofe", "spoiler_text" => "2hu", "sensitive" => "false"})
 
-    assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu"} = json_response(conn, 200)
+    assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} = json_response(conn, 200)
     assert Repo.get(Activity, id)
   end
 

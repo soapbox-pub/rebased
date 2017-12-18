@@ -10,7 +10,7 @@ defmodule Pleroma.Formatter do
   def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
     |> Enum.map(fn (["#" <> tag = full_tag]) -> {full_tag, String.downcase(tag)} end)
-    |> (fn map -> if data["sensitive"], do: [{"#nsfw", "nsfw"}] ++ map, else: map end).()
+    |> (fn map -> if data["sensitive"] in [true, "True", "true"], do: [{"#nsfw", "nsfw"}] ++ map, else: map end).()
   end
 
   def parse_mentions(text) do
