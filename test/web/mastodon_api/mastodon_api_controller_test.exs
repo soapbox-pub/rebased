@@ -43,6 +43,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> get("/api/v1/timelines/public", %{"local" => "True"})
 
     assert [%{"content" => "test"}] = json_response(conn, 200)
+
+    conn = build_conn()
+    |> get("/api/v1/timelines/public", %{"local" => "1"})
+
+    assert [%{"content" => "test"}] = json_response(conn, 200)
   end
 
   test "posting a status", %{conn: conn} do

@@ -162,7 +162,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
     params = params
     |> Map.put("type", ["Create", "Announce"])
-    |> Map.put("local_only", params["local"] in [true, "True", "true"])
+    |> Map.put("local_only", params["local"] in [true, "True", "true", "1"])
     |> Map.put("blocking_user", user)
 
     activities = ActivityPub.fetch_public_activities(params)
