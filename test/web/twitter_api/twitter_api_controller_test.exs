@@ -518,7 +518,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   describe "GET /api/statuses/friends" do
-    test "it returns a user's friends", %{conn: conn} do
+    test "it returns the logged in user's friends", %{conn: conn} do
       user = insert(:user)
       followed_one = insert(:user)
       followed_two = insert(:user)
@@ -530,6 +530,36 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn = conn
       |> assign(:user, user)
       |> get("/api/statuses/friends")
+
+      assert MapSet.equal?(MapSet.new(json_response(conn, 200)), MapSet.new(UserView.render("index.json", %{users: [followed_one, followed_two], for: user})))
+    end
+
+    test "it returns a given user's friends with user_id", %{conn: conn} do
+      user = insert(:user)
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      conn = conn
+      |> get("/api/statuses/friends", %{"user_id" => user.id})
+
+      assert MapSet.equal?(MapSet.new(json_response(conn, 200)), MapSet.new(UserView.render("index.json", %{users: [followed_one, followed_two], for: user})))
+    end
+
+    test "it returns a given user's friends with screen_name", %{conn: conn} do
+      user = insert(:user)
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      conn = conn
+      |> get("/api/statuses/friends", %{"screen_name" => user.nickname})
 
       assert MapSet.equal?(MapSet.new(json_response(conn, 200)), MapSet.new(UserView.render("index.json", %{users: [followed_one, followed_two], for: user})))
     end
