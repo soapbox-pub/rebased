@@ -6,7 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter do
     data = object.data
     url = List.first(data["url"])
     %{
-      url: url["href"],
+      url: url["href"] |> Pleroma.Web.MediaProxy.url(),
       mimetype: url["mediaType"],
       id: data["uuid"],
       oembed: false
