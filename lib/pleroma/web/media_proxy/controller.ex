@@ -14,7 +14,6 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     with \
       true <- Keyword.get(config, :enabled, false),
       {:ok, url} <- Pleroma.Web.MediaProxy.decode_url(sig, url),
-      url = URI.encode(url),
       {:ok, content_type, body} <- proxy_request(url)
     do
       conn
