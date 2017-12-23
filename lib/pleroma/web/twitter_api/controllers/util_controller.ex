@@ -79,7 +79,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     follow_import(conn, %{"list" => File.read!(listfile.path)})
   end
   def follow_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
-    Task.start_link(fn ->
+    Task.start(fn ->
     String.split(list)
     |> Enum.map(fn nick ->
         with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
