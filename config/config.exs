@@ -40,6 +40,7 @@ version = with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
             _ -> "Pleroma dev"
           end
 
+# Configures http settings, upstream proxy etc.
 config :pleroma, :http,
   proxy_url: ""
 
