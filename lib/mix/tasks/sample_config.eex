@@ -10,6 +10,11 @@ config :pleroma, :instance,
   limit: 5000,
   registrations_open: true
 
+config :pleroma, :media_proxy,
+  enabled: <%= mediaproxy %>,
+  redirect_on_failure: true,
+  #base_url: "https://cache.pleroma.social"
+
 # Configure your database
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
