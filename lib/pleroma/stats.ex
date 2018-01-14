@@ -4,13 +4,17 @@ defmodule Pleroma.Stats do
   alias Pleroma.{User, Repo, Activity}
 
   def start_link do
-    agent = Agent.start_link(fn -> %{} end, name: __MODULE__)
+    agent = Agent.start_link(fn -> {[], %{}} end, name: __MODULE__)
     schedule_update()
     agent
   end
 
-  def get do
-    Agent.get(__MODULE__, fn stats -> stats end)
+  def get_stats do
+    Agent.get(__MODULE__, fn {_, stats} -> stats end)
+  end
+
+  def get_peers do
+    Agent.get(__MODULE__, fn {peers, _} -> peers end)
   end
 
   def schedule_update do
@@ -31,8 +35,9 @@ defmodule Pleroma.Stats do
       where: p.local == ^true,
       where: fragment("?->'object'->>'type' = ?", p.data, ^"Note")
     status_count = Repo.aggregate(status_query, :count, :id)
+    user_count = Repo.aggregate(User.local_user_query, :count, :id)
     Agent.update(__MODULE__, fn _ ->
-      %{peers: peers, domain_count: domain_count, status_count: status_count}
+      {peers, %{domain_count: domain_count, status_count: status_count, user_count: user_count}}
     end)
   end
 end

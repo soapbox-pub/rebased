@@ -93,8 +93,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   @instance Application.get_env(:pleroma, :instance)
 
   def masto_instance(conn, _params) do
-    user_count = Repo.aggregate(User.local_user_query, :count, :id)
-    %{domain_count: domain_count, status_count: status_count} = Stats.get()
     response = %{
       uri: Web.base_url,
       title: Keyword.get(@instance, :name),
@@ -104,11 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       urls: %{
         streaming_api: String.replace(Web.base_url, ["http","https"], "wss")
       },
-      stats: %{
-        status_count: status_count,
-        user_count: user_count,
-        domain_count: domain_count
-      },
+      stats: Stats.get_stats,
       max_toot_chars: Keyword.get(@instance, :limit)
     }
 
@@ -116,8 +110,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def peers(conn, _params) do
-    %{peers: peers} = Stats.get()
-    json(conn, peers)
+    json(conn, Stats.get_peers)
   end
 
   defp mastodonized_emoji do
