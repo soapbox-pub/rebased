@@ -45,7 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "screen_name" => user.nickname,
       "statuses_count" => user_info[:note_count],
       "statusnet_profile_url" => user.ap_id,
-      "cover_photo" => image_url(user.info["banner"]) |> MediaProxy.url(),
+      "cover_photo" => User.banner_url(user) |> MediaProxy.url(),
       "background_image" => image_url(user.info["background"]) |> MediaProxy.url(),
     }
 
