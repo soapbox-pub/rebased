@@ -586,11 +586,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
 
+    Pleroma.Stats.update_stats()
+
     conn = conn
     |> get("/api/v1/instance")
 
     assert result = json_response(conn, 200)
 
     assert result["stats"]["user_count"] == 2
+    assert result["stats"]["status_count"] == 1
   end
 end
