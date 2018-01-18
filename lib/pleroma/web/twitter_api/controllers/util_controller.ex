@@ -2,6 +2,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   use Pleroma.Web, :controller
   require Logger
   alias Pleroma.Web
+  alias Pleroma.Web.OStatus
+  alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.{Repo, PasswordResetToken, User}
@@ -28,6 +30,52 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def help_test(conn, _params) do
     json(conn, "ok")
+  end
+
+  def remote_follow(%{assigns: %{user: user}} = conn, %{"acct" => acct}) do
+    {err, followee} = OStatus.find_or_make_user(acct)
+    avatar = User.avatar_url(followee)
+    name = followee.nickname
+    id = followee.id
+
+    if !!user do
+      conn
+      |> render("follow.html", %{error: err, acct: acct, avatar: avatar, name: name, id: id})
+    else
+      conn
+      |> render("follow_login.html", %{error: false, acct: acct, avatar: avatar, name: name, id: id})
+    end
+  end
+
+  def do_remote_follow(conn, %{"authorization" => %{"name" => username, "password" => password, "id" => id}}) do
+    followee = Repo.get(User, id)
+    avatar = User.avatar_url(followee)
+    name = followee.nickname
+    with %User{} = user <- User.get_cached_by_nickname(username),
+         true <- Pbkdf2.checkpw(password, user.password_hash),
+           %User{} = followed <- Repo.get(User, id),
+         {:ok, follower} <- User.follow(user, followee),
+         {:ok, _activity} <- ActivityPub.follow(follower, followee) do
+      conn
+      |> render("followed.html", %{error: false})
+    else
+      _e ->
+        conn
+        |> render("follow_login.html", %{error: "Wrong username or password", id: id, name: name, avatar: avatar})
+    end
+  end
+  def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
+    with %User{} = followee <- Repo.get(User, id),
+         {:ok, follower} <- User.follow(user, followee),
+         {:ok, _activity} <- ActivityPub.follow(follower, followee) do
+      conn
+      |> render("followed.html", %{error: false})
+    else
+      e ->
+        Logger.debug("Remote follow failed with error #{inspect e}")
+      conn
+      |> render("followed.html", %{error: inspect(e)})
+    end
   end
 
   @instance Application.get_env(:pleroma, :instance)
