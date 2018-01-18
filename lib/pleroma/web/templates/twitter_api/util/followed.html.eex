@@ -1,6 +1,0 @@
-<%= if @error do %>
-<p>Error following account</p>
-<% else %>
-<h2>Account followed!</h2>
-<% end %>
-
