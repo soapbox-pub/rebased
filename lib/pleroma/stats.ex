@@ -5,7 +5,7 @@ defmodule Pleroma.Stats do
 
   def start_link do
     agent = Agent.start_link(fn -> {[], %{}} end, name: __MODULE__)
-    schedule_update()
+    spawn(fn -> schedule_update() end)
     agent
   end
 
@@ -18,23 +18,22 @@ defmodule Pleroma.Stats do
   end
 
   def schedule_update do
-    update_stats()
     spawn(fn ->
       Process.sleep(1000 * 60 * 60 * 1) # 1 hour
       schedule_update()
     end)
+    update_stats()
   end
 
   def update_stats do
     peers = from(u in Pleroma.User,
-      select: fragment("?->'host'", u.info),
+      select: fragment("distinct ?->'host'", u.info),
       where: u.local != ^true)
-    |> Repo.all() |> Enum.uniq()
+    |> Repo.all()
     domain_count = Enum.count(peers)
-    status_query = from p in Activity,
-      where: p.local == ^true,
-      where: fragment("?->'object'->>'type' = ?", p.data, ^"Note")
-    status_count = Repo.aggregate(status_query, :count, :id)
+    status_query = from(u in User.local_user_query,
+      select: fragment("sum((?->>'note_count')::int)", u.info))
+    status_count = Repo.one(status_query) |> IO.inspect
     user_count = Repo.aggregate(User.local_user_query, :count, :id)
     Agent.update(__MODULE__, fn _ ->
       {peers, %{domain_count: domain_count, status_count: status_count, user_count: user_count}}
