@@ -33,7 +33,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     {:ok, user} = User.update_follower_count(user)
     Cachex.set(:user_cache, "user_info:#{user.id}", User.user_info(Repo.get!(User, user.id)))
 
-    image = "https://placehold.it/48x48"
+    image = "http://localhost:4001/static/avi.png"
+    banner = "http://localhost:4001/static/banner.png"
 
     represented = %{
       "id" => user.id,
@@ -54,7 +55,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "statusnet_blocking" => false,
       "rights" => %{},
       "statusnet_profile_url" => user.ap_id,
-      "cover_photo" => nil,
+      "cover_photo" => banner,
       "background_image" => nil
     }
 
@@ -64,7 +65,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   test "A user for a given other follower", %{user: user} do
     {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
     {:ok, user} = User.update_follower_count(user)
-    image = "https://placehold.it/48x48"
+    image = "http://localhost:4001/static/avi.png"
+    banner = "http://localhost:4001/static/banner.png"
+
     represented = %{
       "id" => user.id,
       "name" => user.name,
@@ -84,7 +87,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "statusnet_blocking" => false,
       "rights" => %{},
       "statusnet_profile_url" => user.ap_id,
-      "cover_photo" => nil,
+      "cover_photo" => banner,
       "background_image" => nil
     }
 
@@ -95,7 +98,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     follower = insert(:user)
     {:ok, follower} = User.follow(follower, user)
     {:ok, user} = User.update_follower_count(user)
-    image = "https://placehold.it/48x48"
+    image = "http://localhost:4001/static/avi.png"
+    banner = "http://localhost:4001/static/banner.png"
+
     represented = %{
       "id" => follower.id,
       "name" => follower.name,
@@ -115,7 +120,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "statusnet_blocking" => false,
       "rights" => %{},
       "statusnet_profile_url" => follower.ap_id,
-      "cover_photo" => nil,
+      "cover_photo" => banner,
       "background_image" => nil
     }
 
@@ -126,7 +131,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     user = insert(:user)
     blocker = insert(:user)
     User.block(blocker, user)
-    image = "https://placehold.it/48x48"
+    image = "http://localhost:4001/static/avi.png"
+    banner = "http://localhost:4001/static/banner.png"
+
     represented = %{
       "id" => user.id,
       "name" => user.name,
@@ -146,7 +153,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "statusnet_blocking" => true,
       "rights" => %{},
       "statusnet_profile_url" => user.ap_id,
-      "cover_photo" => nil,
+      "cover_photo" => banner,
       "background_image" => nil
     }
 

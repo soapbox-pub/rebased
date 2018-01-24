@@ -28,6 +28,13 @@ defmodule Pleroma.Web.Router do
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true}
   end
 
+  pipeline :pleroma_html do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug Pleroma.Plugs.OAuthPlug
+    plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true}
+  end
+
   pipeline :well_known do
     plug :accepts, ["xml", "xrd+xml"]
   end
@@ -49,6 +56,12 @@ defmodule Pleroma.Web.Router do
     get "/password_reset/:token", UtilController, :show_password_reset
     post "/password_reset", UtilController, :password_reset
     get "/emoji", UtilController, :emoji
+  end
+
+  scope "/", Pleroma.Web.TwitterAPI do
+    pipe_through :pleroma_html
+    get "/ostatus_subscribe", UtilController, :remote_follow
+    post "/ostatus_subscribe", UtilController, :do_remote_follow
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -106,6 +119,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through :api
     get "/instance", MastodonAPIController, :masto_instance
+    get "/instance/peers", MastodonAPIController, :peers
     post "/apps", MastodonAPIController, :create_app
     get "/custom_emojis", MastodonAPIController, :custom_emojis
 

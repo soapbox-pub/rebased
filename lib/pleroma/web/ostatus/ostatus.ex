@@ -22,6 +22,10 @@ defmodule Pleroma.Web.OStatus do
     "#{user.ap_id}/salmon"
   end
 
+  def remote_follow_path do
+    "#{Web.base_url}/ostatus_subscribe?acct={uri}"
+  end
+
   def handle_incoming(xml_string) do
     with doc when doc != :error <- parse_document(xml_string) do
       entries = :xmerl_xpath.string('//entry', doc)

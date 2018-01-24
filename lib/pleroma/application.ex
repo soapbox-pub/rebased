@@ -21,6 +21,7 @@ defmodule Pleroma.Application do
                        ]]),
       worker(Pleroma.Web.Federator, []),
       worker(Pleroma.Web.ChatChannel.ChatChannelState, []),
+      worker(Pleroma.Stats, []),
     ]
     ++ if Mix.env == :test, do: [], else: [worker(Pleroma.Web.Streamer, [])]
 
