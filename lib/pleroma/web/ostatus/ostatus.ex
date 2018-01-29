@@ -163,8 +163,7 @@ defmodule Pleroma.Web.OStatus do
     Get the cw that mastodon uses.
   """
   def get_cw(entry) do
-    with scope when not is_nil(scope) <- string_from_xpath("//mastodon:scope", entry),
-         cw when not is_nil(cw) <- string_from_xpath("/*/summary", entry) do
+    with cw when not is_nil(cw) <- string_from_xpath("/*/summary", entry) do
       cw
     else _e -> nil
     end
