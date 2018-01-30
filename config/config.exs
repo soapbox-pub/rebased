@@ -32,13 +32,17 @@ config :mime, :types, %{
 
 config :pleroma, :websub, Pleroma.Web.Websub
 config :pleroma, :ostatus, Pleroma.Web.OStatus
-config :pleroma, :httpoison, HTTPoison
+config :pleroma, :httpoison, Pleroma.HTTP
 
 version = with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
             "Pleroma #{String.trim(version)}"
           else
             _ -> "Pleroma dev"
           end
+
+# Configures http settings, upstream proxy etc.
+config :pleroma, :http,
+  proxy_url: nil
 
 config :pleroma, :instance,
   version: version,
