@@ -1,6 +1,8 @@
 defmodule Pleroma.Web.OStatus.FeedRepresenter do
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.OStatus.{UserRepresenter, ActivityRepresenter}
+  alias Pleroma.User
+  alias Pleroma.Web.MediaProxy
 
   def to_simple_form(user, activities, _users) do
     most_recent_update = (List.first(activities) || user).updated_at
@@ -25,6 +27,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
         {:id, h.(OStatus.feed_path(user))},
         {:title, ['#{user.nickname}\'s timeline']},
         {:updated, h.(most_recent_update)},
+        {:logo, [to_charlist(User.avatar_url(user) |> MediaProxy.url())]},
         {:link, [rel: 'hub', href: h.(OStatus.pubsub_path(user))], []},
         {:link, [rel: 'salmon', href: h.(OStatus.salmon_path(user))], []},
         {:link, [rel: 'self', href: h.(OStatus.feed_path(user)), type: 'application/atom+xml'], []},

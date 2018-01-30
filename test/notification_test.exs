@@ -14,9 +14,9 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, [notification, other_notification]} = Notification.create_notifications(activity)
 
-      assert notification.user_id == other_user.id
+      notified_ids = Enum.sort([notification.user_id, other_notification.user_id])
+      assert notified_ids == [other_user.id, third_user.id]
       assert notification.activity_id == activity.id
-      assert other_notification.user_id == third_user.id
       assert other_notification.activity_id == activity.id
     end
   end
