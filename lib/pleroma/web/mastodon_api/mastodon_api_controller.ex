@@ -103,6 +103,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         streaming_api: String.replace(Web.base_url, ["http","https"], "wss")
       },
       stats: Stats.get_stats,
+      thumbnail: Web.base_url <> "/instance/thumbnail.jpeg",
       max_toot_chars: Keyword.get(@instance, :limit)
     }
 
