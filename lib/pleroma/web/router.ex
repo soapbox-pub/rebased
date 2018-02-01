@@ -62,6 +62,7 @@ defmodule Pleroma.Web.Router do
     pipe_through :pleroma_html
     get "/ostatus_subscribe", UtilController, :remote_follow
     post "/ostatus_subscribe", UtilController, :do_remote_follow
+    post "/main/ostatus", UtilController, :remote_subscribe
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
