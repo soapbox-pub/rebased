@@ -3,6 +3,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   require Logger
   alias Pleroma.Web
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.WebFinger
   alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -30,6 +31,26 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def help_test(conn, _params) do
     json(conn, "ok")
+  end
+
+  def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
+    with %User{} = user <- User.get_cached_by_nickname(nick),
+         avatar = User.avatar_url(user) do
+      conn
+      |> render("subscribe.html", %{nickname: nick, avatar: avatar, error: false})
+    else
+      _e -> render(conn, "subscribe.html", %{nickname: nick, avatar: nil, error: "Could not find user"})
+    end
+  end
+  def remote_subscribe(conn, %{"user" => %{"nickname" => nick, "profile" => profile}}) do
+    with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile),
+         %User{ap_id: ap_id} <- User.get_cached_by_nickname(nick) do
+      conn
+      |> Phoenix.Controller.redirect(external: String.replace(template, "{uri}", ap_id))
+    else
+      _e ->
+        render(conn, "subscribe.html", %{nickname: nick, avatar: nil, error: "Something went wrong."})
+    end
   end
 
   def remote_follow(%{assigns: %{user: user}} = conn, %{"acct" => acct}) do

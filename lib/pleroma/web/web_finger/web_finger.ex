@@ -69,11 +69,13 @@ defmodule Pleroma.Web.WebFinger do
     topic = XML.string_from_xpath(~s{//Link[@rel="http://schemas.google.com/g/2010#updates-from"]/@href}, doc)
     subject = XML.string_from_xpath("//Subject", doc)
     salmon = XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc)
+    subscribe_address = XML.string_from_xpath(~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template}, doc)
     data = %{
       "magic_key" => magic_key,
       "topic" => topic,
       "subject" => subject,
-      "salmon" => salmon
+      "salmon" => salmon,
+      "subscribe_address" => subscribe_address
     }
     {:ok, data}
   end
