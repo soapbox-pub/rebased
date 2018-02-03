@@ -29,14 +29,14 @@ defmodule Pleroma.User do
   def avatar_url(user) do
     case user.avatar do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "#{Web.base_url()}/static/avi.png"
+      _ -> "#{Web.base_url()}/images/avi.png"
     end
   end
 
   def banner_url(user) do
     case user.info["banner"] do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "#{Web.base_url()}/static/banner.png"
+      _ -> "#{Web.base_url()}/images/banner.png"
     end
   end
 
