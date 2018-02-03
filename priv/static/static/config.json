@@ -5,5 +5,6 @@
   "logo": "/static/logo.png",
   "registrationOpen": true,
   "defaultPath": "/main/all",
-  "chatDisabled": false
+  "chatDisabled": false,
+  "showInstanceSpecificPanel": true
 }
