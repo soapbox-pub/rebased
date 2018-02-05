@@ -22,7 +22,7 @@ No release has been made yet, but several servers have been online for months al
 ### Dependencies
 
 * Postgresql version 9.6 or newer
-* Elixir version 1.4 or newer (you will also need erlang-dev, erlang-parsetools, erlang-xmerl packages)
+* Elixir version 1.5 or newer
 * Build-essential tools
 
 ### Configuration
