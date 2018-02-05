@@ -9,7 +9,7 @@ defmodule Pleroma.Upload do
     File.cp!(file.path, result_file)
 
     # fix content type on some image uploads
-    content_type = if file.content_type == "application/octet-stream" do
+    content_type = if file.content_type in [nil, "application/octet-stream"] do
       get_content_type(file.path)
     else
       file.content_type
