@@ -5,7 +5,9 @@ defmodule Pleroma.Web.UserSocket do
 
   ## Channels
   # channel "room:*", Pleroma.Web.RoomChannel
-  channel "chat:*", Pleroma.Web.ChatChannel
+  if Application.get_env(:pleroma, :chat) |> Keyword.get(:enabled) do
+    channel "chat:*", Pleroma.Web.ChatChannel
+  end
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
