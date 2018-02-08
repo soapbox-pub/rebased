@@ -1,5 +1,4 @@
 defmodule Pleroma.Stats do
-  use Agent
   import Ecto.Query
   alias Pleroma.{User, Repo, Activity}
 
