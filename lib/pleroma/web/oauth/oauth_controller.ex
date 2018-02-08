@@ -5,6 +5,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.{Repo, User}
   alias Comeonin.Pbkdf2
 
+  plug :fetch_session
+  plug :fetch_flash
+
+  action_fallback Pleroma.Web.OAuth.FallbackController
+
   def authorize(conn, params) do
     render conn, "show.html", %{
       response_type: params["response_type"],
