@@ -24,7 +24,6 @@ defmodule Pleroma.Web.ChatChannel do
 end
 
 defmodule Pleroma.Web.ChatChannel.ChatChannelState do
-  use Agent
   @max_messages 20
 
   def start_link do
