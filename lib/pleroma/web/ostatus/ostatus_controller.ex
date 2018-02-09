@@ -17,7 +17,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
-  def feed(conn, %{"nickname" => nickname}) do
+  def feed(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
     query = from activity in Activity,
       where: fragment("?->>'actor' = ?", activity.data, ^user.ap_id),
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
       order_by: [desc: :id]
 
     activities = query
-    |> restrict_max(opts)    
+    |> restrict_max(params)
     |> Repo.all
 
     response = user
