@@ -25,6 +25,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
       order_by: [desc: :id]
 
     activities = query
+    |> restrict_max(opts)    
     |> Repo.all
 
     response = user
@@ -53,6 +54,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
         end
     end
   end
+
+  defp restrict_max(query, %{"max_id" => max_id}) do
+    from activity in query, where: activity.id < ^max_id
+  end
+  defp restrict_max(query, _), do: query
 
   def salmon_incoming(conn, _) do
     {:ok, body, _conn} = read_body(conn)
