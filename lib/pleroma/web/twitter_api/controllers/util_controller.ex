@@ -121,7 +121,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
               site: %{
                 name: Keyword.get(@instance, :name),
                 server: Web.base_url,
-                textlimit: Keyword.get(@instance, :limit),
+                textlimit: to_string(Keyword.get(@instance, :limit)),
                 closed: if(Keyword.get(@instance, :registrations_open), do: "0", else: "1")
               }
              })
