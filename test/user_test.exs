@@ -370,4 +370,8 @@ defmodule Pleroma.UserTest do
 
     refute Repo.get(Activity, activity.id)
   end
+
+  test "get_public_key_for_ap_id fetches a user that's not in the db" do
+    assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
+  end
 end

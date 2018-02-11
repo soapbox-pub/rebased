@@ -47,6 +47,9 @@ defmodule Pleroma.Web.Federator do
 
       Logger.debug(fn -> "Sending #{activity.data["id"]} out via websub" end)
       Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
+
+      Logger.debug(fn -> "Sending #{activity.data["id"]} out via AP" end)
+      Pleroma.Web.ActivityPub.ActivityPub.publish(actor, activity)
     end
   end
 

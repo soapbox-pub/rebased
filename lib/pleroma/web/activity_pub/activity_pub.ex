@@ -223,18 +223,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.insert(%Object{data: data})
   end
 
-  def prepare_incoming(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
-    with {:ok, user} <- OStatus.find_or_make_user(data["actor"]) do
-      data
-    else
-      _e -> :error
-    end
-  end
-
-  def prepare_incoming(_) do
-    :error
-  end
-
   def make_user_from_ap_id(ap_id) do
     with {:ok, %{status_code: 200, body: body}} <- @httpoison.get(ap_id, ["Accept": "application/activity+json"]),
     {:ok, data} <- Poison.decode(body)
@@ -250,6 +238,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       }
 
       User.insert_or_update_user(user_data)
+    end
+  end
+
+  # TODO: Extract to own module, align as close to Mastodon format as possible.
+  def sanitize_outgoing_activity_data(data) do
+    data
+    |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+  end
+
+  def prepare_incoming(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
+    with {:ok, user} <- OStatus.find_or_make_user(data["actor"]) do
+      {:ok, data}
+    else
+      _e -> :error
+    end
+  end
+
+  def prepare_incoming(_) do
+    :error
+  end
+
+  def publish(actor, activity) do
+    remote_users = Pleroma.Web.Salmon.remote_users(activity)
+    data = sanitize_outgoing_activity_data(activity.data)
+    Enum.each remote_users, fn(user) ->
+      if user.info["ap_enabled"] do
+        inbox = user.info["source_data"]["inbox"]
+        Logger.info("Federating #{activity.data["id"]} to #{inbox}")
+        host = URI.parse(inbox).host
+        signature = Pleroma.Web.HTTPSignatures.sign(actor, %{host: host})
+        @httpoison.post(inbox, Poison.encode!(data), [{"Content-Type", "application/activity+json"}, {"signature", signature}])
+      end
     end
   end
 end

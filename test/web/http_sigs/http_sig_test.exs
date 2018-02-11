@@ -3,6 +3,7 @@
 defmodule Pleroma.Web.HTTPSignaturesTest do
   use Pleroma.DataCase
   alias Pleroma.Web.HTTPSignatures
+  import Pleroma.Factory
 
   @private_key (hd(:public_key.pem_decode(File.read!("test/web/http_sigs/priv.key")))
     |> :public_key.pem_entry_decode())
@@ -85,5 +86,30 @@ defmodule Pleroma.Web.HTTPSignaturesTest do
     }
 
     assert HTTPSignatures.validate_conn(conn, public_key)
+  end
+
+  test "it validates a conn and fetches the key" do
+    conn = %{
+      params: %{"actor" => "http://mastodon.example.org/users/admin"},
+      req_headers: [
+        {"host", "localtesting.pleroma.lol"},
+        {"x-forwarded-for", "127.0.0.1"},
+        {"connection", "close"},
+        {"content-length", "2307"},
+        {"user-agent", "http.rb/2.2.2 (Mastodon/2.1.0.rc3; +http://mastodon.example.org/)"},
+        {"date", "Sun, 11 Feb 2018 17:12:01 GMT"},
+        {"digest", "SHA-256=UXsAnMtR9c7mi1FOf6HRMtPgGI1yi2e9nqB/j4rZ99I="},
+        {"content-type", "application/activity+json"},
+        {"signature", "keyId=\"http://mastodon.example.org/users/admin#main-key\",algorithm=\"rsa-sha256\",headers=\"(request-target) user-agent host date digest content-type\",signature=\"qXKqpQXUpC3d9bZi2ioEeAqP8nRMD021CzH1h6/w+LRk4Hj31ARJHDwQM+QwHltwaLDUepshMfz2WHSXAoLmzWtvv7xRwY+mRqe+NGk1GhxVZ/LSrO/Vp7rYfDpfdVtkn36LU7/Bzwxvvaa4ZWYltbFsRBL0oUrqsfmJFswNCQIG01BB52BAhGSCORHKtQyzo1IZHdxl8y80pzp/+FOK2SmHkqWkP9QbaU1qTZzckL01+7M5btMW48xs9zurEqC2sM5gdWMQSZyL6isTV5tmkTZrY8gUFPBJQZgihK44v3qgfWojYaOwM8ATpiv7NG8wKN/IX7clDLRMA8xqKRCOKw==\""},
+        {"(request-target)", "post /users/demiurge/inbox"}
+      ]
+    }
+
+    assert HTTPSignatures.validate_conn(conn)
+  end
+
+  test "it generates a signature" do
+    user = insert(:user)
+    assert HTTPSignatures.sign(user, %{host: "mastodon.example.org"}) =~ "keyId=\""
   end
 end

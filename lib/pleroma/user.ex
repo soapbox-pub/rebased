@@ -383,10 +383,33 @@ defmodule Pleroma.User do
     :ok
   end
 
+  def get_or_fetch_by_ap_id(ap_id) do
+    if user = get_by_ap_id(ap_id) do
+      user
+    else
+      with {:ok, user} <- ActivityPub.make_user_from_ap_id(ap_id) do
+        user
+      end
+    end
+  end
+
+  # AP style
+  def public_key_from_info(%{"source_data" => %{"publicKey" => %{"publicKeyPem" => public_key_pem}}}) do
+     key = :public_key.pem_decode(public_key_pem)
+     |> hd()
+     |> :public_key.pem_entry_decode()
+
+     {:ok, key}
+  end
+
+  # OStatus Magic Key
+  def public_key_from_info(%{"magic_key" => magic_key}) do
+    {:ok, Pleroma.Web.Salmon.decode_key(magic_key)}
+  end
+
   def get_public_key_for_ap_id(ap_id) do
-    with %User{} = user <- get_cached_by_ap_id(ap_id),
-         %{info: %{"magic_key" => magic_key}} <- user,
-         public_key <- Pleroma.Web.Salmon.decode_key(magic_key) do
+    with %User{} = user <- get_or_fetch_by_ap_id(ap_id),
+         {:ok, public_key} <- public_key_from_info(user.info) do
       {:ok, public_key}
     else
       _ -> :error

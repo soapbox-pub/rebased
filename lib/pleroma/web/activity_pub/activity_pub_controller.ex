@@ -23,6 +23,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with {:ok, data} <- ActivityPub.prepare_incoming(params),
          {:ok, activity} <- ActivityPub.insert(data, false) do
       json(conn, "ok")
+    else
+      e -> IO.inspect(e)
     end
   end
 end
