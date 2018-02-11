@@ -2,15 +2,27 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
   alias Pleroma.Object
 
-  def to_map(%Object{} = object, _opts) do
+  def to_map(%Object{data: %{"url" => [url | _]}} = object, _opts) do
     data = object.data
-    url = List.first(data["url"])
     %{
       url: url["href"] |> Pleroma.Web.MediaProxy.url(),
       mimetype: url["mediaType"],
       id: data["uuid"],
       oembed: false
     }
+  end
+
+  def to_map(%Object{data: %{"url" => url} = data}, _opts) when is_binary(url) do
+    %{
+      url: url |> Pleroma.Web.MediaProxy.url(),
+      mimetype: data["mediaType"],
+      id: data["uuid"],
+      oembed: false
+    }
+  end
+
+  def to_map(%Object{}, _opts) do
+    %{}
   end
 
   # If we only get the naked data, wrap in an object
