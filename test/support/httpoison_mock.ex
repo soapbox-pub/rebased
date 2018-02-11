@@ -366,6 +366,13 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("http://mastodon.example.org/users/admin", ["Accept": "application/activity+json"], _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/admin@mastdon.example.org.json")
+    }}
+  end
+
   def get(url, body, headers) do
     {:error, "Not implemented the mock response for get #{inspect(url)}, #{inspect(body)}, #{inspect(headers)}"}
   end
