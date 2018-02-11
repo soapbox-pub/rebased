@@ -80,9 +80,15 @@ defmodule Pleroma.User do
     |> validate_length(:name, max: 100)
     |> put_change(:local, false)
     if changes.valid? do
-      followers = User.ap_followers(%User{nickname: changes.changes[:nickname]})
-      changes
-      |> put_change(:follower_address, followers)
+      case changes.changes[:info]["source_data"] do
+        %{"followers" => followers} ->
+          changes
+          |> put_change(:follower_address, followers)
+        _ ->
+          followers = User.ap_followers(%User{nickname: changes.changes[:nickname]})
+          changes
+          |> put_change(:follower_address, followers)
+      end
     else
       changes
     end
@@ -385,5 +391,10 @@ defmodule Pleroma.User do
     else
       _ -> :error
     end
+  end
+
+  def insert_or_update_user(data) do
+    cs = User.remote_user_creation(data)
+    Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
 end

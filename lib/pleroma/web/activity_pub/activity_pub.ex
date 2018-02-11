@@ -5,6 +5,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   import Pleroma.Web.ActivityPub.Utils
   require Logger
 
+  @httpoison Application.get_env(:pleroma, :httpoison)
+
   def get_recipients(data) do
     (data["to"] || []) ++ (data["cc"] || [])
   end
@@ -231,5 +233,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def prepare_incoming(_) do
     :error
+  end
+
+  def make_user_from_ap_id(ap_id) do
+    with {:ok, %{status_code: 200, body: body}} <- @httpoison.get(ap_id, ["Accept": "application/activity+json"]),
+    {:ok, data} <- Poison.decode(body)
+      do
+      user_data = %{
+        ap_id: data["id"],
+        info: %{
+          "ap_enabled" => true,
+          "source_data" => data
+        },
+        nickname: "#{data["preferredUsername"]}@#{URI.parse(ap_id).host}",
+        name: data["name"]
+      }
+
+      User.insert_or_update_user(user_data)
+    end
   end
 end

@@ -7,6 +7,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   import Pleroma.Factory
 
+  describe "building a user from his ap id" do
+    test "it returns a user" do
+      user_id = "http://mastodon.example.org/users/admin"
+      {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
+      assert user.ap_id == user_id
+      assert user.nickname == "admin@mastodon.example.org"
+      assert user.info["source_data"]
+      assert user.info["ap_enabled"]
+      assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
+    end
+  end
+
   describe "insertion" do
     test "returns the activity if one with the same id is already in" do
       activity = insert(:note_activity)
