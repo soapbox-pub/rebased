@@ -56,7 +56,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "contains mentions" do
     incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
-    user = insert(:user, %{ap_id: "https://pleroma.soykaf.com/users/lain"})
+    # a user with this ap id might be in the cache.
+    recipient = "https://pleroma.soykaf.com/users/lain"
+    user = User.get_cached_by_ap_id(recipient) || insert(:user, %{ap_id: recipient})
 
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 

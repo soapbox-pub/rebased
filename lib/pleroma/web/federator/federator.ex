@@ -41,12 +41,12 @@ defmodule Pleroma.Web.Federator do
   def handle(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      Logger.debug(fn -> "Sending #{activity.data["id"]} out via websub" end)
-      Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
-
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
       Logger.debug(fn -> "Sending #{activity.data["id"]} out via salmon" end)
       Pleroma.Web.Salmon.publish(actor, activity)
+
+      Logger.debug(fn -> "Sending #{activity.data["id"]} out via websub" end)
+      Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
     end
   end
 

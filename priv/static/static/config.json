@@ -1,7 +1,7 @@
 {
-  "name": "Pleroma FE",
   "theme": "pleroma-dark",
   "background": "/static/bg.jpg",
   "logo": "/static/logo.png",
-  "registrationOpen": true
+  "defaultPath": "/main/all",
+  "chatDisabled": false
 }

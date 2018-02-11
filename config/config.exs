@@ -33,7 +33,7 @@ config :mime, :types, %{
 
 config :pleroma, :websub, Pleroma.Web.Websub
 config :pleroma, :ostatus, Pleroma.Web.OStatus
-config :pleroma, :httpoison, HTTPoison
+config :pleroma, :httpoison, Pleroma.HTTP
 
 version = with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
             "Pleroma #{String.trim(version)}"
@@ -41,12 +41,24 @@ version = with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
             _ -> "Pleroma dev"
           end
 
+# Configures http settings, upstream proxy etc.
+config :pleroma, :http,
+  proxy_url: nil
+
 config :pleroma, :instance,
   version: version,
   name: "Pleroma",
   email: "example@example.com",
   limit: 5000,
   registrations_open: true
+
+config :pleroma, :media_proxy,
+  enabled: false,
+  redirect_on_failure: true
+  #base_url: "https://cache.pleroma.social"
+
+config :pleroma, :chat,
+  enabled: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

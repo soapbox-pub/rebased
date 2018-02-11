@@ -45,7 +45,8 @@ defmodule Pleroma.Web.WebFinger do
         {:Link, %{rel: "http://webfinger.net/rel/profile-page", type: "text/html", href: user.ap_id}},
         {:Link, %{rel: "salmon", href: OStatus.salmon_path(user)}},
         {:Link, %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}},
-        {:Link, %{rel: "self", type: "application/activity+json", href: user.ap_id}}
+        {:Link, %{rel: "self", type: "application/activity+json", href: user.ap_id}},
+        {:Link, %{rel: "http://ostatus.org/schema/1.0/subscribe", template: OStatus.remote_follow_path()}}
       ]
     }
     |> XmlBuilder.to_doc
@@ -69,11 +70,13 @@ defmodule Pleroma.Web.WebFinger do
     topic = XML.string_from_xpath(~s{//Link[@rel="http://schemas.google.com/g/2010#updates-from"]/@href}, doc)
     subject = XML.string_from_xpath("//Subject", doc)
     salmon = XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc)
+    subscribe_address = XML.string_from_xpath(~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template}, doc)
     data = %{
       "magic_key" => magic_key,
       "topic" => topic,
       "subject" => subject,
-      "salmon" => salmon
+      "salmon" => salmon,
+      "subscribe_address" => subscribe_address
     }
     {:ok, data}
   end

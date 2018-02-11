@@ -316,10 +316,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def get_external_profile(for_user, uri) do
     with {:ok, %User{} = user} <- OStatus.find_or_make_user(uri) do
-      with url <- user.info["topic"],
-           {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
-        OStatus.handle_incoming(body)
-      end
+      spawn(fn ->
+        with url <- user.info["topic"],
+             {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
+          OStatus.handle_incoming(body)
+        end
+      end)
       {:ok, UserView.render("show.json", %{user: user, for: for_user})}
     else _e ->
         {:error, "Couldn't find user"}

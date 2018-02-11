@@ -35,12 +35,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, [_activity]} = OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
 
     conn = conn
-    |> get("/api/v1/timelines/public")
+    |> get("/api/v1/timelines/public", %{"local" => "False"})
 
     assert length(json_response(conn, 200)) == 2
 
     conn = build_conn()
     |> get("/api/v1/timelines/public", %{"local" => "True"})
+
+    assert [%{"content" => "test"}] = json_response(conn, 200)
+
+    conn = build_conn()
+    |> get("/api/v1/timelines/public", %{"local" => "1"})
 
     assert [%{"content" => "test"}] = json_response(conn, 200)
   end
@@ -50,9 +55,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     conn = conn
     |> assign(:user, user)
-    |> post("/api/v1/statuses", %{"status" => "cofe", "spoiler_text" => "2hu"})
+    |> post("/api/v1/statuses", %{"status" => "cofe", "spoiler_text" => "2hu", "sensitive" => "false"})
 
-    assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu"} = json_response(conn, 200)
+    assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} = json_response(conn, 200)
     assert Repo.get(Activity, id)
   end
 
@@ -145,7 +150,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/notifications")
 
-      expected_response = "hi <a href=\"#{user.ap_id}\">@#{user.nickname}</a>"
+      expected_response = "hi <span><a href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
       assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
       assert response == expected_response
     end
@@ -161,7 +166,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/notifications/#{notification.id}")
 
-      expected_response = "hi <a href=\"#{user.ap_id}\">@#{user.nickname}</a>"
+      expected_response = "hi <span><a href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
       assert %{"status" => %{"content" => response}} = json_response(conn, 200)
       assert response == expected_response
     end
@@ -581,11 +586,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
 
+    Pleroma.Stats.update_stats()
+
     conn = conn
     |> get("/api/v1/instance")
 
     assert result = json_response(conn, 200)
 
     assert result["stats"]["user_count"] == 2
+    assert result["stats"]["status_count"] == 1
   end
 end

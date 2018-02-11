@@ -22,7 +22,7 @@ No release has been made yet, but several servers have been online for months al
 ### Dependencies
 
 * Postgresql version 9.6 or newer
-* Elixir version 1.4 or newer (you will also need erlang-dev, erlang-parsetools, erlang-xmerl packages)
+* Elixir version 1.5 or newer
 * Build-essential tools
 
 ### Configuration
@@ -50,3 +50,12 @@ Logs can be watched by using `journalctl -fu pleroma.service`
 
 ### Standalone/run by other means
 Run `mix phx.server` in repository's root, it will output log into stdout/stderr
+
+### Using an upstream proxy for federation
+
+Add the following to your `dev.secret.exs` or `prod.secret.exs` if you want to proxify all http requests that pleroma makes to an upstream proxy server:
+
+    config :pleroma, :http,
+      proxy_url: "127.0.0.1:8123"
+
+This is useful for running pleroma inside Tor or i2p.

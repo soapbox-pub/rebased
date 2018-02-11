@@ -28,6 +28,13 @@ defmodule Pleroma.Web.Router do
     plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true}
   end
 
+  pipeline :pleroma_html do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug Pleroma.Plugs.OAuthPlug
+    plug Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true}
+  end
+
   pipeline :well_known do
     plug :accepts, ["xml", "xrd+xml"]
   end
@@ -49,6 +56,18 @@ defmodule Pleroma.Web.Router do
     get "/password_reset/:token", UtilController, :show_password_reset
     post "/password_reset", UtilController, :password_reset
     get "/emoji", UtilController, :emoji
+  end
+
+  scope "/", Pleroma.Web.TwitterAPI do
+    pipe_through :pleroma_html
+    get "/ostatus_subscribe", UtilController, :remote_follow
+    post "/ostatus_subscribe", UtilController, :do_remote_follow
+    post "/main/ostatus", UtilController, :remote_subscribe
+  end
+
+  scope "/api/pleroma", Pleroma.Web.TwitterAPI do
+    pipe_through :authenticated_api
+    post "/follow_import", UtilController, :follow_import
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
@@ -101,6 +120,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through :api
     get "/instance", MastodonAPIController, :masto_instance
+    get "/instance/peers", MastodonAPIController, :peers
     post "/apps", MastodonAPIController, :create_app
     get "/custom_emojis", MastodonAPIController, :custom_emojis
 
@@ -142,6 +162,8 @@ defmodule Pleroma.Web.Router do
     get "/qvitter/statuses/user_timeline", TwitterAPI.Controller, :user_timeline
     get "/users/show", TwitterAPI.Controller, :show_user
 
+    get "/statuses/followers", TwitterAPI.Controller, :followers
+    get "/statuses/friends", TwitterAPI.Controller, :friends
     get "/statuses/show/:id", TwitterAPI.Controller, :fetch_status
     get "/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation
 
@@ -188,8 +210,6 @@ defmodule Pleroma.Web.Router do
 
     post "/qvitter/update_avatar", TwitterAPI.Controller, :update_avatar
 
-    get "/statuses/followers", TwitterAPI.Controller, :followers
-    get "/statuses/friends", TwitterAPI.Controller, :friends
     get "/friends/ids", TwitterAPI.Controller, :friends_ids
     get "/friendships/no_retweets/ids", TwitterAPI.Controller, :empty_array
 
@@ -241,6 +261,14 @@ defmodule Pleroma.Web.Router do
     post "/web/login", MastodonAPIController, :login_post
     get "/web/*path", MastodonAPIController, :index
     delete "/auth/sign_out", MastodonAPIController, :logout
+  end
+
+  pipeline :remote_media do
+    plug :accepts, ["html"]
+  end
+  scope "/proxy/", Pleroma.Web.MediaProxy do
+    pipe_through :remote_media
+    get "/:sig/:url", MediaProxyController, :remote
   end
 
   scope "/", Fallback do

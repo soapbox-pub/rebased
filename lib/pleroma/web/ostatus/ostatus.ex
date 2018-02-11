@@ -22,6 +22,10 @@ defmodule Pleroma.Web.OStatus do
     "#{user.ap_id}/salmon"
   end
 
+  def remote_follow_path do
+    "#{Web.base_url}/ostatus_subscribe?acct={uri}"
+  end
+
   def handle_incoming(xml_string) do
     with doc when doc != :error <- parse_document(xml_string) do
       entries = :xmerl_xpath.string('//entry', doc)
@@ -159,8 +163,7 @@ defmodule Pleroma.Web.OStatus do
     Get the cw that mastodon uses.
   """
   def get_cw(entry) do
-    with scope when not is_nil(scope) <- string_from_xpath("//mastodon:scope", entry),
-         cw when not is_nil(cw) <- string_from_xpath("/*/summary", entry) do
+    with cw when not is_nil(cw) <- string_from_xpath("/*/summary", entry) do
       cw
     else _e -> nil
     end

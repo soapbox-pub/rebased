@@ -1,5 +1,6 @@
 defmodule Pleroma.Formatter do
   alias Pleroma.User
+  alias Pleroma.Web.MediaProxy
 
   @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&@~\(\)]+[\w\/]/u
   def linkify(text) do
@@ -10,7 +11,7 @@ defmodule Pleroma.Formatter do
   def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
     |> Enum.map(fn (["#" <> tag = full_tag]) -> {full_tag, String.downcase(tag)} end)
-    |> (fn map -> if data["sensitive"], do: [{"#nsfw", "nsfw"}] ++ map, else: map end).()
+    |> (fn map -> if data["sensitive"] in [true, "True", "true", "1"], do: [{"#nsfw", "nsfw"}] ++ map, else: map end).()
   end
 
   def parse_mentions(text) do
@@ -103,13 +104,19 @@ defmodule Pleroma.Formatter do
     {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
   end)
 
-  @emoji_from_file (with {:ok, file} <- File.read("config/emoji.txt") do
-                     file
-                     |> String.trim
-                     |> String.split("\n")
-                     |> Enum.map(fn(line) ->
-                       [name, file] = String.split(line, ", ")
-                       {name, file}
+  @emoji_from_file (with {:ok, default} <- File.read("config/emoji.txt") do
+                      custom =
+                        with {:ok, custom} <- File.read("config/custom_emoji.txt") do
+                          custom
+                        else
+                          _e -> ""
+                        end
+                      (default <> "\n" <> custom)
+                      |> String.trim()
+                      |> String.split(~r/\n+/)
+                      |> Enum.map(fn(line) ->
+                        [name, file] = String.split(line, ~r/,\s*/)
+                        {name, file}
                      end)
                     else
                       _ -> []
@@ -125,7 +132,7 @@ defmodule Pleroma.Formatter do
     end
 
     Enum.reduce(all_emoji, text, fn ({emoji, file}, text) ->
-      String.replace(text, ":#{emoji}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{file}' />")
+      String.replace(text, ":#{emoji}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{MediaProxy.url(file)}' />")
     end)
   end
 
