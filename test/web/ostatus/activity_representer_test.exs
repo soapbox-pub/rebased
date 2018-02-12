@@ -96,7 +96,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     user = insert(:user)
     object = Object.get_cached_by_ap_id(note.data["object"]["id"])
 
-    {:ok, announce, object} = ActivityPub.announce(user, object)
+    {:ok, announce, _object} = ActivityPub.announce(user, object)
 
     announce = Repo.get(Activity, announce.id)
 

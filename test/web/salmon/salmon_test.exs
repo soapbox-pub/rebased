@@ -35,7 +35,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
   end
 
   test "it decodes a friendica public key" do
-    key = Salmon.decode_key(@magickey_friendica)
+    _key = Salmon.decode_key(@magickey_friendica)
   end
 
   test "returns a public and private key from a pem" do
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     user = Repo.get_by(User, ap_id: activity.data["actor"])
     {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
 
-    poster = fn (url, data, headers, options) ->
+    poster = fn (url, _data, _headers, _options) ->
       assert url == "http://example.org/salmon"
     end
     Salmon.publish(user, activity, poster)

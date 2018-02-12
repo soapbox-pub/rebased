@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.{OStatus, CommonAPI}
 
   import Pleroma.Factory
+  import ExUnit.CaptureLog
 
   test "the home timeline", %{conn: conn} do
     user = insert(:user)
@@ -31,23 +32,25 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   test "the public timeline", %{conn: conn} do
     following = insert(:user)
 
-    {:ok, _activity} = TwitterAPI.create_status(following, %{"status" => "test"})
-    {:ok, [_activity]} = OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
+    capture_log fn ->
+      {:ok, _activity} = TwitterAPI.create_status(following, %{"status" => "test"})
+      {:ok, [_activity]} = OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
 
-    conn = conn
-    |> get("/api/v1/timelines/public", %{"local" => "False"})
+      conn = conn
+      |> get("/api/v1/timelines/public", %{"local" => "False"})
 
-    assert length(json_response(conn, 200)) == 2
+      assert length(json_response(conn, 200)) == 2
 
-    conn = build_conn()
-    |> get("/api/v1/timelines/public", %{"local" => "True"})
+      conn = build_conn()
+      |> get("/api/v1/timelines/public", %{"local" => "True"})
 
-    assert [%{"content" => "test"}] = json_response(conn, 200)
+      assert [%{"content" => "test"}] = json_response(conn, 200)
 
-    conn = build_conn()
-    |> get("/api/v1/timelines/public", %{"local" => "1"})
+      conn = build_conn()
+      |> get("/api/v1/timelines/public", %{"local" => "1"})
 
-    assert [%{"content" => "test"}] = json_response(conn, 200)
+      assert [%{"content" => "test"}] = json_response(conn, 200)
+    end
   end
 
   test "posting a status", %{conn: conn} do
@@ -144,7 +147,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = insert(:user)
 
       {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
-      {:ok, [notification]} = Notification.create_notifications(activity)
+      {:ok, [_notification]} = Notification.create_notifications(activity)
 
       conn = conn
       |> assign(:user, user)
@@ -190,7 +193,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = insert(:user)
 
       {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "hi @#{user.nickname}"})
-      {:ok, [notification]} = Notification.create_notifications(activity)
+      {:ok, [_notification]} = Notification.create_notifications(activity)
 
       conn = conn
       |> assign(:user, user)
@@ -338,15 +341,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   test "hashtag timeline", %{conn: conn} do
     following = insert(:user)
 
-    {:ok, activity} = TwitterAPI.create_status(following, %{"status" => "test #2hu"})
-    {:ok, [_activity]} = OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
+    capture_log fn ->
+      {:ok, activity} = TwitterAPI.create_status(following, %{"status" => "test #2hu"})
+      {:ok, [_activity]} = OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
+      conn = conn
+      |> get("/api/v1/timelines/tag/2hu")
 
-    conn = conn
-    |> get("/api/v1/timelines/tag/2hu")
+      assert [%{"id" => id}] = json_response(conn, 200)
 
-    assert [%{"id" => id}] = json_response(conn, 200)
-
-    assert id == to_string(activity.id)
+      assert id == to_string(activity.id)
+    end
   end
 
   test "getting followers", %{conn: conn} do
@@ -381,14 +385,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> assign(:user, user)
     |> post("/api/v1/accounts/#{other_user.id}/follow")
 
-    assert %{"id" => id, "following" => true} = json_response(conn, 200)
+    assert %{"id" => _id, "following" => true} = json_response(conn, 200)
 
     user = Repo.get(User, user.id)
     conn = build_conn()
     |> assign(:user, user)
     |> post("/api/v1/accounts/#{other_user.id}/unfollow")
 
-    assert %{"id" => id, "following" => false} = json_response(conn, 200)
+    assert %{"id" => _id, "following" => false} = json_response(conn, 200)
 
     user = Repo.get(User, user.id)
     conn = build_conn()
@@ -407,14 +411,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     |> assign(:user, user)
     |> post("/api/v1/accounts/#{other_user.id}/block")
 
-    assert %{"id" => id, "blocking" => true} = json_response(conn, 200)
+    assert %{"id" => _id, "blocking" => true} = json_response(conn, 200)
 
     user = Repo.get(User, user.id)
     conn = build_conn()
     |> assign(:user, user)
     |> post("/api/v1/accounts/#{other_user.id}/unblock")
 
-    assert %{"id" => id, "blocking" => false} = json_response(conn, 200)
+    assert %{"id" => _id, "blocking" => false} = json_response(conn, 200)
   end
 
   test "getting a list of blocks", %{conn: conn} do
@@ -461,7 +465,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   test "account search", %{conn: conn} do
     user = insert(:user)
-    user_two = insert(:user, %{nickname: "shp@shitposter.club"})
+    _user_two = insert(:user, %{nickname: "shp@shitposter.club"})
     user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
     conn = conn
@@ -495,12 +499,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "search fetches remote statuses", %{conn: conn} do
-    conn = conn
-    |> get("/api/v1/search", %{"q" => "https://shitposter.club/notice/2827873"})
-    assert results = json_response(conn, 200)
+    capture_log fn ->
+      conn = conn
+      |> get("/api/v1/search", %{"q" => "https://shitposter.club/notice/2827873"})
+      assert results = json_response(conn, 200)
 
-    [status] = results["statuses"]
-    assert status["uri"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+      [status] = results["statuses"]
+      assert status["uri"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+    end
   end
 
   test "search fetches remote accounts", %{conn: conn} do
@@ -530,7 +536,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   describe "updating credentials" do
-    test "updates the user's bio" do
+    test "updates the user's bio", %{conn: conn} do
       user = insert(:user)
 
       conn = conn
@@ -541,7 +547,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["note"] == "I drink #cofe"
     end
 
-    test "updates the user's name" do
+    test "updates the user's name", %{conn: conn} do
       user = insert(:user)
 
       conn = conn
@@ -552,7 +558,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["display_name"] == "markorepairs"
     end
 
-    test "updates the user's avatar" do
+    test "updates the user's avatar", %{conn: conn} do
       user = insert(:user)
 
       new_avatar = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
@@ -565,7 +571,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["avatar"] != "https://placehold.it/48x48"
     end
 
-    test "updates the user's banner" do
+    test "updates the user's banner", %{conn: conn} do
       user = insert(:user)
 
       new_header = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
@@ -579,7 +585,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
-  test "get instance information" do
+  test "get instance information", %{conn: conn} do
     insert(:user, %{local: true})
     user = insert(:user, %{local: true})
     insert(:user, %{local: false})

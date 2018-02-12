@@ -174,7 +174,7 @@ defmodule Pleroma.Web.WebsubTest do
     signed = Websub.sign("secret", "text")
     assert signed == "B8392C23690CCF871F37EC270BE1582DEC57A503" |> String.downcase
 
-    signed = Websub.sign("secret", [["て"], ['す']])
+    _signed = Websub.sign("secret", [["て"], ['す']])
   end
 
   describe "renewing subscriptions" do
@@ -184,7 +184,7 @@ defmodule Pleroma.Web.WebsubTest do
       still_good = insert(:websub_client_subscription, %{valid_until: NaiveDateTime.add(now, 2 * day), topic: "http://example.org/still_good", state: "accepted"})
       needs_refresh = insert(:websub_client_subscription, %{valid_until: NaiveDateTime.add(now, day - 100), topic: "http://example.org/needs_refresh", state: "accepted"})
 
-      refresh = Websub.refresh_subscriptions()
+      _refresh = Websub.refresh_subscriptions()
 
       assert still_good == Repo.get(WebsubClientSubscription, still_good.id)
       refute needs_refresh == Repo.get(WebsubClientSubscription, needs_refresh.id)

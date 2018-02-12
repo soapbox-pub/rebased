@@ -84,10 +84,3 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     assert response(conn, 200)
   end
 end
-
-defmodule Pleroma.Web.OStatusMock do
-  import Pleroma.Factory
-  def handle_incoming(_doc) do
-    insert(:note_activity)
-  end
-end

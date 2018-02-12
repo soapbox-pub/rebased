@@ -21,4 +21,4 @@ before_script:
 unit-testing:
   stage: test
   script:
-    - MIX_ENV=test mix test
+    - MIX_ENV=test mix test --trace

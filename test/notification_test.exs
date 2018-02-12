@@ -50,7 +50,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = TwitterAPI.create_status(user, %{"status" => "hey @#{other_user.nickname}"})
       {:ok, [notification]} = Notification.create_notifications(activity)
-      {:error, notification} = Notification.get(user, notification.id)
+      {:error, _notification} = Notification.get(user, notification.id)
     end
   end
 
@@ -72,7 +72,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = TwitterAPI.create_status(user, %{"status" => "hey @#{other_user.nickname}"})
       {:ok, [notification]} = Notification.create_notifications(activity)
-      {:error, notification} = Notification.dismiss(user, notification.id)
+      {:error, _notification} = Notification.dismiss(user, notification.id)
     end
   end
 

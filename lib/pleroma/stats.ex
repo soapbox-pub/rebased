@@ -32,7 +32,7 @@ defmodule Pleroma.Stats do
     domain_count = Enum.count(peers)
     status_query = from(u in User.local_user_query,
       select: fragment("sum((?->>'note_count')::int)", u.info))
-    status_count = Repo.one(status_query) |> IO.inspect
+    status_count = Repo.one(status_query)
     user_count = Repo.aggregate(User.local_user_query, :count, :id)
     Agent.update(__MODULE__, fn _ ->
       {peers, %{domain_count: domain_count, status_count: status_count, user_count: user_count}}

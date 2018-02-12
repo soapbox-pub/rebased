@@ -10,6 +10,8 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
 
     h = fn(str) -> [to_charlist(str)] end
 
+    last_activity = List.last(activities)
+
     entries = activities
     |> Enum.map(fn(activity) ->
       {:entry, ActivityRepresenter.to_simple_form(activity, user)}
@@ -32,7 +34,15 @@ defmodule Pleroma.Web.OStatus.FeedRepresenter do
         {:link, [rel: 'salmon', href: h.(OStatus.salmon_path(user))], []},
         {:link, [rel: 'self', href: h.(OStatus.feed_path(user)), type: 'application/atom+xml'], []},
         {:author, UserRepresenter.to_simple_form(user)},
-      ] ++ entries
+      ] ++
+      if last_activity do
+        [{:link, [rel: 'next',
+          href: to_charlist(OStatus.feed_path(user)) ++ '?max_id=' ++ to_charlist(last_activity.id),
+          type: 'application/atom+xml'], []}]
+      else
+        []
+      end
+      ++ entries
     }]
   end
 end

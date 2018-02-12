@@ -147,7 +147,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     follower = insert(:user)
     followed = insert(:user)
 
-    {:ok, follow} = ActivityPub.follow(follower, followed)
+    {:ok, _follow} = ActivityPub.follow(follower, followed)
     {:ok, unfollow} = ActivityPub.unfollow(follower, followed)
 
     map = ActivityRepresenter.to_map(unfollow, %{user: follower})
