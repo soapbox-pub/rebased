@@ -16,7 +16,7 @@ defmodule Pleroma.ObjectTest do
       cs = Object.change(%Object{}, %{data: %{id: object.data["id"]}})
       assert cs.valid?
 
-      {:error, result} = Repo.insert(cs)
+      {:error, _result} = Repo.insert(cs)
     end
   end
 end

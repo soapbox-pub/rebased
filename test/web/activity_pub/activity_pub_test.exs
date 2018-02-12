@@ -110,7 +110,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "public fetch activities" do
     test "retrieves public activities" do
-      activities = ActivityPub.fetch_public_activities
+      _activities = ActivityPub.fetch_public_activities
 
       %{public: public} = ActivityBuilder.public_and_non_public
 

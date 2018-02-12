@@ -12,7 +12,7 @@ defmodule Pleroma.Web.OStatus.DeleteHandlingTest do
       user = insert(:user)
       object = Object.get_by_ap_id(note.data["object"]["id"])
 
-      {:ok, like, object} = Pleroma.Web.ActivityPub.ActivityPub.like(user, object)
+      {:ok, like, _object} = Pleroma.Web.ActivityPub.ActivityPub.like(user, object)
 
       incoming = File.read!("test/fixtures/delete.xml")
       |> String.replace("tag:mastodon.sdf.org,2017-06-10:objectId=310513:objectType=Status", note.data["object"]["id"])

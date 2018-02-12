@@ -42,8 +42,7 @@ defmodule Pleroma.Web.WebFingerTest do
     test "it works for friendica" do
       user = "lain@squeet.me"
 
-      {:ok, data} = WebFinger.finger(user)
-
+      {:ok, _data} = WebFinger.finger(user)
     end
 
     test "it gets the xrd endpoint" do

@@ -4,6 +4,7 @@ defmodule Pleroma.Web.OStatusTest do
   alias Pleroma.Web.XML
   alias Pleroma.{Object, Repo, User, Activity}
   import Pleroma.Factory
+  import ExUnit.CaptureLog
 
   test "don't insert create notes twice" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
@@ -91,7 +92,7 @@ defmodule Pleroma.Web.OStatusTest do
 
   test "handle incoming retweets - Mastodon, with CW" do
     incoming = File.read!("test/fixtures/cw_retweet.xml")
-    {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+    {:ok, [[_activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
 
     assert retweeted_activity.data["object"]["summary"] == "Hey."
   end
@@ -168,19 +169,21 @@ defmodule Pleroma.Web.OStatusTest do
   end
 
   test "handle incoming favorites - GS, websub" do
-    incoming = File.read!("test/fixtures/favorite.xml")
-    {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
+    capture_log fn ->
+      incoming = File.read!("test/fixtures/favorite.xml")
+      {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
 
-    assert activity.data["type"] == "Like"
-    assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"] == favorited_activity.data["object"]["id"]
-    assert activity.data["id"] == "tag:social.heldscal.la,2017-05-05:fave:23211:comment:2061643:2017-05-05T09:12:50+00:00"
+      assert activity.data["type"] == "Like"
+      assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
+      assert activity.data["object"] == favorited_activity.data["object"]["id"]
+      assert activity.data["id"] == "tag:social.heldscal.la,2017-05-05:fave:23211:comment:2061643:2017-05-05T09:12:50+00:00"
 
-    refute activity.local
-    assert favorited_activity.data["type"] == "Create"
-    assert favorited_activity.data["actor"] == "https://shitposter.club/user/1"
-    assert favorited_activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
-    refute favorited_activity.local
+      refute activity.local
+      assert favorited_activity.data["type"] == "Create"
+      assert favorited_activity.data["actor"] == "https://shitposter.club/user/1"
+      assert favorited_activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+      refute favorited_activity.local
+    end
   end
 
   test "handle conversation references" do
@@ -335,11 +338,13 @@ defmodule Pleroma.Web.OStatusTest do
 
   describe "fetching a status by it's HTML url" do
     test "it builds a missing status from an html url" do
-      url = "https://shitposter.club/notice/2827873"
-      {:ok, [activity] } = OStatus.fetch_activity_from_url(url)
+      capture_log fn ->
+        url = "https://shitposter.club/notice/2827873"
+        {:ok, [activity] } = OStatus.fetch_activity_from_url(url)
 
-      assert activity.data["actor"] == "https://shitposter.club/user/1"
-      assert activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+        assert activity.data["actor"] == "https://shitposter.club/user/1"
+        assert activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+      end
     end
 
     test "it works for atom notes, too" do

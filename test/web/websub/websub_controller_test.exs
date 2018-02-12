@@ -74,10 +74,3 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
     assert length(Repo.all(Activity)) == 0
   end
 end
-
-defmodule Pleroma.Web.OStatusMock do
-  import Pleroma.Factory
-  def handle_incoming(_doc) do
-    insert(:note_activity)
-  end
-end

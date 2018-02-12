@@ -504,7 +504,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user)
       follower_one = insert(:user)
       follower_two = insert(:user)
-      not_follower = insert(:user)
+      _not_follower = insert(:user)
 
       {:ok, follower_one} = User.follow(follower_one, user)
       {:ok, follower_two} = User.follow(follower_two, user)
@@ -522,7 +522,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user)
       followed_one = insert(:user)
       followed_two = insert(:user)
-      not_followed = insert(:user)
+      _not_followed = insert(:user)
 
       {:ok, user} = User.follow(user, followed_one)
       {:ok, user} = User.follow(user, followed_two)
@@ -538,7 +538,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user)
       followed_one = insert(:user)
       followed_two = insert(:user)
-      not_followed = insert(:user)
+      _not_followed = insert(:user)
 
       {:ok, user} = User.follow(user, followed_one)
       {:ok, user} = User.follow(user, followed_two)
@@ -553,7 +553,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user)
       followed_one = insert(:user)
       followed_two = insert(:user)
-      not_followed = insert(:user)
+      _not_followed = insert(:user)
 
       {:ok, user} = User.follow(user, followed_one)
       {:ok, user} = User.follow(user, followed_two)
@@ -570,7 +570,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user)
       followed_one = insert(:user)
       followed_two = insert(:user)
-      not_followed = insert(:user)
+      _not_followed = insert(:user)
 
       {:ok, user} = User.follow(user, followed_one)
       {:ok, user} = User.follow(user, followed_two)

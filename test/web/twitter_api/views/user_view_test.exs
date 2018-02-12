@@ -130,7 +130,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     assert represented == UserView.render("show.json", %{user: follower, for: user})
   end
 
-  test "A blocked user for the blocker", %{user: user} do
+  test "A blocked user for the blocker" do
     user = insert(:user)
     blocker = insert(:user)
     User.block(blocker, user)
