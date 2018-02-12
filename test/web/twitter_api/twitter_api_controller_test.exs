@@ -585,7 +585,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   describe "POST /api/account/update_profile.json" do
-    test "it updates a user's profile" do
+    test "it updates a user's profile", %{conn: conn} do
       user = insert(:user)
 
       conn = conn
@@ -627,7 +627,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   describe "GET /api/statusnet/tags/timeline/:tag.json" do
-    test "it returns the tags timeline" do
+    test "it returns the tags timeline", %{conn: conn} do
       user = insert(:user)
       user_two = insert(:user, %{nickname: "shp@shitposter.club"})
 

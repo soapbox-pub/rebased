@@ -530,7 +530,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   describe "updating credentials" do
-    test "updates the user's bio" do
+    test "updates the user's bio", %{conn: conn} do
       user = insert(:user)
 
       conn = conn
@@ -541,7 +541,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["note"] == "I drink #cofe"
     end
 
-    test "updates the user's name" do
+    test "updates the user's name", %{conn: conn} do
       user = insert(:user)
 
       conn = conn
@@ -552,7 +552,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["display_name"] == "markorepairs"
     end
 
-    test "updates the user's avatar" do
+    test "updates the user's avatar", %{conn: conn} do
       user = insert(:user)
 
       new_avatar = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
@@ -565,7 +565,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["avatar"] != "https://placehold.it/48x48"
     end
 
-    test "updates the user's banner" do
+    test "updates the user's banner", %{conn: conn} do
       user = insert(:user)
 
       new_header = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
@@ -579,7 +579,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
-  test "get instance information" do
+  test "get instance information", %{conn: conn} do
     insert(:user, %{local: true})
     user = insert(:user, %{local: true})
     insert(:user, %{local: false})
