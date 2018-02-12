@@ -33,6 +33,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
       <author>
         #{user_xml}
       </author>
+      <link rel="next" href="#{OStatus.feed_path(user)}?max_id=#{note_activity.id}" type="application/atom+xml" />
       <entry>
         #{entry_xml}
       </entry>
