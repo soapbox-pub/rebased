@@ -355,13 +355,6 @@ defmodule Pleroma.Web.OStatusTest do
     end
   end
 
-  test "insert or update a user from given data" do
-    user = insert(:user, %{nickname: "nick@name.de"})
-    data = %{ ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname }
-
-    assert {:ok, %User{}} = OStatus.insert_or_update_user(data)
-  end
-
   test "it doesn't add nil in the do field" do
     incoming = File.read!("test/fixtures/nil_mention_entry.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
