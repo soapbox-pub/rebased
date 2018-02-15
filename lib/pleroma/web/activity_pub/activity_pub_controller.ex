@@ -1,8 +1,10 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
   alias Pleroma.{User, Repo, Object}
-  alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
+  alias Pleroma.Web.ActivityPub.{ObjectView, UserView, Transmogrifier}
   alias Pleroma.Web.ActivityPub.ActivityPub
+
+  action_fallback :errors
 
   def user(conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
@@ -18,13 +20,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  # TODO: Move signature failure halt into plug
+  # TODO: Ensure that this inbox is a recipient of the message
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
-    with {:ok, data} <- ActivityPub.prepare_incoming(params),
-         {:ok, activity} <- ActivityPub.insert(data, false) do
+    # File.write("/tmp/incoming.json", Poison.encode!(params))
+    with {:ok, activity} <- Transmogrifier.handle_incoming(params) do
       json(conn, "ok")
     else
       e -> IO.inspect(e)
     end
+  end
+
+  def errors(conn, _e) do
+    conn
+    |> put_status(500)
+    |> json("error")
   end
 end

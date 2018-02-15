@@ -32,8 +32,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/users/:nickname/inbox" do
-    test "it inserts an incoming activity into the database" do
-      assert false
+    test "it inserts an incoming activity into the database", %{conn: conn} do
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!
+
+      conn = conn
+      |> assign(:valid_signature, true)
+      |> put_req_header("content-type", "application/activity+json")
+      |> post("/users/doesntmatter/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
     end
   end
 end

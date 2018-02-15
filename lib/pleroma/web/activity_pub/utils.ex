@@ -205,7 +205,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def make_create_data(params, additional) do
     published = params.published || make_date()
-
     %{
       "type" => "Create",
       "to" => params.to |> Enum.uniq,
