@@ -6,6 +6,10 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
     options
   end
 
+  def call(%{assigns: %{valid_signature: true}} = conn, opts) do
+    conn
+  end
+
   def call(conn, opts) do
     if get_req_header(conn, "signature") do
       conn = conn
