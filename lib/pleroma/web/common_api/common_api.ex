@@ -61,7 +61,7 @@ defmodule Pleroma.Web.CommonAPI do
          cw <- data["spoiler_text"],
          object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags, cw),
          object <- Map.put(object, "emoji", Formatter.get_emoji(status) |> Enum.reduce(%{}, fn({name, file}, acc) -> Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url}#{file}") end)) do
-      res = ActivityPub.create(to, user, context, object)
+      res = ActivityPub.create(%{to: to, actor: user, context: context, object: object})
       User.increase_note_count(user)
       res
     end

@@ -1,6 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
-  alias Pleroma.Web.OStatus
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   require Logger
@@ -37,7 +36,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def create(to, actor, context, object, additional \\ %{}, published \\ nil, local \\ true) do
+  def create(%{to: to, actor: actor, context: context, object: object} = params) do
+    additional = params[:additional] || %{}
+    local = !(params[:local] == false) # only accept false as false value
+    published = params[:published]
+
     with create_data <- make_create_data(%{to: to, actor: actor, published: published, context: context, object: object}, additional),
          {:ok, activity} <- insert(create_data, local),
          :ok <- maybe_federate(activity) do
@@ -245,18 +248,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def sanitize_outgoing_activity_data(data) do
     data
     |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
-  end
-
-  def prepare_incoming(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
-    with {:ok, user} <- OStatus.find_or_make_user(data["actor"]) do
-      {:ok, data}
-    else
-      _e -> :error
-    end
-  end
-
-  def prepare_incoming(_) do
-    :error
   end
 
   def publish(actor, activity) do

@@ -112,7 +112,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          # TODO: Handle this case in make_note_data
          note <- (if inReplyTo && !inReplyToActivity, do: note |> Map.put("inReplyTo", inReplyTo), else: note)
       do
-      res = ActivityPub.create(to, actor, context, note, %{}, date, false)
+      res = ActivityPub.create(%{to: to, actor: actor, context: context, object: note, published: date, local: false})
       User.increase_note_count(actor)
       res
     else
