@@ -73,6 +73,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(%{"type" => "Announce", "object" => object_id, "actor" => actor, "id" => id} = data) do
+    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- ActivityPub.fetch_object_from_id(object_id),
+         {:ok, activity, object} <- ActivityPub.announce(actor, object, id, false) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
   # TODO
   # Accept
   # Undo

@@ -62,6 +62,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["id"] == "http://mastodon.example.org/users/admin#likes/2"
       assert data["object"] == activity.data["object"]["id"]
     end
+
+    test "it works for incoming announces" do
+      data = File.read!("test/fixtures/mastodon-announce.json") |> Poison.decode!
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "Announce"
+      assert data["id"] == "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
+      assert data["object"] == "http://mastodon.example.org/users/admin/statuses/99541947525187367"
+    end
   end
 
   describe "prepare outgoing" do
