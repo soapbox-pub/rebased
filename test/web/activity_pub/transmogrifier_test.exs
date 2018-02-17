@@ -2,6 +2,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Activity
+  alias Pleroma.User
   import Pleroma.Factory
   alias Pleroma.Web.CommonAPI
 
@@ -29,6 +30,20 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       ]
       assert object["actor"] == "http://mastodon.example.org/users/admin"
       assert object["attributedTo"] == "http://mastodon.example.org/users/admin"
+    end
+
+    test "it works for incoming follow requests" do
+      user = insert(:user)
+      data = File.read!("test/fixtures/mastodon-follow-activity.json") |> Poison.decode!
+      |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "Follow"
+      assert data["id"] == "http://mastodon.example.org/users/admin#follows/2"
+      assert User.following?(User.get_by_ap_id(data["actor"]), user)
+
     end
   end
 

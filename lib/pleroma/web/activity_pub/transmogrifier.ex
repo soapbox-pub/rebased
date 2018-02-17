@@ -38,6 +38,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(%{"type" => "Follow", "object" => followed, "actor" => follower, "id" => id}) do
+    with %User{} = followed <- User.get_cached_by_ap_id(followed),
+         %User{} = follower <- User.get_or_fetch_by_ap_id(follower),
+         {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
+      # TODO: Send an "Accept" activity.
+      User.follow(follower, followed)
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(_), do: :error
+
   @doc
   """
   internal -> Mastodon
