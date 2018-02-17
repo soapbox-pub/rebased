@@ -417,7 +417,12 @@ defmodule Pleroma.User do
     end
   end
 
+  defp blank?(""), do: nil
+  defp blank?(n), do: n
+
   def insert_or_update_user(data) do
+    data = data
+    |> Map.put(:name, blank?(data[:name]) || data[:nickname])
     cs = User.remote_user_creation(data)
     Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
