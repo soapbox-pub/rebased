@@ -11,6 +11,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_object(object) do
     object
     |> Map.put("actor", object["attributedTo"])
+    |> fix_attachments
+  end
+
+  def fix_attachments(object) do
+    attachments = object["attachment"] || []
+    |> Enum.map(fn (data) ->
+      url = [%{"type" => "Link", "mediaType" => data["mediaType"], "url" => data["url"]}]
+      Map.put(data, "url", url)
+    end)
+
+    object
+    |> Map.put("attachment", attachments)
   end
 
   # TODO: validate those with a Ecto scheme
@@ -60,6 +72,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object = object
     |> add_mention_tags
     |> add_attributed_to
+    |> prepare_attachments
 
     data = data
     |> Map.put("object", object)
@@ -92,5 +105,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("attributedTo", attributedTo)
+  end
+
+  def prepare_attachments(object) do
+    attachments = (object["attachment"] || [])
+    |> Enum.map(fn (data) ->
+      [%{"mediaType" => media_type, "href" => href} | _] = data["url"]
+      %{"url" => href, "mediaType" => media_type, "name" => data["name"], "type" => "Document"}
+    end)
+
+    object
+    |> Map.put("attachment", attachments)
   end
 end
