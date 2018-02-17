@@ -256,18 +256,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def publish(actor, activity) do
     {:ok, followers} = User.get_followers(actor)
 
-    remote_users = Pleroma.Web.Salmon.remote_users(activity) ++ followers
+    remote_inboxes = Pleroma.Web.Salmon.remote_users(activity) ++ followers
+    |> Enum.filter(fn (user) -> User.ap_enabled?(user) end)
+    |> Enum.map(fn (%{info: %{"source_data" => data}}) ->
+      (data["endpoints"] && data["endpoints"]["sharedInbox"]) ||data["inbox"]
+    end)
     |> Enum.uniq
 
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
-    Enum.each remote_users, fn(user) ->
-      if user.info["ap_enabled"] do
-        inbox = user.info["source_data"]["inbox"]
-        Logger.info("Federating #{activity.data["id"]} to #{inbox}")
-        host = URI.parse(inbox).host
-        signature = Pleroma.Web.HTTPSignatures.sign(actor, %{host: host})
-        @httpoison.post(inbox, Poison.encode!(data), [{"Content-Type", "application/activity+json"}, {"signature", signature}])
-      end
+
+    Enum.each remote_inboxes, fn(inbox) ->
+      Logger.info("Federating #{activity.data["id"]} to #{inbox}")
+      host = URI.parse(inbox).host
+      signature = Pleroma.Web.HTTPSignatures.sign(actor, %{host: host})
+      @httpoison.post(inbox, Poison.encode!(data), [{"Content-Type", "application/activity+json"}, {"signature", signature}])
     end
   end
 end
