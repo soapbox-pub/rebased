@@ -21,6 +21,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
     }
 
     additional = Map.take(object.data, ["id", "to", "cc", "actor", "content", "summary", "type"])
+    |> Map.put("attributedTo", object.data["actor"])
     Map.merge(base, additional)
   end
 end
