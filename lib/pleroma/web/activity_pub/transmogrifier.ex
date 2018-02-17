@@ -58,12 +58,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     mentions = object["to"]
     |> Enum.map(fn (ap_id) -> User.get_cached_by_ap_id(ap_id) end)
     |> Enum.filter(&(&1))
-    |> Enum.map(fn(user) -> %{"type" => "mention", "href" => user.ap_id, "name" => "@#{user.nickname}"} end)
+    |> Enum.map(fn(user) -> %{"type" => "Mention", "href" => user.ap_id, "name" => "@#{user.nickname}"} end)
 
-    tags = object["tags"] || []
+    tags = object["tag"] || []
 
     object
-    |> Map.put("tags", tags ++ mentions)
+    |> Map.put("tag", tags ++ mentions)
   end
 
   def add_attributed_to(object) do

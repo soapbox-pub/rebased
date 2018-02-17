@@ -45,10 +45,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       expected_tag = %{
         "href" => other_user.ap_id,
         "name" => "@#{other_user.nickname}",
-        "type" => "mention"
+        "type" => "Mention"
       }
 
-      assert Enum.member?(object["tags"], expected_tag)
+      assert Enum.member?(object["tag"], expected_tag)
     end
 
     test "it adds the json-ld context" do
