@@ -2,6 +2,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Activity
+  import Pleroma.Factory
+  alias Pleroma.Web.CommonAPI
 
   describe "handle_incoming" do
     test "it works for incoming notices" do
@@ -27,6 +29,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       ]
       assert object["actor"] == "http://mastodon.example.org/users/admin"
       assert object["attributedTo"] == "http://mastodon.example.org/users/admin"
+    end
+  end
+
+  describe "prepare outgoing" do
+    test "it turns mentions into tags" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey, @#{other_user.nickname}, how are ya?"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+      object = modified["object"]
+
+      expected_tag = %{
+        "href" => other_user.ap_id,
+        "name" => "@#{other_user.nickname}",
+        "type" => "mention"
+      }
+
+      assert Enum.member?(object["tags"], expected_tag)
+    end
+
+    test "it adds the json-ld context" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["@context"] == "https://www.w3.org/ns/activitystreams"
+    end
+
+    test "it sets the 'attributedTo' property to the actor of the object if it doesn't have one" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["object"]["actor"] == modified["object"]["attributedTo"]
     end
   end
 end

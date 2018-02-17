@@ -1,5 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   require Logger
@@ -242,15 +243,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  # TODO: Extract to own module, align as close to Mastodon format as possible.
-  def sanitize_outgoing_activity_data(data) do
-    data
-    |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
-  end
-
   def publish(actor, activity) do
     remote_users = Pleroma.Web.Salmon.remote_users(activity)
-    data = sanitize_outgoing_activity_data(activity.data)
+    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     Enum.each remote_users, fn(user) ->
       if user.info["ap_enabled"] do
         inbox = user.info["source_data"]["inbox"]

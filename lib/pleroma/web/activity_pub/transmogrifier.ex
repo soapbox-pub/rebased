@@ -38,7 +38,38 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def prepare_incoming(_) do
-    :error
+  @doc
+  """
+  internal -> Mastodon
+  """
+  def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
+    object = object
+    |> add_mention_tags
+    |> add_attributed_to
+
+    data = data
+    |> Map.put("object", object)
+    |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+
+    {:ok, data}
+  end
+
+  def add_mention_tags(object) do
+    mentions = object["to"]
+    |> Enum.map(fn (ap_id) -> User.get_cached_by_ap_id(ap_id) end)
+    |> Enum.filter(&(&1))
+    |> Enum.map(fn(user) -> %{"type" => "mention", "href" => user.ap_id, "name" => "@#{user.nickname}"} end)
+
+    tags = object["tags"] || []
+
+    object
+    |> Map.put("tags", tags ++ mentions)
+  end
+
+  def add_attributed_to(object) do
+    attributedTo = object["attributedTo"] || object["actor"]
+
+    object
+    |> Map.put("attributedTo", attributedTo)
   end
 end
