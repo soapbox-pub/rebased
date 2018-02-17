@@ -265,6 +265,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "fetching an object" do
+    test "it fetches an existing object" do
+      {:ok, object} = ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+    end
+  end
+
   describe "following / unfollowing" do
     test "creates a follow activity" do
       follower = insert(:user)

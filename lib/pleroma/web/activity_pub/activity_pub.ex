@@ -272,4 +272,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       @httpoison.post(inbox, Poison.encode!(data), [{"Content-Type", "application/activity+json"}, {"signature", signature}])
     end
   end
+
+  def fetch_object_from_id(id) do
+    if object = Object.get_cached_by_ap_id(id) do
+      {:ok, object}
+    else
+      with {:ok, %{body: body, status_code: code}} when code in 200..299 <- @httpoison.get(id, [Accept: "application/activity+json"], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
+           {:ok, data} <- Poison.decode(body),
+           data <- Transmogrifier.fix_object(data),
+           %User{} <- User.get_or_fetch_by_ap_id(data["attributedTo"]) do
+        Object.create(data)
+      end
+    end
+  end
 end
