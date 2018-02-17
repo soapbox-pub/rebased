@@ -150,11 +150,12 @@ defmodule Pleroma.User do
 
   def follow(%User{} = follower, %User{info: info} = followed) do
     ap_followers = followed.follower_address
+
     if following?(follower, followed) or info["deactivated"] do
       {:error,
        "Could not follow user: #{followed.nickname} is already on your list."}
     else
-      if !followed.local && follower.local do
+      if !followed.local && follower.local && !ap_enabled?(followed) do
         Websub.subscribe(follower, followed)
       end
 
@@ -420,4 +421,6 @@ defmodule Pleroma.User do
     cs = User.remote_user_creation(data)
     Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
+
+  def ap_enabled?(%User{info: %{"ap_enabled" => ap}}), do: ap
 end

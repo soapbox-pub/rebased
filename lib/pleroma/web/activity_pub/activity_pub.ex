@@ -49,6 +49,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def accept(%{to: to, actor: actor, object: object} = params) do
+    local = !(params[:local] == false) # only accept false as false value
+
+    with data <- %{"to" => to, "type" => "Accept", "actor" => actor, "object" => object},
+         {:ok, activity} <- insert(data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
   def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => _}} = object, activity_id \\ nil, local \\ true) do
     with nil <- get_existing_like(ap_id, object),
@@ -244,7 +254,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def publish(actor, activity) do
-    remote_users = Pleroma.Web.Salmon.remote_users(activity)
+    {:ok, followers} = User.get_followers(actor)
+
+    remote_users = Pleroma.Web.Salmon.remote_users(activity) ++ followers
+    |> Enum.uniq
+
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     Enum.each remote_users, fn(user) ->
       if user.info["ap_enabled"] do

@@ -38,11 +38,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(%{"type" => "Follow", "object" => followed, "actor" => follower, "id" => id}) do
-    with %User{} = followed <- User.get_cached_by_ap_id(followed),
+  def handle_incoming(%{"type" => "Follow", "object" => followed, "actor" => follower, "id" => id} = data) do
+    with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
          %User{} = follower <- User.get_or_fetch_by_ap_id(follower),
          {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
-      # TODO: Send an "Accept" activity.
+      ActivityPub.accept(%{to: [follower.ap_id], actor: followed.ap_id, object: data, local: true})
       User.follow(follower, followed)
       {:ok, activity}
     else
@@ -63,6 +63,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     data = data
     |> Map.put("object", object)
+    |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+
+    {:ok, data}
+  end
+
+  def prepare_outgoing(%{"type" => type} = data) when type in ["Follow", "Accept"] do
+    data = data
     |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
 
     {:ok, data}

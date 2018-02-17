@@ -154,8 +154,16 @@ defmodule Pleroma.Web.Salmon do
 
   defp send_to_user(_,_,_), do: nil
 
+  @supported_activities [
+    "Create",
+    "Follow",
+    "Like",
+    "Announce",
+    "Undo",
+    "Delete"
+  ]
   def publish(user, activity, poster \\ &@httpoison.post/4)
-  def publish(%{info: %{"keys" => keys}} = user, activity, poster) do
+  def publish(%{info: %{"keys" => keys}} = user, %{data: %{"type" => type}} = activity, poster) when type in @supported_activities do
     feed = ActivityRepresenter.to_simple_form(activity, user, true)
     |> ActivityRepresenter.wrap_with_entry
     |> :xmerl.export_simple(:xmerl_xml)
