@@ -3,6 +3,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Activity
   alias Pleroma.User
+  alias Pleroma.Repo
+  import Ecto.Query
+
   import Pleroma.Factory
   alias Pleroma.Web.CommonAPI
 
@@ -43,7 +46,21 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["type"] == "Follow"
       assert data["id"] == "http://mastodon.example.org/users/admin#follows/2"
       assert User.following?(User.get_by_ap_id(data["actor"]), user)
+    end
 
+    test "it works for incoming likes" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data = File.read!("test/fixtures/mastodon-like.json") |> Poison.decode!
+      |> Map.put("object", activity.data["object"]["id"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "Like"
+      assert data["id"] == "http://mastodon.example.org/users/admin#likes/2"
+      assert data["object"] == activity.data["object"]["id"]
     end
   end
 

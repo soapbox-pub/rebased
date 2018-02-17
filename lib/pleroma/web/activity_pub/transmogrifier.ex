@@ -3,6 +3,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   A module to handle coding from internal to wire ActivityPub and back.
   """
   alias Pleroma.User
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   @doc """
@@ -61,6 +62,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       _e -> :error
     end
   end
+
+  def handle_incoming(%{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = data) do
+    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         %Object{} = object <- Object.get_by_ap_id(object_id),
+         {:ok, activity, object} <- ActivityPub.like(actor, object, id, false) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  # TODO
+  # Accept
+  # Undo
 
   def handle_incoming(_), do: :error
 
