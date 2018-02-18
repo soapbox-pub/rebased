@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
-  alias Pleroma.{User, Repo, Object}
+  alias Pleroma.{User, Repo, Object, Activity}
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView, Transmogrifier}
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -26,9 +26,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
     # File.write("/tmp/incoming.json", Poison.encode!(params))
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
+         nil <- Activity.get_by_ap_id(params["id"]),
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
       json(conn, "ok")
     else
+      %Activity{} ->
+        Logger.info("Already had #{params["id"]}")
+        json(conn, "ok")
       e ->
         # Just drop those for now
         Logger.info("Unhandled activity")
