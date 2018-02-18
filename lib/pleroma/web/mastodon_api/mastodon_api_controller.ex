@@ -150,6 +150,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     params = params
     |> Map.put("type", ["Create", "Announce"])
     |> Map.put("blocking_user", user)
+    |> Map.put("user", user)
 
     activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
     |> Enum.reverse

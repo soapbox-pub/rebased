@@ -13,7 +13,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do
-    opts = Map.put(opts, "blocking_user", user)
+    opts = opts
+    |> Map.put("blocking_user", user)
+    |> Map.put("user", user)
+
     ActivityPub.fetch_activities([user.ap_id | user.following], opts)
     |> activities_to_statuses(%{for: user})
   end

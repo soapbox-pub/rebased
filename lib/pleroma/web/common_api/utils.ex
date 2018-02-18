@@ -27,7 +27,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def to_for_user_and_mentions(user, mentions, inReplyTo, "public") do
     to = ["https://www.w3.org/ns/activitystreams#Public"]
 
-    mentioned_users = Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end) ++ [user.ap_id]
+    mentioned_users = Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
     cc = [user.follower_address | mentioned_users]
     if inReplyTo do
       {to, Enum.uniq([inReplyTo.data["actor"] | cc])}
@@ -47,7 +47,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def to_for_user_and_mentions(user, mentions, inReplyTo, "direct") do
-    mentioned_users = Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end) ++ [user.ap_id]
+    mentioned_users = Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
     if inReplyTo do
       {Enum.uniq([inReplyTo.data["actor"] | mentioned_users]), []}
     else

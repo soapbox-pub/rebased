@@ -151,10 +151,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_tag(query, _), do: query
 
-  defp restrict_recipients(query, []), do: query
-  defp restrict_recipients(query, recipients) do
+  defp restrict_recipients(query, [], user), do: query
+  defp restrict_recipients(query, recipients, nil) do
     from activity in query,
      where: fragment("? && ?", ^recipients, activity.recipients)
+  end
+  defp restrict_recipients(query, recipients, user) do
+    from activity in query,
+      where: fragment("? && ?", ^recipients, activity.recipients),
+      or_where: activity.actor == ^user.ap_id
   end
 
   defp restrict_local(query, %{"local_only" => true}) do
@@ -216,7 +221,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       order_by: [fragment("? desc nulls last", activity.id)]
 
     base_query
-    |> restrict_recipients(recipients)
+    |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
     |> restrict_since(opts)
     |> restrict_local(opts)
