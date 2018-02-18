@@ -283,7 +283,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def publish(actor, activity) do
-    {:ok, followers} = User.get_followers(actor)
+    followers = if user.follower_address in activity.recipients do
+      {:ok, followers} = User.get_followers(actor)
+      followers
+    else
+      []
+    end
 
     remote_inboxes = (Pleroma.Web.Salmon.remote_users(activity) ++ followers)
     |> Enum.filter(fn (user) -> User.ap_enabled?(user) end)
