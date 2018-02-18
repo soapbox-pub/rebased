@@ -114,7 +114,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     {:ok, data}
   end
 
-  def prepare_outgoing(%{"type" => type} = data) when type in ["Follow", "Accept", "Like", "Announce"] do
+  def prepare_outgoing(%{"type" => type} = data) do
     data = data
     |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
 
