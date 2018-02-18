@@ -49,19 +49,20 @@ defmodule Pleroma.Web.CommonAPI do
   @instance Application.get_env(:pleroma, :instance)
   @limit Keyword.get(@instance, :limit)
   def post(user, %{"status" => status} = data) do
+    visibility = data["visibility"] || "public"
     with status <- String.trim(status),
          length when length in 1..@limit <- String.length(status),
          attachments <- attachments_from_ids(data["media_ids"]),
          mentions <- Formatter.parse_mentions(status),
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
-         to <- to_for_user_and_mentions(user, mentions, inReplyTo),
+         {to, cc} <- to_for_user_and_mentions(user, mentions, inReplyTo, visibility),
          tags <- Formatter.parse_tags(status, data),
          content_html <- make_content_html(status, mentions, attachments, tags, data["no_attachment_links"]),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
-         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags, cw),
+         object <- make_note_data(user.ap_id, to, context, content_html, attachments, inReplyTo, tags, cw, cc),
          object <- Map.put(object, "emoji", Formatter.get_emoji(status) |> Enum.reduce(%{}, fn({name, file}, acc) -> Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url}#{file}") end)) do
-      res = ActivityPub.create(%{to: to, actor: user, context: context, object: object, additional: %{"cc" => to}})
+      res = ActivityPub.create(%{to: to, actor: user, context: context, object: object, additional: %{"cc" => cc}})
       User.increase_note_count(user)
       res
     end
