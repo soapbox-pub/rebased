@@ -288,12 +288,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.uniq
 
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
-
+    json = Poison.encode!(data)
     Enum.each remote_inboxes, fn(inbox) ->
       Logger.info("Federating #{activity.data["id"]} to #{inbox}")
       host = URI.parse(inbox).host
-      signature = Pleroma.Web.HTTPSignatures.sign(actor, %{host: host})
-      @httpoison.post(inbox, Poison.encode!(data), [{"Content-Type", "application/activity+json"}, {"signature", signature}])
+      signature = Pleroma.Web.HTTPSignatures.sign(actor, %{host: host, "content-length": byte_size(json)})
+      @httpoison.post(inbox, json, [{"Content-Type", "application/activity+json"}, {"signature", signature}])
     end
   end
 
