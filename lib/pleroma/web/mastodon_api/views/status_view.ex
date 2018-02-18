@@ -96,7 +96,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       muted: false,
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",
-      visibility: "public",
+      visibility: get_visibility(object),
       media_attachments: attachments |> Enum.take(4),
       mentions: mentions,
       tags: [], # fix,
@@ -109,7 +109,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
+  def get_visibility(object) do
+    public = "https://www.w3.org/ns/activitystreams#Public"
+    to = object["to"] || []
+    cc = object["cc"] || []
+    cond do
+      public in to -> "public"
+      public in cc -> "unlisted"
+      [] == cc -> "direct"
+      true -> "private"
+    end
+  end
+
   def render("attachment.json", %{attachment: attachment}) do
+    IO.inspect(attachment)
     [%{"mediaType" => media_type, "href" => href} | _] = attachment["url"]
 
     type = cond do
