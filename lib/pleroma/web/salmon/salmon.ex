@@ -29,7 +29,8 @@ defmodule Pleroma.Web.Salmon do
     with [data, _, _, _, _] <- decode(salmon),
          doc <- XML.parse_document(data),
          uri when not is_nil(uri) <- XML.string_from_xpath("/entry/author[1]/uri", doc),
-         {:ok, %{info: %{"magic_key" => magic_key}}} <- Pleroma.Web.OStatus.find_or_make_user(uri) do
+         {:ok, public_key} <- User.get_public_key_for_ap_id(uri),
+         magic_key <- encode_key(public_key) do
       {:ok, magic_key}
     end
   end
