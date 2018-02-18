@@ -280,10 +280,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def publish(actor, activity) do
     {:ok, followers} = User.get_followers(actor)
 
-    remote_inboxes = Pleroma.Web.Salmon.remote_users(activity) ++ followers
+    remote_inboxes = (Pleroma.Web.Salmon.remote_users(activity) ++ followers)
     |> Enum.filter(fn (user) -> User.ap_enabled?(user) end)
     |> Enum.map(fn (%{info: %{"source_data" => data}}) ->
-      (data["endpoints"] && data["endpoints"]["sharedInbox"]) ||data["inbox"]
+      (data["endpoints"] && data["endpoints"]["sharedInbox"]) || data["inbox"]
     end)
     |> Enum.uniq
 
