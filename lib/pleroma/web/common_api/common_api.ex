@@ -46,10 +46,17 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def get_visibility(%{"visibility" => visibility}), do: visibility
+  def get_visibility(%{"in_reply_to_status_id" => status_id}) do
+    inReplyTo = get_replied_to_activity(status_id)
+    Pleroma.Web.MastodonAPI.StatusView.get_visibility(inReplyTo.data["object"])
+  end
+  def get_visibility(_), do: "public"
+
   @instance Application.get_env(:pleroma, :instance)
   @limit Keyword.get(@instance, :limit)
   def post(user, %{"status" => status} = data) do
-    visibility = data["visibility"] || "public"
+    visibility = get_visibility(data)
     with status <- String.trim(status),
          length when length in 1..@limit <- String.length(status),
          attachments <- attachments_from_ids(data["media_ids"]),
