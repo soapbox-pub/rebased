@@ -4,6 +4,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView, Transmogrifier}
   alias Pleroma.Web.ActivityPub.ActivityPub
 
+  require Logger
+
   action_fallback :errors
 
   def user(conn, %{"nickname" => nickname}) do
@@ -27,7 +29,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
       json(conn, "ok")
     else
-      e -> IO.inspect(e)
+      e ->
+        # Just drop those for now
+        Logger.info("Unhandled activity")
+        Logger.info(Poison.encode!(params, [pretty: 2]))
+        json(conn, "ok")
     end
   end
 
