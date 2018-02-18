@@ -100,6 +100,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
     object = object
+    |> set_sensitive
     |> add_hashtags
     |> add_mention_tags
     |> add_attributed_to
@@ -142,6 +143,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def set_conversation(object) do
     Map.put(object, "conversation", object["context"])
+  end
+
+  def set_sensitive(object) do
+    tags = object["tag"] || []
+    Map.put(object, "sensitive", "nsfw" in tags)
   end
 
   def add_attributed_to(object) do
