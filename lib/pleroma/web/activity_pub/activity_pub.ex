@@ -273,6 +273,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       }
 
       User.insert_or_update_user(user_data)
+      if user = User.get_by_ap_id(ap_id) do
+        User.info_changeset(user, user_data}
+        |> Repo.update
+      else
+        User.insert_or_update_user(user_data)
+      end
     end
   end
 
