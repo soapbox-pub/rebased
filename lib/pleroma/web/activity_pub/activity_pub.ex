@@ -136,8 +136,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_public_activities(opts \\ %{}) do
-    public = ["https://www.w3.org/ns/activitystreams#Public"]
-    fetch_activities(public, opts)
+    public = %{to: ["https://www.w3.org/ns/activitystreams#Public"]}
+    q = fetch_activities_query([], opts)
+    q = from activity in q,
+      where: fragment(~s(? @> ?), activity.data, ^public)
+    q
+    |> Repo.all
+    |> Enum.reverse
   end
 
   defp restrict_since(query, %{"since_id" => since_id}) do
@@ -215,7 +220,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
   defp restrict_blocked(query, _), do: query
 
-  def fetch_activities(recipients, opts \\ %{}) do
+  def fetch_activities_query(recipients, opts \\ %{}) do
     base_query = from activity in Activity,
       limit: 20,
       order_by: [fragment("? desc nulls last", activity.id)]
@@ -232,6 +237,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_recent(opts)
     |> restrict_blocked(opts)
     |> restrict_media(opts)
+  end
+
+  def fetch_activities(recipients, opts \\ %{}) do
+    fetch_activities_query(recipients, opts)
     |> Repo.all
     |> Enum.reverse
   end
