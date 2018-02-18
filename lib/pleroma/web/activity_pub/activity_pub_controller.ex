@@ -41,6 +41,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def inbox(conn, params) do
+    Logger.info("Signature error.")
+    Logger.info(conn.req_headers)
+    json(conn, "ok")
+  end
   def ap_enabled_actor(id) do
     user = User.get_by_ap_id(id)
     if User.ap_enabled?(user) do
