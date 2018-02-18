@@ -104,6 +104,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> add_mention_tags
     |> add_attributed_to
     |> prepare_attachments
+    |> set_conversation
 
     data = data
     |> Map.put("object", object)
@@ -137,6 +138,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("tag", tags ++ mentions)
+  end
+
+  def set_conversation(object) do
+    Map.put(object, "conversation", object["context"])
   end
 
   def add_attributed_to(object) do

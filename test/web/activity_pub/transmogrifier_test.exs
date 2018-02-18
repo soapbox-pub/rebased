@@ -120,13 +120,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Enum.member?(object["tag"], expected_mention)
     end
 
-    test "it adds the json-ld context" do
+    test "it adds the json-ld context and the conversation property" do
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["@context"] == "https://www.w3.org/ns/activitystreams"
+      assert modified["object"]["conversation"] == modified["context"]
     end
 
     test "it sets the 'attributedTo' property to the actor of the object if it doesn't have one" do
