@@ -133,7 +133,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     conversation_id = conversation_id(activity)
 
     tags = activity.data["object"]["tag"] || []
-    possibly_sensitive = Enum.member?(tags, "nsfw")
+    possibly_sensitive = activity.data["object"]["sensitive"] || Enum.member?(tags, "nsfw")
+
+    tags = if possibly_sensitive, do: ["nsfw" | tags], else: tags
 
     summary = activity.data["object"]["summary"]
     content = if !!summary and summary != "" do

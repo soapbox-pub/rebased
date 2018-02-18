@@ -58,7 +58,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     announcement_count = object["announcement_count"] || 0
 
     tags = object["tag"] || []
-    sensitive = Enum.member?(tags, "nsfw")
+    sensitive = object["sensitive"] || Enum.member?(tags, "nsfw")
 
     mentions = activity.data["to"]
     |> Enum.map(fn (ap_id) -> User.get_cached_by_ap_id(ap_id) end)

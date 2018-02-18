@@ -33,6 +33,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       ]
       assert object["actor"] == "http://mastodon.example.org/users/admin"
       assert object["attributedTo"] == "http://mastodon.example.org/users/admin"
+      assert object["sensitive"] == true
     end
 
     test "it works for incoming follow requests" do
