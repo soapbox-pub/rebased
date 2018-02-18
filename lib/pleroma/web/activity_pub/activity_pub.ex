@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.WebFinger
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   require Logger
@@ -250,6 +251,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       }
 
       User.insert_or_update_user(user_data)
+    end
+  end
+
+  def make_user_from_nickname(nickname) do
+    with {:ok, %{"ap_id" => ap_id}} when not is_nil(ap_id) <- WebFinger.finger(nickname) do
+      make_user_from_ap_id(ap_id)
     end
   end
 

@@ -71,12 +71,14 @@ defmodule Pleroma.Web.WebFinger do
     subject = XML.string_from_xpath("//Subject", doc)
     salmon = XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc)
     subscribe_address = XML.string_from_xpath(~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template}, doc)
+    ap_id = XML.string_from_xpath(~s{//Link[@rel="self" and @type="application/activity+json"]/@href}, doc)
     data = %{
       "magic_key" => magic_key,
       "topic" => topic,
       "subject" => subject,
       "salmon" => salmon,
-      "subscribe_address" => subscribe_address
+      "subscribe_address" => subscribe_address,
+      "ap_id" => ap_id
     }
     {:ok, data}
   end
