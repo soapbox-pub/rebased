@@ -4,6 +4,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   alias Pleroma.User
   alias Pleroma.Object
+  alias Pleroma.Activity
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   @doc """
@@ -75,7 +76,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(%{"type" => "Announce", "object" => object_id, "actor" => actor, "id" => id} = data) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- ActivityPub.fetch_object_from_id(object_id),
+         {:ok, object} <- get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
          {:ok, activity, object} <- ActivityPub.announce(actor, object, id, false) do
       {:ok, activity}
     else
@@ -88,6 +89,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # Undo
 
   def handle_incoming(_), do: :error
+
+  def get_obj_helper(id) do
+    if object = Object.get_by_ap_id(id), do: {:ok, object}, else: nil
+  end
 
   @doc
   """

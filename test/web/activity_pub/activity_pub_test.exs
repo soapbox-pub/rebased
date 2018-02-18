@@ -266,8 +266,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "fetching an object" do
-    test "it fetches an existing object" do
+    test "it fetches an object" do
       {:ok, object} = ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+      assert Activity.get_create_activity_by_object_ap_id(object.data["id"])
+      {:ok, object_again} = ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      assert object == object_again
     end
   end
 

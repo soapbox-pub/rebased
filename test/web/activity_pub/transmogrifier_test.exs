@@ -72,6 +72,26 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["type"] == "Announce"
       assert data["id"] == "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
       assert data["object"] == "http://mastodon.example.org/users/admin/statuses/99541947525187367"
+
+      assert Activity.get_create_activity_by_object_ap_id(data["object"])
+    end
+
+    test "it works for incoming announces with an existing activity" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+
+      data = File.read!("test/fixtures/mastodon-announce.json")
+      |> Poison.decode!
+      |> Map.put("object", activity.data["object"]["id"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "Announce"
+      assert data["id"] == "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
+      assert data["object"] == activity.data["object"]["id"]
+
+      assert Activity.get_create_activity_by_object_ap_id(data["object"]).id == activity.id
     end
   end
 

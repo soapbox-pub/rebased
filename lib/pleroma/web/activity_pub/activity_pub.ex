@@ -273,6 +273,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  # TODO:
+  # This will create a Create activity, which we need internally at the moment.
   def fetch_object_from_id(id) do
     if object = Object.get_cached_by_ap_id(id) do
       {:ok, object}
@@ -280,8 +282,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       with {:ok, %{body: body, status_code: code}} when code in 200..299 <- @httpoison.get(id, [Accept: "application/activity+json"], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
            {:ok, data} <- Poison.decode(body),
            data <- Transmogrifier.fix_object(data),
-           %User{} <- User.get_or_fetch_by_ap_id(data["attributedTo"]) do
-        Object.create(data)
+           nil <- Object.get_by_ap_id(data["id"]),
+           %User{} = user <- User.get_or_fetch_by_ap_id(data["attributedTo"]),
+           {:ok, activity} = create(%{to: data["to"], actor: user, context: data["context"], object: data, local: false, additional: %{"cc" => data["cc"]}}) do
+        {:ok, Object.get_by_ap_id(activity.data["object"]["id"])}
+      else
+        object = %Object{} -> {:ok, object}
+        e -> e
       end
     end
   end
