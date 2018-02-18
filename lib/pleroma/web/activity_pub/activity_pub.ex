@@ -129,12 +129,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_activities_for_context(context, opts \\ %{}) do
-    query = from activity in Activity,
-      where: fragment("?->>'type' = ? and ?->>'context' = ?", activity.data, "Create", activity.data, ^context),
-      order_by: [desc: :id]
+    public = ["https://www.w3.org/ns/activitystreams#Public"]
+    recipients = if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
+
+    query = from activity in Activity
     query = query
       |> restrict_blocked(opts)
-      |> restrict_recipients(["https://www.w3.org/ns/activitystreams#Public"], opts["user"])
+      |> restrict_recipients(recipients, opts["user"])
+
+   query = from activity in query,
+      where: fragment("?->>'type' = ? and ?->>'context' = ?", activity.data, "Create", activity.data, ^context),
+      order_by: [desc: :id]
     Repo.all(query)
   end
 

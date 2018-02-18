@@ -46,7 +46,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def fetch_conversation(user, id) do
     with context when is_binary(context) <- conversation_id_to_context(id),
-         activities <- ActivityPub.fetch_activities_for_context(context, %{"blocking_user" => user}),
+         activities <- ActivityPub.fetch_activities_for_context(context, %{"blocking_user" => user, "user" => user}),
          statuses <- activities |> activities_to_statuses(%{for: user})
     do
       statuses
