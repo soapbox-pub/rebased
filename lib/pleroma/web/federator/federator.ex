@@ -44,14 +44,14 @@ defmodule Pleroma.Web.Federator do
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
       if ActivityPub.is_public?(activity) do
-        Logger.debug(fn -> "Sending #{activity.data["id"]} out via salmon" end)
-        Pleroma.Web.Salmon.publish(actor, activity)
-
-        Logger.debug(fn -> "Sending #{activity.data["id"]} out via websub" end)
+        Logger.info(fn -> "Sending #{activity.data["id"]} out via websub" end)
         Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
       end
 
-      Logger.debug(fn -> "Sending #{activity.data["id"]} out via AP" end)
+      Logger.info(fn -> "Sending #{activity.data["id"]} out via salmon" end)
+      Pleroma.Web.Salmon.publish(actor, activity)
+
+      Logger.info(fn -> "Sending #{activity.data["id"]} out via AP" end)
       Pleroma.Web.ActivityPub.ActivityPub.publish(actor, activity)
     end
   end
