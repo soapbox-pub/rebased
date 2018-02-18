@@ -84,7 +84,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def announce(%User{ap_id: _} = user, %Object{data: %{"id" => _}} = object, activity_id \\ nil, local \\ true) do
-    with announce_data <- make_announce_data(user, object, activity_id),
+    with true <- is_public?(object),
+         announce_data <- make_announce_data(user, object, activity_id),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),
          :ok <- maybe_federate(activity) do
@@ -316,8 +317,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def visible_for_user?(activity, nil) do
+  def is_public?(activity) do
     "https://www.w3.org/ns/activitystreams#Public" in (activity.data["to"] ++ (activity.data["cc"] || []))
+  end
+
+  def visible_for_user?(activity, nil) do
+    is_public?(activity)
   end
   def visible_for_user?(activity, user) do
     x = [user.ap_id | user.following]
