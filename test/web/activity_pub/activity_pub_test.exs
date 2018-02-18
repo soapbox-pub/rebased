@@ -271,6 +271,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert Activity.get_create_activity_by_object_ap_id(object.data["id"])
       {:ok, object_again} = ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
+      assert [attachment] = object.data["attachment"]
+      assert is_list(attachment["url"])
+
       assert object == object_again
     end
   end

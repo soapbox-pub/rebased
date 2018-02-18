@@ -17,9 +17,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_attachments(object) do
-    attachments = object["attachment"] || []
+    attachments = (object["attachment"] || [])
     |> Enum.map(fn (data) ->
-      url = [%{"type" => "Link", "mediaType" => data["mediaType"], "url" => data["url"]}]
+      url = [%{"type" => "Link", "mediaType" => data["mediaType"], "href" => data["url"]}]
       Map.put(data, "url", url)
     end)
 
