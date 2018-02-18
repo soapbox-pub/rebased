@@ -100,18 +100,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey, @#{other_user.nickname}, how are ya?"})
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey, @#{other_user.nickname}, how are ya? #2hu"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
       object = modified["object"]
 
-      expected_tag = %{
+      expected_mention = %{
         "href" => other_user.ap_id,
         "name" => "@#{other_user.nickname}",
         "type" => "Mention"
       }
+      expected_tag = %{
+        "href" => Pleroma.Web.Endpoint.url <> "/tags/2hu",
+        "type" => "Hashtag",
+        "name" => "#2hu"
+      }
 
       assert Enum.member?(object["tag"], expected_tag)
+      assert Enum.member?(object["tag"], expected_mention)
     end
 
     test "it adds the json-ld context" do

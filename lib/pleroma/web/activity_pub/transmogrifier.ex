@@ -100,6 +100,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
     object = object
+    |> add_hashtags
     |> add_mention_tags
     |> add_attributed_to
     |> prepare_attachments
@@ -116,6 +117,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
 
     {:ok, data}
+  end
+
+  def add_hashtags(object) do
+    tags = (object["tag"] || [])
+    |> Enum.map fn (tag) -> %{"href" => Pleroma.Web.Endpoint.url() <> "/tags/#{tag}", "name" => "##{tag}", "type" => "Hashtag"} end
+
+    object
+    |> Map.put("tag", tags)
   end
 
   def add_mention_tags(object) do
