@@ -190,14 +190,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Repo.get(Activity, id) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         true <- ActivityPub.visible_for_user?(activity, user) do
       render conn, StatusView, "status.json", %{activity: activity, for: user}
     end
   end
 
   def get_context(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
-         activities <- ActivityPub.fetch_activities_for_context(activity.data["object"]["context"], %{"blocking_user" => user}),
+         activities <- ActivityPub.fetch_activities_for_context(activity.data["object"]["context"], %{"blocking_user" => user, "user" => user}),
          activities <- activities |> Enum.filter(fn (%{id: aid}) -> to_string(aid) != to_string(id) end),
          activities <- activities |> Enum.filter(fn (%{data: %{"type" => type}}) -> type == "Create" end),
          grouped_activities <- Enum.group_by(activities, fn (%{id: id}) -> id < activity.id end) do

@@ -131,7 +131,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     query = from activity in Activity,
       where: fragment("?->>'type' = ? and ?->>'context' = ?", activity.data, "Create", activity.data, ^context),
       order_by: [desc: :id]
-    query = restrict_blocked(query, opts)
+    query = query
+      |> restrict_blocked(opts)
+      |> restrict_recipients(["https://www.w3.org/ns/activitystreams#Public"], opts["user"])
     Repo.all(query)
   end
 
@@ -312,5 +314,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         e -> e
       end
     end
+  end
+
+  def visible_for_user?(activity, nil) do
+    "https://www.w3.org/ns/activitystreams#Public" in (activity.data["to"] ++ (activity.data["cc"] || []))
+  end
+  def visible_for_user?(activity, user) do
+    x = [user.ap_id | user.following]
+    y = (activity.data["to"] ++ (activity.data["cc"] || []))
+    visible_for_user?(activity, nil) || Enum.any?(x, &(&1 in y))
   end
 end

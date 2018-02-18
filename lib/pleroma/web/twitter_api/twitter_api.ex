@@ -56,7 +56,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_status(user, id) do
-    with %Activity{} = activity <- Repo.get(Activity, id) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         true <- ActivityPub.visible_for_user?(activity, user) do
       activity_to_status(activity, %{for: user})
     end
   end
