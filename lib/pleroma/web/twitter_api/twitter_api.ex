@@ -16,26 +16,34 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     opts = opts
     |> Map.put("blocking_user", user)
     |> Map.put("user", user)
+    |> Map.put("type", ["Create", "Announce", "Follow"])
 
     ActivityPub.fetch_activities([user.ap_id | user.following], opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_public_statuses(user, opts \\ %{}) do
-    opts = Map.put(opts, "local_only", true)
-    opts = Map.put(opts, "blocking_user", user)
+    opts = opts
+    |> Map.put("local_only", true)
+    |> Map.put("blocking_user", user)
+    |> Map.put("type", ["Create", "Announce", "Follow"])
+
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_public_and_external_statuses(user, opts \\ %{}) do
-    opts = Map.put(opts, "blocking_user", user)
+    opts = opts
+    |> Map.put("blocking_user", user)
+    |> Map.put("type", ["Create", "Announce", "Follow"])
+
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_user_statuses(user, opts \\ %{}) do
     ActivityPub.fetch_activities([], opts)
+    |> Map.put("type", ["Create", "Announce", "Follow"])
     |> activities_to_statuses(%{for: user})
   end
 
