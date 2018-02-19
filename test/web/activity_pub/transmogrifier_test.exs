@@ -33,6 +33,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       ]
       assert object["actor"] == "http://mastodon.example.org/users/admin"
       assert object["attributedTo"] == "http://mastodon.example.org/users/admin"
+      assert object["context"] == "tag:mastodon.example.org,2018-02-12:objectId=20:objectType=Conversation"
       assert object["sensitive"] == true
     end
 
@@ -111,6 +112,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         "name" => "@#{other_user.nickname}",
         "type" => "Mention"
       }
+
       expected_tag = %{
         "href" => Pleroma.Web.Endpoint.url <> "/tags/2hu",
         "type" => "Hashtag",

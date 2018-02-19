@@ -14,6 +14,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
     |> Map.put("actor", object["attributedTo"])
     |> fix_attachments
+    |> fix_context
+  end
+
+  def fix_context(object) do
+    object
+    |> Map.put("context", object["conversation"])
   end
 
   def fix_attachments(object) do
@@ -130,7 +136,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def add_mention_tags(object) do
-    mentions = object["to"]
+    recipients = object["to"] ++ (object["cc"] || [])
+    mentions = recipients
     |> Enum.map(fn (ap_id) -> User.get_cached_by_ap_id(ap_id) end)
     |> Enum.filter(&(&1))
     |> Enum.map(fn(user) -> %{"type" => "Mention", "href" => user.ap_id, "name" => "@#{user.nickname}"} end)
