@@ -56,7 +56,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
-  def to_map(%Activity{data: %{"type" => "Follow", "published" => created_at, "object" => followed_id}} = activity, %{user: user} = opts) do
+  def to_map(%Activity{data: %{"type" => "Follow", "object" => followed_id}} = activity, %{user: user} = opts) do
+    created_at = activity.data["published"] || (DateTime.to_iso8601(activity.inserted_at))
     created_at = created_at |> Utils.date_to_asctime
 
     followed = User.get_cached_by_ap_id(followed_id)
