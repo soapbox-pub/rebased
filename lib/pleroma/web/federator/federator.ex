@@ -46,10 +46,10 @@ defmodule Pleroma.Web.Federator do
       if ActivityPub.is_public?(activity) do
         Logger.info(fn -> "Sending #{activity.data["id"]} out via websub" end)
         Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
-      end
 
-      Logger.info(fn -> "Sending #{activity.data["id"]} out via salmon" end)
-      Pleroma.Web.Salmon.publish(actor, activity)
+        Logger.info(fn -> "Sending #{activity.data["id"]} out via salmon" end)
+        Pleroma.Web.Salmon.publish(actor, activity)
+      end
 
       Logger.info(fn -> "Sending #{activity.data["id"]} out via AP" end)
       Pleroma.Web.ActivityPub.ActivityPub.publish(actor, activity)
