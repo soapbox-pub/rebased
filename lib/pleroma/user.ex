@@ -304,7 +304,7 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
-  def get_notified_from_activity(%Activity{data: %{"to" => to}}) do
+  def get_notified_from_activity(%Activity{recipients: to}) do
     query = from u in User,
       where: u.ap_id in ^to,
       where: u.local == true
@@ -312,7 +312,7 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def get_recipients_from_activity(%Activity{data: %{"to" => to}}) do
+  def get_recipients_from_activity(%Activity{recipients: to}) do
     query = from u in User,
       where: u.ap_id in ^to,
       or_where: fragment("? \\\?| ?", u.following, ^to)
