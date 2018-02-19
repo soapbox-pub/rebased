@@ -10,6 +10,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Web.CommonAPI
 
   describe "handle_incoming" do
+    test "it ignores an incoming notice if we already have it" do
+      activity = insert(:note_activity)
+
+      data = File.read!("test/fixtures/mastodon-post-activity.json")
+      |> Poison.decode!
+      |> Map.put("object", activity.data["object"])
+
+      {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
+
+      assert activity == returned_activity
+    end
+
     test "it works for incoming notices" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!
 

@@ -37,7 +37,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - tags
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
-    with %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
+    with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
+         %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
       object = fix_object(data["object"])
       params = %{
         to: data["to"],
@@ -54,6 +55,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       ActivityPub.create(params)
     else
+      %Activity{} = activity -> {:ok, activity}
       _e -> :error
     end
   end

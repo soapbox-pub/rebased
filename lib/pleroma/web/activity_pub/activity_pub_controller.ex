@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   # TODO: Ensure that this inbox is a recipient of the message
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
     # File.write("/tmp/incoming.json", Poison.encode!(params))
-    Logger.info(Poison.encode!(params, [pretty: 2]))
+    # Logger.info(Poison.encode!(params, [pretty: 2]))
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.get_by_ap_id(params["id"]),
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
