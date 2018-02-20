@@ -2,6 +2,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Federator
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   require Logger
@@ -305,11 +306,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Poison.encode!(data)
     Enum.each remote_inboxes, fn(inbox) ->
-      Logger.info("Federating #{activity.data["id"]} to #{inbox}")
-      host = URI.parse(inbox).host
-      signature = Pleroma.Web.HTTPSignatures.sign(actor, %{host: host, "content-length": byte_size(json)})
-      @httpoison.post(inbox, json, [{"Content-Type", "application/activity+json"}, {"signature", signature}])
+      Federator.enqueue(:publish_single_ap, %{inbox: inbox, json: json, actor: actor, id: activity.data["id"]})
     end
+  end
+
+  def publish_one(%{inbox: inbox, json: json, actor: actor, id: id}) do
+    Logger.info("Federating #{id} to #{inbox}")
+    host = URI.parse(inbox).host
+    signature = Pleroma.Web.HTTPSignatures.sign(actor, %{host: host, "content-length": byte_size(json)})
+    @httpoison.post(inbox, json, [{"Content-Type", "application/activity+json"}, {"signature", signature}])
   end
 
   # TODO:

@@ -66,6 +66,10 @@ defmodule Pleroma.Web.Federator do
     @ostatus.handle_incoming(doc)
   end
 
+  def handle(:publish_single_ap, params) do
+    ActivityPub.publish_one(params)
+  end
+
   def handle(:publish_single_websub, %{xml: xml, topic: topic, callback: callback, secret: secret}) do
     signature = @websub.sign(secret || "", xml)
     Logger.debug(fn -> "Pushing #{topic} to #{callback}" end)
