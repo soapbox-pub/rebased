@@ -108,6 +108,45 @@ defmodule Pleroma.Web.HTTPSignaturesTest do
     assert HTTPSignatures.validate_conn(conn)
   end
 
+  test "validate this" do
+    conn = %{
+      params: %{"actor" => "https://niu.moe/users/rye"},
+      req_headers: [
+        {"x-forwarded-for", "149.202.73.191"},
+        {"host", "testing.pleroma.lol"},
+        {"x-cluster-client-ip", "149.202.73.191"},
+        {"connection", "upgrade"},
+        {"content-length", "2396"},
+        {"user-agent", "http.rb/3.0.0 (Mastodon/2.2.0; +https://niu.moe/)"},
+        {"date", "Sun, 18 Feb 2018 20:31:51 GMT"},
+        {"digest", "SHA-256=dzH+vLyhxxALoe9RJdMl4hbEV9bGAZnSfddHQzeidTU="},
+        {"content-type", "application/activity+json"},
+        {"signature", "keyId=\"https://niu.moe/users/rye#main-key\",algorithm=\"rsa-sha256\",headers=\"(request-target) user-agent host date digest content-type\",signature=\"wtxDg4kIpW7nsnUcVJhBk6SgJeDZOocr8yjsnpDRqE52lR47SH6X7G16r7L1AUJdlnbfx7oqcvomoIJoHB3ghP6kRnZW6MyTMZ2jPoi3g0iC5RDqv6oAmDSO14iw6U+cqZbb3P/odS5LkbThF0UNXcfenVNfsKosIJycFjhNQc54IPCDXYq/7SArEKJp8XwEgzmiC2MdxlkVIUSTQYfjM4EG533cwlZocw1mw72e5mm/owTa80BUZAr0OOuhoWARJV9btMb02ZyAF6SCSoGPTA37wHyfM1Dk88NHf7Z0Aov/Fl65dpRM+XyoxdkpkrhDfH9qAx4iuV2VEWddQDiXHA==\""},
+        {"(request-target)", "post /inbox"}
+      ]
+    }
+    assert HTTPSignatures.validate_conn(conn)
+  end
+
+  test "validate this too" do
+    conn = %{
+      params: %{"actor" => "https://niu.moe/users/rye"},
+      req_headers: [
+        {"x-forwarded-for", "149.202.73.191"},
+        {"host", "testing.pleroma.lol"},
+        {"x-cluster-client-ip", "149.202.73.191"},
+        {"connection", "upgrade"},
+        {"content-length", "2342"},
+        {"user-agent", "http.rb/3.0.0 (Mastodon/2.2.0; +https://niu.moe/)"},
+        {"date", "Sun, 18 Feb 2018 21:44:46 GMT"},
+        {"digest", "SHA-256=vS8uDOJlyAu78cF3k5EzrvaU9iilHCX3chP37gs5sS8="},
+        {"content-type", "application/activity+json"},
+        {"signature", "keyId=\"https://niu.moe/users/rye#main-key\",algorithm=\"rsa-sha256\",headers=\"(request-target) user-agent host date digest content-type\",signature=\"IN6fHD8pLiDEf35dOaRHzJKc1wBYh3/Yq0ItaNGxUSbJTd2xMjigZbcsVKzvgYYjglDDN+disGNeD+OBKwMqkXWaWe/lyMc9wHvCH5NMhpn/A7qGLY8yToSt4vh8ytSkZKO6B97yC+Nvy6Fz/yMbvKtFycIvSXCq417cMmY6f/aG+rtMUlTbKO5gXzC7SUgGJCtBPCh1xZzu5/w0pdqdjO46ePNeR6JyJSLLV4hfo3+p2n7SRraxM4ePVCUZqhwS9LPt3Zdhy3ut+IXCZgMVIZggQFM+zXLtcXY5HgFCsFQr5WQDu+YkhWciNWtKFnWfAsnsg5sC330lZ/0Z8Z91yA==\""},
+        {"(request-target)", "post /inbox"}
+      ]}
+    assert HTTPSignatures.validate_conn(conn)
+  end
+
   test "it generates a signature" do
     user = insert(:user)
     assert HTTPSignatures.sign(user, %{host: "mastodon.example.org"}) =~ "keyId=\""

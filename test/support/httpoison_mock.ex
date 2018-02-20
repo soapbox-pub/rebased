@@ -373,6 +373,20 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://masto.quad.moe/users/_HellPie", ["Accept": "application/activity+json"], _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/hellpie.json")
+    }}
+  end
+
+  def get("https://niu.moe/users/rye", ["Accept": "application/activity+json"], _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/rye.json")
+    }}
+  end
+
   def get("http://mastodon.example.org/@admin/99541947525187367", ["Accept": "application/activity+json"], _) do
     {:ok, %Response{
       status_code: 200,
