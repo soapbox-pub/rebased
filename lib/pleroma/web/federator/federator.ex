@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.Federator do
   use GenServer
   alias Pleroma.User
+  alias Pleroma.Activity
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
