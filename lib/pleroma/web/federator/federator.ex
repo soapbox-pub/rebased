@@ -64,11 +64,12 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:incoming_doc, doc) do
-    Logger.debug("Got document, trying to parse")
+    Logger.info("Got document, trying to parse")
     @ostatus.handle_incoming(doc)
   end
 
   def handle(:incoming_ap_doc, params) do
+    Logger.info("Handling incoming ap activity")
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.get_by_ap_id(params["id"]),
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
@@ -124,7 +125,7 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle_cast({:enqueue, type, payload, priority}, state) when type in [:incoming_doc] do
+  def handle_cast({:enqueue, type, payload, priority}, state) when type in [:incoming_doc, :incoming_ap_doc] do
     %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
     i_queue = enqueue_sorted(i_queue, {type, payload}, 1)
     {i_running_jobs, i_queue} = maybe_start_job(i_running_jobs, i_queue)
