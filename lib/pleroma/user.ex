@@ -249,10 +249,9 @@ defmodule Pleroma.User do
     end
   end
 
-  # TODO: these queries could be more efficient if the type in postgresql wasn't map, but array.
   def get_followers(%User{id: id, follower_address: follower_address}) do
     q = from u in User,
-      where: fragment("? @> ?", u.following, ^follower_address ),
+      where: ^follower_address in u.following,
       where: u.id != ^id
 
     {:ok, Repo.all(q)}
@@ -291,7 +290,7 @@ defmodule Pleroma.User do
 
   def update_follower_count(%User{} = user) do
     follower_count_query = from u in User,
-      where: fragment("? @> ?", u.following, ^user.follower_address),
+      where: ^user.follower_address in u.following,
       where: u.id != ^user.id,
       select: count(u.id)
 
