@@ -25,7 +25,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   # TODO: Ensure that this inbox is a recipient of the message
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
-    Federator.enqeue(:incoming_ap_doc, params)
+    Federator.enqueue(:incoming_ap_doc, params)
     json(conn, "ok")
   end
 
