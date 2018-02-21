@@ -324,6 +324,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     if object = Object.get_cached_by_ap_id(id) do
       {:ok, object}
     else
+      Logger.info("Fetching #{id} via AP")
       with {:ok, %{body: body, status_code: code}} when code in 200..299 <- @httpoison.get(id, [Accept: "application/activity+json"], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
            {:ok, data} <- Poison.decode(body),
            nil <- Object.get_by_ap_id(data["id"]),
