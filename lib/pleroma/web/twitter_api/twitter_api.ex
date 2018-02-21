@@ -16,7 +16,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     opts = opts
     |> Map.put("blocking_user", user)
     |> Map.put("user", user)
-    |> Map.put("type", ["Create", "Announce", "Follow"])
+    |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
 
     ActivityPub.fetch_activities([user.ap_id | user.following], opts)
     |> activities_to_statuses(%{for: user})
@@ -42,8 +42,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_user_statuses(user, opts \\ %{}) do
-    ActivityPub.fetch_activities([], opts)
+    opts = opts
     |> Map.put("type", ["Create", "Announce", "Follow"])
+    ActivityPub.fetch_activities([], opts)
     |> activities_to_statuses(%{for: user})
   end
 
