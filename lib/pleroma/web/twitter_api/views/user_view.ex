@@ -41,7 +41,9 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "profile_image_url_https" => image,
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
-      "rights" => %{},
+      "rights" => %{
+        "delete_others_notice" => !!user.info["is_moderator"]
+      },
       "screen_name" => user.nickname,
       "statuses_count" => user_info[:note_count],
       "statusnet_profile_url" => user.ap_id,

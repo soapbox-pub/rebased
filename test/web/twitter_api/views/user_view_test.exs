@@ -53,7 +53,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "following" => false,
       "follows_you" => false,
       "statusnet_blocking" => false,
-      "rights" => %{},
+      "rights" => %{
+        "delete_others_notice" => false
+      },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
       "background_image" => nil,
@@ -86,7 +88,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "following" => true,
       "follows_you" => false,
       "statusnet_blocking" => false,
-      "rights" => %{},
+      "rights" => %{
+        "delete_others_notice" => false
+      },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
       "background_image" => nil,
@@ -120,7 +124,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "following" => false,
       "follows_you" => true,
       "statusnet_blocking" => false,
-      "rights" => %{},
+      "rights" => %{
+        "delete_others_notice" => false
+      },
       "statusnet_profile_url" => follower.ap_id,
       "cover_photo" => banner,
       "background_image" => nil,
@@ -128,6 +134,13 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
+  end
+
+  test "a user that is a moderator" do
+    user = insert(:user, %{info: %{"is_moderator" => true}})
+    represented = UserView.render("show.json", %{user: user, for: user})
+
+    assert represented["rights"]["delete_others_notice"]
   end
 
   test "A blocked user for the blocker" do
@@ -154,7 +167,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "following" => false,
       "follows_you" => false,
       "statusnet_blocking" => true,
-      "rights" => %{},
+      "rights" => %{
+        "delete_others_notice" => false
+      },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
       "background_image" => nil,
