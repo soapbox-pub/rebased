@@ -3,6 +3,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.{User, Repo, Object, Activity}
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView, Transmogrifier}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.Federator
 
   require Logger
 
@@ -24,37 +25,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   # TODO: Ensure that this inbox is a recipient of the message
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
-    # File.write("/tmp/incoming.json", Poison.encode!(params))
-    # Logger.info(Poison.encode!(params, [pretty: 2]))
-    with {:ok, _user} <- ap_enabled_actor(params["actor"]),
-         nil <- Activity.get_by_ap_id(params["id"]),
-         {:ok, activity} <- Transmogrifier.handle_incoming(params) do
-      json(conn, "ok")
-    else
-      %Activity{} ->
-        Logger.info("Already had #{params["id"]}")
-        json(conn, "ok")
-      e ->
-        # Just drop those for now
-        Logger.info("Unhandled activity")
-        Logger.info(Poison.encode!(params, [pretty: 2]))
-        json(conn, "ok")
-    end
+    Federator.enqeue(:incoming_ap_doc, params)
+    json(conn, "ok")
   end
 
   def inbox(conn, params) do
     Logger.info("Signature error.")
     Logger.info(inspect(conn.req_headers))
     json(conn, "ok")
-  end
-
-  def ap_enabled_actor(id) do
-    user = User.get_by_ap_id(id)
-    if User.ap_enabled?(user) do
-      {:ok, user}
-    else
-      ActivityPub.make_user_from_ap_id(id)
-    end
   end
 
   def errors(conn, _e) do

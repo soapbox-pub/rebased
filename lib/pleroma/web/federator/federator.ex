@@ -3,6 +3,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.User
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
@@ -64,6 +65,20 @@ defmodule Pleroma.Web.Federator do
   def handle(:incoming_doc, doc) do
     Logger.debug("Got document, trying to parse")
     @ostatus.handle_incoming(doc)
+  end
+
+  def handle(:incoming_ap_doc, params) do
+    with {:ok, _user} <- ap_enabled_actor(params["actor"]),
+         nil <- Activity.get_by_ap_id(params["id"]),
+         {:ok, activity} <- Transmogrifier.handle_incoming(params) do
+    else
+      %Activity{} ->
+        Logger.info("Already had #{params["id"]}")
+      e ->
+        # Just drop those for now
+        Logger.info("Unhandled activity")
+        Logger.info(Poison.encode!(params, [pretty: 2]))
+    end
   end
 
   def handle(:publish_single_ap, params) do
@@ -144,5 +159,14 @@ defmodule Pleroma.Web.Federator do
 
   def queue_pop([%{item: element} | queue]) do
     {element, queue}
+  end
+
+  def ap_enabled_actor(id) do
+    user = User.get_by_ap_id(id)
+    if User.ap_enabled?(user) do
+      {:ok, user}
+    else
+      ActivityPub.make_user_from_ap_id(id)
+    end
   end
 end
