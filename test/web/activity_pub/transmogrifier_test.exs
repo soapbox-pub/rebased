@@ -22,6 +22,21 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert activity == returned_activity
     end
 
+    test "it fetches replied-to activities if we don't have them" do
+      data = File.read!("test/fixtures/mastodon-post-activity.json")
+      |> Poison.decode!
+
+      object = data["object"]
+      |> Map.put("inReplyTo", "https://shitposter.club/notice/2827873")
+
+      data = data
+      |> Map.put("object", object)
+
+      {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
+
+      assert Activity.get_create_activity_by_object_ap_id("tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment")
+    end
+
     test "it works for incoming notices" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!
 

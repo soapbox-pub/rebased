@@ -268,11 +268,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "fetching an object" do
     test "it fetches an object" do
       {:ok, object} = ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
-      assert Activity.get_create_activity_by_object_ap_id(object.data["id"])
+      assert activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+      assert activity.data["id"]
+
       {:ok, object_again} = ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
       assert [attachment] = object.data["attachment"]
       assert is_list(attachment["url"])
+
+      assert object == object_again
+    end
+
+    test "it works with objects only available via Ostatus" do
+      {:ok, object} = ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
+      assert activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+      assert activity.data["id"]
+
+      {:ok, object_again} = ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
 
       assert object == object_again
     end

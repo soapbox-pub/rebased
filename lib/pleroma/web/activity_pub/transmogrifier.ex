@@ -53,6 +53,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
             ])
       }
 
+      if object["inReplyTo"] do
+        {:ok, object} = ActivityPub.fetch_object_from_id(object["inReplyTo"])
+      end
+
       ActivityPub.create(params)
     else
       %Activity{} = activity -> {:ok, activity}

@@ -3,6 +3,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Federator
+  alias Pleroma.Web.OStatus
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
   require Logger
@@ -325,14 +326,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     else
       with {:ok, %{body: body, status_code: code}} when code in 200..299 <- @httpoison.get(id, [Accept: "application/activity+json"], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
            {:ok, data} <- Poison.decode(body),
-           data <- Transmogrifier.fix_object(data),
            nil <- Object.get_by_ap_id(data["id"]),
-           %User{} = user <- User.get_or_fetch_by_ap_id(data["attributedTo"]),
-           {:ok, activity} = create(%{to: data["to"], actor: user, context: data["context"], object: data, local: false, additional: %{"cc" => data["cc"]}}) do
+           params <- %{"type" => "Create", "to" => data["to"], "cc" => data["cc"], "actor" => data["attributedTo"], "object" => data},
+           {:ok, activity} <- Transmogrifier.handle_incoming(params) do
         {:ok, Object.get_by_ap_id(activity.data["object"]["id"])}
       else
         object = %Object{} -> {:ok, object}
-        e -> e
+      e ->
+        Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
+        case OStatus.fetch_activity_from_url(id) do
+          {:ok, [activity | _]} -> {:ok, Object.get_by_ap_id(activity.data["object"]["id"])}
+          _ -> e
+        end
       end
     end
   end
