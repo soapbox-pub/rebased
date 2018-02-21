@@ -59,3 +59,9 @@ Add the following to your `dev.secret.exs` or `prod.secret.exs` if you want to p
       proxy_url: "127.0.0.1:8123"
 
 This is useful for running pleroma inside Tor or i2p.
+
+## Admin Tasks
+
+### Password reset
+
+Run `mix generate_password_reset username` to generate a password reset link that you can then send to the user.
