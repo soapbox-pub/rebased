@@ -178,4 +178,40 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert modified["object"]["actor"] == modified["object"]["attributedTo"]
     end
   end
+
+  describe "user upgrade" do
+    test "it upgrades a user to activitypub" do
+      user = insert(:user, %{local: false, ap_id: "https://niu.moe/users/rye", follower_address: "..."})
+      user_two = insert(:user, %{following: [user.follower_address]})
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
+      {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})
+      assert "..." in activity.recipients
+
+      user = Repo.get(User, user.id)
+      assert user.info["note_count"] == 1
+
+      {:ok, user} = Transmogrifier.upgrade_user_from_ap_id("https://niu.moe/users/rye")
+      assert user.info["ap_enabled"]
+      assert user.info["note_count"] == 1
+      assert user.follower_address == "https://niu.moe/users/rye/followers"
+
+      # Wait for the background task
+      :timer.sleep(1000)
+
+      user = Repo.get(User, user.id)
+      assert user.info["note_count"] == 1
+
+      activity = Repo.get(Activity, activity.id)
+      assert user.follower_address in activity.recipients
+      refute "..." in activity.recipients
+
+      unrelated_activity = Repo.get(Activity, unrelated_activity.id)
+      refute user.follower_address in unrelated_activity.recipients
+
+      user_two = Repo.get(User, user_two.id)
+      assert user.follower_address in user_two.following
+      refute "..." in user_two.following
+    end
+  end
 end

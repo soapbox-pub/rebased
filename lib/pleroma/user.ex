@@ -103,6 +103,15 @@ defmodule Pleroma.User do
     |> validate_length(:name, min: 1, max: 100)
   end
 
+  def upgrade_changeset(struct, params \\ %{}) do
+    struct
+    |> cast(params, [:bio, :name, :info, :follower_address])
+    |> unique_constraint(:nickname)
+    |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
+    |> validate_length(:bio, min: 1, max: 1000)
+    |> validate_length(:name, min: 1, max: 100)
+  end
+
   def password_update_changeset(struct, params) do
     changeset = struct
     |> cast(params, [:password, :password_confirmation])

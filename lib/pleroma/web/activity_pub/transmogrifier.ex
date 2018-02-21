@@ -5,7 +5,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.User
   alias Pleroma.Object
   alias Pleroma.Activity
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
+
+  import Ecto.Query
 
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
@@ -179,5 +182,34 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("attachment", attachments)
+  end
+
+  def upgrade_user_from_ap_id(ap_id) do
+    with %User{} = user <- User.get_by_ap_id(ap_id),
+         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id) do
+      data = data
+      |> Map.put(:info, Map.merge(user.info, data[:info]))
+
+      old_follower_address = user.follower_address
+      {:ok, user} = User.upgrade_changeset(user, data)
+      |> Repo.update()
+
+      # This could potentially take a long time, do it in the background
+      Task.start(fn ->
+        q  = from a in Activity,
+        where: ^old_follower_address in a.recipients,
+        update: [set: [recipients: fragment("array_replace(?,?,?)", a.recipients, ^old_follower_address, ^user.follower_address)]]
+        Repo.update_all(q, [])
+
+        q  = from u in User,
+        where: ^old_follower_address in u.following,
+        update: [set: [following: fragment("array_replace(?,?,?)", u.following, ^old_follower_address, ^user.follower_address)]]
+        Repo.update_all(q, [])
+      end)
+
+      {:ok, user}
+    else
+      e -> e
+    end
   end
 end

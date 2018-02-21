@@ -260,7 +260,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.insert(%Object{data: data})
   end
 
-  def make_user_from_ap_id(ap_id) do
+  def fetch_and_prepare_user_from_ap_id(ap_id) do
     with {:ok, %{status_code: 200, body: body}} <- @httpoison.get(ap_id, ["Accept": "application/activity+json"]),
     {:ok, data} <- Poison.decode(body)
       do
@@ -271,14 +271,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "source_data" => data
         },
         nickname: "#{data["preferredUsername"]}@#{URI.parse(ap_id).host}",
-        name: data["name"]
+        name: data["name"],
+        follower_address: data["followers"]
       }
 
-      if user = User.get_by_ap_id(ap_id) do
-        User.info_changeset(user, user_data)
-        |> Repo.update
+      {:ok, user_data}
+    end
+  end
+
+  def make_user_from_ap_id(ap_id) do
+    if user = User.get_by_ap_id(ap_id) do
+      Transmogrifier.upgrade_user_from_ap_id(ap_id)
+    else
+      with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
+        User.insert_or_update_user(data)
       else
-        User.insert_or_update_user(user_data)
+        e -> e
       end
     end
   end
