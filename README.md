@@ -65,3 +65,9 @@ This is useful for running pleroma inside Tor or i2p.
 ### Password reset
 
 Run `mix generate_password_reset username` to generate a password reset link that you can then send to the user.
+
+### Moderators
+
+You can make users moderators. They will then be able to delete any post.
+
+Run `mix set_moderator username [true|false]` to make user a moderator or not.
