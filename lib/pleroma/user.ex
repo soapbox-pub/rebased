@@ -323,7 +323,7 @@ defmodule Pleroma.User do
   def get_recipients_from_activity(%Activity{recipients: to}) do
     query = from u in User,
       where: u.ap_id in ^to,
-      or_where: fragment("? \\\?| ?", u.following, ^to)
+      or_where: fragment("? && ?", u.following, ^to)
 
     query = from u in query,
       where: u.local == true
