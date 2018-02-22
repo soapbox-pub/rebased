@@ -264,15 +264,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, %{status_code: 200, body: body}} <- @httpoison.get(ap_id, ["Accept": "application/activity+json"]),
     {:ok, data} <- Poison.decode(body)
       do
+      avatar = %{
+        "type" => "Image",
+        "url" => [%{"href" => data["icon"]["url"]}]
+      }
+
+      banner = %{
+        "type" => "Image",
+        "url" => [%{"href" => data["image"]["url"]}]
+      }
+
       user_data = %{
         ap_id: data["id"],
         info: %{
           "ap_enabled" => true,
-          "source_data" => data
+          "source_data" => data,
+          "banner" => banner
         },
+        avatar: avatar,
         nickname: "#{data["preferredUsername"]}@#{URI.parse(ap_id).host}",
         name: data["name"],
-        follower_address: data["followers"]
+        follower_address: data["followers"],
       }
 
       {:ok, user_data}

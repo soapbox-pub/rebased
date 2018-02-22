@@ -105,7 +105,7 @@ defmodule Pleroma.User do
 
   def upgrade_changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:bio, :name, :info, :follower_address])
+    |> cast(params, [:bio, :name, :info, :follower_address, :avatar])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
     |> validate_length(:bio, min: 1, max: 1000)

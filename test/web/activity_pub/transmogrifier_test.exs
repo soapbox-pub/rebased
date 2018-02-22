@@ -204,6 +204,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       activity = Repo.get(Activity, activity.id)
       assert user.follower_address in activity.recipients
+      assert %{"url" => [%{"href" => "https://cdn.niu.moe/accounts/avatars/000/033/323/original/fd7f8ae0b3ffedc9.jpeg"}]} = user.avatar
+      assert %{"url" => [%{"href" => "https://cdn.niu.moe/accounts/headers/000/033/323/original/850b3448fa5fd477.png"}]} = user.info["banner"]
       refute "..." in activity.recipients
 
       unrelated_activity = Repo.get(Activity, unrelated_activity.id)
