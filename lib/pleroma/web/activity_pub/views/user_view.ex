@@ -45,6 +45,10 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "icon" => %{
         "type" => "Image",
         "url" => User.avatar_url(user)
+      },
+      "image" => %{
+        "type" => "Image",
+        "url" => User.banner_url(user)
       }
     }
   end
