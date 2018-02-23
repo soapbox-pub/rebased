@@ -10,6 +10,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   import Ecto.Query
 
+  require Logger
+
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
@@ -43,6 +45,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
       object = fix_object(data["object"])
+
+      replied_to_id = if object["inReplyTo"] do
+        case ActivityPub.fetch_object_from_id(object["inReplyTo"]) do
+          {:ok, object} -> object.data["id"]
+          e ->
+            Logger.error("Couldn't fetch #{object["inReplyTo"]} #{inspect(e)}")
+            nil
+        end
+      else
+        nil
+      end
+
+      object = Map.put(object, "inReplyTo", replied_to_id || object["inReplyTo"])
+
       params = %{
         to: data["to"],
         object: object,
@@ -56,9 +72,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
             ])
       }
 
-      if object["inReplyTo"] do
-        {:ok, object} = ActivityPub.fetch_object_from_id(object["inReplyTo"])
-      end
 
       ActivityPub.create(params)
     else

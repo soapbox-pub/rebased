@@ -288,6 +288,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert object == object_again
     end
+
+    test "it correctly stitches up conversations between ostatus and ap" do
+      last = "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
+      {:ok, object} = ActivityPub.fetch_object_from_id(last)
+
+      object = Object.get_by_ap_id(object.data["inReplyTo"])
+      assert object
+    end
   end
 
   describe "following / unfollowing" do

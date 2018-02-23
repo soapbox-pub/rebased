@@ -80,6 +80,13 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://shitposter.club/.well-known/webfinger?resource=https://shitposter.club/user/5381", [Accept: "application/xrd+xml"], []) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/spc_5381_xrd.xml")
+    }}
+  end
+
   def get("http://gs.example.org/.well-known/webfinger", [Accept: "application/xrd+xml"], [params: [resource: "http://gs.example.org:4040/index.php/user/1"], follow_redirect: true]) do
     {:ok, %Response{
       status_code: 200,
@@ -119,6 +126,13 @@ defmodule HTTPoisonMock do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_api_statuses_user_timeline_29191.atom.xml")
+    }}
+  end
+
+  def get("https://shitposter.club/api/statuses/user_timeline/5381.atom", _body, _headers) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/spc_5381.atom")
     }}
   end
 
@@ -387,10 +401,38 @@ defmodule HTTPoisonMock do
     }}
   end
 
+  def get("https://mstdn.io/users/mayuutann", ["Accept": "application/activity+json"], _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/mayumayu.json")
+    }}
+  end
+
   def get("http://mastodon.example.org/@admin/99541947525187367", ["Accept": "application/activity+json"], _) do
     {:ok, %Response{
       status_code: 200,
       body: File.read!("test/fixtures/mastodon-note-object.json")
+    }}
+  end
+
+  def get("https://mstdn.io/users/mayuutann/statuses/99568293732299394", ["Accept": "application/activity+json"], _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/mayumayupost.json")
+    }}
+  end
+
+  def get("https://shitposter.club/notice/7369654", _, _) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/7369654.html")
+    }}
+  end
+
+  def get("https://shitposter.club/api/statuses/show/7369654.atom", _body, _headers) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/7369654.atom")
     }}
   end
 
