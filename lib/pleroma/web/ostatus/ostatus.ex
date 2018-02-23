@@ -292,7 +292,10 @@ defmodule Pleroma.Web.OStatus do
     with {:ok, %{body: body, status_code: code}} when code in 200..299 <- @httpoison.get(url, [Accept: "application/atom+xml"], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
       Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body)
-    else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+    else
+      e ->
+        Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+        e
     end
   end
 
@@ -301,7 +304,10 @@ defmodule Pleroma.Web.OStatus do
     with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
          {:ok, atom_url} <- get_atom_url(body) do
         fetch_activity_from_atom_url(atom_url)
-    else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+    else
+      e ->
+        Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+        e
     end
   end
 

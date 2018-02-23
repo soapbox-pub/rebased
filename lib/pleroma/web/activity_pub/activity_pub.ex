@@ -288,6 +288,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       }
 
       {:ok, user_data}
+    else
+      e -> Logger.error("Could not user at fetch #{ap_id}, #{inspect(e)}")
     end
   end
 
@@ -353,12 +355,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {:ok, Object.get_by_ap_id(activity.data["object"]["id"])}
       else
         object = %Object{} -> {:ok, object}
-      e ->
-        Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
-        case OStatus.fetch_activity_from_url(id) do
-          {:ok, [activity | _]} -> {:ok, Object.get_by_ap_id(activity.data["object"]["id"])}
-          _ -> e
-        end
+        e ->
+          Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
+          case OStatus.fetch_activity_from_url(id) do
+            {:ok, [activity | _]} -> {:ok, Object.get_by_ap_id(activity.data["object"]["id"])}
+            e -> e
+          end
       end
     end
   end
