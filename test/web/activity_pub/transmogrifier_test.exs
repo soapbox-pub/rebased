@@ -10,6 +10,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Web.CommonAPI
 
   describe "handle_incoming" do
+
+    test "it correctly connects AP and non-AP statuses" do
+      last = "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
+    end
+
     test "it ignores an incoming notice if we already have it" do
       activity = insert(:note_activity)
 
