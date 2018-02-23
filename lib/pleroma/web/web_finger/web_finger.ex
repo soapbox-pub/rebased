@@ -105,6 +105,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def finger(account) do
+    account = String.trim_leading(account, "@")
     domain = with [_name, domain] <- String.split(account, "@") do
                domain
              else _e ->
