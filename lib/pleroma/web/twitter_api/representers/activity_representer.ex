@@ -164,7 +164,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "repeat_num" => announcement_count,
       "favorited" => to_boolean(favorited),
       "repeated" => to_boolean(repeated),
-      "external_url" => object["external_url"],
+      "external_url" => object["external_url"] || object["id"],
       "tags" => tags,
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive
