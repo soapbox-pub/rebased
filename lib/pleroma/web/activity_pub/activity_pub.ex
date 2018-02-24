@@ -314,7 +314,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def publish(actor, activity) do
     followers = if actor.follower_address in activity.recipients do
       {:ok, followers} = User.get_followers(actor)
-      followers
+      followers |> Enum.filter(&(!&1.local))
     else
       []
     end
