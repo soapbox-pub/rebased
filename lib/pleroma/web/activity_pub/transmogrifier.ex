@@ -214,7 +214,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def upgrade_user_from_ap_id(ap_id, async \\ true) do
-    with %User{} = user <- User.get_by_ap_id(ap_id),
+    with %User{local: false} = user <- User.get_by_ap_id(ap_id),
          {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id) do
       data = data
       |> Map.put(:info, Map.merge(user.info, data[:info]))
