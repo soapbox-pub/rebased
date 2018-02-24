@@ -306,7 +306,8 @@ defmodule Pleroma.Web.OStatusTest do
         "fqn" => user,
         "bio" => "cofe",
         "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]},
-        "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}"
+        "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}",
+        "ap_id" => nil
       }
       assert data == expected
     end
@@ -330,7 +331,8 @@ defmodule Pleroma.Web.OStatusTest do
         "fqn" => user,
         "bio" => "cofe",
         "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]},
-        "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}"
+        "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}",
+        "ap_id" => nil
       }
       assert data == expected
     end

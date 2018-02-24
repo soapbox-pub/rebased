@@ -177,6 +177,13 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def maybe_update(doc, user) do
+    if "true" == string_from_xpath("//author[1]/ap_enabled", doc) do
+      Transmogrifier.upgrade_user_from_ap_id(user.ap_id)
+    else
+      maybe_update_ostatus(doc, user)
+    end
+  end
+  def maybe_update_ostatus(doc, user) do
     old_data = %{
       avatar: user.avatar,
       bio: user.bio,

@@ -12,6 +12,12 @@ defmodule Pleroma.Web.OStatus.UserRepresenter do
       []
     end
 
+    ap_enabled = if user.local do
+      [{:ap_enabled, ['true']}]
+    else
+      []
+    end
+
     [
       {:id, [ap_id]},
       {:"activity:object", ['http://activitystrea.ms/schema/1.0/person']},
@@ -22,6 +28,6 @@ defmodule Pleroma.Web.OStatus.UserRepresenter do
       {:summary, [bio]},
       {:name, [nickname]},
       {:link, [rel: 'avatar', href: avatar_url], []}
-    ] ++ banner
+    ] ++ banner ++ ap_enabled
   end
 end
