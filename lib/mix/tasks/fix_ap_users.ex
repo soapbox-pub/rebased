@@ -9,7 +9,8 @@ defmodule Mix.Tasks.FixApUsers do
     Mix.Task.run("app.start")
 
     q = from u in User,
-      where: fragment("? @> ?", u.info, ^%{"ap_enabled" => true})
+      where: fragment("? @> ?", u.info, ^%{"ap_enabled" => true}),
+      where: u.local == false
     users = Repo.all(q)
 
     Enum.each(users, fn(user) ->
