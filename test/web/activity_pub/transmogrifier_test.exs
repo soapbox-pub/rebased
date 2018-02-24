@@ -181,12 +181,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
   describe "user upgrade" do
     test "it upgrades a user to activitypub" do
-      user = insert(:user, %{local: false, ap_id: "https://niu.moe/users/rye", follower_address: "..."})
+      user = insert(:user, %{nickname: "rye@niu.moe", local: false, ap_id: "https://niu.moe/users/rye", follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})})
       user_two = insert(:user, %{following: [user.follower_address]})
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
       {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})
-      assert "..." in activity.recipients
+      assert "http://localhost:4001/users/rye@niu.moe/followers" in activity.recipients
 
       user = Repo.get(User, user.id)
       assert user.info["note_count"] == 1

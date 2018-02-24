@@ -203,7 +203,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data = data
       |> Map.put(:info, Map.merge(user.info, data[:info]))
 
-      old_follower_address = user.follower_address
+      old_follower_address = User.ap_followers(user)
       {:ok, user} = User.upgrade_changeset(user, data)
       |> Repo.update()
 
