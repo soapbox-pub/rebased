@@ -35,7 +35,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def inbox(conn, params) do
     headers = Enum.into(conn.req_headers, %{})
-    if !(String.contains(headers["signature"] || "", params["actor"])) do
+    if !(String.contains?(headers["signature"] || "", params["actor"])) do
       Logger.info("Signature not from author, relayed message, ignoring.")
     else
       Logger.info("Signature error.")
