@@ -20,6 +20,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
 
       assign(conn, :valid_signature, HTTPSignatures.validate_conn(conn))
     else
+      Logger.debug("No signature header!")
       conn
     end
   end

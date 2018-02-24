@@ -2,6 +2,7 @@
 defmodule Pleroma.Web.HTTPSignatures do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  require Logger
 
   def split_signature(sig) do
     default = %{"headers" => "date"}
@@ -32,6 +33,7 @@ defmodule Pleroma.Web.HTTPSignatures do
       if validate_conn(conn, public_key) do
         true
       else
+        Logger.debug("Could not validate, re-fetching user and trying one more time.")
         # Fetch user anew and try one more time
         with actor_id <- conn.params["actor"],
              {:ok, _user} <- ActivityPub.make_user_from_ap_id(actor_id),
@@ -40,7 +42,8 @@ defmodule Pleroma.Web.HTTPSignatures do
         end
       end
     else
-      _ -> false
+      e ->
+        Logger.debug("Could not public key!")
     end
   end
 
