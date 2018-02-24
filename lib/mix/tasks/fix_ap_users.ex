@@ -13,8 +13,12 @@ defmodule Mix.Tasks.FixApUsers do
     users = Repo.all(q)
 
     Enum.each(users, fn(user) ->
-      IO.puts("Fetching #{user.nickname}")
-      Pleroma.Web.ActivityPub.Transmogrifier.upgrade_user_from_ap_id(user.ap_id, false)
+      try do
+        IO.puts("Fetching #{user.nickname}")
+        Pleroma.Web.ActivityPub.Transmogrifier.upgrade_user_from_ap_id(user.ap_id, false)
+      rescue
+        e -> IO.inspect(e)
+      end
     end)
   end
 end
