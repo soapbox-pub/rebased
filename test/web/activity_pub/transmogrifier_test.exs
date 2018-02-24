@@ -4,6 +4,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Activity
   alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.Web.Websub.WebsubClientSubscription
+  alias Pleroma.Web.Websub.WebsubServerSubscription
   import Ecto.Query
 
   import Pleroma.Factory
@@ -214,6 +216,34 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user_two = Repo.get(User, user_two.id)
       assert user.follower_address in user_two.following
       refute "..." in user_two.following
+    end
+  end
+
+  describe "maybe_retire_websub" do
+    test "it deletes all websub client subscripitions with the user as topic" do
+      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/rye.atom"}
+      {:ok, ws} = Repo.insert(subscription)
+
+      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/pasty.atom"}
+      {:ok, ws2} = Repo.insert(subscription)
+
+      Transmogrifier.maybe_retire_websub("https://niu.moe/users/rye")
+
+      refute Repo.get(WebsubClientSubscription, ws.id)
+      assert Repo.get(WebsubClientSubscription, ws2.id)
+    end
+
+    test "it deletes all websub server subscriptions with the server as callback" do
+      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/rye.atom"}
+      {:ok, ws} = Repo.insert(subscription)
+
+      subscription = %WebsubClientSubscription{topic: "https://niu.moe/users/pasty.atom"}
+      {:ok, ws2} = Repo.insert(subscription)
+
+      Transmogrifier.maybe_retire_websub("https://niu.moe/users/rye")
+
+      refute Repo.get(WebsubClientSubscription, ws.id)
+      assert Repo.get(WebsubClientSubscription, ws2.id)
     end
   end
 end

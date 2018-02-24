@@ -204,6 +204,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     update: [set: [following: fragment("array_replace(?,?,?)", u.following, ^old_follower_address, ^user.follower_address)]]
     Repo.update_all(q, [])
 
+    maybe_retire_websub(user.ap_id)
+
     # Only do this for recent activties, don't go through the whole db.
     since = (Repo.aggregate(Activity, :max, :id) || 0) - 100_000
     q  = from a in Activity,
@@ -234,6 +236,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:ok, user}
     else
       e -> e
+    end
+  end
+
+  def maybe_retire_websub(ap_id) do
+    # some sanity checks
+    if is_binary(ap_id) && (String.length(ap_id) > 8) do
+      q = from ws in Pleroma.Web.Websub.WebsubClientSubscription,
+        where: fragment("? like ?", ws.topic, ^"#{ap_id}%")
+      Repo.delete_all(q)
     end
   end
 end
