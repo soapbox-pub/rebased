@@ -209,14 +209,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       # This could potentially take a long time, do it in the background
       Task.start(fn ->
-        q  = from a in Activity,
-        where: ^old_follower_address in a.recipients,
-        update: [set: [recipients: fragment("array_replace(?,?,?)", a.recipients, ^old_follower_address, ^user.follower_address)]]
-        Repo.update_all(q, [])
-
         q  = from u in User,
         where: ^old_follower_address in u.following,
         update: [set: [following: fragment("array_replace(?,?,?)", u.following, ^old_follower_address, ^user.follower_address)]]
+        Repo.update_all(q, [])
+
+        # Only do this for recent activties, don't go through the whole db.
+        since = (Repo.aggregate(Activity, :max, :id) || 0) - 100_000
+        q  = from a in Activity,
+        where: ^old_follower_address in a.recipients,
+        where: a.id > ^since,
+        update: [set: [recipients: fragment("array_replace(?,?,?)", a.recipients, ^old_follower_address, ^user.follower_address)]]
         Repo.update_all(q, [])
       end)
 
