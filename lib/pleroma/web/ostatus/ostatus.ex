@@ -9,6 +9,7 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler, DeleteHandler}
+  alias Pleroma.Web.ActivityPub.Transmogrifier
 
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
