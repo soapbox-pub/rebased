@@ -35,6 +35,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def inbox(conn, params) do
     Logger.info("Signature error.")
+    Logger.info("Could not validate #{params["actor"]}")
     Logger.info(inspect(conn.req_headers))
     json(conn, "ok")
   end
