@@ -79,7 +79,14 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     mentions = activity.recipients |> get_mentions
 
     categories = (activity.data["object"]["tag"] || [])
-    |> Enum.map(fn (tag) -> {:category, [term: to_charlist(tag)], []} end)
+    |> Enum.map(fn (tag) ->
+      if is_binary(tag) do
+        {:category, [term: to_charlist(tag)], []}
+      else
+        nil
+      end
+    end)
+    |> Enum.filter(&(&1))
 
     emoji_links = get_emoji_links(activity.data["object"]["emoji"] || %{})
 
