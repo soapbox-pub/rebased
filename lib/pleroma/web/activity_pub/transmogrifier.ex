@@ -122,18 +122,23 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     if object = Object.get_by_ap_id(id), do: {:ok, object}, else: nil
   end
 
-  @doc
-  """
-  internal -> Mastodon
-  """
-  def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
-    object = object
+  def prepare_object(object) do
+    object
     |> set_sensitive
     |> add_hashtags
     |> add_mention_tags
     |> add_attributed_to
     |> prepare_attachments
     |> set_conversation
+  end
+
+  @doc
+  """
+  internal -> Mastodon
+  """
+  def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
+    object = object
+    |> prepare_object
 
     data = data
     |> Map.put("object", object)
