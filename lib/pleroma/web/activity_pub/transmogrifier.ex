@@ -197,31 +197,39 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("attachment", attachments)
   end
 
-  def upgrade_user_from_ap_id(ap_id) do
+  defp user_upgrade_task(user) do
+    old_follower_address = User.ap_followers(user)
+    q  = from u in User,
+    where: ^old_follower_address in u.following,
+    update: [set: [following: fragment("array_replace(?,?,?)", u.following, ^old_follower_address, ^user.follower_address)]]
+    Repo.update_all(q, [])
+
+    # Only do this for recent activties, don't go through the whole db.
+    since = (Repo.aggregate(Activity, :max, :id) || 0) - 100_000
+    q  = from a in Activity,
+    where: ^old_follower_address in a.recipients,
+    where: a.id > ^since,
+    update: [set: [recipients: fragment("array_replace(?,?,?)", a.recipients, ^old_follower_address, ^user.follower_address)]]
+    Repo.update_all(q, [])
+  end
+
+  def upgrade_user_from_ap_id(ap_id, async \\ true) do
     with %User{} = user <- User.get_by_ap_id(ap_id),
          {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id) do
       data = data
       |> Map.put(:info, Map.merge(user.info, data[:info]))
 
-      old_follower_address = User.ap_followers(user)
       {:ok, user} = User.upgrade_changeset(user, data)
       |> Repo.update()
 
       # This could potentially take a long time, do it in the background
-      Task.start(fn ->
-        q  = from u in User,
-        where: ^old_follower_address in u.following,
-        update: [set: [following: fragment("array_replace(?,?,?)", u.following, ^old_follower_address, ^user.follower_address)]]
-        Repo.update_all(q, [])
-
-        # Only do this for recent activties, don't go through the whole db.
-        since = (Repo.aggregate(Activity, :max, :id) || 0) - 100_000
-        q  = from a in Activity,
-        where: ^old_follower_address in a.recipients,
-        where: a.id > ^since,
-        update: [set: [recipients: fragment("array_replace(?,?,?)", a.recipients, ^old_follower_address, ^user.follower_address)]]
-        Repo.update_all(q, [])
-      end)
+      if async do
+        Task.start(fn ->
+          user_upgrade_task(user)
+        end)
+      else
+        user_upgrade_task(user)
+      end
 
       {:ok, user}
     else

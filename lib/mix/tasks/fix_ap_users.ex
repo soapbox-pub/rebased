@@ -14,7 +14,7 @@ defmodule Mix.Tasks.FixApUsers do
 
     Enum.each(users, fn(user) ->
       IO.puts("Fetching #{user.nickname}")
-      Pleroma.Web.ActivityPub.Transmogrifier.upgrade_user_from_ap_id(user.ap_id)
+      Pleroma.Web.ActivityPub.Transmogrifier.upgrade_user_from_ap_id(user.ap_id, false)
     end)
   end
 end
