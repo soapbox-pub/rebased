@@ -31,8 +31,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put("inReplyTo", replied_object.data["id"])
         |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
         |> Map.put("inReplyToStatusId", activity.id)
-        |> Map.put("conversation", replied_object.data["conversation"])
-        |> Map.put("context", replied_object.data["conversation"])
+        |> Map.put("conversation", replied_object.data["context"])
+        |> Map.put("context", replied_object.data["context"])
       e ->
         Logger.error("Couldn't fetch #{object["inReplyTo"]} #{inspect(e)}")
         object
