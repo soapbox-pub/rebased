@@ -121,6 +121,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
       #{note_xml}
     </activity:object>
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{note.data["actor"]}"/>
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
 
     announce_xml = ActivityRepresenter.to_simple_form(announce, user)
@@ -156,6 +157,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <link rel="self" type="application/atom+xml" href="#{like.data["id"]}"/>
     <thr:in-reply-to ref="#{note.data["id"]}" />
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{note.data["actor"]}"/>
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
 
     assert clean(res) == clean(expected)
