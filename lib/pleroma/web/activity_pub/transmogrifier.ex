@@ -68,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         to: data["to"],
         object: object,
         actor: user,
-        context: data["object"]["conversation"],
+        context: object["conversation"],
         local: false,
         published: data["published"],
         additional: Map.take(data, [
