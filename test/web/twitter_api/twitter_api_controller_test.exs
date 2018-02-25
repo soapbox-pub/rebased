@@ -218,6 +218,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "with user_id", %{conn: conn} do
       user = insert(:user)
       {:ok, activity} = ActivityBuilder.insert(%{"id" => 1}, %{user: user})
+      |> IO.inspect
 
       conn = get(conn, "/api/statuses/user_timeline.json", %{"user_id" => user.id})
       response = json_response(conn, 200)
@@ -376,9 +377,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
+      avatar_image = File.read!("test/fixtures/avatar_data_uri")
       conn = conn
       |> with_credentials(current_user.nickname, "test")
-      |> post("/api/qvitter/update_avatar.json", %{img: Pleroma.Web.ActivityPub.ActivityPubTest.data_uri})
+      |> post("/api/qvitter/update_avatar.json", %{img: avatar_image})
 
       current_user = Repo.get(User, current_user.id)
       assert is_map(current_user.avatar)

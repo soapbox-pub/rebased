@@ -8,9 +8,11 @@ defmodule Pleroma.Builders.ActivityBuilder do
       "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id,
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "type" => "Create",
       "object" => %{
         "type" => "Note",
-        "content" => "test"
+        "content" => "test",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
       }
     }
     Map.merge(activity, data)
@@ -23,7 +25,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
 
   def insert_list(times, data \\ %{}, opts \\ %{}) do
     Enum.map(1..times, fn (n) ->
-      {:ok, activity} = insert(data)
+      {:ok, activity} = insert(data, opts)
       activity
     end)
   end
@@ -32,7 +34,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
     user = Pleroma.Factory.insert(:user)
 
     public = build(%{"id" => 1}, %{user: user})
-    non_public = build(%{"id" => 2, "to" => []}, %{user: user})
+    non_public = build(%{"id" => 2, "to" => [user.follower_address]}, %{user: user})
 
     {:ok, public} = ActivityPub.insert(public)
     {:ok, non_public} = ActivityPub.insert(non_public)
