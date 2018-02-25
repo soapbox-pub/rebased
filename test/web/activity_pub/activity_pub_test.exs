@@ -47,9 +47,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["id"] == given_id
     end
 
-    test "adds an id to a given object if it lacks one and inserts it to the object database" do
+    test "adds an id to a given object if it lacks one and is a note and inserts it to the object database" do
       data = %{
         "object" => %{
+          "type" => "Note",
           "ok" => true
         }
       }

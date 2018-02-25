@@ -208,6 +208,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     {:ok, object} = ActivityPub.upload(params)
     change = Changeset.change(user, %{avatar: object.data})
     {:ok, user} = User.update_and_set_cache(change)
+    CommonAPI.update(user)
 
     render(conn, UserView, "show.json", %{user: user, for: user})
   end
@@ -216,7 +217,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}),
          new_info <- Map.put(user.info, "banner", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, _user} <- User.update_and_set_cache(change) do
+         {:ok, user} <- User.update_and_set_cache(change) do
+      CommonAPI.update(user)
       %{"url" => [ %{ "href" => href } | _ ]} = object.data
       response = %{ url: href } |> Poison.encode!
       conn
@@ -306,6 +308,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     with changeset <- User.update_changeset(user, params),
          {:ok, user} <- User.update_and_set_cache(changeset) do
+      CommonAPI.update(user)
       render(conn, UserView, "user.json", %{user: user, for: user})
     else
       error ->

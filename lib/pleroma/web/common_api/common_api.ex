@@ -74,4 +74,8 @@ defmodule Pleroma.Web.CommonAPI do
       res
     end
   end
+
+  def update(user) do
+    ActivityPub.update(%{local: true, to: [user.follower_address], cc: [], actor: user.ap_id, object: Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})})
+  end
 end

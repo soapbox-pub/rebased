@@ -24,6 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def update_credentials(%{assigns: %{user: user}} = conn, params) do
+    original_user = user
     params = if bio = params["note"] do
       Map.put(params, "bio", bio)
     else
@@ -40,7 +41,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       with %Plug.Upload{} <- avatar,
            {:ok, object} <- ActivityPub.upload(avatar),
            change = Ecto.Changeset.change(user, %{avatar: object.data}),
-           {:ok, user} = Repo.update(change) do
+           {:ok, user} = User.update_and_set_cache(change) do
         user
       else
         _e -> user
@@ -54,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
            {:ok, object} <- ActivityPub.upload(banner),
            new_info <- Map.put(user.info, "banner", object.data),
            change <- User.info_changeset(user, %{info: new_info}),
-           {:ok, user} <- Repo.update(change) do
+           {:ok, user} <- User.update_and_set_cache(change) do
         user
       else
         _e -> user
@@ -64,7 +65,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
 
     with changeset <- User.update_changeset(user, params),
-         {:ok, user} <- Repo.update(changeset) do
+         {:ok, user} <- User.update_and_set_cache(changeset) do
+      if original_user != user do
+        CommonAPI.update(user)
+      end
       json conn, AccountView.render("account.json", %{user: user})
     else
       _e ->
