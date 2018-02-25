@@ -128,9 +128,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       actor
       |> User.upgrade_changeset(update_data)
-      |> Repo.update
+      |> User.update_and_set_cache()
 
-      User.invalidate_cache(actor)
       ActivityPub.update(%{local: false, to: data["to"] || [], cc: data["cc"] || [], object: object, actor: actor_id})
     else
       e ->

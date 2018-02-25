@@ -60,9 +60,8 @@ defmodule Pleroma.Web.WebFinger do
     else
       {:ok, pem} = Salmon.generate_rsa_pem
       info = Map.put(info, "keys", pem)
-      res = Repo.update(Ecto.Changeset.change(user, info: info))
-      User.invalidate_cache(user)
-      res
+      Ecto.Changeset.change(user, info: info)
+      |> User.update_and_set_cache()
     end
   end
 
