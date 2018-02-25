@@ -410,8 +410,15 @@ defmodule Pleroma.User do
     if user = get_by_ap_id(ap_id) do
       user
     else
-      with {:ok, user} <- ActivityPub.make_user_from_ap_id(ap_id) do
-        user
+      ap_try = ActivityPub.make_user_from_ap_id(ap_id)
+
+      case ap_try do
+        {:ok, user} -> user
+        _ ->
+          case OStatus.make_user(ap_id) do
+            {:ok, user} -> user
+            _ -> {:error, "Could not fetch by ap id"}
+          end
       end
     end
   end

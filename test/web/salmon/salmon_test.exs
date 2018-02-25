@@ -59,7 +59,6 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
   end
 
   test "it gets a magic key" do
-    # TODO: Make test local
     salmon = File.read!("test/fixtures/salmon2.xml")
     {:ok, key} = Salmon.fetch_magic_key(salmon)
 
@@ -86,7 +85,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
       "context" => note.data["context"]
     }
 
-    {:ok, activity} = Repo.insert(%Activity{data: activity_data})
+    {:ok, activity} = Repo.insert(%Activity{data: activity_data, recipients: activity_data["to"]})
     user = Repo.get_by(User, ap_id: activity.data["actor"])
     {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
 
