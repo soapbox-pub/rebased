@@ -16,7 +16,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
     Logger.debug("Checking sig for #{user}")
     if get_req_header(conn, "signature") do
       conn = conn
-      |> put_req_header("(request-target)", String.downcase("#{conn.method} #{conn.request_path}"))
+      |> put_req_header("(request-target)", String.downcase("#{conn.method}") <> " #{conn.request_path}")
 
       assign(conn, :valid_signature, HTTPSignatures.validate_conn(conn))
     else
