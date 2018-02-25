@@ -41,24 +41,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert returned_activity.data["object"]["inReplyToStatusId"] == activity.id
     end
 
-    test "it works if the activity id isn't an url but an atom-uri is given" do
-      data = File.read!("test/fixtures/mastodon-post-activity.json")
-      |> Poison.decode!
-
-      object = data["object"]
-      |> Map.put("inReplyToAtomUri", "https://shitposter.club/notice/2827873")
-      |> Map.put("inReplyTo", "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment")
-
-      data = data
-      |> Map.put("object", object)
-
-      {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
-
-      assert activity = Activity.get_create_activity_by_object_ap_id("tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment")
-      assert returned_activity.data["object"]["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
-      assert returned_activity.data["object"]["inReplyToStatusId"] == activity.id
-    end
-
     test "it works for incoming notices" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!
 
@@ -143,6 +125,28 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"] == activity.data["object"]["id"]
 
       assert Activity.get_create_activity_by_object_ap_id(data["object"]).id == activity.id
+    end
+
+    test "it works for incoming update activities" do
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!
+      object = update_data["object"]
+      |> Map.put("actor", data["actor"])
+      |> Map.put("id", data["actor"])
+
+      update_data = update_data
+      |> Map.put("actor", data["actor"])
+      |> Map.put("object", object)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(update_data)
+
+      user = User.get_cached_by_ap_id(data["actor"])
+      assert user.name == "gargle"
+      assert user.avatar["url"] == [%{"href" => "https://cd.niu.moe/accounts/avatars/000/033/323/original/fd7f8ae0b3ffedc9.jpeg"}]
+      assert user.info["banner"]["url"] == [%{"href" => "https://cd.niu.moe/accounts/headers/000/033/323/original/850b3448fa5fd477.png"}]
+      assert user.bio == "<p>Some bio</p>"
     end
   end
 

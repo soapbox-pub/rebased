@@ -99,7 +99,7 @@ defmodule Pleroma.User do
     |> cast(params, [:bio, :name])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
-    |> validate_length(:bio, min: 1, max: 1000)
+    |> validate_length(:bio, min: 1, max: 5000)
     |> validate_length(:name, min: 1, max: 100)
   end
 
@@ -108,8 +108,8 @@ defmodule Pleroma.User do
     |> cast(params, [:bio, :name, :info, :follower_address, :avatar])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
-    |> validate_length(:bio, min: 1, max: 1000)
-    |> validate_length(:name, min: 1, max: 100)
+    |> validate_length(:bio, max: 5000)
+    |> validate_length(:name, max: 100)
   end
 
   def password_update_changeset(struct, params) do
@@ -216,6 +216,11 @@ defmodule Pleroma.User do
     else
       e -> e
     end
+  end
+
+  def invalidate_cache(user) do
+    Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
+    Cachex.del(:user_cache, "nickname:#{user.nickname}")
   end
 
   def get_cached_by_ap_id(ap_id) do

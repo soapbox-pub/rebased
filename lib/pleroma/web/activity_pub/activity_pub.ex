@@ -62,6 +62,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def update(%{to: to, cc: cc, actor: actor, object: object} = params) do
+    local = !(params[:local] == false) # only accept false as false value
+
+    with data <- %{"to" => to, "cc" => cc, "type" => "Update", "actor" => actor, "object" => object},
+         {:ok, activity} <- insert(data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
   def like(%User{ap_id: ap_id} = user, %Object{data: %{"id" => _}} = object, activity_id \\ nil, local \\ true) do
     with nil <- get_existing_like(ap_id, object),
@@ -260,34 +270,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.insert(%Object{data: data})
   end
 
+  def user_data_from_user_object(data) do
+    avatar = data["icon"]["url"] && %{
+      "type" => "Image",
+      "url" => [%{"href" => data["icon"]["url"]}]
+    }
+
+    banner = data["image"]["url"] && %{
+      "type" => "Image",
+      "url" => [%{"href" => data["image"]["url"]}]
+    }
+
+    user_data = %{
+      ap_id: data["id"],
+      info: %{
+        "ap_enabled" => true,
+        "source_data" => data,
+        "banner" => banner
+      },
+      avatar: avatar,
+      nickname: "#{data["preferredUsername"]}@#{URI.parse(data["id"]).host}",
+      name: data["name"],
+      follower_address: data["followers"],
+      bio: data["summary"]
+    }
+
+    {:ok, user_data}
+  end
+
   def fetch_and_prepare_user_from_ap_id(ap_id) do
     with {:ok, %{status_code: 200, body: body}} <- @httpoison.get(ap_id, ["Accept": "application/activity+json"]),
-    {:ok, data} <- Poison.decode(body)
-      do
-      avatar = %{
-        "type" => "Image",
-        "url" => [%{"href" => data["icon"]["url"]}]
-      }
-
-      banner = %{
-        "type" => "Image",
-        "url" => [%{"href" => data["image"]["url"]}]
-      }
-
-      user_data = %{
-        ap_id: data["id"],
-        info: %{
-          "ap_enabled" => true,
-          "source_data" => data,
-          "banner" => banner
-        },
-        avatar: avatar,
-        nickname: "#{data["preferredUsername"]}@#{URI.parse(ap_id).host}",
-        name: data["name"],
-        follower_address: data["followers"],
-      }
-
-      {:ok, user_data}
+    {:ok, data} <- Poison.decode(body) do
+      user_data_from_user_object(data)
     else
       e -> Logger.error("Could not user at fetch #{ap_id}, #{inspect(e)}")
     end

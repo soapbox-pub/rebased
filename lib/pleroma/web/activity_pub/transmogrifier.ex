@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object) when not is_nil(in_reply_to_id) do
-    case ActivityPub.fetch_object_from_id(object["inReplyToAtomUri"] || in_reply_to_id) do
+    case ActivityPub.fetch_object_from_id(in_reply_to_id) do
       {:ok, replied_object} ->
         activity = Activity.get_create_activity_by_object_ap_id(replied_object.data["id"])
         object
@@ -114,6 +114,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:ok, activity}
     else
       _e -> :error
+    end
+  end
+
+  def handle_incoming(%{"type" => "Update", "object" => %{"type" => "Person"} = object, "actor" => actor_id} = data) do
+    with %User{ap_id: ^actor_id} = actor <- User.get_by_ap_id(object["id"]) do
+      {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
+
+      banner = new_user_data[:info]["banner"]
+      update_data = new_user_data
+      |> Map.take([:name, :bio, :avatar])
+      |> Map.put(:info, Map.merge(actor.info, %{"banner" => banner}))
+
+      actor
+      |> User.upgrade_changeset(update_data)
+      |> Repo.update
+
+      User.invalidate_cache(actor)
+      ActivityPub.update(%{local: false, to: data["to"] || [], cc: data["cc"] || [], object: object, actor: actor_id})
+    else
+      e ->
+        Logger.error(e)
+        :error
     end
   end
 
