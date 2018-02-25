@@ -450,4 +450,5 @@ defmodule Pleroma.User do
   end
 
   def ap_enabled?(%User{info: info}), do: info["ap_enabled"]
+  def ap_enabled?(_), do: false
 end

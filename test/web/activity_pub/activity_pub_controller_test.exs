@@ -3,6 +3,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   import Pleroma.Factory
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
   alias Pleroma.{Repo, User}
+  alias Pleroma.Activity
 
   describe "/users/:nickname" do
     test "it returns a json representation of the user", %{conn: conn} do
@@ -38,9 +39,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       conn = conn
       |> assign(:valid_signature, true)
       |> put_req_header("content-type", "application/activity+json")
-      |> post("/users/doesntmatter/inbox", data)
+      |> post("/inbox", data)
 
       assert "ok" == json_response(conn, 200)
+      :timer.sleep(500)
+      assert Activity.get_by_ap_id(data["id"])
     end
   end
 end
