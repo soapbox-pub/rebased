@@ -218,7 +218,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "with user_id", %{conn: conn} do
       user = insert(:user)
       {:ok, activity} = ActivityBuilder.insert(%{"id" => 1}, %{user: user})
-      |> IO.inspect
 
       conn = get(conn, "/api/statuses/user_timeline.json", %{"user_id" => user.id})
       response = json_response(conn, 200)

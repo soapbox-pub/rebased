@@ -47,7 +47,7 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def get_visibility(%{"visibility" => visibility}), do: visibility
-  def get_visibility(%{"in_reply_to_status_id" => status_id}) do
+  def get_visibility(%{"in_reply_to_status_id" => status_id}) when status_id do
     inReplyTo = get_replied_to_activity(status_id)
     Pleroma.Web.MastodonAPI.StatusView.get_visibility(inReplyTo.data["object"])
   end

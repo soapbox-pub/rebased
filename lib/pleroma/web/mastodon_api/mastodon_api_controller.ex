@@ -182,7 +182,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("actor_id", ap_id)
       |> Map.put("whole_db", true)
 
-      activities = ActivityPub.fetch_activities([], params)
+      activities = ActivityPub.fetch_public_activities(params)
       |> Enum.reverse
 
       render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
@@ -465,12 +465,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def favourites(%{assigns: %{user: user}} = conn, _) do
-    params = conn
+    params = %{}
     |> Map.put("type", "Create")
     |> Map.put("favorited_by", user.ap_id)
     |> Map.put("blocking_user", user)
 
-    activities = ActivityPub.fetch_activities([], params)
+    activities = ActivityPub.fetch_public_activities(params)
     |> Enum.reverse
 
     conn
