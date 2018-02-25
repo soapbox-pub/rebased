@@ -314,7 +314,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
         User.insert_or_update_user(data)
       else
-        e -> e
+        e -> {:error, e}
       end
     end
   end
@@ -322,6 +322,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def make_user_from_nickname(nickname) do
     with {:ok, %{"ap_id" => ap_id}} when not is_nil(ap_id) <- WebFinger.finger(nickname) do
       make_user_from_ap_id(ap_id)
+    else
+      _e -> {:error, "No ap id in webfinger"}
     end
   end
 

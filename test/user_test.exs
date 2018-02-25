@@ -46,21 +46,22 @@ defmodule Pleroma.UserTest do
     {:error, _} = User.follow(user, followed)
   end
 
-  test "following a remote user will ensure a websub subscription is present" do
-    user = insert(:user)
-    {:ok, followed} = OStatus.make_user("shp@social.heldscal.la")
+  # This is a somewhat useless test.
+  # test "following a remote user will ensure a websub subscription is present" do
+  #   user = insert(:user)
+  #   {:ok, followed} = OStatus.make_user("shp@social.heldscal.la")
 
-    assert followed.local == false
+  #   assert followed.local == false
 
-    {:ok, user} = User.follow(user, followed)
-    assert User.ap_followers(followed) in user.following
+  #   {:ok, user} = User.follow(user, followed)
+  #   assert User.ap_followers(followed) in user.following
 
-    query = from w in WebsubClientSubscription,
-    where: w.topic == ^followed.info["topic"]
-    websub = Repo.one(query)
+  #   query = from w in WebsubClientSubscription,
+  #   where: w.topic == ^followed.info["topic"]
+  #   websub = Repo.one(query)
 
-    assert websub
-  end
+  #   assert websub
+  # end
 
   test "unfollow takes a user and another user" do
     followed = insert(:user)
