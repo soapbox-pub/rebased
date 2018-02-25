@@ -36,7 +36,27 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
 
-      assert Activity.get_create_activity_by_object_ap_id("tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment")
+      assert activity = Activity.get_create_activity_by_object_ap_id("tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment")
+      assert returned_activity.data["object"]["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+      assert returned_activity.data["object"]["inReplyToStatusId"] == activity.id
+    end
+
+    test "it works if the activity id isn't an url but an atom-uri is given" do
+      data = File.read!("test/fixtures/mastodon-post-activity.json")
+      |> Poison.decode!
+
+      object = data["object"]
+      |> Map.put("inReplyToAtomUri", "https://shitposter.club/notice/2827873")
+      |> Map.put("inReplyTo", "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment")
+
+      data = data
+      |> Map.put("object", object)
+
+      {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
+
+      assert activity = Activity.get_create_activity_by_object_ap_id("tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment")
+      assert returned_activity.data["object"]["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+      assert returned_activity.data["object"]["inReplyToStatusId"] == activity.id
     end
 
     test "it works for incoming notices" do

@@ -20,7 +20,23 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("actor", object["attributedTo"])
     |> fix_attachments
     |> fix_context
+    |> fix_in_reply_to
   end
+
+  def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object) when not is_nil(in_reply_to_id) do
+    case ActivityPub.fetch_object_from_id(object["inReplyToAtomUri"] || in_reply_to_id) do
+      {:ok, replied_object} ->
+        activity = Activity.get_create_activity_by_object_ap_id(replied_object.data["id"])
+        object
+        |> Map.put("inReplyTo", replied_object.data["id"])
+        |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
+        |> Map.put("inReplyToStatusId", activity.id)
+      e ->
+        Logger.error("Couldn't fetch #{object["inReplyTo"]} #{inspect(e)}")
+        object
+    end
+  end
+  def fix_in_reply_to(object), do: object
 
   def fix_context(object) do
     object
@@ -45,19 +61,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
       object = fix_object(data["object"])
-
-      replied_to_id = if object["inReplyTo"] do
-        case ActivityPub.fetch_object_from_id(object["inReplyTo"]) do
-          {:ok, object} -> object.data["id"]
-          e ->
-            Logger.error("Couldn't fetch #{object["inReplyTo"]} #{inspect(e)}")
-            nil
-        end
-      else
-        nil
-      end
-
-      object = Map.put(object, "inReplyTo", replied_to_id || object["inReplyTo"])
 
       params = %{
         to: data["to"],
@@ -139,7 +142,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
     object = object
     |> prepare_object
-
     data = data
     |> Map.put("object", object)
     |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
