@@ -43,7 +43,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def fetch_user_statuses(user, opts \\ %{}) do
     opts = opts
-    |> Map.put("type", ["Create", "Announce", "Follow"])
+    |> Map.put("type", ["Create"])
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
