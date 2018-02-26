@@ -155,11 +155,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.all(query)
   end
 
+  # TODO: Make this work properly with unlisted.
   def fetch_public_activities(opts \\ %{}) do
-    public = %{to: ["https://www.w3.org/ns/activitystreams#Public"]}
-    q = fetch_activities_query([], opts)
-    q = from activity in q,
-      where: fragment(~s(? @> ?), activity.data, ^public)
+    q = fetch_activities_query(["https://www.w3.org/ns/activitystreams#Public"], opts)
     q
     |> Repo.all
     |> Enum.reverse
