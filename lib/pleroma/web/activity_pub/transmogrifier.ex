@@ -138,6 +138,21 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  # TODO: Make secure.
+  def handle_incoming(%{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => id} = data) do
+    object_id = case object_id do
+                  %{"id" => id} -> id
+                  id -> id
+                end
+    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+         {:ok, activity} <- ActivityPub.delete(object, false) do
+      {:ok, activity}
+    else
+      e -> :error
+    end
+  end
+
   # TODO
   # Accept
   # Undo
