@@ -3,6 +3,9 @@ defmodule Pleroma.Web.Router do
 
   alias Pleroma.{Repo, User, Web.Router}
 
+  @instance Application.get_env(:pleroma, :instance)
+  @federating Keyword.get(@instance, :federating)
+
   def user_fetcher(username) do
     {:ok, Repo.get_by(User, %{nickname: username})}
   end
@@ -228,20 +231,25 @@ defmodule Pleroma.Web.Router do
     get "/objects/:uuid", OStatus.OStatusController, :object
     get "/activities/:uuid", OStatus.OStatusController, :activity
     get "/notice/:id", OStatus.OStatusController, :notice
-
     get "/users/:nickname/feed", OStatus.OStatusController, :feed
     get "/users/:nickname", OStatus.OStatusController, :feed_redirect
-    post "/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming
-    post "/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request
-    get "/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation
-    post "/push/subscriptions/:id", Websub.WebsubController, :websub_incoming
+
+    if @federating do
+      post "/users/:nickname/salmon", OStatus.OStatusController, :salmon_incoming
+      post "/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request
+      get "/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation
+      post "/push/subscriptions/:id", Websub.WebsubController, :websub_incoming
+    end
+
   end
 
-  scope "/.well-known", Pleroma.Web do
-    pipe_through :well_known
+  if @federating do
+    scope "/.well-known", Pleroma.Web do
+      pipe_through :well_known
 
-    get "/host-meta", WebFinger.WebFingerController, :host_meta
-    get "/webfinger", WebFinger.WebFingerController, :webfinger
+      get "/host-meta", WebFinger.WebFingerController, :host_meta
+      get "/webfinger", WebFinger.WebFingerController, :webfinger
+    end
   end
 
   scope "/", Pleroma.Web.MastodonAPI do
