@@ -7,6 +7,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.{OStatus, Federator}
   alias Pleroma.Web.XML
   alias Pleroma.Web.ActivityPub.ActivityPubController
+  alias Pleroma.Web.ActivityPub.ActivityPub
   import Ecto.Query
 
   def feed_redirect(conn, %{"nickname" => nickname} = params) do
@@ -21,14 +22,9 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def feed(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
-    query = from activity in Activity,
-      where: fragment("?->>'actor' = ?", activity.data, ^user.ap_id),
-      limit: 20,
-      order_by: [desc: :id]
 
-    activities = query
-    |> restrict_max(params)
-    |> Repo.all
+    activities = ActivityPub.fetch_public_activities(%{"whole_db" => true, "actor_id" => user.ap_id})
+    |> Enum.reverse
 
     response = user
     |> FeedRepresenter.to_simple_form(activities, [user])
@@ -57,11 +53,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
-  defp restrict_max(query, %{"max_id" => max_id}) do
-    from activity in query, where: activity.id < ^max_id
-  end
-  defp restrict_max(query, _), do: query
-
   def salmon_incoming(conn, _) do
     {:ok, body, _conn} = read_body(conn)
     {:ok, doc} = decode_or_retry(body)
@@ -72,6 +63,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> send_resp(200, "")
   end
 
+  # TODO: Data leak
   def object(conn, %{"uuid" => uuid} = params) do
     if get_format(conn) == "activity+json" do
       ActivityPubController.object(conn, params)
@@ -87,6 +79,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
+  # TODO: Data leak
   def activity(conn, %{"uuid" => uuid}) do
     with id <- o_status_url(conn, :activity, uuid),
          %Activity{} = activity <- Activity.get_by_ap_id(id),
@@ -98,6 +91,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
+  # TODO: Data leak
   def notice(conn, %{"id" => id}) do
      with %Activity{} = activity <- Repo.get(Activity, id),
           %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do

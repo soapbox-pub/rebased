@@ -43,7 +43,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     conn = conn
     |> get("/users/#{user.nickname}/feed.atom")
 
-    assert response(conn, 200)
+    assert response(conn, 200) =~ note_activity.data["object"]["content"]
   end
 
   test "gets an object", %{conn: conn} do
