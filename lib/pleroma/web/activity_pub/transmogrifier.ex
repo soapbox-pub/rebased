@@ -266,16 +266,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data = data
       |> Map.put(:info, Map.merge(user.info, data[:info]))
 
+      already_ap = User.ap_enabled?(user)
       {:ok, user} = User.upgrade_changeset(user, data)
       |> Repo.update()
 
-      # This could potentially take a long time, do it in the background
-      if async do
-        Task.start(fn ->
+      if !already_ap do
+        # This could potentially take a long time, do it in the background
+        if async do
+          Task.start(fn ->
+            user_upgrade_task(user)
+          end)
+        else
           user_upgrade_task(user)
-        end)
-      else
-        user_upgrade_task(user)
+        end
       end
 
       {:ok, user}
