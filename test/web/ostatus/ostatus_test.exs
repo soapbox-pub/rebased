@@ -90,6 +90,15 @@ defmodule Pleroma.Web.OStatusTest do
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
+  test "handle incoming unlisted messages, put public into cc" do
+    incoming = File.read!("test/fixtures/mastodon-note-unlisted.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    refute "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["cc"]
+    refute "https://www.w3.org/ns/activitystreams#Public" in activity.data["object"]["to"]
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["object"]["cc"]
+  end
+
   test "handle incoming retweets - Mastodon, with CW" do
     incoming = File.read!("test/fixtures/cw_retweet.xml")
     {:ok, [[_activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
