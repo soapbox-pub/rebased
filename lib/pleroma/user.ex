@@ -99,7 +99,7 @@ defmodule Pleroma.User do
     |> cast(params, [:bio, :name])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
-    |> validate_length(:bio, min: 1, max: 5000)
+    |> validate_length(:bio, max: 1000)
     |> validate_length(:name, min: 1, max: 100)
   end
 
@@ -134,13 +134,13 @@ defmodule Pleroma.User do
   def register_changeset(struct, params \\ %{}) do
     changeset = struct
     |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
-    |> validate_required([:bio, :email, :name, :nickname, :password, :password_confirmation])
+    |> validate_required([:email, :name, :nickname, :password, :password_confirmation])
     |> validate_confirmation(:password)
     |> unique_constraint(:email)
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
     |> validate_format(:email, @email_regex)
-    |> validate_length(:bio, min: 1, max: 1000)
+    |> validate_length(:bio, max: 1000)
     |> validate_length(:name, min: 1, max: 100)
 
     if changeset.valid? do

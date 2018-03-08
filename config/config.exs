@@ -50,7 +50,8 @@ config :pleroma, :instance,
   name: "Pleroma",
   email: "example@example.com",
   limit: 5000,
-  registrations_open: true
+  registrations_open: true,
+  federating: true
 
 config :pleroma, :media_proxy,
   enabled: false,

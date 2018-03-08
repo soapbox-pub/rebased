@@ -102,13 +102,14 @@ defmodule Pleroma.UserTest do
       email: "email@example.com"
     }
 
-    test "it requires a bio, email, name, nickname and password" do
+    test "it requires an email, name, nickname and password, bio is optional" do
       @full_user_data
       |> Map.keys
       |> Enum.each(fn (key) ->
         params = Map.delete(@full_user_data, key)
         changeset = User.register_changeset(%User{}, params)
-        assert changeset.valid? == false
+
+        assert (if key == :bio, do: changeset.valid?, else: not changeset.valid?)
       end)
     end
 
