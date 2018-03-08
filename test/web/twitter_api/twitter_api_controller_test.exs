@@ -376,9 +376,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
+      avatar_image = File.read!("test/fixtures/avatar_data_uri")
       conn = conn
       |> with_credentials(current_user.nickname, "test")
-      |> post("/api/qvitter/update_avatar.json", %{img: Pleroma.Web.ActivityPub.ActivityPubTest.data_uri})
+      |> post("/api/qvitter/update_avatar.json", %{img: avatar_image})
 
       current_user = Repo.get(User, current_user.id)
       assert is_map(current_user.avatar)

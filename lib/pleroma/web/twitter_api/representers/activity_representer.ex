@@ -56,7 +56,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
-  def to_map(%Activity{data: %{"type" => "Follow", "published" => created_at, "object" => followed_id}} = activity, %{user: user} = opts) do
+  def to_map(%Activity{data: %{"type" => "Follow", "object" => followed_id}} = activity, %{user: user} = opts) do
+    created_at = activity.data["published"] || (DateTime.to_iso8601(activity.inserted_at))
     created_at = created_at |> Utils.date_to_asctime
 
     followed = User.get_cached_by_ap_id(followed_id)
@@ -125,7 +126,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     mentions = opts[:mentioned] || []
 
-    attentions = activity.data["to"]
+    attentions = activity.recipients
     |> Enum.map(fn (ap_id) -> Enum.find(mentions, fn(user) -> ap_id == user.ap_id end) end)
     |> Enum.filter(&(&1))
     |> Enum.map(fn (user) -> UserView.render("show.json", %{user: user, for: opts[:for]}) end)
@@ -133,7 +134,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     conversation_id = conversation_id(activity)
 
     tags = activity.data["object"]["tag"] || []
-    possibly_sensitive = Enum.member?(tags, "nsfw")
+    possibly_sensitive = activity.data["object"]["sensitive"] || Enum.member?(tags, "nsfw")
+
+    tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
     summary = activity.data["object"]["summary"]
     content = if !!summary and summary != "" do
@@ -161,7 +164,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "repeat_num" => announcement_count,
       "favorited" => to_boolean(favorited),
       "repeated" => to_boolean(repeated),
-      "external_url" => object["external_url"],
+      "external_url" => object["external_url"] || object["id"],
       "tags" => tags,
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive

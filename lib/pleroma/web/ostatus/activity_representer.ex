@@ -76,10 +76,17 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
-    mentions = activity.data["to"] |> get_mentions
+    mentions = activity.recipients |> get_mentions
 
     categories = (activity.data["object"]["tag"] || [])
-    |> Enum.map(fn (tag) -> {:category, [term: to_charlist(tag)], []} end)
+    |> Enum.map(fn (tag) ->
+      if is_binary(tag) do
+        {:category, [term: to_charlist(tag)], []}
+      else
+        nil
+      end
+    end)
+    |> Enum.filter(&(&1))
 
     emoji_links = get_emoji_links(activity.data["object"]["emoji"] || %{})
 
@@ -110,7 +117,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     _in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
-    mentions = activity.data["to"] |> get_mentions
+    mentions = activity.recipients |> get_mentions
 
     [
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/favorite']},
@@ -144,7 +151,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     retweeted_xml = to_simple_form(retweeted_activity, retweeted_user, true)
 
-    mentions = activity.data["to"] |> get_mentions
+    mentions = activity.recipients |> get_mentions
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/share']},
@@ -168,7 +175,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
-    mentions = (activity.data["to"] || []) |> get_mentions
+    mentions = (activity.recipients || []) |> get_mentions
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/follow']},
@@ -196,7 +203,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
     follow_activity = Activity.get_by_ap_id(activity.data["object"])
 
-    mentions = (activity.data["to"] || []) |> get_mentions
+    mentions = (activity.recipients || []) |> get_mentions
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/unfollow']},

@@ -38,9 +38,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert get_in(activity.data, ["object", "type"]) == "Note"
     assert get_in(activity.data, ["object", "actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
-    assert Enum.member?(get_in(activity.data, ["to"]), User.ap_followers(user))
+    assert Enum.member?(get_in(activity.data, ["cc"]), User.ap_followers(user))
     assert Enum.member?(get_in(activity.data, ["to"]), "https://www.w3.org/ns/activitystreams#Public")
-    assert Enum.member?(get_in(activity.data, ["to"]), "shp")
+    assert Enum.member?(get_in(activity.data, ["cc"]), "shp")
     assert activity.local == true
 
     assert %{"moominmamma" => "http://localhost:4001/finmoji/128px/moominmamma-128.png"} = activity.data["object"]["emoji"]
@@ -80,7 +80,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert get_in(reply.data, ["object", "context"]) == get_in(activity.data, ["object", "context"])
     assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
     assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
-    assert Enum.member?(get_in(reply.data, ["to"]), user.ap_id)
   end
 
   test "fetch public statuses, excluding remote ones." do
@@ -99,7 +98,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     %{ public: activity, user: user } = ActivityBuilder.public_and_non_public
     insert(:note_activity, %{local: false})
 
-    follower = insert(:user, following: [User.ap_followers(user)])
+    follower = insert(:user, following: [user.follower_address])
 
     statuses = TwitterAPI.fetch_public_and_external_statuses(follower)
 

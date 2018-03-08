@@ -207,7 +207,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
     {:ok, object} = ActivityPub.upload(params)
     change = Changeset.change(user, %{avatar: object.data})
-    {:ok, user} = Repo.update(change)
+    {:ok, user} = User.update_and_set_cache(change)
+    CommonAPI.update(user)
 
     render(conn, UserView, "show.json", %{user: user, for: user})
   end
@@ -216,7 +217,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}),
          new_info <- Map.put(user.info, "banner", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, _user} <- Repo.update(change) do
+         {:ok, user} <- User.update_and_set_cache(change) do
+      CommonAPI.update(user)
       %{"url" => [ %{ "href" => href } | _ ]} = object.data
       response = %{ url: href } |> Poison.encode!
       conn
@@ -228,7 +230,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     with {:ok, object} <- ActivityPub.upload(params),
          new_info <- Map.put(user.info, "background", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, _user} <- Repo.update(change) do
+         {:ok, _user} <- User.update_and_set_cache(change) do
       %{"url" => [ %{ "href" => href } | _ ]} = object.data
       response = %{ url: href } |> Poison.encode!
       conn
@@ -255,7 +257,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          mrn <- max(id, user.info["most_recent_notification"] || 0),
          updated_info <- Map.put(info, "most_recent_notification", mrn),
          changeset <- User.info_changeset(user, %{info: updated_info}),
-         {:ok, _user} <- Repo.update(changeset) do
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
       conn
       |> json_reply(200, Poison.encode!(mrn))
     else
@@ -305,7 +307,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
 
     with changeset <- User.update_changeset(user, params),
-         {:ok, user} <- Repo.update(changeset) do
+         {:ok, user} <- User.update_and_set_cache(changeset) do
+      CommonAPI.update(user)
       render(conn, UserView, "user.json", %{user: user, for: user})
     else
       error ->

@@ -88,6 +88,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     end
   end
 
+  # TODO: Clean this up a bit.
   def handle_note(entry, doc \\ nil) do
     with id <- XML.string_from_xpath("//id", entry),
          activity when is_nil(activity) <- Activity.get_create_activity_by_object_ap_id(id),
@@ -104,15 +105,18 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          mentions <- get_mentions(entry),
          to <- make_to_list(actor, mentions),
          date <- XML.string_from_xpath("//published", entry),
+         unlisted <- XML.string_from_xpath("//mastodon:scope", entry) == "unlisted",
+         cc <- if(unlisted, do: ["https://www.w3.org/ns/activitystreams#Public"], else: []),
          note <- CommonAPI.Utils.make_note_data(actor.ap_id, to, context, content_html, attachments, inReplyToActivity, [], cw),
          note <- note |> Map.put("id", id) |> Map.put("tag", tags),
          note <- note |> Map.put("published", date),
          note <- note |> Map.put("emoji", get_emoji(entry)),
          note <- add_external_url(note, entry),
+         note <- note |> Map.put("cc", cc),
          # TODO: Handle this case in make_note_data
          note <- (if inReplyTo && !inReplyToActivity, do: note |> Map.put("inReplyTo", inReplyTo), else: note)
       do
-      res = ActivityPub.create(to, actor, context, note, %{}, date, false)
+      res = ActivityPub.create(%{to: to, actor: actor, context: context, object: note, published: date, local: false, additional: %{"cc" => cc}})
       User.increase_note_count(actor)
       res
     else

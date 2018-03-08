@@ -75,17 +75,17 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601
 
     {:ok, convo_object} = Object.context_mapping("2hu") |> Repo.insert
-
+    to = [
+      User.ap_followers(user),
+      "https://www.w3.org/ns/activitystreams#Public",
+      mentioned_user.ap_id
+    ]
     activity = %Activity{
       id: 1,
       data: %{
         "type" => "Create",
         "id" => "id",
-        "to" => [
-          User.ap_followers(user),
-          "https://www.w3.org/ns/activitystreams#Public",
-          mentioned_user.ap_id
-        ],
+        "to" => to,
         "actor" => User.ap_id(user),
         "object" => %{
           "published" => date,
@@ -108,7 +108,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         "published" => date,
         "context" => "2hu"
       },
-      local: false
+      local: false,
+      recipients: to
     }
 
     expected_html = "<span>2hu</span><br />alert('YAY')Some <img height='32px' width='32px' alt='2hu' title='2hu' src='corndog.png' /> content mentioning <a href=\"#{mentioned_user.ap_id}\">@shp</a>"
@@ -134,7 +135,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "favorited" => false,
       "repeated" => false,
       "external_url" => "some url",
-      "tags" => ["content", "mentioning", "nsfw"],
+      "tags" => ["nsfw", "content", "mentioning"],
       "activity_type" => "post",
       "possibly_sensitive" => true,
       "uri" => activity.data["object"]["id"]

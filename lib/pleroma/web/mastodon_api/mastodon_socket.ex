@@ -25,7 +25,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
   def id(_), do: nil
 
   def handle(:text, message, _state) do
-    IO.inspect message
     #| :ok
     #| state
     #| {:text, message}

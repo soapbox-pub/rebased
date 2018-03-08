@@ -38,7 +38,15 @@ defmodule Pleroma.Web.Websub do
     end
   end
 
-  def publish(topic, user, activity) do
+  @supported_activities [
+    "Create",
+    "Follow",
+    "Like",
+    "Announce",
+    "Undo",
+    "Delete"
+  ]
+  def publish(topic, user, %{data: %{"type" => type}} = activity) when type in @supported_activities do
     # TODO: Only send to still valid subscriptions.
     query = from sub in WebsubServerSubscription,
     where: sub.topic == ^topic and sub.state == "active"
@@ -58,6 +66,7 @@ defmodule Pleroma.Web.Websub do
       Pleroma.Web.Federator.enqueue(:publish_single_websub, data)
     end)
   end
+  def publish(_,_,_), do: ""
 
   def sign(secret, doc) do
     :crypto.hmac(:sha, secret, to_string(doc)) |> Base.encode16 |> String.downcase

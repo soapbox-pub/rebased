@@ -58,7 +58,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     announcement_count = object["announcement_count"] || 0
 
     tags = object["tag"] || []
-    sensitive = Enum.member?(tags, "nsfw")
+    sensitive = object["sensitive"] || Enum.member?(tags, "nsfw")
 
     mentions = activity.data["to"]
     |> Enum.map(fn (ap_id) -> User.get_cached_by_ap_id(ap_id) end)
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       muted: false,
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",
-      visibility: "public",
+      visibility: get_visibility(object),
       media_attachments: attachments |> Enum.take(4),
       mentions: mentions,
       tags: [], # fix,
@@ -107,6 +107,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       language: nil,
       emojis: emojis
     }
+  end
+
+  def get_visibility(object) do
+    public = "https://www.w3.org/ns/activitystreams#Public"
+    to = object["to"] || []
+    cc = object["cc"] || []
+    cond do
+      public in to -> "public"
+      public in cc -> "unlisted"
+      Enum.any?(to, &(String.contains?(&1, "/followers"))) -> "private"
+      true -> "direct"
+    end
   end
 
   def render("attachment.json", %{attachment: attachment}) do

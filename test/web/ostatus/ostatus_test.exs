@@ -90,6 +90,15 @@ defmodule Pleroma.Web.OStatusTest do
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
+  test "handle incoming unlisted messages, put public into cc" do
+    incoming = File.read!("test/fixtures/mastodon-note-unlisted.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    refute "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["cc"]
+    refute "https://www.w3.org/ns/activitystreams#Public" in activity.data["object"]["to"]
+    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["object"]["cc"]
+  end
+
   test "handle incoming retweets - Mastodon, with CW" do
     incoming = File.read!("test/fixtures/cw_retweet.xml")
     {:ok, [[_activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
@@ -306,7 +315,8 @@ defmodule Pleroma.Web.OStatusTest do
         "fqn" => user,
         "bio" => "cofe",
         "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]},
-        "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}"
+        "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}",
+        "ap_id" => nil
       }
       assert data == expected
     end
@@ -330,7 +340,8 @@ defmodule Pleroma.Web.OStatusTest do
         "fqn" => user,
         "bio" => "cofe",
         "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]},
-        "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}"
+        "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}",
+        "ap_id" => nil
       }
       assert data == expected
     end
@@ -353,13 +364,6 @@ defmodule Pleroma.Web.OStatusTest do
       assert activity.data["actor"] == "https://social.sakamoto.gq/users/eal"
       assert activity.data["object"]["id"] == url
     end
-  end
-
-  test "insert or update a user from given data" do
-    user = insert(:user, %{nickname: "nick@name.de"})
-    data = %{ ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname }
-
-    assert {:ok, %User{}} = OStatus.insert_or_update_user(data)
   end
 
   test "it doesn't add nil in the do field" do

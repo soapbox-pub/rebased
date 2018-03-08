@@ -45,6 +45,7 @@ defmodule Pleroma.Web.WebFinger do
         {:Link, %{rel: "http://webfinger.net/rel/profile-page", type: "text/html", href: user.ap_id}},
         {:Link, %{rel: "salmon", href: OStatus.salmon_path(user)}},
         {:Link, %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}},
+        {:Link, %{rel: "self", type: "application/activity+json", href: user.ap_id}},
         {:Link, %{rel: "http://ostatus.org/schema/1.0/subscribe", template: OStatus.remote_follow_path()}}
       ]
     }
@@ -59,7 +60,8 @@ defmodule Pleroma.Web.WebFinger do
     else
       {:ok, pem} = Salmon.generate_rsa_pem
       info = Map.put(info, "keys", pem)
-      Repo.update(Ecto.Changeset.change(user, info: info))
+      Ecto.Changeset.change(user, info: info)
+      |> User.update_and_set_cache()
     end
   end
 
@@ -70,12 +72,14 @@ defmodule Pleroma.Web.WebFinger do
     subject = XML.string_from_xpath("//Subject", doc)
     salmon = XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc)
     subscribe_address = XML.string_from_xpath(~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template}, doc)
+    ap_id = XML.string_from_xpath(~s{//Link[@rel="self" and @type="application/activity+json"]/@href}, doc)
     data = %{
       "magic_key" => magic_key,
       "topic" => topic,
       "subject" => subject,
       "salmon" => salmon,
-      "subscribe_address" => subscribe_address
+      "subscribe_address" => subscribe_address,
+      "ap_id" => ap_id
     }
     {:ok, data}
   end
@@ -102,6 +106,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def finger(account) do
+    account = String.trim_leading(account, "@")
     domain = with [_name, domain] <- String.split(account, "@") do
                domain
              else _e ->

@@ -24,17 +24,34 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end)
   end
 
-  def to_for_user_and_mentions(user, mentions, inReplyTo) do
-    default_to = [
-      user.follower_address,
-      "https://www.w3.org/ns/activitystreams#Public"
-    ]
+  def to_for_user_and_mentions(user, mentions, inReplyTo, "public") do
+    to = ["https://www.w3.org/ns/activitystreams#Public"]
 
-    to = default_to ++ Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
+    mentioned_users = Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
+    cc = [user.follower_address | mentioned_users]
     if inReplyTo do
-      Enum.uniq([inReplyTo.data["actor"] | to])
+      {to, Enum.uniq([inReplyTo.data["actor"] | cc])}
     else
-      to
+      {to, cc}
+    end
+  end
+
+  def to_for_user_and_mentions(user, mentions, inReplyTo, "unlisted") do
+    {to, cc} = to_for_user_and_mentions(user, mentions, inReplyTo, "public")
+    {cc, to}
+  end
+
+  def to_for_user_and_mentions(user, mentions, inReplyTo, "private") do
+    {to, cc} = to_for_user_and_mentions(user, mentions, inReplyTo, "direct")
+    {[user.follower_address | to], cc}
+  end
+
+  def to_for_user_and_mentions(user, mentions, inReplyTo, "direct") do
+    mentioned_users = Enum.map(mentions, fn ({_, %{ap_id: ap_id}}) -> ap_id end)
+    if inReplyTo do
+      {Enum.uniq([inReplyTo.data["actor"] | mentioned_users]), []}
+    else
+      {mentioned_users, []}
     end
   end
 
@@ -99,10 +116,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end)
   end
 
-  def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags, cw \\ nil) do
+  def make_note_data(actor, to, context, content_html, attachments, inReplyTo, tags, cw \\ nil, cc \\ []) do
       object = %{
         "type" => "Note",
         "to" => to,
+        "cc" => cc,
         "content" => content_html,
         "summary" => cw,
         "context" => context,

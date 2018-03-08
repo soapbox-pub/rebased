@@ -222,7 +222,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :ostatus do
-    plug :accepts, ["xml", "atom", "html"]
+    plug :accepts, ["xml", "atom", "html", "activity+json"]
   end
 
   scope "/", Pleroma.Web do
@@ -243,7 +243,18 @@ defmodule Pleroma.Web.Router do
 
   end
 
+  pipeline :activitypub do
+    plug :accepts, ["activity+json"]
+    plug Pleroma.Web.Plugs.HTTPSignaturePlug
+  end
+
   if @federating do
+    scope "/", Pleroma.Web.ActivityPub do
+      pipe_through :activitypub
+      post "/users/:nickname/inbox", ActivityPubController, :inbox
+      post "/inbox", ActivityPubController, :inbox
+    end
+
     scope "/.well-known", Pleroma.Web do
       pipe_through :well_known
 

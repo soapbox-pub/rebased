@@ -9,6 +9,7 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler, DeleteHandler}
+  alias Pleroma.Web.ActivityPub.Transmogrifier
 
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
@@ -177,6 +178,13 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def maybe_update(doc, user) do
+    if "true" == string_from_xpath("//author[1]/ap_enabled", doc) do
+      Transmogrifier.upgrade_user_from_ap_id(user.ap_id)
+    else
+      maybe_update_ostatus(doc, user)
+    end
+  end
+  def maybe_update_ostatus(doc, user) do
     old_data = %{
       avatar: user.avatar,
       bio: user.bio,
@@ -218,11 +226,6 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
-  def insert_or_update_user(data) do
-    cs = User.remote_user_creation(data)
-    Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
-  end
-
   def make_user(uri, update \\ false) do
     with {:ok, info} <- gather_user_info(uri) do
       data = %{
@@ -236,7 +239,7 @@ defmodule Pleroma.Web.OStatus do
       with false <- update,
            %User{} = user <- User.get_by_ap_id(data.ap_id) do
         {:ok, user}
-      else _e -> insert_or_update_user(data)
+      else _e -> User.insert_or_update_user(data)
       end
     end
   end
@@ -297,7 +300,10 @@ defmodule Pleroma.Web.OStatus do
     with {:ok, %{body: body, status_code: code}} when code in 200..299 <- @httpoison.get(url, [Accept: "application/atom+xml"], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
       Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body)
-    else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+    else
+      e ->
+        Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+        e
     end
   end
 
@@ -306,7 +312,10 @@ defmodule Pleroma.Web.OStatus do
     with {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
          {:ok, atom_url} <- get_atom_url(body) do
         fetch_activity_from_atom_url(atom_url)
-    else e -> Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+    else
+      e ->
+        Logger.debug("Couldn't get #{url}: #{inspect(e)}")
+        e
     end
   end
 

@@ -13,26 +13,38 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_friend_statuses(user, opts \\ %{}) do
-    opts = Map.put(opts, "blocking_user", user)
+    opts = opts
+    |> Map.put("blocking_user", user)
+    |> Map.put("user", user)
+    |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
+
     ActivityPub.fetch_activities([user.ap_id | user.following], opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_public_statuses(user, opts \\ %{}) do
-    opts = Map.put(opts, "local_only", true)
-    opts = Map.put(opts, "blocking_user", user)
+    opts = opts
+    |> Map.put("local_only", true)
+    |> Map.put("blocking_user", user)
+    |> Map.put("type", ["Create", "Announce", "Follow"])
+
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_public_and_external_statuses(user, opts \\ %{}) do
-    opts = Map.put(opts, "blocking_user", user)
+    opts = opts
+    |> Map.put("blocking_user", user)
+    |> Map.put("type", ["Create", "Announce", "Follow"])
+
     ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
 
   def fetch_user_statuses(user, opts \\ %{}) do
-    ActivityPub.fetch_activities([], opts)
+    opts = opts
+    |> Map.put("type", ["Create"])
+    ActivityPub.fetch_public_activities(opts)
     |> activities_to_statuses(%{for: user})
   end
 
@@ -43,7 +55,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def fetch_conversation(user, id) do
     with context when is_binary(context) <- conversation_id_to_context(id),
-         activities <- ActivityPub.fetch_activities_for_context(context, %{"blocking_user" => user}),
+         activities <- ActivityPub.fetch_activities_for_context(context, %{"blocking_user" => user, "user" => user}),
          statuses <- activities |> activities_to_statuses(%{for: user})
     do
       statuses
@@ -53,7 +65,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fetch_status(user, id) do
-    with %Activity{} = activity <- Repo.get(Activity, id) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         true <- ActivityPub.visible_for_user?(activity, user) do
       activity_to_status(activity, %{for: user})
     end
   end
@@ -276,7 +289,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     actor = get_in(activity.data, ["actor"])
     user = User.get_cached_by_ap_id(actor)
     # mentioned_users = Repo.all(from user in User, where: user.ap_id in ^activity.data["to"])
-    mentioned_users = Enum.map(activity.data["to"] || [], fn (ap_id) ->
+    mentioned_users = Enum.map(activity.recipients || [], fn (ap_id) ->
       if ap_id do
         User.get_cached_by_ap_id(ap_id)
       else

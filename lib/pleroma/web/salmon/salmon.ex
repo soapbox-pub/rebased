@@ -29,7 +29,8 @@ defmodule Pleroma.Web.Salmon do
     with [data, _, _, _, _] <- decode(salmon),
          doc <- XML.parse_document(data),
          uri when not is_nil(uri) <- XML.string_from_xpath("/entry/author[1]/uri", doc),
-         {:ok, %{info: %{"magic_key" => magic_key}}} <- Pleroma.Web.OStatus.find_or_make_user(uri) do
+         {:ok, public_key} <- User.get_public_key_for_ap_id(uri),
+         magic_key <- encode_key(public_key) do
       {:ok, magic_key}
     end
   end
@@ -138,7 +139,8 @@ defmodule Pleroma.Web.Salmon do
     {:ok, salmon}
   end
 
-  def remote_users(%{data: %{"to" => to}}) do
+  def remote_users(%{data: %{"to" => to} = data}) do
+    to = to ++ (data["cc"] || [])
     to
     |> Enum.map(fn(id) -> User.get_cached_by_ap_id(id) end)
     |> Enum.filter(fn(user) -> user && !user.local end)
@@ -154,8 +156,16 @@ defmodule Pleroma.Web.Salmon do
 
   defp send_to_user(_,_,_), do: nil
 
+  @supported_activities [
+    "Create",
+    "Follow",
+    "Like",
+    "Announce",
+    "Undo",
+    "Delete"
+  ]
   def publish(user, activity, poster \\ &@httpoison.post/4)
-  def publish(%{info: %{"keys" => keys}} = user, activity, poster) do
+  def publish(%{info: %{"keys" => keys}} = user, %{data: %{"type" => type}} = activity, poster) when type in @supported_activities do
     feed = ActivityRepresenter.to_simple_form(activity, user, true)
     |> ActivityRepresenter.wrap_with_entry
     |> :xmerl.export_simple(:xmerl_xml)

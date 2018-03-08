@@ -6,27 +6,25 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Repo
   alias Pleroma.Web.{OStatus, Federator}
   alias Pleroma.Web.XML
+  alias Pleroma.Web.ActivityPub.ActivityPubController
+  alias Pleroma.Web.ActivityPub.ActivityPub
   import Ecto.Query
 
-  def feed_redirect(conn, %{"nickname" => nickname}) do
+  def feed_redirect(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
 
     case get_format(conn) do
       "html" -> Fallback.RedirectController.redirector(conn, nil)
+      "activity+json" -> ActivityPubController.user(conn, params)
       _ -> redirect conn, external: OStatus.feed_path(user)
     end
   end
 
   def feed(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
-    query = from activity in Activity,
-      where: fragment("?->>'actor' = ?", activity.data, ^user.ap_id),
-      limit: 20,
-      order_by: [desc: :id]
 
-    activities = query
-    |> restrict_max(params)
-    |> Repo.all
+    activities = ActivityPub.fetch_public_activities(%{"whole_db" => true, "actor_id" => user.ap_id})
+    |> Enum.reverse
 
     response = user
     |> FeedRepresenter.to_simple_form(activities, [user])
@@ -55,11 +53,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
-  defp restrict_max(query, %{"max_id" => max_id}) do
-    from activity in query, where: activity.id < ^max_id
-  end
-  defp restrict_max(query, _), do: query
-
   def salmon_incoming(conn, _) do
     {:ok, body, _conn} = read_body(conn)
     {:ok, doc} = decode_or_retry(body)
@@ -70,17 +63,23 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> send_resp(200, "")
   end
 
-  def object(conn, %{"uuid" => uuid}) do
-    with id <- o_status_url(conn, :object, uuid),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
-         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      case get_format(conn) do
-        "html" -> redirect(conn, to: "/notice/#{activity.id}")
-        _ -> represent_activity(conn, activity, user)
+  # TODO: Data leak
+  def object(conn, %{"uuid" => uuid} = params) do
+    if get_format(conn) == "activity+json" do
+      ActivityPubController.object(conn, params)
+    else
+      with id <- o_status_url(conn, :object, uuid),
+           %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
+             %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+        case get_format(conn) do
+          "html" -> redirect(conn, to: "/notice/#{activity.id}")
+          _ -> represent_activity(conn, activity, user)
+        end
       end
     end
   end
 
+  # TODO: Data leak
   def activity(conn, %{"uuid" => uuid}) do
     with id <- o_status_url(conn, :activity, uuid),
          %Activity{} = activity <- Activity.get_by_ap_id(id),
@@ -92,6 +91,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
+  # TODO: Data leak
   def notice(conn, %{"id" => id}) do
      with %Activity{} = activity <- Repo.get(Activity, id),
           %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do

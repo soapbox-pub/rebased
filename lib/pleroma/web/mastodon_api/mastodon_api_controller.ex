@@ -24,6 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def update_credentials(%{assigns: %{user: user}} = conn, params) do
+    original_user = user
     params = if bio = params["note"] do
       Map.put(params, "bio", bio)
     else
@@ -40,7 +41,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       with %Plug.Upload{} <- avatar,
            {:ok, object} <- ActivityPub.upload(avatar),
            change = Ecto.Changeset.change(user, %{avatar: object.data}),
-           {:ok, user} = Repo.update(change) do
+           {:ok, user} = User.update_and_set_cache(change) do
         user
       else
         _e -> user
@@ -54,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
            {:ok, object} <- ActivityPub.upload(banner),
            new_info <- Map.put(user.info, "banner", object.data),
            change <- User.info_changeset(user, %{info: new_info}),
-           {:ok, user} <- Repo.update(change) do
+           {:ok, user} <- User.update_and_set_cache(change) do
         user
       else
         _e -> user
@@ -64,7 +65,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
 
     with changeset <- User.update_changeset(user, params),
-         {:ok, user} <- Repo.update(changeset) do
+         {:ok, user} <- User.update_and_set_cache(changeset) do
+      if original_user != user do
+        CommonAPI.update(user)
+      end
       json conn, AccountView.render("account.json", %{user: user})
     else
       _e ->
@@ -150,6 +154,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     params = params
     |> Map.put("type", ["Create", "Announce"])
     |> Map.put("blocking_user", user)
+    |> Map.put("user", user)
 
     activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
     |> Enum.reverse
@@ -181,7 +186,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("actor_id", ap_id)
       |> Map.put("whole_db", true)
 
-      activities = ActivityPub.fetch_activities([], params)
+      activities = ActivityPub.fetch_public_activities(params)
       |> Enum.reverse
 
       render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
@@ -189,14 +194,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Repo.get(Activity, id) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         true <- ActivityPub.visible_for_user?(activity, user) do
       render conn, StatusView, "status.json", %{activity: activity, for: user}
     end
   end
 
   def get_context(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
-         activities <- ActivityPub.fetch_activities_for_context(activity.data["object"]["context"], %{"blocking_user" => user}),
+         activities <- ActivityPub.fetch_activities_for_context(activity.data["context"], %{"blocking_user" => user, "user" => user}),
          activities <- activities |> Enum.filter(fn (%{id: aid}) -> to_string(aid) != to_string(id) end),
          activities <- activities |> Enum.filter(fn (%{data: %{"type" => type}}) -> type == "Create" end),
          grouped_activities <- Enum.group_by(activities, fn (%{id: id}) -> id < activity.id end) do
@@ -463,12 +469,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def favourites(%{assigns: %{user: user}} = conn, _) do
-    params = conn
+    params = %{}
     |> Map.put("type", "Create")
     |> Map.put("favorited_by", user.ap_id)
     |> Map.put("blocking_user", user)
 
-    activities = ActivityPub.fetch_activities([], params)
+    activities = ActivityPub.fetch_public_activities(params)
     |> Enum.reverse
 
     conn

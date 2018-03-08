@@ -1,7 +1,10 @@
 defmodule Pleroma.Web.Federator do
   use GenServer
   alias Pleroma.User
+  alias Pleroma.Activity
   alias Pleroma.Web.{WebFinger, Websub}
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
@@ -44,11 +47,16 @@ defmodule Pleroma.Web.Federator do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
-      Logger.debug(fn -> "Sending #{activity.data["id"]} out via salmon" end)
-      Pleroma.Web.Salmon.publish(actor, activity)
+      if ActivityPub.is_public?(activity) do
+        Logger.info(fn -> "Sending #{activity.data["id"]} out via websub" end)
+        Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
-      Logger.debug(fn -> "Sending #{activity.data["id"]} out via websub" end)
-      Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
+        Logger.info(fn -> "Sending #{activity.data["id"]} out via salmon" end)
+        Pleroma.Web.Salmon.publish(actor, activity)
+      end
+
+      Logger.info(fn -> "Sending #{activity.data["id"]} out via AP" end)
+      Pleroma.Web.ActivityPub.ActivityPub.publish(actor, activity)
     end
   end
 
@@ -58,8 +66,27 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:incoming_doc, doc) do
-    Logger.debug("Got document, trying to parse")
+    Logger.info("Got document, trying to parse")
     @ostatus.handle_incoming(doc)
+  end
+
+  def handle(:incoming_ap_doc, params) do
+    Logger.info("Handling incoming ap activity")
+    with {:ok, _user} <- ap_enabled_actor(params["actor"]),
+         nil <- Activity.get_by_ap_id(params["id"]),
+         {:ok, activity} <- Transmogrifier.handle_incoming(params) do
+    else
+      %Activity{} ->
+        Logger.info("Already had #{params["id"]}")
+      e ->
+        # Just drop those for now
+        Logger.info("Unhandled activity")
+        Logger.info(Poison.encode!(params, [pretty: 2]))
+    end
+  end
+
+  def handle(:publish_single_ap, params) do
+    ActivityPub.publish_one(params)
   end
 
   def handle(:publish_single_websub, %{xml: xml, topic: topic, callback: callback, secret: secret}) do
@@ -102,7 +129,7 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle_cast({:enqueue, type, payload, priority}, state) when type in [:incoming_doc] do
+  def handle_cast({:enqueue, type, payload, priority}, state) when type in [:incoming_doc, :incoming_ap_doc] do
     %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
     i_queue = enqueue_sorted(i_queue, {type, payload}, 1)
     {i_running_jobs, i_queue} = maybe_start_job(i_running_jobs, i_queue)
@@ -138,5 +165,14 @@ defmodule Pleroma.Web.Federator do
 
   def queue_pop([%{item: element} | queue]) do
     {element, queue}
+  end
+
+  def ap_enabled_actor(id) do
+    user = User.get_by_ap_id(id)
+    if User.ap_enabled?(user) do
+      {:ok, user}
+    else
+      ActivityPub.make_user_from_ap_id(id)
+    end
   end
 end

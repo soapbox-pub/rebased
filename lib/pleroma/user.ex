@@ -80,9 +80,15 @@ defmodule Pleroma.User do
     |> validate_length(:name, max: 100)
     |> put_change(:local, false)
     if changes.valid? do
-      followers = User.ap_followers(%User{nickname: changes.changes[:nickname]})
-      changes
-      |> put_change(:follower_address, followers)
+      case changes.changes[:info]["source_data"] do
+        %{"followers" => followers} ->
+          changes
+          |> put_change(:follower_address, followers)
+        _ ->
+          followers = User.ap_followers(%User{nickname: changes.changes[:nickname]})
+          changes
+          |> put_change(:follower_address, followers)
+      end
     else
       changes
     end
@@ -95,6 +101,15 @@ defmodule Pleroma.User do
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
     |> validate_length(:bio, max: 1000)
     |> validate_length(:name, min: 1, max: 100)
+  end
+
+  def upgrade_changeset(struct, params \\ %{}) do
+    struct
+    |> cast(params, [:bio, :name, :info, :follower_address, :avatar])
+    |> unique_constraint(:nickname)
+    |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
+    |> validate_length(:bio, max: 5000)
+    |> validate_length(:name, max: 100)
   end
 
   def password_update_changeset(struct, params) do
@@ -144,11 +159,12 @@ defmodule Pleroma.User do
 
   def follow(%User{} = follower, %User{info: info} = followed) do
     ap_followers = followed.follower_address
+
     if following?(follower, followed) or info["deactivated"] do
       {:error,
        "Could not follow user: #{followed.nickname} is already on your list."}
     else
-      if !followed.local && follower.local do
+      if !followed.local && follower.local && !ap_enabled?(followed) do
         Websub.subscribe(follower, followed)
       end
 
@@ -202,6 +218,11 @@ defmodule Pleroma.User do
     end
   end
 
+  def invalidate_cache(user) do
+    Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
+    Cachex.del(:user_cache, "nickname:#{user.nickname}")
+  end
+
   def get_cached_by_ap_id(ap_id) do
     key = "ap_id:#{ap_id}"
     Cachex.get!(:user_cache, key, fallback: fn(_) -> get_by_ap_id(ap_id) end)
@@ -221,22 +242,30 @@ defmodule Pleroma.User do
     Cachex.get!(:user_cache, key, fallback: fn(_) -> user_info(user) end)
   end
 
+  def fetch_by_nickname(nickname) do
+    ap_try = ActivityPub.make_user_from_nickname(nickname)
+
+    case ap_try do
+      {:ok, user} -> {:ok, user}
+      _ -> OStatus.make_user(nickname)
+    end
+  end
+
   def get_or_fetch_by_nickname(nickname) do
     with %User{} = user <- get_by_nickname(nickname)  do
       user
     else _e ->
       with [_nick, _domain] <- String.split(nickname, "@"),
-           {:ok, user} <- OStatus.make_user(nickname) do
+           {:ok, user} <- fetch_by_nickname(nickname) do
         user
       else _e -> nil
       end
     end
   end
 
-  # TODO: these queries could be more efficient if the type in postgresql wasn't map, but array.
   def get_followers(%User{id: id, follower_address: follower_address}) do
     q = from u in User,
-      where: fragment("? @> ?", u.following, ^follower_address ),
+      where: ^follower_address in u.following,
       where: u.id != ^id
 
     {:ok, Repo.all(q)}
@@ -275,7 +304,7 @@ defmodule Pleroma.User do
 
   def update_follower_count(%User{} = user) do
     follower_count_query = from u in User,
-      where: fragment("? @> ?", u.following, ^user.follower_address),
+      where: ^user.follower_address in u.following,
       where: u.id != ^user.id,
       select: count(u.id)
 
@@ -288,7 +317,7 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
-  def get_notified_from_activity(%Activity{data: %{"to" => to}}) do
+  def get_notified_from_activity(%Activity{recipients: to}) do
     query = from u in User,
       where: u.ap_id in ^to,
       where: u.local == true
@@ -296,10 +325,10 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def get_recipients_from_activity(%Activity{data: %{"to" => to}}) do
+  def get_recipients_from_activity(%Activity{recipients: to}) do
     query = from u in User,
       where: u.ap_id in ^to,
-      or_where: fragment("? \\\?| ?", u.following, ^to)
+      or_where: fragment("? && ?", u.following, ^to)
 
     query = from u in query,
       where: u.local == true
@@ -376,4 +405,57 @@ defmodule Pleroma.User do
 
     :ok
   end
+
+  def get_or_fetch_by_ap_id(ap_id) do
+    if user = get_by_ap_id(ap_id) do
+      user
+    else
+      ap_try = ActivityPub.make_user_from_ap_id(ap_id)
+
+      case ap_try do
+        {:ok, user} -> user
+        _ ->
+          case OStatus.make_user(ap_id) do
+            {:ok, user} -> user
+            _ -> {:error, "Could not fetch by ap id"}
+          end
+      end
+    end
+  end
+
+  # AP style
+  def public_key_from_info(%{"source_data" => %{"publicKey" => %{"publicKeyPem" => public_key_pem}}}) do
+     key = :public_key.pem_decode(public_key_pem)
+     |> hd()
+     |> :public_key.pem_entry_decode()
+
+     {:ok, key}
+  end
+
+  # OStatus Magic Key
+  def public_key_from_info(%{"magic_key" => magic_key}) do
+    {:ok, Pleroma.Web.Salmon.decode_key(magic_key)}
+  end
+
+  def get_public_key_for_ap_id(ap_id) do
+    with %User{} = user <- get_or_fetch_by_ap_id(ap_id),
+         {:ok, public_key} <- public_key_from_info(user.info) do
+      {:ok, public_key}
+    else
+      _ -> :error
+    end
+  end
+
+  defp blank?(""), do: nil
+  defp blank?(n), do: n
+
+  def insert_or_update_user(data) do
+    data = data
+    |> Map.put(:name, blank?(data[:name]) || data[:nickname])
+    cs = User.remote_user_creation(data)
+    Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
+  end
+
+  def ap_enabled?(%User{info: info}), do: info["ap_enabled"]
+  def ap_enabled?(_), do: false
 end
