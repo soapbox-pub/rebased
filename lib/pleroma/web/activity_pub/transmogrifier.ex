@@ -252,7 +252,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     maybe_retire_websub(user.ap_id)
 
     # Only do this for recent activties, don't go through the whole db.
-    since = (Repo.aggregate(Activity, :max, :id) || 0) - 100_000
+    # Only look at the last 1000 activities.
+    since = (Repo.aggregate(Activity, :max, :id) || 0) - 1_000
     q  = from a in Activity,
     where: ^old_follower_address in a.recipients,
     where: a.id > ^since,
