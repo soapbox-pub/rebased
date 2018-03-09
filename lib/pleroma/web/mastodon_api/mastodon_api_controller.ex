@@ -135,14 +135,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json conn, mastodon_emoji
   end
 
-  defp add_link_headers(conn, method, activities) do
+  defp add_link_headers(conn, method, activities, param \\ false) do
     last = List.last(activities)
     first = List.first(activities)
     if last do
       min = last.id
       max = first.id
-      next_url = mastodon_api_url(Pleroma.Web.Endpoint, method, max_id: min)
-      prev_url = mastodon_api_url(Pleroma.Web.Endpoint, method, since_id: max)
+      {next_url, prev_url} = if param do
+        {
+          mastodon_api_url(Pleroma.Web.Endpoint, method, param, max_id: min),
+          mastodon_api_url(Pleroma.Web.Endpoint, method, param, since_id: max)
+        }
+      else
+        {
+          mastodon_api_url(Pleroma.Web.Endpoint, method, max_id: min),
+          mastodon_api_url(Pleroma.Web.Endpoint, method, since_id: max)
+        }
+      end
       conn
       |> put_resp_header("link", "<#{next_url}>; rel=\"next\", <#{prev_url}>; rel=\"prev\"")
     else
@@ -178,7 +187,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
-  # TODO: Link headers
   def user_statuses(%{assigns: %{user: user}} = conn, params) do
     with %User{ap_id: ap_id} <- Repo.get(User, params["id"]) do
       params = params
@@ -189,7 +197,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       activities = ActivityPub.fetch_public_activities(params)
       |> Enum.reverse
 
-      render conn, StatusView, "index.json", %{activities: activities, for: user, as: :activity}
+      conn
+      |> add_link_headers(:user_statuses, activities, params["id"])
+      |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
     end
   end
 
@@ -333,7 +343,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  # TODO: Link headers
   def hashtag_timeline(%{assigns: %{user: user}} = conn, params) do
     params = params
     |> Map.put("type", "Create")
@@ -344,6 +353,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> Enum.reverse
 
     conn
+    |> add_link_headers(:hashtag_timeline, activities, params["tag"])
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
