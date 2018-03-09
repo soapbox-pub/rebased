@@ -624,6 +624,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, [])
   end
 
+  def empty_object(conn, _) do
+    Logger.debug("Unimplemented, returning an empty object")
+    json(conn, %{})
+  end
+
   def render_notification(user, %{id: id, activity: activity, inserted_at: created_at} = _params) do
     actor = User.get_cached_by_ap_id(activity.data["actor"])
     created_at = NaiveDateTime.to_iso8601(created_at)
