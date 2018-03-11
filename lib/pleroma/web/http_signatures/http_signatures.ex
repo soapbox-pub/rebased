@@ -7,20 +7,23 @@ defmodule Pleroma.Web.HTTPSignatures do
   def split_signature(sig) do
     default = %{"headers" => "date"}
 
-    sig = sig
-    |> String.trim()
-    |> String.split(",")
-    |> Enum.reduce(default, fn(part, acc) ->
-      [key | rest] = String.split(part, "=")
-      value = Enum.join(rest, "=")
-      Map.put(acc, key, String.trim(value, "\""))
-    end)
+    sig =
+      sig
+      |> String.trim()
+      |> String.split(",")
+      |> Enum.reduce(default, fn part, acc ->
+        [key | rest] = String.split(part, "=")
+        value = Enum.join(rest, "=")
+        Map.put(acc, key, String.trim(value, "\""))
+      end)
 
     Map.put(sig, "headers", String.split(sig["headers"], ~r/\s/))
   end
 
   def validate(headers, signature, public_key) do
     sigstring = build_signing_string(headers, signature["headers"])
+    Logger.debug("Signature: #{signature["signature"]}")
+    Logger.debug("Sigstring: #{sigstring}")
     {:ok, sig} = Base.decode64(signature["signature"])
     :public_key.verify(sigstring, :sha256, sig, public_key)
   end
@@ -55,7 +58,7 @@ defmodule Pleroma.Web.HTTPSignatures do
 
   def build_signing_string(headers, used_headers) do
     used_headers
-    |> Enum.map(fn (header) -> "#{header}: #{headers[header]}" end)
+    |> Enum.map(fn header -> "#{header}: #{headers[header]}" end)
     |> Enum.join("\n")
   end
 
@@ -63,8 +66,10 @@ defmodule Pleroma.Web.HTTPSignatures do
     with {:ok, %{info: %{"keys" => keys}}} <- Pleroma.Web.WebFinger.ensure_keys_present(user),
          {:ok, private_key, _} = Pleroma.Web.Salmon.keys_from_pem(keys) do
       sigstring = build_signing_string(headers, Map.keys(headers))
-      signature = :public_key.sign(sigstring, :sha256, private_key)
-      |> Base.encode64()
+
+      signature =
+        :public_key.sign(sigstring, :sha256, private_key)
+        |> Base.encode64()
 
       [
         keyId: user.ap_id <> "#main-key",
@@ -72,7 +77,7 @@ defmodule Pleroma.Web.HTTPSignatures do
         headers: Map.keys(headers) |> Enum.join(" "),
         signature: signature
       ]
-      |> Enum.map(fn({k, v}) -> "#{k}=\"#{v}\"" end)
+      |> Enum.map(fn {k, v} -> "#{k}=\"#{v}\"" end)
       |> Enum.join(",")
     end
   end
