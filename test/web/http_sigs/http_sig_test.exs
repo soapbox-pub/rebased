@@ -183,6 +183,7 @@ defmodule Pleroma.Web.HTTPSignaturesTest do
         {"(request-target)", "post /inbox"}
       ]
     }
+
     assert HTTPSignatures.validate_conn(conn)
   end
 end

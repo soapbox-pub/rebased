@@ -47,6 +47,7 @@ defmodule Pleroma.Web.HTTPSignatures do
     else
       e ->
         Logger.debug("Could not public key!")
+        false
     end
   end
 
