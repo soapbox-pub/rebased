@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html lang='en'>
 <head>
+	<title>
+	<%=   Application.get_env(:pleroma, :instance)[:name] %>
+	</title>
 <meta charset='utf-8'>
 <meta content='width=device-width, initial-scale=1' name='viewport'>
+<link rel="icon" type="image/png" href="/static/favicon.png"/>
 <link rel="stylesheet" media="all" href="/packs/common.css" />
 <link rel="stylesheet" media="all" href="/packs/default.css" />
 <link rel="stylesheet" media="all" href="/packs/pl-dark-masto-fe.css" />
