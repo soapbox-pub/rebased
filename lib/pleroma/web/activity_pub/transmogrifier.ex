@@ -210,9 +210,29 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def prepare_outgoing(%{"type" => type} = data) do
     data = data
+    |> maybe_fix_object_url
     |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
 
     {:ok, data}
+  end
+
+  def maybe_fix_object_url(data) do
+    if is_binary(data["object"]) and not String.starts_with?(data["object"], "http") do
+      case ActivityPub.fetch_object_from_id(data["object"]) do
+        {:ok, relative_object} ->
+          if relative_object.data["external_url"] do
+            data = data
+            |> Map.put("object", relative_object.data["external_url"])
+          else
+            data
+          end
+        e ->
+          Logger.error("Couldn't fetch #{data["object"]} #{inspect(e)}")
+          data
+      end
+    else
+      data
+    end
   end
 
   def add_hashtags(object) do

@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.OStatus
   alias Pleroma.Activity
   alias Pleroma.User
   alias Pleroma.Repo
@@ -219,6 +220,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["object"]["actor"] == modified["object"]["attributedTo"]
+    end
+
+    test "it translates ostatus IDs to external URLs" do
+      incoming = File.read!("test/fixtures/incoming_note_activity.xml")
+      {:ok, [referent_activity]} = OStatus.handle_incoming(incoming)
+
+      user = insert(:user)
+
+      {:ok, activity, _} = CommonAPI.favorite(referent_activity.id, user)
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["object"] == "http://gs.example.org:4040/index.php/notice/29"
     end
   end
 
