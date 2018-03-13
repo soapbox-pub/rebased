@@ -49,7 +49,8 @@ defmodule Pleroma.Web.Websub do
   def publish(topic, user, %{data: %{"type" => type}} = activity) when type in @supported_activities do
     # TODO: Only send to still valid subscriptions.
     query = from sub in WebsubServerSubscription,
-    where: sub.topic == ^topic and sub.state == "active"
+      where: sub.topic == ^topic and sub.state == "active",
+      where: fragment("? > NOW()", sub.valid_until)
     subscriptions = Repo.all(query)
     Enum.each(subscriptions, fn(sub) ->
       response = user
