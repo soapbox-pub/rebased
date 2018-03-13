@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Federator do
   @httpoison Application.get_env(:pleroma, :httpoison)
   @instance Application.get_env(:pleroma, :instance)
   @federating Keyword.get(@instance, :federating)
-  @max_jobs 10
+  @max_jobs 20
 
   def start_link do
     spawn(fn ->
