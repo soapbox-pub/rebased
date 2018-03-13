@@ -21,6 +21,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_attachments
     |> fix_context
     |> fix_in_reply_to
+    |> fix_emoji
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object) when not is_nil(in_reply_to_id) do
@@ -54,6 +55,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("attachment", attachments)
+  end
+
+  def fix_emoji(object) do
+    tags = (object["tag"] || [])
+    emoji = tags |> Enum.filter(fn (data) -> data["type"] == "Emoji" and data["icon"] end)
+    emoji = emoji |> Enum.reduce(%{}, fn (data, mapping) ->
+      name = data["name"]
+      if String.starts_with?(name, ":") do
+        name = name |> String.slice(1..-2)
+      end
+
+      mapping |> Map.put(name, data["icon"]["url"])
+    end)
+
+    # we merge mastodon and pleroma emoji into a single mapping, to allow for both wire formats
+    emoji = Map.merge(object["emoji"] || %{}, emoji)
+
+    object
+    |> Map.put("emoji", emoji)
   end
 
   # TODO: validate those with a Ecto scheme
@@ -168,6 +188,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> set_sensitive
     |> add_hashtags
     |> add_mention_tags
+    |> add_emoji_tags
     |> add_attributed_to
     |> prepare_attachments
     |> set_conversation
@@ -213,6 +234,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("tag", tags ++ mentions)
+  end
+
+  # TODO: we should probably send mtime instead of unix epoch time for updated
+  def add_emoji_tags(object) do
+    tags = object["tag"] || []
+    emoji = object["emoji"] || []
+    out = emoji |> Enum.map(fn {name, url} ->
+      %{"icon" => %{"url" => url, "type" => "Image"},
+        "name" => ":" <> name <> ":",
+        "type" => "Emoji",
+        "updated" => "1970-01-01T00:00:00Z",
+        "id" => url}
+    end)
+
+    object
+    |> Map.put("tag", tags ++ out)
   end
 
   def set_conversation(object) do
