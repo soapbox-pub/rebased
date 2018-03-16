@@ -60,6 +60,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     recipient = "https://pleroma.soykaf.com/users/lain"
     user = User.get_cached_by_ap_id(recipient) || insert(:user, %{ap_id: recipient})
 
+    # invalidate the cache
+    User.invalidate_cache(user)
+
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
     status = StatusView.render("status.json", %{activity: activity})
