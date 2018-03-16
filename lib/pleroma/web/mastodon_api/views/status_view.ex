@@ -16,7 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     reblogged = Activity.get_create_activity_by_object_ap_id(object)
     reblogged = render("status.json", Map.put(opts, :activity, reblogged))
 
-    mentions = activity.data["to"]
+    mentions = activity.recipients
     |> Enum.map(fn (ap_id) -> User.get_cached_by_ap_id(ap_id) end)
     |> Enum.filter(&(&1))
     |> Enum.map(fn (user) -> AccountView.render("mention.json", %{user: user}) end)
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     tags = object["tag"] || []
     sensitive = object["sensitive"] || Enum.member?(tags, "nsfw")
 
-    mentions = activity.data["to"]
+    mentions = activity.recipients
     |> Enum.map(fn (ap_id) -> User.get_cached_by_ap_id(ap_id) end)
     |> Enum.filter(&(&1))
     |> Enum.map(fn (user) -> AccountView.render("mention.json", %{user: user}) end)
