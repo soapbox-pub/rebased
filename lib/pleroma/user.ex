@@ -417,7 +417,7 @@ defmodule Pleroma.User do
         _ ->
           case OStatus.make_user(ap_id) do
             {:ok, user} -> user
-            _ -> {:error, "Could not fetch by ap id"}
+            _ -> {:error, "Could not fetch by AP id"}
           end
       end
     end
