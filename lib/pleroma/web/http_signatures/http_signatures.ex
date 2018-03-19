@@ -36,7 +36,7 @@ defmodule Pleroma.Web.HTTPSignatures do
       if validate_conn(conn, public_key) do
         true
       else
-        Logger.debug("Could not validate, re-fetching user and trying one more time.")
+        Logger.debug("Could not validate, re-fetching user and trying one more time")
         # Fetch user anew and try one more time
         with actor_id <- conn.params["actor"],
              {:ok, _user} <- ActivityPub.make_user_from_ap_id(actor_id),
