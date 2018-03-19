@@ -21,7 +21,7 @@ defmodule Pleroma.Web.XML do
       doc
     catch
       :exit, _error ->
-        Logger.debug("Couldn't parse xml: #{inspect(text)}")
+        Logger.debug("Couldn't parse XML: #{inspect(text)}")
         :error
     end
   end
