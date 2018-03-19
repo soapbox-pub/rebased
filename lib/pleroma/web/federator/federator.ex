@@ -105,7 +105,7 @@ defmodule Pleroma.Web.Federator do
 
   def handle(type, _) do
     Logger.debug(fn -> "Unknown task: #{type}" end)
-    {:error, "Don't know what do do with this"}
+    {:error, "Don't know what to do with this"}
   end
 
   def enqueue(type, payload, priority \\ 1) do
