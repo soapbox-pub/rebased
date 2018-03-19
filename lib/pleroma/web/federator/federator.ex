@@ -61,7 +61,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:verify_websub, websub) do
-    Logger.debug(fn -> "Running websub verification for #{websub.id} (#{websub.topic}, #{websub.callback})" end)
+    Logger.debug(fn -> "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})" end)
     @websub.verify(websub)
   end
 
