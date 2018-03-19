@@ -71,7 +71,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:incoming_ap_doc, params) do
-    Logger.info("Handling incoming ap activity")
+    Logger.info("Handling incoming AP activity")
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.get_by_ap_id(params["id"]),
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
