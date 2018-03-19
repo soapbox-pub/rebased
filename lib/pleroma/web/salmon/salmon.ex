@@ -178,7 +178,7 @@ defmodule Pleroma.Web.Salmon do
       remote_users(activity)
       |> Enum.each(fn(remote_user) ->
         Task.start(fn ->
-          Logger.debug(fn -> "sending Salmon to #{remote_user.ap_id}" end)
+          Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
           send_to_user(remote_user, feed, poster)
         end)
       end)
