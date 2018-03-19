@@ -43,5 +43,5 @@ defmodule Pleroma.Web.OAuth.Authorization do
       {:error, "token expired"}
     end
   end
-  def use_token(%Authorization{used: true}), do: {:error, "already used"}
+  def use_token(%Authorization{used: true}), do: {:error, "Already used"}
 end
