@@ -150,7 +150,7 @@ defmodule Pleroma.Web.Salmon do
     with {:ok, %{status_code: code}} <- poster.(salmon, feed, [{"Content-Type", "application/magic-envelope+xml"}], timeout: 10000, recv_timeout: 20000) do
       Logger.debug(fn -> "Pushed to #{salmon}, code #{code}" end)
     else
-      e -> Logger.debug(fn -> "Pushing salmon to #{salmon} failed, #{inspect(e)}" end)
+      e -> Logger.debug(fn -> "Pushing Salmon to #{salmon} failed, #{inspect(e)}" end)
     end
   end
 
@@ -178,7 +178,7 @@ defmodule Pleroma.Web.Salmon do
       remote_users(activity)
       |> Enum.each(fn(remote_user) ->
         Task.start(fn ->
-          Logger.debug(fn -> "sending salmon to #{remote_user.ap_id}" end)
+          Logger.debug(fn -> "sending Salmon to #{remote_user.ap_id}" end)
           send_to_user(remote_user, feed, poster)
         end)
       end)

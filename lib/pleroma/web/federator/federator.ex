@@ -51,7 +51,7 @@ defmodule Pleroma.Web.Federator do
         Logger.info(fn -> "Sending #{activity.data["id"]} out via websub" end)
         Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
-        Logger.info(fn -> "Sending #{activity.data["id"]} out via salmon" end)
+        Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
         Pleroma.Web.Salmon.publish(actor, activity)
       end
 
