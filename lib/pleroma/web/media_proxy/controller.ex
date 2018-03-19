@@ -3,7 +3,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   require Logger
 
   @httpoison Application.get_env(:pleroma, :httpoison)
-  
+
   @max_body_length 25 * 1048576
 
   @cache_control %{
@@ -31,7 +31,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
   defp proxy_request(link) do
     headers = [{"user-agent", "Pleroma/MediaProxy; #{Pleroma.Web.base_url()} <#{Application.get_env(:pleroma, :instance)[:email]}>"}]
-    options = @httpoison.process_request_options([:insecure, {:follow_redirect, true}])
+    options = @httpoison.process_request_options([:insecure, {:follow_redirect, true}]) ++ [{:pool, :default}]
     with \
       {:ok, 200, headers, client} <- :hackney.request(:get, link, headers, "", options),
       headers = Enum.into(headers, Map.new),

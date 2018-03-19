@@ -96,7 +96,7 @@ defmodule Pleroma.Web.Federator do
     with {:ok, %{status_code: code}} <- @httpoison.post(callback, xml, [
                   {"Content-Type", "application/atom+xml"},
                   {"X-Hub-Signature", "sha1=#{signature}"}
-                ], timeout: 10000, recv_timeout: 20000) do
+                ], timeout: 10000, recv_timeout: 20000, hackney: [pool: :default]) do
       Logger.debug(fn -> "Pushed to #{callback}, code #{code}" end)
     else e ->
         Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)

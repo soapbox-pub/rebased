@@ -351,7 +351,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Logger.info("Federating #{id} to #{inbox}")
     host = URI.parse(inbox).host
     signature = Pleroma.Web.HTTPSignatures.sign(actor, %{host: host, "content-length": byte_size(json)})
-    @httpoison.post(inbox, json, [{"Content-Type", "application/activity+json"}, {"signature", signature}])
+    @httpoison.post(inbox, json, [{"Content-Type", "application/activity+json"}, {"signature", signature}], hackney: [pool: :default])
   end
 
   # TODO:

@@ -147,7 +147,7 @@ defmodule Pleroma.Web.Salmon do
   end
 
   defp send_to_user(%{info: %{"salmon" => salmon}}, feed, poster) do
-    with {:ok, %{status_code: code}} <- poster.(salmon, feed, [{"Content-Type", "application/magic-envelope+xml"}], timeout: 10000, recv_timeout: 20000) do
+    with {:ok, %{status_code: code}} <- poster.(salmon, feed, [{"Content-Type", "application/magic-envelope+xml"}], timeout: 10000, recv_timeout: 20000, hackney: [pool: :default]) do
       Logger.debug(fn -> "Pushed to #{salmon}, code #{code}" end)
     else
       e -> Logger.debug(fn -> "Pushing salmon to #{salmon} failed, #{inspect(e)}" end)

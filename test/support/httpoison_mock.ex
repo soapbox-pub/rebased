@@ -450,4 +450,8 @@ defmodule HTTPoisonMock do
   def post(url, body, headers) do
     {:error, "Not implemented the mock response for post #{inspect(url)}"}
   end
+
+  def post(url, body, headers, options) do
+    {:error, "Not implemented the mock response for post #{inspect(url)}"}
+  end
 end
