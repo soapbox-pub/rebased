@@ -321,7 +321,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, %{"ap_id" => ap_id}} when not is_nil(ap_id) <- WebFinger.finger(nickname) do
       make_user_from_ap_id(ap_id)
     else
-      _e -> {:error, "No ap id in webfinger"}
+      _e -> {:error, "No AP id in WebFinger"}
     end
   end
 
