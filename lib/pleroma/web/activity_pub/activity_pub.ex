@@ -301,7 +301,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, data} <- Poison.decode(body) do
       user_data_from_user_object(data)
     else
-      e -> Logger.error("Could not user at fetch #{ap_id}, #{inspect(e)}")
+      e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
     end
   end
 
