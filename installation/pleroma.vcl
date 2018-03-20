@@ -6,6 +6,11 @@ backend default {
     .port = "4000";
 }
 
+# ACL for IPs that are allowed to PURGE data from the cache
+acl purge {
+    "127.0.0.1";
+}
+
 sub vcl_recv {
     # Redirect HTTP to HTTPS
     if (std.port(server.ip) != 443) {
@@ -16,6 +21,14 @@ sub vcl_recv {
     # Pipe if WebSockets request is coming through
     if (req.http.upgrade ~ "(?i)websocket") {
         return (pipe);
+    }
+
+    # Allow purging of the cache
+    if (req.method == "PURGE") {
+        if (!client.ip ~ purge) {
+          return(synth(405,"Not allowed."));
+        }
+        return(purge);
     }
 
     # Pleroma MediaProxy - strip headers that will affect caching
