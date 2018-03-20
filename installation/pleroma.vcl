@@ -114,7 +114,7 @@ sub vcl_backend_response {
     }
 }
 
-# The synthetic response for the HTTP to HTTPS upgrade
+# The synthetic response for 301 redirects
 sub vcl_synth {
     if (resp.status == 750) {
       set resp.status = 301;
