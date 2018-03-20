@@ -48,10 +48,10 @@ defmodule Pleroma.Web.Federator do
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
       if ActivityPub.is_public?(activity) do
-        Logger.info(fn -> "Sending #{activity.data["id"]} out via websub" end)
+        Logger.info(fn -> "Sending #{activity.data["id"]} out via WebSub" end)
         Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
-        Logger.info(fn -> "Sending #{activity.data["id"]} out via salmon" end)
+        Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
         Pleroma.Web.Salmon.publish(actor, activity)
       end
 
@@ -61,7 +61,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:verify_websub, websub) do
-    Logger.debug(fn -> "Running websub verification for #{websub.id} (#{websub.topic}, #{websub.callback})" end)
+    Logger.debug(fn -> "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})" end)
     @websub.verify(websub)
   end
 
@@ -71,7 +71,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:incoming_ap_doc, params) do
-    Logger.info("Handling incoming ap activity")
+    Logger.info("Handling incoming AP activity")
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.get_by_ap_id(params["id"]),
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.Federator do
 
   def handle(type, _) do
     Logger.debug(fn -> "Unknown task: #{type}" end)
-    {:error, "Don't know what do do with this"}
+    {:error, "Don't know what to do with this"}
   end
 
   def enqueue(type, payload, priority \\ 1) do

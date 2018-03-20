@@ -100,7 +100,7 @@ defmodule Pleroma.Web.WebFinger do
         with {:ok, %{body: body}} <- @httpoison.get("https://#{domain}/.well-known/host-meta", []) do
           get_template_from_xml(body)
         else
-          e -> {:error, "Can't find lrdd template: #{inspect(e)}"}
+          e -> {:error, "Can't find LRDD template: #{inspect(e)}"}
         end
     end
   end
@@ -122,7 +122,7 @@ defmodule Pleroma.Web.WebFinger do
       {:ok, data}
     else
       e ->
-        Logger.debug(fn -> "Couldn't finger #{account}." end)
+        Logger.debug(fn -> "Couldn't finger #{account}" end)
         Logger.debug(fn -> inspect(e) end)
         {:error, e}
     end

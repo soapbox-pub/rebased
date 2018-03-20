@@ -291,8 +291,8 @@ defmodule Pleroma.Web.OStatus do
         [[_, match]] = Regex.scan(@gs_classic_regex, body)
         {:ok, match}
       true ->
-        Logger.debug(fn -> "Couldn't find atom link in #{inspect(body)}" end)
-        {:error, "Couldn't find the atom link"}
+        Logger.debug(fn -> "Couldn't find Atom link in #{inspect(body)}" end)
+        {:error, "Couldn't find the Atom link"}
     end
   end
 
