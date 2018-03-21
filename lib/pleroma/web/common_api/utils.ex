@@ -109,7 +109,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       |> Enum.sort_by(fn {tag, _} -> -String.length(tag) end)
 
     Enum.reduce(tags, text, fn {full, tag}, text ->
-      url = "#<a href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{tag}</a>"
+      url = "<a href='#{Pleroma.Web.base_url}/tag/#{tag}' rel='tag'>##{tag}</a>"
       String.replace(text, full, url)
     end)
   end
