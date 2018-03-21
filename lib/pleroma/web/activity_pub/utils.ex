@@ -5,6 +5,26 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.{Changeset, UUID}
   import Ecto.Query
 
+  def make_json_ld_header do
+    %{
+      "@context" => [
+        "https://www.w3.org/ns/activitystreams",
+        "https://w3id.org/security/v1",
+        %{
+          "manuallyApprovesFollowers" => "as:manuallyApprovesFollowers",
+          "sensitive" => "as:sensitive",
+          "Hashtag" => "as:Hashtag",
+          "ostatus" => "http://ostatus.org#",
+          "atomUri" => "ostatus:atomUri",
+          "inReplyToAtomUri" => "ostatus:inReplyToAtomUri",
+          "conversation" => "ostatus:conversation",
+          "toot" => "http://joinmastodon.org/ns#",
+          "Emoji" => "toot:Emoji"
+        }
+      ]
+    }
+  end
+
   def make_date do
     DateTime.utc_now() |> DateTime.to_iso8601
   end

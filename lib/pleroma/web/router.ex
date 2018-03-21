@@ -249,6 +249,14 @@ defmodule Pleroma.Web.Router do
     plug Pleroma.Web.Plugs.HTTPSignaturePlug
   end
 
+  scope "/", Pleroma.Web.ActivityPub do
+    # XXX: not really ostatus
+    pipe_through :ostatus
+
+    get "/users/:nickname/followers", ActivityPubController, :followers
+    get "/users/:nickname/following", ActivityPubController, :following
+  end
+
   if @federating do
     scope "/", Pleroma.Web.ActivityPub do
       pipe_through :activitypub

@@ -3,6 +3,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.Salmon
   alias Pleroma.Web.WebFinger
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Utils
 
   def render("user.json", %{user: user}) do
     {:ok, user} = WebFinger.ensure_keys_present(user)
@@ -10,21 +11,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     public_key = :public_key.pem_entry_encode(:RSAPublicKey, public_key)
     public_key = :public_key.pem_encode([public_key])
     %{
-      "@context" => [
-        "https://www.w3.org/ns/activitystreams",
-        "https://w3id.org/security/v1",
-        %{
-          "manuallyApprovesFollowers" => "as:manuallyApprovesFollowers",
-          "sensitive" => "as:sensitive",
-          "Hashtag" => "as:Hashtag",
-          "ostatus" => "http://ostatus.org#",
-          "atomUri" => "ostatus:atomUri",
-          "inReplyToAtomUri" => "ostatus:inReplyToAtomUri",
-          "conversation" => "ostatus:conversation",
-          "toot" => "http://joinmastodon.org/ns#",
-          "Emoji" => "toot:Emoji"
-        }
-      ],
       "id" => user.ap_id,
       "type" => "Person",
       "following" => "#{user.ap_id}/following",
@@ -53,5 +39,56 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "url" => User.banner_url(user)
       }
     }
+    |> Map.merge(Utils.make_json_ld_header())
+  end
+
+  def collection(collection, iri, page) do
+    offset = (page - 1) * 10
+    items = Enum.slice(collection, offset, 10)
+    items = Enum.map(items, fn (user) -> user.ap_id end)
+    map = %{
+      "id" => "#{iri}?page=#{page}",
+      "type" => "OrderedCollectionPage",
+      "partOf" => iri,
+      "totalItems" => length(collection),
+      "orderedItems" => items
+    }
+    if offset < length(collection) do
+      Map.put(map, "next", "#{iri}?page=#{page+1}")
+    end
+  end
+
+  def render("following.json", %{user: user, page: page}) do
+    {:ok, following} = User.get_friends(user)
+    collection(following, "#{user.ap_id}/following", page)
+    |> Map.merge(Utils.make_json_ld_header())
+  end
+
+  def render("following.json", %{user: user}) do
+    {:ok, following} = User.get_friends(user)
+    %{
+      "id" => "#{user.ap_id}/following",
+      "type" => "OrderedCollection",
+      "totalItems" => length(following),
+      "first" => collection(following, "#{user.ap_id}/following", 1)
+    }
+    |> Map.merge(Utils.make_json_ld_header())
+  end
+
+  def render("followers.json", %{user: user, page: page}) do
+    {:ok, followers} = User.get_followers(user)
+    collection(followers, "#{user.ap_id}/followers", page)
+    |> Map.merge(Utils.make_json_ld_header())
+  end
+
+  def render("followers.json", %{user: user}) do
+    {:ok, followers} = User.get_followers(user)
+    %{
+      "id" => "#{user.ap_id}/following",
+      "type" => "OrderedCollection",
+      "totalItems" => length(followers),
+      "first" => collection(followers, "#{user.ap_id}/followers", 1)
+    }
+    |> Map.merge(Utils.make_json_ld_header())
   end
 end

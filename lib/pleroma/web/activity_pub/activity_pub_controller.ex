@@ -27,6 +27,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def following(conn, %{"nickname" => nickname, "page" => page}) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+      {page, _} = Integer.parse(page)
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("following.json", %{user: user, page: page}))
+    end
+  end
+
+  def following(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("following.json", %{user: user}))
+    end
+  end
+
+  def followers(conn, %{"nickname" => nickname, "page" => page}) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+      {page, _} = Integer.parse(page)
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("followers.json", %{user: user, page: page}))
+    end
+  end
+
+  def followers(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("followers.json", %{user: user}))
+    end
+  end
+
   # TODO: Ensure that this inbox is a recipient of the message
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
     Federator.enqueue(:incoming_ap_doc, params)
