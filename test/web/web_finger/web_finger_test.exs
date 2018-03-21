@@ -15,14 +15,14 @@ defmodule Pleroma.Web.WebFingerTest do
     test "works for fqns" do
       user = insert(:user)
 
-      {:ok, result} = WebFinger.webfinger("#{user.nickname}@#{Pleroma.Web.Endpoint.host}")
+      {:ok, result} = WebFinger.webfinger("#{user.nickname}@#{Pleroma.Web.Endpoint.host}", "XML")
       assert is_binary(result)
     end
 
     test "works for ap_ids" do
       user = insert(:user)
 
-      {:ok, result} = WebFinger.webfinger(user.ap_id)
+      {:ok, result} = WebFinger.webfinger(user.ap_id, "XML")
       assert is_binary(result)
     end
   end

@@ -17,22 +17,55 @@ defmodule Pleroma.Web.WebFinger do
     |> XmlBuilder.to_doc
   end
 
-  def webfinger(resource) do
+  def webfinger(resource, "JSON") do
     host = Pleroma.Web.Endpoint.host
     regex = ~r/(acct:)?(?<username>\w+)@#{host}/
     with %{"username" => username} <- Regex.named_captures(regex, resource) do
       user = User.get_by_nickname(username)
-      {:ok, represent_user(user)}
+      {:ok, represent_user(user, "JSON")}
     else _e ->
       with user when not is_nil(user) <- User.get_cached_by_ap_id(resource) do
-        {:ok, represent_user(user)}
+        {:ok, represent_user(user, "JSON")}
       else _e ->
         {:error, "Couldn't find user"}
       end
     end
   end
 
-  def represent_user(user) do
+  def webfinger(resource, "XML") do
+    host = Pleroma.Web.Endpoint.host
+    regex = ~r/(acct:)?(?<username>\w+)@#{host}/
+    with %{"username" => username} <- Regex.named_captures(regex, resource) do
+      user = User.get_by_nickname(username)
+      {:ok, represent_user(user, "XML")}
+    else _e ->
+      with user when not is_nil(user) <- User.get_cached_by_ap_id(resource) do
+        {:ok, represent_user(user, "XML")}
+      else _e ->
+        {:error, "Couldn't find user"}
+      end
+    end
+  end
+
+  def represent_user(user, "JSON") do
+    {:ok, user} = ensure_keys_present(user)
+    {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
+    magic_key = Salmon.encode_key(public)
+    %{
+      "subject" => "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host}",
+      "aliases" => [user.ap_id],
+      "links" => [
+        %{"rel" => "http://schemas.google.com/g/2010#updates-from", "type" => "application/atom+xml", "href" => OStatus.feed_path(user)},
+        %{"rel" => "http://webfinger.net/rel/profile-page", "type" => "text/html", "href" => user.ap_id},
+        %{"rel" => "salmon", "href" => OStatus.salmon_path(user)},
+        %{"rel" => "magic-public-key", "href" => "data:application/magic-public-key,#{magic_key}"},
+        %{"rel" => "self", "type" => "application/activity+json", "href" => user.ap_id},
+        %{"rel" => "http://ostatus.org/schema/1.0/subscribe", "template" => OStatus.remote_follow_path()}
+      ]
+    }
+  end
+
+  def represent_user(user, "XML") do
     {:ok, user} = ensure_keys_present(user)
     {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
     magic_key = Salmon.encode_key(public)
