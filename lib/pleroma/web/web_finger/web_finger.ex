@@ -4,6 +4,7 @@ defmodule Pleroma.Web.WebFinger do
   alias Pleroma.{Repo, User, XmlBuilder}
   alias Pleroma.Web
   alias Pleroma.Web.{XML, Salmon, OStatus}
+  require Poison
   require Logger
 
   def host_meta do
@@ -117,6 +118,19 @@ defmodule Pleroma.Web.WebFinger do
     {:ok, data}
   end
 
+  # TODO: maybe fill in other details from JRD webfinger response
+  defp webfinger_from_json(doc) do
+    data = Enum.reduce(doc["links"], %{"subject" => doc["subject"]}, fn (link, data) ->
+      case link["type"] do
+        "application/activity+json" ->
+          Map.put(data, "ap_id", link["href"])
+        _ ->
+          Logger.debug("Unhandled type: #{inspect(link["type"])}")
+      end
+    end)
+    {:ok, data}
+  end
+
   def get_template_from_xml(body) do
     xpath = "//Link[@rel='lrdd' and @type='application/xrd+xml']/@template"
     with doc when doc != :error <- XML.parse_document(body),
@@ -150,14 +164,18 @@ defmodule Pleroma.Web.WebFinger do
       {:ok, template} ->
         address = String.replace(template, "{uri}", URI.encode(account))
       _ ->
-        address = "http://#{domain}/.well-known/webfinger?resource=#{account}"
+        address = "http://#{domain}/.well-known/webfinger?resource=acct:#{account}"
     end
 
-    with response <- @httpoison.get(address, ["Accept": "application/xrd+xml"]),
-         {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
-         doc when doc != :error<- XML.parse_document(body),
-         {:ok, data} <- webfinger_from_xml(doc) do
-      {:ok, data}
+    with response <- @httpoison.get(address, ["Accept": "application/xrd+xml,application/jrd+json"], follow_redirect: true),
+         {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response do
+       doc = XML.parse_document(body)
+       if doc != :error do
+         webfinger_from_xml(doc)
+       else
+         {:ok, doc} = Poison.decode(body)
+         webfinger_from_json(doc)
+       end
     else
       e ->
         Logger.debug(fn -> "Couldn't finger #{account}" end)
