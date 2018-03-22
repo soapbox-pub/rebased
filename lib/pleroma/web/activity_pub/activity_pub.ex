@@ -185,6 +185,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       or_where: activity.actor == ^user.ap_id
   end
 
+  defp restrict_limit(query, %{"limit" => limit}) do
+    from activity in query,
+      limit: ^limit
+  end
+  defp restrict_limit(query, _), do: query
+
   defp restrict_local(query, %{"local_only" => true}) do
     from activity in query, where: activity.local == true
   end
@@ -248,6 +254,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_tag(opts)
     |> restrict_since(opts)
     |> restrict_local(opts)
+    |> restrict_limit(opts)
     |> restrict_max(opts)
     |> restrict_actor(opts)
     |> restrict_type(opts)
