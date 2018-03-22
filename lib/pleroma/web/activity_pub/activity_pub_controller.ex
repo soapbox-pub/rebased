@@ -65,6 +65,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def outbox(conn, %{"nickname" => nickname, "max_id" => max_id}) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("outbox.json", %{user: user, max_id: max_id}))
+    end
+  end
+
+  def outbox(conn, %{"nickname" => nickname}) do outbox(conn, %{"nickname" => nickname, "max_id" => nil}) end
+
   # TODO: Ensure that this inbox is a recipient of the message
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
     Federator.enqueue(:incoming_ap_doc, params)

@@ -255,6 +255,7 @@ defmodule Pleroma.Web.Router do
 
     get "/users/:nickname/followers", ActivityPubController, :followers
     get "/users/:nickname/following", ActivityPubController, :following
+    get "/users/:nickname/outbox", ActivityPubController, :outbox
   end
 
   if @federating do

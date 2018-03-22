@@ -3,6 +3,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.Salmon
   alias Pleroma.Web.WebFinger
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
 
   def render("user.json", %{user: user}) do
@@ -90,5 +92,54 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "first" => collection(followers, "#{user.ap_id}/followers", 1)
     }
     |> Map.merge(Utils.make_json_ld_header())
+  end
+
+  def render("outbox.json", %{user: user, max_id: max_qid}) do
+    # XXX: technically note_count is wrong for this, but it's better than nothing
+    info = User.user_info(user)
+
+    params = %{
+      "type" => ["Create", "Announce"],
+      "actor_id" => user.ap_id,
+      "whole_db" => true,
+      "limit" => "10"
+    }
+
+    if max_qid != nil do
+      params = Map.put(params, "max_id", max_qid)
+    end
+
+    activities = ActivityPub.fetch_public_activities(params)
+    min_id = Enum.at(activities, 0).id
+
+    activities = Enum.reverse(activities)
+    max_id = Enum.at(activities, 0).id
+
+    collection = Enum.map(activities, fn (act) ->
+      {:ok, data} = Transmogrifier.prepare_outgoing(act.data)
+      data
+    end)
+
+    iri = "#{user.ap_id}/outbox"
+    page = %{
+      "id" => "#{iri}?max_id=#{max_id}",
+      "type" => "OrderedCollectionPage",
+      "partOf" => iri,
+      "totalItems" => info.note_count,
+      "orderedItems" => collection,
+      "next" => "#{iri}?max_id=#{min_id-1}",
+    }
+
+    if max_qid == nil do
+      %{
+        "id" => iri,
+        "type" => "OrderedCollection",
+        "totalItems" => info.note_count,
+        "first" => page
+      }
+      |> Map.merge(Utils.make_json_ld_header())
+    else
+      page |> Map.merge(Utils.make_json_ld_header())
+    end
   end
 end
