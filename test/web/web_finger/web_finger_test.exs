@@ -15,20 +15,20 @@ defmodule Pleroma.Web.WebFingerTest do
     test "works for fqns" do
       user = insert(:user)
 
-      {:ok, result} = WebFinger.webfinger("#{user.nickname}@#{Pleroma.Web.Endpoint.host}")
+      {:ok, result} = WebFinger.webfinger("#{user.nickname}@#{Pleroma.Web.Endpoint.host}", "XML")
       assert is_binary(result)
     end
 
     test "works for ap_ids" do
       user = insert(:user)
 
-      {:ok, result} = WebFinger.webfinger(user.ap_id)
+      {:ok, result} = WebFinger.webfinger(user.ap_id, "XML")
       assert is_binary(result)
     end
   end
 
   describe "fingering" do
-    test "returns the info for a user" do
+    test "returns the info for an OStatus user" do
       user = "shp@social.heldscal.la"
 
       {:ok, data} = WebFinger.finger(user)
@@ -37,6 +37,12 @@ defmodule Pleroma.Web.WebFingerTest do
       assert data["topic"] == "https://social.heldscal.la/api/statuses/user_timeline/29191.atom"
       assert data["subject"] == "acct:shp@social.heldscal.la"
       assert data["salmon"] == "https://social.heldscal.la/main/salmon/user/29191"
+    end
+
+    test "returns the ActivityPub actor URI for an ActivityPub user" do
+      user = "framasoft@framatube.org"
+
+      {:ok, _data} = WebFinger.finger(user)
     end
 
     test "it works for friendica" do

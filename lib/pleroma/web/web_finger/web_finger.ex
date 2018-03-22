@@ -4,6 +4,7 @@ defmodule Pleroma.Web.WebFinger do
   alias Pleroma.{Repo, User, XmlBuilder}
   alias Pleroma.Web
   alias Pleroma.Web.{XML, Salmon, OStatus}
+  require Poison
   require Logger
 
   def host_meta do
@@ -17,22 +18,55 @@ defmodule Pleroma.Web.WebFinger do
     |> XmlBuilder.to_doc
   end
 
-  def webfinger(resource) do
+  def webfinger(resource, "JSON") do
     host = Pleroma.Web.Endpoint.host
     regex = ~r/(acct:)?(?<username>\w+)@#{host}/
     with %{"username" => username} <- Regex.named_captures(regex, resource) do
       user = User.get_by_nickname(username)
-      {:ok, represent_user(user)}
+      {:ok, represent_user(user, "JSON")}
     else _e ->
       with user when not is_nil(user) <- User.get_cached_by_ap_id(resource) do
-        {:ok, represent_user(user)}
+        {:ok, represent_user(user, "JSON")}
       else _e ->
         {:error, "Couldn't find user"}
       end
     end
   end
 
-  def represent_user(user) do
+  def webfinger(resource, "XML") do
+    host = Pleroma.Web.Endpoint.host
+    regex = ~r/(acct:)?(?<username>\w+)@#{host}/
+    with %{"username" => username} <- Regex.named_captures(regex, resource) do
+      user = User.get_by_nickname(username)
+      {:ok, represent_user(user, "XML")}
+    else _e ->
+      with user when not is_nil(user) <- User.get_cached_by_ap_id(resource) do
+        {:ok, represent_user(user, "XML")}
+      else _e ->
+        {:error, "Couldn't find user"}
+      end
+    end
+  end
+
+  def represent_user(user, "JSON") do
+    {:ok, user} = ensure_keys_present(user)
+    {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
+    magic_key = Salmon.encode_key(public)
+    %{
+      "subject" => "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host}",
+      "aliases" => [user.ap_id],
+      "links" => [
+        %{"rel" => "http://schemas.google.com/g/2010#updates-from", "type" => "application/atom+xml", "href" => OStatus.feed_path(user)},
+        %{"rel" => "http://webfinger.net/rel/profile-page", "type" => "text/html", "href" => user.ap_id},
+        %{"rel" => "salmon", "href" => OStatus.salmon_path(user)},
+        %{"rel" => "magic-public-key", "href" => "data:application/magic-public-key,#{magic_key}"},
+        %{"rel" => "self", "type" => "application/activity+json", "href" => user.ap_id},
+        %{"rel" => "http://ostatus.org/schema/1.0/subscribe", "template" => OStatus.remote_follow_path()}
+      ]
+    }
+  end
+
+  def represent_user(user, "XML") do
     {:ok, user} = ensure_keys_present(user)
     {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
     magic_key = Salmon.encode_key(public)
@@ -84,6 +118,19 @@ defmodule Pleroma.Web.WebFinger do
     {:ok, data}
   end
 
+  # TODO: maybe fill in other details from JRD webfinger response
+  defp webfinger_from_json(doc) do
+    data = Enum.reduce(doc["links"], %{"subject" => doc["subject"]}, fn (link, data) ->
+      case link["type"] do
+        "application/activity+json" ->
+          Map.put(data, "ap_id", link["href"])
+        _ ->
+          Logger.debug("Unhandled type: #{inspect(link["type"])}")
+      end
+    end)
+    {:ok, data}
+  end
+
   def get_template_from_xml(body) do
     xpath = "//Link[@rel='lrdd' and @type='application/xrd+xml']/@template"
     with doc when doc != :error <- XML.parse_document(body),
@@ -113,13 +160,22 @@ defmodule Pleroma.Web.WebFinger do
                URI.parse(account).host
              end
 
-    with {:ok, template} <- find_lrdd_template(domain),
-         address <- String.replace(template, "{uri}", URI.encode(account)),
-         response <- @httpoison.get(address, ["Accept": "application/xrd+xml"]),
-         {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response,
-         doc when doc != :error<- XML.parse_document(body),
-         {:ok, data} <- webfinger_from_xml(doc) do
-      {:ok, data}
+    case find_lrdd_template(domain) do
+      {:ok, template} ->
+        address = String.replace(template, "{uri}", URI.encode(account))
+      _ ->
+        address = "http://#{domain}/.well-known/webfinger?resource=acct:#{account}"
+    end
+
+    with response <- @httpoison.get(address, ["Accept": "application/xrd+xml,application/jrd+json"], follow_redirect: true),
+         {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response do
+       doc = XML.parse_document(body)
+       if doc != :error do
+         webfinger_from_xml(doc)
+       else
+         {:ok, doc} = Poison.decode(body)
+         webfinger_from_json(doc)
+       end
     else
       e ->
         Logger.debug(fn -> "Couldn't finger #{account}" end)

@@ -40,8 +40,8 @@ defmodule Pleroma.Web.OAuth.Authorization do
     if NaiveDateTime.diff(NaiveDateTime.utc_now, valid_until) < 0 do
       Repo.update(use_changeset(auth, %{used: true}))
     else
-      {:error, "Token expired"}
+      {:error, "token expired"}
     end
   end
-  def use_token(%Authorization{used: true}), do: {:error, "Already used"}
+  def use_token(%Authorization{used: true}), do: {:error, "already used"}
 end
