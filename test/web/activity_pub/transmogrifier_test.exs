@@ -233,6 +233,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified["object"] == "http://gs.example.org:4040/index.php/notice/29"
     end
+
+    test "it translates ostatus reply_to IDs to external URLs" do
+      incoming = File.read!("test/fixtures/incoming_note_activity.xml")
+      {:ok, [referred_activity]} = OStatus.handle_incoming(incoming)
+
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!", "in_reply_to_status_id" => referred_activity.id})
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["object"]["inReplyTo"] == "http://gs.example.org:4040/index.php/notice/29"
+    end
   end
 
   describe "user upgrade" do

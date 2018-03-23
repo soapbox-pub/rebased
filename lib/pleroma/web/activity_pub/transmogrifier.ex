@@ -183,6 +183,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     if object = Object.get_by_ap_id(id), do: {:ok, object}, else: nil
   end
 
+  def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) do
+    with false <- String.starts_with?(inReplyTo, "http"),
+         {:ok, %{data: replied_to_object}} <- get_obj_helper(inReplyTo) do
+      Map.put(object, "inReplyTo", replied_to_object["external_url"] || inReplyTo)
+    else
+      _e -> object
+    end
+  end
+  def set_reply_to_uri(obj), do: obj
+
+  # Prepares the object of an outgoing create activity.
   def prepare_object(object) do
     object
     |> set_sensitive
@@ -192,6 +203,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> add_attributed_to
     |> prepare_attachments
     |> set_conversation
+    |> set_reply_to_uri
   end
 
   @doc
