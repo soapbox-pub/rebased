@@ -62,6 +62,27 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+  # TODO
+  # - investigate a way to verify the user wants to grant read/write/follow once scope handling is done
+  def token_exchange(conn, %{"grant_type" => "password", "name" => name, "password" => password} = params) do
+    with %App{} = app <- Repo.get_by(App, client_id: params["client_id"], client_secret: params["client_secret"]),
+         %User{} = user <- User.get_cached_by_nickname(name),
+         true <- Pbkdf2.checkpw(password, user.password_hash),
+         {:ok, auth} <- Authorization.create_authorization(app, user),
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      response = %{
+        token_type: "Bearer",
+        access_token: token.token,
+        refresh_token: token.refresh_token,
+        expires_in: 60 * 10,
+        scope: "read write follow"
+      }
+      json(conn, response)
+    else
+      _error -> json(conn, %{error: "Invalid credentials"})
+    end
+  end
+
   defp fix_padding(token) do
     token
     |> Base.url_decode64!(padding: false)
