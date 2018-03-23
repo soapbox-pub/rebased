@@ -132,6 +132,8 @@ defmodule Pleroma.Formatter do
     end
 
     Enum.reduce(all_emoji, text, fn ({emoji, file}, text) ->
+      emoji = HtmlSanitizeEx.strip_tags(emoji)
+      file = HtmlSanitizeEx.strip_tags(file)
       String.replace(text, ":#{emoji}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{MediaProxy.url(file)}' />")
     end)
   end

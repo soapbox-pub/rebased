@@ -77,7 +77,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     reply_to_user = reply_to && User.get_cached_by_ap_id(reply_to.data["actor"])
 
     emojis = (activity.data["object"]["emoji"] || [])
-    |> Enum.map(fn {name, url} -> %{ shortcode: name, url: url, static_url: url } end)
+    |> Enum.map(fn {name, url} ->
+      name = HtmlSanitizeEx.strip_tags(name)
+      url = HtmlSanitizeEx.strip_tags(url)
+      %{ shortcode: name, url: url, static_url: url }
+    end)
 
     %{
       id: to_string(activity.id),
