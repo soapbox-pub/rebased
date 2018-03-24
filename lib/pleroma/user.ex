@@ -458,4 +458,12 @@ defmodule Pleroma.User do
 
   def ap_enabled?(%User{info: info}), do: info["ap_enabled"]
   def ap_enabled?(_), do: false
+
+  def get_or_fetch(uri_or_nickname) do
+    if String.starts_with?(uri_or_nickname, "http") do
+      get_or_fetch_by_ap_id(uri_or_nickname)
+    else
+      get_or_fetch_by_nickname(uri_or_nickname)
+    end
+  end
 end
