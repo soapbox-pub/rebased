@@ -45,6 +45,18 @@ defmodule Pleroma.Web.WebFingerTest do
       {:ok, _data} = WebFinger.finger(user)
     end
 
+    test "returns the correctly for json ostatus users" do
+      user = "winterdienst@gnusocial.de"
+
+      {:ok, data} = WebFinger.finger(user)
+
+      assert data["magic_key"] == "RSA.qfYaxztz7ZELrE4v5WpJrPM99SKI3iv9Y3Tw6nfLGk-4CRljNYqV8IYX2FXjeucC_DKhPNnlF6fXyASpcSmA_qupX9WC66eVhFhZ5OuyBOeLvJ1C4x7Hi7Di8MNBxY3VdQuQR0tTaS_YAZCwASKp7H6XEid3EJpGt0EQZoNzRd8=.AQAB"
+      assert data["topic"] == "https://gnusocial.de/api/statuses/user_timeline/249296.atom"
+      assert data["subject"] == "acct:winterdienst@gnusocial.de"
+      assert data["salmon"] == "https://gnusocial.de/main/salmon/user/249296"
+      assert data["subscribe_address"] == "https://gnusocial.de/main/ostatussub?profile={uri}"
+    end
+
     test "it works for friendica" do
       user = "lain@squeet.me"
 

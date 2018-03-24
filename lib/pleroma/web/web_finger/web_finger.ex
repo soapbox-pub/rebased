@@ -118,14 +118,23 @@ defmodule Pleroma.Web.WebFinger do
     {:ok, data}
   end
 
-  # TODO: maybe fill in other details from JRD webfinger response
   defp webfinger_from_json(doc) do
     data = Enum.reduce(doc["links"], %{"subject" => doc["subject"]}, fn (link, data) ->
-      case link["type"] do
-        "application/activity+json" ->
+      case {link["type"], link["rel"]} do
+        {"application/activity+json", "self"} ->
           Map.put(data, "ap_id", link["href"])
+        {_, "magic-public-key"} ->
+          "data:application/magic-public-key," <> magic_key = link["href"]
+          Map.put(data, "magic_key", magic_key)
+        {"application/atom+xml", "http://schemas.google.com/g/2010#updates-from"} ->
+          Map.put(data, "topic", link["href"])
+        {_, "salmon"} ->
+          Map.put(data, "salmon", link["href"])
+        {_, "http://ostatus.org/schema/1.0/subscribe"} ->
+          Map.put(data, "subscribe_address", link["template"])
         _ ->
           Logger.debug("Unhandled type: #{inspect(link["type"])}")
+          data
       end
     end)
     {:ok, data}

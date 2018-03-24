@@ -9,6 +9,12 @@ defmodule HTTPoisonMock do
       body: File.read!("test/fixtures/httpoison_mock/framasoft@framatube.org.json")
     }}
   end
+  def get("http://gnusocial.de/.well-known/webfinger?resource=acct:winterdienst@gnusocial.de", [Accept: "application/xrd+xml,application/jrd+json"], [follow_redirect: true]) do
+    {:ok, %Response{
+      status_code: 200,
+      body: File.read!("test/fixtures/httpoison_mock/winterdienst_webfinger.json")
+    }}
+  end
 
   def get("https://social.heldscal.la/.well-known/webfinger", [Accept: "application/xrd+xml,application/jrd+json"], [params: [resource: "nonexistant@social.heldscal.la"], follow_redirect: true]) do
     {:ok, %Response{
