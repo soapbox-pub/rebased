@@ -69,6 +69,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert object["sensitive"] == true
     end
 
+    test "it works for incoming notices with hashtags" do
+      data = File.read!("test/fixtures/mastodon-post-activity-hashtag.json") |> Poison.decode!
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      assert Enum.at(data["object"]["tag"], 2) == "moo"
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
       data = File.read!("test/fixtures/mastodon-follow-activity.json") |> Poison.decode!

@@ -22,6 +22,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_context
     |> fix_in_reply_to
     |> fix_emoji
+    |> fix_tag
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object) when not is_nil(in_reply_to_id) do
@@ -74,6 +75,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("emoji", emoji)
+  end
+
+  def fix_tag(object) do
+    tags = (object["tag"] || [])
+    |> Enum.filter(fn (data) -> data["type"] == "Hashtag" and data["name"] end)
+    |> Enum.map(fn (data) -> String.slice(data["name"], 1..-1) end)
+
+    combined = (object["tag"] || []) ++ tags
+
+    object
+    |> Map.put("tag", combined)
   end
 
   # TODO: validate those with a Ecto scheme
