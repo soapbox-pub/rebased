@@ -78,13 +78,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.join([text | attachment_text], "<br>")
   end
 
-  def format_input(text, mentions, _tags) do
+  def format_input(text, mentions, tags) do
     text
     |> Formatter.html_escape
-    |> Formatter.linkify
     |> String.replace("\n", "<br>")
-    |> add_user_links(mentions)
-    # |> add_tag_links(tags)
+    |> (&({[], &1})).()
+    |> Formatter.add_links
+    |> Formatter.add_user_links(mentions)
+    |> Formatter.add_hashtag_links(tags)
+    |> Formatter.finalize
   end
 
   def add_tag_links(text, tags) do
@@ -94,25 +96,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.reduce(tags, text, fn({full, tag}, text) ->
       url = "#<a href='#{Pleroma.Web.base_url}/tag/#{tag}' rel='tag'>#{tag}</a>"
       String.replace(text, full, url)
-    end)
-  end
-
-  def add_user_links(text, mentions) do
-    mentions = mentions
-    |> Enum.sort_by(fn ({name, _}) -> -String.length(name) end)
-    |> Enum.map(fn({name, user}) -> {name, user, Ecto.UUID.generate} end)
-
-    # This replaces the mention with a unique reference first so it doesn't
-    # contain parts of other replaced mentions. There probably is a better
-    # solution for this...
-    step_one = mentions
-    |> Enum.reduce(text, fn ({match, _user, uuid}, text) ->
-      String.replace(text, match, uuid)
-    end)
-
-    Enum.reduce(mentions, step_one, fn ({match, %User{ap_id: ap_id}, uuid}, text) ->
-      short_match = String.split(match, "@") |> tl() |> hd()
-      String.replace(text, uuid, "<span><a href='#{ap_id}'>@<span>#{short_match}</span></a></span>")
     end)
   end
 

@@ -2,11 +2,6 @@ defmodule Pleroma.Formatter do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&@~\(\)]+[\w\/]/u
-  def linkify(text) do
-    Regex.replace(@link_regex, text, "<a href='\\0'>\\0</a>")
-  end
-
   @tag_regex ~r/\#\w+/u
   def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
@@ -23,15 +18,6 @@ defmodule Pleroma.Formatter do
     |> Enum.uniq
     |> Enum.map(fn ("@" <> match = full_match) -> {full_match, User.get_cached_by_nickname(match)} end)
     |> Enum.filter(fn ({_match, user}) -> user end)
-  end
-
-  def html_escape(text) do
-    Regex.split(@link_regex, text, include_captures: true)
-    |> Enum.map_every(2, fn chunk ->
-      {:safe, part} = Phoenix.HTML.html_escape(chunk)
-      part
-    end)
-    |> Enum.join("")
   end
 
   @finmoji [
@@ -144,5 +130,75 @@ defmodule Pleroma.Formatter do
 
   def get_custom_emoji() do
     @emoji
+  end
+
+  @link_regex ~r/https?:\/\/[\w\.\/?=\-#%&@~\(\)]+[\w\/]/u
+
+  def html_escape(text) do
+    Regex.split(@link_regex, text, include_captures: true)
+    |> Enum.map_every(2, fn chunk ->
+      {:safe, part} = Phoenix.HTML.html_escape(chunk)
+      part
+    end)
+    |> Enum.join("")
+  end
+
+  @doc "changes http:... links to html links"
+  def add_links({subs, text}) do
+    links = Regex.scan(@link_regex, text)
+    |> Enum.map(fn ([url]) -> {Ecto.UUID.generate, url} end)
+
+    uuid_text = links
+    |> Enum.reduce(text, fn({uuid, url}, acc) -> String.replace(acc, url, uuid) end)
+
+    subs = subs ++ Enum.map(links, fn({uuid, url}) ->
+      {uuid, "<a href='#{url}'>#{url}</a>"}
+    end)
+
+    {subs, uuid_text}
+  end
+
+  @doc "Adds the links to mentioned users"
+  def add_user_links({subs, text}, mentions) do
+    mentions = mentions
+    |> Enum.sort_by(fn ({name, _}) -> -String.length(name) end)
+    |> Enum.map(fn({name, user}) -> {name, user, Ecto.UUID.generate} end)
+
+    uuid_text = mentions
+    |> Enum.reduce(text, fn ({match, _user, uuid}, text) ->
+      String.replace(text, match, uuid)
+    end)
+
+    subs = subs ++ Enum.map(mentions, fn ({match, %User{ap_id: ap_id}, uuid}) ->
+      short_match = String.split(match, "@") |> tl() |> hd()
+      {uuid, "<span><a href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
+    end)
+
+    {subs, uuid_text}
+  end
+
+  @doc "Adds the hashtag links"
+  def add_hashtag_links({subs, text}, tags) do
+    tags = tags
+    |> Enum.sort_by(fn ({name, _}) -> -String.length(name) end)
+    |> Enum.map(fn({name, short}) -> {name, short, Ecto.UUID.generate} end)
+
+    uuid_text = tags
+    |> Enum.reduce(text, fn ({match, _short, uuid}, text) ->
+      String.replace(text, match, uuid)
+    end)
+
+    subs = subs ++ Enum.map(tags, fn ({_, tag, uuid}) ->
+      url = "#<a href='#{Pleroma.Web.base_url}/tag/#{tag}' rel='tag'>#{tag}</a>"
+      {uuid, url}
+    end)
+
+    {subs, uuid_text}
+  end
+
+  def finalize({subs, text}) do
+    Enum.reduce(subs, text, fn({uuid, replacement}, result_text) ->
+      String.replace(result_text, uuid, replacement)
+    end)
   end
 end
