@@ -24,12 +24,8 @@
 .notification {
     background-color: #121a24;
 }
-.display-name__html,
-.display-name__account {
-    color: #d8a070;
-}
-
-.status__relative-time {
+.reply-indicator__display-name .display-name__html,
+.reply-indicator__display-name .display-name__account {
     color: #d8a070;
 }
 
@@ -43,14 +39,6 @@
 
 .status-link {
     color: #d8a070;
-}
-
-.fa {
-    color: #d8a070;
-}
-
-.icon-button {
-    color: #d8a070 !important;
 }
 
 .status__content.status__content--with-action {
@@ -129,20 +117,16 @@
     color: #d8a070;
 }
 
-.text-icon-button {
-    color: #d8a070;
-}
-
 .getting-started__footer {
     background-color: #121a24;
 }
 .notification__message{
-    background-color: #121a24;    
+    background-color: #121a24;
 
 }
 a.status-link{
     color: #d8a070;
 }
-.column { 
+.column {
 flex: 1 1 auto !important;
 }
