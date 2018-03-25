@@ -99,8 +99,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
 
-    attachments =
-      render_many(object["attachment"] || [], StatusView, "attachment.json", as: :attachment)
+    attachment_data = object["attachment"] || []
+    attachment_data = attachment_data ++ if object["type"] == "Video", do: [object], else: []
+    attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
 
     created_at = Utils.to_masto_date(object["published"])
 
@@ -151,7 +152,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("attachment.json", %{attachment: attachment}) do
-    [%{"mediaType" => media_type, "href" => href} | _] = attachment["url"]
+    [attachment | _] = attachment["url"]
+    media_type = attachment["mediaType"] || attachment["mimeType"]
+    href = attachment["href"]
 
     type =
       cond do
