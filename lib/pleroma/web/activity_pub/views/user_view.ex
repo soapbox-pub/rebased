@@ -86,7 +86,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("followers.json", %{user: user}) do
     {:ok, followers} = User.get_followers(user)
     %{
-      "id" => "#{user.ap_id}/following",
+      "id" => "#{user.ap_id}/followers",
       "type" => "OrderedCollection",
       "totalItems" => length(followers),
       "first" => collection(followers, "#{user.ap_id}/followers", 1)
