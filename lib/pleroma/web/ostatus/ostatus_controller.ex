@@ -23,7 +23,10 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   def feed(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
 
-    activities = ActivityPub.fetch_public_activities(%{"whole_db" => true, "actor_id" => user.ap_id})
+    query_params = Map.take(params, ["max_id"])
+    |> Map.merge(%{"whole_db" => true, "actor_id" => user.ap_id})
+
+    activities = ActivityPub.fetch_public_activities(query_params)
     |> Enum.reverse
 
     response = user
