@@ -265,7 +265,7 @@ defmodule Pleroma.User do
 
   def get_followers(%User{id: id, follower_address: follower_address}) do
     q = from u in User,
-      where: ^follower_address in u.following,
+      where: fragment("? <@ ?", ^[follower_address], u.following),
       where: u.id != ^id
 
     {:ok, Repo.all(q)}
