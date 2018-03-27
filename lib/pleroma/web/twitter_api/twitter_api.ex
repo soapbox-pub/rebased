@@ -169,7 +169,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           media_id_string: "#{object.id}}",
           media_url: href,
           size: 0
-        } |> Poison.encode!
+        } |> Jason.encode!
     end
   end
 
@@ -190,7 +190,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     else
       {:error, changeset} ->
         errors = Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-      |> Poison.encode!
+      |> Jason.encode!
       {:error, %{error: errors}}
     end
   end

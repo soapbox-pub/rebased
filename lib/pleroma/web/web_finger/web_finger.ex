@@ -4,7 +4,7 @@ defmodule Pleroma.Web.WebFinger do
   alias Pleroma.{Repo, User, XmlBuilder}
   alias Pleroma.Web
   alias Pleroma.Web.{XML, Salmon, OStatus}
-  require Poison
+  require Jason
   require Logger
 
   def host_meta do
@@ -182,7 +182,7 @@ defmodule Pleroma.Web.WebFinger do
        if doc != :error do
          webfinger_from_xml(doc)
        else
-         {:ok, doc} = Poison.decode(body)
+         {:ok, doc} = Jason.decode(body)
          webfinger_from_json(doc)
        end
     else

@@ -5,7 +5,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.BaseRepresenter do
       def to_json(object, options) do
         object
         |> to_map(options)
-        |> Poison.encode!
+        |> Jason.encode!
       end
 
       def enum_to_list(enum, options) do
@@ -21,7 +21,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.BaseRepresenter do
       def enum_to_json(enum, options) do
         enum
         |> enum_to_list(options)
-        |> Poison.encode!
+        |> Jason.encode!
       end
     end
   end

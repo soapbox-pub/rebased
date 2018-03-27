@@ -58,7 +58,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   defp halt_or_continue(conn, _) do
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(403, Poison.encode!(%{error: "Invalid credentials."}))
+    |> send_resp(403, Jason.encode!(%{error: "Invalid credentials."}))
     |> halt
   end
 end

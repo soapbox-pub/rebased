@@ -284,7 +284,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:error, reason} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(403, Poison.encode!(%{"error" => reason}))
+        |> send_resp(403, Jason.encode!(%{"error" => reason}))
     end
   end
 
@@ -300,7 +300,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:error, reason} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(403, Poison.encode!(%{"error" => reason}))
+        |> send_resp(403, Jason.encode!(%{"error" => reason}))
     end
   end
 
@@ -381,7 +381,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:error, message} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(403, Poison.encode!(%{"error" => message}))
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
@@ -394,7 +394,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:error, message} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(403, Poison.encode!(%{"error" => message}))
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
@@ -419,7 +419,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:error, message} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(403, Poison.encode!(%{"error" => message}))
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
@@ -431,7 +431,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:error, message} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(403, Poison.encode!(%{"error" => message}))
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
@@ -565,7 +565,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         push_subscription: nil,
         accounts: accounts,
         custom_emojis: mastodon_emoji
-      } |> Poison.encode!
+      } |> Jason.encode!
       conn
       |> put_layout(false)
       |> render(MastodonView, "index.html", %{initial_state: initial_state})

@@ -305,7 +305,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_and_prepare_user_from_ap_id(ap_id) do
     with {:ok, %{status_code: 200, body: body}} <- @httpoison.get(ap_id, ["Accept": "application/activity+json"]),
-    {:ok, data} <- Poison.decode(body) do
+    {:ok, data} <- Jason.decode(body) do
       user_data_from_user_object(data)
     else
       e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
@@ -348,7 +348,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.uniq
 
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
-    json = Poison.encode!(data)
+    json = Jason.encode!(data)
     Enum.each remote_inboxes, fn(inbox) ->
       Federator.enqueue(:publish_single_ap, %{inbox: inbox, json: json, actor: actor, id: activity.data["id"]})
     end
@@ -370,7 +370,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       Logger.info("Fetching #{id} via AP")
       with true <- String.starts_with?(id, "http"),
            {:ok, %{body: body, status_code: code}} when code in 200..299 <- @httpoison.get(id, [Accept: "application/activity+json"], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
-           {:ok, data} <- Poison.decode(body),
+           {:ok, data} <- Jason.decode(body),
            nil <- Object.get_by_ap_id(data["id"]),
            params <- %{"type" => "Create", "to" => data["to"], "cc" => data["cc"], "actor" => data["attributedTo"], "object" => data},
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do

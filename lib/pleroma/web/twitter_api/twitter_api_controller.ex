@@ -44,7 +44,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def public_and_external_timeline(%{assigns: %{user: user}} = conn, params) do
     statuses = TwitterAPI.fetch_public_and_external_statuses(user, params)
-    {:ok, json} = Poison.encode(statuses)
+    {:ok, json} = Jason.encode(statuses)
 
     conn
     |> json_reply(200, json)
@@ -52,7 +52,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
     statuses = TwitterAPI.fetch_public_statuses(user, params)
-    {:ok, json} = Poison.encode(statuses)
+    {:ok, json} = Jason.encode(statuses)
 
     conn
     |> json_reply(200, json)
@@ -60,7 +60,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def friends_timeline(%{assigns: %{user: user}} = conn, params) do
     statuses = TwitterAPI.fetch_friend_statuses(user, params)
-    {:ok, json} = Poison.encode(statuses)
+    {:ok, json} = Jason.encode(statuses)
 
     conn
     |> json_reply(200, json)
@@ -85,7 +85,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
         params = Map.merge(params, %{"actor_id" => target_user.ap_id, "whole_db" => true})
         statuses  = TwitterAPI.fetch_user_statuses(user, params)
         conn
-        |> json_reply(200, statuses |> Poison.encode!)
+        |> json_reply(200, statuses |> Jason.encode!)
       {:error, msg} ->
         bad_request_reply(conn, msg)
     end
@@ -93,7 +93,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def mentions_timeline(%{assigns: %{user: user}} = conn, params) do
     statuses = TwitterAPI.fetch_mentions(user, params)
-    {:ok, json} = Poison.encode(statuses)
+    {:ok, json} = Jason.encode(statuses)
 
     conn
     |> json_reply(200, json)
@@ -140,7 +140,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    response = Poison.encode!(TwitterAPI.fetch_status(user, id))
+    response = Jason.encode!(TwitterAPI.fetch_status(user, id))
 
     conn
     |> json_reply(200, response)
@@ -148,7 +148,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def fetch_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     id = String.to_integer(id)
-    response = Poison.encode!(TwitterAPI.fetch_conversation(user, id))
+    response = Jason.encode!(TwitterAPI.fetch_conversation(user, id))
 
     conn
     |> json_reply(200, response)
@@ -200,7 +200,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     else
       {:error, errors} ->
       conn
-      |> json_reply(400, Poison.encode!(errors))
+      |> json_reply(400, Jason.encode!(errors))
     end
   end
 
@@ -220,7 +220,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          {:ok, user} <- User.update_and_set_cache(change) do
       CommonAPI.update(user)
       %{"url" => [ %{ "href" => href } | _ ]} = object.data
-      response = %{ url: href } |> Poison.encode!
+      response = %{ url: href } |> Jason.encode!
       conn
       |> json_reply(200, response)
     end
@@ -232,7 +232,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          change <- User.info_changeset(user, %{info: new_info}),
          {:ok, _user} <- User.update_and_set_cache(change) do
       %{"url" => [ %{ "href" => href } | _ ]} = object.data
-      response = %{ url: href } |> Poison.encode!
+      response = %{ url: href } |> Jason.encode!
       conn
       |> json_reply(200, response)
     end
@@ -240,7 +240,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def external_profile(%{assigns: %{user: current_user}} = conn, %{"profileurl" => uri}) do
     with {:ok, user_map} <- TwitterAPI.get_external_profile(current_user, uri),
-         response <- Poison.encode!(user_map) do
+         response <- Jason.encode!(user_map) do
       conn
       |> json_reply(200, response)
     else
@@ -259,7 +259,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          changeset <- User.info_changeset(user, %{info: updated_info}),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       conn
-      |> json_reply(200, Poison.encode!(mrn))
+      |> json_reply(200, Jason.encode!(mrn))
     else
       _e -> bad_request_reply(conn, "Can't update.")
     end
@@ -287,7 +287,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     with {:ok, friends} <- User.get_friends(user) do
       ids = friends
       |> Enum.map(fn x -> x.id end)
-      |> Poison.encode!
+      |> Jason.encode!
 
       json(conn, ids)
     else
@@ -296,7 +296,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def empty_array(conn, _params) do
-    json(conn, Poison.encode!([]))
+    json(conn, Jason.encode!([]))
   end
 
   def update_profile(%{assigns: %{user: user}} = conn, params) do
@@ -339,6 +339,6 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   defp error_json(conn, error_message) do
-    %{"error" => error_message, "request" => conn.request_path} |> Poison.encode!
+    %{"error" => error_message, "request" => conn.request_path} |> Jason.encode!
   end
 end
