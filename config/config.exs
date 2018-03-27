@@ -39,9 +39,9 @@ config :pleroma, :ostatus, Pleroma.Web.OStatus
 config :pleroma, :httpoison, Pleroma.HTTP
 
 version = with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
-            "Pleroma #{String.trim(version)}"
+            "Pleroma #{Mix.Project.config[:version]} #{String.trim(version)}"
           else
-            _ -> "Pleroma dev"
+            _ -> "Pleroma #{Mix.Project.config[:version]} dev"
           end
 
 # Configures http settings, upstream proxy etc.
