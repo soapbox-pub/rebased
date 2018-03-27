@@ -90,8 +90,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "GET /statuses/show/:id.json" do
     test "returns one status", %{conn: conn} do
-      {:ok, user} = UserBuilder.insert
-      {:ok, activity} = ActivityBuilder.insert(%{}, %{user: user})
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey!"})
       actor = Repo.get_by!(User, ap_id: activity.data["actor"])
 
       conn = conn

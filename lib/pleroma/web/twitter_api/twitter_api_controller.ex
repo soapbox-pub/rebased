@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
-  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
+  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView}
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Web.CommonAPI
   alias Pleroma.{Repo, Activity, User}
@@ -140,10 +140,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    response = Jason.encode!(TwitterAPI.fetch_status(user, id))
-
-    conn
-    |> json_reply(200, response)
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         true <- ActivityPub.visible_for_user?(activity, user) do
+      render conn, ActivityView, "activity.json", %{activity: activity, for: user}
+    end
   end
 
   def fetch_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
