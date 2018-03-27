@@ -34,7 +34,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     { :ok, activity = %Activity{} } = TwitterAPI.create_status(user, input)
 
-    expected_text = "Hello again, <span><a href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> #<a href='http://localhost:4001/tag/epic' rel='tag'>epic</a> <a href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+    expected_text = "Hello again, <span><a href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
     assert get_in(activity.data, ["object", "content"]) == expected_text
     assert get_in(activity.data, ["object", "type"]) == "Note"
     assert get_in(activity.data, ["object", "actor"]) == user.ap_id
