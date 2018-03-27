@@ -59,7 +59,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "he", "in_reply_to_status_id" => note.id})
 
-    assert activity.data["object"]["inReplyTo"] == note.data["object"]["id"]
+    status = StatusView.render("status.json", %{activity: activity})
+
+    assert status.in_reply_to_id == note.id
+
+    [status] = StatusView.render("index.json", %{activities: [activity], as: :activity})
+
+    assert status.in_reply_to_id == note.id
   end
 
   test "contains mentions" do

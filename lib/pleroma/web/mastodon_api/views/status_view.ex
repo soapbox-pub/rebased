@@ -4,9 +4,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.{User, Activity}
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Repo
+
+  # TODO: Add cached version.
+  defp get_replied_to_activities(activities) do
+    activities
+    |> Enum.map(fn
+      (%{data: %{"type" => "Create", "object" => %{"inReplyTo" => inReplyTo}}}) ->
+        (inReplyTo != "") && inReplyTo
+      _ -> nil
+    end)
+    |> Enum.filter(&(&1))
+    |> Activity.create_activity_by_object_id_query()
+    |> Repo.all
+    |> Enum.reduce(%{}, fn(activity, acc) -> Map.put(acc,activity.data["object"]["id"], activity) end)
+  end
 
   def render("index.json", opts) do
-    render_many(opts.activities, StatusView, "status.json", opts)
+    replied_to_activities = get_replied_to_activities(opts.activities)
+    render_many(opts.activities, StatusView, "status.json", Map.put(opts, :replied_to_activities, replied_to_activities))
   end
 
   def render("status.json", %{activity: %{data: %{"type" => "Announce", "object" => object}} = activity} = opts) do
@@ -51,6 +67,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
+  def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
+    id = activity.data["object"]["inReplyTo"]
+    replied_to_activities[activity.data["object"]["inReplyTo"]]
+  end
+
+  def get_reply_to(%{data: %{"object" => object}}, _) do
+    if object["inReplyTo"] && object["inReplyTo"] != "" do
+      Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
+    else
+      nil
+    end
+  end
+
   def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
     user = User.get_cached_by_ap_id(activity.data["actor"])
 
@@ -72,12 +101,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     created_at = Utils.to_masto_date(object["published"])
 
-    # TODO: Add cached version.
-    reply_to = if object["inReplyTo"] && object["inReplyTo"] != "" do
-      Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
-    else
-      nil
-    end
+    reply_to = get_reply_to(activity, opts)
     reply_to_user = reply_to && User.get_cached_by_ap_id(reply_to.data["actor"])
 
     emojis = (activity.data["object"]["emoji"] || [])
