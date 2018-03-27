@@ -189,7 +189,7 @@ defmodule Pleroma.Formatter do
     end)
 
     subs = subs ++ Enum.map(tags, fn ({_, tag, uuid}) ->
-      url = "#<a href='#{Pleroma.Web.base_url}/tag/#{tag}' rel='tag'>#{tag}</a>"
+      url = "<a href='#{Pleroma.Web.base_url}/tag/#{tag}' rel='tag'>##{tag}</a>"
       {uuid, url}
     end)
 
