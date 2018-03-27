@@ -7,7 +7,7 @@ defmodule Pleroma.FormatterTest do
   describe ".add_hashtag_links" do
     test "turns hashtags into links" do
       text = "I love #cofe and #2hu"
-      expected_text = "I love #<a href='http://localhost:4001/tag/cofe' rel='tag'>cofe</a> and #<a href='http://localhost:4001/tag/2hu' rel='tag'>2hu</a>"
+      expected_text = "I love <a href='http://localhost:4001/tag/cofe' rel='tag'>#cofe</a> and <a href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a>"
 
       tags = Formatter.parse_tags(text)
       assert expected_text == Formatter.add_hashtag_links({[], text}, tags) |> Formatter.finalize
