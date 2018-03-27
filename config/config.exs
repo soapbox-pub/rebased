@@ -9,6 +9,9 @@ use Mix.Config
 config :pleroma,
   ecto_repos: [Pleroma.Repo]
 
+config :pleroma, Pleroma.Repo,
+  types: Pleroma.PostgresTypes
+
 config :pleroma, Pleroma.Upload,
   uploads: "uploads"
 
@@ -60,6 +63,11 @@ config :pleroma, :media_proxy,
 
 config :pleroma, :chat,
   enabled: true
+
+config :ecto, json_library: Jason
+
+config :phoenix, :format_encoders,
+  json: Jason
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
