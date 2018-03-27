@@ -73,7 +73,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     created_at = Utils.to_masto_date(object["published"])
 
     # TODO: Add cached version.
-    reply_to = Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
+    reply_to = if object["inReplyTo"] && object["inReplyTo"] != "" do
+      Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
+    else
+      nil
+    end
     reply_to_user = reply_to && User.get_cached_by_ap_id(reply_to.data["actor"])
 
     emojis = (activity.data["object"]["emoji"] || [])

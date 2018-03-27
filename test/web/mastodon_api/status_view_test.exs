@@ -54,6 +54,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status == expected
   end
 
+  test "a reply" do
+    note = insert(:note_activity)
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "he", "in_reply_to_status_id" => note.id})
+
+    assert activity.data["object"]["inReplyTo"] == note.data["object"]["id"]
+  end
+
   test "contains mentions" do
     incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
     # a user with this ap id might be in the cache.
