@@ -37,7 +37,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       content
     end
 
-    html = HtmlSanitizeEx.basic_html(content) |> Formatter.emojify(object["emoji"])
+    html = HtmlSanitizeEx.basic_html(content)
+    |> Formatter.emojify(object["emoji"])
 
     %{
       "id" => activity.id,
