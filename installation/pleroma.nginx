@@ -8,7 +8,7 @@ server {
 }
 
 server {
-    listen 443;
+    listen 443 ssl http2;
     ssl on;
     ssl_session_timeout 5m;
 
@@ -21,6 +21,12 @@ server {
 
     server_name example.tld;
 
+    gzip_vary on;                                                                                                                         
+    gzip_proxied any;                                                                                                                     
+    gzip_comp_level 6;                                                                                                                    
+    gzip_buffers 16 8k;                                                                                                                   
+    gzip_http_version 1.1;                                                                                                                
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/activity+json application/atom+xml;      
     location / {
         add_header 'Access-Control-Allow-Origin' '*';
         proxy_http_version 1.1;
