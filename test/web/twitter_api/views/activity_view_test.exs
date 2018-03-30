@@ -24,7 +24,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "attentions" => [
         UserView.render("show.json", %{user: other_user})
       ],
-      "created_at" => activity.data["object"]["published"] |> Utils.date_to_asctime,
+      "created_at" => activity.data["object"]["published"] |> Utils.date_to_asctime(),
       "external_url" => activity.data["object"]["id"],
       "fave_num" => 0,
       "favorited" => false,
@@ -37,11 +37,51 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "repeated" => false,
       "statusnet_conversation_id" => convo_id,
       "statusnet_html" =>
-        "Hey <span><a href=\"http://localhost:4001/users/nick1\">@<span>shp</span></a></span>!",
+        "Hey <span><a href=\"#{other_user.ap_id}\">@<span>shp</span></a></span>!",
       "tags" => [],
       "text" => "Hey @shp!",
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user})
+    }
+
+    assert result == expected
+  end
+
+  test "an activity that is a reply" do
+    user = insert(:user)
+    other_user = insert(:user, %{nickname: "shp"})
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+
+    {:ok, answer} =
+      CommonAPI.post(other_user, %{"status" => "Hi!", "in_reply_to_status_id" => activity.id})
+
+    result = ActivityView.render("activity.json", %{activity: answer})
+
+    assert result["in_reply_to_status_id"] == activity.id
+  end
+
+  test "a like activity" do
+    user = insert(:user)
+    other_user = insert(:user, %{nickname: "shp"})
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    {:ok, like, _object} = CommonAPI.favorite(activity.id, other_user)
+
+    result = ActivityView.render("activity.json", activity: like)
+
+    expected = %{
+      "activity_type" => "like",
+      "created_at" => like.data["published"] |> Utils.date_to_asctime(),
+      "external_url" => like.data["id"],
+      "id" => like.id,
+      "in_reply_to_status_id" => activity.id,
+      "is_local" => true,
+      "is_post_verb" => false,
+      "statusnet_html" => "shp favorited a status.",
+      "text" => "shp favorited a status.",
+      "uri" => "tag:#{like.data["id"]}:objectType=Favourite",
+      "user" => UserView.render("show.json", user: other_user)
     }
 
     assert result == expected

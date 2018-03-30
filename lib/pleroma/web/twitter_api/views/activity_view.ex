@@ -5,7 +5,31 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
+  alias Pleroma.Activity
   alias Pleroma.Formatter
+
+  def render("activity.json", %{activity: %{data: %{"type" => "Like"}} = activity} = opts) do
+    user = User.get_cached_by_ap_id(activity.data["actor"])
+    liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    created_at = activity.data["published"]
+    |> Utils.date_to_asctime
+
+    text = "#{user.nickname} favorited a status."
+
+    %{
+      "id" => activity.id,
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
+      "statusnet_html" => text,
+      "text" => text,
+      "is_local" => activity.local,
+      "is_post_verb" => false,
+      "uri" => "tag:#{activity.data["id"]}:objectType=Favourite",
+      "created_at" => created_at,
+      "in_reply_to_status_id" => liked_activity.id,
+      "external_url" => activity.data["id"],
+      "activity_type" => "like"
+    }
+  end
 
   def render("activity.json", %{activity: %{data: %{"type" => "Create", "object" => object}} = activity} = opts) do
     actor = get_in(activity.data, ["actor"])
