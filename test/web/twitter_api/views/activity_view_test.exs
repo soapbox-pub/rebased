@@ -6,6 +6,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Repo
+  alias Pleroma.Activity
   import Pleroma.Factory
 
   test "a create activity with a note" do
@@ -82,6 +84,37 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "text" => "shp favorited a status.",
       "uri" => "tag:#{like.data["id"]}:objectType=Favourite",
       "user" => UserView.render("show.json", user: other_user)
+    }
+
+    assert result == expected
+  end
+
+  test "an announce activity" do
+    user = insert(:user)
+    other_user = insert(:user, %{nickname: "shp"})
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    {:ok, announce, _object} = CommonAPI.repeat(activity.id, other_user)
+
+    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+
+    activity = Repo.get(Activity, activity.id)
+
+    result = ActivityView.render("activity.json", activity: announce)
+
+    expected = %{
+      "activity_type" => "repeat",
+      "created_at" => announce.data["published"] |> Utils.date_to_asctime(),
+      "external_url" => announce.data["id"],
+      "id" => announce.id,
+      "is_local" => true,
+      "is_post_verb" => false,
+      "statusnet_html" => "shp retweeted a status.",
+      "text" => "shp retweeted a status.",
+      "uri" => "tag:#{announce.data["id"]}:objectType=note",
+      "user" => UserView.render("show.json", user: other_user),
+      "retweeted_status" => ActivityView.render("activity.json", activity: activity),
+      "statusnet_conversation_id" => convo_id
     }
 
     assert result == expected

@@ -8,6 +8,32 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Activity
   alias Pleroma.Formatter
 
+  def render("activity.json", %{activity: %{data: %{"type" => "Announce"}} = activity} = opts) do
+    user = User.get_by_ap_id(activity.data["actor"])
+    created_at = activity.data["published"] |> Utils.date_to_asctime
+    announced_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+
+    text = "#{user.nickname} retweeted a status."
+
+    # retweeted_status = to_map(announced_activity, Map.merge(%{user: announced_user}, opts))
+    retweeted_status = render("activity.json", Map.merge(opts, %{activity: announced_activity}))
+
+    %{
+      "id" => activity.id,
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
+      "statusnet_html" => text,
+      "text" => text,
+      "is_local" => activity.local,
+      "is_post_verb" => false,
+      "uri" => "tag:#{activity.data["id"]}:objectType=note",
+      "created_at" => created_at,
+      "retweeted_status" => retweeted_status,
+      "statusnet_conversation_id" => conversation_id(announced_activity),
+      "external_url" => activity.data["id"],
+      "activity_type" => "repeat"
+    }
+  end
+
   def render("activity.json", %{activity: %{data: %{"type" => "Like"}} = activity} = opts) do
     user = User.get_cached_by_ap_id(activity.data["actor"])
     liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
