@@ -8,6 +8,26 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Activity
   alias Pleroma.Formatter
 
+  def render("activity.json", %{activity: %{data: %{"type" => "Delete"}} = activity} = opts) do
+    user = User.get_cached_by_ap_id(activity.data["actor"])
+    created_at = activity.data["published"] |> Utils.date_to_asctime()
+
+    %{
+      "id" => activity.id,
+      "uri" => activity.data["object"],
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
+      "attentions" => [],
+      "statusnet_html" => "deleted notice {{tag",
+      "text" => "deleted notice {{tag",
+      "is_local" => activity.local,
+      "is_post_verb" => false,
+      "created_at" => created_at,
+      "in_reply_to_status_id" => nil,
+      "external_url" => activity.data["id"],
+      "activity_type" => "delete"
+    }
+  end
+
   def render("activity.json", %{activity: %{data: %{"type" => "Follow"}} = activity} = opts) do
     user = User.get_cached_by_ap_id(activity.data["actor"])
     created_at = activity.data["published"] || DateTime.to_iso8601(activity.inserted_at)

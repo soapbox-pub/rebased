@@ -126,7 +126,6 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     user = insert(:user)
     other_user = insert(:user, %{nickname: "shp"})
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
     {:ok, follower} = User.follow(user, other_user)
     {:ok, follow} = ActivityPub.follow(follower, other_user)
 
@@ -143,6 +142,32 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "is_post_verb" => false,
       "statusnet_html" => "#{user.nickname} started following shp",
       "text" => "#{user.nickname} started following shp",
+      "user" => UserView.render("show.json", user: user)
+    }
+
+    assert result == expected
+  end
+
+  test "a delete activity" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    {:ok, delete} = CommonAPI.delete(activity.id, user)
+
+    result = ActivityView.render("activity.json", activity: delete)
+
+    expected = %{
+      "activity_type" => "delete",
+      "attentions" => [],
+      "created_at" => delete.data["published"] |> Utils.date_to_asctime(),
+      "external_url" => delete.data["id"],
+      "id" => delete.id,
+      "in_reply_to_status_id" => nil,
+      "is_local" => true,
+      "is_post_verb" => false,
+      "statusnet_html" => "deleted notice {{tag",
+      "text" => "deleted notice {{tag",
+      "uri" => delete.data["object"],
       "user" => UserView.render("show.json", user: user)
     }
 
