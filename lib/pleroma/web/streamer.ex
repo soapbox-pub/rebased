@@ -5,9 +5,11 @@ defmodule Pleroma.Web.Streamer do
 
   def start_link do
     spawn(fn ->
-      Process.sleep(1000 * 30) # 30 seconds
+      # 30 seconds
+      Process.sleep(1000 * 30)
       GenServer.cast(__MODULE__, %{action: :ping})
     end)
+
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
@@ -25,39 +27,54 @@ defmodule Pleroma.Web.Streamer do
 
   def handle_cast(%{action: :ping}, topics) do
     Map.values(topics)
-    |> List.flatten
-    |> Enum.each(fn (socket) ->
+    |> List.flatten()
+    |> Enum.each(fn socket ->
       Logger.debug("Sending keepalive ping")
-      send socket.transport_pid, {:text, ""}
+      send(socket.transport_pid, {:text, ""})
     end)
+
     spawn(fn ->
-      Process.sleep(1000 * 30) # 30 seconds
+      # 30 seconds
+      Process.sleep(1000 * 30)
       GenServer.cast(__MODULE__, %{action: :ping})
     end)
+
     {:noreply, topics}
   end
 
   def handle_cast(%{action: :stream, topic: "user", item: %Notification{} = item}, topics) do
     topic = "user:#{item.user_id}"
-    Enum.each(topics[topic] || [], fn (socket) ->
-      json = %{
-        event: "notification",
-        payload: Pleroma.Web.MastodonAPI.MastodonAPIController.render_notification(socket.assigns["user"], item) |> Jason.encode!
-      } |> Jason.encode!
 
-      send socket.transport_pid, {:text, json}
+    Enum.each(topics[topic] || [], fn socket ->
+      json =
+        %{
+          event: "notification",
+          payload:
+            Pleroma.Web.MastodonAPI.MastodonAPIController.render_notification(
+              socket.assigns["user"],
+              item
+            )
+            |> Jason.encode!()
+        }
+        |> Jason.encode!()
+
+      send(socket.transport_pid, {:text, json})
     end)
+
     {:noreply, topics}
   end
 
   def handle_cast(%{action: :stream, topic: "user", item: item}, topics) do
     Logger.debug("Trying to push to users")
-    recipient_topics = User.get_recipients_from_activity(item)
-    |> Enum.map(fn (%{id: id}) -> "user:#{id}" end)
 
-    Enum.each(recipient_topics, fn (topic) ->
+    recipient_topics =
+      User.get_recipients_from_activity(item)
+      |> Enum.map(fn %{id: id} -> "user:#{id}" end)
+
+    Enum.each(recipient_topics, fn topic ->
       push_to_socket(topics, topic, item)
     end)
+
     {:noreply, topics}
   end
 
@@ -92,13 +109,21 @@ defmodule Pleroma.Web.Streamer do
   end
 
   def push_to_socket(topics, topic, item) do
-    Enum.each(topics[topic] || [], fn (socket) ->
-      json = %{
-        event: "update",
-        payload: Pleroma.Web.MastodonAPI.StatusView.render("status.json", activity: item, for: socket.assigns[:user]) |> Jason.encode!
-      } |> Jason.encode!
+    Enum.each(topics[topic] || [], fn socket ->
+      json =
+        %{
+          event: "update",
+          payload:
+            Pleroma.Web.MastodonAPI.StatusView.render(
+              "status.json",
+              activity: item,
+              for: socket.assigns[:user]
+            )
+            |> Jason.encode!()
+        }
+        |> Jason.encode!()
 
-      send socket.transport_pid, {:text, json}
+      send(socket.transport_pid, {:text, json})
     end)
   end
 

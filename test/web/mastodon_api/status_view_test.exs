@@ -13,8 +13,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("status.json", %{activity: note})
 
-    created_at = (note.data["object"]["published"] || "")
-    |> String.replace(~r/\.\d+Z/, ".000Z")
+    created_at =
+      (note.data["object"]["published"] || "")
+      |> String.replace(~r/\.\d+Z/, ".000Z")
 
     expected = %{
       id: to_string(note.id),
@@ -57,7 +58,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   test "a reply" do
     note = insert(:note_activity)
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "he", "in_reply_to_status_id" => note.id})
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{"status" => "he", "in_reply_to_status_id" => note.id})
 
     status = StatusView.render("status.json", %{activity: activity})
 

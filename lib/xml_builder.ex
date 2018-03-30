@@ -23,7 +23,7 @@ defmodule Pleroma.XmlBuilder do
     for element <- content do
       to_xml(element)
     end
-    |> Enum.join
+    |> Enum.join()
   end
 
   def to_xml(%NaiveDateTime{} = time) do
@@ -33,10 +33,12 @@ defmodule Pleroma.XmlBuilder do
   def to_doc(content), do: ~s(<?xml version="1.0" encoding="UTF-8"?>) <> to_xml(content)
 
   defp make_open_tag(tag, attributes) do
-    attributes_string = for {attribute, value} <- attributes do
-      "#{attribute}=\"#{value}\""
-    end |> Enum.join(" ")
+    attributes_string =
+      for {attribute, value} <- attributes do
+        "#{attribute}=\"#{value}\""
+      end
+      |> Enum.join(" ")
 
-    [tag, attributes_string] |> Enum.join(" ") |> String.trim
+    [tag, attributes_string] |> Enum.join(" ") |> String.trim()
   end
 end

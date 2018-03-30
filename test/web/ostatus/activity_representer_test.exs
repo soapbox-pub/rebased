@@ -16,9 +16,12 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
     tuple = ActivityRepresenter.to_simple_form(activity, user)
 
-    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary()
 
-    assert String.contains?(res, ~s{<link type="text/html" href="https://mastodon.social/users/lambadalambda/updates/2314748" rel="alternate"/>})
+    assert String.contains?(
+             res,
+             ~s{<link type="text/html" href="https://mastodon.social/users/lambadalambda/updates/2314748" rel="alternate"/>}
+           )
   end
 
   test "a note activity" do
@@ -46,7 +49,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
     tuple = ActivityRepresenter.to_simple_form(note_activity, user)
 
-    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary()
 
     assert clean(res) == clean(expected)
   end
@@ -61,7 +64,10 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     answer = %{answer | data: data}
 
     note_object = Object.get_by_ap_id(note.data["object"]["id"])
-    Repo.update!(Object.change(note_object, %{ data: Map.put(note_object.data, "external_url", "someurl") }))
+
+    Repo.update!(
+      Object.change(note_object, %{data: Map.put(note_object.data, "external_url", "someurl")})
+    )
 
     user = User.get_cached_by_ap_id(answer.data["actor"])
 
@@ -86,7 +92,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
     tuple = ActivityRepresenter.to_simple_form(answer, user)
 
-    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary()
 
     assert clean(res) == clean(expected)
   end
@@ -102,9 +108,11 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
     note_user = User.get_cached_by_ap_id(note.data["actor"])
     note = Repo.get(Activity, note.id)
-    note_xml = ActivityRepresenter.to_simple_form(note, note_user, true)
-    |> :xmerl.export_simple_content(:xmerl_xml)
-    |> to_string
+
+    note_xml =
+      ActivityRepresenter.to_simple_form(note, note_user, true)
+      |> :xmerl.export_simple_content(:xmerl_xml)
+      |> to_string
 
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/activity</activity:object-type>
@@ -120,13 +128,16 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <activity:object>
       #{note_xml}
     </activity:object>
-    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{note.data["actor"]}"/>
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{
+      note.data["actor"]
+    }"/>
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
 
-    announce_xml = ActivityRepresenter.to_simple_form(announce, user)
-    |> :xmerl.export_simple_content(:xmerl_xml)
-    |> to_string
+    announce_xml =
+      ActivityRepresenter.to_simple_form(announce, user)
+      |> :xmerl.export_simple_content(:xmerl_xml)
+      |> to_string
 
     assert clean(expected) == clean(announce_xml)
   end
@@ -139,7 +150,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     tuple = ActivityRepresenter.to_simple_form(like, user)
     refute is_nil(tuple)
 
-    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary()
 
     expected = """
     <activity:verb>http://activitystrea.ms/schema/1.0/favorite</activity:verb>
@@ -156,7 +167,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <link ref="#{like.data["context"]}" rel="ostatus:conversation" />
     <link rel="self" type="application/atom+xml" href="#{like.data["id"]}"/>
     <thr:in-reply-to ref="#{note.data["id"]}" />
-    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{note.data["actor"]}"/>
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{
+      note.data["actor"]
+    }"/>
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     """
 
@@ -166,18 +179,20 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
   test "a follow activity" do
     follower = insert(:user)
     followed = insert(:user)
-    {:ok, activity} = ActivityPub.insert(%{
-          "type" => "Follow",
-          "actor" => follower.ap_id,
-          "object" => followed.ap_id,
-          "to" => [followed.ap_id]
-    })
+
+    {:ok, activity} =
+      ActivityPub.insert(%{
+        "type" => "Follow",
+        "actor" => follower.ap_id,
+        "object" => followed.ap_id,
+        "to" => [followed.ap_id]
+      })
 
     tuple = ActivityRepresenter.to_simple_form(activity, follower)
 
     refute is_nil(tuple)
 
-    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary()
 
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/activity</activity:object-type>
@@ -193,7 +208,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
       <uri>#{activity.data["object"]}</uri>
     </activity:object>
     <link rel="self" type="application/atom+xml" href="#{activity.data["id"]}"/>
-    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{activity.data["object"]}"/>
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{
+      activity.data["object"]
+    }"/>
     """
 
     assert clean(res) == clean(expected)
@@ -209,7 +226,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
     refute is_nil(tuple)
 
-    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary()
 
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/activity</activity:object-type>
@@ -225,7 +242,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
       <uri>#{followed.ap_id}</uri>
     </activity:object>
     <link rel="self" type="application/atom+xml" href="#{activity.data["id"]}"/>
-    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{followed.ap_id}"/>
+    <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="#{
+      followed.ap_id
+    }"/>
     """
 
     assert clean(res) == clean(expected)
@@ -233,13 +252,22 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
   test "a delete" do
     user = insert(:user)
-    activity = %Activity{data: %{ "id" => "ap_id", "type" => "Delete", "actor" => user.ap_id, "object" => "some_id", "published" => "2017-06-18T12:00:18+00:00" }}
+
+    activity = %Activity{
+      data: %{
+        "id" => "ap_id",
+        "type" => "Delete",
+        "actor" => user.ap_id,
+        "object" => "some_id",
+        "published" => "2017-06-18T12:00:18+00:00"
+      }
+    }
 
     tuple = ActivityRepresenter.to_simple_form(activity, nil)
 
     refute is_nil(tuple)
 
-    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary
+    res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> IO.iodata_to_binary()
 
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/activity</activity:object-type>

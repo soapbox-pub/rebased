@@ -11,15 +11,19 @@ defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
 
     tuple = FeedRepresenter.to_simple_form(user, [note_activity], [user])
 
-    most_recent_update = note_activity.updated_at
-    |> NaiveDateTime.to_iso8601
+    most_recent_update =
+      note_activity.updated_at
+      |> NaiveDateTime.to_iso8601()
 
     res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> to_string
-    user_xml = UserRepresenter.to_simple_form(user)
-    |> :xmerl.export_simple_content(:xmerl_xml)
 
-    entry_xml = ActivityRepresenter.to_simple_form(note_activity, user)
-    |> :xmerl.export_simple_content(:xmerl_xml)
+    user_xml =
+      UserRepresenter.to_simple_form(user)
+      |> :xmerl.export_simple_content(:xmerl_xml)
+
+    entry_xml =
+      ActivityRepresenter.to_simple_form(note_activity, user)
+      |> :xmerl.export_simple_content(:xmerl_xml)
 
     expected = """
     <feed xmlns="http://www.w3.org/2005/Atom" xmlns:thr="http://purl.org/syndication/thread/1.0" xmlns:activity="http://activitystrea.ms/spec/1.0/" xmlns:poco="http://portablecontacts.net/spec/1.0" xmlns:ostatus="http://ostatus.org/schema/1.0">
@@ -39,6 +43,7 @@ defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
       </entry>
     </feed>
     """
+
     assert clean(res) == clean(expected)
   end
 

@@ -10,6 +10,7 @@ defmodule Pleroma.Builders.UserBuilder do
       bio: "A tester.",
       ap_id: "some id"
     }
+
     Map.merge(user, data)
   end
 

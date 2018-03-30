@@ -4,7 +4,7 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
   alias Pleroma.Web.WebFinger
 
   def host_meta(conn, _params) do
-    xml = WebFinger.host_meta
+    xml = WebFinger.host_meta()
 
     conn
     |> put_resp_content_type("application/xrd+xml")
@@ -21,12 +21,14 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
         else
           _e -> send_resp(conn, 404, "Couldn't find user")
         end
+
       n when n in ["json", "jrd+json"] ->
         with {:ok, response} <- WebFinger.webfinger(resource, "JSON") do
           json(conn, response)
         else
           _e -> send_resp(conn, 404, "Couldn't find user")
         end
+
       _ ->
         send_resp(conn, 404, "Unsupported format")
     end

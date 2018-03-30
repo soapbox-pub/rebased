@@ -5,19 +5,26 @@ defmodule Pleroma.Formatter do
   @tag_regex ~r/\#\w+/u
   def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
-    |> Enum.map(fn (["#" <> tag = full_tag]) -> {full_tag, String.downcase(tag)} end)
-    |> (fn map -> if data["sensitive"] in [true, "True", "true", "1"], do: [{"#nsfw", "nsfw"}] ++ map, else: map end).()
+    |> Enum.map(fn ["#" <> tag = full_tag] -> {full_tag, String.downcase(tag)} end)
+    |> (fn map ->
+          if data["sensitive"] in [true, "True", "true", "1"],
+            do: [{"#nsfw", "nsfw"}] ++ map,
+            else: map
+        end).()
   end
 
   def parse_mentions(text) do
     # Modified from https://www.w3.org/TR/html5/forms.html#valid-e-mail-address
-    regex = ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/u
+    regex =
+      ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/u
 
     Regex.scan(regex, text)
-    |> List.flatten
-    |> Enum.uniq
-    |> Enum.map(fn ("@" <> match = full_match) -> {full_match, User.get_cached_by_nickname(match)} end)
-    |> Enum.filter(fn ({_match, user}) -> user end)
+    |> List.flatten()
+    |> Enum.uniq()
+    |> Enum.map(fn "@" <> match = full_match ->
+      {full_match, User.get_cached_by_nickname(match)}
+    end)
+    |> Enum.filter(fn {_match, user} -> user end)
   end
 
   @finmoji [
@@ -86,9 +93,9 @@ defmodule Pleroma.Formatter do
     "woollysocks"
   ]
 
-  @finmoji_with_filenames Enum.map(@finmoji, fn (finmoji) ->
-    {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
-  end)
+  @finmoji_with_filenames Enum.map(@finmoji, fn finmoji ->
+                            {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
+                          end)
 
   @emoji_from_file (with {:ok, default} <- File.read("config/emoji.txt") do
                       custom =
@@ -97,31 +104,40 @@ defmodule Pleroma.Formatter do
                         else
                           _e -> ""
                         end
+
                       (default <> "\n" <> custom)
                       |> String.trim()
                       |> String.split(~r/\n+/)
-                      |> Enum.map(fn(line) ->
+                      |> Enum.map(fn line ->
                         [name, file] = String.split(line, ~r/,\s*/)
                         {name, file}
-                     end)
+                      end)
                     else
                       _ -> []
-                   end)
+                    end)
 
   @emoji @finmoji_with_filenames ++ @emoji_from_file
 
   def emojify(text, emoji \\ @emoji)
   def emojify(text, nil), do: text
+
   def emojify(text, emoji) do
-    Enum.reduce(emoji, text, fn ({emoji, file}, text) ->
+    Enum.reduce(emoji, text, fn {emoji, file}, text ->
       emoji = HtmlSanitizeEx.strip_tags(emoji)
       file = HtmlSanitizeEx.strip_tags(file)
-      String.replace(text, ":#{emoji}:", "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{MediaProxy.url(file)}' />")
+
+      String.replace(
+        text,
+        ":#{emoji}:",
+        "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{
+          MediaProxy.url(file)
+        }' />"
+      )
     end)
   end
 
   def get_emoji(text) do
-    Enum.filter(@emoji, fn ({emoji, _}) -> String.contains?(text, ":#{emoji}:") end)
+    Enum.filter(@emoji, fn {emoji, _} -> String.contains?(text, ":#{emoji}:") end)
   end
 
   def get_custom_emoji() do
@@ -141,59 +157,71 @@ defmodule Pleroma.Formatter do
 
   @doc "changes http:... links to html links"
   def add_links({subs, text}) do
-    links = Regex.scan(@link_regex, text)
-    |> Enum.map(fn ([url]) -> {Ecto.UUID.generate, url} end)
+    links =
+      Regex.scan(@link_regex, text)
+      |> Enum.map(fn [url] -> {Ecto.UUID.generate(), url} end)
 
-    uuid_text = links
-    |> Enum.reduce(text, fn({uuid, url}, acc) -> String.replace(acc, url, uuid) end)
+    uuid_text =
+      links
+      |> Enum.reduce(text, fn {uuid, url}, acc -> String.replace(acc, url, uuid) end)
 
-    subs = subs ++ Enum.map(links, fn({uuid, url}) ->
-      {uuid, "<a href='#{url}'>#{url}</a>"}
-    end)
+    subs =
+      subs ++
+        Enum.map(links, fn {uuid, url} ->
+          {uuid, "<a href='#{url}'>#{url}</a>"}
+        end)
 
     {subs, uuid_text}
   end
 
   @doc "Adds the links to mentioned users"
   def add_user_links({subs, text}, mentions) do
-    mentions = mentions
-    |> Enum.sort_by(fn ({name, _}) -> -String.length(name) end)
-    |> Enum.map(fn({name, user}) -> {name, user, Ecto.UUID.generate} end)
+    mentions =
+      mentions
+      |> Enum.sort_by(fn {name, _} -> -String.length(name) end)
+      |> Enum.map(fn {name, user} -> {name, user, Ecto.UUID.generate()} end)
 
-    uuid_text = mentions
-    |> Enum.reduce(text, fn ({match, _user, uuid}, text) ->
-      String.replace(text, match, uuid)
-    end)
+    uuid_text =
+      mentions
+      |> Enum.reduce(text, fn {match, _user, uuid}, text ->
+        String.replace(text, match, uuid)
+      end)
 
-    subs = subs ++ Enum.map(mentions, fn ({match, %User{ap_id: ap_id}, uuid}) ->
-      short_match = String.split(match, "@") |> tl() |> hd()
-      {uuid, "<span><a href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
-    end)
+    subs =
+      subs ++
+        Enum.map(mentions, fn {match, %User{ap_id: ap_id}, uuid} ->
+          short_match = String.split(match, "@") |> tl() |> hd()
+          {uuid, "<span><a href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
+        end)
 
     {subs, uuid_text}
   end
 
   @doc "Adds the hashtag links"
   def add_hashtag_links({subs, text}, tags) do
-    tags = tags
-    |> Enum.sort_by(fn ({name, _}) -> -String.length(name) end)
-    |> Enum.map(fn({name, short}) -> {name, short, Ecto.UUID.generate} end)
+    tags =
+      tags
+      |> Enum.sort_by(fn {name, _} -> -String.length(name) end)
+      |> Enum.map(fn {name, short} -> {name, short, Ecto.UUID.generate()} end)
 
-    uuid_text = tags
-    |> Enum.reduce(text, fn ({match, _short, uuid}, text) ->
-      String.replace(text, match, uuid)
-    end)
+    uuid_text =
+      tags
+      |> Enum.reduce(text, fn {match, _short, uuid}, text ->
+        String.replace(text, match, uuid)
+      end)
 
-    subs = subs ++ Enum.map(tags, fn ({_, tag, uuid}) ->
-      url = "<a href='#{Pleroma.Web.base_url}/tag/#{tag}' rel='tag'>##{tag}</a>"
-      {uuid, url}
-    end)
+    subs =
+      subs ++
+        Enum.map(tags, fn {_, tag, uuid} ->
+          url = "<a href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>##{tag}</a>"
+          {uuid, url}
+        end)
 
     {subs, uuid_text}
   end
 
   def finalize({subs, text}) do
-    Enum.reduce(subs, text, fn({uuid, replacement}, result_text) ->
+    Enum.reduce(subs, text, fn {uuid, replacement}, result_text ->
       String.replace(result_text, uuid, replacement)
     end)
   end

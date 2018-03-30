@@ -6,7 +6,15 @@ defmodule Pleroma.Web.OAuth.TokenTest do
   import Pleroma.Factory
 
   test "exchanges a auth token for an access token" do
-    {:ok, app} = Repo.insert(App.register_changeset(%App{}, %{client_name: "client", scopes: "scope", redirect_uris: "url"}))
+    {:ok, app} =
+      Repo.insert(
+        App.register_changeset(%App{}, %{
+          client_name: "client",
+          scopes: "scope",
+          redirect_uris: "url"
+        })
+      )
+
     user = insert(:user)
 
     {:ok, auth} = Authorization.create_authorization(app, user)

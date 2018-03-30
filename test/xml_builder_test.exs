@@ -3,7 +3,7 @@ defmodule Pleroma.XmlBuilderTest do
   alias Pleroma.XmlBuilder
 
   test "Build a basic xml string from a tuple" do
-    data = { :feed, %{ xmlns: "http://www.w3.org/2005/Atom"}, "Some content" }
+    data = {:feed, %{xmlns: "http://www.w3.org/2005/Atom"}, "Some content"}
 
     expected_xml = "<feed xmlns=\"http://www.w3.org/2005/Atom\">Some content</feed>"
 
@@ -11,9 +11,10 @@ defmodule Pleroma.XmlBuilderTest do
   end
 
   test "returns a complete document" do
-    data = { :feed, %{ xmlns: "http://www.w3.org/2005/Atom"}, "Some content" }
+    data = {:feed, %{xmlns: "http://www.w3.org/2005/Atom"}, "Some content"}
 
-    expected_xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><feed xmlns=\"http://www.w3.org/2005/Atom\">Some content</feed>"
+    expected_xml =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?><feed xmlns=\"http://www.w3.org/2005/Atom\">Some content</feed>"
 
     assert XmlBuilder.to_doc(data) == expected_xml
   end
@@ -34,11 +35,12 @@ defmodule Pleroma.XmlBuilderTest do
       :feed,
       [
         {:guy, "brush"},
-        {:lament, %{ configuration: "puzzle" }, "pinhead" }
+        {:lament, %{configuration: "puzzle"}, "pinhead"}
       ]
     }
 
-    expected_xml = ~s[<feed><guy>brush</guy><lament configuration="puzzle">pinhead</lament></feed>]
+    expected_xml =
+      ~s[<feed><guy>brush</guy><lament configuration="puzzle">pinhead</lament></feed>]
 
     assert XmlBuilder.to_xml(data) == expected_xml
   end
@@ -50,7 +52,7 @@ defmodule Pleroma.XmlBuilderTest do
   test "Uses self-closing tags when no content is giving" do
     data = {
       :link,
-      %{ rel: "self" }
+      %{rel: "self"}
     }
 
     expected_xml = ~s[<link rel="self" />]

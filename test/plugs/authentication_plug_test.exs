@@ -37,22 +37,24 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
   describe "without an authorization header" do
     test "it halts the application" do
-      conn = build_conn()
-      |> Plug.Session.call(Plug.Session.init(@session_opts))
-      |> fetch_session
-      |> AuthenticationPlug.call(%{})
+      conn =
+        build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
+        |> AuthenticationPlug.call(%{})
 
       assert conn.status == 403
       assert conn.halted == true
     end
 
     test "it assigns a nil user if the 'optional' option is used" do
-      conn = build_conn()
-      |> Plug.Session.call(Plug.Session.init(@session_opts))
-      |> fetch_session
-      |> AuthenticationPlug.call(%{optional: true})
+      conn =
+        build_conn()
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
+        |> AuthenticationPlug.call(%{optional: true})
 
-      assert %{ user: nil } == conn.assigns
+      assert %{user: nil} == conn.assigns
     end
   end
 
@@ -73,9 +75,9 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
         build_conn()
         |> Plug.Session.call(Plug.Session.init(@session_opts))
         |> fetch_session
-        |> AuthenticationPlug.call(%{optional: true, fetcher: &fetch_nil/1 })
+        |> AuthenticationPlug.call(%{optional: true, fetcher: &fetch_nil/1})
 
-      assert %{ user: nil } == conn.assigns
+      assert %{user: nil} == conn.assigns
     end
   end
 
@@ -113,7 +115,7 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
         |> put_req_header("authorization", header)
         |> AuthenticationPlug.call(opts)
 
-      assert %{ user: nil } == conn.assigns
+      assert %{user: nil} == conn.assigns
     end
   end
 
@@ -126,13 +128,14 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
       header = basic_auth_enc("dude", "guy")
 
-      conn = conn
+      conn =
+        conn
         |> Plug.Session.call(Plug.Session.init(@session_opts))
         |> fetch_session
         |> put_req_header("authorization", header)
         |> AuthenticationPlug.call(opts)
 
-      assert %{ user: @user } == conn.assigns
+      assert %{user: @user} == conn.assigns
       assert get_session(conn, :user_id) == @user.id
       assert conn.halted == false
     end
@@ -147,7 +150,8 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
       header = basic_auth_enc("dude", "guy")
 
-      conn = conn
+      conn =
+        conn
         |> Plug.Session.call(Plug.Session.init(@session_opts))
         |> fetch_session
         |> put_req_header("authorization", header)
@@ -167,14 +171,15 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
       header = basic_auth_enc("dude", "THIS IS WRONG")
 
-      conn = conn
+      conn =
+        conn
         |> Plug.Session.call(Plug.Session.init(@session_opts))
         |> fetch_session
         |> put_session(:user_id, @user.id)
         |> put_req_header("authorization", header)
         |> AuthenticationPlug.call(opts)
 
-      assert %{ user: @user } == conn.assigns
+      assert %{user: @user} == conn.assigns
       assert get_session(conn, :user_id) == @user.id
       assert conn.halted == false
     end
@@ -182,8 +187,9 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
   describe "with an assigned user" do
     test "it does nothing, returning the incoming conn", %{conn: conn} do
-      conn = conn
-      |> assign(:user, @user)
+      conn =
+        conn
+        |> assign(:user, @user)
 
       conn_result = AuthenticationPlug.call(conn, %{})
 

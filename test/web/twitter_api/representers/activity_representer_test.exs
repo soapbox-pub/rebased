@@ -16,12 +16,19 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     {:ok, announce_activity, _object} = ActivityPub.announce(user, object)
     note_activity = Activity.get_by_ap_id(note_activity.data["id"])
 
-    status = ActivityRepresenter.to_map(announce_activity, %{users: [user, activity_actor], announced_activity: note_activity, for: user})
+    status =
+      ActivityRepresenter.to_map(announce_activity, %{
+        users: [user, activity_actor],
+        announced_activity: note_activity,
+        for: user
+      })
 
     assert status["id"] == announce_activity.id
     assert status["user"] == UserView.render("show.json", %{user: user, for: user})
 
-    retweeted_status = ActivityRepresenter.to_map(note_activity, %{user: activity_actor, for: user})
+    retweeted_status =
+      ActivityRepresenter.to_map(note_activity, %{user: activity_actor, for: user})
+
     assert retweeted_status["repeated"] == true
     assert retweeted_status["id"] == note_activity.id
     assert status["statusnet_conversation_id"] == retweeted_status["statusnet_conversation_id"]
@@ -36,7 +43,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     object = Object.get_by_ap_id(note_activity.data["object"]["id"])
 
     {:ok, like_activity, _object} = ActivityPub.like(user, object)
-    status = ActivityRepresenter.to_map(like_activity, %{user: user, liked_activity: note_activity})
+
+    status =
+      ActivityRepresenter.to_map(like_activity, %{user: user, liked_activity: note_activity})
 
     assert status["id"] == like_activity.id
     assert status["in_reply_to_status_id"] == note_activity.id
@@ -49,7 +58,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   end
 
   test "an activity" do
-    {:ok, user} = UserBuilder.insert
+    {:ok, user} = UserBuilder.insert()
     #   {:ok, mentioned_user } = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
     mentioned_user = insert(:user, %{nickname: "shp"})
 
@@ -70,16 +79,20 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       }
     }
 
-    content_html = "<script>alert('YAY')</script>Some :2hu: content mentioning <a href='#{mentioned_user.ap_id}'>@shp</shp>"
-    content = HtmlSanitizeEx.strip_tags(content_html)
-    date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601
+    content_html =
+      "<script>alert('YAY')</script>Some :2hu: content mentioning <a href='#{mentioned_user.ap_id}'>@shp</shp>"
 
-    {:ok, convo_object} = Object.context_mapping("2hu") |> Repo.insert
+    content = HtmlSanitizeEx.strip_tags(content_html)
+    date = DateTime.from_naive!(~N[2016-05-24 13:26:08.003], "Etc/UTC") |> DateTime.to_iso8601()
+
+    {:ok, convo_object} = Object.context_mapping("2hu") |> Repo.insert()
+
     to = [
       User.ap_followers(user),
       "https://www.w3.org/ns/activitystreams#Public",
       mentioned_user.ap_id
     ]
+
     activity = %Activity{
       id: 1,
       data: %{
@@ -92,7 +105,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "type" => "Note",
           "content" => content_html,
           "summary" => "2hu",
-          "inReplyToStatusId" => 213123,
+          "inReplyToStatusId" => 213_123,
           "attachment" => [
             object
           ],
@@ -112,7 +125,10 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       recipients: to
     }
 
-    expected_html = "<span>2hu</span><br />alert('YAY')Some <img height='32px' width='32px' alt='2hu' title='2hu' src='corndog.png' /> content mentioning <a href=\"#{mentioned_user.ap_id}\">@shp</a>"
+    expected_html =
+      "<span>2hu</span><br />alert('YAY')Some <img height='32px' width='32px' alt='2hu' title='2hu' src='corndog.png' /> content mentioning <a href=\"#{
+        mentioned_user.ap_id
+      }\">@shp</a>"
 
     expected_status = %{
       "id" => activity.id,
@@ -122,7 +138,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "text" => "2hu" <> content,
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",
-      "in_reply_to_status_id" => 213123,
+      "in_reply_to_status_id" => 213_123,
       "statusnet_conversation_id" => convo_object.id,
       "attachments" => [
         ObjectRepresenter.to_map(object)
@@ -141,7 +157,11 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "uri" => activity.data["object"]["id"]
     }
 
-    assert ActivityRepresenter.to_map(activity, %{user: user, for: follower, mentioned: [mentioned_user]}) == expected_status
+    assert ActivityRepresenter.to_map(activity, %{
+             user: user,
+             for: follower,
+             mentioned: [mentioned_user]
+           }) == expected_status
   end
 
   test "an undo for a follow" do

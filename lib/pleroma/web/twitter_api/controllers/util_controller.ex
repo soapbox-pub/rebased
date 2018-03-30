@@ -11,21 +11,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def show_password_reset(conn, %{"token" => token}) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
-      %User{} = user <- Repo.get(User, token.user_id) do
-      render conn, "password_reset.html", %{
+         %User{} = user <- Repo.get(User, token.user_id) do
+      render(conn, "password_reset.html", %{
         token: token,
         user: user
-      }
+      })
     else
-      _e -> render conn, "invalid_token.html"
+      _e -> render(conn, "invalid_token.html")
     end
   end
 
   def password_reset(conn, %{"data" => data}) do
     with {:ok, _} <- PasswordResetToken.reset_password(data["token"], data) do
-      render conn, "password_reset_success.html"
+      render(conn, "password_reset_success.html")
     else
-      _e -> render conn, "password_reset_failed.html"
+      _e -> render(conn, "password_reset_failed.html")
     end
   end
 
@@ -34,14 +34,19 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
-    with %User{} = user <- User.get_cached_by_nickname(nick),
-         avatar = User.avatar_url(user) do
+    with %User{} = user <- User.get_cached_by_nickname(nick), avatar = User.avatar_url(user) do
       conn
       |> render("subscribe.html", %{nickname: nick, avatar: avatar, error: false})
     else
-      _e -> render(conn, "subscribe.html", %{nickname: nick, avatar: nil, error: "Could not find user"})
+      _e ->
+        render(conn, "subscribe.html", %{
+          nickname: nick,
+          avatar: nil,
+          error: "Could not find user"
+        })
     end
   end
+
   def remote_subscribe(conn, %{"user" => %{"nickname" => nick, "profile" => profile}}) do
     with {:ok, %{"subscribe_address" => template}} <- WebFinger.finger(profile),
          %User{ap_id: ap_id} <- User.get_cached_by_nickname(nick) do
@@ -49,7 +54,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       |> Phoenix.Controller.redirect(external: String.replace(template, "{uri}", ap_id))
     else
       _e ->
-        render(conn, "subscribe.html", %{nickname: nick, avatar: nil, error: "Something went wrong."})
+        render(conn, "subscribe.html", %{
+          nickname: nick,
+          avatar: nil,
+          error: "Something went wrong."
+        })
     end
   end
 
@@ -64,17 +73,26 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       |> render("follow.html", %{error: err, acct: acct, avatar: avatar, name: name, id: id})
     else
       conn
-      |> render("follow_login.html", %{error: false, acct: acct, avatar: avatar, name: name, id: id})
+      |> render("follow_login.html", %{
+        error: false,
+        acct: acct,
+        avatar: avatar,
+        name: name,
+        id: id
+      })
     end
   end
 
-  def do_remote_follow(conn, %{"authorization" => %{"name" => username, "password" => password, "id" => id}}) do
+  def do_remote_follow(conn, %{
+        "authorization" => %{"name" => username, "password" => password, "id" => id}
+      }) do
     followee = Repo.get(User, id)
     avatar = User.avatar_url(followee)
     name = followee.nickname
+
     with %User{} = user <- User.get_cached_by_nickname(username),
          true <- Pbkdf2.checkpw(password, user.password_hash),
-           %User{} = followed <- Repo.get(User, id),
+         %User{} = followed <- Repo.get(User, id),
          {:ok, follower} <- User.follow(user, followee),
          {:ok, _activity} <- ActivityPub.follow(follower, followee) do
       conn
@@ -82,9 +100,15 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     else
       _e ->
         conn
-        |> render("follow_login.html", %{error: "Wrong username or password", id: id, name: name, avatar: avatar})
+        |> render("follow_login.html", %{
+          error: "Wrong username or password",
+          id: id,
+          name: name,
+          avatar: avatar
+        })
     end
   end
+
   def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
     with %User{} = followee <- Repo.get(User, id),
          {:ok, follower} <- User.follow(user, followee),
@@ -93,9 +117,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       |> render("followed.html", %{error: false})
     else
       e ->
-        Logger.debug("Remote follow failed with error #{inspect e}")
-      conn
-      |> render("followed.html", %{error: inspect(e)})
+        Logger.debug("Remote follow failed with error #{inspect(e)}")
+
+        conn
+        |> render("followed.html", %{error: inspect(e)})
     end
   end
 
@@ -107,60 +132,67 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         <config>
           <site>
             <name>#{Keyword.get(@instance, :name)}</name>
-            <site>#{Web.base_url}</site>
+            <site>#{Web.base_url()}</site>
             <textlimit>#{Keyword.get(@instance, :limit)}</textlimit>
             <closed>#{!Keyword.get(@instance, :registrations_open)}</closed>
           </site>
         </config>
         """
+
         conn
         |> put_resp_content_type("application/xml")
         |> send_resp(200, response)
+
       _ ->
         json(conn, %{
-              site: %{
-                name: Keyword.get(@instance, :name),
-                server: Web.base_url,
-                textlimit: to_string(Keyword.get(@instance, :limit)),
-                closed: if(Keyword.get(@instance, :registrations_open), do: "0", else: "1")
-              }
-             })
+          site: %{
+            name: Keyword.get(@instance, :name),
+            server: Web.base_url(),
+            textlimit: to_string(Keyword.get(@instance, :limit)),
+            closed: if(Keyword.get(@instance, :registrations_open), do: "0", else: "1")
+          }
+        })
     end
   end
 
   def version(conn, _params) do
     version = Keyword.get(@instance, :version)
+
     case get_format(conn) do
       "xml" ->
         response = "<version>#{version}</version>"
+
         conn
         |> put_resp_content_type("application/xml")
         |> send_resp(200, response)
-      _ -> json(conn, version)
+
+      _ ->
+        json(conn, version)
     end
   end
 
   def emoji(conn, _params) do
-    json conn, Enum.into(Formatter.get_custom_emoji(), %{})
+    json(conn, Enum.into(Formatter.get_custom_emoji(), %{}))
   end
 
   def follow_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
     follow_import(conn, %{"list" => File.read!(listfile.path)})
   end
+
   def follow_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
     Task.start(fn ->
-    String.split(list)
-    |> Enum.map(fn nick ->
+      String.split(list)
+      |> Enum.map(fn nick ->
         with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
-        %User{} = followed <- User.get_or_fetch_by_nickname(nick),
-        {:ok, follower} <- User.follow(follower, followed) do
+             %User{} = followed <- User.get_or_fetch_by_nickname(nick),
+             {:ok, follower} <- User.follow(follower, followed) do
           ActivityPub.follow(follower, followed)
         else
-          _e -> Logger.debug "follow_import: following #{nick} failed"
+          _e -> Logger.debug("follow_import: following #{nick} failed")
         end
       end)
     end)
 
-    json conn, "job started"
+    json(conn, "job started")
   end
 end

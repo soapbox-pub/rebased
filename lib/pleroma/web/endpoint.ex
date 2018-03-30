@@ -2,47 +2,55 @@ defmodule Pleroma.Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :pleroma
 
   if Application.get_env(:pleroma, :chat) |> Keyword.get(:enabled) do
-    socket "/socket", Pleroma.Web.UserSocket
+    socket("/socket", Pleroma.Web.UserSocket)
   end
-  socket "/api/v1", Pleroma.Web.MastodonAPI.MastodonSocket
+
+  socket("/api/v1", Pleroma.Web.MastodonAPI.MastodonSocket)
 
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phoenix.digest
   # when deploying your static files in production.
-  plug Plug.Static,
-    at: "/media", from: "uploads", gzip: false
-  plug Plug.Static,
-    at: "/", from: :pleroma,
+  plug(Plug.Static, at: "/media", from: "uploads", gzip: false)
+
+  plug(
+    Plug.Static,
+    at: "/",
+    from: :pleroma,
     only: ~w(index.html static finmoji emoji packs sounds images instance sw.js)
+  )
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do
-    plug Phoenix.CodeReloader
+    plug(Phoenix.CodeReloader)
   end
 
-  plug TrailingFormatPlug
-  plug Plug.RequestId
-  plug Plug.Logger
+  plug(TrailingFormatPlug)
+  plug(Plug.RequestId)
+  plug(Plug.Logger)
 
-  plug Plug.Parsers,
+  plug(
+    Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
     json_decoder: Jason
+  )
 
-  plug Plug.MethodOverride
-  plug Plug.Head
+  plug(Plug.MethodOverride)
+  plug(Plug.Head)
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
-  plug Plug.Session,
+  plug(
+    Plug.Session,
     store: :cookie,
     key: "_pleroma_key",
     signing_salt: "CqaoopA2"
+  )
 
-  plug Pleroma.Web.Router
+  plug(Pleroma.Web.Router)
 
   @doc """
   Dynamically loads configuration from the system environment

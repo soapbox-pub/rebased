@@ -20,12 +20,18 @@ defmodule Pleroma.Web.OStatusTest do
     assert user.info["note_count"] == 1
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"
-    assert activity.data["object"]["id"] == "tag:gs.example.org:4040,2017-04-23:noticeId=29:objectType=note"
+
+    assert activity.data["object"]["id"] ==
+             "tag:gs.example.org:4040,2017-04-23:noticeId=29:objectType=note"
+
     assert activity.data["published"] == "2017-04-23T14:51:03+00:00"
     assert activity.data["object"]["published"] == "2017-04-23T14:51:03+00:00"
-    assert activity.data["context"] == "tag:gs.example.org:4040,2017-04-23:objectType=thread:nonce=f09e22f58abd5c7b"
+
+    assert activity.data["context"] ==
+             "tag:gs.example.org:4040,2017-04-23:objectType=thread:nonce=f09e22f58abd5c7b"
+
     assert "http://pleroma.example.org:4000/users/lain3" in activity.data["to"]
-    assert activity.data["object"]["emoji"] == %{ "marko" => "marko.png", "reimu" => "reimu.png" }
+    assert activity.data["object"]["emoji"] == %{"marko" => "marko.png", "reimu" => "reimu.png"}
     assert activity.local == false
   end
 
@@ -65,10 +71,12 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming notes - Mastodon, salmon, reply" do
     # It uses the context of the replied to object
     Repo.insert!(%Object{
-          data: %{
-            "id" => "https://pleroma.soykaf.com/objects/c237d966-ac75-4fe3-a87a-d89d71a3a7a4",
-            "context" => "2hu"
-          }})
+      data: %{
+        "id" => "https://pleroma.soykaf.com/objects/c237d966-ac75-4fe3-a87a-d89d71a3a7a4",
+        "context" => "2hu"
+      }
+    })
+
     incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
@@ -113,8 +121,13 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"
     assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"]["content"] == "@<a href=\"https://gs.archae.me/user/4687\" class=\"h-card u-url p-nickname mention\" title=\"shpbot\">shpbot</a> why not indeed."
-    assert activity.data["object"]["inReplyTo"] == "tag:gs.archae.me,2017-04-30:noticeId=778260:objectType=note"
+
+    assert activity.data["object"]["content"] ==
+             "@<a href=\"https://gs.archae.me/user/4687\" class=\"h-card u-url p-nickname mention\" title=\"shpbot\">shpbot</a> why not indeed."
+
+    assert activity.data["object"]["inReplyTo"] ==
+             "tag:gs.archae.me,2017-04-30:noticeId=778260:objectType=note"
+
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
@@ -141,9 +154,11 @@ defmodule Pleroma.Web.OStatusTest do
     incoming = File.read!("test/fixtures/share-gs-local.xml")
     note_activity = insert(:note_activity)
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
-    incoming = incoming
-    |> String.replace("LOCAL_ID", note_activity.data["object"]["id"])
-    |> String.replace("LOCAL_USER", user.ap_id)
+
+    incoming =
+      incoming
+      |> String.replace("LOCAL_ID", note_activity.data["object"]["id"])
+      |> String.replace("LOCAL_USER", user.ap_id)
 
     {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
 
@@ -168,7 +183,9 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["type"] == "Announce"
     assert activity.data["actor"] == "https://mastodon.social/users/lambadalambda"
     assert activity.data["object"] == retweeted_activity.data["object"]["id"]
-    assert activity.data["id"] == "tag:mastodon.social,2017-05-03:objectId=4934452:objectType=Status"
+
+    assert activity.data["id"] ==
+             "tag:mastodon.social,2017-05-03:objectId=4934452:objectType=Status"
 
     refute activity.local
     assert retweeted_activity.data["type"] == "Create"
@@ -178,35 +195,42 @@ defmodule Pleroma.Web.OStatusTest do
   end
 
   test "handle incoming favorites - GS, websub" do
-    capture_log fn ->
+    capture_log(fn ->
       incoming = File.read!("test/fixtures/favorite.xml")
       {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
 
       assert activity.data["type"] == "Like"
       assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
       assert activity.data["object"] == favorited_activity.data["object"]["id"]
-      assert activity.data["id"] == "tag:social.heldscal.la,2017-05-05:fave:23211:comment:2061643:2017-05-05T09:12:50+00:00"
+
+      assert activity.data["id"] ==
+               "tag:social.heldscal.la,2017-05-05:fave:23211:comment:2061643:2017-05-05T09:12:50+00:00"
 
       refute activity.local
       assert favorited_activity.data["type"] == "Create"
       assert favorited_activity.data["actor"] == "https://shitposter.club/user/1"
-      assert favorited_activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+
+      assert favorited_activity.data["object"]["id"] ==
+               "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+
       refute favorited_activity.local
-    end
+    end)
   end
 
   test "handle conversation references" do
     incoming = File.read!("test/fixtures/mastodon_conversation.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
-    assert activity.data["context"] == "tag:mastodon.social,2017-08-28:objectId=7876885:objectType=Conversation"
+    assert activity.data["context"] ==
+             "tag:mastodon.social,2017-08-28:objectId=7876885:objectType=Conversation"
   end
 
   test "handle incoming favorites with locally available object - GS, websub" do
     note_activity = insert(:note_activity)
 
-    incoming = File.read!("test/fixtures/favorite_with_local_note.xml")
-    |> String.replace("localid", note_activity.data["object"]["id"])
+    incoming =
+      File.read!("test/fixtures/favorite_with_local_note.xml")
+      |> String.replace("localid", note_activity.data["object"]["id"])
 
     {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
 
@@ -224,9 +248,15 @@ defmodule Pleroma.Web.OStatusTest do
 
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"
-    assert activity.data["object"]["inReplyTo"] == "http://pleroma.example.org:4000/objects/55bce8fc-b423-46b1-af71-3759ab4670bc"
+
+    assert activity.data["object"]["inReplyTo"] ==
+             "http://pleroma.example.org:4000/objects/55bce8fc-b423-46b1-af71-3759ab4670bc"
+
     assert "http://pleroma.example.org:4000/users/lain5" in activity.data["to"]
-    assert activity.data["object"]["id"] == "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
+
+    assert activity.data["object"]["id"] ==
+             "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
+
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
@@ -234,7 +264,10 @@ defmodule Pleroma.Web.OStatusTest do
     incoming = File.read!("test/fixtures/follow.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
     assert activity.data["type"] == "Follow"
-    assert activity.data["id"] == "tag:social.heldscal.la,2017-05-07:subscription:23211:person:44803:2017-05-07T09:54:48+00:00"
+
+    assert activity.data["id"] ==
+             "tag:social.heldscal.la,2017-05-07:subscription:23211:person:44803:2017-05-07T09:54:48+00:00"
+
     assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
     assert activity.data["object"] == "https://pawoo.net/users/pekorino"
     refute activity.local
@@ -304,7 +337,8 @@ defmodule Pleroma.Web.OStatusTest do
 
       expected = %{
         "hub" => "https://social.heldscal.la/main/push/hub",
-        "magic_key" => "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
+        "magic_key" =>
+          "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
         "name" => "shp",
         "nickname" => "shp",
         "salmon" => "https://social.heldscal.la/main/salmon/user/29191",
@@ -314,10 +348,20 @@ defmodule Pleroma.Web.OStatusTest do
         "host" => "social.heldscal.la",
         "fqn" => user,
         "bio" => "cofe",
-        "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]},
+        "avatar" => %{
+          "type" => "Image",
+          "url" => [
+            %{
+              "href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg",
+              "mediaType" => "image/jpeg",
+              "type" => "Link"
+            }
+          ]
+        },
         "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}",
         "ap_id" => nil
       }
+
       assert data == expected
     end
 
@@ -329,7 +373,8 @@ defmodule Pleroma.Web.OStatusTest do
 
       expected = %{
         "hub" => "https://social.heldscal.la/main/push/hub",
-        "magic_key" => "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
+        "magic_key" =>
+          "RSA.wQ3i9UA0qmAxZ0WTIp4a-waZn_17Ez1pEEmqmqoooRsG1_BvpmOvLN0G2tEcWWxl2KOtdQMCiPptmQObeZeuj48mdsDZ4ArQinexY2hCCTcbV8Xpswpkb8K05RcKipdg07pnI7tAgQ0VWSZDImncL6YUGlG5YN8b5TjGOwk2VG8=.AQAB",
         "name" => "shp",
         "nickname" => "shp",
         "salmon" => "https://social.heldscal.la/main/salmon/user/29191",
@@ -339,28 +384,40 @@ defmodule Pleroma.Web.OStatusTest do
         "host" => "social.heldscal.la",
         "fqn" => user,
         "bio" => "cofe",
-        "avatar" => %{"type" => "Image", "url" => [%{"href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg", "mediaType" => "image/jpeg", "type" => "Link"}]},
+        "avatar" => %{
+          "type" => "Image",
+          "url" => [
+            %{
+              "href" => "https://social.heldscal.la/avatar/29191-original-20170421154949.jpeg",
+              "mediaType" => "image/jpeg",
+              "type" => "Link"
+            }
+          ]
+        },
         "subscribe_address" => "https://social.heldscal.la/main/ostatussub?profile={uri}",
         "ap_id" => nil
       }
+
       assert data == expected
     end
   end
 
   describe "fetching a status by it's HTML url" do
     test "it builds a missing status from an html url" do
-      capture_log fn ->
+      capture_log(fn ->
         url = "https://shitposter.club/notice/2827873"
-        {:ok, [activity] } = OStatus.fetch_activity_from_url(url)
+        {:ok, [activity]} = OStatus.fetch_activity_from_url(url)
 
         assert activity.data["actor"] == "https://shitposter.club/user/1"
-        assert activity.data["object"]["id"] == "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
-      end
+
+        assert activity.data["object"]["id"] ==
+                 "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+      end)
     end
 
     test "it works for atom notes, too" do
       url = "https://social.sakamoto.gq/objects/0ccc1a2c-66b0-4305-b23a-7f7f2b040056"
-      {:ok, [activity] } = OStatus.fetch_activity_from_url(url)
+      {:ok, [activity]} = OStatus.fetch_activity_from_url(url)
       assert activity.data["actor"] == "https://social.sakamoto.gq/users/eal"
       assert activity.data["object"]["id"] == url
     end
@@ -370,6 +427,9 @@ defmodule Pleroma.Web.OStatusTest do
     incoming = File.read!("test/fixtures/nil_mention_entry.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
-    assert activity.data["to"] == ["http://localhost:4001/users/atarifrosch@social.stopwatchingus-heidelberg.de/followers", "https://www.w3.org/ns/activitystreams#Public"]
+    assert activity.data["to"] == [
+             "http://localhost:4001/users/atarifrosch@social.stopwatchingus-heidelberg.de/followers",
+             "https://www.w3.org/ns/activitystreams#Public"
+           ]
   end
 end

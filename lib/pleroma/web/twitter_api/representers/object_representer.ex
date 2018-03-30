@@ -4,6 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter do
 
   def to_map(%Object{data: %{"url" => [url | _]}} = object, _opts) do
     data = object.data
+
     %{
       url: url["href"] |> Pleroma.Web.MediaProxy.url(),
       mimetype: url["mediaType"],

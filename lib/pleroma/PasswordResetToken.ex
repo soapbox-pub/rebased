@@ -6,15 +6,15 @@ defmodule Pleroma.PasswordResetToken do
   alias Pleroma.{User, PasswordResetToken, Repo}
 
   schema "password_reset_tokens" do
-    belongs_to :user, User
-    field :token, :string
-    field :used, :boolean, default: false
+    belongs_to(:user, User)
+    field(:token, :string)
+    field(:used, :boolean, default: false)
 
     timestamps()
   end
 
   def create_token(%User{} = user) do
-    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64
+    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
 
     token = %PasswordResetToken{
       user_id: user.id,

@@ -9,20 +9,27 @@ defmodule Pleroma.Factory do
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: sequence(:bio, &"Tester Number #{&1}")
     }
-    %{ user | ap_id: Pleroma.User.ap_id(user), follower_address: Pleroma.User.ap_followers(user), following: [Pleroma.User.ap_id(user)] }
+
+    %{
+      user
+      | ap_id: Pleroma.User.ap_id(user),
+        follower_address: Pleroma.User.ap_followers(user),
+        following: [Pleroma.User.ap_id(user)]
+    }
   end
 
   def note_factory do
     text = sequence(:text, &"This is :moominmamma: note #{&1}")
 
     user = insert(:user)
+
     data = %{
       "type" => "Note",
       "content" => text,
-      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-      "published" => DateTime.utc_now() |> DateTime.to_iso8601,
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "likes" => [],
       "like_count" => 0,
       "context" => "2hu",
@@ -40,13 +47,14 @@ defmodule Pleroma.Factory do
 
   def note_activity_factory do
     note = insert(:note)
+
     data = %{
-      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
       "type" => "Create",
       "actor" => note.data["actor"],
       "to" => note.data["to"],
       "object" => note.data,
-      "published" => DateTime.utc_now() |> DateTime.to_iso8601,
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "context" => note.data["context"]
     }
 
@@ -62,11 +70,11 @@ defmodule Pleroma.Factory do
     user = insert(:user)
 
     data = %{
-      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
       "actor" => user.ap_id,
       "type" => "Like",
       "object" => note_activity.data["object"]["id"],
-      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601
+      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
     %Pleroma.Activity{
@@ -79,11 +87,11 @@ defmodule Pleroma.Factory do
     followed = insert(:user)
 
     data = %{
-      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
       "actor" => follower.ap_id,
       "type" => "Follow",
       "object" => followed.ap_id,
-      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601
+      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
     %Pleroma.Activity{
@@ -96,7 +104,7 @@ defmodule Pleroma.Factory do
       topic: "http://example.org",
       callback: "http://example/org/callback",
       secret: "here's a secret",
-      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now, 100),
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 100),
       state: "requested"
     }
   end

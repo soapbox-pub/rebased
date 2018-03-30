@@ -18,8 +18,9 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
       "hub.lease_seconds": "100"
     }
 
-    conn = conn
-    |> post(path, data)
+    conn =
+      conn
+      |> post(path, data)
 
     assert response(conn, 202) == "Accepted"
   end
@@ -34,14 +35,15 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
       "hub.lease_seconds" => "100"
     }
 
-    conn = conn
-    |> get("/push/subscriptions/#{websub.id}", params)
+    conn =
+      conn
+      |> get("/push/subscriptions/#{websub.id}", params)
 
     websub = Repo.get(WebsubClientSubscription, websub.id)
 
     assert response(conn, 200) == "some challenge"
     assert websub.state == "accepted"
-    assert_in_delta NaiveDateTime.diff(websub.valid_until, NaiveDateTime.utc_now), 100, 5
+    assert_in_delta NaiveDateTime.diff(websub.valid_until, NaiveDateTime.utc_now()), 100, 5
   end
 
   test "handles incoming feed updates", %{conn: conn} do
@@ -49,10 +51,11 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
     doc = "some stuff"
     signature = Websub.sign(websub.secret, doc)
 
-    conn = conn
-    |> put_req_header("x-hub-signature", "sha1=" <> signature)
-    |> put_req_header("content-type", "application/atom+xml")
-    |> post("/push/subscriptions/#{websub.id}", doc)
+    conn =
+      conn
+      |> put_req_header("x-hub-signature", "sha1=" <> signature)
+      |> put_req_header("content-type", "application/atom+xml")
+      |> post("/push/subscriptions/#{websub.id}", doc)
 
     assert response(conn, 200) == "OK"
 
@@ -64,10 +67,11 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
     doc = "some stuff"
     signature = Websub.sign("wrong secret", doc)
 
-    conn = conn
-    |> put_req_header("x-hub-signature", "sha1=" <> signature)
-    |> put_req_header("content-type", "application/atom+xml")
-    |> post("/push/subscriptions/#{websub.id}", doc)
+    conn =
+      conn
+      |> put_req_header("x-hub-signature", "sha1=" <> signature)
+      |> put_req_header("content-type", "application/atom+xml")
+      |> post("/push/subscriptions/#{websub.id}", doc)
 
     assert response(conn, 500) == "Error"
 

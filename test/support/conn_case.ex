@@ -26,14 +26,14 @@ defmodule Pleroma.Web.ConnCase do
     end
   end
 
-
   setup tags do
     Cachex.clear(:user_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
+
     unless tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
     end
+
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
-
 end

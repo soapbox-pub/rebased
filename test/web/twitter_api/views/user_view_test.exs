@@ -15,7 +15,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
 
   test "A user with an avatar object", %{user: user} do
     image = "image"
-    user = %{ user | avatar: %{ "url" => [%{"href" => image}] }}
+    user = %{user | avatar: %{"url" => [%{"href" => image}]}}
     represented = UserView.render("show.json", %{user: user})
     assert represented["profile_image_url"] == image
   end
@@ -41,7 +41,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "name" => user.name,
       "screen_name" => user.nickname,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
-      "created_at" => user.inserted_at |> Utils.format_naive_asctime,
+      "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "favourites_count" => 0,
       "statuses_count" => 1,
       "friends_count" => 1,
@@ -76,7 +76,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "name" => user.name,
       "screen_name" => user.nickname,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
-      "created_at" => user.inserted_at |> Utils.format_naive_asctime,
+      "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "favourites_count" => 0,
       "statuses_count" => 0,
       "friends_count" => 0,
@@ -112,7 +112,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "name" => follower.name,
       "screen_name" => follower.nickname,
       "description" => HtmlSanitizeEx.strip_tags(follower.bio),
-      "created_at" => follower.inserted_at |> Utils.format_naive_asctime,
+      "created_at" => follower.inserted_at |> Utils.format_naive_asctime(),
       "favourites_count" => 0,
       "statuses_count" => 0,
       "friends_count" => 1,
@@ -155,7 +155,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "name" => user.name,
       "screen_name" => user.nickname,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
-      "created_at" => user.inserted_at |> Utils.format_naive_asctime,
+      "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "favourites_count" => 0,
       "statuses_count" => 0,
       "friends_count" => 0,

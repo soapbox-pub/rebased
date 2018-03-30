@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     {:ok, _, public_key} = Salmon.keys_from_pem(user.info["keys"])
     public_key = :public_key.pem_entry_encode(:RSAPublicKey, public_key)
     public_key = :public_key.pem_encode([public_key])
+
     %{
       "id" => user.ap_id,
       "type" => "Person",
@@ -30,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "publicKeyPem" => public_key
       },
       "endpoints" => %{
-        "sharedInbox" => "#{Pleroma.Web.Endpoint.url}/inbox"
+        "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
       },
       "icon" => %{
         "type" => "Image",
@@ -47,7 +48,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def collection(collection, iri, page) do
     offset = (page - 1) * 10
     items = Enum.slice(collection, offset, 10)
-    items = Enum.map(items, fn (user) -> user.ap_id end)
+    items = Enum.map(items, fn user -> user.ap_id end)
+
     map = %{
       "id" => "#{iri}?page=#{page}",
       "type" => "OrderedCollectionPage",
@@ -55,19 +57,22 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "totalItems" => length(collection),
       "orderedItems" => items
     }
+
     if offset < length(collection) do
-      Map.put(map, "next", "#{iri}?page=#{page+1}")
+      Map.put(map, "next", "#{iri}?page=#{page + 1}")
     end
   end
 
   def render("following.json", %{user: user, page: page}) do
     {:ok, following} = User.get_friends(user)
+
     collection(following, "#{user.ap_id}/following", page)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
   def render("following.json", %{user: user}) do
     {:ok, following} = User.get_friends(user)
+
     %{
       "id" => "#{user.ap_id}/following",
       "type" => "OrderedCollection",
@@ -79,12 +84,14 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
   def render("followers.json", %{user: user, page: page}) do
     {:ok, followers} = User.get_followers(user)
+
     collection(followers, "#{user.ap_id}/followers", page)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
   def render("followers.json", %{user: user}) do
     {:ok, followers} = User.get_followers(user)
+
     %{
       "id" => "#{user.ap_id}/followers",
       "type" => "OrderedCollection",
@@ -115,19 +122,21 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     activities = Enum.reverse(activities)
     max_id = Enum.at(activities, 0).id
 
-    collection = Enum.map(activities, fn (act) ->
-      {:ok, data} = Transmogrifier.prepare_outgoing(act.data)
-      data
-    end)
+    collection =
+      Enum.map(activities, fn act ->
+        {:ok, data} = Transmogrifier.prepare_outgoing(act.data)
+        data
+      end)
 
     iri = "#{user.ap_id}/outbox"
+
     page = %{
       "id" => "#{iri}?max_id=#{max_id}",
       "type" => "OrderedCollectionPage",
       "partOf" => iri,
       "totalItems" => info.note_count,
       "orderedItems" => collection,
-      "next" => "#{iri}?max_id=#{min_id-1}",
+      "next" => "#{iri}?max_id=#{min_id - 1}"
     }
 
     if max_qid == nil do

@@ -16,27 +16,36 @@ defmodule Pleroma.Web.Federator do
 
   def start_link do
     spawn(fn ->
-      Process.sleep(1000 * 60 * 1) # 1 minute
+      # 1 minute
+      Process.sleep(1000 * 60 * 1)
       enqueue(:refresh_subscriptions, nil)
     end)
-    GenServer.start_link(__MODULE__, %{
-          in: {:sets.new(), []},
-          out: {:sets.new(), []}
-                         }, name: __MODULE__)
+
+    GenServer.start_link(
+      __MODULE__,
+      %{
+        in: {:sets.new(), []},
+        out: {:sets.new(), []}
+      },
+      name: __MODULE__
+    )
   end
 
   def handle(:refresh_subscriptions, _) do
     Logger.debug("Federator running refresh subscriptions")
     Websub.refresh_subscriptions()
+
     spawn(fn ->
-      Process.sleep(1000 * 60 * 60 * 6) # 6 hours
+      # 6 hours
+      Process.sleep(1000 * 60 * 60 * 6)
       enqueue(:refresh_subscriptions, nil)
     end)
   end
 
   def handle(:request_subscription, websub) do
     Logger.debug("Refreshing #{websub.topic}")
-    with {:ok, websub } <- Websub.request_subscription(websub) do
+
+    with {:ok, websub} <- Websub.request_subscription(websub) do
       Logger.debug("Successfully refreshed #{websub.topic}")
     else
       _e -> Logger.debug("Couldn't refresh #{websub.topic}")
@@ -45,8 +54,10 @@ defmodule Pleroma.Web.Federator do
 
   def handle(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
+
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
+
       if ActivityPub.is_public?(activity) do
         Logger.info(fn -> "Sending #{activity.data["id"]} out via WebSub" end)
         Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
@@ -61,7 +72,10 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:verify_websub, websub) do
-    Logger.debug(fn -> "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})" end)
+    Logger.debug(fn ->
+      "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})"
+    end)
+
     @websub.verify(websub)
   end
 
@@ -72,16 +86,18 @@ defmodule Pleroma.Web.Federator do
 
   def handle(:incoming_ap_doc, params) do
     Logger.info("Handling incoming AP activity")
+
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.get_by_ap_id(params["id"]),
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
     else
       %Activity{} ->
         Logger.info("Already had #{params["id"]}")
+
       e ->
         # Just drop those for now
         Logger.info("Unhandled activity")
-        Logger.info(Poison.encode!(params, [pretty: 2]))
+        Logger.info(Poison.encode!(params, pretty: 2))
     end
   end
 
@@ -93,12 +109,21 @@ defmodule Pleroma.Web.Federator do
     signature = @websub.sign(secret || "", xml)
     Logger.debug(fn -> "Pushing #{topic} to #{callback}" end)
 
-    with {:ok, %{status_code: code}} <- @httpoison.post(callback, xml, [
-                  {"Content-Type", "application/atom+xml"},
-                  {"X-Hub-Signature", "sha1=#{signature}"}
-                ], timeout: 10000, recv_timeout: 20000, hackney: [pool: :default]) do
+    with {:ok, %{status_code: code}} <-
+           @httpoison.post(
+             callback,
+             xml,
+             [
+               {"Content-Type", "application/atom+xml"},
+               {"X-Hub-Signature", "sha1=#{signature}"}
+             ],
+             timeout: 10000,
+             recv_timeout: 20000,
+             hackney: [pool: :default]
+           ) do
       Logger.debug(fn -> "Pushed to #{callback}, code #{code}" end)
-    else e ->
+    else
+      e ->
         Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)
     end
   end
@@ -110,7 +135,7 @@ defmodule Pleroma.Web.Federator do
 
   def enqueue(type, payload, priority \\ 1) do
     if @federating do
-      if Mix.env == :test do
+      if Mix.env() == :test do
         handle(type, payload)
       else
         GenServer.cast(__MODULE__, {:enqueue, type, payload, priority})
@@ -119,7 +144,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def maybe_start_job(running_jobs, queue) do
-    if (:sets.size(running_jobs) < @max_jobs) && queue != [] do
+    if :sets.size(running_jobs) < @max_jobs && queue != [] do
       {{type, payload}, queue} = queue_pop(queue)
       {:ok, pid} = Task.start(fn -> handle(type, payload) end)
       mref = Process.monitor(pid)
@@ -129,7 +154,8 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle_cast({:enqueue, type, payload, priority}, state) when type in [:incoming_doc, :incoming_ap_doc] do
+  def handle_cast({:enqueue, type, payload, priority}, state)
+      when type in [:incoming_doc, :incoming_ap_doc] do
     %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
     i_queue = enqueue_sorted(i_queue, {type, payload}, 1)
     {i_running_jobs, i_queue} = maybe_start_job(i_running_jobs, i_queue)
@@ -160,7 +186,7 @@ defmodule Pleroma.Web.Federator do
 
   def enqueue_sorted(queue, element, priority) do
     [%{item: element, priority: priority} | queue]
-    |> Enum.sort_by(fn (%{priority: priority}) -> priority end)
+    |> Enum.sort_by(fn %{priority: priority} -> priority end)
   end
 
   def queue_pop([%{item: element} | queue]) do
@@ -169,6 +195,7 @@ defmodule Pleroma.Web.Federator do
 
   def ap_enabled_actor(id) do
     user = User.get_by_ap_id(id)
+
     if User.ap_enabled?(user) do
       {:ok, user}
     else

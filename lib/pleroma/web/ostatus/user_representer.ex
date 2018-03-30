@@ -1,22 +1,26 @@
 defmodule Pleroma.Web.OStatus.UserRepresenter do
   alias Pleroma.User
+
   def to_simple_form(user) do
     ap_id = to_charlist(user.ap_id)
     nickname = to_charlist(user.nickname)
     name = to_charlist(user.name)
     bio = to_charlist(user.bio)
     avatar_url = to_charlist(User.avatar_url(user))
-    banner = if banner_url = User.banner_url(user) do
-      [{:link, [rel: 'header', href: banner_url], []}]
-    else
-      []
-    end
 
-    ap_enabled = if user.local do
-      [{:ap_enabled, ['true']}]
-    else
-      []
-    end
+    banner =
+      if banner_url = User.banner_url(user) do
+        [{:link, [rel: 'header', href: banner_url], []}]
+      else
+        []
+      end
+
+    ap_enabled =
+      if user.local do
+        [{:ap_enabled, ['true']}]
+      else
+        []
+      end
 
     [
       {:id, [ap_id]},

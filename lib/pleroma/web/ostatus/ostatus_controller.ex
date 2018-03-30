@@ -16,23 +16,26 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     case get_format(conn) do
       "html" -> Fallback.RedirectController.redirector(conn, nil)
       "activity+json" -> ActivityPubController.user(conn, params)
-      _ -> redirect conn, external: OStatus.feed_path(user)
+      _ -> redirect(conn, external: OStatus.feed_path(user))
     end
   end
 
   def feed(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
 
-    query_params = Map.take(params, ["max_id"])
-    |> Map.merge(%{"whole_db" => true, "actor_id" => user.ap_id})
+    query_params =
+      Map.take(params, ["max_id"])
+      |> Map.merge(%{"whole_db" => true, "actor_id" => user.ap_id})
 
-    activities = ActivityPub.fetch_public_activities(query_params)
-    |> Enum.reverse
+    activities =
+      ActivityPub.fetch_public_activities(query_params)
+      |> Enum.reverse()
 
-    response = user
-    |> FeedRepresenter.to_simple_form(activities, [user])
-    |> :xmerl.export_simple(:xmerl_xml)
-    |> to_string
+    response =
+      user
+      |> FeedRepresenter.to_simple_form(activities, [user])
+      |> :xmerl.export_simple(:xmerl_xml)
+      |> to_string
 
     conn
     |> put_resp_content_type("application/atom+xml")
@@ -73,7 +76,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     else
       with id <- o_status_url(conn, :object, uuid),
            %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
-             %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+           %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
           _ -> represent_activity(conn, activity, user)
@@ -96,24 +99,27 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   # TODO: Data leak
   def notice(conn, %{"id" => id}) do
-     with %Activity{} = activity <- Repo.get(Activity, id),
-          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+    with %Activity{} = activity <- Repo.get(Activity, id),
+         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case get_format(conn) do
         "html" ->
           conn
           |> put_resp_content_type("text/html")
           |> send_file(200, "priv/static/index.html")
-        _ -> represent_activity(conn, activity, user)
+
+        _ ->
+          represent_activity(conn, activity, user)
       end
     end
   end
 
   defp represent_activity(conn, activity, user) do
-    response = activity
-    |> ActivityRepresenter.to_simple_form(user, true)
-    |> ActivityRepresenter.wrap_with_entry
-    |> :xmerl.export_simple(:xmerl_xml)
-    |> to_string
+    response =
+      activity
+      |> ActivityRepresenter.to_simple_form(user, true)
+      |> ActivityRepresenter.wrap_with_entry()
+      |> :xmerl.export_simple(:xmerl_xml)
+      |> to_string
 
     conn
     |> put_resp_content_type("application/atom+xml")

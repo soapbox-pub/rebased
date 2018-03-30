@@ -16,7 +16,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => _} = status_data) do
     with media_ids <- extract_media_ids(status_data),
-         {:ok, activity} <- TwitterAPI.create_status(user, Map.put(status_data, "media_ids",  media_ids)) do
+         {:ok, activity} <-
+           TwitterAPI.create_status(user, Map.put(status_data, "media_ids", media_ids)) do
       conn
       |> json(ActivityRepresenter.to_map(activity, %{user: user}))
     else
@@ -35,10 +36,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   defp extract_media_ids(status_data) do
     with media_ids when not is_nil(media_ids) <- status_data["media_ids"],
          split_ids <- String.split(media_ids, ","),
-         clean_ids <- Enum.reject(split_ids, fn (id) -> String.length(id) == 0 end)
-      do
-        clean_ids
-      else _e -> []
+         clean_ids <- Enum.reject(split_ids, fn id -> String.length(id) == 0 end) do
+      clean_ids
+    else
+      _e -> []
     end
   end
 
@@ -69,9 +70,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def show_user(conn, params) do
     with {:ok, shown} <- TwitterAPI.get_user(params) do
       if user = conn.assigns.user do
-        render conn, UserView, "show.json", %{user: shown, for: user}
+        render(conn, UserView, "show.json", %{user: shown, for: user})
       else
-        render conn, UserView, "show.json", %{user: shown}
+        render(conn, UserView, "show.json", %{user: shown})
       end
     else
       {:error, msg} ->
@@ -83,9 +84,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     case TwitterAPI.get_user(user, params) do
       {:ok, target_user} ->
         params = Map.merge(params, %{"actor_id" => target_user.ap_id, "whole_db" => true})
-        statuses  = TwitterAPI.fetch_user_statuses(user, params)
+        statuses = TwitterAPI.fetch_user_statuses(user, params)
+
         conn
-        |> json_reply(200, statuses |> Jason.encode!)
+        |> json_reply(200, statuses |> Jason.encode!())
+
       {:error, msg} ->
         bad_request_reply(conn, msg)
     end
@@ -103,29 +106,36 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     case TwitterAPI.follow(user, params) do
       {:ok, user, followed, _activity} ->
         render(conn, UserView, "show.json", %{user: followed, for: user})
-      {:error, msg} -> forbidden_json_reply(conn, msg)
+
+      {:error, msg} ->
+        forbidden_json_reply(conn, msg)
     end
   end
 
   def block(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.block(user, params) do
       {:ok, user, blocked} ->
-        render conn, UserView, "show.json", %{user: blocked, for: user}
-      {:error, msg} -> forbidden_json_reply(conn, msg)
+        render(conn, UserView, "show.json", %{user: blocked, for: user})
+
+      {:error, msg} ->
+        forbidden_json_reply(conn, msg)
     end
   end
 
   def unblock(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.unblock(user, params) do
       {:ok, user, blocked} ->
-        render conn, UserView, "show.json", %{user: blocked, for: user}
-      {:error, msg} -> forbidden_json_reply(conn, msg)
+        render(conn, UserView, "show.json", %{user: blocked, for: user})
+
+      {:error, msg} ->
+        forbidden_json_reply(conn, msg)
     end
   end
 
   def delete_post(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with {:ok, delete} <- CommonAPI.delete(id, user) do
       json = ActivityRepresenter.to_json(delete, %{user: user, for: user})
+
       conn
       |> json_reply(200, json)
     end
@@ -135,14 +145,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     case TwitterAPI.unfollow(user, params) do
       {:ok, user, unfollowed} ->
         render(conn, UserView, "show.json", %{user: unfollowed, for: user})
-      {:error, msg} -> forbidden_json_reply(conn, msg)
+
+      {:error, msg} ->
+        forbidden_json_reply(conn, msg)
     end
   end
 
   def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
          true <- ActivityPub.visible_for_user?(activity, user) do
-      render conn, ActivityView, "activity.json", %{activity: activity, for: user}
+      render(conn, ActivityView, "activity.json", %{activity: activity, for: user})
     end
   end
 
@@ -156,6 +168,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def upload(conn, %{"media" => media}) do
     response = TwitterAPI.upload(media)
+
     conn
     |> put_resp_content_type("application/atom+xml")
     |> send_resp(200, response)
@@ -163,12 +176,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def upload_json(conn, %{"media" => media}) do
     response = TwitterAPI.upload(media, "json")
+
     conn
     |> json_reply(200, response)
   end
 
   def get_by_id_or_ap_id(id) do
     activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
+
     if activity.data["type"] == "Create" do
       activity
     else
@@ -199,8 +214,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       render(conn, UserView, "show.json", %{user: user})
     else
       {:error, errors} ->
-      conn
-      |> json_reply(400, Jason.encode!(errors))
+        conn
+        |> json_reply(400, Jason.encode!(errors))
     end
   end
 
@@ -219,8 +234,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          change <- User.info_changeset(user, %{info: new_info}),
          {:ok, user} <- User.update_and_set_cache(change) do
       CommonAPI.update(user)
-      %{"url" => [ %{ "href" => href } | _ ]} = object.data
-      response = %{ url: href } |> Jason.encode!
+      %{"url" => [%{"href" => href} | _]} = object.data
+      response = %{url: href} |> Jason.encode!()
+
       conn
       |> json_reply(200, response)
     end
@@ -231,8 +247,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          new_info <- Map.put(user.info, "background", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
          {:ok, _user} <- User.update_and_set_cache(change) do
-      %{"url" => [ %{ "href" => href } | _ ]} = object.data
-      response = %{ url: href } |> Jason.encode!
+      %{"url" => [%{"href" => href} | _]} = object.data
+      response = %{url: href} |> Jason.encode!()
+
       conn
       |> json_reply(200, response)
     end
@@ -285,9 +302,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def friends_ids(%{assigns: %{user: user}} = conn, _params) do
     with {:ok, friends} <- User.get_friends(user) do
-      ids = friends
-      |> Enum.map(fn x -> x.id end)
-      |> Jason.encode!
+      ids =
+        friends
+        |> Enum.map(fn x -> x.id end)
+        |> Jason.encode!()
 
       json(conn, ids)
     else
@@ -300,11 +318,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def update_profile(%{assigns: %{user: user}} = conn, params) do
-    params = if bio = params["description"] do
-      Map.put(params, "bio", bio)
-    else
-      params
-    end
+    params =
+      if bio = params["description"] do
+        Map.put(params, "bio", bio)
+      else
+        params
+      end
 
     with changeset <- User.update_changeset(user, params),
          {:ok, user} <- User.update_and_set_cache(changeset) do
@@ -339,6 +358,6 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   defp error_json(conn, error_message) do
-    %{"error" => error_message, "request" => conn.request_path} |> Jason.encode!
+    %{"error" => error_message, "request" => conn.request_path} |> Jason.encode!()
   end
 end

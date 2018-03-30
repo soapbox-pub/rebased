@@ -7,7 +7,10 @@ use Mix.Config
 # watchers to your application. For example, we use it
 # with brunch.io to recompile .js and .css sources.
 config :pleroma, Pleroma.Web.Endpoint,
-  http: [port: 4000, protocol_options: [max_request_line_length: 8192, max_header_value_length: 8192]],
+  http: [
+    port: 4000,
+    protocol_options: [max_request_line_length: 8192, max_header_value_length: 8192]
+  ],
   protocol: "http",
   debug_errors: true,
   code_reloader: true,
@@ -49,5 +52,8 @@ config :pleroma, Pleroma.Repo,
 try do
   import_config "dev.secret.exs"
 rescue
-  _-> IO.puts("!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs")
+  _ ->
+    IO.puts(
+      "!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs"
+    )
 end

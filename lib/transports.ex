@@ -1,8 +1,10 @@
 defmodule Phoenix.Transports.WebSocket.Raw do
-  import Plug.Conn, only: [
-    fetch_query_params: 1,
-    send_resp: 3
-  ]
+  import Plug.Conn,
+    only: [
+      fetch_query_params: 1,
+      send_resp: 3
+    ]
+
   alias Phoenix.Socket.Transport
 
   def default_config do
@@ -16,21 +18,24 @@ defmodule Phoenix.Transports.WebSocket.Raw do
   def init(%Plug.Conn{method: "GET"} = conn, {endpoint, handler, transport}) do
     {_, opts} = handler.__transport__(transport)
 
-    conn = conn
-    |> fetch_query_params
-    |> Transport.transport_log(opts[:transport_log])
-    |> Transport.force_ssl(handler, endpoint, opts)
-    |> Transport.check_origin(handler, endpoint, opts)
+    conn =
+      conn
+      |> fetch_query_params
+      |> Transport.transport_log(opts[:transport_log])
+      |> Transport.force_ssl(handler, endpoint, opts)
+      |> Transport.check_origin(handler, endpoint, opts)
 
     case conn do
       %{halted: false} = conn ->
         case Transport.connect(endpoint, handler, transport, __MODULE__, nil, conn.params) do
           {:ok, socket} ->
             {:ok, conn, {__MODULE__, {socket, opts}}}
+
           :error ->
             send_resp(conn, :forbidden, "")
             {:error, conn}
         end
+
       _ ->
         {:error, conn}
     end
@@ -52,16 +57,19 @@ defmodule Phoenix.Transports.WebSocket.Raw do
     |> case do
       {op, data} ->
         {:reply, {op, data}, state}
+
       {op, data, state} ->
         {:reply, {op, data}, state}
+
       %{} = state ->
         {:ok, state}
+
       _ ->
         {:ok, state}
     end
   end
 
-  def ws_info({_,_} = tuple, state) do
+  def ws_info({_, _} = tuple, state) do
     {:reply, tuple, state}
   end
 

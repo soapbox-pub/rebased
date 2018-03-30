@@ -22,7 +22,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "insertion" do
     test "returns the activity if one with the same id is already in" do
       activity = insert(:note_activity)
-      {:ok, new_activity}= ActivityPub.insert(activity.data)
+      {:ok, new_activity} = ActivityPub.insert(activity.data)
 
       assert activity == new_activity
     end
@@ -37,6 +37,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert is_binary(activity.data["id"])
 
       given_id = "bla"
+
       data = %{
         "ok" => true,
         "id" => given_id
@@ -63,7 +64,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "create activities" do
     test "removes doubled 'to' recipients" do
-      {:ok, activity} = ActivityPub.create(%{to: ["user1", "user1", "user2"], actor: %User{ap_id: "1"}, context: "", object: %{}})
+      {:ok, activity} =
+        ActivityPub.create(%{
+          to: ["user1", "user1", "user2"],
+          actor: %User{ap_id: "1"},
+          context: "",
+          object: %{}
+        })
+
       assert activity.data["to"] == ["user1", "user2"]
       assert activity.actor == "1"
       assert activity.recipients == ["user1", "user2"]
@@ -124,11 +132,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "public fetch activities" do
     test "retrieves public activities" do
-      _activities = ActivityPub.fetch_public_activities
+      _activities = ActivityPub.fetch_public_activities()
 
-      %{public: public} = ActivityBuilder.public_and_non_public
+      %{public: public} = ActivityBuilder.public_and_non_public()
 
-      activities = ActivityPub.fetch_public_activities
+      activities = ActivityPub.fetch_public_activities()
       assert length(activities) == 1
       assert Enum.at(activities, 0) == public
     end
@@ -137,7 +145,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activities = ActivityBuilder.insert_list(30)
       last_expected = List.last(activities)
 
-      activities = ActivityPub.fetch_public_activities
+      activities = ActivityPub.fetch_public_activities()
       last = List.last(activities)
 
       assert length(activities) == 20
@@ -232,7 +240,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, announce_activity, object} = ActivityPub.announce(user, object)
       assert object.data["announcement_count"] == 1
       assert object.data["announcements"] == [user.ap_id]
-      assert announce_activity.data["to"] == [User.ap_followers(user), note_activity.data["actor"]]
+
+      assert announce_activity.data["to"] == [
+               User.ap_followers(user),
+               note_activity.data["actor"]
+             ]
+
       assert announce_activity.data["object"] == object.data["id"]
       assert announce_activity.data["actor"] == user.ap_id
       assert announce_activity.data["context"] == object.data["context"]
@@ -241,7 +254,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "uploading files" do
     test "copies the file to the configured folder" do
-      file = %Plug.Upload{content_type: "image/jpg", path: Path.absname("test/fixtures/image.jpg"), filename: "an_image.jpg"}
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
 
       {:ok, %Object{} = object} = ActivityPub.upload(file)
       assert object.data["name"] == "an_image.jpg"
@@ -268,11 +285,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "fetching an object" do
     test "it fetches an object" do
-      {:ok, object} = ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+      {:ok, object} =
+        ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
       assert activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
       assert activity.data["id"]
 
-      {:ok, object_again} = ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+      {:ok, object_again} =
+        ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
       assert [attachment] = object.data["attachment"]
       assert is_list(attachment["url"])
@@ -285,7 +305,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
       assert activity.data["id"]
 
-      {:ok, object_again} = ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
+      {:ok, object_again} =
+        ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
 
       assert object == object_again
     end
@@ -344,7 +365,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
       {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
       user_data = Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
-      {:ok, update} = ActivityPub.update(%{actor: user_data["id"], to: [user.follower_address], cc: [], object: user_data})
+
+      {:ok, update} =
+        ActivityPub.update(%{
+          actor: user_data["id"],
+          to: [user.follower_address],
+          cc: [],
+          object: user_data
+        })
 
       assert update.data["actor"] == user.ap_id
       assert update.data["to"] == [user.follower_address]

@@ -18,22 +18,31 @@ defmodule Pleroma.Stats do
 
   def schedule_update do
     spawn(fn ->
-      Process.sleep(1000 * 60 * 60 * 1) # 1 hour
+      # 1 hour
+      Process.sleep(1000 * 60 * 60 * 1)
       schedule_update()
     end)
+
     update_stats()
   end
 
   def update_stats do
-    peers = from(u in Pleroma.User,
-      select: fragment("distinct ?->'host'", u.info),
-      where: u.local != ^true)
-    |> Repo.all()
+    peers =
+      from(
+        u in Pleroma.User,
+        select: fragment("distinct ?->'host'", u.info),
+        where: u.local != ^true
+      )
+      |> Repo.all()
+
     domain_count = Enum.count(peers)
-    status_query = from(u in User.local_user_query,
-      select: fragment("sum((?->>'note_count')::int)", u.info))
+
+    status_query =
+      from(u in User.local_user_query(), select: fragment("sum((?->>'note_count')::int)", u.info))
+
     status_count = Repo.one(status_query)
-    user_count = Repo.aggregate(User.local_user_query, :count, :id)
+    user_count = Repo.aggregate(User.local_user_query(), :count, :id)
+
     Agent.update(__MODULE__, fn _ ->
       {peers, %{domain_count: domain_count, status_count: status_count, user_count: user_count}}
     end)

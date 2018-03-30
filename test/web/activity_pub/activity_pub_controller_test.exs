@@ -9,9 +9,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "it returns a json representation of the user", %{conn: conn} do
       user = insert(:user)
 
-      conn = conn
-      |> put_req_header("accept", "application/activity+json")
-      |> get("/users/#{user.nickname}")
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}")
 
       user = Repo.get(User, user.id)
 
@@ -22,11 +23,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   describe "/object/:uuid" do
     test "it returns a json representation of the object", %{conn: conn} do
       note = insert(:note)
-      uuid = String.split(note.data["id"], "/") |> List.last
+      uuid = String.split(note.data["id"], "/") |> List.last()
 
-      conn = conn
-      |> put_req_header("accept", "application/activity+json")
-      |> get("/objects/#{uuid}")
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}")
 
       assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
     end
@@ -34,12 +36,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   describe "/users/:nickname/inbox" do
     test "it inserts an incoming activity into the database", %{conn: conn} do
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
-      conn = conn
-      |> assign(:valid_signature, true)
-      |> put_req_header("content-type", "application/activity+json")
-      |> post("/inbox", data)
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/inbox", data)
 
       assert "ok" == json_response(conn, 200)
       :timer.sleep(500)

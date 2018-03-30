@@ -5,38 +5,49 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.{Repo, User}
   alias Comeonin.Pbkdf2
 
-  plug :fetch_session
-  plug :fetch_flash
+  plug(:fetch_session)
+  plug(:fetch_flash)
 
-  action_fallback Pleroma.Web.OAuth.FallbackController
+  action_fallback(Pleroma.Web.OAuth.FallbackController)
 
   def authorize(conn, params) do
-    render conn, "show.html", %{
+    render(conn, "show.html", %{
       response_type: params["response_type"],
       client_id: params["client_id"],
       scope: params["scope"],
       redirect_uri: params["redirect_uri"],
       state: params["state"]
-    }
+    })
   end
 
-  def create_authorization(conn, %{"authorization" => %{"name" => name, "password" => password, "client_id" => client_id, "redirect_uri" => redirect_uri} = params}) do
+  def create_authorization(conn, %{
+        "authorization" =>
+          %{
+            "name" => name,
+            "password" => password,
+            "client_id" => client_id,
+            "redirect_uri" => redirect_uri
+          } = params
+      }) do
     with %User{} = user <- User.get_cached_by_nickname(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          {:ok, auth} <- Authorization.create_authorization(app, user) do
       if redirect_uri == "urn:ietf:wg:oauth:2.0:oob" do
-        render conn, "results.html", %{
+        render(conn, "results.html", %{
           auth: auth
-        }
+        })
       else
         connector = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
         url = "#{redirect_uri}#{connector}code=#{auth.token}"
-        url = if params["state"] do
-          url <> "&state=#{params["state"]}"
-        else
-          url
-        end
+
+        url =
+          if params["state"] do
+            url <> "&state=#{params["state"]}"
+          else
+            url
+          end
+
         redirect(conn, external: url)
       end
     end
@@ -45,7 +56,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   # TODO
   # - proper scope handling
   def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
-    with %App{} = app <- Repo.get_by(App, client_id: params["client_id"], client_secret: params["client_secret"]),
+    with %App{} = app <-
+           Repo.get_by(
+             App,
+             client_id: params["client_id"],
+             client_secret: params["client_secret"]
+           ),
          fixed_token = fix_padding(params["code"]),
          %Authorization{} = auth <- Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
          {:ok, token} <- Token.exchange_token(app, auth) do
@@ -56,6 +72,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         expires_in: 60 * 10,
         scope: "read write follow"
       }
+
       json(conn, response)
     else
       _error -> json(conn, %{error: "Invalid credentials"})
@@ -64,8 +81,16 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   # TODO
   # - investigate a way to verify the user wants to grant read/write/follow once scope handling is done
-  def token_exchange(conn, %{"grant_type" => "password", "name" => name, "password" => password} = params) do
-    with %App{} = app <- Repo.get_by(App, client_id: params["client_id"], client_secret: params["client_secret"]),
+  def token_exchange(
+        conn,
+        %{"grant_type" => "password", "name" => name, "password" => password} = params
+      ) do
+    with %App{} = app <-
+           Repo.get_by(
+             App,
+             client_id: params["client_id"],
+             client_secret: params["client_secret"]
+           ),
          %User{} = user <- User.get_cached_by_nickname(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:ok, auth} <- Authorization.create_authorization(app, user),
@@ -77,6 +102,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         expires_in: 60 * 10,
         scope: "read write follow"
       }
+
       json(conn, response)
     else
       _error -> json(conn, %{error: "Invalid credentials"})
@@ -86,6 +112,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   defp fix_padding(token) do
     token
     |> Base.url_decode64!(padding: false)
-    |> Base.url_encode64
+    |> Base.url_encode64()
   end
 end

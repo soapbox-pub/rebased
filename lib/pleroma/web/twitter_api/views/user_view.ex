@@ -14,20 +14,22 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
 
   def render("user.json", %{user: user = %User{}} = assigns) do
     image = User.avatar_url(user) |> MediaProxy.url()
-    {following, follows_you, statusnet_blocking} = if assigns[:for] do
-      {
-        User.following?(assigns[:for], user),
-        User.following?(user, assigns[:for]),
-        User.blocks?(assigns[:for], user)
-      }
-    else
-      {false, false, false}
-    end
+
+    {following, follows_you, statusnet_blocking} =
+      if assigns[:for] do
+        {
+          User.following?(assigns[:for], user),
+          User.following?(user, assigns[:for]),
+          User.blocks?(assigns[:for], user)
+        }
+      else
+        {false, false, false}
+      end
 
     user_info = User.get_cached_user_info(user)
 
     data = %{
-      "created_at" => user.inserted_at |> Utils.format_naive_asctime,
+      "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
       "favourites_count" => 0,
       "followers_count" => user_info[:follower_count],
@@ -59,9 +61,14 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     end
   end
 
-  def render("short.json", %{user: %User{
-                               nickname: nickname, id: id, ap_id: ap_id, name: name
-                           }}) do
+  def render("short.json", %{
+        user: %User{
+          nickname: nickname,
+          id: id,
+          ap_id: ap_id,
+          name: name
+        }
+      }) do
     %{
       "fullname" => name,
       "id" => id,
@@ -71,6 +78,6 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     }
   end
 
-  defp image_url(%{"url" => [ %{ "href" => href } | _ ]}), do: href
+  defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
 end

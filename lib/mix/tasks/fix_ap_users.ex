@@ -8,12 +8,16 @@ defmodule Mix.Tasks.FixApUsers do
   def run([]) do
     Mix.Task.run("app.start")
 
-    q = from u in User,
-      where: fragment("? @> ?", u.info, ^%{"ap_enabled" => true}),
-      where: u.local == false
+    q =
+      from(
+        u in User,
+        where: fragment("? @> ?", u.info, ^%{"ap_enabled" => true}),
+        where: u.local == false
+      )
+
     users = Repo.all(q)
 
-    Enum.each(users, fn(user) ->
+    Enum.each(users, fn user ->
       try do
         IO.puts("Fetching #{user.nickname}")
         Pleroma.Web.ActivityPub.Transmogrifier.upgrade_user_from_ap_id(user.ap_id, false)

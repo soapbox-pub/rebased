@@ -8,36 +8,49 @@ defmodule Pleroma.Web.Websub.WebsubController do
   def websub_subscription_request(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
 
-    with {:ok, _websub} <- Websub.incoming_subscription_request(user, params)
-    do
+    with {:ok, _websub} <- Websub.incoming_subscription_request(user, params) do
       conn
       |> send_resp(202, "Accepted")
-    else {:error, reason} ->
-      conn
-      |> send_resp(500, reason)
+    else
+      {:error, reason} ->
+        conn
+        |> send_resp(500, reason)
     end
   end
 
   # TODO: Extract this into the Websub module
-  def websub_subscription_confirmation(conn, %{"id" => id, "hub.mode" => "subscribe", "hub.challenge" => challenge, "hub.topic" => topic} = params) do
+  def websub_subscription_confirmation(
+        conn,
+        %{
+          "id" => id,
+          "hub.mode" => "subscribe",
+          "hub.challenge" => challenge,
+          "hub.topic" => topic
+        } = params
+      ) do
     Logger.debug("Got WebSub confirmation")
     Logger.debug(inspect(params))
-    lease_seconds = if params["hub.lease_seconds"] do
-      String.to_integer(params["hub.lease_seconds"])
-    else
-      # Guess 3 days
-      60 * 60 * 24 * 3
-    end
 
-    with %WebsubClientSubscription{} = websub <- Repo.get_by(WebsubClientSubscription, id: id, topic: topic) do
-      valid_until = NaiveDateTime.add(NaiveDateTime.utc_now, lease_seconds)
+    lease_seconds =
+      if params["hub.lease_seconds"] do
+        String.to_integer(params["hub.lease_seconds"])
+      else
+        # Guess 3 days
+        60 * 60 * 24 * 3
+      end
+
+    with %WebsubClientSubscription{} = websub <-
+           Repo.get_by(WebsubClientSubscription, id: id, topic: topic) do
+      valid_until = NaiveDateTime.add(NaiveDateTime.utc_now(), lease_seconds)
       change = Ecto.Changeset.change(websub, %{state: "accepted", valid_until: valid_until})
       {:ok, _websub} = Repo.update(change)
+
       conn
       |> send_resp(200, challenge)
-    else _e ->
-      conn
-      |> send_resp(500, "Error")
+    else
+      _e ->
+        conn
+        |> send_resp(500, "Error")
     end
   end
 
@@ -48,12 +61,15 @@ defmodule Pleroma.Web.Websub.WebsubController do
          {:ok, body, _conn} = read_body(conn),
          ^signature <- Websub.sign(websub.secret, body) do
       Federator.enqueue(:incoming_doc, body)
+
       conn
       |> send_resp(200, "OK")
-    else _e ->
-      Logger.debug("Can't handle incoming subscription post")
-      conn
-      |> send_resp(500, "Error")
+    else
+      _e ->
+        Logger.debug("Can't handle incoming subscription post")
+
+        conn
+        |> send_resp(500, "Error")
     end
   end
 end

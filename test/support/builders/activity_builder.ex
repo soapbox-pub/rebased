@@ -4,17 +4,19 @@ defmodule Pleroma.Builders.ActivityBuilder do
 
   def build(data \\ %{}, opts \\ %{}) do
     user = opts[:user] || Pleroma.Factory.insert(:user)
+
     activity = %{
-      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id,
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
       "actor" => user.ap_id,
       "to" => ["https://www.w3.org/ns/activitystreams#Public"],
       "type" => "Create",
       "object" => %{
         "type" => "Note",
         "content" => "test",
-        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
     }
+
     Map.merge(activity, data)
   end
 
@@ -24,7 +26,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
   end
 
   def insert_list(times, data \\ %{}, opts \\ %{}) do
-    Enum.map(1..times, fn (n) ->
+    Enum.map(1..times, fn n ->
       {:ok, activity} = insert(data, opts)
       activity
     end)

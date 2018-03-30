@@ -14,8 +14,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
          {:ok, user} <- opts[:fetcher].(username),
          false <- !!user.info["deactivated"],
          saved_user_id <- get_session(conn, :user_id),
-         {:ok, verified_user} <- verify(user, password, saved_user_id)
-    do
+         {:ok, verified_user} <- verify(user, password, saved_user_id) do
       conn
       |> assign(:user, verified_user)
       |> put_session(:user_id, verified_user.id)
@@ -30,7 +29,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   end
 
   defp verify(nil, _password, _user_id) do
-    Pbkdf2.dummy_checkpw
+    Pbkdf2.dummy_checkpw()
     :error
   end
 
@@ -45,8 +44,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   defp decode_header(conn) do
     with ["Basic " <> header] <- get_req_header(conn, "authorization"),
          {:ok, userinfo} <- Base.decode64(header),
-         [username, password] <- String.split(userinfo, ":", parts: 2)
-    do
+         [username, password] <- String.split(userinfo, ":", parts: 2) do
       {:ok, username, password}
     end
   end

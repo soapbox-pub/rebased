@@ -4,7 +4,15 @@ defmodule Pleroma.Web.OAuth.AuthorizationTest do
   import Pleroma.Factory
 
   test "create an authorization token for a valid app" do
-    {:ok, app} = Repo.insert(App.register_changeset(%App{}, %{client_name: "client", scopes: "scope", redirect_uris: "url"}))
+    {:ok, app} =
+      Repo.insert(
+        App.register_changeset(%App{}, %{
+          client_name: "client",
+          scopes: "scope",
+          redirect_uris: "url"
+        })
+      )
+
     user = insert(:user)
 
     {:ok, auth} = Authorization.create_authorization(app, user)
@@ -16,7 +24,15 @@ defmodule Pleroma.Web.OAuth.AuthorizationTest do
   end
 
   test "use up a token" do
-    {:ok, app} = Repo.insert(App.register_changeset(%App{}, %{client_name: "client", scopes: "scope", redirect_uris: "url"}))
+    {:ok, app} =
+      Repo.insert(
+        App.register_changeset(%App{}, %{
+          client_name: "client",
+          scopes: "scope",
+          redirect_uris: "url"
+        })
+      )
+
     user = insert(:user)
 
     {:ok, auth} = Authorization.create_authorization(app, user)
@@ -30,7 +46,7 @@ defmodule Pleroma.Web.OAuth.AuthorizationTest do
     expired_auth = %Authorization{
       user_id: user.id,
       app_id: app.id,
-      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now, -10),
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), -10),
       token: "mytoken",
       used: false
     }

@@ -10,15 +10,15 @@ defmodule Pleroma.UserTest do
   import Ecto.Query
 
   test "ap_id returns the activity pub id for the user" do
-    user = UserBuilder.build
+    user = UserBuilder.build()
 
-    expected_ap_id = "#{Pleroma.Web.base_url}/users/#{user.nickname}"
+    expected_ap_id = "#{Pleroma.Web.base_url()}/users/#{user.nickname}"
 
     assert expected_ap_id == User.ap_id(user)
   end
 
   test "ap_followers returns the followers collection for the user" do
-    user = UserBuilder.build
+    user = UserBuilder.build()
 
     expected_followers_collection = "#{User.ap_id(user)}/followers"
 
@@ -67,7 +67,7 @@ defmodule Pleroma.UserTest do
     followed = insert(:user)
     user = insert(:user, %{following: [User.ap_followers(followed)]})
 
-    {:ok, user, _activity } = User.unfollow(user, followed)
+    {:ok, user, _activity} = User.unfollow(user, followed)
 
     user = Repo.get(User, user.id)
 
@@ -82,7 +82,6 @@ defmodule Pleroma.UserTest do
     user = Repo.get(User, user.id)
     assert user.following == [user.ap_id]
   end
-
 
   test "test if a user is following another user" do
     followed = insert(:user)
@@ -104,12 +103,12 @@ defmodule Pleroma.UserTest do
 
     test "it requires an email, name, nickname and password, bio is optional" do
       @full_user_data
-      |> Map.keys
-      |> Enum.each(fn (key) ->
+      |> Map.keys()
+      |> Enum.each(fn key ->
         params = Map.delete(@full_user_data, key)
         changeset = User.register_changeset(%User{}, params)
 
-        assert (if key == :bio, do: changeset.valid?, else: not changeset.valid?)
+        assert if key == :bio, do: changeset.valid?, else: not changeset.valid?
       end)
     end
 
@@ -120,7 +119,11 @@ defmodule Pleroma.UserTest do
 
       assert is_binary(changeset.changes[:password_hash])
       assert changeset.changes[:ap_id] == User.ap_id(%User{nickname: @full_user_data.nickname})
-      assert changeset.changes[:following] == [User.ap_followers(%User{nickname: @full_user_data.nickname})]
+
+      assert changeset.changes[:following] == [
+               User.ap_followers(%User{nickname: @full_user_data.nickname})
+             ]
+
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
   end
@@ -158,12 +161,24 @@ defmodule Pleroma.UserTest do
 
   test "returns an ap_id for a user" do
     user = insert(:user)
-    assert User.ap_id(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname)
+
+    assert User.ap_id(user) ==
+             Pleroma.Web.Router.Helpers.o_status_url(
+               Pleroma.Web.Endpoint,
+               :feed_redirect,
+               user.nickname
+             )
   end
 
   test "returns an ap_followers link for a user" do
     user = insert(:user)
-    assert User.ap_followers(user) == Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname) <> "/followers"
+
+    assert User.ap_followers(user) ==
+             Pleroma.Web.Router.Helpers.o_status_url(
+               Pleroma.Web.Endpoint,
+               :feed_redirect,
+               user.nickname
+             ) <> "/followers"
   end
 
   describe "remote user creation changeset" do
@@ -184,7 +199,8 @@ defmodule Pleroma.UserTest do
     test "it sets the follower_adress" do
       cs = User.remote_user_creation(@valid_remote)
       # remote users get a fake local follower address
-      assert cs.changes.follower_address == User.ap_followers(%User{ nickname: @valid_remote[:nickname] })
+      assert cs.changes.follower_address ==
+               User.ap_followers(%User{nickname: @valid_remote[:nickname]})
     end
 
     test "it enforces the fqn format for nicknames" do
@@ -196,7 +212,7 @@ defmodule Pleroma.UserTest do
 
     test "it has required fields" do
       [:name, :nickname, :ap_id]
-      |> Enum.each(fn (field) ->
+      |> Enum.each(fn field ->
         cs = User.remote_user_creation(Map.delete(@valid_remote, field))
         refute cs.valid?
       end)
@@ -204,7 +220,7 @@ defmodule Pleroma.UserTest do
 
     test "it restricts some sizes" do
       [bio: 5000, name: 100]
-      |> Enum.each(fn ({field, size}) ->
+      |> Enum.each(fn {field, size} ->
         string = String.pad_leading(".", size)
         cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
         assert cs.valid?
@@ -323,7 +339,11 @@ defmodule Pleroma.UserTest do
     user_two = insert(:user, local: false)
     addressed = insert(:user, local: true)
     addressed_remote = insert(:user, local: false)
-    {:ok, activity} = CommonAPI.post(actor, %{"status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"})
+
+    {:ok, activity} =
+      CommonAPI.post(actor, %{
+        "status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
+      })
 
     assert [addressed] == User.get_recipients_from_activity(activity)
 
@@ -379,7 +399,7 @@ defmodule Pleroma.UserTest do
 
   test "insert or update a user from given data" do
     user = insert(:user, %{nickname: "nick@name.de"})
-    data = %{ ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname }
+    data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
 
     assert {:ok, %User{}} = User.insert_or_update_user(data)
   end

@@ -9,19 +9,21 @@ defmodule Pleroma.Web.ChatChannel do
   end
 
   def handle_info(:after_join, socket) do
-    push socket, "messages", %{messages: ChatChannelState.messages()}
+    push(socket, "messages", %{messages: ChatChannelState.messages()})
     {:noreply, socket}
   end
 
   def handle_in("new_msg", %{"text" => text}, %{assigns: %{user_name: user_name}} = socket) do
     text = String.trim(text)
+
     if String.length(text) > 0 do
       author = User.get_cached_by_nickname(user_name)
       author = Pleroma.Web.MastodonAPI.AccountView.render("account.json", user: author)
       message = ChatChannelState.add_message(%{text: text, author: author})
 
-      broadcast! socket, "new_msg", message
+      broadcast!(socket, "new_msg", message)
     end
+
     {:noreply, socket}
   end
 end
@@ -43,6 +45,6 @@ defmodule Pleroma.Web.ChatChannel.ChatChannelState do
   end
 
   def messages() do
-    Agent.get(__MODULE__, fn state -> state[:messages] |> Enum.reverse end)
+    Agent.get(__MODULE__, fn state -> state[:messages] |> Enum.reverse() end)
   end
 end

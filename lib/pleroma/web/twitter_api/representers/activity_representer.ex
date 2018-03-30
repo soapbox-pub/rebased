@@ -7,18 +7,22 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.Formatter
 
   defp user_by_ap_id(user_list, ap_id) do
-    Enum.find(user_list, fn (%{ap_id: user_id}) -> ap_id == user_id end)
+    Enum.find(user_list, fn %{ap_id: user_id} -> ap_id == user_id end)
   end
 
-  def to_map(%Activity{data: %{"type" => "Announce", "actor" => actor, "published" => created_at}} = activity,
-             %{users: users, announced_activity: announced_activity} = opts) do
+  def to_map(
+        %Activity{data: %{"type" => "Announce", "actor" => actor, "published" => created_at}} =
+          activity,
+        %{users: users, announced_activity: announced_activity} = opts
+      ) do
     user = user_by_ap_id(users, actor)
-    created_at = created_at |> Utils.date_to_asctime
+    created_at = created_at |> Utils.date_to_asctime()
 
     text = "#{user.nickname} retweeted a status."
 
     announced_user = user_by_ap_id(users, announced_activity.data["actor"])
     retweeted_status = to_map(announced_activity, Map.merge(%{user: announced_user}, opts))
+
     %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
@@ -35,9 +39,11 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
-  def to_map(%Activity{data: %{"type" => "Like", "published" => created_at}} = activity,
-             %{user: user, liked_activity: liked_activity} = opts) do
-    created_at = created_at |> Utils.date_to_asctime
+  def to_map(
+        %Activity{data: %{"type" => "Like", "published" => created_at}} = activity,
+        %{user: user, liked_activity: liked_activity} = opts
+      ) do
+    created_at = created_at |> Utils.date_to_asctime()
 
     text = "#{user.nickname} favorited a status."
 
@@ -56,12 +62,16 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
-  def to_map(%Activity{data: %{"type" => "Follow", "object" => followed_id}} = activity, %{user: user} = opts) do
-    created_at = activity.data["published"] || (DateTime.to_iso8601(activity.inserted_at))
-    created_at = created_at |> Utils.date_to_asctime
+  def to_map(
+        %Activity{data: %{"type" => "Follow", "object" => followed_id}} = activity,
+        %{user: user} = opts
+      ) do
+    created_at = activity.data["published"] || DateTime.to_iso8601(activity.inserted_at)
+    created_at = created_at |> Utils.date_to_asctime()
 
     followed = User.get_cached_by_ap_id(followed_id)
     text = "#{user.nickname} started following #{followed.nickname}"
+
     %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
@@ -79,10 +89,16 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
   # TODO:
   # Make this more proper. Just a placeholder to not break the frontend.
-  def to_map(%Activity{data: %{"type" => "Undo", "published" => created_at, "object" => undid_activity }} = activity, %{user: user} = opts) do
-    created_at = created_at |> Utils.date_to_asctime
+  def to_map(
+        %Activity{
+          data: %{"type" => "Undo", "published" => created_at, "object" => undid_activity}
+        } = activity,
+        %{user: user} = opts
+      ) do
+    created_at = created_at |> Utils.date_to_asctime()
 
     text = "#{user.nickname} undid the action at #{undid_activity}"
+
     %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
@@ -98,8 +114,12 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
-  def to_map(%Activity{data: %{"type" => "Delete", "published" => created_at, "object" => _ }} = activity, %{user: user} = opts) do
-    created_at = created_at |> Utils.date_to_asctime
+  def to_map(
+        %Activity{data: %{"type" => "Delete", "published" => created_at, "object" => _}} =
+          activity,
+        %{user: user} = opts
+      ) do
+    created_at = created_at |> Utils.date_to_asctime()
 
     %{
       "id" => activity.id,
@@ -107,7 +127,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "attentions" => [],
       "statusnet_html" => "deleted notice {{tag",
-      "text" => "deleted notice {{tag" ,
+      "text" => "deleted notice {{tag",
       "is_local" => activity.local,
       "is_post_verb" => false,
       "created_at" => created_at,
@@ -117,8 +137,11 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     }
   end
 
-  def to_map(%Activity{data: %{"object" => %{"content" => content} = object}} = activity, %{user: user} = opts) do
-    created_at = object["published"] |> Utils.date_to_asctime
+  def to_map(
+        %Activity{data: %{"object" => %{"content" => content} = object}} = activity,
+        %{user: user} = opts
+      ) do
+    created_at = object["published"] |> Utils.date_to_asctime()
     like_count = object["like_count"] || 0
     announcement_count = object["announcement_count"] || 0
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
@@ -126,10 +149,11 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     mentions = opts[:mentioned] || []
 
-    attentions = activity.recipients
-    |> Enum.map(fn (ap_id) -> Enum.find(mentions, fn(user) -> ap_id == user.ap_id end) end)
-    |> Enum.filter(&(&1))
-    |> Enum.map(fn (user) -> UserView.render("show.json", %{user: user, for: opts[:for]}) end)
+    attentions =
+      activity.recipients
+      |> Enum.map(fn ap_id -> Enum.find(mentions, fn user -> ap_id == user.ap_id end) end)
+      |> Enum.filter(& &1)
+      |> Enum.map(fn user -> UserView.render("show.json", %{user: user, for: opts[:for]}) end)
 
     conversation_id = conversation_id(activity)
 
@@ -139,14 +163,17 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
     summary = activity.data["object"]["summary"]
-    content = if !!summary and summary != "" do
-      "<span>#{activity.data["object"]["summary"]}</span><br />#{content}</span>"
-    else
-      content
-    end
 
-    html = HtmlSanitizeEx.basic_html(content)
-    |> Formatter.emojify(object["emoji"])
+    content =
+      if !!summary and summary != "" do
+        "<span>#{activity.data["object"]["summary"]}</span><br />#{content}</span>"
+      else
+        content
+      end
+
+    html =
+      HtmlSanitizeEx.basic_html(content)
+      |> Formatter.emojify(object["emoji"])
 
     %{
       "id" => activity.id,
@@ -175,7 +202,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   def conversation_id(activity) do
     with context when not is_nil(context) <- activity.data["context"] do
       TwitterAPI.context_to_conversation_id(context)
-    else _e -> nil
+    else
+      _e -> nil
     end
   end
 

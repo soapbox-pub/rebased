@@ -6,14 +6,11 @@
 use Mix.Config
 
 # General application configuration
-config :pleroma,
-  ecto_repos: [Pleroma.Repo]
+config :pleroma, ecto_repos: [Pleroma.Repo]
 
-config :pleroma, Pleroma.Repo,
-  types: Pleroma.PostgresTypes
+config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
-config :pleroma, Pleroma.Upload,
-  uploads: "uploads"
+config :pleroma, Pleroma.Upload, uploads: "uploads"
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
@@ -21,8 +18,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
-  pubsub: [name: Pleroma.PubSub,
-           adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]
 
 # Configures Elixir's Logger
 config :logger, :console,
@@ -38,15 +34,15 @@ config :pleroma, :websub, Pleroma.Web.Websub
 config :pleroma, :ostatus, Pleroma.Web.OStatus
 config :pleroma, :httpoison, Pleroma.HTTP
 
-version = with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
-            "Pleroma #{Mix.Project.config[:version]} #{String.trim(version)}"
-          else
-            _ -> "Pleroma #{Mix.Project.config[:version]} dev"
-          end
+version =
+  with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
+    "Pleroma #{Mix.Project.config()[:version]} #{String.trim(version)}"
+  else
+    _ -> "Pleroma #{Mix.Project.config()[:version]} dev"
+  end
 
 # Configures http settings, upstream proxy etc.
-config :pleroma, :http,
-  proxy_url: nil
+config :pleroma, :http, proxy_url: nil
 
 config :pleroma, :instance,
   version: version,
@@ -59,16 +55,15 @@ config :pleroma, :instance,
 config :pleroma, :media_proxy,
   enabled: false,
   redirect_on_failure: true
-  #base_url: "https://cache.pleroma.social"
 
-config :pleroma, :chat,
-  enabled: true
+# base_url: "https://cache.pleroma.social"
+
+config :pleroma, :chat, enabled: true
 
 config :ecto, json_library: Jason
 
-config :phoenix, :format_encoders,
-  json: Jason
+config :phoenix, :format_encoders, json: Jason
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
-import_config "#{Mix.env}.exs"
+import_config "#{Mix.env()}.exs"

@@ -1,1 +1,5 @@
-Postgrex.Types.define(Pleroma.PostgresTypes, [] ++ Ecto.Adapters.Postgres.extensions(), json: Jason)
+Postgrex.Types.define(
+  Pleroma.PostgresTypes,
+  [] ++ Ecto.Adapters.Postgres.extensions(),
+  json: Jason
+)
