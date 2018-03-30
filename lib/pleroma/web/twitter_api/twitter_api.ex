@@ -277,7 +277,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       )
 
     activities = Repo.all(q)
-    activities_to_statuses(activities, %{for: user})
   end
 
   defp activities_to_statuses(activities, opts) do

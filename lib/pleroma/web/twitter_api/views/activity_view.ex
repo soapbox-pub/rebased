@@ -3,10 +3,20 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.User
   alias Pleroma.Web.TwitterAPI.UserView
+  alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.Activity
   alias Pleroma.Formatter
+
+  def render("index.json", opts) do
+    render_many(
+      opts.activities,
+      ActivityView,
+      "activity.json",
+      opts
+    )
+  end
 
   def render("activity.json", %{activity: %{data: %{"type" => "Delete"}} = activity} = opts) do
     user = User.get_cached_by_ap_id(activity.data["actor"])

@@ -19,7 +19,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          {:ok, activity} <-
            TwitterAPI.create_status(user, Map.put(status_data, "media_ids", media_ids)) do
       conn
-      |> json(ActivityRepresenter.to_map(activity, %{user: user}))
+      |> json(ActivityView.render("activity.json", activity: activity, for: user))
     else
       _ -> empty_status_reply(conn)
     end
@@ -44,27 +44,41 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def public_and_external_timeline(%{assigns: %{user: user}} = conn, params) do
-    statuses = TwitterAPI.fetch_public_and_external_statuses(user, params)
-    {:ok, json} = Jason.encode(statuses)
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce", "Follow"])
+      |> Map.put("blocking_user", user)
+
+    activities = ActivityPub.fetch_public_activities(params)
 
     conn
-    |> json_reply(200, json)
+    |> render(ActivityView, "index.json", %{activities: activities, for: user})
   end
 
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
-    statuses = TwitterAPI.fetch_public_statuses(user, params)
-    {:ok, json} = Jason.encode(statuses)
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce", "Follow"])
+      |> Map.put("local_only", true)
+      |> Map.put("blocking_user", user)
+
+    activities = ActivityPub.fetch_public_activities(params)
 
     conn
-    |> json_reply(200, json)
+    |> render(ActivityView, "index.json", %{activities: activities, for: user})
   end
 
   def friends_timeline(%{assigns: %{user: user}} = conn, params) do
-    statuses = TwitterAPI.fetch_friend_statuses(user, params)
-    {:ok, json} = Jason.encode(statuses)
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
+      |> Map.put("blocking_user", user)
+      |> Map.put("user", user)
+
+    activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
 
     conn
-    |> json_reply(200, json)
+    |> render(ActivityView, "index.json", %{activities: activities, for: user})
   end
 
   def show_user(conn, params) do
@@ -83,11 +97,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def user_timeline(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.get_user(user, params) do
       {:ok, target_user} ->
-        params = Map.merge(params, %{"actor_id" => target_user.ap_id, "whole_db" => true})
-        statuses = TwitterAPI.fetch_user_statuses(user, params)
+        params =
+          params
+          |> Map.put("type", ["Create", "Announce"])
+          |> Map.put("actor_id", target_user.ap_id)
+          |> Map.put("whole_db", true)
+
+        activities = ActivityPub.fetch_public_activities(params)
 
         conn
-        |> json_reply(200, statuses |> Jason.encode!())
+        |> render(ActivityView, "index.json", %{activities: activities, for: user})
 
       {:error, msg} ->
         bad_request_reply(conn, msg)
@@ -95,11 +114,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def mentions_timeline(%{assigns: %{user: user}} = conn, params) do
-    statuses = TwitterAPI.fetch_mentions(user, params)
-    {:ok, json} = Jason.encode(statuses)
+    activities = ActivityPub.fetch_activities([user.ap_id], params)
 
     conn
-    |> json_reply(200, json)
+    |> render(ActivityView, "index.json", %{activities: activities, for: user})
   end
 
   def follow(%{assigns: %{user: user}} = conn, params) do
@@ -160,10 +178,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def fetch_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     id = String.to_integer(id)
-    response = Jason.encode!(TwitterAPI.fetch_conversation(user, id))
 
-    conn
-    |> json_reply(200, response)
+    with context when is_binary(context) <- TwitterAPI.conversation_id_to_context(id),
+         activities <-
+           ActivityPub.fetch_activities_for_context(context, %{
+             "blocking_user" => user,
+             "user" => user
+           }) do
+      conn
+      |> render(ActivityView, "index.json", %{activities: activities, for: user})
+    end
   end
 
   def upload(conn, %{"media" => media}) do
@@ -337,8 +361,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => _query} = params) do
+    activities = TwitterAPI.search(user, params)
+
     conn
-    |> json(TwitterAPI.search(user, params))
+    |> render(ActivityView, "index.json", %{activities: activities, for: user})
   end
 
   defp bad_request_reply(conn, error_message) do
