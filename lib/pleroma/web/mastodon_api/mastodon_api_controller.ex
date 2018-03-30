@@ -564,7 +564,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         },
         push_subscription: nil,
         accounts: accounts,
-        custom_emojis: mastodon_emoji
+        custom_emojis: mastodon_emoji,
+        char_limit: Keyword.get(@instance, :limit)
       } |> Jason.encode!
       conn
       |> put_layout(false)
