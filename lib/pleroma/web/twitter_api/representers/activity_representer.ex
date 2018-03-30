@@ -1,3 +1,5 @@
+# THIS MODULE IS DEPRECATED! DON'T USE IT!
+# USE THE Pleroma.Web.TwitterAPI.Views.ActivityView MODULE!
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter

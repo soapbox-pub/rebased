@@ -1,7 +1,6 @@
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView}
-  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Web.CommonAPI
   alias Pleroma.{Repo, Activity, User}
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -152,10 +151,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def delete_post(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with {:ok, delete} <- CommonAPI.delete(id, user) do
-      json = ActivityRepresenter.to_json(delete, %{user: user, for: user})
-
-      conn
-      |> json_reply(200, json)
+      render(conn, ActivityView, "activity.json", %{activity: delete, for: user})
     end
   end
 
@@ -216,20 +212,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def favorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {:ok, status} <- TwitterAPI.fav(user, id) do
-      json(conn, status)
+    with {:ok, activity} <- TwitterAPI.fav(user, id) do
+      render(conn, ActivityView, "activity.json", %{activity: activity, for: user})
     end
   end
 
   def unfavorite(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {:ok, status} <- TwitterAPI.unfav(user, id) do
-      json(conn, status)
+    with {:ok, activity} <- TwitterAPI.unfav(user, id) do
+      render(conn, ActivityView, "activity.json", %{activity: activity, for: user})
     end
   end
 
   def retweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {:ok, status} <- TwitterAPI.repeat(user, id) do
-      json(conn, status)
+    with {:ok, activity} <- TwitterAPI.repeat(user, id) do
+      render(conn, ActivityView, "activity.json", %{activity: activity, for: user})
     end
   end
 
