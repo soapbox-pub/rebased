@@ -8,6 +8,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Repo
   alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   import Pleroma.Factory
 
   test "a create activity with a note" do
@@ -115,6 +117,33 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "user" => UserView.render("show.json", user: other_user),
       "retweeted_status" => ActivityView.render("activity.json", activity: activity),
       "statusnet_conversation_id" => convo_id
+    }
+
+    assert result == expected
+  end
+
+  test "A follow activity" do
+    user = insert(:user)
+    other_user = insert(:user, %{nickname: "shp"})
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    {:ok, follower} = User.follow(user, other_user)
+    {:ok, follow} = ActivityPub.follow(follower, other_user)
+
+    result = ActivityView.render("activity.json", activity: follow)
+
+    expected = %{
+      "activity_type" => "follow",
+      "attentions" => [],
+      "created_at" => follow.data["published"] |> Utils.date_to_asctime(),
+      "external_url" => follow.data["id"],
+      "id" => follow.id,
+      "in_reply_to_status_id" => nil,
+      "is_local" => true,
+      "is_post_verb" => false,
+      "statusnet_html" => "#{user.nickname} started following shp",
+      "text" => "#{user.nickname} started following shp",
+      "user" => UserView.render("show.json", user: user)
     }
 
     assert result == expected

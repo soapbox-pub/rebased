@@ -8,6 +8,29 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Activity
   alias Pleroma.Formatter
 
+  def render("activity.json", %{activity: %{data: %{"type" => "Follow"}} = activity} = opts) do
+    user = User.get_cached_by_ap_id(activity.data["actor"])
+    created_at = activity.data["published"] || DateTime.to_iso8601(activity.inserted_at)
+    created_at = created_at |> Utils.date_to_asctime()
+
+    followed = User.get_cached_by_ap_id(activity.data["object"])
+    text = "#{user.nickname} started following #{followed.nickname}"
+
+    %{
+      "id" => activity.id,
+      "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
+      "attentions" => [],
+      "statusnet_html" => text,
+      "text" => text,
+      "is_local" => activity.local,
+      "is_post_verb" => false,
+      "created_at" => created_at,
+      "in_reply_to_status_id" => nil,
+      "external_url" => activity.data["id"],
+      "activity_type" => "follow"
+    }
+  end
+
   def render("activity.json", %{activity: %{data: %{"type" => "Announce"}} = activity} = opts) do
     user = User.get_by_ap_id(activity.data["actor"])
     created_at = activity.data["published"] |> Utils.date_to_asctime()
@@ -15,7 +38,6 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     text = "#{user.nickname} retweeted a status."
 
-    # retweeted_status = to_map(announced_activity, Map.merge(%{user: announced_user}, opts))
     retweeted_status = render("activity.json", Map.merge(opts, %{activity: announced_activity}))
 
     %{
