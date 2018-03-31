@@ -50,6 +50,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
   end
 
   def info(text) do
+    text = String.replace(text, ~r/[\t\r\n]/, " ")
     "#{text}\tfake\(NULL)\t0\r\n"
   end
 
