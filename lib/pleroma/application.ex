@@ -24,6 +24,7 @@ defmodule Pleroma.Application do
           ]
         ]),
         worker(Pleroma.Web.Federator, []),
+        worker(Pleroma.Gopher.Server, []),
         worker(Pleroma.Stats, [])
       ] ++
         if Mix.env() == :test,
