@@ -1,3 +1,1060 @@
-var __wpo = {"assets":{"main":["/packs/features/compose-4617f6e912b5bfa71c43.js","/packs/modals/onboarding_modal-399f44a19ddd0ddc4e9c.js","/packs/features/public_timeline-d6e6bc704f49ebf922be.js","/packs/features/community_timeline-20bc8a94c08809c127d0.js","/packs/features/hashtag_timeline-3ed7e7bf18fd2fc04c9e.js","/packs/emoji_picker-9cf581d158c1cefc73c9.js","/packs/features/notifications-99d27ff7a90c7f701400.js","/packs/features/home_timeline-c146f32b0118845677ee.js","/packs/features/account_timeline-cad2550e777d3958eca4.js","/packs/features/pinned_statuses-fc56dd5916a37286e823.js","/packs/features/favourited_statuses-b15a9a6cc711cca1eb76.js","/packs/features/status-1f1807fdb4d1fd6daf40.js","/packs/features/following-9060b3726e6ad25f3621.js","/packs/features/followers-6716b8606f70dfa12ed7.js","/packs/features/account_gallery-b13924812f8dd47200c2.js","/packs/modals/report_modal-7a2950f40d4867b9cbb0.js","/packs/features/follow_requests-281e5b40331385149920.js","/packs/features/mutes-60c139f123f8d11ed903.js","/packs/features/blocks-e9605338ea941de78465.js","/packs/features/reblogs-e284a8647e830c151a40.js","/packs/features/favourites-083fedd11007764f7fad.js","/packs/features/getting_started-b65f1e917d66a972f2bf.js","/packs/features/generic_not_found-dc757b4cfe00489a06fb.js","/packs/modals/embed_modal-c776fd6a0ea581675783.js","/packs/status/media_gallery-7642f779bf4243e58b78.js","/packs/application-1b1f37dff2aac402336b.js","/packs/share-914b479bea45d0f6d4aa.js","/packs/about-d6275c885cd0e28a1186.js","/packs/public-88b87539fc95f07f2721.js","/packs/default-99ffdcf166b2dedef105.js","/packs/admin-1bab981afc4fd0d71402.js","/packs/common-1789b98651001ef10c0b.js","/packs/common-daadaac9454e7d14470e7954e3143dca.css","/packs/default-818c1287ac3c764905d81e549d5e0160.css","/packs/manifest.json"],"additional":["/emoji/1f602.svg","/emoji/sheet.png"],"optional":["/packs/locale_zh-TW-2ce95af6015c1c812a17.js","/packs/locale_zh-HK-b59fc4967cc8ed927fe9.js","/packs/locale_zh-CN-601e45ab96a4205d0315.js","/packs/locale_uk-1dc16dc9b7d7c6e9c566.js","/packs/locale_tr-71d85a06079f5471426f.js","/packs/locale_th-9c80f19a54e11880465c.js","/packs/locale_sv-a171cdf4deaf1e12bb0d.js","/packs/locale_ru-6976b8c1b98d9a59e933.js","/packs/locale_pt-ab5ecfe44d3e665b5bb7.js","/packs/locale_pt-BR-d2e312d147c156be6d25.js","/packs/locale_pl-a29786d2e8e517933a46.js","/packs/locale_oc-5db5b324864d5986ca40.js","/packs/locale_no-a905e439e333e8a75417.js","/packs/locale_nl-eb63a7c19f056d7aad37.js","/packs/locale_ko-6095b6a5356744e8c0fa.js","/packs/locale_ja-d62b9a98f6d06252f969.js","/packs/locale_it-e0da50e91bbf1d0ca7cd.js","/packs/locale_io-aa797a5ae99e86edda1b.js","/packs/locale_id-fab008a8becc89597587.js","/packs/locale_hu-2bb0c40f1c7f66e27e2d.js","/packs/locale_hr-e2d2f61a68ccc0db5448.js","/packs/locale_he-005e46857d05c85ee2eb.js","/packs/locale_fr-abab8a49160466298d03.js","/packs/locale_fi-a0bb536510dfb7fe46e7.js","/packs/locale_fa-36da2b4b7fce9ee445d4.js","/packs/locale_es-26cf29fe0ea58c648317.js","/packs/locale_eo-907e661a2a8c6d12f600.js","/packs/locale_en-a0e3195e8a56398ec497.js","/packs/locale_de-bf72ca55e704d5a96788.js","/packs/locale_ca-04107d1a98af2b039204.js","/packs/locale_bg-c13dba4d26f870d592b2.js","/packs/locale_ar-7d02662cc0cfffd6f6f9.js","/packs/base_polyfills-0e7cb02d7748745874eb.js","/packs/extra_polyfills-1caed55b56bce0471b41.js","/packs/fontawesome-webfont-af7ae505a9eed503f8b8e6982036873e.woff2","/packs/roboto-italic-webfont-50efdad8c62f5f279e3f4f1f63a4f9bc.woff2","/packs/roboto-bold-webfont-f633cb5c651ba4d50791e1adf55d3c18.woff2","/packs/roboto-medium-webfont-69c55fc2fe77d38934ea98dc31642ce6.woff2","/packs/roboto-regular-webfont-3ec24f953ed5e859a6402cb3c030ea8b.woff2","/packs/robotomono-regular-webfont-6c1ce30b90ee993b22618ec489585594.woff2","/packs/Montserrat-Regular-080422d4c1328f3407818d25c86cce51.woff2","/packs/mastodon-getting-started-758db9bb72f30f65b07bb7b64f24ea83.png","/packs/mastodon-not-found-afb3fe71154b0c7518f25c70897c03d2.png","/packs/void-65dfe5bd31335a5b308d36964d320574.png","/packs/elephant-friend-1-18bbe5bf56bcd2f550f26ae91be00dfb.png","/packs/elephant-fren-d16fd77f9a9387e7d146b5f9d4dc1e7f.png","/packs/elephant-friend-df0b9c6af525e0dea9f1f9c044d9a903.png","/packs/preview-9a17d32fc48369e8ccd910a75260e67d.jpg","/packs/logo-fe5141d38a25f50068b4c69b77ca1ec8.svg","/packs/logo_alt-6090911445f54a587465e41da77a6969.svg","/packs/logo_full-96e7a97fe469f75a23a74852b2478fa3.svg"]},"externals":["/emoji/1f602.svg","/emoji/sheet.png"],"hashesMap":{"d6f48cba7d076fb6f2fd6ba993a75b9dc1ecbf0c":"/packs/fontawesome-webfont-af7ae505a9eed503f8b8e6982036873e.woff2","8aadd54157395376ea8c22827bde88e67f31358e":"/packs/roboto-italic-webfont-50efdad8c62f5f279e3f4f1f63a4f9bc.woff2","e2fc71044647b6edf7a3ba41429d5d626e63710a":"/packs/roboto-bold-webfont-f633cb5c651ba4d50791e1adf55d3c18.woff2","b66f9a200f8671202198f0238b4729e127bc0dac":"/packs/roboto-medium-webfont-69c55fc2fe77d38934ea98dc31642ce6.woff2","74f352b40a57789750d3c738c710a82cdb0f254a":"/packs/roboto-regular-webfont-3ec24f953ed5e859a6402cb3c030ea8b.woff2","1e149b7d5f1c5a5c4971cb523450118b1d50ed47":"/packs/robotomono-regular-webfont-6c1ce30b90ee993b22618ec489585594.woff2","c6aade94b414951dc75e41b6f30fc1fa93bf89fb":"/packs/Montserrat-Regular-080422d4c1328f3407818d25c86cce51.woff2","606c0a294501407cb606af6a2e99ad086691a2d5":"/packs/mastodon-getting-started-758db9bb72f30f65b07bb7b64f24ea83.png","07f2e56474ad40bb2eeefa96747db607148b48e6":"/packs/mastodon-not-found-afb3fe71154b0c7518f25c70897c03d2.png","7e2065071fefe6d54f64b821bf575a0ab49b92c0":"/packs/void-65dfe5bd31335a5b308d36964d320574.png","5e03126b9137ddaac4cd49ee9d8b5f810c73befa":"/packs/elephant-friend-1-18bbe5bf56bcd2f550f26ae91be00dfb.png","027d2ab934afd67b404426234750c08b516ec223":"/packs/elephant-fren-d16fd77f9a9387e7d146b5f9d4dc1e7f.png","ae877f891f7ed247da4e37f126e626065906b050":"/packs/elephant-friend-df0b9c6af525e0dea9f1f9c044d9a903.png","aa75bce521938954706802c15e393ea05663e5e0":"/packs/logo-fe5141d38a25f50068b4c69b77ca1ec8.svg","f573db9e5698b7a3541880875c3ce88fe03ebee2":"/packs/logo_alt-6090911445f54a587465e41da77a6969.svg","3b339fcffc64574bca7cd2521e25bfbea8c3cbbf":"/packs/logo_full-96e7a97fe469f75a23a74852b2478fa3.svg","361cf83e570038228710feb587738d6b74308e26":"/packs/preview-9a17d32fc48369e8ccd910a75260e67d.jpg","02c2c674487079bb099ca92f873a399fe519c75d":"/packs/base_polyfills-0e7cb02d7748745874eb.js","1113f8f4a75e274532df89a37e72252df4b6061d":"/packs/extra_polyfills-1caed55b56bce0471b41.js","09b19d13785042afdc51a7081cc1dfa683abd3e4":"/packs/features/compose-4617f6e912b5bfa71c43.js","5be17973e9c0066acc5c54d3f9c564e0fe508421":"/packs/modals/onboarding_modal-399f44a19ddd0ddc4e9c.js","f17dbfa6961438865e07f03ec6f20fb8f49a7802":"/packs/features/public_timeline-d6e6bc704f49ebf922be.js","3c60c7ba8fd023743c177cebb46fad162f351203":"/packs/features/community_timeline-20bc8a94c08809c127d0.js","a00d9ff200d87d50da8a5581cc5bbf2ad51cd4ec":"/packs/features/hashtag_timeline-3ed7e7bf18fd2fc04c9e.js","4a25d59c03ac2de45524793f76ef24d650088af4":"/packs/emoji_picker-9cf581d158c1cefc73c9.js","82ac4eb08aa65b8eb21e01a95e904c8520d7f0f2":"/packs/features/notifications-99d27ff7a90c7f701400.js","ae6e166636ca34b0e5c698008c48914e33c852b9":"/packs/features/home_timeline-c146f32b0118845677ee.js","a9193d39ede3f09559fae05ef5cf7a4d4f16b62b":"/packs/features/account_timeline-cad2550e777d3958eca4.js","7857e0c4f26fbcd1aa4437a15822a21f238bb519":"/packs/features/pinned_statuses-fc56dd5916a37286e823.js","0f44c43b9b2ec1779fd6744f73c87dca0187a153":"/packs/features/favourited_statuses-b15a9a6cc711cca1eb76.js","dd590f3f97184b3c424b269d2f59eac3d9302f43":"/packs/features/status-1f1807fdb4d1fd6daf40.js","86184a8a6e86a6604bc095c39b4e9b37d08a3a5e":"/packs/features/following-9060b3726e6ad25f3621.js","43626d72bbdf5ff7282f4a4ce712882fc250413b":"/packs/features/followers-6716b8606f70dfa12ed7.js","adef2121adec26a02614a50a00d5911ff5b8ccac":"/packs/features/account_gallery-b13924812f8dd47200c2.js","1607fc3b92d38881a3dd61f82b680b57d4bc6067":"/packs/modals/report_modal-7a2950f40d4867b9cbb0.js","f02af8336f1638c7297ecc0cfcb0e2a089e37be1":"/packs/features/follow_requests-281e5b40331385149920.js","bf9964f139adfe6896ab4f996f0580143768c429":"/packs/features/mutes-60c139f123f8d11ed903.js","10dcc877d7461df7c3de874253a8aab34d5abe13":"/packs/features/blocks-e9605338ea941de78465.js","26d6e458ca239b3171654786ff87c65f3efbb997":"/packs/features/reblogs-e284a8647e830c151a40.js","caec704b8557fbae5544c8a1a82c7e96ff6106ea":"/packs/features/favourites-083fedd11007764f7fad.js","7f3aec72305d03dc3cf02617d24aedf45c48ca22":"/packs/features/getting_started-b65f1e917d66a972f2bf.js","5f999603053c15e02015866c6ee0ef752f1e5a90":"/packs/features/generic_not_found-dc757b4cfe00489a06fb.js","4e42ba33598769eca758896b9955413eff36c6cf":"/packs/modals/embed_modal-c776fd6a0ea581675783.js","f87258c5fce80c82d8fbefebd196f1acc3e3da05":"/packs/status/media_gallery-7642f779bf4243e58b78.js","6e7bdfec33a96ca7385e63314e7b61ed0b520fa1":"/packs/application-1b1f37dff2aac402336b.js","5197ef4f66578d04932c46a2ca73c62ff5354d56":"/packs/share-914b479bea45d0f6d4aa.js","3fe1b7c2d54ae1ca5dde0ecd6bfe77561ae67fcd":"/packs/about-d6275c885cd0e28a1186.js","fdc97092981d986badeff525b2e2e8f7ac3411dd":"/packs/public-88b87539fc95f07f2721.js","08c632ac540cb754bdb26568b5d979ef767a2e32":"/packs/locale_zh-TW-2ce95af6015c1c812a17.js","c23db08d37501a68617a17f5d617c9e2883abfcf":"/packs/locale_zh-HK-b59fc4967cc8ed927fe9.js","32847ac3daff8d15c3b2ca52091bd1052ae17e01":"/packs/locale_zh-CN-601e45ab96a4205d0315.js","c9e5de55bcfdb0793e2ba581ee5fcf0549b17652":"/packs/locale_uk-1dc16dc9b7d7c6e9c566.js","e3ac8cba2dd9601304bfdba4335b962a9889901d":"/packs/locale_tr-71d85a06079f5471426f.js","85ccb9a70acd8791ea4538b92b46a8191c13c2b2":"/packs/locale_th-9c80f19a54e11880465c.js","538200f4a7ad2f95668437ec71720246eeb611d4":"/packs/locale_sv-a171cdf4deaf1e12bb0d.js","4819a17de70e5d38f06ec1bcb43aaa34bf709143":"/packs/locale_ru-6976b8c1b98d9a59e933.js","be59fef7bdc4f0a8e2f2a536136cb7e4971b86dd":"/packs/locale_pt-ab5ecfe44d3e665b5bb7.js","d9d48de5e93f7fbeb9349a24365ece1c0083b41b":"/packs/locale_pt-BR-d2e312d147c156be6d25.js","b05ac962c01e60bcc3a1dfa9635ed601ab015e96":"/packs/locale_pl-a29786d2e8e517933a46.js","04714874cd20422eaee9cd8f0ea7e6f67486c5ee":"/packs/locale_oc-5db5b324864d5986ca40.js","4b24bf3af970b7d47164c90dffc2089e0f1c141b":"/packs/locale_no-a905e439e333e8a75417.js","2c8f8037f2b00c4d4c38fbeba19942e26a0adce8":"/packs/locale_nl-eb63a7c19f056d7aad37.js","edd3e6d9e2efae9927c863ba9be81e34ee0eae4a":"/packs/locale_ko-6095b6a5356744e8c0fa.js","fa0c39ab6085f85bcc15ffa6a32958294d7512a3":"/packs/locale_ja-d62b9a98f6d06252f969.js","c69e885b56b0207913241c564b340776b5eb241b":"/packs/locale_it-e0da50e91bbf1d0ca7cd.js","78b569e009581e6528a57890dbe2d475da744e84":"/packs/locale_io-aa797a5ae99e86edda1b.js","e0c7b8f4798525d5aad43d513cdc6777a8f2a582":"/packs/locale_id-fab008a8becc89597587.js","054e8555165b2e38718db7b660434ee6af4c7b54":"/packs/locale_hu-2bb0c40f1c7f66e27e2d.js","af6a9496ab50297822ad79eb3a8b28bee463a8db":"/packs/locale_hr-e2d2f61a68ccc0db5448.js","7b2b805e78070c1d3aaf1d26d86a491c0c4fdd96":"/packs/locale_he-005e46857d05c85ee2eb.js","8eb27bc91ec6f28951459e76420b636facdebb29":"/packs/locale_fr-abab8a49160466298d03.js","cb66594b9d4b77021b32b3860b93f1fc99ff2631":"/packs/locale_fi-a0bb536510dfb7fe46e7.js","356326a18ce4dd212d7137662fad19d6550ce281":"/packs/locale_fa-36da2b4b7fce9ee445d4.js","d93ea9563c97512409f213a1a34ce152a315ccbe":"/packs/locale_es-26cf29fe0ea58c648317.js","5577ec515e3b2e03226c30e59baf1a1ee55f582b":"/packs/locale_eo-907e661a2a8c6d12f600.js","c4ddaecc4a8d9736bd977ee09f81a049915ddae1":"/packs/locale_en-a0e3195e8a56398ec497.js","310c228396d14679fb0eab558fbb08f3f60b045a":"/packs/locale_de-bf72ca55e704d5a96788.js","921d59001fd5c7f1aad52159d3ad0c91364ccc20":"/packs/locale_ca-04107d1a98af2b039204.js","70eebbd017c2af446683cede112550e3af338a1b":"/packs/locale_bg-c13dba4d26f870d592b2.js","40e44a1ff6d321e7aef60ef9beef5d69f92ebddc":"/packs/locale_ar-7d02662cc0cfffd6f6f9.js","d25247128936074df50bda24bf944c1c201c77c8":"/packs/default-99ffdcf166b2dedef105.js","d0074e124cc28ba46226e7c906433d357e2f7b3a":"/packs/admin-1bab981afc4fd0d71402.js","2be0b26b1bd787307ae34dcb88aeb93875d36b5c":"/packs/common-1789b98651001ef10c0b.js","fa0de8eb4bebb338afc3b9304a1ec1cb7190082a":"/packs/common-daadaac9454e7d14470e7954e3143dca.css","fcf86dc0c729d935398a92324b42093644bdff3c":"/packs/default-818c1287ac3c764905d81e549d5e0160.css","a7d14fcd27e80d7232c6f09a2f5c4c768b171c7b":"/packs/manifest.json"},"strategy":"changed","responseStrategy":"cache-first","version":"11/12/2017, 12:40:57 PM","name":"webpack-offline:mastodon","pluginVersion":"4.8.4","relativePaths":false};
+var __wpo = {"assets":{"main":["/packs/base_polyfills.js","/packs/extra_polyfills.js","/packs/features/compose.js","/packs/modals/onboarding_modal.js","/packs/emoji_picker.js","/packs/features/notifications.js","/packs/features/account_timeline.js","/packs/features/home_timeline.js","/packs/features/public_timeline.js","/packs/features/community_timeline.js","/packs/features/following.js","/packs/features/followers.js","/packs/features/favourited_statuses.js","/packs/features/list_timeline.js","/packs/features/account_gallery.js","/packs/features/hashtag_timeline.js","/packs/features/status.js","/packs/features/blocks.js","/packs/modals/report_modal.js","/packs/features/follow_requests.js","/packs/features/reblogs.js","/packs/features/favourites.js","/packs/features/getting_started.js","/packs/features/keyboard_shortcuts.js","/packs/features/generic_not_found.js","/packs/features/list_editor.js","/packs/status/media_gallery.js","/packs/share.js","/packs/application.js","/packs/about.js","/packs/public.js","/packs/mailer.js","/packs/default.js","/packs/admin.js","/packs/common.js","/packs/common.css","/packs/mailer.css","/packs/default.css","/packs/manifest.json"],"additional":["/emoji/1f602.svg","/emoji/sheet.png"],"optional":["/packs/locale_zh-TW.js","/packs/locale_zh-HK.js","/packs/locale_zh-CN.js","/packs/locale_uk.js","/packs/locale_tr.js","/packs/locale_th.js","/packs/locale_sv.js","/packs/locale_sr.js","/packs/locale_sr-Latn.js","/packs/locale_sk.js","/packs/locale_ru.js","/packs/locale_pt.js","/packs/locale_pt-BR.js","/packs/locale_pl.js","/packs/locale_oc.js","/packs/locale_no.js","/packs/locale_nl.js","/packs/locale_ko.js","/packs/locale_ja.js","/packs/locale_it.js","/packs/locale_io.js","/packs/locale_id.js","/packs/locale_hy.js","/packs/locale_hu.js","/packs/locale_hr.js","/packs/locale_he.js","/packs/locale_gl.js","/packs/locale_fr.js","/packs/locale_fi.js","/packs/locale_fa.js","/packs/locale_es.js","/packs/locale_eo.js","/packs/locale_en.js","/packs/locale_de.js","/packs/locale_ca.js","/packs/locale_bg.js","/packs/locale_ar.js","/packs/roboto-italic-webfont-50efdad8c62f5f279e3f4f1f63a4f9bc.woff2","/packs/roboto-bold-webfont-f633cb5c651ba4d50791e1adf55d3c18.woff2","/packs/roboto-medium-webfont-69c55fc2fe77d38934ea98dc31642ce6.woff2","/packs/roboto-regular-webfont-3ec24f953ed5e859a6402cb3c030ea8b.woff2","/packs/fontawesome-webfont-af7ae505a9eed503f8b8e6982036873e.woff2","/packs/robotomono-regular-webfont-6c1ce30b90ee993b22618ec489585594.woff2","/packs/Montserrat-Regular-080422d4c1328f3407818d25c86cce51.woff2","/packs/void-65dfe5bd31335a5b308d36964d320574.png","/packs/reticle-7d7ce959271e5ff1193fb32cff90ea56.png","/packs/elephant-fren-d16fd77f9a9387e7d146b5f9d4dc1e7f.png","/packs/icon_cached-98a757f1d9e93652742be43c22f46287.png","/packs/icon_done-12b87c12f915597dccbd2ca4d7167ba4.png","/packs/icon_email-738c89662d6640f5e6539151023d049a.png","/packs/icon_file_download-e5c29678f3a639e1e62374911d85e1d0.png","/packs/icon_grade-3ec67253b37908d2ab783f7225f20682.png","/packs/icon_lock_open-0bfd71a52eb3f34934edd59088b559fb.png","/packs/icon_person_add-e2c6b660f6e1c95785d8d2bfa7a823af.png","/packs/icon_reply-4f6ada7a0b886b084706a484753a0ff0.png","/packs/logo_full-5c51cffe1fcb8225ae02400d6a7e7077.png","/packs/logo_transparent-6f79eeb2c38ec2d12ed4d978322457d6.png","/packs/preview-9a17d32fc48369e8ccd910a75260e67d.jpg","/packs/elephant_ui_plane-e3f2d57c12c376e189c274cbe81af8dd.svg","/packs/elephant_ui_disappointed-8864342480c3612e3061702851d3a798.svg","/packs/elephant_ui_greeting-475430963d0b00fe82b07b17857ebf6c.svg","/packs/elephant_ui_working-2e653cc278c2ac871c23aeb10de1c0e2.svg","/packs/icon_cached-108e30d96e1d5152be7fe2978bcdfe14.svg","/packs/icon_done-dba357bfbba455428787fefc655ce120.svg","/packs/icon_email-1346985c7aaceb601b0d4257133254f4.svg","/packs/icon_file_download-4b5c054e76b0df3cbbc851854cd10c3c.svg","/packs/icon_grade-8e81b8e88c2b5834347a2a226c65d440.svg","/packs/icon_lock_open-c9627928caaaa505ac7de2a64bd065ec.svg","/packs/icon_person_add-5c56ef10b9e99e77a44d89041f4b77b5.svg","/packs/icon_reply-b5e28e1fe6acd4ec003e643e947f1c4a.svg","/packs/logo-fe5141d38a25f50068b4c69b77ca1ec8.svg","/packs/logo_alt-6090911445f54a587465e41da77a6969.svg","/packs/logo_full-96e7a97fe469f75a23a74852b2478fa3.svg","/packs/logo_transparent-6900bab180aa3a46c34425e5367a218f.svg"]},"externals":["/emoji/1f602.svg","/emoji/sheet.png"],"hashesMap":{"8aadd54157395376ea8c22827bde88e67f31358e":"/packs/roboto-italic-webfont-50efdad8c62f5f279e3f4f1f63a4f9bc.woff2","e2fc71044647b6edf7a3ba41429d5d626e63710a":"/packs/roboto-bold-webfont-f633cb5c651ba4d50791e1adf55d3c18.woff2","b66f9a200f8671202198f0238b4729e127bc0dac":"/packs/roboto-medium-webfont-69c55fc2fe77d38934ea98dc31642ce6.woff2","74f352b40a57789750d3c738c710a82cdb0f254a":"/packs/roboto-regular-webfont-3ec24f953ed5e859a6402cb3c030ea8b.woff2","d6f48cba7d076fb6f2fd6ba993a75b9dc1ecbf0c":"/packs/fontawesome-webfont-af7ae505a9eed503f8b8e6982036873e.woff2","1e149b7d5f1c5a5c4971cb523450118b1d50ed47":"/packs/robotomono-regular-webfont-6c1ce30b90ee993b22618ec489585594.woff2","c6aade94b414951dc75e41b6f30fc1fa93bf89fb":"/packs/Montserrat-Regular-080422d4c1328f3407818d25c86cce51.woff2","7e2065071fefe6d54f64b821bf575a0ab49b92c0":"/packs/void-65dfe5bd31335a5b308d36964d320574.png","f7e7808e34f32df8859ac9cef991858df4fc0bba":"/packs/reticle-7d7ce959271e5ff1193fb32cff90ea56.png","8523aa7b16b029770170cc12026e7c7d172d626d":"/packs/elephant_ui_plane-e3f2d57c12c376e189c274cbe81af8dd.svg","027d2ab934afd67b404426234750c08b516ec223":"/packs/elephant-fren-d16fd77f9a9387e7d146b5f9d4dc1e7f.png","2523b7002bda93c12af3b4b7f4d7a35fd52faf41":"/packs/elephant_ui_disappointed-8864342480c3612e3061702851d3a798.svg","2dace1e38e0d159660c56d838ad2ce22c0184661":"/packs/elephant_ui_greeting-475430963d0b00fe82b07b17857ebf6c.svg","42a8fc2f0526540979583534ec331a2d28d2575e":"/packs/elephant_ui_working-2e653cc278c2ac871c23aeb10de1c0e2.svg","22fac75a796b2bd2c6872cbd8d14bd325b00bb64":"/packs/icon_cached-108e30d96e1d5152be7fe2978bcdfe14.svg","e9cea6fd6e8034f60e0358a15956490831c66b03":"/packs/icon_done-dba357bfbba455428787fefc655ce120.svg","17604ec5d343bc1aee070a2197dae8fd78bdccef":"/packs/icon_email-1346985c7aaceb601b0d4257133254f4.svg","e4a88b85b09c072041e89acaa22ec362ece97f27":"/packs/icon_file_download-4b5c054e76b0df3cbbc851854cd10c3c.svg","75a26256446662fb331fd42b9849dfff235364d5":"/packs/icon_grade-8e81b8e88c2b5834347a2a226c65d440.svg","7a534f4811adb70a796a285fb70b93c87a9f4b94":"/packs/icon_lock_open-c9627928caaaa505ac7de2a64bd065ec.svg","08ef53f9228b3d24f2801ba942fc842599c39e34":"/packs/icon_person_add-5c56ef10b9e99e77a44d89041f4b77b5.svg","ad9a0479341f3a93a83c7cadab091569e459076c":"/packs/icon_reply-b5e28e1fe6acd4ec003e643e947f1c4a.svg","aa75bce521938954706802c15e393ea05663e5e0":"/packs/logo-fe5141d38a25f50068b4c69b77ca1ec8.svg","f573db9e5698b7a3541880875c3ce88fe03ebee2":"/packs/logo_alt-6090911445f54a587465e41da77a6969.svg","3b339fcffc64574bca7cd2521e25bfbea8c3cbbf":"/packs/logo_full-96e7a97fe469f75a23a74852b2478fa3.svg","12520e03b958c73d94a1f19644ca4d0b79c6505d":"/packs/logo_transparent-6900bab180aa3a46c34425e5367a218f.svg","dc0b5a8d2d7e67f84d37635137610c6c6d937058":"/packs/icon_cached-98a757f1d9e93652742be43c22f46287.png","58f810df15baa9109f9db7f800e31c0d011e6f0d":"/packs/icon_done-12b87c12f915597dccbd2ca4d7167ba4.png","828ed8086eacb6622609e9992950998ce0a1579b":"/packs/icon_email-738c89662d6640f5e6539151023d049a.png","c60492c5ceea92a0acb138f20e0a33dd1e553f6b":"/packs/icon_file_download-e5c29678f3a639e1e62374911d85e1d0.png","b60349291b7d31e9aa78b94aed0f6ce07171096f":"/packs/icon_grade-3ec67253b37908d2ab783f7225f20682.png","d80b4dd1135df4803cddc1c1f6646dd7fc601367":"/packs/icon_lock_open-0bfd71a52eb3f34934edd59088b559fb.png","3f2c7f54c1073569de3a7312fb9a055723f68898":"/packs/icon_person_add-e2c6b660f6e1c95785d8d2bfa7a823af.png","f7717ae34919e3c88a668b5d9426b5fdc868b0de":"/packs/icon_reply-4f6ada7a0b886b084706a484753a0ff0.png","ee2ae924bf02960749696f2c66890780ca321924":"/packs/logo_full-5c51cffe1fcb8225ae02400d6a7e7077.png","2a2ed7e6889f11e00656cb952d0704f762bf05ea":"/packs/logo_transparent-6f79eeb2c38ec2d12ed4d978322457d6.png","361cf83e570038228710feb587738d6b74308e26":"/packs/preview-9a17d32fc48369e8ccd910a75260e67d.jpg","1093eb8607b16d18b21df6b7c7ac6184756d00eb":"/packs/base_polyfills.js","19d9381ec4a37b0ce90fd8a80581afece0578913":"/packs/extra_polyfills.js","9a581ad7b3a19f7ba589ba4857ffad5c4e0fba37":"/packs/features/compose.js","a807150965be923f9214a5ba04d240a22c5acf00":"/packs/modals/onboarding_modal.js","d1a1f85ed4b47e8d15b7b46ea49e69f3ad413d9b":"/packs/emoji_picker.js","c2c89543f78b36f537c5dcd959a88bfc8378150a":"/packs/features/notifications.js","79766c629b05381d4b868391cc3e373567733bae":"/packs/features/account_timeline.js","df7aba04e76bb5224b18fa24a400ccc61a7f7e97":"/packs/features/home_timeline.js","e97df182490872c0ef2880427c352687feb1e82f":"/packs/features/public_timeline.js","7573702e2027e2982ff3d1d4894bd92b04a2e0ec":"/packs/features/community_timeline.js","2397794b1b960662a826822d67d9e8126e3fd02e":"/packs/features/following.js","d8b04807d74dcd79f6468c2078742d6f06484185":"/packs/features/followers.js","97f5a122d0f6defa84cafecc5f5cf27c982aa2b8":"/packs/features/favourited_statuses.js","061e6ea67335763fb9377b5ba6ae0a3d1aee76ce":"/packs/features/list_timeline.js","cc2a0330aab75cc678e1ff5782a592f566bfe283":"/packs/features/account_gallery.js","d9fe0b2779b643c6d5a1b5a40a6092511866645e":"/packs/features/hashtag_timeline.js","6d6385ee3c76b0f54d0ff69611c0d673b60f63b1":"/packs/features/status.js","77c42f70ffcc354e30d9ee9db623bc7bb0007042":"/packs/features/blocks.js","bfd0c5bf9d36f06245f4ec480b936d343a168828":"/packs/modals/report_modal.js","c8b7290ca73cc1472e154aba2d52fd6966ef8be0":"/packs/features/follow_requests.js","a668ad01ca34d4211a57cff660177a31f2ffc8e5":"/packs/features/reblogs.js","33d4fa32eb71e22a33855facdc52af2f46b10f7a":"/packs/features/favourites.js","ecb0ae362c163643e885ea2603323e8c748044b9":"/packs/features/getting_started.js","e5b2e97e2cc4611d697bcaaafffde156b116bfb7":"/packs/features/keyboard_shortcuts.js","aec0dce42ea20ab03909e5cea2b38565cab44377":"/packs/features/generic_not_found.js","2949b762d8ca7f0e1d94514484795084d30f36ff":"/packs/features/list_editor.js","d0e16a7b13ff5a954008fa3f704f1b5631b7090b":"/packs/status/media_gallery.js","b133d2a88b2d4906f863ed12b5faa70c99f957bb":"/packs/share.js","d2fb1f58ace5dbe1078504997600ace692475117":"/packs/application.js","cd6373f2afb467a8ecec5167680cbb980c485bdd":"/packs/about.js","130a98761f27156e8179051c0014df21c7117d88":"/packs/public.js","0a3ac31019da1d9d6348cff48724ac6e5ad7eead":"/packs/locale_zh-TW.js","d92af521778dd0287d371f6e0c8b80f46786756c":"/packs/locale_zh-HK.js","318dc09ecab668bf76bb47ec49321fe5b3c4e4ce":"/packs/locale_zh-CN.js","7d96c83787c7f218275442385d44c1b3d1090332":"/packs/locale_uk.js","3bf483234ead015d5da0db777548039a749d0e3b":"/packs/locale_tr.js","5d431448a3c0894eef34a9ddf4a6a9c6516a9ff4":"/packs/locale_th.js","4dee08b7ad22e6437a0be5104f546c14effc87c7":"/packs/locale_sv.js","320c6d7c8a94e99620135151bc2a99b236d1736a":"/packs/locale_sr.js","fab1e8898846ace52dd61e1fe50f4551392f5cd8":"/packs/locale_sr-Latn.js","1eb62f681688fbc8a5ee80ec6dbffc2dfc261621":"/packs/locale_sk.js","c93eb4efc7a9964fe2e3ca4fe331081fcacc6552":"/packs/locale_ru.js","689c846b2b16788cfa7af5a649e7b2fff090a7bb":"/packs/locale_pt.js","3c7fb0c47c9725eac3e2946892297f86fd9ce2ec":"/packs/locale_pt-BR.js","3e09e830117edebd014bc8c74585aa9dc66276df":"/packs/locale_pl.js","c411f06ed734c1c357c0fd055ee5356b189361b0":"/packs/locale_oc.js","69088a1a4d23996425652c229aed6ba947c73aa8":"/packs/locale_no.js","f081e3203b47eaf5f1295ce511e25411b9c948be":"/packs/locale_nl.js","af4569a5d574967c806dabe5af79483e9cda5ae6":"/packs/locale_ko.js","84fea8512443aa9efda58cbe901a83924433cdbd":"/packs/locale_ja.js","7248c11e53ddcd995ff539d8a0ad97e48acc084f":"/packs/locale_it.js","3770b119a74ad4ecaee078bd3a186bcf9cadc2eb":"/packs/locale_io.js","36fdfe34383c8251699b1fd8c06d4e41a6df1294":"/packs/locale_id.js","5418a21d11ad08b893ef409cb267e97cda1b9113":"/packs/locale_hy.js","50f856d246840e645fa0578c6ca97e223960d087":"/packs/locale_hu.js","e20d063d67e9420db3fb40333fb44570f565708c":"/packs/locale_hr.js","87e4b49ef511e74a903de358ad7fc348b6e2fc36":"/packs/locale_he.js","3a6e47b5708222de8e8607f8dfb1ee2023d6f419":"/packs/locale_gl.js","ca6fa923d0d14bd09149b1e343e2fc4198f1b1a7":"/packs/locale_fr.js","d2c9bed85d569fedb169c28497c57ec7dfe5b382":"/packs/locale_fi.js","2debc63b3000be72aac518ab74f6a4d4de7ef0dc":"/packs/locale_fa.js","7728d12c267aeae1e924d0a629080bba0af479ad":"/packs/locale_es.js","42dfacf0a352f0fd3d0e420f68e18f5b60fd00e5":"/packs/locale_eo.js","1eda8ebf8977438d241bfb0c4ade0445eaec7880":"/packs/locale_en.js","0f12041ae729232d8c65f89eb79a4998b2024340":"/packs/locale_de.js","c51bce8fb87ae242af33345e7fb02c0f6e243caf":"/packs/locale_ca.js","baa7a0de343865285134c21434cf388cb93610c4":"/packs/locale_bg.js","70ab091d657ac5880d2697c9513fc3e4412db31d":"/packs/locale_ar.js","be713e019f94ed8fb74a774b455eac2e3168a830":"/packs/mailer.js","9bc74f90760e779c5aab7e1ee6da1068f3adfd55":"/packs/default.js","c484f9cf5f64192ce57a46d1b90009df00875787":"/packs/admin.js","8c0a2b3bf59c36d99d5d5087aa95d875ce17ac8f":"/packs/common.js","63d5949a7f9065ed25c771b22883444dc420be1d":"/packs/common.css","2a742852e4241f6de4f33884bf01731c08a3851d":"/packs/mailer.css","b16bfa7a55ba0ecfd3c91f84f587f8875a238634":"/packs/default.css","ee1364b2dbdafd5add54ddccd8adb32f82f269e4":"/packs/manifest.json"},"strategy":"changed","responseStrategy":"cache-first","version":"2018-3-31 19:06:08","name":"webpack-offline:mastodon","pluginVersion":"4.8.4","relativePaths":false};
 
-!function(t){function n(i){if(e[i])return e[i].exports;var r=e[i]={i:i,l:!1,exports:{}};return t[i].call(r.exports,r,r.exports,n),r.l=!0,r.exports}var e={};n.m=t,n.c=e,n.d=function(t,e,i){n.o(t,e)||Object.defineProperty(t,e,{configurable:!1,enumerable:!0,get:i})},n.n=function(t){var e=t&&t.__esModule?function(){return t.default}:function(){return t};return n.d(e,"a",e),e},n.o=function(t,n){return Object.prototype.hasOwnProperty.call(t,n)},n.p="/packs/",n(n.s=0)}([function(t,n,e){"use strict";function i(t,n){return caches.match(t,{cacheName:n}).then(function(e){return a()?e:c(e).then(function(e){return caches.open(n).then(function(n){return n.put(t,e)}).then(function(){return e})})}).catch(function(){})}function r(t,n){return t+(-1!==t.indexOf("?")?"&":"?")+"__uncache="+encodeURIComponent(n)}function o(t){return"navigate"===t.mode||t.headers.get("Upgrade-Insecure-Requests")||-1!==(t.headers.get("Accept")||"").indexOf("text/html")}function a(t){return!t||!t.redirected||!t.ok||"opaqueredirect"===t.type}function c(t){return a(t)?Promise.resolve(t):("body"in t?Promise.resolve(t.body):t.blob()).then(function(n){return new Response(n,{headers:t.headers,status:t.status})})}function u(t){return Object.keys(t).reduce(function(n,e){return n[e]=t[e],n},{})}function s(t,n){n.forEach(function(t){})}if(function(){var t=ExtendableEvent.prototype.waitUntil,n=FetchEvent.prototype.respondWith,e=new WeakMap;ExtendableEvent.prototype.waitUntil=function(n){var i=this,r=e.get(i);return r?void r.push(Promise.resolve(n)):(r=[Promise.resolve(n)],e.set(i,r),t.call(i,Promise.resolve().then(function t(){var n=r.length;return Promise.all(r.map(function(t){return t.catch(function(){})})).then(function(){return r.length!=n?t():(e.delete(i),Promise.all(r))})})))},FetchEvent.prototype.respondWith=function(t){return this.waitUntil(t),n.call(this,t)}}(),void 0===f)var f=!1;!function(t,n){function e(){if(!U.additional.length)return Promise.resolve();var t=void 0;return t="changed"===O?f("additional"):a("additional"),t.catch(function(t){})}function a(n){var e=U[n];return caches.open(j).then(function(n){return g(n,e,{bust:t.version,request:t.prefetchRequest})}).then(function(){s("Cached assets: "+n,e)}).catch(function(t){throw t})}function f(n){return d().then(function(e){if(!e)return a(n);var i=e[0],r=e[1],o=e[2],c=o.hashmap,u=o.version;if(!o.hashmap||u===t.version)return a(n);var f=Object.keys(c).map(function(t){return c[t]}),l=r.map(function(t){var n=new URL(t.url);return n.search="",n.hash="",n.toString()}),d=U[n],h=[],v=d.filter(function(t){return-1===l.indexOf(t)||-1===f.indexOf(t)});Object.keys(E).forEach(function(t){var n=E[t];if(-1!==d.indexOf(n)&&-1===v.indexOf(n)&&-1===h.indexOf(n)){var e=c[t];e&&-1!==l.indexOf(e)?h.push([e,n]):v.push(n)}}),s("Changed assets: "+n,v),s("Moved assets: "+n,h);var p=Promise.all(h.map(function(t){return i.match(t[0]).then(function(n){return[t[1],n]})}));return caches.open(j).then(function(n){var e=p.then(function(t){return Promise.all(t.map(function(t){return n.put(t[0],t[1])}))});return Promise.all([e,g(n,v,{bust:t.version,request:t.prefetchRequest})])})})}function l(){return caches.keys().then(function(t){var n=t.map(function(t){if(0===t.indexOf(q)&&0!==t.indexOf(j))return caches.delete(t)});return Promise.all(n)})}function d(){return caches.keys().then(function(t){for(var n=t.length,e=void 0;n--&&(e=t[n],0!==e.indexOf(q)););if(e){var i=void 0;return caches.open(e).then(function(t){return i=t,t.match(new URL(_,location).toString())}).then(function(t){if(t)return Promise.all([i,i.keys(),t.json()])})}})}function h(){return caches.open(j).then(function(n){var e=new Response(JSON.stringify({version:t.version,hashmap:E}));return n.put(new URL(_,location).toString(),e)})}function v(t,n,e){return i(e,j).then(function(i){return i||fetch(t.request).then(function(i){return i.ok?(e===n&&function(){var e=i.clone(),r=caches.open(j).then(function(t){return t.put(n,e)}).then(function(){});t.waitUntil(r)}(),i):i})})}function p(t,n,e){return fetch(t.request).then(function(t){if(t.ok)return t;throw new Error("Response is not ok")}).catch(function(){return i(e,j)})}function m(t){return t.catch(function(){}).then(function(t){var n=t&&t.ok,e=t&&"opaqueredirect"===t.type;return n||e&&!M?t:i(S,j)})}function g(t,n,e){var i=!1!==e.allowLoaders,o=e&&e.bust,a=e.request||{credentials:"omit",mode:"cors"};return Promise.all(n.map(function(t){return o&&(t=r(t,o)),fetch(t,a).then(c)})).then(function(r){if(r.some(function(t){return!t.ok}))return Promise.reject(new Error("Wrong response status"));var o=[],a=r.map(function(e,r){return i&&o.push(w(n[r],e)),t.put(n[r],e)});return o.length?function(){var i=u(e);i.allowLoaders=!1;var r=a;a=Promise.all(o).then(function(e){var o=[].concat.apply([],e);return n.length&&(r=r.concat(g(t,o,i))),Promise.all(r)})}():a=Promise.all(a),a})}function w(t,n){var e=Object.keys(P).map(function(e){if(-1!==P[e].indexOf(t)&&b[e])return b[e](n.clone())}).filter(function(t){return!!t});return Promise.all(e).then(function(t){return[].concat.apply([],t)})}function y(t){var n=t.url,e=new URL(n),i=void 0;i="navigate"===t.mode?"navigate":e.origin===location.origin?"same-origin":"cross-origin";for(var r=0;r<x.length;r++){var o=x[r];if(o&&(!o.requestTypes||-1!==o.requestTypes.indexOf(i))){var a=void 0;if((a="function"==typeof o.match?o.match(e,t):n.replace(o.match,o.to))&&a!==n)return a}}}var b=n.loaders,x=n.cacheMaps,O=t.strategy,k=t.responseStrategy,U=t.assets,P=t.loaders||{},E=t.hashesMap,L=t.externals,q=t.name,R=t.version,j=q+":"+R,_="__offline_webpack__data";!function(){Object.keys(U).forEach(function(t){U[t]=U[t].map(function(t){var n=new URL(t,location);return n.hash="",-1===L.indexOf(t)&&(n.search=""),n.toString()})}),Object.keys(P).forEach(function(t){P[t]=P[t].map(function(t){var n=new URL(t,location);return n.hash="",-1===L.indexOf(t)&&(n.search=""),n.toString()})}),E=Object.keys(E).reduce(function(t,n){var e=new URL(E[n],location);return e.search="",e.hash="",t[n]=e.toString(),t},{}),L=L.map(function(t){var n=new URL(t,location);return n.hash="",n.toString()})}();var W=[].concat(U.main,U.additional,U.optional),S=t.navigateFallbackURL,M=t.navigateFallbackForRedirects;self.addEventListener("install",function(t){var n=void 0;n="changed"===O?f("main"):a("main"),t.waitUntil(n)}),self.addEventListener("activate",function(t){var n=e();n=n.then(h),n=n.then(l),n=n.then(function(){if(self.clients&&self.clients.claim)return self.clients.claim()}),t.waitUntil(n)}),self.addEventListener("fetch",function(t){var n=new URL(t.request.url);n.hash="";var e=n.toString();-1===L.indexOf(e)&&(n.search="",e=n.toString());var i="GET"===t.request.method,r=-1!==W.indexOf(e),a=e;if(!r){var c=y(t.request);c&&(a=c,r=!0)}if(!r&&i&&S&&o(t.request))return void t.respondWith(m(fetch(t.request)));if(!r||!i)return void(n.origin!==location.origin&&-1!==navigator.userAgent.indexOf("Firefox/44.")&&t.respondWith(fetch(t.request)));var u=void 0;u="network-first"===k?p(t,e,a):v(t,e,a),S&&o(t.request)&&(u=m(u)),t.respondWith(u)}),self.addEventListener("message",function(t){var n=t.data;if(n)switch(n.action){case"skipWaiting":self.skipWaiting&&self.skipWaiting()}})}(__wpo,{loaders:{},cacheMaps:[]}),t.exports=e(1)},function(t,n,e){"use strict";Object.defineProperty(n,"__esModule",{value:!0});var i=e(2);e.n(i);self.addEventListener("install",function(t){t.waitUntil(self.skipWaiting())}),self.addEventListener("activate",function(t){t.waitUntil(self.clients.claim())})},function(t,n){var e=function(t,n){return t.replace("%{count}",n)},i=function(t){return self.registration.getNotifications().then(function(n){if(5===n.length){var i={title:e(t.data.message,n.length+1),body:n.sort(function(t,n){return t.timestamp<n.timestamp}).map(function(t){return t.title}).join("\n"),badge:"/badge.png",icon:"/android-chrome-192x192.png",tag:"tag",data:{url:new URL("/web/notifications",self.location).href,count:n.length+1,message:t.data.message}};return n.forEach(function(t){return t.close()}),self.registration.showNotification(i.title,i)}if(1===n.length&&"tag"===n[0].tag){var r=o(n[0]);return r.title=e(r.data.message,r.data.count+1),r.body=t.title+"\n"+r.body,r.data=Object.assign({},r.data,{count:r.data.count+1}),self.registration.showNotification(r.title,r)}return self.registration.showNotification(t.title,t)})},r=function(t){var n=t.data.json();n.body=n.data.nsfw||n.data.content,n.dir=n.data.dir,n.image=n.image||void 0,n.timestamp=n.timestamp&&new Date(n.timestamp);var e=n.data.actions.find(function(t){return"expand"===t.todo});e?(n.actions=[e],n.hiddenActions=n.data.actions.filter(function(t){return t!==e}),n.data.hiddenImage=n.image,n.image=void 0):n.actions=n.data.actions,t.waitUntil(i(n))},o=function(t){var n={};for(var e in t)n[e]=t[e];return n},a=function(t){var n=o(t);return n.body=t.data.content,n.image=t.data.hiddenImage,n.actions=t.data.actions.filter(function(t){return"expand"!==t.todo}),self.registration.showNotification(n.title,n)},c=function(t,n){return fetch(n.action,{headers:{Authorization:"Bearer "+t.data.access_token,"Content-Type":"application/json"},method:n.method,credentials:"include"})},u=function(t){var n=t.find(function(t){return t.focused}),e=t.find(function(t){return"visible"===t.visibilityState});return n||e||t[0]},s=function(t){return self.clients.matchAll({type:"window"}).then(function(n){if(0!==n.length){var e=n.filter(function(t){return/\/web\//.test(t.url)});if(0!==e.length){var i=u(e),r=new URL(t),o=r.pathname;if(o.startsWith("/web/"))return i.focus().then(function(t){return t.postMessage({type:"navigate",path:o.slice("/web/".length-1)})})}else if("navigate"in n[0]){var a=u(n);return a.navigate(t).then(function(t){return t.focus()})}}return self.clients.openWindow(t)})},f=function(t,n){var e=t.actions.filter(function(t){return t.action!==n.action}),i=o(t);return i.actions=e,self.registration.showNotification(i.title,i)},l=function(t){var n=new Promise(function(n,e){if(t.action){var i=t.notification.data.actions.find(function(n){return n.action===t.action});"expand"===i.todo?n(a(t.notification)):"request"===i.todo?n(c(t.notification,i).then(function(){return f(t.notification,i)})):e("Unknown action: "+i.todo)}else t.notification.close(),n(s(t.notification.data.url))});t.waitUntil(n)};self.addEventListener("push",r),self.addEventListener("notificationclick",l)}]);
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "/packs/";
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = 0);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+(function () {
+  var waitUntil = ExtendableEvent.prototype.waitUntil;
+  var respondWith = FetchEvent.prototype.respondWith;
+  var promisesMap = new WeakMap();
+
+  ExtendableEvent.prototype.waitUntil = function (promise) {
+    var extendableEvent = this;
+    var promises = promisesMap.get(extendableEvent);
+
+    if (promises) {
+      promises.push(Promise.resolve(promise));
+      return;
+    }
+
+    promises = [Promise.resolve(promise)];
+    promisesMap.set(extendableEvent, promises);
+
+    // call original method
+    return waitUntil.call(extendableEvent, Promise.resolve().then(function processPromises() {
+      var len = promises.length;
+
+      // wait for all to settle
+      return Promise.all(promises.map(function (p) {
+        return p["catch"](function () {});
+      })).then(function () {
+        // have new items been added? If so, wait again
+        if (promises.length != len) return processPromises();
+        // we're done!
+        promisesMap["delete"](extendableEvent);
+        // reject if one of the promises rejected
+        return Promise.all(promises);
+      });
+    }));
+  };
+
+  FetchEvent.prototype.respondWith = function (promise) {
+    this.waitUntil(promise);
+    return respondWith.call(this, promise);
+  };
+})();;
+        'use strict';
+
+if (typeof DEBUG === 'undefined') {
+  var DEBUG = false;
+}
+
+function WebpackServiceWorker(params, helpers) {
+  var loaders = helpers.loaders;
+  var cacheMaps = helpers.cacheMaps;
+
+  var strategy = params.strategy;
+  var responseStrategy = params.responseStrategy;
+
+  var assets = params.assets;
+  var loadersMap = params.loaders || {};
+
+  var hashesMap = params.hashesMap;
+  var externals = params.externals;
+
+  // Not used yet
+  // const alwaysRevalidate = params.alwaysRevalidate;
+  // const ignoreSearch = params.ignoreSearch;
+  // const preferOnline = params.preferOnline;
+
+  var CACHE_PREFIX = params.name;
+  var CACHE_TAG = params.version;
+  var CACHE_NAME = CACHE_PREFIX + ':' + CACHE_TAG;
+
+  var STORED_DATA_KEY = '__offline_webpack__data';
+
+  mapAssets();
+
+  var allAssets = [].concat(assets.main, assets.additional, assets.optional);
+  var navigateFallbackURL = params.navigateFallbackURL;
+  var navigateFallbackForRedirects = params.navigateFallbackForRedirects;
+
+  self.addEventListener('install', function (event) {
+    console.log('[SW]:', 'Install event');
+
+    var installing = undefined;
+
+    if (strategy === 'changed') {
+      installing = cacheChanged('main');
+    } else {
+      installing = cacheAssets('main');
+    }
+
+    event.waitUntil(installing);
+  });
+
+  self.addEventListener('activate', function (event) {
+    console.log('[SW]:', 'Activate event');
+
+    var activation = cacheAdditional();
+
+    // Delete all assets which name starts with CACHE_PREFIX and
+    // is not current cache (CACHE_NAME)
+    activation = activation.then(storeCacheData);
+    activation = activation.then(deleteObsolete);
+    activation = activation.then(function () {
+      if (self.clients && self.clients.claim) {
+        return self.clients.claim();
+      }
+    });
+
+    event.waitUntil(activation);
+  });
+
+  function cacheAdditional() {
+    if (!assets.additional.length) {
+      return Promise.resolve();
+    }
+
+    if (DEBUG) {
+      console.log('[SW]:', 'Caching additional');
+    }
+
+    var operation = undefined;
+
+    if (strategy === 'changed') {
+      operation = cacheChanged('additional');
+    } else {
+      operation = cacheAssets('additional');
+    }
+
+    // Ignore fail of `additional` cache section
+    return operation['catch'](function (e) {
+      console.error('[SW]:', 'Cache section `additional` failed to load');
+    });
+  }
+
+  function cacheAssets(section) {
+    var batch = assets[section];
+
+    return caches.open(CACHE_NAME).then(function (cache) {
+      return addAllNormalized(cache, batch, {
+        bust: params.version,
+        request: params.prefetchRequest
+      });
+    }).then(function () {
+      logGroup('Cached assets: ' + section, batch);
+    })['catch'](function (e) {
+      console.error(e);
+      throw e;
+    });
+  }
+
+  function cacheChanged(section) {
+    return getLastCache().then(function (args) {
+      if (!args) {
+        return cacheAssets(section);
+      }
+
+      var lastCache = args[0];
+      var lastKeys = args[1];
+      var lastData = args[2];
+
+      var lastMap = lastData.hashmap;
+      var lastVersion = lastData.version;
+
+      if (!lastData.hashmap || lastVersion === params.version) {
+        return cacheAssets(section);
+      }
+
+      var lastHashedAssets = Object.keys(lastMap).map(function (hash) {
+        return lastMap[hash];
+      });
+
+      var lastUrls = lastKeys.map(function (req) {
+        var url = new URL(req.url);
+        url.search = '';
+        url.hash = '';
+
+        return url.toString();
+      });
+
+      var sectionAssets = assets[section];
+      var moved = [];
+      var changed = sectionAssets.filter(function (url) {
+        if (lastUrls.indexOf(url) === -1 || lastHashedAssets.indexOf(url) === -1) {
+          return true;
+        }
+
+        return false;
+      });
+
+      Object.keys(hashesMap).forEach(function (hash) {
+        var asset = hashesMap[hash];
+
+        // Return if not in sectionAssets or in changed or moved array
+        if (sectionAssets.indexOf(asset) === -1 || changed.indexOf(asset) !== -1 || moved.indexOf(asset) !== -1) return;
+
+        var lastAsset = lastMap[hash];
+
+        if (lastAsset && lastUrls.indexOf(lastAsset) !== -1) {
+          moved.push([lastAsset, asset]);
+        } else {
+          changed.push(asset);
+        }
+      });
+
+      logGroup('Changed assets: ' + section, changed);
+      logGroup('Moved assets: ' + section, moved);
+
+      var movedResponses = Promise.all(moved.map(function (pair) {
+        return lastCache.match(pair[0]).then(function (response) {
+          return [pair[1], response];
+        });
+      }));
+
+      return caches.open(CACHE_NAME).then(function (cache) {
+        var move = movedResponses.then(function (responses) {
+          return Promise.all(responses.map(function (pair) {
+            return cache.put(pair[0], pair[1]);
+          }));
+        });
+
+        return Promise.all([move, addAllNormalized(cache, changed, {
+          bust: params.version,
+          request: params.prefetchRequest
+        })]);
+      });
+    });
+  }
+
+  function deleteObsolete() {
+    return caches.keys().then(function (keys) {
+      var all = keys.map(function (key) {
+        if (key.indexOf(CACHE_PREFIX) !== 0 || key.indexOf(CACHE_NAME) === 0) return;
+
+        console.log('[SW]:', 'Delete cache:', key);
+        return caches['delete'](key);
+      });
+
+      return Promise.all(all);
+    });
+  }
+
+  function getLastCache() {
+    return caches.keys().then(function (keys) {
+      var index = keys.length;
+      var key = undefined;
+
+      while (index--) {
+        key = keys[index];
+
+        if (key.indexOf(CACHE_PREFIX) === 0) {
+          break;
+        }
+      }
+
+      if (!key) return;
+
+      var cache = undefined;
+
+      return caches.open(key).then(function (_cache) {
+        cache = _cache;
+        return _cache.match(new URL(STORED_DATA_KEY, location).toString());
+      }).then(function (response) {
+        if (!response) return;
+
+        return Promise.all([cache, cache.keys(), response.json()]);
+      });
+    });
+  }
+
+  function storeCacheData() {
+    return caches.open(CACHE_NAME).then(function (cache) {
+      var data = new Response(JSON.stringify({
+        version: params.version,
+        hashmap: hashesMap
+      }));
+
+      return cache.put(new URL(STORED_DATA_KEY, location).toString(), data);
+    });
+  }
+
+  self.addEventListener('fetch', function (event) {
+    var url = new URL(event.request.url);
+    url.hash = '';
+
+    var urlString = url.toString();
+
+    // Not external, so search part of the URL should be stripped,
+    // if it's external URL, the search part should be kept
+    if (externals.indexOf(urlString) === -1) {
+      url.search = '';
+      urlString = url.toString();
+    }
+
+    // Handle only GET requests
+    var isGET = event.request.method === 'GET';
+    var assetMatches = allAssets.indexOf(urlString) !== -1;
+    var cacheUrl = urlString;
+
+    if (!assetMatches) {
+      var cacheRewrite = matchCacheMap(event.request);
+
+      if (cacheRewrite) {
+        cacheUrl = cacheRewrite;
+        assetMatches = true;
+      }
+    }
+
+    if (!assetMatches && isGET) {
+      // If isn't a cached asset and is a navigation request,
+      // fallback to navigateFallbackURL if available
+      if (navigateFallbackURL && isNavigateRequest(event.request)) {
+        event.respondWith(handleNavigateFallback(fetch(event.request)));
+
+        return;
+      }
+    }
+
+    if (!assetMatches || !isGET) {
+      // Fix for https://twitter.com/wanderview/status/696819243262873600
+      if (url.origin !== location.origin && navigator.userAgent.indexOf('Firefox/44.') !== -1) {
+        event.respondWith(fetch(event.request));
+      }
+
+      return;
+    }
+
+    // Logic of caching / fetching is here
+    // * urlString -- url to match from the CACHE_NAME
+    // * event.request -- original Request to perform fetch() if necessary
+    var resource = undefined;
+
+    if (responseStrategy === 'network-first') {
+      resource = networkFirstResponse(event, urlString, cacheUrl);
+    }
+    // 'cache-first'
+    // (responseStrategy has been validated before)
+    else {
+        resource = cacheFirstResponse(event, urlString, cacheUrl);
+      }
+
+    if (navigateFallbackURL && isNavigateRequest(event.request)) {
+      resource = handleNavigateFallback(resource);
+    }
+
+    event.respondWith(resource);
+  });
+
+  self.addEventListener('message', function (e) {
+    var data = e.data;
+    if (!data) return;
+
+    switch (data.action) {
+      case 'skipWaiting':
+        {
+          if (self.skipWaiting) self.skipWaiting();
+        }break;
+    }
+  });
+
+  function cacheFirstResponse(event, urlString, cacheUrl) {
+    return cachesMatch(cacheUrl, CACHE_NAME).then(function (response) {
+      if (response) {
+        if (DEBUG) {
+          console.log('[SW]:', 'URL [' + cacheUrl + '](' + urlString + ') from cache');
+        }
+
+        return response;
+      }
+
+      // Load and cache known assets
+      var fetching = fetch(event.request).then(function (response) {
+        if (!response.ok) {
+          if (DEBUG) {
+            console.log('[SW]:', 'URL [' + urlString + '] wrong response: [' + response.status + '] ' + response.type);
+          }
+
+          return response;
+        }
+
+        if (DEBUG) {
+          console.log('[SW]:', 'URL [' + urlString + '] from network');
+        }
+
+        if (cacheUrl === urlString) {
+          (function () {
+            var responseClone = response.clone();
+            var storing = caches.open(CACHE_NAME).then(function (cache) {
+              return cache.put(urlString, responseClone);
+            }).then(function () {
+              console.log('[SW]:', 'Cache asset: ' + urlString);
+            });
+
+            event.waitUntil(storing);
+          })();
+        }
+
+        return response;
+      });
+
+      return fetching;
+    });
+  }
+
+  function networkFirstResponse(event, urlString, cacheUrl) {
+    return fetch(event.request).then(function (response) {
+      if (response.ok) {
+        if (DEBUG) {
+          console.log('[SW]:', 'URL [' + urlString + '] from network');
+        }
+
+        return response;
+      }
+
+      // Throw to reach the code in the catch below
+      throw new Error('Response is not ok');
+    })
+    // This needs to be in a catch() and not just in the then() above
+    // cause if your network is down, the fetch() will throw
+    ['catch'](function () {
+      if (DEBUG) {
+        console.log('[SW]:', 'URL [' + urlString + '] from cache if possible');
+      }
+
+      return cachesMatch(cacheUrl, CACHE_NAME);
+    });
+  }
+
+  function handleNavigateFallback(fetching) {
+    return fetching['catch'](function () {}).then(function (response) {
+      var isOk = response && response.ok;
+      var isRedirect = response && response.type === 'opaqueredirect';
+
+      if (isOk || isRedirect && !navigateFallbackForRedirects) {
+        return response;
+      }
+
+      if (DEBUG) {
+        console.log('[SW]:', 'Loading navigation fallback [' + navigateFallbackURL + '] from cache');
+      }
+
+      return cachesMatch(navigateFallbackURL, CACHE_NAME);
+    });
+  }
+
+  function mapAssets() {
+    Object.keys(assets).forEach(function (key) {
+      assets[key] = assets[key].map(function (path) {
+        var url = new URL(path, location);
+
+        url.hash = '';
+
+        if (externals.indexOf(path) === -1) {
+          url.search = '';
+        }
+
+        return url.toString();
+      });
+    });
+
+    Object.keys(loadersMap).forEach(function (key) {
+      loadersMap[key] = loadersMap[key].map(function (path) {
+        var url = new URL(path, location);
+
+        url.hash = '';
+
+        if (externals.indexOf(path) === -1) {
+          url.search = '';
+        }
+
+        return url.toString();
+      });
+    });
+
+    hashesMap = Object.keys(hashesMap).reduce(function (result, hash) {
+      var url = new URL(hashesMap[hash], location);
+      url.search = '';
+      url.hash = '';
+
+      result[hash] = url.toString();
+      return result;
+    }, {});
+
+    externals = externals.map(function (path) {
+      var url = new URL(path, location);
+      url.hash = '';
+
+      return url.toString();
+    });
+  }
+
+  function addAllNormalized(cache, requests, options) {
+    var allowLoaders = options.allowLoaders !== false;
+    var bustValue = options && options.bust;
+    var requestInit = options.request || {
+      credentials: 'omit',
+      mode: 'cors'
+    };
+
+    return Promise.all(requests.map(function (request) {
+      if (bustValue) {
+        request = applyCacheBust(request, bustValue);
+      }
+
+      return fetch(request, requestInit).then(fixRedirectedResponse);
+    })).then(function (responses) {
+      if (responses.some(function (response) {
+        return !response.ok;
+      })) {
+        return Promise.reject(new Error('Wrong response status'));
+      }
+
+      var extracted = [];
+      var addAll = responses.map(function (response, i) {
+        if (allowLoaders) {
+          extracted.push(extractAssetsWithLoaders(requests[i], response));
+        }
+
+        return cache.put(requests[i], response);
+      });
+
+      if (extracted.length) {
+        (function () {
+          var newOptions = copyObject(options);
+          newOptions.allowLoaders = false;
+
+          var waitAll = addAll;
+
+          addAll = Promise.all(extracted).then(function (all) {
+            var extractedRequests = [].concat.apply([], all);
+
+            if (requests.length) {
+              waitAll = waitAll.concat(addAllNormalized(cache, extractedRequests, newOptions));
+            }
+
+            return Promise.all(waitAll);
+          });
+        })();
+      } else {
+        addAll = Promise.all(addAll);
+      }
+
+      return addAll;
+    });
+  }
+
+  function extractAssetsWithLoaders(request, response) {
+    var all = Object.keys(loadersMap).map(function (key) {
+      var loader = loadersMap[key];
+
+      if (loader.indexOf(request) !== -1 && loaders[key]) {
+        return loaders[key](response.clone());
+      }
+    }).filter(function (a) {
+      return !!a;
+    });
+
+    return Promise.all(all).then(function (all) {
+      return [].concat.apply([], all);
+    });
+  }
+
+  function matchCacheMap(request) {
+    var urlString = request.url;
+    var url = new URL(urlString);
+
+    var requestType = undefined;
+
+    if (request.mode === 'navigate') {
+      requestType = 'navigate';
+    } else if (url.origin === location.origin) {
+      requestType = 'same-origin';
+    } else {
+      requestType = 'cross-origin';
+    }
+
+    for (var i = 0; i < cacheMaps.length; i++) {
+      var map = cacheMaps[i];
+
+      if (!map) continue;
+      if (map.requestTypes && map.requestTypes.indexOf(requestType) === -1) {
+        continue;
+      }
+
+      var newString = undefined;
+
+      if (typeof map.match === 'function') {
+        newString = map.match(url, request);
+      } else {
+        newString = urlString.replace(map.match, map.to);
+      }
+
+      if (newString && newString !== urlString) {
+        return newString;
+      }
+    }
+  }
+}
+
+function cachesMatch(request, cacheName) {
+  return caches.match(request, {
+    cacheName: cacheName
+  }).then(function (response) {
+    if (isNotRedirectedResponse()) {
+      return response;
+    }
+
+    // Fix already cached redirected responses
+    return fixRedirectedResponse(response).then(function (fixedResponse) {
+      return caches.open(cacheName).then(function (cache) {
+        return cache.put(request, fixedResponse);
+      }).then(function () {
+        return fixedResponse;
+      });
+    });
+  })
+  // Return void if error happened (cache not found)
+  ['catch'](function () {});
+}
+
+function applyCacheBust(asset, key) {
+  var hasQuery = asset.indexOf('?') !== -1;
+  return asset + (hasQuery ? '&' : '?') + '__uncache=' + encodeURIComponent(key);
+}
+
+function getClientsURLs() {
+  if (!self.clients) {
+    return Promise.resolve([]);
+  }
+
+  return self.clients.matchAll({
+    includeUncontrolled: true
+  }).then(function (clients) {
+    if (!clients.length) return [];
+
+    var result = [];
+
+    clients.forEach(function (client) {
+      var url = new URL(client.url);
+      url.search = '';
+      url.hash = '';
+      var urlString = url.toString();
+
+      if (!result.length || result.indexOf(urlString) === -1) {
+        result.push(urlString);
+      }
+    });
+
+    return result;
+  });
+}
+
+function isNavigateRequest(request) {
+  return request.mode === 'navigate' || request.headers.get('Upgrade-Insecure-Requests') || (request.headers.get('Accept') || '').indexOf('text/html') !== -1;
+}
+
+function isNotRedirectedResponse(response) {
+  return !response || !response.redirected || !response.ok || response.type === 'opaqueredirect';
+}
+
+// Based on https://github.com/GoogleChrome/sw-precache/pull/241/files#diff-3ee9060dc7a312c6a822cac63a8c630bR85
+function fixRedirectedResponse(response) {
+  if (isNotRedirectedResponse(response)) {
+    return Promise.resolve(response);
+  }
+
+  var body = 'body' in response ? Promise.resolve(response.body) : response.blob();
+
+  return body.then(function (data) {
+    return new Response(data, {
+      headers: response.headers,
+      status: response.status
+    });
+  });
+}
+
+function copyObject(original) {
+  return Object.keys(original).reduce(function (result, key) {
+    result[key] = original[key];
+    return result;
+  }, {});
+}
+
+function logGroup(title, assets) {
+  console.groupCollapsed('[SW]:', title);
+
+  assets.forEach(function (asset) {
+    console.log('Asset:', asset);
+  });
+
+  console.groupEnd();
+}
+        WebpackServiceWorker(__wpo, {
+loaders: {},
+cacheMaps: [],
+});
+        module.exports = __webpack_require__(1)
+      
+
+/***/ }),
+/* 1 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__web_push_notifications__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__web_push_notifications___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__web_push_notifications__);
+/*** IMPORTS FROM imports-loader ***/
+var process = (process || {});
+process.env = {"GJS_DEBUG_TOPICS":"JS ERROR;JS LOG","npm_config_cache_lock_stale":"60000","npm_config_ham_it_up":"","npm_package_dependencies_mark_loader":"^0.1.6","npm_config_legacy_bundling":"","npm_config_sign_git_tag":"","USER":"howl","LANGUAGE":"en_GB:en","npm_package_dependencies_autoprefixer":"^7.1.6","npm_package_dependencies_mkdirp":"^0.5.1","npm_package_dependencies_node_sass":"^4.7.2","npm_package_devDependencies_jest":"^21.2.1","npm_config_user_agent":"npm/5.6.0 node/v9.10.1 linux x64","npm_config_always_auth":"","COMP_WORDBREAKS":" \t\n\"'><;|&(:","XDG_SEAT":"seat0","npm_package_dependencies_detect_passive_events":"^1.0.2","npm_package_dependencies_immutable":"^3.8.2","npm_package_bugs_url":"https://github.com/tootsuite/mastodon/issues","npm_config_bin_links":"true","npm_config_key":"","SSH_AGENT_PID":"1323","XDG_SESSION_TYPE":"x11","npm_package_dependencies_react_overlays":"^0.8.3","npm_config_allow_same_version":"","npm_config_description":"true","npm_config_fetch_retries":"2","npm_config_heading":"npm","npm_config_if_present":"","npm_config_init_version":"1.0.0","npm_config_user":"","npm_node_execpath":"/usr/bin/node","LD_LIBRARY_PATH":"/home/howl/torch-cl/install/lib:","LUA_PATH":"/home/howl/.luarocks/share/lua/5.1/?.lua;/home/howl/.luarocks/share/lua/5.1/?/init.lua;/home/howl/torch-cl/install/share/lua/5.1/?.lua;/home/howl/torch-cl/install/share/lua/5.1/?/init.lua;./?.lua;/home/howl/torch-cl/install/share/luajit-2.1.0-beta1/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua","SHLVL":"1","npm_package_scripts_manage_translations":"node ./config/webpack/translationRunner.js","npm_package_dependencies_babel_plugin_transform_class_properties":"^6.24.1","npm_package_dependencies_babel_plugin_transform_es2015_modules_commonjs":"^6.24.1","npm_package_dependencies_escape_html":"^1.0.3","npm_package_dependencies_imports_loader":"^0.8.0","npm_package_optionalDependencies_node_zopfli":"^2.0.2","npm_config_prefer_online":"","OLDPWD":"/home/howl/oc/mastofe/app","HOME":"/home/howl","npm_package_dependencies_postcss_loader":"^2.0.9","npm_config_force":"","OSU_API_KEY":"e0146ddaf01d1e9d107afedcd340b42347186260","DESKTOP_SESSION":"cinnamon","npm_package_dependencies_react_redux_loading_bar":"^2.9.3","npm_package_dependencies_redis":"^2.7.1","npm_config_only":"","npm_config_read_only":"","GIO_LAUNCHED_DESKTOP_FILE":"/usr/share/applications/xfce4-terminal.desktop","npm_package_engines_node":">=6","npm_package_dependencies_babel_plugin_react_intl":"^2.3.1","npm_package_dependencies_npmlog":"^4.1.2","npm_package_devDependencies_enzyme_adapter_react_16":"^1.1.0","npm_config_cache_min":"10","npm_config_init_license":"ISC","GTK_MODULES":"gail:atk-bridge","XDG_SEAT_PATH":"/org/freedesktop/DisplayManager/Seat0","npm_package_scripts_build_production":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","npm_package_dependencies_glob":"^7.1.1","npm_package_dependencies_webpack_merge":"^4.1.1","npm_config_editor":"vi","npm_config_rollback":"true","npm_config_tag_version_prefix":"v","OSU_PASSWORD":"il mio cane gioca meglio di me","npm_package_dependencies_redux_thunk":"^2.2.0","npm_package_dependencies_webpack":"^3.9.1","npm_config_cache_max":"Infinity","npm_config_timing":"","npm_config_userconfig":"/home/howl/.npmrc","DBUS_SESSION_BUS_ADDRESS":"unix:path=/run/user/1000/bus","CINNAMON_VERSION":"3.6.7","npm_package_dependencies_babel_plugin_lodash":"^3.3.2","npm_package_dependencies_dotenv":"^4.0.0","npm_package_dependencies_precss":"^2.0.0","npm_package_dependencies_react_hotkeys":"^0.10.0","npm_config_engine_strict":"","npm_config_init_author_name":"","npm_config_init_author_url":"","npm_config_tmp":"/tmp","COLORTERM":"truecolor","GIO_LAUNCHED_DESKTOP_FILE_PID":"1943","npm_package_dependencies_react_router_dom":"^4.1.1","npm_package_description":"Here is a fork of mastodon. We could really just remove all of the code except for the frontend, but to easily pull the upstream repo we'll just keep everything. This is my fork for the moment with the idea of making the mastofe just as polished as the pleromafe. If you want to get access, open an issue or hit me up at howl@social.zxq.co.","npm_config_depth":"Infinity","npm_config_package_lock_only":"","npm_config_save_dev":"","npm_config_usage":"","npm_package_scripts_test_jest":"cross-env NODE_ENV=test jest --coverage","npm_package_dependencies_throng":"^4.0.0","npm_package_devDependencies_react_intl_translations_manager":"^5.0.0","npm_package_readmeFilename":"README.md","npm_package_homepage":"https://github.com/tootsuite/mastodon#readme","npm_config_metrics_registry":"https://registry.npmjs.org/","npm_config_cafile":"","npm_config_otp":"","npm_config_package_lock":"true","npm_config_progress":"true","npm_config_https_proxy":"","npm_config_save_prod":"","QT_QPA_PLATFORMTHEME":"gtk2","npm_package_scripts_dev":"cross-env NODE_ENV=development webpack-dev-server --config config/webpack/development.js --progress --color","npm_package_scripts_test_lint":"eslint -c .eslintrc.yml --ext=js app/javascript/ config/webpack/ streaming/","npm_package_dependencies_babel_plugin_transform_react_remove_prop_types":"^0.4.10","npm_package_dependencies_websocket_js":"^0.1.12","npm_config_cidr":"","npm_config_onload_script":"","npm_config_sso_type":"oauth","LOGNAME":"howl","npm_package_dependencies_babel_plugin_syntax_dynamic_import":"^6.18.0","npm_package_dependencies_hammerjs":"^2.0.8","npm_package_dependencies_rails_ujs":"^5.1.2","npm_package_dependencies_react_immutable_pure_component":"^1.1.1","npm_package_dependencies_react_motion":"^0.5.2","npm_package_dependencies_reselect":"^3.0.1","npm_package_devDependencies_eslint_plugin_import":"^2.8.0","npm_config_rebuild_bundle":"true","npm_config_save_bundle":"","npm_config_shell":"/bin/bash","WINDOWID":"77594627","_":"./build.sh","npm_package_private":"true","npm_package_dependencies_express":"^4.16.2","npm_package_dependencies_react_notification":"^6.8.2","npm_package_dependencies_sass_loader":"^6.0.6","npm_config_dry_run":"","npm_config_prefix":"/usr","npm_config_scope":"","npm_config_browser":"","npm_config_cache_lock_wait":"10000","npm_config_ignore_prepublish":"","npm_config_registry":"https://registry.npmjs.org/","npm_config_save_optional":"","npm_config_searchopts":"","npm_config_versions":"","GTK_OVERLAY_SCROLLING":"0","XDG_SESSION_ID":"2","TERM":"xterm-256color","npm_package_dependencies_font_awesome":"^4.7.0","npm_package_dependencies_postcss_object_fit_images":"^1.1.2","npm_package_dependencies_react_immutable_proptypes":"^2.1.0","npm_package_dependencies_style_loader":"^0.19.0","npm_package_dependencies_uws":"^8.14.0","npm_package_optionalDependencies_fsevents":"*","npm_config_cache":"/home/howl/.npm","npm_config_proxy":"","npm_config_send_metrics":"","GNOME_DESKTOP_SESSION_ID":"this-is-deprecated","npm_package_scripts_start":"node ./streaming/index.js","npm_config_global_style":"","npm_config_ignore_scripts":"","npm_config_version":"","npm_package_dependencies_axios":"~0.16.2","npm_package_dependencies_css_loader":"^0.28.4","npm_package_dependencies_marky":"^1.2.0","npm_config_local_address":"","npm_config_viewer":"man","npm_config_node_gyp":"/usr/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js","PATH":"/usr/lib/node_modules/npm/node_modules/npm-lifecycle/node-gyp-bin:/home/howl/oc/mastofe/node_modules/.bin:/home/howl/torch-cl/install/bin:/home/howl/go/bin:/home/howl/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games","SESSION_MANAGER":"local/pluto:@/tmp/.ICE-unix/1292,unix/pluto:/tmp/.ICE-unix/1292","npm_package_name":"mastodon","npm_package_repository_type":"git","npm_package_dependencies_babel_preset_env":"^1.6.1","npm_package_dependencies_cross_env":"^5.1.1","npm_package_dependencies_extract_text_webpack_plugin":"^3.0.2","npm_package_dependencies_substring_trie":"^1.0.2","npm_config_prefer_offline":"","NODE":"/usr/bin/node","XDG_RUNTIME_DIR":"/run/user/1000","XDG_SESSION_PATH":"/org/freedesktop/DisplayManager/Session0","npm_package_dependencies_babel_plugin_transform_runtime":"^6.23.0","npm_package_dependencies_react_redux":"^5.0.4","npm_package_dependencies_tiny_queue":"^0.2.1","npm_package_devDependencies_eslint_plugin_jsx_a11y":"^5.1.1","npm_config_color":"true","DISPLAY":":0","npm_package_scripts_build_development":"cross-env NODE_ENV=development webpack --config config/webpack/development.js","npm_package_dependencies_npm_run_all":"^4.1.2","npm_package_dependencies_stringz":"^0.3.0","npm_config_fetch_retry_mintimeout":"10000","npm_config_maxsockets":"50","npm_config_offline":"","npm_config_sso_poll_frequency":"500","LANG":"en_GB.UTF-8","XDG_CURRENT_DESKTOP":"X-Cinnamon","npm_package_dependencies_babel_plugin_transform_react_inline_elements":"^6.22.0","npm_package_dependencies_babel_preset_react":"^6.24.1","npm_package_dependencies_object_assign":"^4.1.1","npm_package_dependencies_react_dom":"^16.2.0","npm_package_dependencies_react_textarea_autosize":"^5.2.1","npm_package_dependencies_redux":"^3.7.1","npm_package_devDependencies_eslint":"^4.15.0","npm_package_devDependencies_react_test_renderer":"^16.2.0","npm_config_umask":"0022","LS_COLORS":"rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:","XDG_SESSION_DESKTOP":"cinnamon","XAUTHORITY":"/home/howl/.Xauthority","npm_package_dependencies_babel_plugin_transform_object_rest_spread":"^6.23.0","npm_package_dependencies_offline_plugin":"^4.8.3","npm_package_dependencies_path_complete_extname":"^0.1.0","npm_package_dependencies_postcss_smart_import":"^0.7.5","npm_package_dependencies_node_zopfli":"^2.0.2","npm_package_gitHead":"d23a03ea39fe35ebc580130fd7b779bfffbfc967","npm_config_fetch_retry_maxtimeout":"60000","npm_config_loglevel":"notice","npm_config_logs_max":"10","npm_config_message":"%s","npm_lifecycle_script":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","SSH_AUTH_SOCK":"/run/user/1000/keyring/ssh","XDG_GREETER_DATA_DIR":"/var/lib/lightdm/data/howl","npm_package_scripts_postversion":"git push --tags","npm_package_scripts_test":"npm-run-all test:lint test:jest","npm_package_dependencies_babel_core":"^6.25.0","npm_package_dependencies_babel_plugin_preval":"^1.6.1","npm_package_dependencies_http_link_header":"^0.8.0","npm_package_dependencies_intersection_observer":"^0.5.0","npm_package_dependencies_is_nan":"^1.2.1","npm_package_dependencies_react_intl":"^2.4.0","npm_package_dependencies_react_router_scroll_4":"^1.0.0-beta.1","npm_package_dependencies_react_swipeable_views":"^0.12.3","npm_package_dependencies_redux_immutable":"^4.0.0","npm_package_devDependencies_webpack_dev_server":"^2.9.5","npm_config_ca":"","npm_config_cert":"","npm_config_global":"","npm_config_link":"","SHELL":"/bin/bash","npm_package_repository_url":"git+https://github.com/tootsuite/mastodon.git","npm_package_dependencies_webpack_bundle_analyzer":"^2.9.1","npm_package_version":"","npm_config_access":"","npm_config_also":"","npm_config_save":"true","npm_config_unicode":"true","npm_lifecycle_event":"build","QT_ACCESSIBILITY":"1","GDMSESSION":"cinnamon","npm_package_scripts_build":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","npm_package_dependencies_emoji_mart":"github:Gargron/emoji-mart#build","npm_package_dependencies_intl":"^1.2.5","npm_package_dependencies_js_yaml":"^3.9.0","npm_package_dependencies_uuid":"^3.1.0","npm_config_argv":"{\"remain\":[],\"cooked\":[\"run\",\"build\"],\"original\":[\"run\",\"build\"]}","npm_config_long":"","npm_config_production":"","npm_config_searchlimit":"20","npm_config_unsafe_perm":"true","npm_package_dependencies_array_includes":"^3.0.3","npm_package_dependencies_babel_plugin_transform_react_jsx_source":"^6.22.0","npm_package_dependencies_compression_webpack_plugin":"^1.0.1","npm_package_dependencies_file_loader":"^0.11.2","npm_package_dependencies_lodash":"^4.17.4","npm_config_auth_type":"legacy","npm_config_node_version":"9.10.1","npm_config_tag":"latest","OSU_USERNAME":"howl","npm_config_git_tag_version":"true","npm_config_commit_hooks":"true","npm_config_script_shell":"","npm_config_shrinkwrap":"true","GJS_DEBUG_OUTPUT":"stderr","GPG_AGENT_INFO":"/run/user/1000/gnupg/S.gpg-agent:0:1","npm_package_license":"AGPL-3.0-or-later","npm_package_dependencies_classnames":"^2.2.5","npm_package_dependencies_es6_symbol":"^3.1.1","npm_package_dependencies_intl_messageformat":"^2.2.0","npm_package_dependencies_punycode":"^2.1.0","npm_package_devDependencies_eslint_plugin_react":"^7.5.1","npm_config_fetch_retry_factor":"10","npm_config_save_exact":"","npm_config_strict_ssl":"true","XDG_VTNR":"7","npm_package_dependencies_babel_plugin_transform_react_jsx_self":"^6.22.0","npm_config_dev":"","npm_config_globalconfig":"/usr/etc/npmrc","npm_config_init_module":"/home/howl/.npm-init.js","npm_config_parseable":"","LUA_CPATH":"/home/howl/torch-cl/install/lib/?.so;/home/howl/.luarocks/lib/lua/5.1/?.so;/home/howl/torch-cl/install/lib/lua/5.1/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so","PWD":"/home/howl/oc/mastofe","npm_package_dependencies_intl_relativeformat":"^2.1.0","npm_package_dependencies_requestidlecallback":"^0.3.0","npm_package_dependencies_webpack_manifest_plugin":"^1.2.1","npm_package_devDependencies_enzyme":"^3.2.0","npm_package_devDependencies_raf":"^3.4.0","npm_config_globalignorefile":"/usr/etc/npmignore","npm_execpath":"/usr/lib/node_modules/npm/bin/npm-cli.js","DYLD_LIBRARY_PATH":"/home/howl/torch-cl/install/lib:","XDG_DATA_DIRS":"/usr/share/gnome:/home/howl/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share","npm_package_dependencies_react_toggle":"^4.0.1","npm_config_cache_lock_retries":"10","npm_config_searchstaleness":"900","npm_package_dependencies_object_values":"^1.0.4","npm_package_dependencies_prop_types":"^15.5.10","npm_package_dependencies_resolve_url_loader":"^2.2.0","npm_package_dependencies_rimraf":"^2.6.1","npm_config_node_options":"","npm_config_save_prefix":"^","npm_config_scripts_prepend_node_path":"warn-only","npm_package_devDependencies_babel_eslint":"^8.2.1","npm_package_devDependencies_yargs":"^8.0.2","npm_config_group":"1000","npm_config_init_author_email":"","npm_config_searchexclude":"","VTE_VERSION":"5200","npm_package_dependencies_babel_loader":"^7.1.1","npm_package_dependencies_object_fit_images":"^3.2.3","npm_config_git":"git","npm_config_optional":"true","npm_package_dependencies_babel_plugin_transform_decorators_legacy":"^1.3.4","npm_package_dependencies_pg":"^6.4.0","npm_package_dependencies_react":"^16.2.0","npm_package_dependencies_fsevents":"*","npm_config_json":"","INIT_CWD":"/home/howl/oc/mastofe","NODE_ENV":"production"};
+
+
+
+function openSystemCache() {
+  return caches.open('mastodon-system');
+}
+
+function openWebCache() {
+  return caches.open('mastodon-web');
+}
+
+function fetchRoot() {
+  return fetch('/', { credentials: 'include' });
+}
+
+// Cause a new version of a registered Service Worker to replace an existing one
+// that is already installed, and replace the currently active worker on open pages.
+self.addEventListener('install', function (event) {
+  event.waitUntil(Promise.all([openWebCache(), fetchRoot()]).then(function (_ref) {
+    var cache = _ref[0],
+        root = _ref[1];
+    return cache.put('/', root);
+  }));
+});
+self.addEventListener('activate', function (event) {
+  event.waitUntil(self.clients.claim());
+});
+self.addEventListener('fetch', function (event) {
+  var url = new URL(event.request.url);
+
+  if (url.pathname.startsWith('/web/')) {
+    var asyncResponse = fetchRoot();
+    var asyncCache = openWebCache();
+
+    event.respondWith(asyncResponse.then(async function (response) {
+      if (response.ok) {
+        var cache = await asyncCache;
+        await cache.put('/', response);
+        return response.clone();
+      }
+
+      throw null;
+    }).catch(function () {
+      return asyncCache.then(function (cache) {
+        return cache.match('/');
+      });
+    }));
+  } else if (url.pathname === '/auth/sign_out') {
+    var _asyncResponse = fetch(event.request);
+    var _asyncCache = openWebCache();
+
+    event.respondWith(_asyncResponse.then(async function (response) {
+      if (response.ok || response.type === 'opaqueredirect') {
+        var cache = await _asyncCache;
+        await cache.delete('/');
+      }
+
+      return response;
+    }));
+  } else if (process.env.CDN_HOST ? url.host === process.env.CDN_HOST : url.pathname.startsWith('/system/')) {
+    event.respondWith(openSystemCache().then(async function (cache) {
+      var cached = await cache.match(event.request.url);
+
+      if (cached === undefined) {
+        var fetched = await fetch(event.request);
+
+        if (fetched.ok) {
+          await cache.put(event.request.url, fetched.clone());
+        }
+
+        return fetched;
+      }
+
+      return cached;
+    }));
+  }
+});
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports) {
+
+var MAX_NOTIFICATIONS = 5;
+var GROUP_TAG = 'tag';
+
+// Avoid loading intl-messageformat and dealing with locales in the ServiceWorker
+var formatGroupTitle = function formatGroupTitle(message, count) {
+  return message.replace('%{count}', count);
+};
+
+var notify = function notify(options) {
+  return self.registration.getNotifications().then(function (notifications) {
+    if (notifications.length === MAX_NOTIFICATIONS) {
+      // Reached the maximum number of notifications, proceed with grouping
+      var group = {
+        title: formatGroupTitle(options.data.message, notifications.length + 1),
+        body: notifications.sort(function (n1, n2) {
+          return n1.timestamp < n2.timestamp;
+        }).map(function (notification) {
+          return notification.title;
+        }).join('\n'),
+        badge: '/badge.png',
+        icon: '/android-chrome-192x192.png',
+        tag: GROUP_TAG,
+        data: {
+          url: new URL('/web/notifications', self.location).href,
+          count: notifications.length + 1,
+          message: options.data.message
+        }
+      };
+
+      notifications.forEach(function (notification) {
+        return notification.close();
+      });
+
+      return self.registration.showNotification(group.title, group);
+    } else if (notifications.length === 1 && notifications[0].tag === GROUP_TAG) {
+      // Already grouped, proceed with appending the notification to the group
+      var _group = cloneNotification(notifications[0]);
+
+      _group.title = formatGroupTitle(_group.data.message, _group.data.count + 1);
+      _group.body = options.title + '\n' + _group.body;
+      _group.data = Object.assign({}, _group.data, { count: _group.data.count + 1 });
+
+      return self.registration.showNotification(_group.title, _group);
+    }
+
+    return self.registration.showNotification(options.title, options);
+  });
+};
+
+var handlePush = function handlePush(event) {
+  var options = event.data.json();
+
+  options.body = options.data.nsfw || options.data.content;
+  options.dir = options.data.dir;
+  options.image = options.image || undefined; // Null results in a network request (404)
+  options.timestamp = options.timestamp && new Date(options.timestamp);
+
+  var expandAction = options.data.actions.find(function (action) {
+    return action.todo === 'expand';
+  });
+
+  if (expandAction) {
+    options.actions = [expandAction];
+    options.hiddenActions = options.data.actions.filter(function (action) {
+      return action !== expandAction;
+    });
+    options.data.hiddenImage = options.image;
+    options.image = undefined;
+  } else {
+    options.actions = options.data.actions;
+  }
+
+  event.waitUntil(notify(options));
+};
+
+var cloneNotification = function cloneNotification(notification) {
+  var clone = {};
+
+  for (var k in notification) {
+    clone[k] = notification[k];
+  }
+
+  return clone;
+};
+
+var expandNotification = function expandNotification(notification) {
+  var nextNotification = cloneNotification(notification);
+
+  nextNotification.body = notification.data.content;
+  nextNotification.image = notification.data.hiddenImage;
+  nextNotification.actions = notification.data.actions.filter(function (action) {
+    return action.todo !== 'expand';
+  });
+
+  return self.registration.showNotification(nextNotification.title, nextNotification);
+};
+
+var makeRequest = function makeRequest(notification, action) {
+  return fetch(action.action, {
+    headers: {
+      'Authorization': 'Bearer ' + notification.data.access_token,
+      'Content-Type': 'application/json'
+    },
+    method: action.method,
+    credentials: 'include'
+  });
+};
+
+var findBestClient = function findBestClient(clients) {
+  var focusedClient = clients.find(function (client) {
+    return client.focused;
+  });
+  var visibleClient = clients.find(function (client) {
+    return client.visibilityState === 'visible';
+  });
+
+  return focusedClient || visibleClient || clients[0];
+};
+
+var openUrl = function openUrl(url) {
+  return self.clients.matchAll({ type: 'window' }).then(function (clientList) {
+    if (clientList.length !== 0) {
+      var webClients = clientList.filter(function (client) {
+        return (/\/web\//.test(client.url)
+        );
+      });
+
+      if (webClients.length !== 0) {
+        var client = findBestClient(webClients);
+
+        var _ref = new URL(url),
+            pathname = _ref.pathname;
+
+        if (pathname.startsWith('/web/')) {
+          return client.focus().then(function (client) {
+            return client.postMessage({
+              type: 'navigate',
+              path: pathname.slice('/web/'.length - 1)
+            });
+          });
+        }
+      } else if ('navigate' in clientList[0]) {
+        // Chrome 42-48 does not support navigate
+        var _client = findBestClient(clientList);
+
+        return _client.navigate(url).then(function (client) {
+          return client.focus();
+        });
+      }
+    }
+
+    return self.clients.openWindow(url);
+  });
+};
+
+var removeActionFromNotification = function removeActionFromNotification(notification, action) {
+  var actions = notification.actions.filter(function (act) {
+    return act.action !== action.action;
+  });
+  var nextNotification = cloneNotification(notification);
+
+  nextNotification.actions = actions;
+
+  return self.registration.showNotification(nextNotification.title, nextNotification);
+};
+
+var handleNotificationClick = function handleNotificationClick(event) {
+  var reactToNotificationClick = new Promise(function (resolve, reject) {
+    if (event.action) {
+      var action = event.notification.data.actions.find(function (_ref2) {
+        var action = _ref2.action;
+        return action === event.action;
+      });
+
+      if (action.todo === 'expand') {
+        resolve(expandNotification(event.notification));
+      } else if (action.todo === 'request') {
+        resolve(makeRequest(event.notification, action).then(function () {
+          return removeActionFromNotification(event.notification, action);
+        }));
+      } else {
+        reject('Unknown action: ' + action.todo);
+      }
+    } else {
+      event.notification.close();
+      resolve(openUrl(event.notification.data.url));
+    }
+  });
+
+  event.waitUntil(reactToNotificationClick);
+};
+
+self.addEventListener('push', handlePush);
+self.addEventListener('notificationclick', handleNotificationClick);
+
+/***/ })
+/******/ ]);
