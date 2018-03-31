@@ -82,7 +82,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
       link("Post ##{activity.id} by #{user.nickname}", "/notices/#{activity.id}") <>
         info("#{like_count} likes, #{announcement_count} repeats") <>
-        "\r\n" <> info(HtmlSanitizeEx.strip_tags(String.replace(activity.data["object"]["content"], "<br>", "\n")))
+        "\r\n" <> info(HtmlSanitizeEx.strip_tags(String.replace(activity.data["object"]["content"], "<br>", "\r")))
     end)
     |> Enum.join("\r\n")
   end
