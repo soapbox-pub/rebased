@@ -50,7 +50,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
   end
 
   def info(text) do
-    text = String.replace(text, ~r/[\t\n]/, " ")
+    text = String.replace(text, ~r/[\t\n]/, "")
     String.split(text, "\r")
     |> Enum.map(fn (text) ->
       "i#{text}\tfake\(NULL)\t0\r\n"
