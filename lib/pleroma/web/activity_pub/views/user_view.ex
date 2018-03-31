@@ -3,9 +3,11 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.Salmon
   alias Pleroma.Web.WebFinger
   alias Pleroma.User
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  import Ecto.Query
 
   def render("user.json", %{user: user}) do
     {:ok, user} = WebFinger.ensure_keys_present(user)
@@ -45,10 +47,11 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     |> Map.merge(Utils.make_json_ld_header())
   end
 
-  def collection(collection, iri, page) do
+  def collection(collection, iri, page, total \\ nil) do
     offset = (page - 1) * 10
     items = Enum.slice(collection, offset, 10)
     items = Enum.map(items, fn user -> user.ap_id end)
+    total = total || length(collection)
 
     map = %{
       "id" => "#{iri}?page=#{page}",
@@ -64,14 +67,18 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("following.json", %{user: user, page: page}) do
-    {:ok, following} = User.get_friends(user)
+    query = User.get_friends_query(user)
+    query = from(user in query, select: [:ap_id])
+    following = Repo.all(query)
 
     collection(following, "#{user.ap_id}/following", page)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
   def render("following.json", %{user: user}) do
-    {:ok, following} = User.get_friends(user)
+    query = User.get_friends_query(user)
+    query = from(user in query, select: [:ap_id])
+    following = Repo.all(query)
 
     %{
       "id" => "#{user.ap_id}/following",
@@ -83,14 +90,18 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("followers.json", %{user: user, page: page}) do
-    {:ok, followers} = User.get_followers(user)
+    query = User.get_followers_query(user)
+    query = from(user in query, select: [:ap_id])
+    followers = Repo.all(query)
 
     collection(followers, "#{user.ap_id}/followers", page)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
   def render("followers.json", %{user: user}) do
-    {:ok, followers} = User.get_followers(user)
+    query = User.get_followers_query(user)
+    query = from(user in query, select: [:ap_id])
+    followers = Repo.all(query)
 
     %{
       "id" => "#{user.ap_id}/followers",

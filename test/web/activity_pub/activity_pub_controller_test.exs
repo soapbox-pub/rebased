@@ -49,4 +49,87 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
   end
+
+  describe "/users/:nickname/followers" do
+    test "it returns the followers in a collection", %{conn: conn} do
+      user = insert(:user)
+      user_two = insert(:user)
+      User.follow(user, user_two)
+
+      result =
+        conn
+        |> get("/users/#{user_two.nickname}/followers")
+        |> json_response(200)
+
+      assert result["first"]["orderedItems"] == [user.ap_id]
+    end
+
+    test "it works for more than 10 users", %{conn: conn} do
+      user = insert(:user)
+
+      Enum.each(1..15, fn _ ->
+        other_user = insert(:user)
+        User.follow(other_user, user)
+      end)
+
+      result =
+        conn
+        |> get("/users/#{user.nickname}/followers")
+        |> json_response(200)
+
+      assert length(result["first"]["orderedItems"]) == 10
+      assert result["first"]["totalItems"] == 15
+      assert result["totalItems"] == 15
+
+      result =
+        conn
+        |> get("/users/#{user.nickname}/followers?page=2")
+        |> json_response(200)
+
+      assert length(result["orderedItems"]) == 5
+      assert result["totalItems"] == 15
+    end
+  end
+
+  describe "/users/:nickname/following" do
+    test "it returns the following in a collection", %{conn: conn} do
+      user = insert(:user)
+      user_two = insert(:user)
+      User.follow(user, user_two)
+
+      result =
+        conn
+        |> get("/users/#{user.nickname}/following")
+        |> json_response(200)
+
+      assert result["first"]["orderedItems"] == [user_two.ap_id]
+    end
+
+    test "it works for more than 10 users", %{conn: conn} do
+      user = insert(:user)
+
+      Enum.each(1..15, fn _ ->
+        user = Repo.get(User, user.id)
+        other_user = insert(:user)
+        User.follow(user, other_user)
+      end)
+
+      result =
+        conn
+        |> get("/users/#{user.nickname}/following")
+        |> json_response(200)
+
+      assert length(result["first"]["orderedItems"]) == 10
+      assert result["first"]["totalItems"] == 15
+      assert result["totalItems"] == 15
+
+      result =
+        conn
+        |> get("/users/#{user.nickname}/following?page=2")
+        |> json_response(200)
+
+      assert length(result["orderedItems"]) == 5
+      assert result["totalItems"] == 15
+    end
+  end
 end

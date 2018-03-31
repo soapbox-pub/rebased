@@ -278,24 +278,30 @@ defmodule Pleroma.User do
     end
   end
 
-  def get_followers(%User{id: id, follower_address: follower_address}) do
-    q =
-      from(
-        u in User,
-        where: fragment("? <@ ?", ^[follower_address], u.following),
-        where: u.id != ^id
-      )
+  def get_followers_query(%User{id: id, follower_address: follower_address}) do
+    from(
+      u in User,
+      where: fragment("? <@ ?", ^[follower_address], u.following),
+      where: u.id != ^id
+    )
+  end
+
+  def get_followers(user) do
+    q = get_followers_query(user)
 
     {:ok, Repo.all(q)}
   end
 
-  def get_friends(%User{id: id, following: following}) do
-    q =
-      from(
-        u in User,
-        where: u.follower_address in ^following,
-        where: u.id != ^id
-      )
+  def get_friends_query(%User{id: id, following: following}) do
+    from(
+      u in User,
+      where: u.follower_address in ^following,
+      where: u.id != ^id
+    )
+  end
+
+  def get_friends(user) do
+    q = get_friends_query(user)
 
     {:ok, Repo.all(q)}
   end
