@@ -1,5 +1,5 @@
 CACHE MANIFEST
-#ver:2018-3-31 18:14:10
+#ver:2018-3-31 19:06:08
 #plugin:4.8.4
 
 CACHE:
@@ -38,9 +38,9 @@ CACHE:
 /packs/default.js
 /packs/admin.js
 /packs/common.js
-/packs/common-daadaac9454e7d14470e7954e3143dca.css
-/packs/mailer-75783e1a7b802fd56ef054aa13585342.css
-/packs/default-6a12993217b6ce9bc8b514398a33b7c9.css
+/packs/common.css
+/packs/mailer.css
+/packs/default.css
 /packs/manifest.json
 
 NETWORK:
