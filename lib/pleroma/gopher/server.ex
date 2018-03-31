@@ -71,8 +71,13 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
     |> Enum.map(fn activity ->
       user = User.get_cached_by_ap_id(activity.data["actor"])
 
+      object = activity.data["object"]
+      like_count = object["like_count"] || 0
+      announcement_count = object["announcement_count"] || 0
+
       link("Post ##{activity.id} by #{user.nickname}", "/notices/#{activity.id}") <>
-        info(HtmlSanitizeEx.strip_tags(activity.data["object"]["content"]))
+        info("#{like_count} likes, #{announcement_count} repeats") <>
+        "\r\n" <> info(HtmlSanitizeEx.strip_tags(activity.data["object"]["content"]))
     end)
     |> Enum.join("\r\n")
   end
