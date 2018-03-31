@@ -49,6 +49,7 @@ config :pleroma, :instance,
   name: "Pleroma",
   email: "example@example.com",
   limit: 5000,
+  upload_limit: 16_000_000,
   registrations_open: true,
   federating: true
 
