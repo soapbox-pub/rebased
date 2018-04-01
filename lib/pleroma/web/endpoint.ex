@@ -17,7 +17,7 @@ defmodule Pleroma.Web.Endpoint do
     Plug.Static,
     at: "/",
     from: :pleroma,
-    only: ~w(index.html static finmoji emoji packs sounds images instance sw.js)
+    only: ~w(index.html static finmoji emoji packs sounds images instance sw.js favicon.png)
   )
 
   # Code reloading can be explicitly enabled under the
