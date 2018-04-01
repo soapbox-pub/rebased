@@ -27,7 +27,8 @@ config :logger, :console,
 
 config :mime, :types, %{
   "application/xrd+xml" => ["xrd+xml"],
-  "application/activity+json" => ["activity+json"]
+  "application/activity+json" => ["activity+json"],
+  "application/ld+json" => ["activity+json"]
 }
 
 config :pleroma, :websub, Pleroma.Web.Websub
