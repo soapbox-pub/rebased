@@ -28,7 +28,16 @@ server {
     gzip_http_version 1.1;                                                                                                                
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/activity+json application/atom+xml;      
     location / {
-        add_header 'Access-Control-Allow-Origin' '*';
+        # if you do not want remote frontends to be able to access your Pleroma backend
+        # server, remove these lines.
+        add_header 'Access-Control-Allow-Origin' '*' always;
+        add_header 'Access-Control-Allow-Methods' 'POST, GET, OPTIONS' always;
+        add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type' always;
+        if ($request_method = OPTIONS) {
+            return 204;
+        }
+        # stop removing lines here.
+
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
