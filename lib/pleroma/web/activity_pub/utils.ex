@@ -45,6 +45,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     "#{Web.base_url()}/#{type}/#{UUID.generate()}"
   end
 
+  def create_context(context) do
+    context = context || generate_id("contexts")
+    changeset = Object.context_mapping(context)
+
+    case Repo.insert(changeset) do
+      {:ok, object} -> object
+      # This should be solved by an upsert, but it seems ecto
+      # has problems accessing the constraint inside the jsonb.
+      {:error, _} -> Object.get_cached_by_ap_id(context)
+    end
+  end
+
   @doc """
   Enqueues an activity for federation if it's local
   """
@@ -67,13 +79,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   also adds it to an included object
   """
   def lazy_put_activity_defaults(map) do
+    %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
+
     map =
       map
       |> Map.put_new_lazy("id", &generate_activity_id/0)
       |> Map.put_new_lazy("published", &make_date/0)
+      |> Map.put_new("context", context)
+      |> Map.put_new("context_id", context_id)
 
     if is_map(map["object"]) do
-      object = lazy_put_object_defaults(map["object"])
+      object = lazy_put_object_defaults(map["object"], map)
       %{map | "object" => object}
     else
       map
@@ -83,10 +99,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Adds an id and published date if they aren't there.
   """
-  def lazy_put_object_defaults(map) do
+  def lazy_put_object_defaults(map, activity \\ %{}) do
     map
     |> Map.put_new_lazy("id", &generate_object_id/0)
     |> Map.put_new_lazy("published", &make_date/0)
+    |> Map.put_new("context", activity["context"])
+    |> Map.put_new("context_id", activity["context_id"])
   end
 
   @doc """

@@ -32,13 +32,14 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     end)
   end
 
-  defp get_context_id(%{data: %{"context" => nil}}), do: nil
+  defp get_context_id(%{data: %{"context" => nil}}, _), do: nil
   defp get_context_id(%{data: %{"context" => context}}, options) do
     cond do
       id = options[:context_ids][context] -> id
       true -> TwitterAPI.context_to_conversation_id(context)
     end
   end
+  defp get_context_id(_, _), do: nil
 
   def render("index.json", opts) do
     context_ids = collect_context_ids(opts.activities)
