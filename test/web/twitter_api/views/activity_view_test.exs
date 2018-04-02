@@ -64,7 +64,12 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       {
         TwitterAPI,
         [],
-        [context_to_conversation_id: fn(_) -> false end]
+        [context_to_conversation_id: fn _ -> false end]
+      },
+      {
+        User,
+        [:passthrough],
+        [get_cached_by_ap_id: fn _ -> nil end]
       }
     ]
 
@@ -73,7 +78,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
       assert result["statusnet_conversation_id"] == convo_id
       assert result["user"]
-      refute called TwitterAPI.context_to_conversation_id(:_)
+      refute called(TwitterAPI.context_to_conversation_id(:_))
+      refute called(User.get_cached_by_ap_id(user.ap_id))
+      refute called(User.get_cached_by_ap_id(other_user.ap_id))
     end
   end
 

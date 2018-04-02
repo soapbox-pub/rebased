@@ -56,7 +56,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         "id" => "some_id",
         "object" => %{
           "id" => "object_id"
-         }
+        }
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
