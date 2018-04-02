@@ -600,8 +600,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> assign(:user, user)
         |> get("/api/statuses/followers")
 
-      assert json_response(conn, 200) ==
-               UserView.render("index.json", %{users: [follower_one, follower_two], for: user})
+      expected = UserView.render("index.json", %{users: [follower_one, follower_two], for: user})
+      result = json_response(conn, 200)
+      assert Enum.sort(expected) == Enum.sort(result)
     end
   end
 
@@ -620,12 +621,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> assign(:user, user)
         |> get("/api/statuses/friends")
 
-      assert MapSet.equal?(
-               MapSet.new(json_response(conn, 200)),
-               MapSet.new(
-                 UserView.render("index.json", %{users: [followed_one, followed_two], for: user})
-               )
-             )
+      expected = UserView.render("index.json", %{users: [followed_one, followed_two], for: user})
+      result = json_response(conn, 200)
+      assert Enum.sort(expected) == Enum.sort(result)
     end
 
     test "it returns a given user's friends with user_id", %{conn: conn} do
