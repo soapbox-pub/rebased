@@ -125,7 +125,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       (activity.data["object"]["emoji"] || [])
       |> Enum.map(fn {name, url} ->
         name = HtmlSanitizeEx.strip_tags(name)
-        url = HtmlSanitizeEx.strip_tags(url)
+
+        url =
+          HtmlSanitizeEx.strip_tags(url)
+          |> MediaProxy.url()
+
         %{shortcode: name, url: url, static_url: url}
       end)
 
