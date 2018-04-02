@@ -212,6 +212,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     DateTime.utc_now() |> DateTime.to_iso8601()
   end
 
+  # DEPRECATED mostly, context objects are now created at insertion time.
   def context_to_conversation_id(context) do
     with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
       id

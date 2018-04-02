@@ -13,6 +13,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
   import Ecto.Query
 
+  defp query_context_ids([]), do: []
   defp query_context_ids(contexts) do
     query = from o in Object,
       where: fragment("(?)->>'id' = ANY(?)", o.data, ^contexts)
@@ -22,6 +23,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
   defp collect_context_ids(activities) do
     contexts = activities
+    |> Enum.reject(&(&1.data["context_id"]))
     |> Enum.map(fn(%{data: data}) ->
       data["context"]
     end)
@@ -32,6 +34,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     end)
   end
 
+  defp get_context_id(%{data: %{"context_id" => context_id}}, _) when not is_nil(context_id), do: context_id
   defp get_context_id(%{data: %{"context" => nil}}, _), do: nil
   defp get_context_id(%{data: %{"context" => context}}, options) do
     cond do
@@ -209,13 +212,5 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive
     }
-  end
-
-  defp conversation_id(activity) do
-    with context when not is_nil(context) <- activity.data["context"] do
-      TwitterAPI.context_to_conversation_id(context)
-    else
-      _e -> nil
-    end
   end
 end
