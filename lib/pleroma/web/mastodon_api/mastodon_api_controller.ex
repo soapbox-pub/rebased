@@ -513,12 +513,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       )
 
     statuses = Repo.all(q) ++ fetched
+    tags = String.split(query)
+    |> Enum.uniq()
+    |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
+    |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
 
     res = %{
       "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
       "statuses" =>
         StatusView.render("index.json", activities: statuses, for: user, as: :activity),
-      "hashtags" => []
+      "hashtags" => tags
     }
 
     json(conn, res)
