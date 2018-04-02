@@ -10,7 +10,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   alias Pleroma.Activity
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+
   import Pleroma.Factory
+  import Mock
 
   test "a create activity with a note" do
     user = insert(:user)
@@ -49,6 +51,30 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     }
 
     assert result == expected
+  end
+
+  test "a list of activities" do
+    user = insert(:user)
+    other_user = insert(:user, %{nickname: "shp"})
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+
+    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+
+    mocks = [
+      {
+        TwitterAPI,
+        [],
+        [context_to_conversation_id: fn(_) -> false end]
+      }
+    ]
+
+    with_mocks mocks do
+      [result] = ActivityView.render("index.json", activities: [activity])
+
+      assert result["statusnet_conversation_id"] == convo_id
+      assert result["user"]
+      refute called TwitterAPI.context_to_conversation_id(:_)
+    end
   end
 
   test "an activity that is a reply" do

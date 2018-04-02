@@ -7,9 +7,44 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Formatter
 
+  import Ecto.Query
+
+  defp query_context_ids(contexts) do
+    query = from o in Object,
+      where: fragment("(?)->>'id' = ANY(?)", o.data, ^contexts)
+
+    Repo.all(query)
+  end
+
+  defp collect_context_ids(activities) do
+    contexts = activities
+    |> Enum.map(fn(%{data: data}) ->
+      data["context"]
+    end)
+    |> Enum.filter(&(&1))
+    |> query_context_ids()
+    |> Enum.reduce(%{}, fn(%{data: %{"id" => ap_id}, id: id}, acc) ->
+      Map.put(acc, ap_id, id)
+    end)
+  end
+
+  defp get_context_id(%{data: %{"context" => nil}}), do: nil
+  defp get_context_id(%{data: %{"context" => context}}, options) do
+    cond do
+      id = options[:context_ids][context] -> id
+      true -> TwitterAPI.context_to_conversation_id(context)
+    end
+  end
+
   def render("index.json", opts) do
+    context_ids = collect_context_ids(opts.activities)
+    opts = opts
+    |> Map.put(:context_ids, context_ids)
+
     render_many(
       opts.activities,
       ActivityView,
@@ -80,7 +115,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "uri" => "tag:#{activity.data["id"]}:objectType=note",
       "created_at" => created_at,
       "retweeted_status" => retweeted_status,
-      "statusnet_conversation_id" => conversation_id(announced_activity),
+      "statusnet_conversation_id" => get_context_id(announced_activity, opts),
       "external_url" => activity.data["id"],
       "activity_type" => "repeat"
     }
@@ -130,7 +165,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> UserView.render("show.json", %{user: user, for: opts[:for]}) end)
 
-    conversation_id = conversation_id(activity)
+    conversation_id = get_context_id(activity, opts)
 
     tags = activity.data["object"]["tag"] || []
     possibly_sensitive = activity.data["object"]["sensitive"] || Enum.member?(tags, "nsfw")
