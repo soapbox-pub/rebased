@@ -189,7 +189,9 @@ defmodule Pleroma.Formatter do
 
     subs =
       subs ++
-        Enum.map(mentions, fn {match, %User{ap_id: ap_id}, uuid} ->
+        Enum.map(mentions, fn {match, %User{ap_id: ap_id, info: info}, uuid} ->
+          ap_id = info["source_data"]["url"] || ap_id
+
           short_match = String.split(match, "@") |> tl() |> hd()
           {uuid, "<span><a href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
         end)

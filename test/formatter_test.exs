@@ -64,7 +64,13 @@ defmodule Pleroma.FormatterTest do
     test "gives a replacement for user links" do
       text = "@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me"
       gsimg = insert(:user, %{nickname: "gsimg"})
-      archaeme = insert(:user, %{nickname: "archaeme"})
+
+      archaeme =
+        insert(:user, %{
+          nickname: "archaeme",
+          info: %{"source_data" => %{"url" => "https://archeme/@archaeme"}}
+        })
+
       archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
 
       mentions = Pleroma.Formatter.parse_mentions(text)
@@ -76,7 +82,7 @@ defmodule Pleroma.FormatterTest do
 
       expected_text =
         "<span><a href='#{gsimg.ap_id}'>@<span>gsimg</span></a></span> According to <span><a href='#{
-          archaeme.ap_id
+          "https://archeme/@archaeme"
         }'>@<span>archaeme</span></a></span>, that is @daggsy. Also hello <span><a href='#{
           archaeme_remote.ap_id
         }'>@<span>archaeme</span></a></span>"
