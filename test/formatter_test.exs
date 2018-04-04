@@ -57,6 +57,13 @@ defmodule Pleroma.FormatterTest do
         "<a href='https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul'>https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+
+      text = "https://www.google.co.jp/search?q=Nasim+Aghdam"
+
+      expected =
+        "<a href='https://www.google.co.jp/search?q=Nasim+Aghdam'>https://www.google.co.jp/search?q=Nasim+Aghdam</a>"
+
+      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
     end
   end
 
