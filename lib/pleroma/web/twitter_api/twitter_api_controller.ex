@@ -45,7 +45,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def public_and_external_timeline(%{assigns: %{user: user}} = conn, params) do
     params =
       params
-      |> Map.put("type", ["Create", "Announce", "Follow"])
+      |> Map.put("type", ["Create", "Announce"])
       |> Map.put("blocking_user", user)
 
     activities = ActivityPub.fetch_public_activities(params)
@@ -57,7 +57,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
     params =
       params
-      |> Map.put("type", ["Create", "Announce", "Follow"])
+      |> Map.put("type", ["Create", "Announce"])
       |> Map.put("local_only", true)
       |> Map.put("blocking_user", user)
 
