@@ -58,7 +58,7 @@ defmodule Pleroma.Upload do
     }
   end
 
-  defp upload_path do
+  def upload_path do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
     Keyword.fetch!(settings, :uploads)
   end
