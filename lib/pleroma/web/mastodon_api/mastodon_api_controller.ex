@@ -494,6 +494,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       if Regex.match?(~r/https?:/, query) do
         with {:ok, activities} <- OStatus.fetch_activity_from_url(query) do
           activities
+          |> Enum.filter(fn
+            %{data: %{"type" => "Create"}} -> true
+            _ -> false
+          end)
         else
           _e -> []
         end
