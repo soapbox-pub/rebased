@@ -1,5 +1,0 @@
-instance.example.com  {  # Your instance's domain
-  proxy / localhost:4000 {
-    websocket
-  }
-}
