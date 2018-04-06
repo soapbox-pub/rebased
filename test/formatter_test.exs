@@ -34,6 +34,13 @@ defmodule Pleroma.FormatterTest do
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
+      text = "https://mastodon.social:4000/@lambadalambda"
+
+      expected =
+        "<a href='https://mastodon.social:4000/@lambadalambda'>https://mastodon.social:4000/@lambadalambda</a>"
+
+      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+
       text = "@lambadalambda"
       expected = "@lambadalambda"
 

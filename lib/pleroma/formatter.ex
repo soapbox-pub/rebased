@@ -144,7 +144,7 @@ defmodule Pleroma.Formatter do
     @emoji
   end
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#\+%&@~\(\)]+[\w\/]/u
+  @link_regex ~r/https?:\/\/[\w\.\/?=\-#\+%&@~\(\):]+[\w\/]/u
 
   def html_escape(text) do
     Regex.split(@link_regex, text, include_captures: true)
