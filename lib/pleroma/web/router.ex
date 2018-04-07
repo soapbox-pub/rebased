@@ -120,6 +120,12 @@ defmodule Pleroma.Web.Router do
     post("/media", MastodonAPIController, :upload)
   end
 
+  scope "/api/web", Pleroma.Web.MastodonAPI do
+    pipe_through(:authenticated_api)
+
+    put("/settings", MastodonAPIController, :put_settings)
+  end
+
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
     get("/instance", MastodonAPIController, :masto_instance)
