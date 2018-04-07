@@ -45,6 +45,9 @@ No release has been made yet, but several servers have been online for months al
 
 By default, it listens on port 4000 (TCP), so you can access it on http://localhost:4000/ (if you are on the same machine). In case of an error it will restart automatically.
 
+### Frontends
+Pleroma comes with two frontends. The first one, Pleroma FE, can be reached by normally visiting the site. The other one, based on the Mastodon project, can be found by visiting the /web path of your site.
+
 ### As systemd service (with provided .service file)
 Running `service pleroma start`
 Logs can be watched by using `journalctl -fu pleroma.service`
@@ -72,3 +75,9 @@ Run `mix generate_password_reset username` to generate a password reset link tha
 You can make users moderators. They will then be able to delete any post.
 
 Run `mix set_moderator username [true|false]` to make user a moderator or not.
+
+## Troubleshooting
+
+### No incoming federation
+
+Check that you correctly forward the "host" header to backend. It is needed to validate signatures.
