@@ -507,6 +507,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       from(
         a in Activity,
         where: fragment("?->>'type' = 'Create'", a.data),
+        where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
         where:
           fragment(
             "to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)",
