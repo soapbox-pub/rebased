@@ -102,13 +102,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   @instance Application.get_env(:pleroma, :instance)
+  @mastodon_api_level "2.3.3"
 
   def masto_instance(conn, _params) do
     response = %{
       uri: Web.base_url(),
       title: Keyword.get(@instance, :name),
       description: "A Pleroma instance, an alternative fediverse server",
-      version: Keyword.get(@instance, :version),
+      version: "#{@mastodon_api_level} (compatible; #{Keyword.get(@instance, :version)})",
       email: Keyword.get(@instance, :email),
       urls: %{
         streaming_api: String.replace(Web.base_url(), ["http", "https"], "wss")
