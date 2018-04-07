@@ -4,14 +4,20 @@ defmodule Pleroma.Web.XML do
   def string_from_xpath(_, :error), do: nil
 
   def string_from_xpath(xpath, doc) do
-    {:xmlObj, :string, res} = :xmerl_xpath.string('string(#{xpath})', doc)
+    try do
+      {:xmlObj, :string, res} = :xmerl_xpath.string('string(#{xpath})', doc)
 
-    res =
-      res
-      |> to_string
-      |> String.trim()
+      res =
+        res
+        |> to_string
+        |> String.trim()
 
-    if res == "", do: nil, else: res
+      if res == "", do: nil, else: res
+    catch
+      e ->
+        Logger.debug("Couldn't find xpath #{xpath} in XML doc")
+        nil
+    end
   end
 
   def parse_document(text) do
