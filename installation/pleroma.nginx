@@ -1,10 +1,18 @@
+# default nginx site config for Pleroma
+#
+# Simple installation instructions:
+# 1. Install your TLS certificate, possibly using Let's Encrypt.
+# 2. Replace 'example.tld' with your instance's domain wherever it appears.
+# 3. Copy this file to /etc/nginx/sites-available/ and then add a symlink to it
+#    in /etc/nginx/sites-enabled/ and restart nginx.
+
 proxy_cache_path /tmp/pleroma-media-cache levels=1:2 keys_zone=pleroma_media_cache:10m max_size=10g
                  inactive=720m use_temp_path=off;
 
 server {
-       listen         80;
-       server_name    example.tld;
-       return         301 https://$server_name$request_uri;
+    listen         80;
+    server_name    example.tld;
+    return         301 https://$server_name$request_uri;
 }
 
 server {
@@ -12,7 +20,7 @@ server {
     ssl on;
     ssl_session_timeout 5m;
 
-    ssl_certificate           /etc/letsencrypt/live/exmaple.tld/fullchain.pem;
+    ssl_certificate           /etc/letsencrypt/live/example.tld/fullchain.pem;
     ssl_certificate_key       /etc/letsencrypt/live/example.tld/privkey.pem;
 
     ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
@@ -21,12 +29,16 @@ server {
 
     server_name example.tld;
 
-    gzip_vary on;                                                                                                                         
-    gzip_proxied any;                                                                                                                     
-    gzip_comp_level 6;                                                                                                                    
-    gzip_buffers 16 8k;                                                                                                                   
-    gzip_http_version 1.1;                                                                                                                
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/activity+json application/atom+xml;      
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_buffers 16 8k;
+    gzip_http_version 1.1;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript application/activity+json application/atom+xml;
+
+    # the nginx default is 1m, not enough for large media uploads
+    client_max_body_size 16m;
+
     location / {
         # if you do not want remote frontends to be able to access your Pleroma backend
         # server, remove these lines.
@@ -44,6 +56,8 @@ server {
         proxy_set_header Host $http_host;
 
         proxy_pass http://localhost:4000;
+
+        client_max_body_size 16m;
     }
 
     location /proxy {
@@ -51,5 +65,4 @@ server {
         proxy_cache_lock on;
         proxy_pass http://localhost:4000;
     }
-
 }
