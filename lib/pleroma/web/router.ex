@@ -100,6 +100,7 @@ defmodule Pleroma.Web.Router do
     get("/domain_blocks", MastodonAPIController, :empty_array)
     get("/follow_requests", MastodonAPIController, :empty_array)
     get("/mutes", MastodonAPIController, :empty_array)
+    get("/lists", MastodonAPIController, :empty_array)
 
     get("/timelines/home", MastodonAPIController, :home_timeline)
 
