@@ -604,7 +604,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
               "video\/mp4"
             ]
           },
-          settings: %{
+          settings: Map.get(user.info, "settings") || %{
             onboarded: true,
             home: %{
               shows: %{
@@ -646,6 +646,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       conn
       |> redirect(to: "/web/login")
+    end
+  end
+
+  def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
+    with new_info <- Map.put(user.info, "settings", settings),
+         change <- User.info_changeset(user, %{info: new_info}),
+         {:ok, _user} <- User.update_and_set_cache(change) do
+      conn
+      |> json(%{})
+    else e ->
+        conn
+        |> json(%{error: inspect(e)})
     end
   end
 
