@@ -1,4 +1,4 @@
-var __wpo = {"assets":{"main":["/packs/base_polyfills.js","/packs/extra_polyfills.js","/packs/features/compose.js","/packs/modals/onboarding_modal.js","/packs/emoji_picker.js","/packs/features/notifications.js","/packs/features/account_timeline.js","/packs/features/home_timeline.js","/packs/features/public_timeline.js","/packs/features/community_timeline.js","/packs/features/favourited_statuses.js","/packs/features/list_timeline.js","/packs/features/following.js","/packs/features/followers.js","/packs/features/hashtag_timeline.js","/packs/features/status.js","/packs/features/account_gallery.js","/packs/features/blocks.js","/packs/features/follow_requests.js","/packs/features/reblogs.js","/packs/features/favourites.js","/packs/features/getting_started.js","/packs/features/keyboard_shortcuts.js","/packs/features/generic_not_found.js","/packs/features/list_editor.js","/packs/status/media_gallery.js","/packs/share.js","/packs/application.js","/packs/about.js","/packs/public.js","/packs/mailer.js","/packs/default.js","/packs/admin.js","/packs/common.js","/packs/common.css","/packs/mailer.css","/packs/default.css","/packs/manifest.json"],"additional":["/emoji/1f602.svg","/emoji/sheet.png"],"optional":["/packs/locale_zh-TW.js","/packs/locale_zh-HK.js","/packs/locale_zh-CN.js","/packs/locale_uk.js","/packs/locale_tr.js","/packs/locale_th.js","/packs/locale_sv.js","/packs/locale_sr.js","/packs/locale_sr-Latn.js","/packs/locale_sk.js","/packs/locale_ru.js","/packs/locale_pt.js","/packs/locale_pt-BR.js","/packs/locale_pl.js","/packs/locale_oc.js","/packs/locale_no.js","/packs/locale_nl.js","/packs/locale_ko.js","/packs/locale_ja.js","/packs/locale_it.js","/packs/locale_io.js","/packs/locale_id.js","/packs/locale_hy.js","/packs/locale_hu.js","/packs/locale_hr.js","/packs/locale_he.js","/packs/locale_gl.js","/packs/locale_fr.js","/packs/locale_fi.js","/packs/locale_fa.js","/packs/locale_es.js","/packs/locale_eo.js","/packs/locale_en.js","/packs/locale_de.js","/packs/locale_ca.js","/packs/locale_bg.js","/packs/locale_ar.js","/packs/roboto-italic-webfont-50efdad8c62f5f279e3f4f1f63a4f9bc.woff2","/packs/roboto-bold-webfont-f633cb5c651ba4d50791e1adf55d3c18.woff2","/packs/roboto-medium-webfont-69c55fc2fe77d38934ea98dc31642ce6.woff2","/packs/roboto-regular-webfont-3ec24f953ed5e859a6402cb3c030ea8b.woff2","/packs/fontawesome-webfont-af7ae505a9eed503f8b8e6982036873e.woff2","/packs/robotomono-regular-webfont-6c1ce30b90ee993b22618ec489585594.woff2","/packs/Montserrat-Regular-080422d4c1328f3407818d25c86cce51.woff2","/packs/void-65dfe5bd31335a5b308d36964d320574.png","/packs/reticle-7d7ce959271e5ff1193fb32cff90ea56.png","/packs/elephant-fren-d16fd77f9a9387e7d146b5f9d4dc1e7f.png","/packs/icon_cached-98a757f1d9e93652742be43c22f46287.png","/packs/icon_done-12b87c12f915597dccbd2ca4d7167ba4.png","/packs/icon_email-738c89662d6640f5e6539151023d049a.png","/packs/icon_file_download-e5c29678f3a639e1e62374911d85e1d0.png","/packs/icon_grade-3ec67253b37908d2ab783f7225f20682.png","/packs/icon_lock_open-0bfd71a52eb3f34934edd59088b559fb.png","/packs/icon_person_add-e2c6b660f6e1c95785d8d2bfa7a823af.png","/packs/icon_reply-4f6ada7a0b886b084706a484753a0ff0.png","/packs/logo_full-5c51cffe1fcb8225ae02400d6a7e7077.png","/packs/logo_transparent-6f79eeb2c38ec2d12ed4d978322457d6.png","/packs/preview-9a17d32fc48369e8ccd910a75260e67d.jpg","/packs/elephant_ui_plane-e3f2d57c12c376e189c274cbe81af8dd.svg","/packs/elephant_ui_disappointed-8864342480c3612e3061702851d3a798.svg","/packs/elephant_ui_greeting-475430963d0b00fe82b07b17857ebf6c.svg","/packs/elephant_ui_working-2e653cc278c2ac871c23aeb10de1c0e2.svg","/packs/icon_cached-108e30d96e1d5152be7fe2978bcdfe14.svg","/packs/icon_done-dba357bfbba455428787fefc655ce120.svg","/packs/icon_email-1346985c7aaceb601b0d4257133254f4.svg","/packs/icon_file_download-4b5c054e76b0df3cbbc851854cd10c3c.svg","/packs/icon_grade-8e81b8e88c2b5834347a2a226c65d440.svg","/packs/icon_lock_open-c9627928caaaa505ac7de2a64bd065ec.svg","/packs/icon_person_add-5c56ef10b9e99e77a44d89041f4b77b5.svg","/packs/icon_reply-b5e28e1fe6acd4ec003e643e947f1c4a.svg","/packs/logo-fe5141d38a25f50068b4c69b77ca1ec8.svg","/packs/logo_alt-6090911445f54a587465e41da77a6969.svg","/packs/logo_full-96e7a97fe469f75a23a74852b2478fa3.svg","/packs/logo_transparent-6900bab180aa3a46c34425e5367a218f.svg"]},"externals":["/emoji/1f602.svg","/emoji/sheet.png"],"hashesMap":{"8aadd54157395376ea8c22827bde88e67f31358e":"/packs/roboto-italic-webfont-50efdad8c62f5f279e3f4f1f63a4f9bc.woff2","e2fc71044647b6edf7a3ba41429d5d626e63710a":"/packs/roboto-bold-webfont-f633cb5c651ba4d50791e1adf55d3c18.woff2","b66f9a200f8671202198f0238b4729e127bc0dac":"/packs/roboto-medium-webfont-69c55fc2fe77d38934ea98dc31642ce6.woff2","74f352b40a57789750d3c738c710a82cdb0f254a":"/packs/roboto-regular-webfont-3ec24f953ed5e859a6402cb3c030ea8b.woff2","d6f48cba7d076fb6f2fd6ba993a75b9dc1ecbf0c":"/packs/fontawesome-webfont-af7ae505a9eed503f8b8e6982036873e.woff2","1e149b7d5f1c5a5c4971cb523450118b1d50ed47":"/packs/robotomono-regular-webfont-6c1ce30b90ee993b22618ec489585594.woff2","c6aade94b414951dc75e41b6f30fc1fa93bf89fb":"/packs/Montserrat-Regular-080422d4c1328f3407818d25c86cce51.woff2","7e2065071fefe6d54f64b821bf575a0ab49b92c0":"/packs/void-65dfe5bd31335a5b308d36964d320574.png","f7e7808e34f32df8859ac9cef991858df4fc0bba":"/packs/reticle-7d7ce959271e5ff1193fb32cff90ea56.png","8523aa7b16b029770170cc12026e7c7d172d626d":"/packs/elephant_ui_plane-e3f2d57c12c376e189c274cbe81af8dd.svg","027d2ab934afd67b404426234750c08b516ec223":"/packs/elephant-fren-d16fd77f9a9387e7d146b5f9d4dc1e7f.png","2523b7002bda93c12af3b4b7f4d7a35fd52faf41":"/packs/elephant_ui_disappointed-8864342480c3612e3061702851d3a798.svg","2dace1e38e0d159660c56d838ad2ce22c0184661":"/packs/elephant_ui_greeting-475430963d0b00fe82b07b17857ebf6c.svg","42a8fc2f0526540979583534ec331a2d28d2575e":"/packs/elephant_ui_working-2e653cc278c2ac871c23aeb10de1c0e2.svg","22fac75a796b2bd2c6872cbd8d14bd325b00bb64":"/packs/icon_cached-108e30d96e1d5152be7fe2978bcdfe14.svg","e9cea6fd6e8034f60e0358a15956490831c66b03":"/packs/icon_done-dba357bfbba455428787fefc655ce120.svg","17604ec5d343bc1aee070a2197dae8fd78bdccef":"/packs/icon_email-1346985c7aaceb601b0d4257133254f4.svg","e4a88b85b09c072041e89acaa22ec362ece97f27":"/packs/icon_file_download-4b5c054e76b0df3cbbc851854cd10c3c.svg","75a26256446662fb331fd42b9849dfff235364d5":"/packs/icon_grade-8e81b8e88c2b5834347a2a226c65d440.svg","7a534f4811adb70a796a285fb70b93c87a9f4b94":"/packs/icon_lock_open-c9627928caaaa505ac7de2a64bd065ec.svg","08ef53f9228b3d24f2801ba942fc842599c39e34":"/packs/icon_person_add-5c56ef10b9e99e77a44d89041f4b77b5.svg","ad9a0479341f3a93a83c7cadab091569e459076c":"/packs/icon_reply-b5e28e1fe6acd4ec003e643e947f1c4a.svg","aa75bce521938954706802c15e393ea05663e5e0":"/packs/logo-fe5141d38a25f50068b4c69b77ca1ec8.svg","f573db9e5698b7a3541880875c3ce88fe03ebee2":"/packs/logo_alt-6090911445f54a587465e41da77a6969.svg","3b339fcffc64574bca7cd2521e25bfbea8c3cbbf":"/packs/logo_full-96e7a97fe469f75a23a74852b2478fa3.svg","12520e03b958c73d94a1f19644ca4d0b79c6505d":"/packs/logo_transparent-6900bab180aa3a46c34425e5367a218f.svg","dc0b5a8d2d7e67f84d37635137610c6c6d937058":"/packs/icon_cached-98a757f1d9e93652742be43c22f46287.png","58f810df15baa9109f9db7f800e31c0d011e6f0d":"/packs/icon_done-12b87c12f915597dccbd2ca4d7167ba4.png","828ed8086eacb6622609e9992950998ce0a1579b":"/packs/icon_email-738c89662d6640f5e6539151023d049a.png","c60492c5ceea92a0acb138f20e0a33dd1e553f6b":"/packs/icon_file_download-e5c29678f3a639e1e62374911d85e1d0.png","b60349291b7d31e9aa78b94aed0f6ce07171096f":"/packs/icon_grade-3ec67253b37908d2ab783f7225f20682.png","d80b4dd1135df4803cddc1c1f6646dd7fc601367":"/packs/icon_lock_open-0bfd71a52eb3f34934edd59088b559fb.png","3f2c7f54c1073569de3a7312fb9a055723f68898":"/packs/icon_person_add-e2c6b660f6e1c95785d8d2bfa7a823af.png","f7717ae34919e3c88a668b5d9426b5fdc868b0de":"/packs/icon_reply-4f6ada7a0b886b084706a484753a0ff0.png","ee2ae924bf02960749696f2c66890780ca321924":"/packs/logo_full-5c51cffe1fcb8225ae02400d6a7e7077.png","2a2ed7e6889f11e00656cb952d0704f762bf05ea":"/packs/logo_transparent-6f79eeb2c38ec2d12ed4d978322457d6.png","361cf83e570038228710feb587738d6b74308e26":"/packs/preview-9a17d32fc48369e8ccd910a75260e67d.jpg","735479ceb519ada5aee125ba574c85c215fd2ac5":"/packs/base_polyfills.js","f4c102539e1713d8b3166b4957ee2a9d7cbfe543":"/packs/extra_polyfills.js","6b26b5b4e14742528d39d5c69baa3e21290a1258":"/packs/features/compose.js","3be6f4f4c81ae89d477559f4ae3a05e2064ab253":"/packs/modals/onboarding_modal.js","97bbbd0fba777d7d88a4a5bc8e245a7a6861207b":"/packs/emoji_picker.js","10518b6f353d9f6ba2c087a578db2ce7d2d975e5":"/packs/features/notifications.js","d529e77e67b205a41653b0191e16c4149b19b0fb":"/packs/features/account_timeline.js","729c925434c0cb8469b14dd8ad42878e048c91a8":"/packs/features/home_timeline.js","f5f6d904e0cc0b6bb1f8ad0714f20bc5533260c8":"/packs/features/public_timeline.js","4ee3950929b78e2e124a0faeb8db637b554ff58c":"/packs/features/community_timeline.js","6898bb229e6adb6df5eab7ebecaa0461ef8511bb":"/packs/features/favourited_statuses.js","4cca8ac1df802d914c002e2cb048abfaebdc1530":"/packs/features/list_timeline.js","d60a1559a2a022c1a9065e461cbb498320f30e91":"/packs/features/following.js","4c82c4430bc97ac6ae0a85783486752761dd5ab1":"/packs/features/followers.js","0cb5916e1eb7c45a7977469f08fb5c4113a78b35":"/packs/features/hashtag_timeline.js","e72705aaa007fe13cd3890523a19ee2f434ff92f":"/packs/features/status.js","16e3593a7fac203b2b41b5a1a9d7d77b221bc734":"/packs/features/account_gallery.js","56f03533466a86db63b9dd6c9e8e1b56fd15cf05":"/packs/features/blocks.js","d7a2c3db0c8cf92e2da04b4724286d96d1117941":"/packs/features/follow_requests.js","a43b2a990a9e4618911789c92fa63b8b8ae3d051":"/packs/features/reblogs.js","f1903e506d49f6c6b504837f0da9d60a0e635b42":"/packs/features/favourites.js","882ded96f053bc32c1e4c26c879b8df0b4365c8a":"/packs/features/getting_started.js","6bf8d183c5e3943801bec1be6b9259eb6df83347":"/packs/features/keyboard_shortcuts.js","9cb7fa53486c69180fc05090fdade632406b3bb0":"/packs/features/generic_not_found.js","e59e196ac21bbf2ca727704d928fcda1ea275427":"/packs/features/list_editor.js","2c17d7d23aee17b52923f613267d055405502aea":"/packs/status/media_gallery.js","e473d2203f613d3551c830a8956e82cb4abe67c0":"/packs/share.js","5d59f1a727c67c9c54caf732fd9107b74a9d77fc":"/packs/application.js","f31b9062a584196a01aa23df62659eb7a311e80a":"/packs/about.js","baaaf139ce7f7c7b50798919d3ddd9b2b41a1c71":"/packs/public.js","e402078e69486c97d16e19a2350cad4d2ebacd4e":"/packs/locale_zh-TW.js","990045d7e496d7c20afa29b95bb57ce3a7233381":"/packs/locale_zh-HK.js","a351f524749530c54240a20b9d287f414ac1fc8f":"/packs/locale_zh-CN.js","a49b1cb687c9db73b917a9d927cafd1b1c3870ec":"/packs/locale_uk.js","1b34cb16a8c2d6eee4d4fc86dd2edd8a93c8a0a6":"/packs/locale_tr.js","cc1753b364aa7390dedc29504398e1fd8c23d8c6":"/packs/locale_th.js","8a22093161c324516acce1bd00c3ba5ac6c8b8f1":"/packs/locale_sv.js","08cb0789a22b4a4859ae4590a59fbbd4c628026e":"/packs/locale_sr.js","a3481ef4cecce5754d600e326c3dc33c12a0c001":"/packs/locale_sr-Latn.js","94531007d4da5d46a0a1dfb87149a05a35025133":"/packs/locale_sk.js","7cea8224e81b7f57c62aeed4f1ec4c16985ae879":"/packs/locale_ru.js","189eaf61b7a833d1222beae1fcf08660a97081bb":"/packs/locale_pt.js","3ed6633be74d664e812cf167d0b79237b346b8eb":"/packs/locale_pt-BR.js","b51a692a328af1eafe8433bf170da8aa963dbffa":"/packs/locale_pl.js","f95a47f22fe522ea9f19aea427eccdb92d668463":"/packs/locale_oc.js","f3a63e3a9b667af7b8aae6677cca9cd5fa544450":"/packs/locale_no.js","1617607a224891aca21dbd955f1d8d748073553c":"/packs/locale_nl.js","a678598ad80ef43bed05a11e60d6672489194d0f":"/packs/locale_ko.js","fa257a7b03017ad1976a1f6ea87df45cb5b2e6d5":"/packs/locale_ja.js","24efd78e64e34023d7fccc6ed6f9e4c9317f606d":"/packs/locale_it.js","eef1fb80c7e2d7d9d9a53fc2d2ab42c49e090973":"/packs/locale_io.js","668463bcf41ce8971dfc2e03b4760a5769608f9d":"/packs/locale_id.js","546038783532ad3a0a3d64c4f9fdec0fe274cb1b":"/packs/locale_hy.js","dcacf3d9c920b82b61e1c5c1e530b4cd89bf86d6":"/packs/locale_hu.js","e6ea9a0c39af19c23dd268dfa42d02f3ef6f5286":"/packs/locale_hr.js","d6f92ff2dc28b2b129db3b70a50916f429363d16":"/packs/locale_he.js","223fb275136e05f90330126a6c36a053c4105212":"/packs/locale_gl.js","da36e5346cec0627c1983cff4d6582ddfdea16d7":"/packs/locale_fr.js","5edfbae7843ae0deb08e842365e6b969c8e4319e":"/packs/locale_fi.js","3d548c85c7e290f736e69504a1380128c99b1527":"/packs/locale_fa.js","8eef75454b123fa84bcbd897bb0b76c8023b57c8":"/packs/locale_es.js","1b22c9a756bdf85cdf2cb24ce2bd957ab2016fcd":"/packs/locale_eo.js","76bf1c955e254301d6271e4a2d1b712d7544b2ef":"/packs/locale_en.js","36c9261b7bf3d23c4a7fe7da776a3f7c73f4cb24":"/packs/locale_de.js","37f324aeecf404d5a9054b8695680305a1e3dcc9":"/packs/locale_ca.js","60d0bb13db45157614defb53ea18733d1d2bfa02":"/packs/locale_bg.js","2002efc5f1696ad482041d03600eb8183fac5e77":"/packs/locale_ar.js","9c5b75dcad12d553d953dfa71e4a3913600ddd80":"/packs/mailer.js","bccfc356ca0d67eb35b045cd313996454ba2e9d5":"/packs/default.js","a216f9aa7a4fb009a2e0fccdb2d0e09b9c7e3368":"/packs/admin.js","d6f5c4c563cf631ce7f3285b3a62b66c217c80ae":"/packs/common.js","63d5949a7f9065ed25c771b22883444dc420be1d":"/packs/common.css","2a742852e4241f6de4f33884bf01731c08a3851d":"/packs/mailer.css","54d7becd9340e4e5137d8895d9e068ce7d463be7":"/packs/default.css","0663f076d7e4cce086fbebc8b2aa66d29e1123d9":"/packs/manifest.json"},"strategy":"changed","responseStrategy":"cache-first","version":"2018-4-2 18:30:13","name":"webpack-offline:mastodon","pluginVersion":"4.8.4","relativePaths":false};
+var __wpo = {"assets":{"main":["/packs/base_polyfills.js","/packs/extra_polyfills.js","/packs/features/compose.js","/packs/modals/onboarding_modal.js","/packs/emoji_picker.js","/packs/features/notifications.js","/packs/features/account_timeline.js","/packs/features/home_timeline.js","/packs/features/public_timeline.js","/packs/features/community_timeline.js","/packs/features/favourited_statuses.js","/packs/features/list_timeline.js","/packs/features/following.js","/packs/features/followers.js","/packs/features/hashtag_timeline.js","/packs/features/status.js","/packs/features/account_gallery.js","/packs/features/blocks.js","/packs/features/follow_requests.js","/packs/features/reblogs.js","/packs/features/favourites.js","/packs/features/getting_started.js","/packs/features/keyboard_shortcuts.js","/packs/features/generic_not_found.js","/packs/features/list_editor.js","/packs/status/media_gallery.js","/packs/share.js","/packs/application.js","/packs/about.js","/packs/public.js","/packs/mailer.js","/packs/default.js","/packs/admin.js","/packs/common.js","/packs/common.css","/packs/mailer.css","/packs/default.css","/packs/manifest.json"],"additional":["/emoji/1f602.svg","/emoji/sheet.png"],"optional":["/packs/locale_zh-TW.js","/packs/locale_zh-HK.js","/packs/locale_zh-CN.js","/packs/locale_uk.js","/packs/locale_tr.js","/packs/locale_th.js","/packs/locale_sv.js","/packs/locale_sr.js","/packs/locale_sr-Latn.js","/packs/locale_sk.js","/packs/locale_ru.js","/packs/locale_pt.js","/packs/locale_pt-BR.js","/packs/locale_pl.js","/packs/locale_oc.js","/packs/locale_no.js","/packs/locale_nl.js","/packs/locale_ko.js","/packs/locale_ja.js","/packs/locale_it.js","/packs/locale_io.js","/packs/locale_id.js","/packs/locale_hy.js","/packs/locale_hu.js","/packs/locale_hr.js","/packs/locale_he.js","/packs/locale_gl.js","/packs/locale_fr.js","/packs/locale_fi.js","/packs/locale_fa.js","/packs/locale_es.js","/packs/locale_eo.js","/packs/locale_en.js","/packs/locale_de.js","/packs/locale_ca.js","/packs/locale_bg.js","/packs/locale_ar.js","/packs/roboto-italic-webfont-50efdad8c62f5f279e3f4f1f63a4f9bc.woff2","/packs/roboto-bold-webfont-f633cb5c651ba4d50791e1adf55d3c18.woff2","/packs/roboto-medium-webfont-69c55fc2fe77d38934ea98dc31642ce6.woff2","/packs/roboto-regular-webfont-3ec24f953ed5e859a6402cb3c030ea8b.woff2","/packs/fontawesome-webfont-af7ae505a9eed503f8b8e6982036873e.woff2","/packs/robotomono-regular-webfont-6c1ce30b90ee993b22618ec489585594.woff2","/packs/Montserrat-Regular-080422d4c1328f3407818d25c86cce51.woff2","/packs/void-65dfe5bd31335a5b308d36964d320574.png","/packs/reticle-7d7ce959271e5ff1193fb32cff90ea56.png","/packs/elephant-fren-d16fd77f9a9387e7d146b5f9d4dc1e7f.png","/packs/icon_cached-98a757f1d9e93652742be43c22f46287.png","/packs/icon_done-12b87c12f915597dccbd2ca4d7167ba4.png","/packs/icon_email-738c89662d6640f5e6539151023d049a.png","/packs/icon_file_download-e5c29678f3a639e1e62374911d85e1d0.png","/packs/icon_grade-3ec67253b37908d2ab783f7225f20682.png","/packs/icon_lock_open-0bfd71a52eb3f34934edd59088b559fb.png","/packs/icon_person_add-e2c6b660f6e1c95785d8d2bfa7a823af.png","/packs/icon_reply-4f6ada7a0b886b084706a484753a0ff0.png","/packs/logo_full-5c51cffe1fcb8225ae02400d6a7e7077.png","/packs/logo_transparent-6f79eeb2c38ec2d12ed4d978322457d6.png","/packs/preview-9a17d32fc48369e8ccd910a75260e67d.jpg","/packs/elephant_ui_plane-e3f2d57c12c376e189c274cbe81af8dd.svg","/packs/elephant_ui_disappointed-8864342480c3612e3061702851d3a798.svg","/packs/elephant_ui_greeting-475430963d0b00fe82b07b17857ebf6c.svg","/packs/elephant_ui_working-2e653cc278c2ac871c23aeb10de1c0e2.svg","/packs/icon_cached-108e30d96e1d5152be7fe2978bcdfe14.svg","/packs/icon_done-dba357bfbba455428787fefc655ce120.svg","/packs/icon_email-1346985c7aaceb601b0d4257133254f4.svg","/packs/icon_file_download-4b5c054e76b0df3cbbc851854cd10c3c.svg","/packs/icon_grade-8e81b8e88c2b5834347a2a226c65d440.svg","/packs/icon_lock_open-c9627928caaaa505ac7de2a64bd065ec.svg","/packs/icon_person_add-5c56ef10b9e99e77a44d89041f4b77b5.svg","/packs/icon_reply-b5e28e1fe6acd4ec003e643e947f1c4a.svg","/packs/logo-fe5141d38a25f50068b4c69b77ca1ec8.svg","/packs/logo_alt-6090911445f54a587465e41da77a6969.svg","/packs/logo_full-96e7a97fe469f75a23a74852b2478fa3.svg","/packs/logo_transparent-6900bab180aa3a46c34425e5367a218f.svg"]},"externals":["/emoji/1f602.svg","/emoji/sheet.png"],"hashesMap":{"8aadd54157395376ea8c22827bde88e67f31358e":"/packs/roboto-italic-webfont-50efdad8c62f5f279e3f4f1f63a4f9bc.woff2","e2fc71044647b6edf7a3ba41429d5d626e63710a":"/packs/roboto-bold-webfont-f633cb5c651ba4d50791e1adf55d3c18.woff2","b66f9a200f8671202198f0238b4729e127bc0dac":"/packs/roboto-medium-webfont-69c55fc2fe77d38934ea98dc31642ce6.woff2","74f352b40a57789750d3c738c710a82cdb0f254a":"/packs/roboto-regular-webfont-3ec24f953ed5e859a6402cb3c030ea8b.woff2","d6f48cba7d076fb6f2fd6ba993a75b9dc1ecbf0c":"/packs/fontawesome-webfont-af7ae505a9eed503f8b8e6982036873e.woff2","1e149b7d5f1c5a5c4971cb523450118b1d50ed47":"/packs/robotomono-regular-webfont-6c1ce30b90ee993b22618ec489585594.woff2","c6aade94b414951dc75e41b6f30fc1fa93bf89fb":"/packs/Montserrat-Regular-080422d4c1328f3407818d25c86cce51.woff2","7e2065071fefe6d54f64b821bf575a0ab49b92c0":"/packs/void-65dfe5bd31335a5b308d36964d320574.png","f7e7808e34f32df8859ac9cef991858df4fc0bba":"/packs/reticle-7d7ce959271e5ff1193fb32cff90ea56.png","8523aa7b16b029770170cc12026e7c7d172d626d":"/packs/elephant_ui_plane-e3f2d57c12c376e189c274cbe81af8dd.svg","027d2ab934afd67b404426234750c08b516ec223":"/packs/elephant-fren-d16fd77f9a9387e7d146b5f9d4dc1e7f.png","2523b7002bda93c12af3b4b7f4d7a35fd52faf41":"/packs/elephant_ui_disappointed-8864342480c3612e3061702851d3a798.svg","2dace1e38e0d159660c56d838ad2ce22c0184661":"/packs/elephant_ui_greeting-475430963d0b00fe82b07b17857ebf6c.svg","42a8fc2f0526540979583534ec331a2d28d2575e":"/packs/elephant_ui_working-2e653cc278c2ac871c23aeb10de1c0e2.svg","22fac75a796b2bd2c6872cbd8d14bd325b00bb64":"/packs/icon_cached-108e30d96e1d5152be7fe2978bcdfe14.svg","e9cea6fd6e8034f60e0358a15956490831c66b03":"/packs/icon_done-dba357bfbba455428787fefc655ce120.svg","17604ec5d343bc1aee070a2197dae8fd78bdccef":"/packs/icon_email-1346985c7aaceb601b0d4257133254f4.svg","e4a88b85b09c072041e89acaa22ec362ece97f27":"/packs/icon_file_download-4b5c054e76b0df3cbbc851854cd10c3c.svg","75a26256446662fb331fd42b9849dfff235364d5":"/packs/icon_grade-8e81b8e88c2b5834347a2a226c65d440.svg","7a534f4811adb70a796a285fb70b93c87a9f4b94":"/packs/icon_lock_open-c9627928caaaa505ac7de2a64bd065ec.svg","08ef53f9228b3d24f2801ba942fc842599c39e34":"/packs/icon_person_add-5c56ef10b9e99e77a44d89041f4b77b5.svg","ad9a0479341f3a93a83c7cadab091569e459076c":"/packs/icon_reply-b5e28e1fe6acd4ec003e643e947f1c4a.svg","aa75bce521938954706802c15e393ea05663e5e0":"/packs/logo-fe5141d38a25f50068b4c69b77ca1ec8.svg","f573db9e5698b7a3541880875c3ce88fe03ebee2":"/packs/logo_alt-6090911445f54a587465e41da77a6969.svg","3b339fcffc64574bca7cd2521e25bfbea8c3cbbf":"/packs/logo_full-96e7a97fe469f75a23a74852b2478fa3.svg","12520e03b958c73d94a1f19644ca4d0b79c6505d":"/packs/logo_transparent-6900bab180aa3a46c34425e5367a218f.svg","dc0b5a8d2d7e67f84d37635137610c6c6d937058":"/packs/icon_cached-98a757f1d9e93652742be43c22f46287.png","58f810df15baa9109f9db7f800e31c0d011e6f0d":"/packs/icon_done-12b87c12f915597dccbd2ca4d7167ba4.png","828ed8086eacb6622609e9992950998ce0a1579b":"/packs/icon_email-738c89662d6640f5e6539151023d049a.png","c60492c5ceea92a0acb138f20e0a33dd1e553f6b":"/packs/icon_file_download-e5c29678f3a639e1e62374911d85e1d0.png","b60349291b7d31e9aa78b94aed0f6ce07171096f":"/packs/icon_grade-3ec67253b37908d2ab783f7225f20682.png","d80b4dd1135df4803cddc1c1f6646dd7fc601367":"/packs/icon_lock_open-0bfd71a52eb3f34934edd59088b559fb.png","3f2c7f54c1073569de3a7312fb9a055723f68898":"/packs/icon_person_add-e2c6b660f6e1c95785d8d2bfa7a823af.png","f7717ae34919e3c88a668b5d9426b5fdc868b0de":"/packs/icon_reply-4f6ada7a0b886b084706a484753a0ff0.png","ee2ae924bf02960749696f2c66890780ca321924":"/packs/logo_full-5c51cffe1fcb8225ae02400d6a7e7077.png","2a2ed7e6889f11e00656cb952d0704f762bf05ea":"/packs/logo_transparent-6f79eeb2c38ec2d12ed4d978322457d6.png","361cf83e570038228710feb587738d6b74308e26":"/packs/preview-9a17d32fc48369e8ccd910a75260e67d.jpg","735479ceb519ada5aee125ba574c85c215fd2ac5":"/packs/base_polyfills.js","f4c102539e1713d8b3166b4957ee2a9d7cbfe543":"/packs/extra_polyfills.js","0619155baee96c839dbbbacd2a63ae2463005870":"/packs/features/compose.js","022719dc969fcd2d0fc7abd14c87d5d94f315ba1":"/packs/modals/onboarding_modal.js","1bd655d9e756f344fed6484b0b3a3382d5c97ccf":"/packs/emoji_picker.js","6a477d999ebfa7fb3598d27ded02c5f1f0512131":"/packs/features/notifications.js","7daa9ca25ab996b360a752cf3d3930a96378de0d":"/packs/features/account_timeline.js","b68df54023e0e818308c25c68ff8c2be771ad31c":"/packs/features/home_timeline.js","ed233ebaa66bb920b67c014c180854008abef292":"/packs/features/public_timeline.js","dcb64cd7cfd3e66b62f9fcb8c878e57aefa3b9ea":"/packs/features/community_timeline.js","eab5f8f94d54b18b1112f6a8f66e03121fceb763":"/packs/features/favourited_statuses.js","d24c6781d180e5f99d4e863f291c8324e0aa3a95":"/packs/features/list_timeline.js","1ad1d2af452319c50b1fb9fa2b24620da38d05f9":"/packs/features/following.js","b09dc2f491db5ad04995567b53f6960bb48b96f0":"/packs/features/followers.js","75a2d3da6ef7094eb3e5e0e38f0c90c218728c13":"/packs/features/hashtag_timeline.js","ca99ad4c9909df104d67349354613825d75ae86c":"/packs/features/status.js","caac30043dcdf1a6306d0d3d552ff945f1866d06":"/packs/features/account_gallery.js","217d498a09a1b74be617f450556f7a863f64a5d4":"/packs/features/blocks.js","a7071a9dd0a4b3d28eb3a93fc46824f9fe0db92d":"/packs/features/follow_requests.js","54a2ef93c18d05b0ad83d1db5344fde3098dedb6":"/packs/features/reblogs.js","a7cd9d438011d2b0a70c58b43d82ffe7730fadc3":"/packs/features/favourites.js","2393a92c92405baaf7c2a704628d38b4b5bed6a9":"/packs/features/getting_started.js","2b96a5605decc8afb10f27b835a60ef378c7c174":"/packs/features/keyboard_shortcuts.js","72b687375078d067ee6017346071ff47e5ba2c8e":"/packs/features/generic_not_found.js","a5174c73cdc9bb2b233091facee91a45b050a675":"/packs/features/list_editor.js","dd563d722f095cd947336c7a825a7c32aebe70da":"/packs/status/media_gallery.js","11df6eaf27e374945cf1bc3b4d6e38f5d1bea493":"/packs/share.js","391a9718742bc7b1c8479917aa5646ad58862111":"/packs/application.js","5687f202d626db2de4805ee06433ffe9b3d8d837":"/packs/about.js","2bdb3b6aa0b8a4cb6bf39112a0ed0304565d144e":"/packs/public.js","e402078e69486c97d16e19a2350cad4d2ebacd4e":"/packs/locale_zh-TW.js","990045d7e496d7c20afa29b95bb57ce3a7233381":"/packs/locale_zh-HK.js","a351f524749530c54240a20b9d287f414ac1fc8f":"/packs/locale_zh-CN.js","a49b1cb687c9db73b917a9d927cafd1b1c3870ec":"/packs/locale_uk.js","1b34cb16a8c2d6eee4d4fc86dd2edd8a93c8a0a6":"/packs/locale_tr.js","cc1753b364aa7390dedc29504398e1fd8c23d8c6":"/packs/locale_th.js","8a22093161c324516acce1bd00c3ba5ac6c8b8f1":"/packs/locale_sv.js","08cb0789a22b4a4859ae4590a59fbbd4c628026e":"/packs/locale_sr.js","a3481ef4cecce5754d600e326c3dc33c12a0c001":"/packs/locale_sr-Latn.js","94531007d4da5d46a0a1dfb87149a05a35025133":"/packs/locale_sk.js","7cea8224e81b7f57c62aeed4f1ec4c16985ae879":"/packs/locale_ru.js","31742ca10beca0986706f8147b6812e5a8a65587":"/packs/locale_pt.js","1deddd8fbe1ad64985ae923bb26a6ad3277237e0":"/packs/locale_pt-BR.js","99b9cb373814bd1906deca5f5943e3b4511ab8b9":"/packs/locale_pl.js","f95a47f22fe522ea9f19aea427eccdb92d668463":"/packs/locale_oc.js","f3a63e3a9b667af7b8aae6677cca9cd5fa544450":"/packs/locale_no.js","1617607a224891aca21dbd955f1d8d748073553c":"/packs/locale_nl.js","a678598ad80ef43bed05a11e60d6672489194d0f":"/packs/locale_ko.js","fa257a7b03017ad1976a1f6ea87df45cb5b2e6d5":"/packs/locale_ja.js","24efd78e64e34023d7fccc6ed6f9e4c9317f606d":"/packs/locale_it.js","eef1fb80c7e2d7d9d9a53fc2d2ab42c49e090973":"/packs/locale_io.js","668463bcf41ce8971dfc2e03b4760a5769608f9d":"/packs/locale_id.js","546038783532ad3a0a3d64c4f9fdec0fe274cb1b":"/packs/locale_hy.js","dcacf3d9c920b82b61e1c5c1e530b4cd89bf86d6":"/packs/locale_hu.js","e6ea9a0c39af19c23dd268dfa42d02f3ef6f5286":"/packs/locale_hr.js","d6f92ff2dc28b2b129db3b70a50916f429363d16":"/packs/locale_he.js","223fb275136e05f90330126a6c36a053c4105212":"/packs/locale_gl.js","da36e5346cec0627c1983cff4d6582ddfdea16d7":"/packs/locale_fr.js","5edfbae7843ae0deb08e842365e6b969c8e4319e":"/packs/locale_fi.js","3d548c85c7e290f736e69504a1380128c99b1527":"/packs/locale_fa.js","8eef75454b123fa84bcbd897bb0b76c8023b57c8":"/packs/locale_es.js","1b22c9a756bdf85cdf2cb24ce2bd957ab2016fcd":"/packs/locale_eo.js","3e39224e5d5c8d48814da3b2162cb97633eafc8e":"/packs/locale_en.js","36c9261b7bf3d23c4a7fe7da776a3f7c73f4cb24":"/packs/locale_de.js","37f324aeecf404d5a9054b8695680305a1e3dcc9":"/packs/locale_ca.js","60d0bb13db45157614defb53ea18733d1d2bfa02":"/packs/locale_bg.js","2002efc5f1696ad482041d03600eb8183fac5e77":"/packs/locale_ar.js","9c5b75dcad12d553d953dfa71e4a3913600ddd80":"/packs/mailer.js","bccfc356ca0d67eb35b045cd313996454ba2e9d5":"/packs/default.js","e7feae220ce18e61722b91ad5029d2c54223c763":"/packs/admin.js","7680c10c61a2991488e790b5203fd431ba9d441d":"/packs/common.js","63d5949a7f9065ed25c771b22883444dc420be1d":"/packs/common.css","2a742852e4241f6de4f33884bf01731c08a3851d":"/packs/mailer.css","b8572eff2c2faa1fff7b2a823b7b8f2b8e0e3b14":"/packs/default.css","0663f076d7e4cce086fbebc8b2aa66d29e1123d9":"/packs/manifest.json"},"strategy":"changed","responseStrategy":"cache-first","version":"2018-4-9 21:57:37","name":"webpack-offline:mastodon","pluginVersion":"4.8.4","relativePaths":false};
 
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -773,11 +773,13 @@ cacheMaps: [],
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__web_push_notifications__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__web_push_notifications___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__web_push_notifications__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__storage_modifier__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__web_push_notifications__ = __webpack_require__(4);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__web_push_notifications___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__web_push_notifications__);
 /*** IMPORTS FROM imports-loader ***/
 var process = (process || {});
-process.env = {"GJS_DEBUG_TOPICS":"JS ERROR;JS LOG","npm_config_cache_lock_stale":"60000","npm_config_ham_it_up":"","npm_package_dependencies_mark_loader":"^0.1.6","npm_config_legacy_bundling":"","npm_config_sign_git_tag":"","USER":"howl","LANGUAGE":"en_GB:en","npm_package_dependencies_autoprefixer":"^7.1.6","npm_package_dependencies_mkdirp":"^0.5.1","npm_package_dependencies_node_sass":"^4.7.2","npm_package_devDependencies_jest":"^21.2.1","npm_config_user_agent":"npm/5.6.0 node/v9.10.1 linux x64","npm_config_always_auth":"","COMP_WORDBREAKS":" \t\n\"'><;|&(:","XDG_SEAT":"seat0","npm_package_dependencies_detect_passive_events":"^1.0.2","npm_package_dependencies_immutable":"^3.8.2","npm_package_bugs_url":"https://github.com/tootsuite/mastodon/issues","npm_config_bin_links":"true","npm_config_key":"","SSH_AGENT_PID":"1448","XDG_SESSION_TYPE":"x11","npm_package_dependencies_react_overlays":"^0.8.3","npm_config_allow_same_version":"","npm_config_description":"true","npm_config_fetch_retries":"2","npm_config_heading":"npm","npm_config_if_present":"","npm_config_init_version":"1.0.0","npm_config_user":"","npm_node_execpath":"/usr/bin/node","LD_LIBRARY_PATH":"/home/howl/torch-cl/install/lib:/home/howl/torch-cl/install/lib:","LUA_PATH":"/home/howl/.luarocks/share/lua/5.1/?.lua;/home/howl/.luarocks/share/lua/5.1/?/init.lua;/home/howl/torch-cl/install/share/lua/5.1/?.lua;/home/howl/torch-cl/install/share/lua/5.1/?/init.lua;./?.lua;/home/howl/torch-cl/install/share/luajit-2.1.0-beta1/?.lua;/usr/local/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?/init.lua","SHLVL":"2","npm_package_scripts_manage_translations":"node ./config/webpack/translationRunner.js","npm_package_dependencies_babel_plugin_transform_class_properties":"^6.24.1","npm_package_dependencies_babel_plugin_transform_es2015_modules_commonjs":"^6.24.1","npm_package_dependencies_escape_html":"^1.0.3","npm_package_dependencies_imports_loader":"^0.8.0","npm_package_optionalDependencies_node_zopfli":"^2.0.2","npm_config_prefer_online":"","OLDPWD":"/home/howl/oc/mastofe/public","HOME":"/home/howl","npm_package_dependencies_postcss_loader":"^2.0.9","npm_config_force":"","OSU_API_KEY":"e0146ddaf01d1e9d107afedcd340b42347186260","DESKTOP_SESSION":"cinnamon","npm_package_dependencies_react_redux_loading_bar":"^2.9.3","npm_package_dependencies_redis":"^2.7.1","npm_config_only":"","npm_config_read_only":"","GIO_LAUNCHED_DESKTOP_FILE":"/usr/share/applications/xfce4-terminal.desktop","npm_package_engines_node":">=6","npm_package_dependencies_babel_plugin_react_intl":"^2.3.1","npm_package_dependencies_npmlog":"^4.1.2","npm_package_devDependencies_enzyme_adapter_react_16":"^1.1.0","npm_config_cache_min":"10","npm_config_init_license":"ISC","GTK_MODULES":"gail:atk-bridge","XDG_SEAT_PATH":"/org/freedesktop/DisplayManager/Seat0","npm_package_scripts_build_production":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","npm_package_dependencies_glob":"^7.1.1","npm_package_dependencies_webpack_merge":"^4.1.1","npm_config_editor":"vi","npm_config_rollback":"true","npm_config_tag_version_prefix":"v","OSU_PASSWORD":"il mio cane gioca meglio di me","npm_package_dependencies_redux_thunk":"^2.2.0","npm_package_dependencies_webpack":"^3.9.1","npm_config_cache_max":"Infinity","npm_config_timing":"","npm_config_userconfig":"/home/howl/.npmrc","DBUS_SESSION_BUS_ADDRESS":"unix:path=/run/user/1000/bus","CINNAMON_VERSION":"3.6.7","npm_package_dependencies_babel_plugin_lodash":"^3.3.2","npm_package_dependencies_dotenv":"^4.0.0","npm_package_dependencies_precss":"^2.0.0","npm_package_dependencies_react_hotkeys":"^0.10.0","npm_config_engine_strict":"","npm_config_init_author_name":"","npm_config_init_author_url":"","npm_config_tmp":"/tmp","COLORTERM":"truecolor","GIO_LAUNCHED_DESKTOP_FILE_PID":"4122","npm_package_description":"mastodon","npm_package_dependencies_react_router_dom":"^4.1.1","npm_config_depth":"Infinity","npm_config_package_lock_only":"","npm_config_save_dev":"","npm_config_usage":"","npm_package_scripts_test_jest":"cross-env NODE_ENV=test jest --coverage","npm_package_dependencies_throng":"^4.0.0","npm_package_devDependencies_react_intl_translations_manager":"^5.0.0","npm_package_readmeFilename":"README.md","npm_package_homepage":"https://github.com/tootsuite/mastodon#readme","npm_config_metrics_registry":"https://registry.npmjs.org/","npm_config_cafile":"","npm_config_otp":"","npm_config_package_lock":"true","npm_config_progress":"true","npm_config_https_proxy":"","npm_config_save_prod":"","QT_QPA_PLATFORMTHEME":"gtk2","npm_package_scripts_dev":"cross-env NODE_ENV=development webpack-dev-server --config config/webpack/development.js --progress --color","npm_package_scripts_test_lint":"eslint -c .eslintrc.yml --ext=js app/javascript/ config/webpack/ streaming/","npm_package_dependencies_babel_plugin_transform_react_remove_prop_types":"^0.4.10","npm_package_dependencies_websocket_js":"^0.1.12","npm_config_cidr":"","npm_config_onload_script":"","npm_config_sso_type":"oauth","LOGNAME":"howl","npm_package_dependencies_babel_plugin_syntax_dynamic_import":"^6.18.0","npm_package_dependencies_hammerjs":"^2.0.8","npm_package_dependencies_rails_ujs":"^5.1.2","npm_package_dependencies_react_immutable_pure_component":"^1.1.1","npm_package_dependencies_react_motion":"^0.5.2","npm_package_dependencies_reselect":"^3.0.1","npm_package_devDependencies_eslint_plugin_import":"^2.8.0","npm_config_rebuild_bundle":"true","npm_config_save_bundle":"","npm_config_shell":"/bin/bash","WINDOWID":"85983235","_":"./build.sh","npm_package_private":"true","npm_package_dependencies_express":"^4.16.2","npm_package_dependencies_react_notification":"^6.8.2","npm_package_dependencies_sass_loader":"^6.0.6","npm_config_dry_run":"","npm_config_prefix":"/usr","npm_config_scope":"","npm_config_browser":"","npm_config_cache_lock_wait":"10000","npm_config_ignore_prepublish":"","npm_config_registry":"https://registry.npmjs.org/","npm_config_save_optional":"","npm_config_searchopts":"","npm_config_versions":"","GTK_OVERLAY_SCROLLING":"0","XDG_SESSION_ID":"2","TERM":"xterm-256color","npm_package_dependencies_font_awesome":"^4.7.0","npm_package_dependencies_postcss_object_fit_images":"^1.1.2","npm_package_dependencies_react_immutable_proptypes":"^2.1.0","npm_package_dependencies_style_loader":"^0.19.0","npm_package_dependencies_uws":"^8.14.0","npm_package_optionalDependencies_fsevents":"*","npm_config_cache":"/home/howl/.npm","npm_config_proxy":"","npm_config_send_metrics":"","GNOME_DESKTOP_SESSION_ID":"this-is-deprecated","npm_package_scripts_start":"node ./streaming/index.js","npm_config_global_style":"","npm_config_ignore_scripts":"","npm_config_version":"","npm_package_dependencies_axios":"~0.16.2","npm_package_dependencies_css_loader":"^0.28.4","npm_package_dependencies_marky":"^1.2.0","npm_config_local_address":"","npm_config_viewer":"man","npm_config_node_gyp":"/usr/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js","PATH":"/usr/lib/node_modules/npm/node_modules/npm-lifecycle/node-gyp-bin:/home/howl/oc/mastofe/node_modules/.bin:/home/howl/torch-cl/install/bin:/home/howl/go/bin:/home/howl/bin:/home/howl/torch-cl/install/bin:/home/howl/go/bin:/home/howl/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games","SESSION_MANAGER":"local/pluto:@/tmp/.ICE-unix/1417,unix/pluto:/tmp/.ICE-unix/1417","npm_package_name":"mastodon","npm_package_repository_type":"git","npm_package_dependencies_babel_preset_env":"^1.6.1","npm_package_dependencies_cross_env":"^5.1.1","npm_package_dependencies_extract_text_webpack_plugin":"^3.0.2","npm_package_dependencies_substring_trie":"^1.0.2","npm_config_prefer_offline":"","NODE":"/usr/bin/node","XDG_RUNTIME_DIR":"/run/user/1000","XDG_SESSION_PATH":"/org/freedesktop/DisplayManager/Session0","npm_package_dependencies_babel_plugin_transform_runtime":"^6.23.0","npm_package_dependencies_react_redux":"^5.0.4","npm_package_dependencies_tiny_queue":"^0.2.1","npm_package_devDependencies_eslint_plugin_jsx_a11y":"^5.1.1","npm_config_color":"true","DISPLAY":":0","npm_package_scripts_build_development":"cross-env NODE_ENV=development webpack --config config/webpack/development.js","npm_package_dependencies_npm_run_all":"^4.1.2","npm_package_dependencies_stringz":"^0.3.0","npm_config_fetch_retry_mintimeout":"10000","npm_config_maxsockets":"50","npm_config_offline":"","npm_config_sso_poll_frequency":"500","LANG":"en_GB.UTF-8","XDG_CURRENT_DESKTOP":"X-Cinnamon","npm_package_dependencies_babel_plugin_transform_react_inline_elements":"^6.22.0","npm_package_dependencies_babel_preset_react":"^6.24.1","npm_package_dependencies_object_assign":"^4.1.1","npm_package_dependencies_react_dom":"^16.2.0","npm_package_dependencies_react_textarea_autosize":"^5.2.1","npm_package_dependencies_redux":"^3.7.1","npm_package_devDependencies_eslint":"^4.15.0","npm_package_devDependencies_react_test_renderer":"^16.2.0","npm_config_umask":"0022","LS_COLORS":"rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:","XDG_SESSION_DESKTOP":"cinnamon","XAUTHORITY":"/home/howl/.Xauthority","npm_package_dependencies_babel_plugin_transform_object_rest_spread":"^6.23.0","npm_package_dependencies_offline_plugin":"^4.8.3","npm_package_dependencies_path_complete_extname":"^0.1.0","npm_package_dependencies_postcss_smart_import":"^0.7.5","npm_package_dependencies_node_zopfli":"^2.0.2","npm_package_gitHead":"5edce2030238293463c041537da4aaeea5cb3875","npm_config_fetch_retry_maxtimeout":"60000","npm_config_loglevel":"notice","npm_config_logs_max":"10","npm_config_message":"%s","npm_lifecycle_script":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","SSH_AUTH_SOCK":"/run/user/1000/keyring/ssh","XDG_GREETER_DATA_DIR":"/var/lib/lightdm/data/howl","npm_package_scripts_postversion":"git push --tags","npm_package_scripts_test":"npm-run-all test:lint test:jest","npm_package_dependencies_babel_core":"^6.25.0","npm_package_dependencies_babel_plugin_preval":"^1.6.1","npm_package_dependencies_http_link_header":"^0.8.0","npm_package_dependencies_intersection_observer":"^0.5.0","npm_package_dependencies_is_nan":"^1.2.1","npm_package_dependencies_react_intl":"^2.4.0","npm_package_dependencies_react_router_scroll_4":"^1.0.0-beta.1","npm_package_dependencies_react_swipeable_views":"^0.12.3","npm_package_dependencies_redux_immutable":"^4.0.0","npm_package_devDependencies_webpack_dev_server":"^2.9.5","npm_config_ca":"","npm_config_cert":"","npm_config_global":"","npm_config_link":"","SHELL":"/bin/bash","npm_package_repository_url":"git+https://github.com/tootsuite/mastodon.git","npm_package_dependencies_webpack_bundle_analyzer":"^2.9.1","npm_package_version":"","npm_config_access":"","npm_config_also":"","npm_config_save":"true","npm_config_unicode":"true","npm_lifecycle_event":"build","QT_ACCESSIBILITY":"1","GDMSESSION":"cinnamon","npm_package_scripts_build":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","npm_package_dependencies_emoji_mart":"github:Gargron/emoji-mart#build","npm_package_dependencies_intl":"^1.2.5","npm_package_dependencies_js_yaml":"^3.9.0","npm_package_dependencies_uuid":"^3.1.0","npm_config_argv":"{\"remain\":[],\"cooked\":[\"run\",\"build\"],\"original\":[\"run\",\"build\"]}","npm_config_long":"","npm_config_production":"","npm_config_searchlimit":"20","npm_config_unsafe_perm":"true","npm_package_dependencies_array_includes":"^3.0.3","npm_package_dependencies_babel_plugin_transform_react_jsx_source":"^6.22.0","npm_package_dependencies_compression_webpack_plugin":"^1.0.1","npm_package_dependencies_file_loader":"^0.11.2","npm_package_dependencies_lodash":"^4.17.4","npm_config_auth_type":"legacy","npm_config_node_version":"9.10.1","npm_config_tag":"latest","OSU_USERNAME":"howl","npm_config_git_tag_version":"true","npm_config_commit_hooks":"true","npm_config_script_shell":"","npm_config_shrinkwrap":"true","GJS_DEBUG_OUTPUT":"stderr","GPG_AGENT_INFO":"/run/user/1000/gnupg/S.gpg-agent:0:1","npm_package_license":"AGPL-3.0-or-later","npm_package_dependencies_classnames":"^2.2.5","npm_package_dependencies_es6_symbol":"^3.1.1","npm_package_dependencies_intl_messageformat":"^2.2.0","npm_package_dependencies_punycode":"^2.1.0","npm_package_devDependencies_eslint_plugin_react":"^7.5.1","npm_config_fetch_retry_factor":"10","npm_config_save_exact":"","npm_config_strict_ssl":"true","XDG_VTNR":"7","npm_package_dependencies_babel_plugin_transform_react_jsx_self":"^6.22.0","npm_config_dev":"","npm_config_globalconfig":"/usr/etc/npmrc","npm_config_init_module":"/home/howl/.npm-init.js","npm_config_parseable":"","LUA_CPATH":"/home/howl/torch-cl/install/lib/?.so;/home/howl/.luarocks/lib/lua/5.1/?.so;/home/howl/torch-cl/install/lib/lua/5.1/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so","PWD":"/home/howl/oc/mastofe","npm_package_dependencies_intl_relativeformat":"^2.1.0","npm_package_dependencies_requestidlecallback":"^0.3.0","npm_package_dependencies_webpack_manifest_plugin":"^1.2.1","npm_package_devDependencies_enzyme":"^3.2.0","npm_package_devDependencies_raf":"^3.4.0","npm_config_globalignorefile":"/usr/etc/npmignore","npm_execpath":"/usr/lib/node_modules/npm/bin/npm-cli.js","DYLD_LIBRARY_PATH":"/home/howl/torch-cl/install/lib:/home/howl/torch-cl/install/lib:","XDG_DATA_DIRS":"/usr/share/gnome:/home/howl/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share","npm_package_dependencies_react_toggle":"^4.0.1","npm_config_cache_lock_retries":"10","npm_config_searchstaleness":"900","npm_package_dependencies_object_values":"^1.0.4","npm_package_dependencies_prop_types":"^15.5.10","npm_package_dependencies_resolve_url_loader":"^2.2.0","npm_package_dependencies_rimraf":"^2.6.1","npm_config_node_options":"","npm_config_save_prefix":"^","npm_config_scripts_prepend_node_path":"warn-only","npm_package_devDependencies_babel_eslint":"^8.2.1","npm_package_devDependencies_yargs":"^8.0.2","npm_config_group":"1000","npm_config_init_author_email":"","npm_config_searchexclude":"","VTE_VERSION":"5200","npm_package_dependencies_babel_loader":"^7.1.1","npm_package_dependencies_object_fit_images":"^3.2.3","npm_package_devDependencies_eslint_plugin_promise":"^3.7.0","npm_config_git":"git","npm_config_optional":"true","npm_package_dependencies_babel_plugin_transform_decorators_legacy":"^1.3.4","npm_package_dependencies_pg":"^6.4.0","npm_package_dependencies_react":"^16.2.0","npm_package_dependencies_fsevents":"*","npm_config_json":"","INIT_CWD":"/home/howl/oc/mastofe","NODE_ENV":"production"};
+process.env = {"npm_config_cache_lock_stale":"60000","npm_config_ham_it_up":"","npm_package_dependencies_mark_loader":"^0.1.6","npm_config_legacy_bundling":"","npm_config_sign_git_tag":"","npm_package_dependencies_autoprefixer":"^7.1.6","npm_package_dependencies_mkdirp":"^0.5.1","npm_package_dependencies_node_sass":"^4.7.2","npm_package_devDependencies_jest":"^21.2.1","npm_config_user_agent":"npm/5.6.0 node/v9.11.1 linux x64","npm_config_always_auth":"","npm_package_dependencies_detect_passive_events":"^1.0.2","npm_package_dependencies_immutable":"^3.8.2","npm_package_bugs_url":"https://github.com/tootsuite/mastodon/issues","npm_config_bin_links":"true","npm_config_key":"","npm_package_dependencies_react_overlays":"^0.8.3","npm_config_allow_same_version":"","npm_config_description":"true","npm_config_fetch_retries":"2","npm_config_heading":"npm","npm_config_if_present":"","npm_config_init_version":"1.0.0","npm_config_user":"","npm_node_execpath":"/usr/bin/node","npm_package_scripts_manage_translations":"node ./config/webpack/translationRunner.js","npm_package_dependencies_babel_plugin_transform_class_properties":"^6.24.1","npm_package_dependencies_babel_plugin_transform_es2015_modules_commonjs":"^6.24.1","npm_package_dependencies_escape_html":"^1.0.3","npm_package_dependencies_imports_loader":"^0.8.0","npm_package_optionalDependencies_node_zopfli":"^2.0.2","npm_config_prefer_online":"","HOME":"/home/howl","npm_package_dependencies_postcss_loader":"^2.0.9","npm_config_force":"","npm_package_dependencies_react_redux_loading_bar":"^2.9.3","npm_package_dependencies_redis":"^2.7.1","npm_config_only":"","npm_config_read_only":"","npm_package_engines_node":">=6","npm_package_dependencies_babel_plugin_react_intl":"^2.3.1","npm_package_dependencies_npmlog":"^4.1.2","npm_package_devDependencies_enzyme_adapter_react_16":"^1.1.0","npm_config_cache_min":"10","npm_config_init_license":"ISC","npm_package_scripts_build_production":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","npm_package_dependencies_glob":"^7.1.1","npm_package_dependencies_webpack_merge":"^4.1.1","npm_config_editor":"vi","npm_config_rollback":"true","npm_config_tag_version_prefix":"v","npm_package_dependencies_redux_thunk":"^2.2.0","npm_package_dependencies_webpack":"^3.9.1","npm_config_cache_max":"Infinity","npm_config_timing":"","npm_config_userconfig":"/home/howl/.npmrc","npm_package_dependencies_babel_plugin_lodash":"^3.3.2","npm_package_dependencies_dotenv":"^4.0.0","npm_package_dependencies_precss":"^2.0.0","npm_package_dependencies_react_hotkeys":"^0.10.0","npm_config_engine_strict":"","npm_config_init_author_name":"","npm_config_init_author_url":"","npm_config_tmp":"/tmp","npm_package_description":"mastodon","npm_package_dependencies_react_router_dom":"^4.1.1","npm_config_depth":"Infinity","npm_config_package_lock_only":"","npm_config_save_dev":"","npm_config_usage":"","npm_package_scripts_test_jest":"cross-env NODE_ENV=test jest --coverage","npm_package_dependencies_throng":"^4.0.0","npm_package_devDependencies_react_intl_translations_manager":"^5.0.0","npm_package_readmeFilename":"README.md","npm_package_homepage":"https://github.com/tootsuite/mastodon#readme","npm_config_metrics_registry":"https://registry.npmjs.org/","npm_config_cafile":"","npm_config_otp":"","npm_config_package_lock":"true","npm_config_progress":"true","npm_config_https_proxy":"","npm_config_save_prod":"","npm_package_scripts_dev":"cross-env NODE_ENV=development webpack-dev-server --config config/webpack/development.js --progress --color","npm_package_scripts_test_lint":"eslint -c .eslintrc.yml --ext=js app/javascript/ config/webpack/ streaming/","npm_package_dependencies_babel_plugin_transform_react_remove_prop_types":"^0.4.10","npm_package_dependencies_websocket_js":"^0.1.12","npm_config_cidr":"","npm_config_onload_script":"","npm_config_sso_type":"oauth","npm_package_dependencies_babel_plugin_syntax_dynamic_import":"^6.18.0","npm_package_dependencies_rails_ujs":"^5.1.2","npm_package_dependencies_react_immutable_pure_component":"^1.1.1","npm_package_dependencies_react_motion":"^0.5.2","npm_package_dependencies_reselect":"^3.0.1","npm_package_devDependencies_eslint_plugin_import":"^2.8.0","npm_config_rebuild_bundle":"true","npm_config_save_bundle":"","npm_config_shell":"bash","npm_package_private":"true","npm_package_dependencies_express":"^4.16.2","npm_package_dependencies_react_notification":"^6.8.2","npm_package_dependencies_sass_loader":"^6.0.6","npm_config_dry_run":"","npm_config_prefix":"/usr","npm_config_scope":"","npm_config_browser":"","npm_config_cache_lock_wait":"10000","npm_config_ignore_prepublish":"","npm_config_registry":"https://registry.npmjs.org/","npm_config_save_optional":"","npm_config_searchopts":"","npm_config_versions":"","npm_package_dependencies_font_awesome":"^4.7.0","npm_package_dependencies_postcss_object_fit_images":"^1.1.2","npm_package_dependencies_react_immutable_proptypes":"^2.1.0","npm_package_dependencies_style_loader":"^0.19.0","npm_package_dependencies_uws":"^8.14.0","npm_package_optionalDependencies_fsevents":"*","npm_config_cache":"/home/howl/.npm","npm_config_proxy":"","npm_config_send_metrics":"","npm_package_scripts_start":"node ./streaming/index.js","npm_config_global_style":"","npm_config_ignore_scripts":"","npm_config_version":"","npm_package_dependencies_axios":"~0.16.2","npm_package_dependencies_css_loader":"^0.28.4","npm_package_dependencies_marky":"^1.2.0","npm_config_local_address":"","npm_config_viewer":"man","npm_config_node_gyp":"/usr/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js","PATH":"/usr/lib/node_modules/npm/node_modules/npm-lifecycle/node-gyp-bin:/home/howl/oc/mastofe/node_modules/.bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games","npm_package_name":"mastodon","npm_package_repository_type":"git","npm_package_dependencies_babel_preset_env":"^1.6.1","npm_package_dependencies_cross_env":"^5.1.1","npm_package_dependencies_extract_text_webpack_plugin":"^3.0.2","npm_package_dependencies_substring_trie":"^1.0.2","npm_config_prefer_offline":"","NODE":"/usr/bin/node","npm_package_dependencies_babel_plugin_transform_runtime":"^6.23.0","npm_package_dependencies_react_redux":"^5.0.4","npm_package_dependencies_tiny_queue":"^0.2.1","npm_package_devDependencies_eslint_plugin_jsx_a11y":"^5.1.1","npm_config_color":"true","npm_package_scripts_build_development":"cross-env NODE_ENV=development webpack --config config/webpack/development.js","npm_package_dependencies_npm_run_all":"^4.1.2","npm_package_dependencies_stringz":"^0.3.0","npm_config_fetch_retry_mintimeout":"10000","npm_config_maxsockets":"50","npm_config_offline":"","npm_config_sso_poll_frequency":"500","npm_package_dependencies_babel_plugin_transform_react_inline_elements":"^6.22.0","npm_package_dependencies_babel_preset_react":"^6.24.1","npm_package_dependencies_object_assign":"^4.1.1","npm_package_dependencies_react_dom":"^16.2.0","npm_package_dependencies_react_textarea_autosize":"^5.2.1","npm_package_dependencies_redux":"^3.7.1","npm_package_devDependencies_eslint":"^4.15.0","npm_package_devDependencies_react_test_renderer":"^16.2.0","npm_config_umask":"0022","npm_package_dependencies_babel_plugin_transform_object_rest_spread":"^6.23.0","npm_package_dependencies_offline_plugin":"^4.8.3","npm_package_dependencies_path_complete_extname":"^0.1.0","npm_package_dependencies_postcss_smart_import":"^0.7.5","npm_package_dependencies_node_zopfli":"^2.0.2","npm_package_gitHead":"bbbb8e40f52cd05e8bbeec1901990144b87fea55","npm_config_fetch_retry_maxtimeout":"60000","npm_config_loglevel":"notice","npm_config_logs_max":"10","npm_config_message":"%s","npm_lifecycle_script":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","npm_package_scripts_postversion":"git push --tags","npm_package_scripts_test":"npm-run-all test:lint test:jest","npm_package_dependencies_babel_core":"^6.25.0","npm_package_dependencies_babel_plugin_preval":"^1.6.1","npm_package_dependencies_http_link_header":"^0.8.0","npm_package_dependencies_intersection_observer":"^0.5.0","npm_package_dependencies_is_nan":"^1.2.1","npm_package_dependencies_react_intl":"^2.4.0","npm_package_dependencies_react_router_scroll_4":"^1.0.0-beta.1","npm_package_dependencies_react_swipeable_views":"^0.12.3","npm_package_dependencies_redux_immutable":"^4.0.0","npm_package_devDependencies_webpack_dev_server":"^2.9.5","npm_config_ca":"","npm_config_cert":"","npm_config_global":"","npm_config_link":"","npm_package_repository_url":"git+https://github.com/tootsuite/mastodon.git","npm_package_dependencies_webpack_bundle_analyzer":"^2.9.1","npm_package_version":"","npm_config_access":"","npm_config_also":"","npm_config_save":"true","npm_config_unicode":"","npm_lifecycle_event":"build","npm_package_scripts_build":"cross-env NODE_ENV=production webpack --config config/webpack/production.js","npm_package_dependencies_emoji_mart":"github:Gargron/emoji-mart#build","npm_package_dependencies_intl":"^1.2.5","npm_package_dependencies_js_yaml":"^3.9.0","npm_package_dependencies_uuid":"^3.1.0","npm_config_argv":"{\"remain\":[],\"cooked\":[\"run\",\"build\"],\"original\":[\"run\",\"build\"]}","npm_config_long":"","npm_config_production":"","npm_config_searchlimit":"20","npm_config_unsafe_perm":"true","npm_package_dependencies_array_includes":"^3.0.3","npm_package_dependencies_babel_plugin_transform_react_jsx_source":"^6.22.0","npm_package_dependencies_compression_webpack_plugin":"^1.0.1","npm_package_dependencies_file_loader":"^0.11.2","npm_package_dependencies_lodash":"^4.17.4","npm_config_auth_type":"legacy","npm_config_node_version":"9.11.1","npm_config_tag":"latest","npm_config_git_tag_version":"true","npm_config_commit_hooks":"true","npm_config_script_shell":"","npm_config_shrinkwrap":"true","npm_package_license":"AGPL-3.0-or-later","npm_package_dependencies_classnames":"^2.2.5","npm_package_dependencies_es6_symbol":"^3.1.1","npm_package_dependencies_intl_messageformat":"^2.2.0","npm_package_dependencies_punycode":"^2.1.0","npm_package_devDependencies_eslint_plugin_react":"^7.5.1","npm_config_fetch_retry_factor":"10","npm_config_save_exact":"","npm_config_strict_ssl":"true","npm_package_dependencies_babel_plugin_transform_react_jsx_self":"^6.22.0","npm_config_dev":"","npm_config_globalconfig":"/usr/etc/npmrc","npm_config_init_module":"/home/howl/.npm-init.js","npm_config_parseable":"","npm_package_dependencies_intl_relativeformat":"^2.1.0","npm_package_dependencies_requestidlecallback":"^0.3.0","npm_package_dependencies_webpack_manifest_plugin":"^1.2.1","npm_package_devDependencies_enzyme":"^3.2.0","npm_package_devDependencies_raf":"^3.4.0","npm_config_globalignorefile":"/usr/etc/npmignore","npm_execpath":"/usr/lib/node_modules/npm/bin/npm-cli.js","PWD":"/home/howl/oc/mastofe","npm_package_dependencies_react_toggle":"^4.0.1","npm_config_cache_lock_retries":"10","npm_config_searchstaleness":"900","npm_package_dependencies_object_values":"^1.0.4","npm_package_dependencies_prop_types":"^15.5.10","npm_package_dependencies_resolve_url_loader":"^2.2.0","npm_package_dependencies_rimraf":"^2.6.1","npm_config_node_options":"","npm_config_save_prefix":"^","npm_config_scripts_prepend_node_path":"warn-only","npm_package_devDependencies_babel_eslint":"^8.2.1","npm_package_devDependencies_yargs":"^8.0.2","npm_config_group":"1000","npm_config_init_author_email":"","npm_config_searchexclude":"","npm_package_dependencies_babel_loader":"^7.1.1","npm_package_dependencies_object_fit_images":"^3.2.3","npm_package_devDependencies_eslint_plugin_promise":"^3.7.0","npm_config_git":"git","npm_config_optional":"true","npm_package_dependencies_babel_plugin_transform_decorators_legacy":"^1.3.4","npm_package_dependencies_pg":"^6.4.0","npm_package_dependencies_react":"^16.2.0","npm_package_dependencies_fsevents":"*","npm_config_json":"","INIT_CWD":"/home/howl/oc/mastofe","NODE_ENV":"production"};
+
 
 
 
@@ -840,8 +842,9 @@ self.addEventListener('fetch', function (event) {
 
     event.respondWith(_asyncResponse.then(async function (response) {
       if (response.ok || response.type === 'opaqueredirect') {
-        var cache = await _asyncCache;
-        await cache.delete('/web');
+        await Promise.all([_asyncCache.then(function (cache) {
+          return cache.delete('/web');
+        }), indexedDB.deleteDatabase('mastodon')]);
       }
 
       return response;
@@ -854,7 +857,11 @@ self.addEventListener('fetch', function (event) {
         var fetched = await fetch(event.request);
 
         if (fetched.ok) {
-          await cache.put(event.request.url, fetched.clone());
+          try {
+            await cache.put(event.request.url, fetched.clone());
+          } finally {
+            Object(__WEBPACK_IMPORTED_MODULE_0__storage_modifier__["a" /* freeStorage */])();
+          }
         }
 
         return fetched;
@@ -868,6 +875,292 @@ self.addEventListener('fetch', function (event) {
 
 /***/ }),
 /* 2 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* unused harmony export evictStatus */
+/* unused harmony export evictStatuses */
+/* unused harmony export putAccounts */
+/* unused harmony export putStatuses */
+/* harmony export (immutable) */ __webpack_exports__["a"] = freeStorage;
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__db__ = __webpack_require__(3);
+
+
+var accountAssetKeys = ['avatar', 'avatar_static', 'header', 'header_static'];
+var storageMargin = 8388608;
+var storeLimit = 1024;
+
+function openCache() {
+  // ServiceWorker and Cache API is not available on iOS 11
+  // https://webkit.org/status/#specification-service-workers
+  return self.caches ? caches.open('mastodon-system') : Promise.reject();
+}
+
+function printErrorIfAvailable(error) {
+  if (error) {
+    console.warn(error);
+  }
+}
+
+function put(name, objects, onupdate, oncreate) {
+  return Object(__WEBPACK_IMPORTED_MODULE_0__db__["a" /* default */])().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var putTransaction = db.transaction(name, 'readwrite');
+      var putStore = putTransaction.objectStore(name);
+      var putIndex = putStore.index('id');
+
+      objects.forEach(function (object) {
+        putIndex.getKey(object.id).onsuccess = function (retrieval) {
+          function addObject() {
+            putStore.add(object);
+          }
+
+          function deleteObject() {
+            putStore.delete(retrieval.target.result).onsuccess = addObject;
+          }
+
+          if (retrieval.target.result) {
+            if (onupdate) {
+              onupdate(object, retrieval.target.result, putStore, deleteObject);
+            } else {
+              deleteObject();
+            }
+          } else {
+            if (oncreate) {
+              oncreate(object, addObject);
+            } else {
+              addObject();
+            }
+          }
+        };
+      });
+
+      putTransaction.oncomplete = function () {
+        var readTransaction = db.transaction(name, 'readonly');
+        var readStore = readTransaction.objectStore(name);
+        var count = readStore.count();
+
+        count.onsuccess = function () {
+          var excess = count.result - storeLimit;
+
+          if (excess > 0) {
+            var retrieval = readStore.getAll(null, excess);
+
+            retrieval.onsuccess = function () {
+              return resolve(retrieval.result);
+            };
+            retrieval.onerror = reject;
+          } else {
+            resolve([]);
+          }
+        };
+
+        count.onerror = reject;
+      };
+
+      putTransaction.onerror = reject;
+    }).then(function (resolved) {
+      db.close();
+      return resolved;
+    }, function (error) {
+      db.close();
+      throw error;
+    });
+  });
+}
+
+function evictAccountsByRecords(records) {
+  return Object(__WEBPACK_IMPORTED_MODULE_0__db__["a" /* default */])().then(function (db) {
+    var transaction = db.transaction(['accounts', 'statuses'], 'readwrite');
+    var accounts = transaction.objectStore('accounts');
+    var accountsIdIndex = accounts.index('id');
+    var accountsMovedIndex = accounts.index('moved');
+    var statuses = transaction.objectStore('statuses');
+    var statusesIndex = statuses.index('account');
+
+    function evict(toEvict) {
+      toEvict.forEach(function (record) {
+        openCache().then(function (cache) {
+          return accountAssetKeys.forEach(function (key) {
+            return cache.delete(records[key]);
+          });
+        }).catch(printErrorIfAvailable);
+
+        accountsMovedIndex.getAll(record.id).onsuccess = function (_ref) {
+          var target = _ref.target;
+          return evict(target.result);
+        };
+
+        statusesIndex.getAll(record.id).onsuccess = function (_ref2) {
+          var target = _ref2.target;
+          return evictStatusesByRecords(target.result);
+        };
+
+        accountsIdIndex.getKey(record.id).onsuccess = function (_ref3) {
+          var target = _ref3.target;
+          return target.result && accounts.delete(target.result);
+        };
+      });
+    }
+
+    evict(records);
+
+    db.close();
+  }).catch(printErrorIfAvailable);
+}
+
+function evictStatus(id) {
+  evictStatuses([id]);
+}
+
+function evictStatuses(ids) {
+  return Object(__WEBPACK_IMPORTED_MODULE_0__db__["a" /* default */])().then(function (db) {
+    var transaction = db.transaction('statuses', 'readwrite');
+    var store = transaction.objectStore('statuses');
+    var idIndex = store.index('id');
+    var reblogIndex = store.index('reblog');
+
+    ids.forEach(function (id) {
+      reblogIndex.getAllKeys(id).onsuccess = function (_ref4) {
+        var target = _ref4.target;
+        return target.result.forEach(function (reblogKey) {
+          return store.delete(reblogKey);
+        });
+      };
+
+      idIndex.getKey(id).onsuccess = function (_ref5) {
+        var target = _ref5.target;
+        return target.result && store.delete(target.result);
+      };
+    });
+
+    db.close();
+  }).catch(printErrorIfAvailable);
+}
+
+function evictStatusesByRecords(records) {
+  return evictStatuses(records.map(function (_ref6) {
+    var id = _ref6.id;
+    return id;
+  }));
+}
+
+function putAccounts(records, avatarStatic) {
+  var avatarKey = avatarStatic ? 'avatar_static' : 'avatar';
+  var newURLs = [];
+
+  put('accounts', records, function (newRecord, oldKey, store, oncomplete) {
+    store.get(oldKey).onsuccess = function (_ref7) {
+      var target = _ref7.target;
+
+      accountAssetKeys.forEach(function (key) {
+        var newURL = newRecord[key];
+        var oldURL = target.result[key];
+
+        if (newURL !== oldURL) {
+          openCache().then(function (cache) {
+            return cache.delete(oldURL);
+          }).catch(printErrorIfAvailable);
+        }
+      });
+
+      var newURL = newRecord[avatarKey];
+      var oldURL = target.result[avatarKey];
+
+      if (newURL !== oldURL) {
+        newURLs.push(newURL);
+      }
+
+      oncomplete();
+    };
+  }, function (newRecord, oncomplete) {
+    newURLs.push(newRecord[avatarKey]);
+    oncomplete();
+  }).then(function (records) {
+    return Promise.all([evictAccountsByRecords(records), openCache().then(function (cache) {
+      return cache.addAll(newURLs);
+    })]);
+  }).then(freeStorage, function (error) {
+    freeStorage();
+    throw error;
+  }).catch(printErrorIfAvailable);
+}
+
+function putStatuses(records) {
+  put('statuses', records).then(evictStatusesByRecords).catch(printErrorIfAvailable);
+}
+
+function freeStorage() {
+  return navigator.storage.estimate().then(function (_ref8) {
+    var quota = _ref8.quota,
+        usage = _ref8.usage;
+
+    if (usage + storageMargin < quota) {
+      return null;
+    }
+
+    return Object(__WEBPACK_IMPORTED_MODULE_0__db__["a" /* default */])().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var retrieval = db.transaction('accounts', 'readonly').objectStore('accounts').getAll(null, 1);
+
+        retrieval.onsuccess = function () {
+          if (retrieval.result.length > 0) {
+            resolve(evictAccountsByRecords(retrieval.result).then(freeStorage));
+          } else {
+            resolve(caches.delete('mastodon-system'));
+          }
+        };
+
+        retrieval.onerror = reject;
+
+        db.close();
+      });
+    });
+  });
+}
+
+/***/ }),
+/* 3 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony default export */ __webpack_exports__["a"] = (function () {
+  return new Promise(function (resolve, reject) {
+    // ServiceWorker is required to synchronize the login state.
+    // Microsoft Edge 17 does not support getAll according to:
+    // Catalog of standard and vendor APIs across browsers - Microsoft Edge Development
+    // https://developer.microsoft.com/en-us/microsoft-edge/platform/catalog/?q=specName%3Aindexeddb
+    if (!('caches' in self && 'getAll' in IDBObjectStore.prototype)) {
+      reject();
+      return;
+    }
+
+    var request = indexedDB.open('mastodon');
+
+    request.onerror = reject;
+    request.onsuccess = function (_ref) {
+      var target = _ref.target;
+      return resolve(target.result);
+    };
+
+    request.onupgradeneeded = function (_ref2) {
+      var target = _ref2.target;
+
+      var accounts = target.result.createObjectStore('accounts', { autoIncrement: true });
+      var statuses = target.result.createObjectStore('statuses', { autoIncrement: true });
+
+      accounts.createIndex('id', 'id', { unique: true });
+      accounts.createIndex('moved', 'moved');
+
+      statuses.createIndex('id', 'id', { unique: true });
+      statuses.createIndex('account', 'account');
+      statuses.createIndex('reblog', 'reblog');
+    };
+  });
+});
+
+/***/ }),
+/* 4 */
 /***/ (function(module, exports) {
 
 var MAX_NOTIFICATIONS = 5;
