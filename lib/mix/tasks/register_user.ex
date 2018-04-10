@@ -5,7 +5,7 @@ defmodule Mix.Tasks.RegisterUser do
 
   @shortdoc "Register user"
   def run([name, nickname, email, bio, password]) do
-    ensure_started(Repo, [])
+    Mix.Task.run("app.start")
 
     params = %{
       name: name,
