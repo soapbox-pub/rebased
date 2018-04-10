@@ -515,7 +515,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             a.data,
             ^query
           ),
-        limit: 20
+        limit: 20,
+        order_by: [desc: :inserted_at]
       )
 
     statuses = Repo.all(q) ++ fetched
@@ -605,35 +606,37 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
               "video\/mp4"
             ]
           },
-          settings: Map.get(user.info, "settings") || %{
-            onboarded: true,
-            home: %{
-              shows: %{
-                reblog: true,
-                reply: true
-              }
-            },
-            notifications: %{
-              alerts: %{
-                follow: true,
-                favourite: true,
-                reblog: true,
-                mention: true
+          settings:
+            Map.get(user.info, "settings") ||
+              %{
+                onboarded: true,
+                home: %{
+                  shows: %{
+                    reblog: true,
+                    reply: true
+                  }
+                },
+                notifications: %{
+                  alerts: %{
+                    follow: true,
+                    favourite: true,
+                    reblog: true,
+                    mention: true
+                  },
+                  shows: %{
+                    follow: true,
+                    favourite: true,
+                    reblog: true,
+                    mention: true
+                  },
+                  sounds: %{
+                    follow: true,
+                    favourite: true,
+                    reblog: true,
+                    mention: true
+                  }
+                }
               },
-              shows: %{
-                follow: true,
-                favourite: true,
-                reblog: true,
-                mention: true
-              },
-              sounds: %{
-                follow: true,
-                favourite: true,
-                reblog: true,
-                mention: true
-              }
-            }
-          },
           push_subscription: nil,
           accounts: accounts,
           custom_emojis: mastodon_emoji,
@@ -656,7 +659,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          {:ok, _user} <- User.update_and_set_cache(change) do
       conn
       |> json(%{})
-    else e ->
+    else
+      e ->
         conn
         |> json(%{error: inspect(e)})
     end
