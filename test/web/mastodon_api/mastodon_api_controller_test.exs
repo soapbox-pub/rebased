@@ -318,7 +318,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     test "unimplemented pinned statuses feature", %{conn: conn} do
       note = insert(:note_activity)
-      user = User.get_by_ap_id(note_two.data["actor"])
+      user = User.get_by_ap_id(note.data["actor"])
 
       conn =
         conn
