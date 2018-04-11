@@ -42,7 +42,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.16.1"},
       {:cachex, "~> 2.1"},
-      {:httpoison, "~> 0.11.2"},
+      {:httpoison, "~> 1.1.0"},
       {:jason, "~> 1.0"},
       {:ex_machina, "~> 2.0", only: :test},
       {:credo, "~> 0.7", only: [:dev, :test]},
