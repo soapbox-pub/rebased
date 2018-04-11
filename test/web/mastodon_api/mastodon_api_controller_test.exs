@@ -316,6 +316,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert id == to_string(note_two.id)
     end
 
+    test "unimplemented pinned statuses feature", %{conn: conn} do
+      note = insert(:note_activity)
+      user = User.get_by_ap_id(note_two.data["actor"])
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+
+      assert json_response(conn, 200) == []
+    end
+
     test "gets an users media", %{conn: conn} do
       note = insert(:note_activity)
       user = User.get_by_ap_id(note.data["actor"])
