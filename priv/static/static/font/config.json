@@ -95,6 +95,18 @@
       "css": "logout",
       "code": 59400,
       "src": "fontawesome"
+    },
+    {
+      "uid": "ccddff8e8670dcd130e3cb55fdfc2fd0",
+      "css": "down-open",
+      "code": 59401,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "44b9e75612c5fad5505edd70d071651f",
+      "css": "attach",
+      "code": 59402,
+      "src": "entypo"
     }
   ]
 }
