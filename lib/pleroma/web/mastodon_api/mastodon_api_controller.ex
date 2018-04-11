@@ -212,9 +212,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> Map.put("actor_id", ap_id)
         |> Map.put("whole_db", true)
 
-      activities =
-        ActivityPub.fetch_public_activities(params)
-        |> Enum.reverse()
+      if params["pinned"] == "true" do
+        # Since Pleroma has no "pinned" posts feature, we'll just set an empty list here
+        activities = []
+      else
+        activities =
+         ActivityPub.fetch_public_activities(params)
+         |> Enum.reverse()
+      end
 
       conn
       |> add_link_headers(:user_statuses, activities, params["id"])
