@@ -20,6 +20,10 @@ No release has been made yet, but several servers have been online for months al
 
 ## Installation
 
+### Docker
+
+While we don't provide docker files, other people have written very good ones. Take a look at https://github.com/Angristan/dockerfiles/tree/master/pleroma or https://github.com/sn0w/pleroma-docker.
+
 ### Dependencies
 
 * Postgresql version 9.6 or newer
