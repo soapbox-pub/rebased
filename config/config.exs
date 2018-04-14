@@ -55,6 +55,12 @@ config :pleroma, :instance,
   federating: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy
 
+config :pleroma, :mrf_simple,
+  media_removal: [],
+  media_nsfw: [],
+  federated_timeline_removal: [],
+  reject: []
+
 config :pleroma, :media_proxy,
   enabled: false,
   redirect_on_failure: true
