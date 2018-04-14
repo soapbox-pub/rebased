@@ -52,7 +52,8 @@ config :pleroma, :instance,
   limit: 5000,
   upload_limit: 16_000_000,
   registrations_open: true,
-  federating: true
+  federating: true,
+  rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy
 
 config :pleroma, :media_proxy,
   enabled: false,
