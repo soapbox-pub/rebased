@@ -239,6 +239,25 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Make announce activity data for the given actor and object
   """
+  def get_existing_announce(actor, %{data: %{"id" => id}}) do
+    query =
+      from(
+        activity in Activity,
+        where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
+        # this is to use the index
+        where:
+          fragment(
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
+            activity.data,
+            activity.data,
+            ^id
+          ),
+        where: fragment("(?)->>'type' = 'Announce'", activity.data)
+      )
+
+    Repo.one(query)
+  end
+
   def make_announce_data(
         %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
@@ -258,6 +277,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def add_announce_to_object(%Activity{data: %{"actor" => actor}}, object) do
     with announcements <- [actor | object.data["announcements"] || []] |> Enum.uniq() do
+      update_element_in_object("announcement", announcements, object)
+    end
+  end
+
+  def remove_announce_from_object(%Activity{data: %{"actor" => actor}}, object) do
+    with announcements <- (object.data["announcements"] || []) |> List.delete(actor) do
       update_element_in_object("announcement", announcements, object)
     end
   end

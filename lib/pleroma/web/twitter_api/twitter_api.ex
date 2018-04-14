@@ -64,6 +64,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
+  def unrepeat(%User{} = user, ap_id_or_id) do
+    with {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.unrepeat(ap_id_or_id, user),
+         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+      {:ok, activity}
+    end
+  end
+
   def fav(%User{} = user, ap_id_or_id) do
     with {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.favorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
