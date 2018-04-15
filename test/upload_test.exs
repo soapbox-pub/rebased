@@ -3,40 +3,45 @@ defmodule Pleroma.UploadTest do
   use Pleroma.DataCase
 
   describe "Storing a file" do
-    test "copies the file to the configured folder" do
+    test "copies the file to the configured folder with deduping" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
       file = %Plug.Upload{
         content_type: "image/jpg",
-        path: Path.absname("test/fixtures/image.jpg"),
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "an [image.jpg"
       }
 
-      data = Upload.store(file)
-      assert data["name"] == "an [image.jpg"
+      data = Upload.store(file, true)
 
-      assert List.first(data["url"])["href"] ==
-               "http://localhost:4001/media/#{data["uuid"]}/an%20%5Bimage.jpg"
+      assert data["name"] ==
+               "e7a6d0cf595bff76f14c9a98b6c199539559e8b844e02e51e5efcfd1f614a2df.jpeg"
     end
 
-    test "fixes an incorrect content type" do
+    test "copies the file to the configured folder without deduping" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "an [image.jpg"
+      }
+
+      data = Upload.store(file, false)
+      assert data["name"] == "an [image.jpg"
+    end
+
+    test "fixes incorrect content type" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
       file = %Plug.Upload{
         content_type: "application/octet-stream",
-        path: Path.absname("test/fixtures/image.jpg"),
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
         filename: "an [image.jpg"
       }
 
-      data = Upload.store(file)
+      data = Upload.store(file, true)
       assert hd(data["url"])["mediaType"] == "image/jpeg"
-    end
-
-    test "does not modify a valid content type" do
-      file = %Plug.Upload{
-        content_type: "image/png",
-        path: Path.absname("test/fixtures/image.jpg"),
-        filename: "an [image.jpg"
-      }
-
-      data = Upload.store(file)
-      assert hd(data["url"])["mediaType"] == "image/png"
     end
   end
 end

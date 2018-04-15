@@ -2,20 +2,21 @@ defmodule Pleroma.Upload do
   alias Ecto.UUID
   alias Pleroma.Web
 
-  def store(%Plug.Upload{} = file) do
-    uuid = UUID.generate()
-    upload_folder = Path.join(upload_path(), uuid)
-    File.mkdir_p!(upload_folder)
-    result_file = Path.join(upload_folder, file.filename)
-    File.cp!(file.path, result_file)
+  def store(%Plug.Upload{} = file, should_dedupe) do
+    content_type = get_content_type(file.path)
+    uuid = get_uuid(file, should_dedupe)
+    name = get_name(file, uuid, content_type, should_dedupe)
+    upload_folder = get_upload_path(uuid, should_dedupe)
+    url_path = get_url(name, uuid, should_dedupe)
 
-    # fix content type on some image uploads
-    content_type =
-      if file.content_type in [nil, "application/octet-stream"] do
-        get_content_type(file.path)
-      else
-        file.content_type
-      end
+    File.mkdir_p!(upload_folder)
+    result_file = Path.join(upload_folder, name)
+
+    if File.exists?(result_file) do
+      File.rm!(file.path)
+    else
+      File.cp!(file.path, result_file)
+    end
 
     %{
       "type" => "Image",
@@ -23,26 +24,48 @@ defmodule Pleroma.Upload do
         %{
           "type" => "Link",
           "mediaType" => content_type,
-          "href" => url_for(Path.join(uuid, :cow_uri.urlencode(file.filename)))
+          "href" => url_path
         }
       ],
-      "name" => file.filename,
-      "uuid" => uuid
+      "name" => name
     }
   end
 
-  def store(%{"img" => "data:image/" <> image_data}) do
+  def store(%{"img" => "data:image/" <> image_data}, should_dedupe) do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
-    data = Base.decode64!(parsed["data"])
+    data = Base.decode64!(parsed["data"], ignore: :whitespace)
     uuid = UUID.generate()
-    upload_folder = Path.join(upload_path(), uuid)
+    uuidpath = Path.join(upload_path(), uuid)
+    uuid = UUID.generate()
+
+    File.mkdir_p!(upload_path())
+
+    File.write!(uuidpath, data)
+
+    content_type = get_content_type(uuidpath)
+
+    name =
+      create_name(
+        String.downcase(Base.encode16(:crypto.hash(:sha256, data))),
+        parsed["filetype"],
+        content_type
+      )
+
+    upload_folder = get_upload_path(uuid, should_dedupe)
+    url_path = get_url(name, uuid, should_dedupe)
+
     File.mkdir_p!(upload_folder)
-    filename = Base.encode16(:crypto.hash(:sha256, data)) <> ".#{parsed["filetype"]}"
-    result_file = Path.join(upload_folder, filename)
+    result_file = Path.join(upload_folder, name)
 
-    File.write!(result_file, data)
-
-    content_type = "image/#{parsed["filetype"]}"
+    if should_dedupe do
+      if !File.exists?(result_file) do
+        File.rename(uuidpath, result_file)
+      else
+        File.rm!(uuidpath)
+      end
+    else
+      File.rename(uuidpath, result_file)
+    end
 
     %{
       "type" => "Image",
@@ -50,17 +73,56 @@ defmodule Pleroma.Upload do
         %{
           "type" => "Link",
           "mediaType" => content_type,
-          "href" => url_for(Path.join(uuid, :cow_uri.urlencode(filename)))
+          "href" => url_path
         }
       ],
-      "name" => filename,
-      "uuid" => uuid
+      "name" => name
     }
   end
 
   def upload_path do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
     Keyword.fetch!(settings, :uploads)
+  end
+
+  defp create_name(uuid, ext, type) do
+    if type == "application/octet-stream" do
+      String.downcase(Enum.join([uuid, ext], "."))
+    else
+      String.downcase(Enum.join([uuid, List.last(String.split(type, "/"))], "."))
+    end
+  end
+
+  defp get_uuid(file, should_dedupe) do
+    if should_dedupe do
+      Base.encode16(:crypto.hash(:sha256, File.read!(file.path)))
+    else
+      UUID.generate()
+    end
+  end
+
+  defp get_name(file, uuid, type, should_dedupe) do
+    if should_dedupe do
+      create_name(uuid, List.last(String.split(file.filename, ".")), type)
+    else
+      file.filename
+    end
+  end
+
+  defp get_upload_path(uuid, should_dedupe) do
+    if should_dedupe do
+      upload_path()
+    else
+      Path.join(upload_path(), uuid)
+    end
+  end
+
+  defp get_url(name, uuid, should_dedupe) do
+    if should_dedupe do
+      url_for(:cow_uri.urlencode(name))
+    else
+      url_for(Path.join(uuid, :cow_uri.urlencode(name)))
+    end
   end
 
   defp url_for(file) do
