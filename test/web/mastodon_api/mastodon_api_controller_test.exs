@@ -264,6 +264,25 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
+  describe "unreblogging" do
+    test "unreblogs and returns the unreblogged status", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user)
+
+      {:ok, _, _} = CommonAPI.repeat(activity.id, user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses/#{activity.id}/unreblog")
+
+      assert %{"reblog" => %{"id" => id, "reblogged" => false, "reblogs_count" => 0}} =
+               json_response(conn, 200)
+
+      assert to_string(activity.id) == id
+    end
+  end
+
   describe "favoriting" do
     test "favs a status and returns it", %{conn: conn} do
       activity = insert(:note_activity)
