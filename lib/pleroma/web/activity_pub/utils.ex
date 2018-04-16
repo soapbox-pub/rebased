@@ -237,7 +237,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Announce-related helpers
 
   @doc """
-  Make announce activity data for the given actor and object
+  Retruns an existing announce activity if the notice has already been announced 
   """
   def get_existing_announce(actor, %{data: %{"id" => id}}) do
     query =
@@ -258,6 +258,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Repo.one(query)
   end
 
+  @doc """
+  Make announce activity data for the given actor and object
+  """
   def make_announce_data(
         %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
