@@ -237,7 +237,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Announce-related helpers
 
   @doc """
-  Retruns an existing announce activity if the notice has already been announced 
+  Retruns an existing announce activity if the notice has already been announced
   """
   def get_existing_announce(actor, %{data: %{"id" => id}}) do
     query =
@@ -276,6 +276,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     }
 
     if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
+  @doc """
+  Make unannounce activity data for the given actor and object
+  """
+  def make_unannounce_data(
+        %User{ap_id: ap_id} = user,
+        %Object{data: %{"id" => id}} = object
+      ) do
+    %{
+      "type" => "Undo",
+      "actor" => ap_id,
+      "object" => id,
+      "to" => [user.follower_address, object.data["actor"]],
+      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "context" => object.data["context"]
+    }
   end
 
   def add_announce_to_object(%Activity{data: %{"actor" => actor}}, object) do
