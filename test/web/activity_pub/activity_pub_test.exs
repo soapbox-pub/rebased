@@ -278,14 +278,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
 
       # Unannouncing an object that is not announced does nothing
-      {:ok, object} = ActivityPub.unannounce(user, object)
-      assert object.data["announcement_count"] == 0
+      #{:ok, object} = ActivityPub.unannounce(user, object)
+      #assert object.data["announcement_count"] == 0
 
       {:ok, announce_activity, object} = ActivityPub.announce(user, object)
       assert object.data["announcement_count"] == 1
 
-      {:ok, object} = ActivityPub.unannounce(user, object)
+      {:ok, unannounce_activity, object} = ActivityPub.unannounce(user, object)
       assert object.data["announcement_count"] == 0
+
+      assert unannounce_activity.data["to"] == [
+               User.ap_followers(user),
+               note_activity.data["actor"]
+      ]
+      assert unannounce_activity.data["type"] == "Undo"
+      assert unannounce_activity.data["object"] == object.data["id"]
+      assert unannounce_activity.data["actor"] == user.ap_id
+      assert unannounce_activity.data["context"] == object.data["context"]
 
       assert Repo.get(Activity, announce_activity.id) == nil
     end

@@ -142,11 +142,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def unannounce(%User{} = actor, %Object{} = object, local \\ true) do
     with %Activity{} = activity <- get_existing_announce(actor.ap_id, object),
-         unannounce_data <- make_unannounce_data(actor, activity),
-         {:ok, _unannounce_activity} <- insert(unannounce_data, local),
+         unannounce_data <- make_unannounce_data(actor, object),
+         {:ok, unannounce_activity} <- insert(unannounce_data, local),
          {:ok, _activity} <- Repo.delete(activity),
          {:ok, object} <- remove_announce_from_object(activity, object) do
-      {:ok, object}
+      {:ok, unannounce_activity, object}
     else
       _e -> {:ok, object}
     end
