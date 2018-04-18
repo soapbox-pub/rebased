@@ -29,7 +29,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
             "redirect_uri" => redirect_uri
           } = params
       }) do
-    with %User{} = user <- User.get_cached_by_nickname(name),
+    with %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          {:ok, auth} <- Authorization.create_authorization(app, user) do

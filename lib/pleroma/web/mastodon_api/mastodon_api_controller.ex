@@ -693,7 +693,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def login_post(conn, %{"authorization" => %{"name" => name, "password" => password}}) do
-    with %User{} = user <- User.get_cached_by_nickname(name),
+    with %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:ok, app} <- get_or_make_app(),
          {:ok, auth} <- Authorization.create_authorization(app, user),
