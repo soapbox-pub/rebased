@@ -250,6 +250,13 @@ defmodule Pleroma.User do
     Repo.get_by(User, nickname: nickname)
   end
 
+  def get_by_nickname_or_email(nickname_or_email) do
+    case user = Repo.get_by(User, nickname: nickname_or_email) do
+      %User{} -> user
+      nil -> Repo.get_by(User, email: nickname_or_email)
+    end
+  end
+
   def get_cached_user_info(user) do
     key = "user_info:#{user.id}"
     Cachex.get!(:user_cache, key, fallback: fn _ -> user_info(user) end)
