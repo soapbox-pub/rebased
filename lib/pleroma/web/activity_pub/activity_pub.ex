@@ -146,7 +146,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, unannounce_activity} <- insert(unannounce_data, local),
          {:ok, _activity} <- Repo.delete(activity),
          {:ok, object} <- remove_announce_from_object(activity, object) do
-      {:ok, unannounce_activity, object}
+      {:ok, unannounce_activity, activity, object}
     else
       _e -> {:ok, object}
     end
