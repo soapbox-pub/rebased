@@ -23,10 +23,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   @media_nsfw Keyword.get(@mrf_policy, :media_nsfw)
   defp check_media_nsfw(actor_info, object) do
-    if actor_info.host in @media_nsfw and object["attachment"] != nil and length(object["attachment"]) > 0 do
-      tags = (object["tag"] || []) ++ ["nsfw"]
-      object = Map.put(object, "tags", tags)
-      object = Map.put(object, "sensitive", true)
+    child_object = object["object"]
+    if actor_info.host in @media_nsfw and child_object["attachment"] != nil and length(child_object["attachment"]) > 0 do
+      tags = (child_object["tag"] || []) ++ ["nsfw"]
+      child_object = Map.put(child_object, "tags", tags)
+      child_object = Map.put(child_object, "sensitive", true)
+      object = Map.put(object, "object", child_object)
     end
 
     {:ok, object}
