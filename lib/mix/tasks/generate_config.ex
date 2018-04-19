@@ -15,14 +15,6 @@ defmodule Mix.Tasks.GenerateConfig do
       |> String.downcase()
       |> String.starts_with?("y")
 
-    proxy_url =
-      if mediaproxy do
-        IO.gets("What is the mediaproxy's URL? (e.g. https://cache.example.com): ")
-        |> String.trim()
-      else
-        "https://cache.example.com"
-      end
-
     secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
     dbpass = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
 

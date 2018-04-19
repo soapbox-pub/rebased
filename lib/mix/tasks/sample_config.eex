@@ -13,7 +13,7 @@ config :pleroma, :instance,
 config :pleroma, :media_proxy,
   enabled: <%= mediaproxy %>,
   redirect_on_failure: true,
-  base_url: "<%= proxy_url %>"
+  #base_url: "https://cache.pleroma.social"
 
 # Configure your database
 config :pleroma, Pleroma.Repo,
