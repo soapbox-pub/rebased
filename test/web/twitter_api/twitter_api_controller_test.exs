@@ -2,9 +2,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   use Pleroma.Web.ConnCase
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Builders.{ActivityBuilder, UserBuilder}
-  alias Pleroma.{Repo, Activity, User, Object}
+  alias Pleroma.{Repo, Activity, User, Object, Notification}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
+  alias Pleroma.Web.TwitterAPI.NotificationView
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
@@ -244,6 +245,35 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  user: current_user,
                  mentioned: [current_user]
                })
+    end
+  end
+
+  describe "GET /api/qvitter/statuses/notifications.json" do
+    setup [:valid_user]
+
+    test "without valid credentials", %{conn: conn} do
+      conn = get(conn, "/api/qvitter/statuses/notifications.json")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      {:ok, activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: current_user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json")
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 1
+
+      assert response ==
+        NotificationView.render(
+          "notification.json",
+          %{notifications: Notification.for_user(current_user), for: current_user}
+        )
     end
   end
 
