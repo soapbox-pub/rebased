@@ -12,7 +12,7 @@ config :pleroma, :instance,
 
 config :pleroma, :media_proxy,
   enabled: false,
-  redirect_on_failure: true,
+  redirect_on_failure: true
   #base_url: "https://cache.pleroma.social"
 
 # Configure your database
