@@ -39,12 +39,6 @@ sub vcl_recv {
         return (hash);
     }
 
-    # Hack to enable a Terms of Service page missing from Pleroma
-    if (req.url ~ "^/about/more$") {
-        set req.http.x-redir = "https://" + req.http.host + "/static/terms-of-service.html";
-        return (synth(750, ""));
-    }
-
     # Strip headers that will affect caching from all other static content
     # This also permits caching of individual toots and AP Activities
     if ((req.url ~ "^/(media|notice|static)/") ||
