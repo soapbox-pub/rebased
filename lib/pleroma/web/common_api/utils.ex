@@ -61,6 +61,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def make_content_html(status, mentions, attachments, tags, no_attachment_links \\ false) do
     status
+    |> String.replace("\r", "")
     |> format_input(mentions, tags)
     |> maybe_add_attachments(attachments, no_attachment_links)
   end
