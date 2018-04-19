@@ -6,6 +6,9 @@
 /uploads
 /test/uploads
 
+# Prevent committing custom emojis
+/priv/static/emoji/custom/*
+
 # Generated on crash by the VM
 erl_crash.dump
 
@@ -16,3 +19,6 @@ erl_crash.dump
 # secrets files as long as you replace their contents by environment
 # variables.
 /config/*.secret.exs
+
+# Database setup file, some may forget to delete it
+/config/setup_db.psql
