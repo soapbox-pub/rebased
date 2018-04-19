@@ -11,7 +11,7 @@ config :pleroma, :instance,
   registrations_open: true
 
 config :pleroma, :media_proxy,
-  enabled: <%= mediaproxy %>,
+  enabled: false,
   redirect_on_failure: true,
   #base_url: "https://cache.pleroma.social"
 
