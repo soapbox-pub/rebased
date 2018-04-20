@@ -2,7 +2,7 @@
 <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
 <h2>OAuth Authorization</h2>
 <%= form_for @conn, o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
-<%= label f, :name, "Name" %>
+<%= label f, :name, "Name or email" %>
 <%= text_input f, :name %>
 <br>
 <%= label f, :password, "Password" %>

@@ -1,8 +1,8 @@
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
-  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView}
+  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.{Repo, Activity, User}
+  alias Pleroma.{Repo, Activity, User, Notification}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Ecto.Changeset
 
@@ -117,6 +117,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     conn
     |> render(ActivityView, "index.json", %{activities: activities, for: user})
+  end
+
+  def notifications(%{assigns: %{user: user}} = conn, params) do
+    notifications = Notification.for_user(user, params)
+
+    conn
+    |> render(NotificationView, "notification.json", %{notifications: notifications, for: user})
   end
 
   def follow(%{assigns: %{user: user}} = conn, params) do
