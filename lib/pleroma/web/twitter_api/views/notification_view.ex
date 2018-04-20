@@ -23,16 +23,34 @@ defmodule Pleroma.Web.TwitterAPI.NotificationView do
   end
 
   def render("notification.json", %{notifications: notifications, for: user}) do
-    render_many(notifications, Pleroma.Web.TwitterAPI.NotificationView, "notification.json", for: user)
+    render_many(
+      notifications,
+      Pleroma.Web.TwitterAPI.NotificationView,
+      "notification.json",
+      for: user
+    )
   end
 
-  def render("notification.json", %{notification: %Notification{id: id, seen: seen, activity: activity, inserted_at: created_at}, for: user} = opts) do
-    ntype = case activity.data["type"] do
-              "Create" -> "mention"
-              "Like" -> "like"
-              "Announce" -> "repeat"
-              "Follow" -> "follow"
-            end
+  def render(
+        "notification.json",
+        %{
+          notification: %Notification{
+            id: id,
+            seen: seen,
+            activity: activity,
+            inserted_at: created_at
+          },
+          for: user
+        } = opts
+      ) do
+    ntype =
+      case activity.data["type"] do
+        "Create" -> "mention"
+        "Like" -> "like"
+        "Announce" -> "repeat"
+        "Follow" -> "follow"
+      end
+
     from = get_user(activity.data["actor"], opts)
 
     %{
@@ -40,7 +58,7 @@ defmodule Pleroma.Web.TwitterAPI.NotificationView do
       "ntype" => ntype,
       "notice" => ActivityView.render("activity.json", %{activity: activity, for: user}),
       "from_profile" => UserView.render("show.json", %{user: from, for: user}),
-      "is_seen" => (if seen, do: 1, else: 0),
+      "is_seen" => if(seen, do: 1, else: 0),
       "created_at" => created_at |> Utils.format_naive_asctime()
     }
   end

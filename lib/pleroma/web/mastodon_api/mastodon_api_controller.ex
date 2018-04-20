@@ -217,8 +217,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         activities = []
       else
         activities =
-         ActivityPub.fetch_public_activities(params)
-         |> Enum.reverse()
+          ActivityPub.fetch_public_activities(params)
+          |> Enum.reverse()
       end
 
       conn

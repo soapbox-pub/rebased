@@ -36,14 +36,17 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
       "ntype" => "follow"
     }
 
-    assert represented == NotificationView.render("notification.json", %{notification: follow_notif, for: user})
+    assert represented ==
+             NotificationView.render("notification.json", %{notification: follow_notif, for: user})
   end
 
   test "A mention notification" do
     user = insert(:user)
     other_user = insert(:user)
 
-    {:ok, activity} = TwitterAPI.create_status(other_user, %{"status" => "Päivää, @#{user.nickname}"})
+    {:ok, activity} =
+      TwitterAPI.create_status(other_user, %{"status" => "Päivää, @#{user.nickname}"})
+
     [notification] = Notification.for_user(user)
 
     represented = %{
@@ -55,7 +58,8 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
       "ntype" => "mention"
     }
 
-    assert represented == NotificationView.render("notification.json", %{notification: notification, for: user})
+    assert represented ==
+             NotificationView.render("notification.json", %{notification: notification, for: user})
   end
 
   test "A retweet notification" do
@@ -71,11 +75,13 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
       "from_profile" => UserView.render("show.json", %{user: repeater, for: user}),
       "id" => notification.id,
       "is_seen" => 0,
-      "notice" => ActivityView.render("activity.json", %{activity: notification.activity, for: user}),
+      "notice" =>
+        ActivityView.render("activity.json", %{activity: notification.activity, for: user}),
       "ntype" => "repeat"
     }
 
-    assert represented == NotificationView.render("notification.json", %{notification: notification, for: user})
+    assert represented ==
+             NotificationView.render("notification.json", %{notification: notification, for: user})
   end
 
   test "A like notification" do
@@ -91,10 +97,12 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
       "from_profile" => UserView.render("show.json", %{user: liker, for: user}),
       "id" => notification.id,
       "is_seen" => 0,
-      "notice" => ActivityView.render("activity.json", %{activity: notification.activity, for: user}),
+      "notice" =>
+        ActivityView.render("activity.json", %{activity: notification.activity, for: user}),
       "ntype" => "like"
     }
 
-    assert represented == NotificationView.render("notification.json", %{notification: notification, for: user})
+    assert represented ==
+             NotificationView.render("notification.json", %{notification: notification, for: user})
   end
 end

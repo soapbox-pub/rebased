@@ -270,10 +270,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert length(response) == 1
 
       assert response ==
-        NotificationView.render(
-          "notification.json",
-          %{notifications: Notification.for_user(current_user), for: current_user}
-        )
+               NotificationView.render("notification.json", %{
+                 notifications: Notification.for_user(current_user),
+                 for: current_user
+               })
     end
   end
 
