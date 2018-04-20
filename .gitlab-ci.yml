@@ -9,6 +9,7 @@ variables:
   POSTGRES_PASSWORD: postgres
 
 stages:
+  - lint
   - test
 
 before_script:
@@ -17,6 +18,11 @@ before_script:
   - mix deps.get
   - MIX_ENV=test mix ecto.create
   - MIX_ENV=test mix ecto.migrate
+
+lint:
+  stage: lint
+  script:
+    - MIX_ENV=test mix format --check-formatted
 
 unit-testing:
   stage: test
