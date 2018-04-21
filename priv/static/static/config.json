@@ -4,5 +4,5 @@
   "logo": "/static/logo.png",
   "defaultPath": "/main/all",
   "chatDisabled": false,
-  "showInstanceSpecificPanel": false
+  "showInstanceSpecificPanel": true
 }
