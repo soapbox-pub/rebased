@@ -83,16 +83,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   describe "create activities" do
     test "removes doubled 'to' recipients" do
+      user = insert(:user)
+
       {:ok, activity} =
         ActivityPub.create(%{
           to: ["user1", "user1", "user2"],
-          actor: %User{ap_id: "1"},
+          actor: user,
           context: "",
           object: %{}
         })
 
       assert activity.data["to"] == ["user1", "user2"]
-      assert activity.actor == "1"
+      assert activity.actor == user.ap_id
       assert activity.recipients == ["user1", "user2"]
     end
   end

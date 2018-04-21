@@ -61,7 +61,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              additional
            ),
          {:ok, activity} <- insert(create_data, local),
-         :ok <- maybe_federate(activity) do
+         :ok <- maybe_federate(activity),
+         {:ok, actor} <- User.increase_note_count(actor) do
       {:ok, activity}
     end
   end
