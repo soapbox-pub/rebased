@@ -521,7 +521,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             ^query
           ),
         limit: 20,
-        order_by: [desc: :inserted_at]
+        order_by: [desc: :id]
       )
 
     statuses = Repo.all(q) ++ fetched
