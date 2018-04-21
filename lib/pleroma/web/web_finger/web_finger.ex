@@ -81,7 +81,10 @@ defmodule Pleroma.Web.WebFinger do
           "href" => user.ap_id
         },
         %{"rel" => "salmon", "href" => OStatus.salmon_path(user)},
-        %{"rel" => "magic-public-key", "href" => "data:application/magic-public-key,#{magic_key}"},
+        %{
+          "rel" => "magic-public-key",
+          "href" => "data:application/magic-public-key,#{magic_key}"
+        },
         %{"rel" => "self", "type" => "application/activity+json", "href" => user.ap_id},
         %{
           "rel" => "http://ostatus.org/schema/1.0/subscribe",

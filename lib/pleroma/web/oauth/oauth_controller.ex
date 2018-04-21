@@ -63,7 +63,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
              client_secret: params["client_secret"]
            ),
          fixed_token = fix_padding(params["code"]),
-         %Authorization{} = auth <- Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
+         %Authorization{} = auth <-
+           Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
         token_type: "Bearer",
