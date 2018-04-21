@@ -27,7 +27,7 @@ While we don't provide docker files, other people have written very good ones. T
 ### Dependencies
 
 * Postgresql version 9.6 or newer
-* Elixir version 1.5 or newer. If your distribution only has an old version available, check [Elixir's install page](https://elixir-lang.org/install.html)
+* Elixir version 1.5 or newer. If your distribution only has an old version available, check [Elixir's install page](https://elixir-lang.org/install.html) or use a tool like [asdf](https://github.com/asdf-vm/asdf).
 * Build-essential tools
 
 ### Configuration
