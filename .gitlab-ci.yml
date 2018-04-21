@@ -13,6 +13,7 @@ stages:
   - test
 
 before_script:
+  - apk add git
   - mix local.hex --force
   - mix local.rebar --force
   - mix deps.get
