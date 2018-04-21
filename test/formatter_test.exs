@@ -23,21 +23,21 @@ defmodule Pleroma.FormatterTest do
       text = "Hey, check out https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla."
 
       expected =
-        "Hey, check out <a href='https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla'>https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla</a>."
+        "Hey, check out <a href=\"https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla\">https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla</a>."
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
       text = "https://mastodon.social/@lambadalambda"
 
       expected =
-        "<a href='https://mastodon.social/@lambadalambda'>https://mastodon.social/@lambadalambda</a>"
+        "<a href=\"https://mastodon.social/@lambadalambda\">https://mastodon.social/@lambadalambda</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
       text = "https://mastodon.social:4000/@lambadalambda"
 
       expected =
-        "<a href='https://mastodon.social:4000/@lambadalambda'>https://mastodon.social:4000/@lambadalambda</a>"
+        "<a href=\"https://mastodon.social:4000/@lambadalambda\">https://mastodon.social:4000/@lambadalambda</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
@@ -47,28 +47,35 @@ defmodule Pleroma.FormatterTest do
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
       text = "http://www.cs.vu.nl/~ast/intel/"
-      expected = "<a href='http://www.cs.vu.nl/~ast/intel/'>http://www.cs.vu.nl/~ast/intel/</a>"
+      expected = "<a href=\"http://www.cs.vu.nl/~ast/intel/\">http://www.cs.vu.nl/~ast/intel/</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
       text = "https://forum.zdoom.org/viewtopic.php?f=44&t=57087"
 
       expected =
-        "<a href='https://forum.zdoom.org/viewtopic.php?f=44&t=57087'>https://forum.zdoom.org/viewtopic.php?f=44&t=57087</a>"
+        "<a href=\"https://forum.zdoom.org/viewtopic.php?f=44&amp;t=57087\">https://forum.zdoom.org/viewtopic.php?f=44&amp;t=57087</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
       text = "https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul"
 
       expected =
-        "<a href='https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul'>https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul</a>"
+        "<a href=\"https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul\">https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
       text = "https://www.google.co.jp/search?q=Nasim+Aghdam"
 
       expected =
-        "<a href='https://www.google.co.jp/search?q=Nasim+Aghdam'>https://www.google.co.jp/search?q=Nasim+Aghdam</a>"
+        "<a href=\"https://www.google.co.jp/search?q=Nasim+Aghdam\">https://www.google.co.jp/search?q=Nasim+Aghdam</a>"
+
+      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+
+      text = "https://en.wikipedia.org/wiki/Duff's_device"
+
+      expected =
+        "<a href=\"https://en.wikipedia.org/wiki/Duff&#39;s_device\">https://en.wikipedia.org/wiki/Duff&#39;s_device</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
     end
