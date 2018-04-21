@@ -283,13 +283,13 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def make_unannounce_data(
         %User{ap_id: ap_id} = user,
-        %Object{data: %{"id" => id, "context" => context}} = object
+        %Activity{data: %{"id" => id, "context" => context}} = activity
       ) do
     %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => id,
-      "to" => [user.follower_address, object.data["actor"]],
+      "to" => [user.follower_address, activity.data["actor"]],
       "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
       "context" => context
     }

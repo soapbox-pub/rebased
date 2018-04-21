@@ -291,12 +291,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert unannounce_activity.data["to"] == [
                User.ap_followers(user),
-               note_activity.data["actor"]
+               announce_activity.data["actor"]
       ]
       assert unannounce_activity.data["type"] == "Undo"
-      assert unannounce_activity.data["object"] == object.data["id"]
+      assert unannounce_activity.data["object"] == announce_activity.data["id"]
       assert unannounce_activity.data["actor"] == user.ap_id
-      assert unannounce_activity.data["context"] == object.data["context"]
+      assert unannounce_activity.data["context"] == announce_activity.data["context"]
 
       assert Repo.get(Activity, announce_activity.id) == nil
     end
