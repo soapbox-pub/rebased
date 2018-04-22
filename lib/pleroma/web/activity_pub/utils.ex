@@ -279,9 +279,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   @doc """
-  Make unannounce activity data for the given actor and object
+  Make undo activity data for the given actor and object
   """
-  def make_unannounce_data(
+  def make_undo_data(
         %User{ap_id: ap_id} = user,
         %Activity{data: %{"id" => id, "context" => context}} = activity
       ) do
