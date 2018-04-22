@@ -103,7 +103,6 @@ defmodule Pleroma.Web.CommonAPI do
           additional: %{"cc" => cc}
         })
 
-      User.increase_note_count(user)
       res
     end
   end

@@ -169,8 +169,11 @@ defmodule Pleroma.Formatter do
       subs ++
         Enum.map(links, fn {uuid, url} ->
           {:safe, link} = Phoenix.HTML.Link.link(url, to: url)
-          link = link
-          |> IO.iodata_to_binary
+
+          link =
+            link
+            |> IO.iodata_to_binary()
+
           {uuid, link}
         end)
 

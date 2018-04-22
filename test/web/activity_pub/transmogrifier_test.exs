@@ -89,6 +89,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "tag:mastodon.example.org,2018-02-12:objectId=20:objectType=Conversation"
 
       assert object["sensitive"] == true
+
+      user = User.get_by_ap_id(object["actor"])
+
+      assert user.info["note_count"] == 1
     end
 
     test "it works for incoming notices with hashtags" do
