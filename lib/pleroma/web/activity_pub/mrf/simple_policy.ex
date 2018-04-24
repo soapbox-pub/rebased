@@ -24,7 +24,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   @media_nsfw Keyword.get(@mrf_policy, :media_nsfw)
   defp check_media_nsfw(actor_info, object) do
     child_object = object["object"]
-    if actor_info.host in @media_nsfw and child_object["attachment"] != nil and length(child_object["attachment"]) > 0 do
+
+    if actor_info.host in @media_nsfw and child_object["attachment"] != nil and
+         length(child_object["attachment"]) > 0 do
       tags = (child_object["tag"] || []) ++ ["nsfw"]
       child_object = Map.put(child_object, "tags", tags)
       child_object = Map.put(child_object, "sensitive", true)
@@ -40,9 +42,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       user = User.get_by_ap_id(object["actor"])
 
       # flip to/cc relationship to make the post unlisted
-      if "https://www.w3.org/ns/activitystreams#Public" in object["to"] and user.follower_address in object["cc"] do
-        to = List.delete(object["to"], "https://www.w3.org/ns/activitystreams#Public") ++ [user.follower_address]
-        cc = List.delete(object["cc"], user.follower_address) ++ ["https://www.w3.org/ns/activitystreams#Public"]
+      if "https://www.w3.org/ns/activitystreams#Public" in object["to"] and
+           user.follower_address in object["cc"] do
+        to =
+          List.delete(object["to"], "https://www.w3.org/ns/activitystreams#Public") ++
+            [user.follower_address]
+
+        cc =
+          List.delete(object["cc"], user.follower_address) ++
+            ["https://www.w3.org/ns/activitystreams#Public"]
 
         object = Map.put(object, "to", to)
         object = Map.put(object, "cc", cc)
