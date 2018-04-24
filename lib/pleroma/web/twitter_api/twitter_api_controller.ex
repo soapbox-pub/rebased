@@ -347,7 +347,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def update_profile(%{assigns: %{user: user}} = conn, params) do
     params =
       if bio = params["description"] do
-        Map.put(params, "bio", bio)
+        bio_brs = Regex.replace(~r/\r\n/,bio,"<br>")
+        Map.put(params, "bio", bio_brs)
       else
         params
       end
