@@ -5,6 +5,7 @@
 /*.ez
 /uploads
 /test/uploads
+/.elixir_ls
 
 # Prevent committing custom emojis
 /priv/static/emoji/custom/*
@@ -22,3 +23,6 @@ erl_crash.dump
 
 # Database setup file, some may forget to delete it
 /config/setup_db.psql
+
+.DS_Store
+.env
