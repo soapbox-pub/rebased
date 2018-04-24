@@ -322,6 +322,16 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
+  def decrease_note_count(%User{} = user) do
+    note_count = (user.info["note_count"] || 0)
+    note_count = if note_count <= 0, do: 0, else: note_count - 1
+    new_info = Map.put(user.info, "note_count", note_count)
+
+    cs = info_changeset(user, %{info: new_info})
+
+    update_and_set_cache(cs)
+  end
+
   def update_note_count(%User{} = user) do
     note_count_query =
       from(
