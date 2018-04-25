@@ -5,6 +5,8 @@ defmodule Pleroma.Web.Router do
 
   @instance Application.get_env(:pleroma, :instance)
   @federating Keyword.get(@instance, :federating)
+  @public Keyword.get(@instance, :public)
+  @registrations_open Keyword.get(@instance, :registrations_open)
 
   def user_fetcher(username) do
     {:ok, Repo.get_by(User, %{nickname: username})}
@@ -160,21 +162,9 @@ defmodule Pleroma.Web.Router do
     get("/statusnet/version", TwitterAPI.UtilController, :version)
   end
 
-  @instance Application.get_env(:pleroma, :instance)
-  @registrations_open Keyword.get(@instance, :registrations_open)
-
   scope "/api", Pleroma.Web do
     pipe_through(:api)
 
-    get("/statuses/public_timeline", TwitterAPI.Controller, :public_timeline)
-
-    get(
-      "/statuses/public_and_external_timeline",
-      TwitterAPI.Controller,
-      :public_and_external_timeline
-    )
-
-    get("/statuses/networkpublic_timeline", TwitterAPI.Controller, :public_and_external_timeline)
     get("/statuses/user_timeline", TwitterAPI.Controller, :user_timeline)
     get("/qvitter/statuses/user_timeline", TwitterAPI.Controller, :user_timeline)
     get("/users/show", TwitterAPI.Controller, :show_user)
@@ -190,6 +180,24 @@ defmodule Pleroma.Web.Router do
 
     get("/search", TwitterAPI.Controller, :search)
     get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)
+  end
+
+  scope "/api", Pleroma.Web do
+    if @public do
+      pipe_through(:api)
+    else
+      pipe_through(:authenticated_api)
+    end
+
+    get("/statuses/public_timeline", TwitterAPI.Controller, :public_timeline)
+
+    get(
+      "/statuses/public_and_external_timeline",
+      TwitterAPI.Controller,
+      :public_and_external_timeline
+    )
+
+    get("/statuses/networkpublic_timeline", TwitterAPI.Controller, :public_and_external_timeline)
   end
 
   scope "/api", Pleroma.Web do
