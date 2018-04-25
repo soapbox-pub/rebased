@@ -104,7 +104,7 @@ defmodule Pleroma.User do
     |> cast(params, [:bio, :name])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
-    |> validate_length(:bio, max: 1000)
+    |> validate_length(:bio, max: 5000)
     |> validate_length(:name, min: 1, max: 100)
   end
 
