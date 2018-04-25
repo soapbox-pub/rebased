@@ -175,7 +175,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def update_element_in_object(property, element, object) do
     with new_data <-
-           object.data |> Map.put("#{property}_count", length(element))
+           object.data
+           |> Map.put("#{property}_count", length(element))
            |> Map.put("#{property}s", element),
          changeset <- Changeset.change(object, data: new_data),
          {:ok, object} <- Repo.update(changeset),

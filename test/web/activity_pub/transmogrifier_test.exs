@@ -89,6 +89,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "tag:mastodon.example.org,2018-02-12:objectId=20:objectType=Conversation"
 
       assert object["sensitive"] == true
+
+      user = User.get_by_ap_id(object["actor"])
+
+      assert user.info["note_count"] == 1
     end
 
     test "it works for incoming notices with hashtags" do
@@ -102,7 +106,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = insert(:user)
 
       data =
-        File.read!("test/fixtures/mastodon-follow-activity.json") |> Poison.decode!()
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
         |> Map.put("object", user.ap_id)
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
@@ -118,7 +123,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
 
       data =
-        File.read!("test/fixtures/mastodon-like.json") |> Poison.decode!()
+        File.read!("test/fixtures/mastodon-like.json")
+        |> Poison.decode!()
         |> Map.put("object", activity.data["object"]["id"])
 
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)

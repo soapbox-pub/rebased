@@ -146,7 +146,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = data
       ) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+         {:ok, object} <-
+           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
          {:ok, activity, object} <- ActivityPub.like(actor, object, id, false) do
       {:ok, activity}
     else
@@ -158,7 +159,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Announce", "object" => object_id, "actor" => actor, "id" => id} = data
       ) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+         {:ok, object} <-
+           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
          {:ok, activity, object} <- ActivityPub.announce(actor, object, id, false) do
       {:ok, activity}
     else
@@ -209,7 +211,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       end
 
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+         {:ok, object} <-
+           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
          {:ok, activity} <- ActivityPub.delete(object, false) do
       {:ok, activity}
     else

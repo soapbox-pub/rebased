@@ -144,7 +144,7 @@ defmodule Pleroma.Formatter do
     @emoji
   end
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#\+%&@~\(\):]+[\w\/]/u
+  @link_regex ~r/https?:\/\/[\w\.\/?=\-#\+%&@~'\(\):]+[\w\/]/u
 
   def html_escape(text) do
     Regex.split(@link_regex, text, include_captures: true)
@@ -168,7 +168,13 @@ defmodule Pleroma.Formatter do
     subs =
       subs ++
         Enum.map(links, fn {uuid, url} ->
-          {uuid, "<a href='#{url}'>#{url}</a>"}
+          {:safe, link} = Phoenix.HTML.Link.link(url, to: url)
+
+          link =
+            link
+            |> IO.iodata_to_binary()
+
+          {uuid, link}
         end)
 
     {subs, uuid_text}
