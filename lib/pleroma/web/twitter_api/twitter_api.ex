@@ -14,7 +14,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def delete(%User{} = user, id) do
     # TwitterAPI does not have an "unretweet" endpoint; instead this is done
-    # via the "destroy" endpoint.  Therefore, there is a need to handle
+    # via the "destroy" endpoint.  Therefore, we need to handle
     # when the status to "delete" is actually an Announce (repeat) object.
     with %Activity{data: %{"type" => type}} <- Repo.get(Activity, id) do
       case type do
