@@ -15,7 +15,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   @media_removal Keyword.get(@mrf_policy, :media_removal)
   defp check_media_removal(actor_info, object) do
     if actor_info.host in @media_removal do
-      object = Map.delete(object, "attachments")
+      child_object = Map.delete(object["object"], "attachment")
+      object = Map.put(object, "object", child_object)
     end
 
     {:ok, object}
