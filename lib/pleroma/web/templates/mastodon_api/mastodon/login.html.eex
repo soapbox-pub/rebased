@@ -1,4 +1,4 @@
-<h2>Login in to Mastodon Frontend</h2>
+<h2>Login to Mastodon Frontend</h2>
 <%= if @error do %>
   <h2><%= @error %></h2>
 <% end %>
