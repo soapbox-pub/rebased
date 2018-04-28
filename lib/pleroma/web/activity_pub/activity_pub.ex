@@ -313,7 +313,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
     blocks = info["blocks"] || []
-    from(activity in query, where: fragment("not (? = ANY(?))", activity.actor, ^blocks))
+    from(activity in query,
+      where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
+      where: fragment("not (?->'to' \\?| ?)", activity.data, ^blocks)
+    )
   end
 
   defp restrict_blocked(query, _), do: query
