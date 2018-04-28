@@ -784,4 +784,20 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert status["id"] == activity.id
     end
   end
+
+  test "Convert newlines to <br> in bio", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+            conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+                "description" => "Hello,\r\nWorld! I\n am a test."
+              })
+
+      user = Repo.get!(User, user.id)
+      assert user.bio == "Hello,<br>World! I<br> am a test."
+  end
+
+  
 end
