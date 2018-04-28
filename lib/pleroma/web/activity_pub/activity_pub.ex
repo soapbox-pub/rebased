@@ -20,8 +20,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
-         :ok <- insert_full_object(map),
-         {:ok, map} <- @rewrite_policy.filter(map) do
+         {:ok, map} <- @rewrite_policy.filter(map),
+         :ok <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
           data: map,
@@ -313,7 +313,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
     blocks = info["blocks"] || []
-    from(activity in query,
+
+    from(
+      activity in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
       where: fragment("not (?->'to' \\?| ?)", activity.data, ^blocks)
     )
