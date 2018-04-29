@@ -35,7 +35,7 @@ defmodule Pleroma.List do
     Repo.all(query)
   end
 
-  def get(%{id: user_id} = _user, id) do
+  def get(id, %{id: user_id} = _user) do
     query =
       from(
         l in Pleroma.List,
@@ -47,10 +47,12 @@ defmodule Pleroma.List do
   end
 
   def get_following(%Pleroma.List{following: following} = list) do
-    q = from(
-      u in User,
-      where: u.follower_address in ^following
-    )
+    q =
+      from(
+        u in User,
+        where: u.follower_address in ^following
+      )
+
     {:ok, Repo.all(q)}
   end
 
@@ -65,7 +67,6 @@ defmodule Pleroma.List do
     Repo.insert(list)
   end
 
-  # TODO check that user is following followed
   def follow(%Pleroma.List{following: following} = list, %User{} = followed) do
     update_follows(list, %{following: Enum.uniq([followed.follower_address | following])})
   end

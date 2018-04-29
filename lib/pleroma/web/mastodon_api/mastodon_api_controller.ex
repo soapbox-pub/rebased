@@ -572,7 +572,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(user, id) do
+    with %Pleroma.List{} = list <- Pleroma.List.get(id, user) do
       res = ListView.render("list.json", list: list)
       json(conn, res)
     else
@@ -581,7 +581,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def delete_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(user, id),
+    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
          {:ok, _list} <- Pleroma.List.delete(list) do
       json(conn, %{})
     else
@@ -600,9 +600,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def add_to_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
     accounts
     |> Enum.each(fn account_id ->
-      with %Pleroma.List{} = list <- Pleroma.List.get(user, id),
+      with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
            %User{} = followed <- Repo.get(User, account_id) do
-        ret = Pleroma.List.follow(list, followed)
+        Pleroma.List.follow(list, followed)
       end
     end)
 
@@ -612,7 +612,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def remove_from_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
     accounts
     |> Enum.each(fn account_id ->
-      with %Pleroma.List{} = list <- Pleroma.List.get(user, id),
+      with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
            %User{} = followed <- Repo.get(Pleroma.User, account_id) do
         Pleroma.List.unfollow(list, followed)
       end
@@ -622,14 +622,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def list_accounts(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(user, id),
+    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
          {:ok, users} = Pleroma.List.get_following(list) do
       render(conn, AccountView, "accounts.json", %{users: users, as: :user})
     end
   end
 
   def rename_list(%{assigns: %{user: user}} = conn, %{"id" => id, "title" => title}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(user, id),
+    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
          {:ok, list} <- Pleroma.List.rename(list, title) do
       res = ListView.render("list.json", list: list)
       json(conn, res)
@@ -640,7 +640,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
-    with %Pleroma.List{title: title, following: following} <- Pleroma.List.get(user, id) do
+    with %Pleroma.List{title: title, following: following} <- Pleroma.List.get(id, user) do
       params =
         params
         |> Map.put("type", "Create")
