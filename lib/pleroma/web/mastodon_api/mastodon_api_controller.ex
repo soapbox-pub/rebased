@@ -134,6 +134,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       %{
         "shortcode" => shortcode,
         "static_url" => url,
+        "visible_in_picker" => true,
         "url" => url
       }
     end)
