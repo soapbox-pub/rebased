@@ -26,7 +26,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       version: "2.0",
       software: %{
         name: "pleroma",
-        version: "#{Keyword.get(@instance, :version)})"
+        version: Keyword.get(@instance, :version)
       },
       protocols: ["ostatus", "activitypub"],
       services: %{
