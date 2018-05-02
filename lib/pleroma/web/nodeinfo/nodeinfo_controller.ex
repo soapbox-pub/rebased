@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       links: [
         %{
           rel: "http://nodeinfo.diaspora.software/ns/schema/2.0",
-          href: Web.base_url() <> "/nodeinfo/2.0"
+          href: Web.base_url() <> "/nodeinfo/2.0.json"
         }
       ]
     }
