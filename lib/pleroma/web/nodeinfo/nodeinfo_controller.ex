@@ -36,8 +36,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       openRegistrations: Keyword.get(@instance, :registrations_open),
       usage: %{
         users: %{
-          total: Stats.get_stats().user_count
-        }
+          total: Stats.get_stats().user_count || 0
+        },
+        localPosts: Stats.get_stats().status_count || 0
       },
       metadata: %{}
     }
