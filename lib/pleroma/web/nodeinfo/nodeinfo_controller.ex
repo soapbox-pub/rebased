@@ -40,7 +40,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         },
         localPosts: Stats.get_stats().status_count || 0
       },
-      metadata: %{}
+      metadata: %{
+        nodeName: Keyword.get(@instance, :name)
+      }
     }
 
     conn
