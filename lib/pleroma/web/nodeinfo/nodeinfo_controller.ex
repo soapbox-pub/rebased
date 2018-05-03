@@ -43,7 +43,12 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       metadata: %{}
     }
 
-    json(conn, response)
+    conn
+    |> put_resp_header(
+      "content-type",
+      "application/json; profile=http://nodeinfo.diaspora.software/ns/schema/2.0#; charset=utf-8"
+    )
+    |> json(response)
   end
 
   def nodeinfo(conn, _) do
