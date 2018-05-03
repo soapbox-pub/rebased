@@ -22,6 +22,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
   # Schema definition: https://github.com/jhass/nodeinfo/blob/master/schemas/2.0/schema.json
   def nodeinfo(conn, %{"version" => "2.0"}) do
+    stats = Stats.get_stats()
+
     response = %{
       version: "2.0",
       software: %{
@@ -36,9 +38,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       openRegistrations: Keyword.get(@instance, :registrations_open),
       usage: %{
         users: %{
-          total: Stats.get_stats().user_count || 0
+          total: stats.user_count || 0
         },
-        localPosts: Stats.get_stats().status_count || 0
+        localPosts: stats.status_count || 0
       },
       metadata: %{
         nodeName: Keyword.get(@instance, :name)
