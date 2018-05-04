@@ -47,25 +47,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     |> Map.merge(Utils.make_json_ld_header())
   end
 
-  def collection(collection, iri, page, _total \\ nil) do
-    offset = (page - 1) * 10
-    items = Enum.slice(collection, offset, 10)
-    items = Enum.map(items, fn user -> user.ap_id end)
-    total = _total || length(collection)
-
-    map = %{
-      "id" => "#{iri}?page=#{page}",
-      "type" => "OrderedCollectionPage",
-      "partOf" => iri,
-      "totalItems" => length(collection),
-      "orderedItems" => items
-    }
-
-    if offset < length(collection) do
-      Map.put(map, "next", "#{iri}?page=#{page + 1}")
-    end
-  end
-
   def render("following.json", %{user: user, page: page}) do
     query = User.get_friends_query(user)
     query = from(user in query, select: [:ap_id])
@@ -160,6 +141,25 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       |> Map.merge(Utils.make_json_ld_header())
     else
       page |> Map.merge(Utils.make_json_ld_header())
+    end
+  end
+
+  def collection(collection, iri, page, _total \\ nil) do
+    offset = (page - 1) * 10
+    items = Enum.slice(collection, offset, 10)
+    items = Enum.map(items, fn user -> user.ap_id end)
+    total = _total || length(collection)
+
+    map = %{
+      "id" => "#{iri}?page=#{page}",
+      "type" => "OrderedCollectionPage",
+      "partOf" => iri,
+      "totalItems" => length(collection),
+      "orderedItems" => items
+    }
+
+    if offset < length(collection) do
+      Map.put(map, "next", "#{iri}?page=#{page + 1}")
     end
   end
 end
