@@ -295,7 +295,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
                User.ap_followers(user),
                announce_activity.data["actor"]
              ]
-      
+
       assert unannounce_activity.data["type"] == "Undo"
       assert unannounce_activity.data["object"] == announce_activity.data
       assert unannounce_activity.data["actor"] == user.ap_id
