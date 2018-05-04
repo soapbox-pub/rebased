@@ -82,19 +82,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
-    _id = activity.data["object"]["inReplyTo"]
-    replied_to_activities[activity.data["object"]["inReplyTo"]]
-  end
-
-  def get_reply_to(%{data: %{"object" => object}}, _) do
-    if object["inReplyTo"] && object["inReplyTo"] != "" do
-      Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
-    else
-      nil
-    end
-  end
-
   def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
     user = User.get_cached_by_ap_id(activity.data["actor"])
 
@@ -164,19 +151,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def get_visibility(object) do
-    public = "https://www.w3.org/ns/activitystreams#Public"
-    to = object["to"] || []
-    cc = object["cc"] || []
-
-    cond do
-      public in to -> "public"
-      public in cc -> "unlisted"
-      Enum.any?(to, &String.contains?(&1, "/followers")) -> "private"
-      true -> "direct"
-    end
-  end
-
   def render("attachment.json", %{attachment: attachment}) do
     [%{"mediaType" => media_type, "href" => href} | _] = attachment["url"]
 
@@ -198,5 +172,31 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       text_url: href,
       type: type
     }
+  end
+
+  def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
+    _id = activity.data["object"]["inReplyTo"]
+    replied_to_activities[activity.data["object"]["inReplyTo"]]
+  end
+
+  def get_reply_to(%{data: %{"object" => object}}, _) do
+    if object["inReplyTo"] && object["inReplyTo"] != "" do
+      Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
+    else
+      nil
+    end
+  end
+
+  def get_visibility(object) do
+    public = "https://www.w3.org/ns/activitystreams#Public"
+    to = object["to"] || []
+    cc = object["cc"] || []
+
+    cond do
+      public in to -> "public"
+      public in cc -> "unlisted"
+      Enum.any?(to, &String.contains?(&1, "/followers")) -> "private"
+      true -> "direct"
+    end
   end
 end
