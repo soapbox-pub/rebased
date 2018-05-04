@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.OStatus.NoteHandler do
   require Logger
   alias Pleroma.Web.{XML, OStatus}
-  alias Pleroma.{Object, User, Activity}
+  alias Pleroma.{Object, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI

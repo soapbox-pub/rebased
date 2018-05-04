@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.WebFinger do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
-  alias Pleroma.{Repo, User, XmlBuilder}
+  alias Pleroma.{User, XmlBuilder}
   alias Pleroma.Web
   alias Pleroma.Web.{XML, Salmon, OStatus}
   require Jason

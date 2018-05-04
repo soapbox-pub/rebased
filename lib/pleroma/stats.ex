@@ -1,6 +1,6 @@
 defmodule Pleroma.Stats do
   import Ecto.Query
-  alias Pleroma.{User, Repo, Activity}
+  alias Pleroma.{User, Repo}
 
   def start_link do
     agent = Agent.start_link(fn -> {[], %{}} end, name: __MODULE__)

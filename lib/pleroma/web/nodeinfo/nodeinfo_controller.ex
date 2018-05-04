@@ -1,7 +1,6 @@
 defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Web.Nodeinfo
   alias Pleroma.Stats
   alias Pleroma.Web
 

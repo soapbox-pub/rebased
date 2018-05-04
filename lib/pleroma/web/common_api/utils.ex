@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
-  alias Pleroma.{Repo, Object, Formatter, User, Activity}
+  alias Pleroma.{Repo, Object, Formatter, Activity}
   alias Pleroma.Web.ActivityPub.Utils
   alias Calendar.Strftime
 
