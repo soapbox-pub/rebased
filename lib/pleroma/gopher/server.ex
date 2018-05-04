@@ -65,12 +65,6 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
     "#{type}#{name}\t#{selector}\t#{address}\t#{port}\r\n"
   end
 
-  def response("") do
-    info("Welcome to #{Keyword.get(@instance, :name, "Pleroma")}!") <>
-      link("Public Timeline", "/main/public") <>
-      link("Federated Timeline", "/main/all") <> ".\r\n"
-  end
-
   def render_activities(activities) do
     activities
     |> Enum.reverse()
@@ -91,6 +85,12 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
         )
     end)
     |> Enum.join("\r\n")
+  end
+
+  def response("") do
+    info("Welcome to #{Keyword.get(@instance, :name, "Pleroma")}!") <>
+      link("Public Timeline", "/main/public") <>
+      link("Federated Timeline", "/main/all") <> ".\r\n"
   end
 
   def response("/main/public") do
