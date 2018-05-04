@@ -66,7 +66,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            ),
          {:ok, activity} <- insert(create_data, local),
          :ok <- maybe_federate(activity),
-         {:ok, actor} <- User.increase_note_count(actor) do
+         {:ok, _actor} <- User.increase_note_count(actor) do
       {:ok, activity}
     end
   end
@@ -177,7 +177,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity),
-         {:ok, actor} <- User.decrease_note_count(user) do
+         {:ok, _actor} <- User.decrease_note_count(user) do
       {:ok, activity}
     end
   end
@@ -236,7 +236,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_tag(query, _), do: query
 
-  defp restrict_recipients(query, [], user), do: query
+  defp restrict_recipients(query, [], _user), do: query
 
   defp restrict_recipients(query, recipients, nil) do
     from(activity in query, where: fragment("? && ?", ^recipients, activity.recipients))
@@ -400,7 +400,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def make_user_from_ap_id(ap_id) do
-    if user = User.get_by_ap_id(ap_id) do
+    if _user = User.get_by_ap_id(ap_id) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
@@ -496,7 +496,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         object = %Object{} ->
           {:ok, object}
 
-        e ->
+        _e ->
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
           case OStatus.fetch_activity_from_url(id) do

@@ -47,11 +47,11 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     |> Map.merge(Utils.make_json_ld_header())
   end
 
-  def collection(collection, iri, page, total \\ nil) do
+  def collection(collection, iri, page, _total \\ nil) do
     offset = (page - 1) * 10
     items = Enum.slice(collection, offset, 10)
     items = Enum.map(items, fn user -> user.ap_id end)
-    total = total || length(collection)
+    _total = _total || length(collection)
 
     map = %{
       "id" => "#{iri}?page=#{page}",

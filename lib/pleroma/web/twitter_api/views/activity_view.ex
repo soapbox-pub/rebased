@@ -31,7 +31,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   end
 
   defp collect_context_ids(activities) do
-    contexts =
+    _contexts =
       activities
       |> Enum.reject(& &1.data["context_id"])
       |> Enum.map(fn %{data: data} ->
