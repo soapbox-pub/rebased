@@ -26,7 +26,7 @@ defmodule Pleroma.Builders.ActivityBuilder do
   end
 
   def insert_list(times, data \\ %{}, opts \\ %{}) do
-    Enum.map(1..times, fn n ->
+    Enum.map(1..times, fn _n ->
       {:ok, activity} = insert(data, opts)
       activity
     end)

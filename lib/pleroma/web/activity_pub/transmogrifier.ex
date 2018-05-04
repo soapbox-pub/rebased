@@ -143,12 +143,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = data
+        %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = _data
       ) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
            get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
-         {:ok, activity, object} <- ActivityPub.like(actor, object, id, false) do
+         {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
       {:ok, activity}
     else
       _e -> :error

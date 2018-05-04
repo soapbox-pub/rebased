@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_ftl_removal(actor_info, object) do
       {:ok, object}
     else
-      e -> {:reject, nil}
+      _e -> {:reject, nil}
     end
   end
 end

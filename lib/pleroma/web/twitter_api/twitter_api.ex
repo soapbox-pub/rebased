@@ -184,7 +184,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   defp parse_int(_, default), do: default
 
-  def search(user, %{"q" => query} = params) do
+  def search(_user, %{"q" => query} = params) do
     limit = parse_int(params["rpp"], 20)
     page = parse_int(params["page"], 1)
     offset = (page - 1) * limit
@@ -206,7 +206,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         order_by: [desc: :inserted_at]
       )
 
-    activities = Repo.all(q)
+    _activities = Repo.all(q)
   end
 
   defp make_date do
