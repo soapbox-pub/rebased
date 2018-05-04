@@ -275,7 +275,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("in_reply_to_status_id", params["in_reply_to_id"])
       |> Map.put("no_attachment_links", true)
 
-    {:ok, activity} = CommonAPI.post(user, params)
+    idempotency_key =
+      case get_req_header(conn, "idempotency-key") do
+        [key] -> key
+        _ -> Ecto.UUID.generate()
+      end
+
+    {:ok, activity} =
+      Cachex.get!(
+        :user_cache,
+        "idem:#{idempotency_key}",
+        fallback: fn _ -> CommonAPI.post(user, params) end
+      )
+
     render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
   end
 

@@ -63,9 +63,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   test "posting a status", %{conn: conn} do
     user = insert(:user)
 
-    conn =
+    idempotency_key = "Pikachu rocks!"
+
+    conn_one =
       conn
       |> assign(:user, user)
+      |> put_req_header("idempotency-key", idempotency_key)
       |> post("/api/v1/statuses", %{
         "status" => "cofe",
         "spoiler_text" => "2hu",
@@ -73,9 +76,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       })
 
     assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
-             json_response(conn, 200)
+             json_response(conn_one, 200)
 
     assert Repo.get(Activity, id)
+
+    conn_two =
+      conn
+      |> assign(:user, user)
+      |> put_req_header("idempotency-key", idempotency_key)
+      |> post("/api/v1/statuses", %{
+        "status" => "cofe",
+        "spoiler_text" => "2hu",
+        "sensitive" => "false"
+      })
+
+    assert %{"id" => second_id} = json_response(conn_two, 200)
+
+    assert id == second_id
   end
 
   test "posting a sensitive status", %{conn: conn} do
