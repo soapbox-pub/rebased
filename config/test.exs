@@ -32,6 +32,6 @@ try do
 rescue
   _ ->
     IO.puts(
-      "You may want to create test.secret.exs to declare custom database connection paramenters."
+      "You may want to create test.secret.exs to declare custom database connection parameters."
     )
 end
