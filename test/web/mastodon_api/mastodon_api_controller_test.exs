@@ -75,6 +75,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         "sensitive" => "false"
       })
 
+    {:ok, ttl} = Cachex.ttl(:user_cache, "idem:#{idempotency_key}")
+    # 5 Minutes
+    assert ttl > :timer.seconds(5 * 60 - 1)
+
     assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
              json_response(conn_one, 200)
 
