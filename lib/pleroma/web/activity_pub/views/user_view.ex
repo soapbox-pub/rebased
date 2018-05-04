@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     offset = (page - 1) * 10
     items = Enum.slice(collection, offset, 10)
     items = Enum.map(items, fn user -> user.ap_id end)
-    _total = _total || length(collection)
+    total = _total || length(collection)
 
     map = %{
       "id" => "#{iri}?page=#{page}",
