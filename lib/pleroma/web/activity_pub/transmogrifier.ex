@@ -254,10 +254,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> set_reply_to_uri
   end
 
-#  @doc
-#  """
-#  internal -> Mastodon
-#  """
+  #  @doc
+  #  """
+  #  internal -> Mastodon
+  #  """
 
   def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
     object =
