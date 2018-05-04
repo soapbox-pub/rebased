@@ -255,7 +255,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   @doc
-  """
+  _ = """
   internal -> Mastodon
   """
 
