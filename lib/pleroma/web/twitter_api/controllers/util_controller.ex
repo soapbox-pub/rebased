@@ -92,7 +92,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
     with %User{} = user <- User.get_cached_by_nickname(username),
          true <- Pbkdf2.checkpw(password, user.password_hash),
-         %User{} = followed <- Repo.get(User, id),
+         %User{} = _followed <- Repo.get(User, id),
          {:ok, follower} <- User.follow(user, followee),
          {:ok, _activity} <- ActivityPub.follow(follower, followee) do
       conn

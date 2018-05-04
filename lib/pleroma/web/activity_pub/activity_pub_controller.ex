@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
   alias Pleroma.{User, Object}
-  alias Pleroma.Web.ActivityPub.{ObjectView, UserView, Transmogrifier}
+  alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.Federator
 

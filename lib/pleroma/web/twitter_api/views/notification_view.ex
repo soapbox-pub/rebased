@@ -2,7 +2,6 @@ defmodule Pleroma.Web.TwitterAPI.NotificationView do
   use Pleroma.Web, :view
   alias Pleroma.{Notification, User}
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.ActivityView
 

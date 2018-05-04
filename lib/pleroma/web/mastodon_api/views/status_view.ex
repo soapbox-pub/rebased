@@ -83,7 +83,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
-    id = activity.data["object"]["inReplyTo"]
+    _id = activity.data["object"]["inReplyTo"]
     replied_to_activities[activity.data["object"]["inReplyTo"]]
   end
 
