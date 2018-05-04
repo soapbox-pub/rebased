@@ -295,6 +295,11 @@ defmodule Pleroma.Web.Router do
 
       get("/host-meta", WebFinger.WebFingerController, :host_meta)
       get("/webfinger", WebFinger.WebFingerController, :webfinger)
+      get("/nodeinfo", Nodeinfo.NodeinfoController, :schemas)
+    end
+
+    scope "/nodeinfo", Pleroma.Web do
+      get("/:version", Nodeinfo.NodeinfoController, :nodeinfo)
     end
   end
 
