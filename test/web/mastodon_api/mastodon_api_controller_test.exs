@@ -75,9 +75,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         "sensitive" => "false"
       })
 
-    {:ok, ttl} = Cachex.ttl(:user_cache, "idem:#{idempotency_key}")
-    # 5 Minutes
-    assert ttl > :timer.seconds(5 * 60 - 1)
+    {:ok, ttl} = Cachex.ttl(:idempotency_cache, idempotency_key)
+    # Six hours
+    assert ttl > :timer.seconds(6 * 60 * 60 - 1)
 
     assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
              json_response(conn_one, 200)
@@ -97,6 +97,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"id" => second_id} = json_response(conn_two, 200)
 
     assert id == second_id
+
+    conn_three =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" => "cofe",
+        "spoiler_text" => "2hu",
+        "sensitive" => "false"
+      })
+
+    assert %{"id" => third_id} = json_response(conn_three, 200)
+
+    refute id == third_id
   end
 
   test "posting a sensitive status", %{conn: conn} do
