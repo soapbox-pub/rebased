@@ -26,3 +26,12 @@ config :comeonin, :pbkdf2_rounds, 1
 config :pleroma, :websub, Pleroma.Web.WebsubMock
 config :pleroma, :ostatus, Pleroma.Web.OStatusMock
 config :pleroma, :httpoison, HTTPoisonMock
+
+try do
+  import_config "test.secret.exs"
+rescue
+  _ ->
+    IO.puts(
+      "You may want to create test.secret.exs to declare custom database connection parameters."
+    )
+end
