@@ -39,15 +39,9 @@ sub vcl_recv {
         return (hash);
     }
 
-    # Hack to enable a Terms of Service page missing from Pleroma
-    if (req.url ~ "^/about/more$") {
-        set req.http.x-redir = "https://" + req.http.host + "/static/terms-of-service.html";
-        return (synth(750, ""));
-    }
-
     # Strip headers that will affect caching from all other static content
     # This also permits caching of individual toots and AP Activities
-    if ((req.url ~ "^/(media|notice|objects|static)/") ||
+    if ((req.url ~ "^/(media|notice|static)/") ||
     (req.url ~ "(?i)\.(html|js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$"))
     {
       unset req.http.Cookie;
@@ -99,7 +93,7 @@ sub vcl_backend_response {
 
     # Strip cache-restricting headers from Pleroma on static content that we want to cache
     # Also enable streaming of cached content to clients (no waiting for Varnish to complete backend fetch)
-    if ((bereq.url ~ "^/(notice|objects)/") ||
+    if ((bereq.url ~ "^/(notice)/") ||
     (bereq.url ~ "(?i)\.(js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$"))
     {
       unset beresp.http.set-cookie;
