@@ -72,9 +72,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> Enum.reduce(%{}, fn data, mapping ->
         name = data["name"]
 
-        if String.starts_with?(name, ":") do
-          name = name |> String.slice(1..-2)
-        end
+        name =
+          if String.starts_with?(name, ":") do
+            name = name |> String.slice(1..-2)
+          else
+            name
+          end
 
         mapping |> Map.put(name, data["icon"]["url"])
       end)

@@ -123,9 +123,12 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "limit" => "10"
     }
 
-    if max_qid != nil do
-      params = Map.put(params, "max_id", max_qid)
-    end
+    params =
+      if max_qid != nil do
+        Map.put(params, "max_id", max_qid)
+      else
+        params
+      end
 
     activities = ActivityPub.fetch_public_activities(params)
     min_id = Enum.at(activities, 0).id
