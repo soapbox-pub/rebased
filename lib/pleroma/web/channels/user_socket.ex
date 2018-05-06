@@ -1,7 +1,6 @@
 defmodule Pleroma.Web.UserSocket do
   use Phoenix.Socket
   alias Pleroma.User
-  alias Comeonin.Pbkdf2
 
   ## Channels
   # channel "room:*", Pleroma.Web.RoomChannel

@@ -1,6 +1,5 @@
 defmodule Mix.Tasks.RegisterUser do
   use Mix.Task
-  import Mix.Ecto
   alias Pleroma.{Repo, User}
 
   @shortdoc "Register user"

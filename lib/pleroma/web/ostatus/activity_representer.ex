@@ -1,7 +1,6 @@
 defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   alias Pleroma.{Activity, User, Object}
   alias Pleroma.Web.OStatus.UserRepresenter
-  alias Pleroma.Formatter
   require Logger
 
   defp get_href(id) do

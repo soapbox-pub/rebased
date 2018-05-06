@@ -146,12 +146,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = data
+        %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = _data
       ) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
            get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
-         {:ok, activity, object} <- ActivityPub.like(actor, object, id, false) do
+         {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
       {:ok, activity}
     else
       _e -> :error
@@ -159,12 +159,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Announce", "object" => object_id, "actor" => actor, "id" => id} = data
+        %{"type" => "Announce", "object" => object_id, "actor" => actor, "id" => id} = _data
       ) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
            get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
-         {:ok, activity, object} <- ActivityPub.announce(actor, object, id, false) do
+         {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false) do
       {:ok, activity}
     else
       _e -> :error
@@ -205,7 +205,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   # TODO: Make secure.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => id} = data
+        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => _id} = _data
       ) do
     object_id =
       case object_id do
@@ -213,13 +213,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         id -> id
       end
 
-    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+    with %User{} = _actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
            get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
          {:ok, activity} <- ActivityPub.delete(object, false) do
       {:ok, activity}
     else
-      e -> :error
+      _e -> :error
     end
   end
 
@@ -257,10 +257,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> set_reply_to_uri
   end
 
-  @doc
-  """
-  internal -> Mastodon
-  """
+  #  @doc
+  #  """
+  #  internal -> Mastodon
+  #  """
 
   def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
     object =
@@ -275,7 +275,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     {:ok, data}
   end
 
-  def prepare_outgoing(%{"type" => type} = data) do
+  def prepare_outgoing(%{"type" => _type} = data) do
     data =
       data
       |> maybe_fix_object_url
@@ -289,7 +289,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       case ActivityPub.fetch_object_from_id(data["object"]) do
         {:ok, relative_object} ->
           if relative_object.data["external_url"] do
-            data =
+            _data =
               data
               |> Map.put("object", relative_object.data["external_url"])
           else

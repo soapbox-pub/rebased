@@ -8,7 +8,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.XML
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ActivityPub
-  import Ecto.Query
 
   def feed_redirect(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)

@@ -1,7 +1,6 @@
 defmodule Mix.Tasks.GeneratePasswordReset do
   use Mix.Task
-  import Mix.Ecto
-  alias Pleroma.{Repo, User}
+  alias Pleroma.User
 
   @shortdoc "Generate password reset link for user"
   def run([nickname]) do

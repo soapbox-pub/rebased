@@ -7,11 +7,11 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
     options
   end
 
-  def call(%{assigns: %{valid_signature: true}} = conn, opts) do
+  def call(%{assigns: %{valid_signature: true}} = conn, _opts) do
     conn
   end
 
-  def call(conn, opts) do
+  def call(conn, _opts) do
     user = conn.params["actor"]
     Logger.debug("Checking sig for #{user}")
     [signature | _] = get_req_header(conn, "signature")

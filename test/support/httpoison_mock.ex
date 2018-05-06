@@ -367,7 +367,7 @@ defmodule HTTPoisonMock do
 
   def post(
         "https://social.heldscal.la/main/push/hub",
-        {:form, data},
+        {:form, _data},
         "Content-type": "application/x-www-form-urlencoded"
       ) do
     {:ok,
@@ -711,11 +711,11 @@ defmodule HTTPoisonMock do
      }"}
   end
 
-  def post(url, body, headers) do
+  def post(url, _body, _headers) do
     {:error, "Not implemented the mock response for post #{inspect(url)}"}
   end
 
-  def post(url, body, headers, options) do
+  def post(url, _body, _headers, _options) do
     {:error, "Not implemented the mock response for post #{inspect(url)}"}
   end
 end
