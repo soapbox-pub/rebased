@@ -17,9 +17,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     if actor_info.host in @media_removal do
       child_object = Map.delete(object["object"], "attachment")
       object = Map.put(object, "object", child_object)
+      {:ok, object}
+    else
+      {:ok, object}
     end
-
-    {:ok, object}
   end
 
   @media_nsfw Keyword.get(@mrf_policy, :media_nsfw)
@@ -32,9 +33,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       child_object = Map.put(child_object, "tags", tags)
       child_object = Map.put(child_object, "sensitive", true)
       object = Map.put(object, "object", child_object)
+      {:ok, object}
+    else
+      {:ok, object}
     end
-
-    {:ok, object}
   end
 
   @ftl_removal Keyword.get(@mrf_policy, :federated_timeline_removal)
@@ -43,22 +45,28 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       user = User.get_by_ap_id(object["actor"])
 
       # flip to/cc relationship to make the post unlisted
-      if "https://www.w3.org/ns/activitystreams#Public" in object["to"] and
-           user.follower_address in object["cc"] do
-        to =
-          List.delete(object["to"], "https://www.w3.org/ns/activitystreams#Public") ++
-            [user.follower_address]
+      object =
+        if "https://www.w3.org/ns/activitystreams#Public" in object["to"] and
+             user.follower_address in object["cc"] do
+          to =
+            List.delete(object["to"], "https://www.w3.org/ns/activitystreams#Public") ++
+              [user.follower_address]
 
-        cc =
-          List.delete(object["cc"], user.follower_address) ++
-            ["https://www.w3.org/ns/activitystreams#Public"]
+          cc =
+            List.delete(object["cc"], user.follower_address) ++
+              ["https://www.w3.org/ns/activitystreams#Public"]
 
-        object = Map.put(object, "to", to)
-        object = Map.put(object, "cc", cc)
-      end
+          object
+          |> Map.put("to", to)
+          |> Map.put("cc", cc)
+        else
+          object
+        end
+
+      {:ok, object}
+    else
+      {:ok, object}
     end
-
-    {:ok, object}
   end
 
   def filter(object) do

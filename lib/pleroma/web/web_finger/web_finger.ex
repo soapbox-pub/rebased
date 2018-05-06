@@ -239,13 +239,14 @@ defmodule Pleroma.Web.WebFinger do
           URI.parse(account).host
       end
 
-    case find_lrdd_template(domain) do
-      {:ok, template} ->
-        address = String.replace(template, "{uri}", URI.encode(account))
+    address =
+      case find_lrdd_template(domain) do
+        {:ok, template} ->
+          String.replace(template, "{uri}", URI.encode(account))
 
-      _ ->
-        address = "http://#{domain}/.well-known/webfinger?resource=acct:#{account}"
-    end
+        _ ->
+          "http://#{domain}/.well-known/webfinger?resource=acct:#{account}"
+      end
 
     with response <-
            @httpoison.get(
