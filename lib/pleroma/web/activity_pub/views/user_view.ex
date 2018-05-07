@@ -147,21 +147,21 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     end
   end
 
-  def collection(collection, iri, page, _total \\ nil) do
+  def collection(collection, iri, page, total \\ nil) do
     offset = (page - 1) * 10
     items = Enum.slice(collection, offset, 10)
     items = Enum.map(items, fn user -> user.ap_id end)
-    total = _total || length(collection)
+    total = total || length(collection)
 
     map = %{
       "id" => "#{iri}?page=#{page}",
       "type" => "OrderedCollectionPage",
       "partOf" => iri,
-      "totalItems" => length(collection),
+      "totalItems" => total,
       "orderedItems" => items
     }
 
-    if offset < length(collection) do
+    if offset < total do
       Map.put(map, "next", "#{iri}?page=#{page + 1}")
     end
   end

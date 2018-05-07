@@ -74,7 +74,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
         name =
           if String.starts_with?(name, ":") do
-            name = name |> String.slice(1..-2)
+            name |> String.slice(1..-2)
           else
             name
           end

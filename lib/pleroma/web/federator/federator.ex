@@ -14,6 +14,10 @@ defmodule Pleroma.Web.Federator do
   @federating Keyword.get(@instance, :federating)
   @max_jobs 20
 
+  def init(args) do
+    {:ok, args}
+  end
+
   def start_link do
     spawn(fn ->
       # 1 minute

@@ -3,6 +3,10 @@ defmodule Pleroma.Web.Streamer do
   require Logger
   alias Pleroma.{User, Notification}
 
+  def init(args) do
+    {:ok, args}
+  end
+
   def start_link do
     spawn(fn ->
       # 30 seconds
