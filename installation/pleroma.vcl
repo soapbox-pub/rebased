@@ -93,8 +93,7 @@ sub vcl_backend_response {
 
     # Strip cache-restricting headers from Pleroma on static content that we want to cache
     # Also enable streaming of cached content to clients (no waiting for Varnish to complete backend fetch)
-    if ((bereq.url ~ "^/(notice)/") ||
-    (bereq.url ~ "(?i)\.(js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$"))
+    if (bereq.url ~ "(?i)\.(js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$")
     {
       unset beresp.http.set-cookie;
       unset beresp.http.Cache-Control;
