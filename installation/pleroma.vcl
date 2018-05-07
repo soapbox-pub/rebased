@@ -41,7 +41,7 @@ sub vcl_recv {
 
     # Strip headers that will affect caching from all other static content
     # This also permits caching of individual toots and AP Activities
-    if ((req.url ~ "^/(media|notice|static)/") ||
+    if ((req.url ~ "^/(media|static)/") ||
     (req.url ~ "(?i)\.(html|js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$"))
     {
       unset req.http.Cookie;
