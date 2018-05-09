@@ -148,8 +148,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def unannounce(
         %User{} = actor,
         %Object{} = object,
-        local \\ true,
-        activity_id \\ nil
+        activity_id \\ nil,
+        local \\ true
       ) do
     with %Activity{} = announce_activity <- get_existing_announce(actor.ap_id, object),
          unannounce_data <- make_unannounce_data(actor, announce_activity, activity_id),
