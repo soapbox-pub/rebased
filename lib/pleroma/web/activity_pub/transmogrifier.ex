@@ -231,7 +231,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
            get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
-         {:ok, activity} <- ActivityPub.unannounce(actor, object, id, false) do
+         {:ok, activity, _, _} <- ActivityPub.unannounce(actor, object, id, false) do
       {:ok, activity}
     else
       e -> :error
