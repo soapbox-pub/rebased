@@ -240,7 +240,13 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     inserted_at = activity.data["published"]
 
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
-    follow_activity = Activity.get_by_ap_id(activity.data["object"])
+
+    follow_activity =
+      if is_map(activity.data["object"]) do
+        Activity.get_by_ap_id(activity.data["object"]["id"])
+      else
+        Activity.get_by_ap_id(activity.data["object"])
+      end
 
     mentions = (activity.recipients || []) |> get_mentions
 

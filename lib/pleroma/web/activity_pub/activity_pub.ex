@@ -151,13 +151,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         local \\ true,
         activity_id \\ nil
       ) do
-    with %Activity{} = activity <- get_existing_announce(actor.ap_id, object),
-         unannounce_data <- make_unannounce_data(actor, activity, activity_id),
+    with %Activity{} = announce_activity <- get_existing_announce(actor.ap_id, object),
+         unannounce_data <- make_unannounce_data(actor, announce_activity, activity_id),
          {:ok, unannounce_activity} <- insert(unannounce_data, local),
-         :ok <- maybe_federate(activity),
-         {:ok, _activity} <- Repo.delete(activity),
-         {:ok, object} <- remove_announce_from_object(activity, object) do
-      {:ok, unannounce_activity, activity, object}
+         :ok <- maybe_federate(unannounce_activity),
+         {:ok, _activity} <- Repo.delete(announce_activity),
+         {:ok, object} <- remove_announce_from_object(announce_activity, object) do
+      {:ok, unannounce_activity, announce_activity, object}
     else
       _e -> {:ok, object}
     end
