@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
-  alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Federator
   alias Pleroma.Web.OStatus
@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
   @instance Application.get_env(:pleroma, :instance)
-  @rewrite_policy Keyword.get(@instance, :rewrite_policy)
 
   def get_recipients(data) do
     (data["to"] || []) ++ (data["cc"] || [])
@@ -20,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
-         {:ok, map} <- @rewrite_policy.filter(map),
+         {:ok, map} <- MRF.filter(map),
          :ok <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
