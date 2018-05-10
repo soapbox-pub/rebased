@@ -1,13 +1,14 @@
 defmodule Pleroma.Web.ActivityPub.MRF do
-
-  @callback filter(Map.t) :: {:ok | :reject, Map.t}
+  @callback filter(Map.t()) :: {:ok | :reject, Map.t()}
 
   def filter(object) do
     get_policies()
     |> Enum.reduce({:ok, object}, fn
-      (policy, {:ok, object}) ->
+      policy, {:ok, object} ->
         policy.filter(object)
-      (_, error) -> error
+
+      _, error ->
+        error
     end)
   end
 
@@ -16,6 +17,8 @@ defmodule Pleroma.Web.ActivityPub.MRF do
     |> Keyword.get(:rewrite_policy, [])
     |> get_policies()
   end
-  def get_policies(policy) when is_atom(policy), do: [policy]
-  def get_policies(policies) when is_list(policies), do: policies
+
+  defp get_policies(policy) when is_atom(policy), do: [policy]
+  defp get_policies(policies) when is_list(policies), do: policies
+  defp get_policies(_), do: []
 end
