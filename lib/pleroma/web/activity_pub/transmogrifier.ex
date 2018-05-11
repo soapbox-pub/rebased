@@ -216,24 +216,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, activity} <- ActivityPub.delete(object, false) do
       {:ok, activity}
     else
-      e ->
-        Logger.error(e)
-        :error
+      e -> :error
     end
   end
 
   def handle_incoming(
-    %{"type" => "Undo", "object" => %{"type" => "Announce", "id" => object_id}, "actor" => actor, "id" => id} = data
-     ) do
+        %{
+          "type" => "Undo",
+          "object" => %{"type" => "Announce", "id" => object_id},
+          "actor" => actor,
+          "id" => id
+        } = data
+      ) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
            get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
          {:ok, activity, _, _} <- ActivityPub.unannounce(actor, object, id, false) do
       {:ok, activity}
     else
-      e ->
-        Logger.error(e)
-        :error
+      e -> :error
     end
   end
 
