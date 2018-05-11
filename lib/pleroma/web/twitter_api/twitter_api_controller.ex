@@ -364,6 +364,19 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def delete_account(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params) do
+      {:ok, user} ->
+        case User.delete(user) do
+          :ok -> json(conn, %{status: "success"})
+          :error -> error_json(conn, "Unable to delete user.")
+        end
+
+      {:error, msg} ->
+        forbidden_json_reply(conn, msg)
+    end
+  end
+
   def search(%{assigns: %{user: user}} = conn, %{"q" => _query} = params) do
     activities = TwitterAPI.search(user, params)
 

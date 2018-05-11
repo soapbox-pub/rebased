@@ -1,5 +1,6 @@
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Builders.{UserBuilder}
   use Pleroma.DataCase
 
   test "it adds attachment links to a given text and attachment set" do
@@ -14,5 +15,24 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     assert res ==
              "<br><a href=\"#{name}\" class='attachment'>Sakura Mana – Turned on by a Se…</a>"
+  end
+
+  describe "it confirms the password given is the current users password" do
+    test "with no credentials" do
+      assert Utils.confirm_current_password(nil, %{"password" => "test"}) ==
+               {:error, "Invalid credentials."}
+    end
+
+    test "with incorrect password given" do
+      {:ok, user} = UserBuilder.insert()
+
+      assert Utils.confirm_current_password(user, %{"password" => ""}) ==
+               {:error, "Invalid password."}
+    end
+
+    test "with correct password given" do
+      {:ok, user} = UserBuilder.insert()
+      assert Utils.confirm_current_password(user, %{"password" => "test"}) == {:ok, user}
+    end
   end
 end
