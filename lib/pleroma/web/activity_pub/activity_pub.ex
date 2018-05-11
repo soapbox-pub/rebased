@@ -42,13 +42,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def stream_out(activity) do
     if activity.data["type"] in ["Create", "Announce"] do
       Pleroma.Web.Streamer.stream("user", activity)
+      direct? = activity.data["object"]["visibility"] == "direct"
 
-      if Enum.member?(activity.data["to"], "https://www.w3.org/ns/activitystreams#Public") do
-        Pleroma.Web.Streamer.stream("public", activity)
+      cond do
+        direct? ->
+          Pleroma.Web.Streamer.stream("direct", activity)
 
-        if activity.local do
-          Pleroma.Web.Streamer.stream("public:local", activity)
-        end
+        Enum.member?(activity.data["to"], "https://www.w3.org/ns/activitystreams#Public") ->
+          Pleroma.Web.Streamer.stream("public", activity)
+
+          if activity.local do
+            Pleroma.Web.Streamer.stream("public:local", activity)
+          end
       end
     end
   end
