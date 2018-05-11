@@ -227,6 +227,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def dm_timeline(%{assigns: %{user: user}} = conn, params) do
+    query = ActivityPub.fetch_activities_query([user.ap_id], %{visibility: "direct"})
+    activities = Repo.all(query)
+
+    conn
+    |> add_link_headers(:user_statuses, activities, user.ap_id)
+    |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
+  end
+
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
          true <- ActivityPub.visible_for_user?(activity, user) do

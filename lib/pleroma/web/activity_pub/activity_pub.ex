@@ -224,6 +224,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  @valid_visibilities ~w[direct unlisted public private]
+
+  defp restrict_visibility(query, %{visibility: "direct"}) do
+    public = "https://www.w3.org/ns/activitystreams#Public"
+
+    from(
+      activity in query,
+      join: sender in User,
+      on: sender.ap_id == activity.actor,
+      where:
+        fragment("not data->'to' \\? ?", ^public) and fragment("not data->'cc' \\? ?", ^public) and
+          fragment("not data->'to' \\? ?", sender.follower_address)
+    )
+  end
+
+  defp restrict_visibility(_query, %{visibility: visibility})
+       when visibility not in @valid_visibilities do
+    Logger.error("Could not restrict visibility to #{visibility}")
+  end
+
+  defp restrict_visibility(query, _visibility), do: query
+
   defp restrict_since(query, %{"since_id" => since_id}) do
     from(activity in query, where: activity.id > ^since_id)
   end
@@ -347,6 +369,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_recent(opts)
     |> restrict_blocked(opts)
     |> restrict_media(opts)
+    |> restrict_visibility(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do

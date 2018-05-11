@@ -106,6 +106,8 @@ defmodule Pleroma.Web.Router do
 
     get("/timelines/home", MastodonAPIController, :home_timeline)
 
+    get("/timelines/direct", MastodonAPIController, :dm_timeline)
+
     get("/favourites", MastodonAPIController, :favourites)
 
     post("/statuses", MastodonAPIController, :post_status)
