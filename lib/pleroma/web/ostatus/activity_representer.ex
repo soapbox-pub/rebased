@@ -250,30 +250,23 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     mentions = (activity.recipients || []) |> get_mentions
 
-    case follow_activity.data["type"] do
-      "Follow" ->
-        [
-          {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
-          {:"activity:verb", ['http://activitystrea.ms/schema/1.0/unfollow']},
-          {:id, h.(activity.data["id"])},
-          {:title, ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
-          {:content, [type: 'html'],
-           ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
-          {:published, h.(inserted_at)},
-          {:updated, h.(updated_at)},
-          {:"activity:object",
-           [
-             {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/person']},
-             {:id, h.(follow_activity.data["object"])},
-             {:uri, h.(follow_activity.data["object"])}
-           ]},
-          {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])],
-           []}
-        ] ++ mentions ++ author
-
-      _ ->
-        nil
-    end
+    [
+      {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
+      {:"activity:verb", ['http://activitystrea.ms/schema/1.0/unfollow']},
+      {:id, h.(activity.data["id"])},
+      {:title, ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
+      {:content, [type: 'html'],
+       ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
+      {:published, h.(inserted_at)},
+      {:updated, h.(updated_at)},
+      {:"activity:object",
+       [
+         {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/person']},
+         {:id, h.(follow_activity.data["object"])},
+         {:uri, h.(follow_activity.data["object"])}
+       ]},
+      {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []}
+    ] ++ mentions ++ author
   end
 
   def to_simple_form(%{data: %{"type" => "Delete"}} = activity, user, with_author) do
