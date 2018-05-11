@@ -46,6 +46,19 @@ defmodule Pleroma.Web.Streamer do
     {:noreply, topics}
   end
 
+  def handle_cast(%{action: :stream, topic: "direct", item: item}, topics) do
+    recipient_topics =
+      User.get_recipients_from_activity(item)
+      |> Enum.map(fn %{id: id} -> "direct:#{id}" end)
+
+    Enum.each(recipient_topics || [], fn user_topic ->
+      Logger.debug("Trying to push direct message to #{user_topic}\n\n")
+      push_to_socket(topics, user_topic, item)
+    end)
+
+    {:noreply, topics}
+  end
+
   def handle_cast(%{action: :stream, topic: "user", item: %Notification{} = item}, topics) do
     topic = "user:#{item.user_id}"
 
@@ -137,8 +150,8 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
-  defp internal_topic("user", socket) do
-    "user:#{socket.assigns[:user].id}"
+  defp internal_topic(topic, socket) when topic in ~w[user, direct] do
+    "#{topic}:#{socket.assigns[:user].id}"
   end
 
   defp internal_topic(topic, _), do: topic
