@@ -271,8 +271,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
            []}
         ] ++ mentions ++ author
 
-      _ ->
-        nil
+      _ -> []
     end
   end
 
