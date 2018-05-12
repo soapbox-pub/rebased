@@ -12,13 +12,13 @@
        "http://www.w3.org/ns/activitystreams#Public"
      ],
      "published": "2018-05-11T16:23:37Z",
-     "object": "http://lostallofmy.faith/objects/acc592f0-093a-4326-856e-2ab30947ef11",
-     "id": "http://mastodon.example.org/users/admin/statuses/100011594053806179/activity",
+     "object": "http://mastodon.example.org/@admin/99541947525187367",
+     "id": "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity",
      "cc": [
-       "http://lostallofmy.faith/users/admin",
+       "http://mastodon.example.org/users/admin",
        "http://mastodon.example.org/users/admin/followers"
      ],
-     "atomUri": "http://mastodon.example.org/users/admin/statuses/100011594053806179/activity",
+     "atomUri": "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity",
      "actor": "http://mastodon.example.org/users/admin"
    },
    "id": "http://mastodon.example.org/users/admin#announces/100011594053806179/undo",
