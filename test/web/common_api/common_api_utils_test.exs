@@ -18,19 +18,14 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   end
 
   describe "it confirms the password given is the current users password" do
-    test "with no credentials" do
-      assert Utils.confirm_current_password(nil, %{"password" => "test"}) ==
-               {:error, "Invalid credentials."}
-    end
-
-    test "with incorrect password given" do
+    test "incorrect password given" do
       {:ok, user} = UserBuilder.insert()
 
       assert Utils.confirm_current_password(user, %{"password" => ""}) ==
                {:error, "Invalid password."}
     end
 
-    test "with correct password given" do
+    test "correct password given" do
       {:ok, user} = UserBuilder.insert()
       assert Utils.confirm_current_password(user, %{"password" => "test"}) == {:ok, user}
     end
