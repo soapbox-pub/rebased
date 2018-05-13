@@ -211,11 +211,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Repo.all(query)
   end
 
-  # TODO: Make this work properly with unlisted.
   def fetch_public_activities(opts \\ %{}) do
     q = fetch_activities_query(["https://www.w3.org/ns/activitystreams#Public"], opts)
 
     q
+    |> restrict_unlisted()
     |> Repo.all()
     |> Enum.reverse()
   end
@@ -321,6 +321,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_blocked(query, _), do: query
+
+  defp restrict_unlisted(query) do
+    from(
+      activity in query,
+      where:
+        fragment(
+          "(?->'to' \\?| ?)",
+          activity.data,
+          ^["https://www.w3.org/ns/activitystreams#Public"]
+        )
+    )
+  end
 
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query =
