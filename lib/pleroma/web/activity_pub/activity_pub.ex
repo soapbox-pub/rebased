@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
-  alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Federator
   alias Pleroma.Web.OStatus
@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
   @instance Application.get_env(:pleroma, :instance)
-  @rewrite_policy Keyword.get(@instance, :rewrite_policy)
 
   def get_recipients(data) do
     (data["to"] || []) ++ (data["cc"] || [])
@@ -20,8 +19,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
-         :ok <- insert_full_object(map),
-         {:ok, map} <- @rewrite_policy.filter(map) do
+         {:ok, map} <- MRF.filter(map),
+         :ok <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
           data: map,
@@ -66,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            ),
          {:ok, activity} <- insert(create_data, local),
          :ok <- maybe_federate(activity),
-         {:ok, actor} <- User.increase_note_count(actor) do
+         {:ok, _actor} <- User.increase_note_count(actor) do
       {:ok, activity}
     end
   end
@@ -177,7 +176,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity),
-         {:ok, actor} <- User.decrease_note_count(user) do
+         {:ok, _actor} <- User.decrease_note_count(user) do
       {:ok, activity}
     end
   end
@@ -236,7 +235,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_tag(query, _), do: query
 
-  defp restrict_recipients(query, [], user), do: query
+  defp restrict_recipients(query, [], _user), do: query
 
   defp restrict_recipients(query, recipients, nil) do
     from(activity in query, where: fragment("? && ?", ^recipients, activity.recipients))
@@ -313,7 +312,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
     blocks = info["blocks"] || []
-    from(activity in query,
+
+    from(
+      activity in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
       where: fragment("not (?->'to' \\?| ?)", activity.data, ^blocks)
     )
@@ -405,7 +406,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def make_user_from_ap_id(ap_id) do
-    if user = User.get_by_ap_id(ap_id) do
+    if _user = User.get_by_ap_id(ap_id) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do
@@ -501,7 +502,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         object = %Object{} ->
           {:ok, object}
 
-        e ->
+        _e ->
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
           case OStatus.fetch_activity_from_url(id) do

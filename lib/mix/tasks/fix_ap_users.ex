@@ -1,6 +1,5 @@
 defmodule Mix.Tasks.FixApUsers do
   use Mix.Task
-  import Mix.Ecto
   import Ecto.Query
   alias Pleroma.{Repo, User}
 

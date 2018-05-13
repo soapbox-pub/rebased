@@ -14,6 +14,10 @@ defmodule Pleroma.Web.Federator do
   @federating Keyword.get(@instance, :federating)
   @max_jobs 20
 
+  def init(args) do
+    {:ok, args}
+  end
+
   def start_link do
     spawn(fn ->
       # 1 minute
@@ -89,12 +93,12 @@ defmodule Pleroma.Web.Federator do
 
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.get_by_ap_id(params["id"]),
-         {:ok, activity} <- Transmogrifier.handle_incoming(params) do
+         {:ok, _activity} <- Transmogrifier.handle_incoming(params) do
     else
       %Activity{} ->
         Logger.info("Already had #{params["id"]}")
 
-      e ->
+      _e ->
         # Just drop those for now
         Logger.info("Unhandled activity")
         Logger.info(Poison.encode!(params, pretty: 2))
@@ -154,7 +158,7 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle_cast({:enqueue, type, payload, priority}, state)
+  def handle_cast({:enqueue, type, payload, _priority}, state)
       when type in [:incoming_doc, :incoming_ap_doc] do
     %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
     i_queue = enqueue_sorted(i_queue, {type, payload}, 1)
@@ -162,7 +166,7 @@ defmodule Pleroma.Web.Federator do
     {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
 
-  def handle_cast({:enqueue, type, payload, priority}, state) do
+  def handle_cast({:enqueue, type, payload, _priority}, state) do
     %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}} = state
     o_queue = enqueue_sorted(o_queue, {type, payload}, 1)
     {o_running_jobs, o_queue} = maybe_start_job(o_running_jobs, o_queue)

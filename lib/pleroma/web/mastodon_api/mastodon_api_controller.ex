@@ -112,7 +112,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       version: "#{@mastodon_api_level} (compatible; #{Keyword.get(@instance, :version)})",
       email: Keyword.get(@instance, :email),
       urls: %{
-        streaming_api: String.replace(Web.base_url(), ["http", "https"], "wss")
+        streaming_api: String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws")
       },
       stats: Stats.get_stats(),
       thumbnail: Web.base_url() <> "/instance/thumbnail.jpeg",
@@ -212,14 +212,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> Map.put("actor_id", ap_id)
         |> Map.put("whole_db", true)
 
-      if params["pinned"] == "true" do
-        # Since Pleroma has no "pinned" posts feature, we'll just set an empty list here
-        activities = []
-      else
-        activities =
+      activities =
+        if params["pinned"] == "true" do
+          # Since Pleroma has no "pinned" posts feature, we'll just set an empty list here
+          []
+        else
           ActivityPub.fetch_public_activities(params)
           |> Enum.reverse()
-      end
+        end
 
       conn
       |> add_link_headers(:user_statuses, activities, params["id"])
@@ -275,7 +275,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("in_reply_to_status_id", params["in_reply_to_id"])
       |> Map.put("no_attachment_links", true)
 
-    {:ok, activity} = CommonAPI.post(user, params)
+    idempotency_key =
+      case get_req_header(conn, "idempotency-key") do
+        [key] -> key
+        _ -> Ecto.UUID.generate()
+      end
+
+    {:ok, activity} =
+      Cachex.get!(
+        :idempotency_cache,
+        idempotency_key,
+        fallback: fn _ -> CommonAPI.post(user, params) end
+      )
+
     render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
   end
 

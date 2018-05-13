@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
-  alias Pleroma.{Repo, Object, Formatter, User, Activity}
+  alias Pleroma.{Repo, Object, Formatter, Activity}
   alias Pleroma.Web.ActivityPub.Utils
   alias Calendar.Strftime
 
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     {[user.follower_address | to], cc}
   end
 
-  def to_for_user_and_mentions(user, mentions, inReplyTo, "direct") do
+  def to_for_user_and_mentions(_user, mentions, inReplyTo, "direct") do
     mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
 
     if inReplyTo do
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id()
 
-  def maybe_add_attachments(text, attachments, _no_links = true), do: text
+  def maybe_add_attachments(text, _attachments, _no_links = true), do: text
 
   def maybe_add_attachments(text, attachments, _no_links) do
     add_attachments(text, attachments)

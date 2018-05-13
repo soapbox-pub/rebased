@@ -14,7 +14,7 @@ defmodule Pleroma.Web.XML do
 
       if res == "", do: nil, else: res
     catch
-      e ->
+      _e ->
         Logger.debug("Couldn't find xpath #{xpath} in XML doc")
         nil
     end

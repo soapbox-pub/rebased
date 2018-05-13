@@ -257,8 +257,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
       {:ok, activity} =
-        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: current_user})
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
 
       conn =
         conn
@@ -783,5 +785,19 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [status] = json_response(conn, 200)
       assert status["id"] == activity.id
     end
+  end
+
+  test "Convert newlines to <br> in bio", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/account/update_profile.json", %{
+        "description" => "Hello,\r\nWorld! I\n am a test."
+      })
+
+    user = Repo.get!(User, user.id)
+    assert user.bio == "Hello,<br>World! I<br> am a test."
   end
 end

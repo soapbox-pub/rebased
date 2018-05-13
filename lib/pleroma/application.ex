@@ -23,6 +23,18 @@ defmodule Pleroma.Application do
             limit: 2500
           ]
         ]),
+        worker(
+          Cachex,
+          [
+            :idempotency_cache,
+            [
+              default_ttl: :timer.seconds(6 * 60 * 60),
+              ttl_interval: :timer.seconds(60),
+              limit: 2500
+            ]
+          ],
+          id: :cachex_idem
+        ),
         worker(Pleroma.Web.Federator, []),
         worker(Pleroma.Gopher.Server, []),
         worker(Pleroma.Stats, [])

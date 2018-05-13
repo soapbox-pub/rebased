@@ -47,25 +47,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     |> Map.merge(Utils.make_json_ld_header())
   end
 
-  def collection(collection, iri, page, total \\ nil) do
-    offset = (page - 1) * 10
-    items = Enum.slice(collection, offset, 10)
-    items = Enum.map(items, fn user -> user.ap_id end)
-    total = total || length(collection)
-
-    map = %{
-      "id" => "#{iri}?page=#{page}",
-      "type" => "OrderedCollectionPage",
-      "partOf" => iri,
-      "totalItems" => length(collection),
-      "orderedItems" => items
-    }
-
-    if offset < length(collection) do
-      Map.put(map, "next", "#{iri}?page=#{page + 1}")
-    end
-  end
-
   def render("following.json", %{user: user, page: page}) do
     query = User.get_friends_query(user)
     query = from(user in query, select: [:ap_id])
@@ -123,9 +104,12 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "limit" => "10"
     }
 
-    if max_qid != nil do
-      params = Map.put(params, "max_id", max_qid)
-    end
+    params =
+      if max_qid != nil do
+        Map.put(params, "max_id", max_qid)
+      else
+        params
+      end
 
     activities = ActivityPub.fetch_public_activities(params)
     min_id = Enum.at(activities, 0).id
@@ -160,6 +144,25 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       |> Map.merge(Utils.make_json_ld_header())
     else
       page |> Map.merge(Utils.make_json_ld_header())
+    end
+  end
+
+  def collection(collection, iri, page, total \\ nil) do
+    offset = (page - 1) * 10
+    items = Enum.slice(collection, offset, 10)
+    items = Enum.map(items, fn user -> user.ap_id end)
+    total = total || length(collection)
+
+    map = %{
+      "id" => "#{iri}?page=#{page}",
+      "type" => "OrderedCollectionPage",
+      "partOf" => iri,
+      "totalItems" => total,
+      "orderedItems" => items
+    }
+
+    if offset < total do
+      Map.put(map, "next", "#{iri}?page=#{page + 1}")
     end
   end
 end

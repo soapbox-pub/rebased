@@ -2,7 +2,8 @@
   "theme": "pleroma-dark",
   "background": "/static/aurora_borealis.jpg",
   "logo": "/static/logo.png",
-  "defaultPath": "/main/all",
+  "redirectRootNoLogin": "/main/all",
+  "redirectRootLogin": "/main/friends",
   "chatDisabled": false,
-  "showInstanceSpecificPanel": true
+  "showInstanceSpecificPanel": false
 }

@@ -3,6 +3,10 @@ defmodule Pleroma.Web.Streamer do
   require Logger
   alias Pleroma.{User, Notification}
 
+  def init(args) do
+    {:ok, args}
+  end
+
   def start_link do
     spawn(fn ->
       # 30 seconds
@@ -110,20 +114,26 @@ defmodule Pleroma.Web.Streamer do
 
   def push_to_socket(topics, topic, item) do
     Enum.each(topics[topic] || [], fn socket ->
-      json =
-        %{
-          event: "update",
-          payload:
-            Pleroma.Web.MastodonAPI.StatusView.render(
-              "status.json",
-              activity: item,
-              for: socket.assigns[:user]
-            )
-            |> Jason.encode!()
-        }
-        |> Jason.encode!()
+      # Get the current user so we have up-to-date blocks etc.
+      user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
+      blocks = user.info["blocks"] || []
 
-      send(socket.transport_pid, {:text, json})
+      unless item.actor in blocks do
+        json =
+          %{
+            event: "update",
+            payload:
+              Pleroma.Web.MastodonAPI.StatusView.render(
+                "status.json",
+                activity: item,
+                for: user
+              )
+              |> Jason.encode!()
+          }
+          |> Jason.encode!()
+
+        send(socket.transport_pid, {:text, json})
+      end
     end)
   end
 

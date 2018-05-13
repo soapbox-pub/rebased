@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.WebFinger do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
-  alias Pleroma.{Repo, User, XmlBuilder}
+  alias Pleroma.{User, XmlBuilder}
   alias Pleroma.Web
   alias Pleroma.Web.{XML, Salmon, OStatus}
   require Jason
@@ -239,13 +239,14 @@ defmodule Pleroma.Web.WebFinger do
           URI.parse(account).host
       end
 
-    case find_lrdd_template(domain) do
-      {:ok, template} ->
-        address = String.replace(template, "{uri}", URI.encode(account))
+    address =
+      case find_lrdd_template(domain) do
+        {:ok, template} ->
+          String.replace(template, "{uri}", URI.encode(account))
 
-      _ ->
-        address = "http://#{domain}/.well-known/webfinger?resource=acct:#{account}"
-    end
+        _ ->
+          "http://#{domain}/.well-known/webfinger?resource=acct:#{account}"
+      end
 
     with response <-
            @httpoison.get(
