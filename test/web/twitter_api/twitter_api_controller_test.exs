@@ -257,8 +257,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
       {:ok, activity} =
-        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: current_user})
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
 
       conn =
         conn
