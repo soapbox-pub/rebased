@@ -327,7 +327,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       activity in query,
       where:
         fragment(
-          "(?->'to' \\?| ?)",
+          "not (coalesce(?->'cc', '{}'::jsonb) \\?| ?)",
           activity.data,
           ^["https://www.w3.org/ns/activitystreams#Public"]
         )
