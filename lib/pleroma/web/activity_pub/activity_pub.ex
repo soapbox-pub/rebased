@@ -16,9 +16,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     (data["to"] || []) ++ (data["cc"] || [])
   end
 
+  defp check_actor_is_active(actor) do
+    user = User.get_cached_by_ap_id(actor)
+
+    if user.info["deactivated"] == true do
+      :reject
+    else
+      :ok
+    end
+  end
+
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
+         :ok <- check_actor_is_active(map["actor"]),
          {:ok, map} <- MRF.filter(map),
          :ok <- insert_full_object(map) do
       {:ok, activity} =
