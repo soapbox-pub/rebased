@@ -233,8 +233,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     q = fetch_activities_query(["https://www.w3.org/ns/activitystreams#Public"], opts)
 
     q
-    # Too slow
-    # |> restrict_unlisted()
+    |> restrict_unlisted()
     |> Repo.all()
     |> Enum.reverse()
   end
