@@ -232,6 +232,34 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       refute Repo.get(Activity, activity.id)
     end
+
+    test "it works for incoming unannounces with an existing notice" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+
+      announce_data =
+        File.read!("test/fixtures/mastodon-announce.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"]["id"])
+
+      {:ok, %Activity{data: announce_data, local: false}} =
+        Transmogrifier.handle_incoming(announce_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-announce.json")
+        |> Poison.decode!()
+        |> Map.put("object", announce_data)
+        |> Map.put("actor", announce_data["actor"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Undo"
+      assert data["object"]["type"] == "Announce"
+      assert data["object"]["object"] == activity.data["object"]["id"]
+
+      assert data["object"]["id"] ==
+               "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
+    end
   end
 
   describe "prepare outgoing" do

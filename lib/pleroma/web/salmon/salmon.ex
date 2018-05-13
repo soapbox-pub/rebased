@@ -187,13 +187,14 @@ defmodule Pleroma.Web.Salmon do
 
   def publish(%{info: %{"keys" => keys}} = user, %{data: %{"type" => type}} = activity, poster)
       when type in @supported_activities do
-    feed =
-      ActivityRepresenter.to_simple_form(activity, user, true)
-      |> ActivityRepresenter.wrap_with_entry()
-      |> :xmerl.export_simple(:xmerl_xml)
-      |> to_string
+    feed = ActivityRepresenter.to_simple_form(activity, user, true)
 
     if feed do
+      feed =
+        ActivityRepresenter.wrap_with_entry(feed)
+        |> :xmerl.export_simple(:xmerl_xml)
+        |> to_string
+
       {:ok, private, _} = keys_from_pem(keys)
       {:ok, feed} = encode(private, feed)
 

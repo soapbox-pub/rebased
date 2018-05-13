@@ -157,8 +157,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def delete_post(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {:ok, delete} <- CommonAPI.delete(id, user) do
-      render(conn, ActivityView, "activity.json", %{activity: delete, for: user})
+    with {:ok, activity} <- TwitterAPI.delete(user, id) do
+      render(conn, ActivityView, "activity.json", %{activity: activity, for: user})
     end
   end
 
