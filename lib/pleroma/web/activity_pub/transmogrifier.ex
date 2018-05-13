@@ -223,7 +223,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Undo",
-          "object" => %{"type" => "Announce", "id" => object_id},
+          "object" => %{"type" => "Announce", "object" => object_id},
           "actor" => actor,
           "id" => id
         } = data
