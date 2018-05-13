@@ -56,7 +56,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              !Enum.member?(
                activity.data["to"],
                User.get_by_ap_id(activity.data["actor"]).follower_address
-             ), do: Pleroma.Web.Streamer.stream("direct", activity)
+             ),
+           do: Pleroma.Web.Streamer.stream("direct", activity)
       end
     end
   end

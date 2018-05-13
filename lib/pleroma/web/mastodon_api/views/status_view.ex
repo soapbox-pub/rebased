@@ -193,11 +193,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     cc = object["cc"] || []
 
     cond do
-      public in to -> "public"
-      public in cc -> "unlisted"
-	  # this should use the sql for the object's activity
-      Enum.any?(to, &String.contains?(&1, "/followers")) -> "private"
-      true -> "direct"
+      public in to ->
+        "public"
+
+      public in cc ->
+        "unlisted"
+
+      # this should use the sql for the object's activity
+      Enum.any?(to, &String.contains?(&1, "/followers")) ->
+        "private"
+
+      true ->
+        "direct"
     end
   end
 end
