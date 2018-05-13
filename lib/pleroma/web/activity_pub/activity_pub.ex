@@ -40,18 +40,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def stream_out(activity) do
+    public = "https://www.w3.org/ns/activitystreams#Public"
+
     if activity.data["type"] in ["Create", "Announce"] do
       Pleroma.Web.Streamer.stream("user", activity)
 
-      visibility = Pleroma.Web.MastodonAPI.StatusView.get_visibility(activity.data["object"])
+      if Enum.member?(activity.data["to"], public) do
+        Pleroma.Web.Streamer.stream("public", activity)
 
-      case visibility do
-        "public" ->
-          Pleroma.Web.Streamer.stream("public", activity)
-          if activity.local, do: Pleroma.Web.Streamer.stream("public:local", activity)
-
-        "direct" ->
-          Pleroma.Web.Streamer.stream("direct", activity)
+        if activity.local do
+          Pleroma.Web.Streamer.stream("public:local", activity)
+        end
+      else
+        if !Enum.member?(activity.data["cc"] || [], public) &&
+             !Enum.member?(
+               activity.data["to"],
+               User.get_by_ap_id(activity.data["actor"]).follower_address
+             ), do: Pleroma.Web.Streamer.stream("direct", activity)
       end
     end
   end
