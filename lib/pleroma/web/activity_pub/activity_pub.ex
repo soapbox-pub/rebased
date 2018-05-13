@@ -144,6 +144,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def unannounce(
+        %User{} = actor,
+        %Object{} = object,
+        activity_id \\ nil,
+        local \\ true
+      ) do
+    with %Activity{} = announce_activity <- get_existing_announce(actor.ap_id, object),
+         unannounce_data <- make_unannounce_data(actor, announce_activity, activity_id),
+         {:ok, unannounce_activity} <- insert(unannounce_data, local),
+         :ok <- maybe_federate(unannounce_activity),
+         {:ok, _activity} <- Repo.delete(announce_activity),
+         {:ok, object} <- remove_announce_from_object(announce_activity, object) do
+      {:ok, unannounce_activity, announce_activity, object}
+    else
+      _e -> {:ok, object}
+    end
+  end
+
   def follow(follower, followed, activity_id \\ nil, local \\ true) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
