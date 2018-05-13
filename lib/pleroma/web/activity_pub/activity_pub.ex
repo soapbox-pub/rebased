@@ -325,7 +325,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_unlisted(query) do
     from(
       activity in query,
-      where: fragment("not (?->'cc' \\?| ?)", activity.data, ^["https://www.w3.org/ns/activitystreams#Public"])
+      where:
+        fragment(
+          "not (?->'cc' \\?| ?)",
+          activity.data,
+          ^["https://www.w3.org/ns/activitystreams#Public"]
+        )
     )
   end
 
