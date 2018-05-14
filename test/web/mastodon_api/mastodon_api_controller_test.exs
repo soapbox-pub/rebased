@@ -124,6 +124,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert Repo.get(Activity, id)
   end
 
+  test "posting a direct status", %{conn: conn} do
+	user1 = insert(:user)
+	user2 = insert(:user)
+	content = "direct cofe @#{user2.nickname}"
+
+	conn =
+	  conn
+	|> assign(:user, user1)
+	|> post("api/v1/statuses", %{"status" => content,
+								 "visibility" => "direct"})
+
+	assert %{"content" => content, "id" => id, "visibility" => "direct"} =  json_response(conn, 200)
+	assert activity = Repo.get(Activity, id)
+	assert user2.follower_address not in activity.data["to"]
+  end
+
   test "replying to a status", %{conn: conn} do
     user = insert(:user)
 
