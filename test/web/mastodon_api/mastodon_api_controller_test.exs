@@ -125,19 +125,37 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "posting a direct status", %{conn: conn} do
-	user1 = insert(:user)
-	user2 = insert(:user)
-	content = "direct cofe @#{user2.nickname}"
+    user1 = insert(:user)
+    user2 = insert(:user)
+    content = "direct cofe @#{user2.nickname}"
 
-	conn =
-	  conn
-	|> assign(:user, user1)
-	|> post("api/v1/statuses", %{"status" => content,
-								 "visibility" => "direct"})
+    conn =
+      conn
+      |> assign(:user, user1)
+      |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
 
-	assert %{"content" => content, "id" => id, "visibility" => "direct"} =  json_response(conn, 200)
-	assert activity = Repo.get(Activity, id)
-	assert user2.follower_address not in activity.data["to"]
+    assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
+    assert activity = Repo.get(Activity, id)
+    assert user2.follower_address not in activity.data["to"]
+  end
+
+  test "direct timeline", %{conn: conn} do
+    dm = insert(:direct_note_activity)
+    reg_note = insert(:note_activity)
+
+    recipient = User.get_by_ap_id(hd(dm.recipients))
+
+    conn =
+      conn
+      |> assign(:user, recipient)
+      |> get("api/v1/timelines/direct")
+
+    resp = json_response(conn, 200)
+    first_status = hd(resp)
+
+    assert length(resp) == 1
+    assert %{"visibility" => "direct"} = first_status
+    assert first_status["url"] != reg_note.data["id"]
   end
 
   test "replying to a status", %{conn: conn} do
