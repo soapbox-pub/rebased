@@ -609,16 +609,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   test "account search", %{conn: conn} do
     user = insert(:user)
-    _user_two = insert(:user, %{nickname: "shp@shitposter.club"})
+    user_two = insert(:user, %{nickname: "shp@shitposter.club"})
     user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
-    conn =
+    results =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/accounts/search", %{"q" => "shp"})
+      |> json_response(200)
+
+    result_ids = for result <- results, do: result["acct"]
+
+    assert user_two.nickname in result_ids
+    assert user_three.nickname in result_ids
+
+    results =
       conn
       |> assign(:user, user)
       |> get("/api/v1/accounts/search", %{"q" => "2hu"})
+      |> json_response(200)
 
-    assert [account] = json_response(conn, 200)
-    assert account["id"] == to_string(user_three.id)
+    result_ids = for result <- results, do: result["acct"]
+
+    assert user_three.nickname in result_ids
   end
 
   test "search", %{conn: conn} do
@@ -642,7 +655,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert results = json_response(conn, 200)
 
-    [account] = results["accounts"]
+    [account | _] = results["accounts"]
     assert account["id"] == to_string(user_three.id)
 
     assert results["hashtags"] == []

@@ -21,6 +21,7 @@ defmodule Pleroma.User do
     field(:local, :boolean, default: true)
     field(:info, :map, default: %{})
     field(:follower_address, :string)
+    field(:search_distance, :float, virtual: true)
     has_many(:notifications, Notification)
 
     timestamps()
@@ -399,18 +400,22 @@ defmodule Pleroma.User do
       User.get_or_fetch_by_nickname(query)
     end
 
-    q =
+    inner =
       from(
         u in User,
-        where:
-          fragment(
-            "(to_tsvector('english', ?) || to_tsvector('english', ?)) @@ plainto_tsquery('english', ?)",
+        select_merge: %{
+          search_distance: fragment(
+            "? <-> (? || ?)",
+            ^query,
             u.nickname,
-            u.name,
-            ^query
-          ),
-        limit: 20
+            u.name
+          )}
       )
+
+    q = from(s in subquery(inner),
+      order_by: s.search_distance,
+      limit: 20
+    )
 
     Repo.all(q)
   end
