@@ -404,22 +404,18 @@ defmodule Pleroma.User do
       from(
         u in User,
         select_merge: %{
-          search_distance:
-            fragment(
-              "? <-> (? || ?)",
-              ^query,
-              u.nickname,
-              u.name
-            )
-        }
+          search_distance: fragment(
+            "? <-> (? || ?)",
+            ^query,
+            u.nickname,
+            u.name
+          )}
       )
 
-    q =
-      from(
-        s in subquery(inner),
-        order_by: s.search_distance,
-        limit: 20
-      )
+    q = from(s in subquery(inner),
+      order_by: s.search_distance,
+      limit: 20
+    )
 
     Repo.all(q)
   end
