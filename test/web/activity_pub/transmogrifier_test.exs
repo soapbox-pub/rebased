@@ -260,6 +260,30 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"]["id"] ==
                "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
     end
+
+    test "it works for incomming unfollows" do
+      user = insert(:user)
+
+      follow_data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: _, local: false}} = Transmogrifier.handle_incoming(follow_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-unfollow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", follow_data)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Undo"
+      assert data["object"]["type"] == "Follow"
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+
+      refute User.following?(User.get_by_ap_id(data["actor"]), user)
+    end
   end
 
   describe "prepare outgoing" do
