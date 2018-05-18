@@ -241,24 +241,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(
-        %{
-          "type" => "Undo",
-          "object" => %{"type" => "Follow", "object" => followed},
-          "actor" => follower,
-          "id" => id
-        } = data
-      ) do
-    with %User{local: true} = followed = User.get_cached_by_ap_id(followed),
-         %User{} = follower = User.get_or_fetch_by_ap_id(follower),
-         {:ok, activity} <- ActivityPub.unfollow(follower, followed, false) do
-      User.unfollow(follower, followed)
-      {:ok, activity}
-    else
-      e -> :error
-    end
-  end
-
   # TODO
   # Accept
   # Undo for non-Announce
