@@ -199,6 +199,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def block(blocker, blocked, local \\ true) do
+    follow_activity = fetch_latest_follow(blocker, blocked)
+
+    if follow_activity do
+      unfollow(blocker, blocked, local)
+    end
+
+    with block_data <- make_block_data(blocker, blocked),
+         {:ok, activity} <- insert(block_data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
+  def unblock(blocker, blocked, local \\ true) do
+    with %Activity{} = block_activity <- fetch_latest_block(blocker, blocked),
+         unblock_data <- make_unblock_data(blocker, blocked, block_activity),
+         {:ok, activity} <- insert(unblock_data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
   def fetch_activities_for_context(context, opts \\ %{}) do
     public = ["https://www.w3.org/ns/activitystreams#Public"]
 

@@ -322,6 +322,41 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     }
   end
 
+  #### Block-related helpers
+  def fetch_latest_block(%User{ap_id: blocker_id}, %User{ap_id: blocked_id}) do
+    query =
+      from(
+        activity in Activity,
+        where:
+          fragment(
+            "? @> ?",
+            activity.data,
+            ^%{type: "Block", actor: blocker_id, object: blocked_id}
+          ),
+        order_by: [desc: :id],
+        limit: 1
+      )
+
+    Repo.one(query)
+  end
+
+  def make_block_data(blocker, blocked) do
+    %{
+      "type" => "Block",
+      "actor" => blocker.ap_id,
+      "to" => [blocked.ap_id],
+      "object" => blocked.ap_id
+    }
+  end
+
+  def make_unblock_data(blocker, blocked, block_activity) do
+    %{
+      "type" => "Undo",
+      "actor" => blocker.ap_id,
+      "to" => [blocked.ap_id],
+      "object" => block_activity.data
+    }
+  end
   #### Create-related helpers
 
   def make_create_data(params, additional) do
