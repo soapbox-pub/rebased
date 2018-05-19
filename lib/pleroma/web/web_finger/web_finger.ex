@@ -86,6 +86,7 @@ defmodule Pleroma.Web.WebFinger do
           "href" => "data:application/magic-public-key,#{magic_key}"
         },
         %{"rel" => "self", "type" => "application/activity+json", "href" => user.ap_id},
+        %{"rel" => "self", "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"", "href" => user.ap_id},
         %{
           "rel" => "http://ostatus.org/schema/1.0/subscribe",
           "template" => OStatus.remote_follow_path()
@@ -117,6 +118,7 @@ defmodule Pleroma.Web.WebFinger do
         {:Link,
          %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}},
         {:Link, %{rel: "self", type: "application/activity+json", href: user.ap_id}},
+        {:Link, %{rel: "self", type: "application/ld+json; profile=&quot;https://www.w3.org/ns/activitystreams&quot;", href: user.ap_id}},
         {:Link,
          %{rel: "http://ostatus.org/schema/1.0/subscribe", template: OStatus.remote_follow_path()}}
       ]
