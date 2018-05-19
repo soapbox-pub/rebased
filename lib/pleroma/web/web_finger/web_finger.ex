@@ -166,6 +166,14 @@ defmodule Pleroma.Web.WebFinger do
         doc
       )
 
+    if ap_id == nil do
+      ap_id =
+        XML.string_from_xpath(
+          ~s{//Link[@rel="self" and @type="application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""]/@href},
+          doc
+        )
+    end
+
     data = %{
       "magic_key" => magic_key,
       "topic" => topic,
@@ -183,6 +191,9 @@ defmodule Pleroma.Web.WebFinger do
       Enum.reduce(doc["links"], %{"subject" => doc["subject"]}, fn link, data ->
         case {link["type"], link["rel"]} do
           {"application/activity+json", "self"} ->
+            Map.put(data, "ap_id", link["href"])
+
+          {"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"", "self"} ->
             Map.put(data, "ap_id", link["href"])
 
           {_, "magic-public-key"} ->
