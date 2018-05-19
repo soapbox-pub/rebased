@@ -825,8 +825,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post("/api/pleroma/delete_account", %{"password" => "test"})
 
       assert json_response(conn, 200) == %{"status" => "success"}
-      fetched_user = Repo.get(User, current_user.id)
-      assert fetched_user.info == %{"deactivated" => true}
     end
   end
 end

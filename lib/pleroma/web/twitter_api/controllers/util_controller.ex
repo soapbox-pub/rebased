@@ -200,10 +200,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   def delete_account(%{assigns: %{user: user}} = conn, params) do
     case CommonAPI.Utils.confirm_current_password(user, params) do
       {:ok, user} ->
-        case User.delete(user) do
-          :ok -> json(conn, %{status: "success"})
-          :error -> json(conn, %{error: "Unable to delete user."})
-        end
+        Task.start(fn -> User.delete(user) end)
+        json(conn, %{status: "success"})
 
       {:error, msg} ->
         json(conn, %{error: msg})
