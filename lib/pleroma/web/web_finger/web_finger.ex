@@ -87,6 +87,11 @@ defmodule Pleroma.Web.WebFinger do
         },
         %{"rel" => "self", "type" => "application/activity+json", "href" => user.ap_id},
         %{
+          "rel" => "self",
+          "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+          "href" => user.ap_id
+        },
+        %{
           "rel" => "http://ostatus.org/schema/1.0/subscribe",
           "template" => OStatus.remote_follow_path()
         }
@@ -181,6 +186,9 @@ defmodule Pleroma.Web.WebFinger do
       Enum.reduce(doc["links"], %{"subject" => doc["subject"]}, fn link, data ->
         case {link["type"], link["rel"]} do
           {"application/activity+json", "self"} ->
+            Map.put(data, "ap_id", link["href"])
+
+          {"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"", "self"} ->
             Map.put(data, "ap_id", link["href"])
 
           {_, "magic-public-key"} ->

@@ -4,6 +4,18 @@ defmodule HTTPoisonMock do
   def get(url, body \\ [], headers \\ [])
 
   def get(
+        "http://gerzilla.de/.well-known/webfinger?resource=acct:kaniini@gerzilla.de",
+        [Accept: "application/xrd+xml,application/jrd+json"],
+        follow_redirect: true
+      ) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/kaniini@gerzilla.de.json")
+     }}
+  end
+
+  def get(
         "http://framatube.org/.well-known/webfinger?resource=acct:framasoft@framatube.org",
         [Accept: "application/xrd+xml,application/jrd+json"],
         follow_redirect: true
