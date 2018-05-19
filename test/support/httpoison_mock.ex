@@ -8,11 +8,11 @@ defmodule HTTPoisonMock do
         [Accept: "application/xrd+xml,application/jrd+json"],
         follow_redirect: true
       ) do
-     {:ok,
-      %Response{
-        status_code: 200,
-        body: File.read!("test/fixtures/httpoison_mock/kaniini@gerzilla.de.json")
-      }}
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/kaniini@gerzilla.de.json")
+     }}
   end
 
   def get(
