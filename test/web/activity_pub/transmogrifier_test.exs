@@ -153,6 +153,43 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"] == activity.data["object"]["id"]
     end
 
+    test "it returns an error for incoming unlikes wihout a like activity" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"]["id"])
+
+      assert Transmogrifier.handle_incoming(data) == :error
+    end
+
+    test "it works for incoming unlikes with an existing like activity" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
+
+      like_data =
+        File.read!("test/fixtures/mastodon-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"]["id"])
+
+      {:ok, %Activity{data: like_data, local: false}} = Transmogrifier.handle_incoming(like_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", like_data)
+        |> Map.put("actor", like_data["actor"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "Undo"
+      assert data["id"] == "http://mastodon.example.org/users/admin#likes/2/undo"
+      assert data["object"]["id"] == "http://mastodon.example.org/users/admin#likes/2"
+    end
+
     test "it works for incoming announces" do
       data = File.read!("test/fixtures/mastodon-announce.json") |> Poison.decode!()
 

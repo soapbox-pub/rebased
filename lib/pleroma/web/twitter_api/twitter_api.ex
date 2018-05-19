@@ -82,14 +82,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def fav(%User{} = user, ap_id_or_id) do
-    with {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.favorite(ap_id_or_id, user),
+    with {:ok, _fav, %{data: %{"id" => id}}} = CommonAPI.favorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       {:ok, activity}
     end
   end
 
   def unfav(%User{} = user, ap_id_or_id) do
-    with {:ok, %{data: %{"id" => id}}} = CommonAPI.unfavorite(ap_id_or_id, user),
+    with {:ok, _unfav, _fav, %{data: %{"id" => id}}} = CommonAPI.unfavorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       {:ok, activity}
     end

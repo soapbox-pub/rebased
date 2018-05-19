@@ -315,6 +315,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
+  def make_unlike_data(
+        %User{ap_id: ap_id} = user,
+        %Activity{data: %{"context" => context}} = activity,
+        activity_id
+      ) do
+    data = %{
+      "type" => "Undo",
+      "actor" => ap_id,
+      "object" => activity.data,
+      "to" => [user.follower_address, activity.data["actor"]],
+      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "context" => context
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
   def add_announce_to_object(%Activity{data: %{"actor" => actor}}, object) do
     with announcements <- [actor | object.data["announcements"] || []] |> Enum.uniq() do
       update_element_in_object("announcement", announcements, object)
