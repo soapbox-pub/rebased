@@ -118,7 +118,6 @@ defmodule Pleroma.Web.WebFinger do
         {:Link,
          %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}},
         {:Link, %{rel: "self", type: "application/activity+json", href: user.ap_id}},
-        {:Link, %{rel: "self", type: "application/ld+json; profile=&quot;https://www.w3.org/ns/activitystreams&quot;", href: user.ap_id}},
         {:Link,
          %{rel: "http://ostatus.org/schema/1.0/subscribe", template: OStatus.remote_follow_path()}}
       ]
@@ -165,14 +164,6 @@ defmodule Pleroma.Web.WebFinger do
         ~s{//Link[@rel="self" and @type="application/activity+json"]/@href},
         doc
       )
-
-    if ap_id == nil do
-      ap_id =
-        XML.string_from_xpath(
-          ~s{//Link[@rel="self" and @type="application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""]/@href},
-          doc
-        )
-    end
 
     data = %{
       "magic_key" => magic_key,
