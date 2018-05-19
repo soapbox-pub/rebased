@@ -495,4 +495,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       Repo.delete_all(q)
     end
   end
+
+  def maybe_fix_user_url(data) do
+    if is_map(data["url"]) do
+      data = Map.put(data, "url", data["url"]["href"])
+    end
+
+    data
+  end
+
+  def maybe_fix_user_object(data) do
+    data
+    |> maybe_fix_user_url
+  end
 end
