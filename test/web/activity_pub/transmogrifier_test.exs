@@ -420,4 +420,15 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Repo.get(WebsubClientSubscription, ws2.id)
     end
   end
+
+  describe "actor rewriting" do
+    test "it fixes the actor URL property to be a proper URI" do
+      data = %{
+        "url" => %{"href" => "http://example.com"}
+      }
+
+      rewritten = Transmogrifier.maybe_fix_user_object(data)
+      assert rewritten["url"] == "http://example.com"
+    end
+  end
 end
