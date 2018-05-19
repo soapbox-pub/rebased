@@ -628,7 +628,11 @@ defmodule HTTPoisonMock do
      }}
   end
 
-  def get("https://hubzilla.example.org/channel/kaniini", [Accept: "application/activity+json"], _) do
+  def get(
+        "https://hubzilla.example.org/channel/kaniini",
+        [Accept: "application/activity+json"],
+        _
+      ) do
     {:ok,
      %Response{
        status_code: 200,
