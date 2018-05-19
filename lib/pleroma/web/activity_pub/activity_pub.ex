@@ -401,6 +401,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "url" => [%{"href" => data["image"]["url"]}]
         }
 
+    data = Transmogrifier.maybe_fix_user_object(data)
+
     user_data = %{
       ap_id: data["id"],
       info: %{

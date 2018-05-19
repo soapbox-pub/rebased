@@ -628,6 +628,18 @@ defmodule HTTPoisonMock do
      }}
   end
 
+  def get(
+        "https://hubzilla.example.org/channel/kaniini",
+        [Accept: "application/activity+json"],
+        _
+      ) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/kaniini@hubzilla.example.org.json")
+     }}
+  end
+
   def get("https://masto.quad.moe/users/_HellPie", [Accept: "application/activity+json"], _) do
     {:ok,
      %Response{

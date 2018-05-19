@@ -5,6 +5,22 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.{Changeset, UUID}
   import Ecto.Query
 
+  # Some implementations send the actor URI as the actor field, others send the entire actor object,
+  # so figure out what the actor's URI is based on what we have.
+  def normalize_actor(actor) do
+    cond do
+      is_binary(actor) ->
+        actor
+
+      is_map(actor) ->
+        actor["id"]
+    end
+  end
+
+  def normalize_params(params) do
+    Map.put(params, "actor", normalize_actor(params["actor"]))
+  end
+
   def make_json_ld_header do
     %{
       "@context" => [
