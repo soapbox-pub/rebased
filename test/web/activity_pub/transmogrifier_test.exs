@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.OStatus
   alias Pleroma.Activity
   alias Pleroma.User
@@ -115,6 +116,23 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["actor"] == "http://mastodon.example.org/users/admin"
       assert data["type"] == "Follow"
       assert data["id"] == "http://mastodon.example.org/users/admin#follows/2"
+      assert User.following?(User.get_by_ap_id(data["actor"]), user)
+    end
+
+    test "it works for incoming follow requests from hubzilla" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/hubzilla-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+        |> Utils.normalize_params()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "https://hubzilla.example.org/channel/kaniini"
+      assert data["type"] == "Follow"
+      assert data["id"] == "https://hubzilla.example.org/channel/kaniini#follows/2"
       assert User.following?(User.get_by_ap_id(data["actor"]), user)
     end
 
