@@ -155,30 +155,6 @@
       "css": "bell",
       "code": 59408,
       "src": "fontawesome"
-    },
-    {
-      "uid": "ccc2329632396dc096bb638d4b46fb98",
-      "css": "mail-alt",
-      "code": 61664,
-      "src": "fontawesome"
-    },
-    {
-      "uid": "c1f1975c885aa9f3dad7810c53b82074",
-      "css": "lock",
-      "code": 59409,
-      "src": "fontawesome"
-    },
-    {
-      "uid": "05376be04a27d5a46e855a233d6e8508",
-      "css": "lock-open-alt",
-      "code": 61758,
-      "src": "fontawesome"
-    },
-    {
-      "uid": "197375a3cea8cb90b02d06e4ddf1433d",
-      "css": "globe",
-      "code": 59410,
-      "src": "fontawesome"
     }
   ]
 }
