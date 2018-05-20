@@ -223,9 +223,9 @@ defmodule Pleroma.User do
 
   def update_and_set_cache(changeset) do
     with {:ok, user} <- Repo.update(changeset) do
-      Cachex.set(:user_cache, "ap_id:#{user.ap_id}", user)
-      Cachex.set(:user_cache, "nickname:#{user.nickname}", user)
-      Cachex.set(:user_cache, "user_info:#{user.id}", user_info(user))
+      Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
+      Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
+      Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user))
       {:ok, user}
     else
       e -> e
@@ -239,12 +239,12 @@ defmodule Pleroma.User do
 
   def get_cached_by_ap_id(ap_id) do
     key = "ap_id:#{ap_id}"
-    Cachex.get!(:user_cache, key, fallback: fn _ -> get_by_ap_id(ap_id) end)
+    Cachex.fetch!(:user_cache, key, fn _ -> get_by_ap_id(ap_id) end)
   end
 
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
-    Cachex.get!(:user_cache, key, fallback: fn _ -> get_or_fetch_by_nickname(nickname) end)
+    Cachex.fetch!(:user_cache, key, fn _ -> get_or_fetch_by_nickname(nickname) end)
   end
 
   def get_by_nickname(nickname) do
@@ -260,7 +260,7 @@ defmodule Pleroma.User do
 
   def get_cached_user_info(user) do
     key = "user_info:#{user.id}"
-    Cachex.get!(:user_cache, key, fallback: fn _ -> user_info(user) end)
+    Cachex.fetch!(:user_cache, key, fn _ -> user_info(user) end)
   end
 
   def fetch_by_nickname(nickname) do

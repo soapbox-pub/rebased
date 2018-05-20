@@ -5,6 +5,7 @@ defmodule Pleroma.Application do
   # for more information on OTP Applications
   def start(_type, _args) do
     import Supervisor.Spec
+    import Cachex.Spec
 
     # Define workers and child supervisors to be supervised
     children =
@@ -28,8 +29,11 @@ defmodule Pleroma.Application do
           [
             :idempotency_cache,
             [
-              default_ttl: :timer.seconds(6 * 60 * 60),
-              ttl_interval: :timer.seconds(60),
+              expiration:
+                expiration(
+                  default: :timer.seconds(6 * 60 * 60),
+                  interval: :timer.seconds(60)
+                ),
               limit: 2500
             ]
           ],
