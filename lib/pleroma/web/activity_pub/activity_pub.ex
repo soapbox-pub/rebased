@@ -16,9 +16,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     (data["to"] || []) ++ (data["cc"] || [])
   end
 
+  defp check_actor_is_active(actor) do
+    if not is_nil(actor) do
+      with user <- User.get_cached_by_ap_id(actor),
+           nil <- user.info["deactivated"] do
+        :ok
+      else
+        _e -> :reject
+      end
+    else
+      :ok
+    end
+  end
+
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.get_by_ap_id(map["id"]),
          map <- lazy_put_activity_defaults(map),
+         :ok <- check_actor_is_active(map["actor"]),
          {:ok, map} <- MRF.filter(map),
          :ok <- insert_full_object(map) do
       {:ok, activity} =
@@ -117,11 +131,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def unlike(%User{} = actor, %Object{} = object) do
-    with %Activity{} = activity <- get_existing_like(actor.ap_id, object),
-         {:ok, _activity} <- Repo.delete(activity),
-         {:ok, object} <- remove_like_from_object(activity, object) do
-      {:ok, object}
+  def unlike(
+        %User{} = actor,
+        %Object{} = object,
+        activity_id \\ nil,
+        local \\ true
+      ) do
+    with %Activity{} = like_activity <- get_existing_like(actor.ap_id, object),
+         unlike_data <- make_unlike_data(actor, like_activity, activity_id),
+         {:ok, unlike_activity} <- insert(unlike_data, local),
+         {:ok, _activity} <- Repo.delete(like_activity),
+         {:ok, object} <- remove_like_from_object(like_activity, object),
+         :ok <- maybe_federate(unlike_activity) do
+      {:ok, unlike_activity, like_activity, object}
     else
       _e -> {:ok, object}
     end
@@ -258,6 +280,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     q
     |> restrict_unlisted()
     |> Repo.all()
+    |> Enum.reverse()
+  end
+
+  def fetch_user_activities(user, reading_user, params \\ %{}) do
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("actor_id", user.ap_id)
+      |> Map.put("whole_db", true)
+
+    recipients =
+      if reading_user do
+        ["https://www.w3.org/ns/activitystreams#Public"] ++
+          [reading_user.ap_id | reading_user.following]
+      else
+        ["https://www.w3.org/ns/activitystreams#Public"]
+      end
+
+    fetch_activities(recipients, params)
     |> Enum.reverse()
   end
 
@@ -423,6 +464,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "type" => "Image",
           "url" => [%{"href" => data["image"]["url"]}]
         }
+
+    data = Transmogrifier.maybe_fix_user_object(data)
 
     user_data = %{
       ap_id: data["id"],

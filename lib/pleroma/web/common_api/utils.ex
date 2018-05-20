@@ -1,7 +1,9 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.{Repo, Object, Formatter, Activity}
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.User
   alias Calendar.Strftime
+  alias Comeonin.Pbkdf2
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
@@ -182,6 +184,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       name
     else
       String.slice(name, 0..30) <> "…"
+    end
+  end
+
+  def confirm_current_password(user, params) do
+    with %User{local: true} = db_user <- Repo.get(User, user.id),
+         true <- Pbkdf2.checkpw(params["password"], db_user.password_hash) do
+      {:ok, db_user}
+    else
+      _ -> {:error, "Invalid password."}
     end
   end
 end

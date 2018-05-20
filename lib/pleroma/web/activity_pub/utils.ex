@@ -5,6 +5,22 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Ecto.{Changeset, UUID}
   import Ecto.Query
 
+  # Some implementations send the actor URI as the actor field, others send the entire actor object,
+  # so figure out what the actor's URI is based on what we have.
+  def normalize_actor(actor) do
+    cond do
+      is_binary(actor) ->
+        actor
+
+      is_map(actor) ->
+        actor["id"]
+    end
+  end
+
+  def normalize_params(params) do
+    Map.put(params, "actor", normalize_actor(params["actor"]))
+  end
+
   def make_json_ld_header do
     %{
       "@context" => [
@@ -283,6 +299,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Make unannounce activity data for the given actor and object
   """
   def make_unannounce_data(
+        %User{ap_id: ap_id} = user,
+        %Activity{data: %{"context" => context}} = activity,
+        activity_id
+      ) do
+    data = %{
+      "type" => "Undo",
+      "actor" => ap_id,
+      "object" => activity.data,
+      "to" => [user.follower_address, activity.data["actor"]],
+      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "context" => context
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
+  def make_unlike_data(
         %User{ap_id: ap_id} = user,
         %Activity{data: %{"context" => context}} = activity,
         activity_id

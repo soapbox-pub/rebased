@@ -74,7 +74,7 @@ This is useful for running pleroma inside Tor or i2p.
 
 ### Register a User
 
-Run `mix register_user <name> <nickname> <email> <bio>`. The `name` appears on statuses, while the nickname corresponds to the user, e.g. `@nickname@instance.tld`
+Run `mix register_user <name> <nickname> <email> <bio> <password>`. The `name` appears on statuses, while the nickname corresponds to the user, e.g. `@nickname@instance.tld`
 
 ### Password reset
 

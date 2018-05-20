@@ -273,9 +273,26 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(
+        %{
+          "type" => "Undo",
+          "object" => %{"type" => "Like", "object" => object_id},
+          "actor" => actor,
+          "id" => id
+        } = data
+      ) do
+    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <-
+           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+         {:ok, activity, _, _} <- ActivityPub.unlike(actor, object, id, false) do
+      {:ok, activity}
+    else
+      e -> :error
+    end
+  end
+
   # TODO
   # Accept
-  # Undo for non-Announce
 
   def handle_incoming(_), do: :error
 
@@ -526,5 +543,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       Repo.delete_all(q)
     end
+  end
+
+  def maybe_fix_user_url(data) do
+    if is_map(data["url"]) do
+      data = Map.put(data, "url", data["url"]["href"])
+    end
+
+    data
+  end
+
+  def maybe_fix_user_object(data) do
+    data
+    |> maybe_fix_user_url
   end
 end

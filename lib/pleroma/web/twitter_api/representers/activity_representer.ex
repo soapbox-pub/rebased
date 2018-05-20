@@ -197,7 +197,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "external_url" => object["external_url"] || object["id"],
       "tags" => tags,
       "activity_type" => "post",
-      "possibly_sensitive" => possibly_sensitive
+      "possibly_sensitive" => possibly_sensitive,
+      "visibility" => Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
     }
   end
 
