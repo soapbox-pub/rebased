@@ -96,13 +96,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def user_timeline(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.get_user(user, params) do
       {:ok, target_user} ->
-        params =
-          params
-          |> Map.put("type", ["Create", "Announce"])
-          |> Map.put("actor_id", target_user.ap_id)
-          |> Map.put("whole_db", true)
-
-        activities = ActivityPub.fetch_public_activities(params)
+        activities = ActivityPub.fetch_user_activities(target_user, user, params)
 
         conn
         |> render(ActivityView, "index.json", %{activities: activities, for: user})

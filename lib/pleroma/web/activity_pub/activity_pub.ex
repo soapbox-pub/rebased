@@ -260,6 +260,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  def fetch_user_activities(user, reading_user, params \\ %{}) do
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("actor_id", user.ap_id)
+      |> Map.put("whole_db", true)
+
+    recipients =
+      if reading_user do
+        ["https://www.w3.org/ns/activitystreams#Public"] ++
+          [reading_user.ap_id | reading_user.following]
+      else
+        ["https://www.w3.org/ns/activitystreams#Public"]
+      end
+
+    fetch_activities(recipients, params)
+    |> Enum.reverse()
+  end
+
   defp restrict_since(query, %{"since_id" => since_id}) do
     from(activity in query, where: activity.id > ^since_id)
   end
