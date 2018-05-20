@@ -259,13 +259,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(%{"type" => "Undo", "object" => object_id} = data) do
-    object = Object.get_by_ap_id(object_id).data
-    data = Map.put(data, "object", object)
-
-    handle_incoming(data)
-  end
-
   def handle_incoming(
         %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = data
       ) do
