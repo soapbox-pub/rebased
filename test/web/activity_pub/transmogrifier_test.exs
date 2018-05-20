@@ -357,7 +357,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       blocker = User.get_by_ap_id(data["actor"])
 
-      assert User.blocks?(blocker, user.ap_id)
+      assert User.blocks?(blocker, user)
     end
 
     test "it works for incoming unblocks" do
