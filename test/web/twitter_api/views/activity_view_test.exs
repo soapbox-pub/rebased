@@ -18,7 +18,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     user = insert(:user)
     other_user = insert(:user, %{nickname: "shp"})
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
 
     result = ActivityView.render("activity.json", activity: activity)
 
@@ -47,7 +47,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "tags" => [],
       "text" => "Hey @shp!",
       "uri" => activity.data["object"]["id"],
-      "user" => UserView.render("show.json", %{user: user})
+      "user" => UserView.render("show.json", %{user: user}),
+      "visibility" => "direct"
     }
 
     assert result == expected
