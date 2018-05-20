@@ -298,7 +298,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert data["type"] == "Block"
       assert data["object"] == user.ap_id
-      assert data["actor"] == "https://mastodon.example.org/users/admin"
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
 
       blocker = User.get_by_ap_id(data["actor"])
 
