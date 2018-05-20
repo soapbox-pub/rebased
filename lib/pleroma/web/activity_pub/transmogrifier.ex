@@ -266,7 +266,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     handle_incoming(data)
   end
 
-  def handle_incoming(%{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = data) do
+  def handle_incoming(
+        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = data
+      ) do
     with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
          %User{} = blocker = User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.block(blocker, blocked, false) do
@@ -277,6 +279,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       e -> :error
     end
   end
+
   # TODO
   # Accept
   # Undo for non-Announce

@@ -280,9 +280,55 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert data["type"] == "Undo"
       assert data["object"]["type"] == "Follow"
+      assert data["object"]["object"] == user.ap_id
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
       refute User.following?(User.get_by_ap_id(data["actor"]), user)
+    end
+
+    test "it works for incoming blocks" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-block-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Block"
+      assert data["object"] == user.ap_id
+      assert data["actor"] == "https://mastodon.example.org/users/admin"
+
+      blocker = User.get_by_ap_id(data["actor"])
+
+      assert User.blocks?(blocker, user.ap_id)
+    end
+
+    test "it works for incoming unblocks" do
+      user = insert(:user)
+
+      block_data =
+        File.read!("test/fixtures/mastodon-block-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: _, local: false}} = Transmogrifier.handle_incoming(block_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-unblock-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", block_data)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      assert data["type"] == "Undo"
+      assert data["object"]["type"] == "Block"
+      assert data["object"]["object"] == user.ap_id
+      assert data["actor"] == "https://mastodon.example.org/users/admin"
+
+      blocker = User.get_by_ap_id(data["actor"])
+
+      refute User.blocks?(blocker, user.ap_id)
     end
   end
 

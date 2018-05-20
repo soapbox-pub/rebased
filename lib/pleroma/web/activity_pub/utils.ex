@@ -357,6 +357,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "object" => block_activity.data
     }
   end
+
   #### Create-related helpers
 
   def make_create_data(params, additional) do
