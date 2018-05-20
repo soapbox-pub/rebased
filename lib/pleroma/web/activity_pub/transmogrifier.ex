@@ -266,7 +266,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          %User{} = blocker = User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.block(blocker, blocked, false) do
       User.unfollow(blocker, blocked)
-      User.block(blocker, blocked.ap_id)
+      User.block(blocker, blocked)
       {:ok, activity}
     else
       e -> :error
