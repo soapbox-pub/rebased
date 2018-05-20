@@ -800,4 +800,31 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     user = Repo.get!(User, user.id)
     assert user.bio == "Hello,<br>World! I<br> am a test."
   end
+
+  describe "POST /api/pleroma/delete_account" do
+    setup [:valid_user]
+
+    test "without credentials", %{conn: conn} do
+      conn = post(conn, "/api/pleroma/delete_account")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials and invalid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/delete_account", %{"password" => "hi"})
+
+      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with credentials and valid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/delete_account", %{"password" => "test"})
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+    end
+  end
 end
