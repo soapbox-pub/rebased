@@ -277,7 +277,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, like_activity, object} = ActivityPub.like(user, object)
       assert object.data["like_count"] == 1
 
-      {:ok, object} = ActivityPub.unlike(user, object)
+      {:ok, _, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
       assert Repo.get(Activity, like_activity.id) == nil

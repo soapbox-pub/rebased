@@ -131,11 +131,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def unlike(%User{} = actor, %Object{} = object) do
-    with %Activity{} = activity <- get_existing_like(actor.ap_id, object),
-         {:ok, _activity} <- Repo.delete(activity),
-         {:ok, object} <- remove_like_from_object(activity, object) do
-      {:ok, object}
+  def unlike(
+        %User{} = actor,
+        %Object{} = object,
+        activity_id \\ nil,
+        local \\ true
+      ) do
+    with %Activity{} = like_activity <- get_existing_like(actor.ap_id, object),
+         unlike_data <- make_unlike_data(actor, like_activity, activity_id),
+         {:ok, unlike_activity} <- insert(unlike_data, local),
+         {:ok, _activity} <- Repo.delete(like_activity),
+         {:ok, object} <- remove_like_from_object(like_activity, object),
+         :ok <- maybe_federate(unlike_activity) do
+      {:ok, unlike_activity, like_activity, object}
     else
       _e -> {:ok, object}
     end
