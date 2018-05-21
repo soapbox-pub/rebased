@@ -353,6 +353,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "to" => [followed.ap_id],
       "object" => follow_activity.data
     }
+
     if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
@@ -381,6 +382,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "to" => [blocked.ap_id],
       "object" => blocked.ap_id
     }
+
     if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
@@ -391,6 +393,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "to" => [blocked.ap_id],
       "object" => block_activity.data
     }
+
     if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
