@@ -224,7 +224,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     follow_activity = fetch_latest_follow(blocker, blocked)
 
     if follow_activity do
-      unfollow(blocker, blocked, local)
+      unfollow(blocker, blocked, nil, local)
     end
 
     with block_data <- make_block_data(blocker, blocked, activity_id),
