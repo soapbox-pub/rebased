@@ -346,13 +346,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   #### Unfollow-related helpers
 
-  def make_unfollow_data(follower, followed, follow_activity) do
-    %{
+  def make_unfollow_data(follower, followed, follow_activity, activity_id) do
+    data = %{
       "type" => "Undo",
       "actor" => follower.ap_id,
       "to" => [followed.ap_id],
-      "object" => follow_activity.data["id"]
+      "object" => follow_activity.data
     }
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
   #### Block-related helpers
@@ -373,22 +374,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Repo.one(query)
   end
 
-  def make_block_data(blocker, blocked) do
-    %{
+  def make_block_data(blocker, blocked, activity_id) do
+    data = %{
       "type" => "Block",
       "actor" => blocker.ap_id,
       "to" => [blocked.ap_id],
       "object" => blocked.ap_id
     }
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
-  def make_unblock_data(blocker, blocked, block_activity) do
-    %{
+  def make_unblock_data(blocker, blocked, block_activity, activity_id) do
+    data = %{
       "type" => "Undo",
       "actor" => blocker.ap_id,
       "to" => [blocked.ap_id],
       "object" => block_activity.data
     }
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
   #### Create-related helpers

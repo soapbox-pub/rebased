@@ -425,7 +425,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert activity.data["type"] == "Undo"
       assert activity.data["actor"] == follower.ap_id
-      assert activity.data["object"] == follow_activity.data["id"]
+      assert activity.data["object"]["id"] == follow_activity.data["id"]
     end
   end
 
