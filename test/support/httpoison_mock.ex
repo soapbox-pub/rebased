@@ -531,6 +531,14 @@ defmodule HTTPoisonMock do
      }}
   end
 
+  def get("http://status.alpicola.com/.well-known/host-meta", [], follow_redirect: true) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/status.alpicola.com_host_meta")
+     }}
+  end
+
   def get("http://macgirvin.com/.well-known/host-meta", [], follow_redirect: true) do
     {:ok,
      %Response{

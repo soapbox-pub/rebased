@@ -88,6 +88,12 @@ defmodule Pleroma.Web.WebFingerTest do
 
       assert template == "https://macgirvin.com/xrd/?uri={uri}"
     end
+
+    test "it gets the xrd endpoint for statusnet" do
+      {:ok, template} = WebFinger.find_lrdd_template("status.alpicola.com")
+
+      assert template == "http://status.alpicola.com/main/xrd?uri={uri}"
+    end
   end
 
   describe "ensure_keys_present" do
