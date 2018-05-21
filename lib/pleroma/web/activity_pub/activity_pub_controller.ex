@@ -93,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       Logger.info("Signature not from author, relayed message, fetching from source")
       ActivityPub.fetch_object_from_id(params["object"]["id"])
     else
-      Logger.info("Signature error")
+      Logger.info("Signature error - make sure you are forwarding the HTTP Host header!")
       Logger.info("Could not validate #{params["actor"]}")
       Logger.info(inspect(conn.req_headers))
     end
