@@ -247,6 +247,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     mentions = (activity.recipients || []) |> get_mentions
     follow_activity = Activity.get_by_ap_id(follow_activity["id"])
+
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/unfollow']},

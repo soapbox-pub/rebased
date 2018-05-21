@@ -278,6 +278,30 @@ defmodule Pleroma.Web.OStatusTest do
     assert User.following?(follower, followed)
   end
 
+  test "handle incoming unfollows with existing follow" do
+    incoming_follow = File.read!("test/fixtures/follow.xml")
+    {:ok, [_activity]} = OStatus.handle_incoming(incoming_follow)
+
+    incoming = File.read!("test/fixtures/unfollow.xml")
+    {:ok, [activity]} = OStatus.handle_incoming(incoming)
+
+    assert activity.data["type"] == "Undo"
+
+    assert activity.data["id"] ==
+             "undo:tag:social.heldscal.la,2017-05-07:subscription:23211:person:44803:2017-05-07T09:54:48+00:00"
+
+    assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
+    assert is_map(activity.data["object"])
+    assert activity.data["object"]["type"] == "Follow"
+    assert activity.data["object"]["object"] == "https://pawoo.net/users/pekorino"
+    refute activity.local
+
+    follower = User.get_by_ap_id(activity.data["actor"])
+    followed = User.get_by_ap_id(activity.data["object"]["object"])
+
+    refute User.following?(follower, followed)
+  end
+
   describe "new remote user creation" do
     test "returns local users" do
       local_user = insert(:user)
