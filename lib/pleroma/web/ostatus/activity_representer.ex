@@ -232,7 +232,12 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   end
 
   # Only undos of follow for now. Will need to get redone once there are more
-  def to_simple_form(%{data: %{"type" => "Undo"}} = activity, user, with_author) do
+  def to_simple_form(
+        %{data: %{"type" => "Undo", "object" => %{"type" => "Follow"} = follow_activity}} =
+          activity,
+        user,
+        with_author
+      ) do
     h = fn str -> [to_charlist(str)] end
 
     updated_at = activity.data["published"]
@@ -240,34 +245,25 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
-    follow_activity =
-      if is_map(activity.data["object"]) do
-        Activity.get_by_ap_id(activity.data["object"]["id"])
-      else
-        Activity.get_by_ap_id(activity.data["object"])
-      end
-
     mentions = (activity.recipients || []) |> get_mentions
-
-    if follow_activity do
-      [
-        {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
-        {:"activity:verb", ['http://activitystrea.ms/schema/1.0/unfollow']},
-        {:id, h.(activity.data["id"])},
-        {:title, ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
-        {:content, [type: 'html'],
-         ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
-        {:published, h.(inserted_at)},
-        {:updated, h.(updated_at)},
-        {:"activity:object",
-         [
-           {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/person']},
-           {:id, h.(follow_activity.data["object"])},
-           {:uri, h.(follow_activity.data["object"])}
-         ]},
-        {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []}
-      ] ++ mentions ++ author
-    end
+    follow_activity = Activity.get_by_ap_id(follow_activity["id"])
+    [
+      {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
+      {:"activity:verb", ['http://activitystrea.ms/schema/1.0/unfollow']},
+      {:id, h.(activity.data["id"])},
+      {:title, ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
+      {:content, [type: 'html'],
+       ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
+      {:published, h.(inserted_at)},
+      {:updated, h.(updated_at)},
+      {:"activity:object",
+       [
+         {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/person']},
+         {:id, h.(follow_activity.data["object"])},
+         {:uri, h.(follow_activity.data["object"])}
+       ]},
+      {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []}
+    ] ++ mentions ++ author
   end
 
   def to_simple_form(%{data: %{"type" => "Delete"}} = activity, user, with_author) do
