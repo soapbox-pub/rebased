@@ -2,6 +2,7 @@
 defmodule Pleroma.Web.HTTPSignatures do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub
   require Logger
 
   def split_signature(sig) do
