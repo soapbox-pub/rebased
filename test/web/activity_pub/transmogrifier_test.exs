@@ -316,7 +316,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
     end
 
-    test "it works for incomming unfollows" do
+    test "it works for incomming unfollows with an existing follow" do
       user = insert(:user)
 
       follow_data =
@@ -360,7 +360,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert User.blocks?(blocker, user)
     end
 
-    test "it works for incoming unblocks" do
+    test "it works for incoming unblocks with an existing block" do
       user = insert(:user)
 
       block_data =
@@ -379,11 +379,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["type"] == "Undo"
       assert data["object"]["type"] == "Block"
       assert data["object"]["object"] == user.ap_id
-      assert data["actor"] == "https://mastodon.example.org/users/admin"
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
 
       blocker = User.get_by_ap_id(data["actor"])
 
-      refute User.blocks?(blocker, user.ap_id)
+      refute User.blocks?(blocker, user)
     end
   end
 

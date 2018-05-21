@@ -26,8 +26,9 @@
       "type": "Block", 
       "object": "http://localtesting.pleroma.lol/users/lain",
       "nickname": "lain",
-      "id": "http://mastodon.example.org/users/admin#follows/2",
+      "id": "http://mastodon.example.org/users/admin#blocks/2",
       "actor": "http://mastodon.example.org/users/admin" 
     },
-    "actor": "http://mastodon.example.org/users/admin"
+    "actor": "http://mastodon.example.org/users/admin",
+    "id": "http://mastodon.example.org/users/admin#blocks/2/undo"
 }
