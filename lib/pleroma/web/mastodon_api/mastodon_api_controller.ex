@@ -457,24 +457,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  # TODO: Clean up and unify
   def unfollow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
-         {:ok, follower, follow_activity} <- User.unfollow(follower, followed),
-         {:ok, _activity} <-
-           ActivityPub.insert(%{
-             "type" => "Undo",
-             "actor" => follower.ap_id,
-             # get latest Follow for these users
-             "object" => follow_activity.data["id"]
-           }) do
+         {:ok, _activity} <- ActivityPub.unfollow(follower, followed),
+         {:ok, follower, _} <- User.unfollow(follower, followed) do
       render(conn, AccountView, "relationship.json", %{user: follower, target: followed})
     end
   end
 
   def block(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
     with %User{} = blocked <- Repo.get(User, id),
-         {:ok, blocker} <- User.block(blocker, blocked) do
+         {:ok, blocker} <- User.block(blocker, blocked),
+         {:ok, _activity} <- ActivityPub.block(blocker, blocked) do
       render(conn, AccountView, "relationship.json", %{user: blocker, target: blocked})
     else
       {:error, message} ->
@@ -486,7 +480,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def unblock(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
     with %User{} = blocked <- Repo.get(User, id),
-         {:ok, blocker} <- User.unblock(blocker, blocked) do
+         {:ok, blocker} <- User.unblock(blocker, blocked),
+         {:ok, _activity} <- ActivityPub.unblock(blocker, blocked) do
       render(conn, AccountView, "relationship.json", %{user: blocker, target: blocked})
     else
       {:error, message} ->

@@ -425,7 +425,40 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert activity.data["type"] == "Undo"
       assert activity.data["actor"] == follower.ap_id
+
+      assert is_map(activity.data["object"])
+      assert activity.data["object"]["type"] == "Follow"
+      assert activity.data["object"]["object"] == followed.ap_id
       assert activity.data["object"]["id"] == follow_activity.data["id"]
+    end
+  end
+
+  describe "blocking / unblocking" do
+    test "creates a block activity" do
+      blocker = insert(:user)
+      blocked = insert(:user)
+
+      {:ok, activity} = ActivityPub.block(blocker, blocked)
+
+      assert activity.data["type"] == "Block"
+      assert activity.data["actor"] == blocker.ap_id
+      assert activity.data["object"] == blocked.ap_id
+    end
+
+    test "creates an undo activity for the last block" do
+      blocker = insert(:user)
+      blocked = insert(:user)
+
+      {:ok, block_activity} = ActivityPub.block(blocker, blocked)
+      {:ok, activity} = ActivityPub.unblock(blocker, blocked)
+
+      assert activity.data["type"] == "Undo"
+      assert activity.data["actor"] == blocker.ap_id
+
+      assert is_map(activity.data["object"])
+      assert activity.data["object"]["type"] == "Block"
+      assert activity.data["object"]["object"] == blocked.ap_id
+      assert activity.data["object"]["id"] == block_activity.data["id"]
     end
   end
 
