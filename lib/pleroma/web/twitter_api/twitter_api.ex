@@ -45,7 +45,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def block(%User{} = blocker, params) do
     with {:ok, %User{} = blocked} <- get_user(params),
-         {:ok, blocker} <- User.block(blocker, blocked) do
+         {:ok, blocker} <- User.block(blocker, blocked),
+         {:ok, _activity} <- ActivityPub.block(blocker, blocked) do
       {:ok, blocker, blocked}
     else
       err -> err
@@ -54,7 +55,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def unblock(%User{} = blocker, params) do
     with {:ok, %User{} = blocked} <- get_user(params),
-         {:ok, blocker} <- User.unblock(blocker, blocked) do
+         {:ok, blocker} <- User.unblock(blocker, blocked),
+         {:ok, _activity} <- ActivityPub.unblock(blocker, blocked) do
       {:ok, blocker, blocked}
     else
       err -> err

@@ -443,7 +443,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "with credentials", %{conn: conn, user: current_user} do
       blocked = insert(:user)
 
-      {:ok, current_user} = User.block(current_user, blocked)
+      {:ok, current_user, blocked} = TwitterAPI.block(current_user, %{"user_id" => blocked.id})
       assert User.blocks?(current_user, blocked)
 
       conn =
