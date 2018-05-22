@@ -204,21 +204,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
-  def user_statuses(%{assigns: %{user: user}} = conn, params) do
-    with %User{ap_id: ap_id} <- Repo.get(User, params["id"]) do
-      params =
-        params
-        |> Map.put("type", ["Create", "Announce"])
-        |> Map.put("actor_id", ap_id)
-        |> Map.put("whole_db", true)
-
+  def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
+    with %User{} = user <- Repo.get(User, params["id"]) do
+      # Since Pleroma has no "pinned" posts feature, we'll just set an empty list here
       activities =
         if params["pinned"] == "true" do
-          # Since Pleroma has no "pinned" posts feature, we'll just set an empty list here
           []
         else
-          ActivityPub.fetch_public_activities(params)
-          |> Enum.reverse()
+          ActivityPub.fetch_user_activities(user, reading_user, params)
         end
 
       conn
@@ -317,6 +310,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def unreblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
+    with {:ok, _, _, %{data: %{"id" => id}}} = CommonAPI.unrepeat(ap_id_or_id, user),
+         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+      render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
+    end
+  end
+
   def fav_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
     with {:ok, _fav, %{data: %{"id" => id}}} = CommonAPI.favorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
@@ -325,7 +325,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def unfav_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, %{data: %{"id" => id}}} = CommonAPI.unfavorite(ap_id_or_id, user),
+    with {:ok, _, _, %{data: %{"id" => id}}} = CommonAPI.unfavorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
     end

@@ -4,6 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Web
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.CommonAPI
   alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -194,5 +195,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end)
 
     json(conn, "job started")
+  end
+
+  def delete_account(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params) do
+      {:ok, user} ->
+        Task.start(fn -> User.delete(user) end)
+        json(conn, %{status: "success"})
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
   end
 end

@@ -332,6 +332,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
+  describe "unreblogging" do
+    test "unreblogs and returns the unreblogged status", %{conn: conn} do
+      activity = insert(:note_activity)
+      user = insert(:user)
+
+      {:ok, _, _} = CommonAPI.repeat(activity.id, user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses/#{activity.id}/unreblog")
+
+      assert %{"id" => id, "reblogged" => false, "reblogs_count" => 0} = json_response(conn, 200)
+
+      assert to_string(activity.id) == id
+    end
+  end
+
   describe "favoriting" do
     test "favs a status and returns it", %{conn: conn} do
       activity = insert(:note_activity)
@@ -370,18 +388,47 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   describe "user timelines" do
     test "gets a users statuses", %{conn: conn} do
-      _note = insert(:note_activity)
-      note_two = insert(:note_activity)
+      user_one = insert(:user)
+      user_two = insert(:user)
+      user_three = insert(:user)
 
-      user = User.get_by_ap_id(note_two.data["actor"])
+      {:ok, user_three} = User.follow(user_three, user_one)
 
-      conn =
+      {:ok, activity} = CommonAPI.post(user_one, %{"status" => "HI!!!"})
+
+      {:ok, direct_activity} =
+        CommonAPI.post(user_one, %{
+          "status" => "Hi, @#{user_two.nickname}.",
+          "visibility" => "direct"
+        })
+
+      {:ok, private_activity} =
+        CommonAPI.post(user_one, %{"status" => "private", "visibility" => "private"})
+
+      resp =
         conn
-        |> get("/api/v1/accounts/#{user.id}/statuses")
+        |> get("/api/v1/accounts/#{user_one.id}/statuses")
 
-      assert [%{"id" => id}] = json_response(conn, 200)
+      assert [%{"id" => id}] = json_response(resp, 200)
+      assert id == to_string(activity.id)
 
-      assert id == to_string(note_two.id)
+      resp =
+        conn
+        |> assign(:user, user_two)
+        |> get("/api/v1/accounts/#{user_one.id}/statuses")
+
+      assert [%{"id" => id_one}, %{"id" => id_two}] = json_response(resp, 200)
+      assert id_one == to_string(direct_activity.id)
+      assert id_two == to_string(activity.id)
+
+      resp =
+        conn
+        |> assign(:user, user_three)
+        |> get("/api/v1/accounts/#{user_one.id}/statuses")
+
+      assert [%{"id" => id_one}, %{"id" => id_two}] = json_response(resp, 200)
+      assert id_one == to_string(private_activity.id)
+      assert id_two == to_string(activity.id)
     end
 
     test "unimplemented pinned statuses feature", %{conn: conn} do
@@ -625,16 +672,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   test "account search", %{conn: conn} do
     user = insert(:user)
-    _user_two = insert(:user, %{nickname: "shp@shitposter.club"})
+    user_two = insert(:user, %{nickname: "shp@shitposter.club"})
     user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
 
-    conn =
+    results =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/accounts/search", %{"q" => "shp"})
+      |> json_response(200)
+
+    result_ids = for result <- results, do: result["acct"]
+
+    assert user_two.nickname in result_ids
+    assert user_three.nickname in result_ids
+
+    results =
       conn
       |> assign(:user, user)
       |> get("/api/v1/accounts/search", %{"q" => "2hu"})
+      |> json_response(200)
 
-    assert [account] = json_response(conn, 200)
-    assert account["id"] == to_string(user_three.id)
+    result_ids = for result <- results, do: result["acct"]
+
+    assert user_three.nickname in result_ids
   end
 
   test "search", %{conn: conn} do
@@ -658,7 +718,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert results = json_response(conn, 200)
 
-    [account] = results["accounts"]
+    [account | _] = results["accounts"]
     assert account["id"] == to_string(user_three.id)
 
     assert results["hashtags"] == []

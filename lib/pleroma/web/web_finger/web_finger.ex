@@ -87,6 +87,11 @@ defmodule Pleroma.Web.WebFinger do
         },
         %{"rel" => "self", "type" => "application/activity+json", "href" => user.ap_id},
         %{
+          "rel" => "self",
+          "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+          "href" => user.ap_id
+        },
+        %{
           "rel" => "http://ostatus.org/schema/1.0/subscribe",
           "template" => OStatus.remote_follow_path()
         }
@@ -183,6 +188,9 @@ defmodule Pleroma.Web.WebFinger do
           {"application/activity+json", "self"} ->
             Map.put(data, "ap_id", link["href"])
 
+          {"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"", "self"} ->
+            Map.put(data, "ap_id", link["href"])
+
           {_, "magic-public-key"} ->
             "data:application/magic-public-key," <> magic_key = link["href"]
             Map.put(data, "magic_key", magic_key)
@@ -206,7 +214,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def get_template_from_xml(body) do
-    xpath = "//Link[@rel='lrdd' and @type='application/xrd+xml']/@template"
+    xpath = "//Link[@rel='lrdd']/@template"
 
     with doc when doc != :error <- XML.parse_document(body),
          template when template != nil <- XML.string_from_xpath(xpath, doc) do

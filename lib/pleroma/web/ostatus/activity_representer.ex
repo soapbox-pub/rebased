@@ -239,27 +239,35 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     inserted_at = activity.data["published"]
 
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
-    follow_activity = Activity.get_by_ap_id(activity.data["object"])
+
+    follow_activity =
+      if is_map(activity.data["object"]) do
+        Activity.get_by_ap_id(activity.data["object"]["id"])
+      else
+        Activity.get_by_ap_id(activity.data["object"])
+      end
 
     mentions = (activity.recipients || []) |> get_mentions
 
-    [
-      {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
-      {:"activity:verb", ['http://activitystrea.ms/schema/1.0/unfollow']},
-      {:id, h.(activity.data["id"])},
-      {:title, ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
-      {:content, [type: 'html'],
-       ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
-      {:published, h.(inserted_at)},
-      {:updated, h.(updated_at)},
-      {:"activity:object",
-       [
-         {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/person']},
-         {:id, h.(follow_activity.data["object"])},
-         {:uri, h.(follow_activity.data["object"])}
-       ]},
-      {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []}
-    ] ++ mentions ++ author
+    if follow_activity do
+      [
+        {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
+        {:"activity:verb", ['http://activitystrea.ms/schema/1.0/unfollow']},
+        {:id, h.(activity.data["id"])},
+        {:title, ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
+        {:content, [type: 'html'],
+         ['#{user.nickname} stopped following #{follow_activity.data["object"]}']},
+        {:published, h.(inserted_at)},
+        {:updated, h.(updated_at)},
+        {:"activity:object",
+         [
+           {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/person']},
+           {:id, h.(follow_activity.data["object"])},
+           {:uri, h.(follow_activity.data["object"])}
+         ]},
+        {:link, [rel: 'self', type: ['application/atom+xml'], href: h.(activity.data["id"])], []}
+      ] ++ mentions ++ author
+    end
   end
 
   def to_simple_form(%{data: %{"type" => "Delete"}} = activity, user, with_author) do

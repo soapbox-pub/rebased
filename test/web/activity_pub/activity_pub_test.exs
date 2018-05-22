@@ -171,6 +171,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "public fetch activities" do
+    test "doesn't retrieve unlisted activities" do
+      user = insert(:user)
+
+      {:ok, unlisted_activity} =
+        CommonAPI.post(user, %{"status" => "yeah", "visibility" => "unlisted"})
+
+      {:ok, listed_activity} = CommonAPI.post(user, %{"status" => "yeah"})
+
+      [activity] = ActivityPub.fetch_public_activities()
+
+      assert activity == listed_activity
+    end
+
     test "retrieves public activities" do
       _activities = ActivityPub.fetch_public_activities()
 
@@ -264,7 +277,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, like_activity, object} = ActivityPub.like(user, object)
       assert object.data["like_count"] == 1
 
-      {:ok, object} = ActivityPub.unlike(user, object)
+      {:ok, _, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
       assert Repo.get(Activity, like_activity.id) == nil
@@ -289,6 +302,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert announce_activity.data["object"] == object.data["id"]
       assert announce_activity.data["actor"] == user.ap_id
       assert announce_activity.data["context"] == object.data["context"]
+    end
+  end
+
+  describe "unannouncing an object" do
+    test "unannouncing a previously announced object" do
+      note_activity = insert(:note_activity)
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      user = insert(:user)
+
+      # Unannouncing an object that is not announced does nothing
+      # {:ok, object} = ActivityPub.unannounce(user, object)
+      # assert object.data["announcement_count"] == 0
+
+      {:ok, announce_activity, object} = ActivityPub.announce(user, object)
+      assert object.data["announcement_count"] == 1
+
+      {:ok, unannounce_activity, activity, object} = ActivityPub.unannounce(user, object)
+      assert object.data["announcement_count"] == 0
+
+      assert activity == announce_activity
+
+      assert unannounce_activity.data["to"] == [
+               User.ap_followers(user),
+               announce_activity.data["actor"]
+             ]
+
+      assert unannounce_activity.data["type"] == "Undo"
+      assert unannounce_activity.data["object"] == announce_activity.data
+      assert unannounce_activity.data["actor"] == user.ap_id
+      assert unannounce_activity.data["context"] == announce_activity.data["context"]
+
+      assert Repo.get(Activity, announce_activity.id) == nil
     end
   end
 

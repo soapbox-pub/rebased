@@ -1,5 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   alias Pleroma.User
+  @behaviour Pleroma.Web.ActivityPub.MRF
 
   @mrf_policy Application.get_env(:pleroma, :mrf_simple)
 
@@ -69,6 +70,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     end
   end
 
+  @impl true
   def filter(object) do
     actor_info = URI.parse(object["actor"])
 

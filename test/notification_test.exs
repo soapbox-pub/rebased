@@ -33,6 +33,13 @@ defmodule Pleroma.NotificationTest do
 
       assert nil == Notification.create_notification(activity, user)
     end
+
+    test "it doesn't create a notification for user if he is the activity author" do
+      activity = insert(:note_activity)
+      author = User.get_by_ap_id(activity.data["actor"])
+
+      assert nil == Notification.create_notification(activity, author)
+    end
   end
 
   describe "get notification" do

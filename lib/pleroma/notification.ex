@@ -91,7 +91,8 @@ defmodule Pleroma.Notification do
 
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user) do
-    unless User.blocks?(user, %{ap_id: activity.data["actor"]}) do
+    unless User.blocks?(user, %{ap_id: activity.data["actor"]}) or
+             user.ap_id == activity.data["actor"] do
       notification = %Notification{user_id: user.id, activity: activity}
       {:ok, notification} = Repo.insert(notification)
       Pleroma.Web.Streamer.stream("user", notification)

@@ -160,6 +160,7 @@ defmodule Pleroma.Formatter do
     links =
       Regex.scan(@link_regex, text)
       |> Enum.map(fn [url] -> {Ecto.UUID.generate(), url} end)
+      |> Enum.sort_by(fn {_, url} -> -String.length(url) end)
 
     uuid_text =
       links

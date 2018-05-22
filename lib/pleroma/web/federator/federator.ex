@@ -5,6 +5,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
@@ -90,6 +91,8 @@ defmodule Pleroma.Web.Federator do
 
   def handle(:incoming_ap_doc, params) do
     Logger.info("Handling incoming AP activity")
+
+    params = Utils.normalize_params(params)
 
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.get_by_ap_id(params["id"]),

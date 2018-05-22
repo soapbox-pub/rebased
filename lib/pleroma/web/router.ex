@@ -73,6 +73,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:authenticated_api)
     post("/follow_import", UtilController, :follow_import)
+    post("/delete_account", UtilController, :delete_account)
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
@@ -114,6 +115,7 @@ defmodule Pleroma.Web.Router do
     delete("/statuses/:id", MastodonAPIController, :delete_status)
 
     post("/statuses/:id/reblog", MastodonAPIController, :reblog_status)
+    post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
     post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
     post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
 

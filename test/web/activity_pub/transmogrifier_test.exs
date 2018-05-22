@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.OStatus
   alias Pleroma.Activity
   alias Pleroma.User
@@ -118,6 +119,23 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert User.following?(User.get_by_ap_id(data["actor"]), user)
     end
 
+    test "it works for incoming follow requests from hubzilla" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/hubzilla-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+        |> Utils.normalize_params()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "https://hubzilla.example.org/channel/kaniini"
+      assert data["type"] == "Follow"
+      assert data["id"] == "https://hubzilla.example.org/channel/kaniini#follows/2"
+      assert User.following?(User.get_by_ap_id(data["actor"]), user)
+    end
+
     test "it works for incoming likes" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
@@ -133,6 +151,43 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["type"] == "Like"
       assert data["id"] == "http://mastodon.example.org/users/admin#likes/2"
       assert data["object"] == activity.data["object"]["id"]
+    end
+
+    test "it returns an error for incoming unlikes wihout a like activity" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"]["id"])
+
+      assert Transmogrifier.handle_incoming(data) == :error
+    end
+
+    test "it works for incoming unlikes with an existing like activity" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
+
+      like_data =
+        File.read!("test/fixtures/mastodon-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"]["id"])
+
+      {:ok, %Activity{data: like_data, local: false}} = Transmogrifier.handle_incoming(like_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-like.json")
+        |> Poison.decode!()
+        |> Map.put("object", like_data)
+        |> Map.put("actor", like_data["actor"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "Undo"
+      assert data["id"] == "http://mastodon.example.org/users/admin#likes/2/undo"
+      assert data["object"]["id"] == "http://mastodon.example.org/users/admin#likes/2"
     end
 
     test "it works for incoming announces" do
@@ -231,6 +286,34 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
       refute Repo.get(Activity, activity.id)
+    end
+
+    test "it works for incoming unannounces with an existing notice" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+
+      announce_data =
+        File.read!("test/fixtures/mastodon-announce.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"]["id"])
+
+      {:ok, %Activity{data: announce_data, local: false}} =
+        Transmogrifier.handle_incoming(announce_data)
+
+      data =
+        File.read!("test/fixtures/mastodon-undo-announce.json")
+        |> Poison.decode!()
+        |> Map.put("object", announce_data)
+        |> Map.put("actor", announce_data["actor"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["type"] == "Undo"
+      assert data["object"]["type"] == "Announce"
+      assert data["object"]["object"] == activity.data["object"]["id"]
+
+      assert data["object"]["id"] ==
+               "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
     end
   end
 
@@ -390,6 +473,17 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       refute Repo.get(WebsubClientSubscription, ws.id)
       assert Repo.get(WebsubClientSubscription, ws2.id)
+    end
+  end
+
+  describe "actor rewriting" do
+    test "it fixes the actor URL property to be a proper URI" do
+      data = %{
+        "url" => %{"href" => "http://example.com"}
+      }
+
+      rewritten = Transmogrifier.maybe_fix_user_object(data)
+      assert rewritten["url"] == "http://example.com"
     end
   end
 end
