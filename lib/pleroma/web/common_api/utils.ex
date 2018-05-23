@@ -133,7 +133,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,
-      "tag" => tags |> Enum.map(fn {_, tag} -> tag end)
+      "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
     if inReplyTo do
