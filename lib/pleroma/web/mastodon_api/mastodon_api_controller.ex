@@ -275,11 +275,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end
 
     {:ok, activity} =
-      Cachex.get!(
-        :idempotency_cache,
-        idempotency_key,
-        fallback: fn _ -> CommonAPI.post(user, params) end
-      )
+      Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ -> CommonAPI.post(user, params) end)
 
     render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
   end

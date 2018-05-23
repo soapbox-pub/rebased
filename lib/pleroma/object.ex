@@ -33,19 +33,15 @@ defmodule Pleroma.Object do
     else
       key = "object:#{ap_id}"
 
-      Cachex.get!(
-        :user_cache,
-        key,
-        fallback: fn _ ->
-          object = get_by_ap_id(ap_id)
+      Cachex.fetch!(:user_cache, key, fn _ ->
+        object = get_by_ap_id(ap_id)
 
-          if object do
-            {:commit, object}
-          else
-            {:ignore, object}
-          end
+        if object do
+          {:commit, object}
+        else
+          {:ignore, object}
         end
-      )
+      end)
     end
   end
 
