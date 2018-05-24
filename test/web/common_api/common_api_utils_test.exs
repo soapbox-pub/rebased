@@ -21,13 +21,12 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     test "incorrect password given" do
       {:ok, user} = UserBuilder.insert()
 
-      assert Utils.confirm_current_password(user, %{"password" => ""}) ==
-               {:error, "Invalid password."}
+      assert Utils.confirm_current_password(user, "") == {:error, "Invalid password."}
     end
 
     test "correct password given" do
       {:ok, user} = UserBuilder.insert()
-      assert Utils.confirm_current_password(user, %{"password" => "test"}) == {:ok, user}
+      assert Utils.confirm_current_password(user, "test") == {:ok, user}
     end
   end
 end
