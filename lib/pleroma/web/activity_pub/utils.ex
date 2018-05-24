@@ -242,8 +242,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
           fragment(
             "? @> ?",
             activity.data,
-            ^%{type: "Follow", actor: follower_id, object: followed_id}
+            ^%{type: "Follow", object: followed_id}
           ),
+        where: activity.actor == ^follower_id,
         order_by: [desc: :id],
         limit: 1
       )
@@ -260,7 +261,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     query =
       from(
         activity in Activity,
-        where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
+        where: activity.actor == ^actor,
         # this is to use the index
         where:
           fragment(

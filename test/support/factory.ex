@@ -95,7 +95,8 @@ defmodule Pleroma.Factory do
     }
 
     %Pleroma.Activity{
-      data: data
+      data: data,
+      actor: follower.ap_id
     }
   end
 
