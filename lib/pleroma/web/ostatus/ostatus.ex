@@ -8,7 +8,7 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.{Repo, User, Web, Object, Activity}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.{WebFinger, Websub}
-  alias Pleroma.Web.OStatus.{FollowHandler, NoteHandler, DeleteHandler}
+  alias Pleroma.Web.OStatus.{FollowHandler, UnfollowHandler, NoteHandler, DeleteHandler}
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   def feed_path(user) do
@@ -46,6 +46,9 @@ defmodule Pleroma.Web.OStatus do
 
               'http://activitystrea.ms/schema/1.0/follow' ->
                 with {:ok, activity} <- FollowHandler.handle(entry, doc), do: activity
+
+              'http://activitystrea.ms/schema/1.0/unfollow' ->
+                with {:ok, activity} <- UnfollowHandler.handle(entry, doc), do: activity
 
               'http://activitystrea.ms/schema/1.0/share' ->
                 with {:ok, activity, retweeted_activity} <- handle_share(entry, doc),

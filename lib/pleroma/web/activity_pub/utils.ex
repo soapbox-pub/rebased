@@ -347,13 +347,56 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   #### Unfollow-related helpers
 
-  def make_unfollow_data(follower, followed, follow_activity) do
-    %{
+  def make_unfollow_data(follower, followed, follow_activity, activity_id) do
+    data = %{
       "type" => "Undo",
       "actor" => follower.ap_id,
       "to" => [followed.ap_id],
-      "object" => follow_activity.data["id"]
+      "object" => follow_activity.data
     }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
+  #### Block-related helpers
+  def fetch_latest_block(%User{ap_id: blocker_id}, %User{ap_id: blocked_id}) do
+    query =
+      from(
+        activity in Activity,
+        where:
+          fragment(
+            "? @> ?",
+            activity.data,
+            ^%{type: "Block", object: blocked_id}
+          ),
+        where: activity.actor == ^blocker_id,
+        order_by: [desc: :id],
+        limit: 1
+      )
+
+    Repo.one(query)
+  end
+
+  def make_block_data(blocker, blocked, activity_id) do
+    data = %{
+      "type" => "Block",
+      "actor" => blocker.ap_id,
+      "to" => [blocked.ap_id],
+      "object" => blocked.ap_id
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
+  def make_unblock_data(blocker, blocked, block_activity, activity_id) do
+    data = %{
+      "type" => "Undo",
+      "actor" => blocker.ap_id,
+      "to" => [blocked.ap_id],
+      "object" => block_activity.data
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
   #### Create-related helpers

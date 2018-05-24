@@ -166,7 +166,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "Unblock another user using user_id" do
     unblocked = insert(:user)
     user = insert(:user)
-    User.block(user, unblocked)
+    {:ok, user, _unblocked} = TwitterAPI.block(user, %{"user_id" => unblocked.id})
 
     {:ok, user, _unblocked} = TwitterAPI.unblock(user, %{"user_id" => unblocked.id})
     assert user.info["blocks"] == []
@@ -175,7 +175,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "Unblock another user using screen_name" do
     unblocked = insert(:user)
     user = insert(:user)
-    User.block(user, unblocked)
+    {:ok, user, _unblocked} = TwitterAPI.block(user, %{"screen_name" => unblocked.nickname})
 
     {:ok, user, _unblocked} = TwitterAPI.unblock(user, %{"screen_name" => unblocked.nickname})
     assert user.info["blocks"] == []

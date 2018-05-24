@@ -244,6 +244,56 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{
           "type" => "Undo",
+          "object" => %{"type" => "Follow", "object" => followed},
+          "actor" => follower,
+          "id" => id
+        } = _data
+      ) do
+    with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
+         %User{} = follower <- User.get_or_fetch_by_ap_id(follower),
+         {:ok, activity} <- ActivityPub.unfollow(follower, followed, id, false) do
+      User.unfollow(follower, followed)
+      {:ok, activity}
+    else
+      e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Undo",
+          "object" => %{"type" => "Block", "object" => blocked},
+          "actor" => blocker,
+          "id" => id
+        } = _data
+      ) do
+    with %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
+         %User{} = blocker <- User.get_or_fetch_by_ap_id(blocker),
+         {:ok, activity} <- ActivityPub.unblock(blocker, blocked, id, false) do
+      User.unblock(blocker, blocked)
+      {:ok, activity}
+    else
+      e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = data
+      ) do
+    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
+         %User{} = blocker = User.get_or_fetch_by_ap_id(blocker),
+         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
+      User.unfollow(blocker, blocked)
+      User.block(blocker, blocked)
+      {:ok, activity}
+    else
+      e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Undo",
           "object" => %{"type" => "Like", "object" => object_id},
           "actor" => actor,
           "id" => id
@@ -261,7 +311,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   # TODO
   # Accept
-  # Undo for non-Announce
 
   def handle_incoming(_), do: :error
 
