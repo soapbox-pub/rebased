@@ -366,8 +366,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
           fragment(
             "? @> ?",
             activity.data,
-            ^%{type: "Block", actor: blocker_id, object: blocked_id}
+            ^%{type: "Block", object: blocked_id}
           ),
+        where: activity.actor == ^blocker_id,
         order_by: [desc: :id],
         limit: 1
       )
