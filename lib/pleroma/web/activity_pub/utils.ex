@@ -240,11 +240,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         activity in Activity,
         where:
           fragment(
-            "? @> ?",
-            activity.data,
-            ^%{type: "Follow", object: followed_id}
+            "? ->> 'type' = 'Follow'",
+            activity.data
           ),
         where: activity.actor == ^follower_id,
+        where:
+          fragment(
+            "? @> ?",
+            activity.data,
+            ^%{object: followed_id}
+          ),
         order_by: [desc: :id],
         limit: 1
       )
@@ -365,11 +370,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         activity in Activity,
         where:
           fragment(
-            "? @> ?",
-            activity.data,
-            ^%{type: "Block", object: blocked_id}
+            "? ->> 'type' = 'Block'",
+            activity.data
           ),
         where: activity.actor == ^blocker_id,
+        where:
+          fragment(
+            "? @> ?",
+            activity.data,
+            ^%{object: blocked_id}
+          ),
         order_by: [desc: :id],
         limit: 1
       )
