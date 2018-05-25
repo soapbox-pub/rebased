@@ -464,6 +464,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "url" => [%{"href" => data["image"]["url"]}]
         }
 
+    locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
 
     user_data = %{
@@ -471,7 +472,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       info: %{
         "ap_enabled" => true,
         "source_data" => data,
-        "banner" => banner
+        "banner" => banner,
+        "locked" => locked
       },
       avatar: avatar,
       nickname: "#{data["preferredUsername"]}@#{URI.parse(data["id"]).host}",
