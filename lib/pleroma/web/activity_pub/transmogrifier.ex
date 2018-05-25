@@ -152,10 +152,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         {:ok, follow_object}
 
       is_binary(follow_object) ->
-        object = get_obj_helper(follow_object) || ActivityPub.fetch_object_from_id(follow_object)
+        object = Activity.get_by_ap_id(follow_object)
 
         if object do
-          {:ok, object}
+          {:ok, object.data}
         else
           {:error, nil}
         end
@@ -170,12 +170,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object),
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]) do
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]),
+         {:ok, activity} <- ActivityPub.insert(data, true) do
       if not User.following?(follower, followed) do
-        User.follow(follower, followed)
+        {:ok, follower} = User.follow(follower, followed)
       end
 
-      {:ok, data}
+      {:ok, activity}
     end
   end
 
@@ -184,10 +185,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object),
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]) do
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]),
+         {:ok, activity} <- ActivityPub.insert(data, true) do
       User.unfollow(follower, followed)
 
-      {:ok, data}
+      {:ok, activity}
     end
   end
 
