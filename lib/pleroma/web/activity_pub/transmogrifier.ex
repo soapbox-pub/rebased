@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
 
   import Ecto.Query
 
@@ -142,6 +143,48 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:ok, activity}
     else
       _e -> :error
+    end
+  end
+
+  defp get_follow_activity(follow_object) do
+    cond do
+      is_map(follow_object) ->
+        {:ok, follow_object}
+
+      is_binary(follow_object) ->
+        object = get_obj_helper(follow_object) || ActivityPub.fetch_object_from_id(follow_object)
+        if object do
+          {:ok, object}
+        else
+          {:error, nil}
+        end
+
+      true ->
+        {:error, nil}
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Accept", "object" => follow_object, "actor" => actor, "id" => id} = data
+      ) do
+    with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, follow_activity} <- get_follow_activity(follow_object),
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]) do
+      User.follow(follower, followed)
+
+      {:ok, data}
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Reject", "object" => follow_object, "actor" => actor, "id" => id} = data
+      ) do
+    with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, follow_activity} <- get_follow_activity(follow_object),
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]),
+         {:ok, follow_activity} <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, activity} <- ActivityPub.delete(follow_activity, false) do
+      {:ok, activity}
     end
   end
 
