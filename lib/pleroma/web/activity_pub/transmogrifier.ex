@@ -153,6 +153,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       is_binary(follow_object) ->
         object = get_obj_helper(follow_object) || ActivityPub.fetch_object_from_id(follow_object)
+
         if object do
           {:ok, object}
         else
