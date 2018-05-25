@@ -46,6 +46,15 @@ defmodule Pleroma.UserTest do
     {:error, _} = User.follow(user, followed)
   end
 
+  test "can't follow a user who blocked us" do
+    blocker = insert(:user)
+    blockee = insert(:user)
+
+    {:ok, blocker} = User.block(blocker, blockee)
+
+    {:error, _} = User.follow(blockee, blocker)
+  end
+
   # This is a somewhat useless test.
   # test "following a remote user will ensure a websub subscription is present" do
   #   user = insert(:user)
