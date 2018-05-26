@@ -263,11 +263,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => _id} = _data
       ) do
-    object_id =
-      case object_id do
-        %{"id" => id} -> id
-        id -> id
-      end
+    object_id = Utils.get_ap_id(object_id)
 
     with %User{} = _actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
@@ -364,9 +360,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       _e -> :error
     end
   end
-
-  # TODO
-  # Accept
 
   def handle_incoming(_), do: :error
 

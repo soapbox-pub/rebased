@@ -7,18 +7,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
-  def normalize_actor(actor) do
-    cond do
-      is_binary(actor) ->
-        actor
-
-      is_map(actor) ->
-        actor["id"]
+  def get_ap_id(object) do
+    case object do
+      %{"id" => id} -> id
+      id -> id
     end
   end
 
   def normalize_params(params) do
-    Map.put(params, "actor", normalize_actor(params["actor"]))
+    Map.put(params, "actor", get_ap_id(params["actor"]))
   end
 
   def make_json_ld_header do
