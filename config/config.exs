@@ -56,6 +56,8 @@ config :pleroma, :instance,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true
 
+config :pleroma, :activitypub, accept_blocks: true
+
 config :pleroma, :mrf_simple,
   media_removal: [],
   media_nsfw: [],
