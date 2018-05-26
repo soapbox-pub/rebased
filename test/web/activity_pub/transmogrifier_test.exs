@@ -399,12 +399,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Poison.decode!()
         |> Map.put("actor", followed.ap_id)
 
-      object = accept_data["object"]
-      |> Map.put("actor", follower.ap_id)
-      |> Map.put("id", follow_activity.data["id"])
+      object =
+        accept_data["object"]
+        |> Map.put("actor", follower.ap_id)
+        |> Map.put("id", follow_activity.data["id"])
 
-      accept_data =
-        Map.put(accept_data, "object", object)
+      accept_data = Map.put(accept_data, "object", object)
 
       {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
       refute activity.local

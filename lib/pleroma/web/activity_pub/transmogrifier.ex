@@ -166,6 +166,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       # Can't find the activity. This might a Mastodon 2.3 "Accept"
       {:activity, nil} ->
         mastodon_follow_hack(follow_object, followed)
+
       _ ->
         {:error, nil}
     end
@@ -177,7 +178,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
-         {:ok, activity} <- ActivityPub.accept(%{to: follow_activity.data["to"], type: "Accept", actor: followed.ap_id, object: follow_activity.data["id"], local: false}) do
+         {:ok, activity} <-
+           ActivityPub.accept(%{
+             to: follow_activity.data["to"],
+             type: "Accept",
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             local: false
+           }) do
       if not User.following?(follower, followed) do
         {:ok, follower} = User.follow(follower, followed)
       end
@@ -194,7 +202,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
-         {:ok, activity} <- ActivityPub.accept(%{to: follow_activity.data["to"], type: "Accept", actor: followed.ap_id, object: follow_activity.data["id"], local: false}) do
+         {:ok, activity} <-
+           ActivityPub.accept(%{
+             to: follow_activity.data["to"],
+             type: "Accept",
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             local: false
+           }) do
       User.unfollow(follower, followed)
 
       {:ok, activity}
