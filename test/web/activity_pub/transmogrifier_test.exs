@@ -2,13 +2,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.OStatus
   alias Pleroma.Activity
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Web.Websub.WebsubClientSubscription
-  alias Pleroma.Web.Websub.WebsubServerSubscription
-  import Ecto.Query
 
   import Pleroma.Factory
   alias Pleroma.Web.CommonAPI
@@ -283,7 +282,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("object", object)
         |> Map.put("actor", activity.data["actor"])
 
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
 
       refute Repo.get(Activity, activity.id)
     end
@@ -384,6 +383,164 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       blocker = User.get_by_ap_id(data["actor"])
 
       refute User.blocks?(blocker, user)
+    end
+
+    test "it works for incoming accepts which were pre-accepted" do
+      follower = insert(:user)
+      followed = insert(:user)
+
+      {:ok, follower} = User.follow(follower, followed)
+      assert User.following?(follower, followed) == true
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+
+      accept_data =
+        File.read!("test/fixtures/mastodon-accept-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+
+      object =
+        accept_data["object"]
+        |> Map.put("actor", follower.ap_id)
+        |> Map.put("id", follow_activity.data["id"])
+
+      accept_data = Map.put(accept_data, "object", object)
+
+      {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
+      refute activity.local
+
+      assert activity.data["object"] == follow_activity.data["id"]
+
+      follower = Repo.get(User, follower.id)
+
+      assert User.following?(follower, followed) == true
+    end
+
+    test "it works for incoming accepts which were orphaned" do
+      follower = insert(:user)
+      followed = insert(:user, %{info: %{"locked" => true}})
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+
+      accept_data =
+        File.read!("test/fixtures/mastodon-accept-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+
+      accept_data =
+        Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
+
+      {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
+      assert activity.data["object"] == follow_activity.data["id"]
+
+      follower = Repo.get(User, follower.id)
+
+      assert User.following?(follower, followed) == true
+    end
+
+    test "it works for incoming accepts which are referenced by IRI only" do
+      follower = insert(:user)
+      followed = insert(:user, %{info: %{"locked" => true}})
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+
+      accept_data =
+        File.read!("test/fixtures/mastodon-accept-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+        |> Map.put("object", follow_activity.data["id"])
+
+      {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
+      assert activity.data["object"] == follow_activity.data["id"]
+
+      follower = Repo.get(User, follower.id)
+
+      assert User.following?(follower, followed) == true
+    end
+
+    test "it fails for incoming accepts which cannot be correlated" do
+      follower = insert(:user)
+      followed = insert(:user, %{info: %{"locked" => true}})
+
+      accept_data =
+        File.read!("test/fixtures/mastodon-accept-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+
+      accept_data =
+        Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
+
+      :error = Transmogrifier.handle_incoming(accept_data)
+
+      follower = Repo.get(User, follower.id)
+
+      refute User.following?(follower, followed) == true
+    end
+
+    test "it fails for incoming rejects which cannot be correlated" do
+      follower = insert(:user)
+      followed = insert(:user, %{info: %{"locked" => true}})
+
+      accept_data =
+        File.read!("test/fixtures/mastodon-reject-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+
+      accept_data =
+        Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
+
+      :error = Transmogrifier.handle_incoming(accept_data)
+
+      follower = Repo.get(User, follower.id)
+
+      refute User.following?(follower, followed) == true
+    end
+
+    test "it works for incoming rejects which are orphaned" do
+      follower = insert(:user)
+      followed = insert(:user, %{info: %{"locked" => true}})
+
+      {:ok, follower} = User.follow(follower, followed)
+      {:ok, _follow_activity} = ActivityPub.follow(follower, followed)
+
+      assert User.following?(follower, followed) == true
+
+      reject_data =
+        File.read!("test/fixtures/mastodon-reject-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+
+      reject_data =
+        Map.put(reject_data, "object", Map.put(reject_data["object"], "actor", follower.ap_id))
+
+      {:ok, activity} = Transmogrifier.handle_incoming(reject_data)
+      refute activity.local
+
+      follower = Repo.get(User, follower.id)
+
+      assert User.following?(follower, followed) == false
+    end
+
+    test "it works for incoming rejects which are referenced by IRI only" do
+      follower = insert(:user)
+      followed = insert(:user, %{info: %{"locked" => true}})
+
+      {:ok, follower} = User.follow(follower, followed)
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+
+      assert User.following?(follower, followed) == true
+
+      reject_data =
+        File.read!("test/fixtures/mastodon-reject-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+        |> Map.put("object", follow_activity.data["id"])
+
+      {:ok, %Activity{data: _}} = Transmogrifier.handle_incoming(reject_data)
+
+      follower = Repo.get(User, follower.id)
+
+      assert User.following?(follower, followed) == false
     end
   end
 

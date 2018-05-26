@@ -32,14 +32,14 @@ defmodule Pleroma.Web.HTTPSignatures do
   def validate_conn(conn) do
     # TODO: How to get the right key and see if it is actually valid for that request.
     # For now, fetch the key for the actor.
-    with actor_id <- Utils.normalize_actor(conn.params["actor"]),
+    with actor_id <- Utils.get_ap_id(conn.params["actor"]),
          {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
       if validate_conn(conn, public_key) do
         true
       else
         Logger.debug("Could not validate, re-fetching user and trying one more time")
         # Fetch user anew and try one more time
-        with actor_id <- Utils.normalize_actor(conn.params["actor"]),
+        with actor_id <- Utils.get_ap_id(conn.params["actor"]),
              {:ok, _user} <- ActivityPub.make_user_from_ap_id(actor_id),
              {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
           validate_conn(conn, public_key)

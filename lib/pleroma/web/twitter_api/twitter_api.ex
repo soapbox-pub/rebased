@@ -25,7 +25,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def follow(%User{} = follower, params) do
     with {:ok, %User{} = followed} <- get_user(params),
-         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
          {:ok, activity} <- ActivityPub.follow(follower, followed) do
       {:ok, follower, followed, activity}
     else

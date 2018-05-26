@@ -95,6 +95,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def reject(%{to: to, actor: actor, object: object} = params) do
+    # only accept false as false value
+    local = !(params[:local] == false)
+
+    with data <- %{"to" => to, "type" => "Reject", "actor" => actor, "object" => object},
+         {:ok, activity} <- insert(data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
   def update(%{to: to, cc: cc, actor: actor, object: object} = params) do
     # only accept false as false value
     local = !(params[:local] == false)
@@ -464,6 +475,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "url" => [%{"href" => data["image"]["url"]}]
         }
 
+    locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
 
     user_data = %{
@@ -471,7 +483,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       info: %{
         "ap_enabled" => true,
         "source_data" => data,
-        "banner" => banner
+        "banner" => banner,
+        "locked" => locked
       },
       avatar: avatar,
       nickname: "#{data["preferredUsername"]}@#{URI.parse(data["id"]).host}",

@@ -298,7 +298,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     test "list timeline", %{conn: conn} do
       user = insert(:user)
       other_user = insert(:user)
-      {:ok, activity_one} = TwitterAPI.create_status(user, %{"status" => "Marisa is cute."})
+      {:ok, _activity_one} = TwitterAPI.create_status(user, %{"status" => "Marisa is cute."})
       {:ok, activity_two} = TwitterAPI.create_status(other_user, %{"status" => "Marisa is cute."})
       {:ok, list} = Pleroma.List.create("name", user)
       {:ok, list} = Pleroma.List.follow(list, other_user)
