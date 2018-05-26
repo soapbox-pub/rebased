@@ -173,7 +173,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]),
          follow_activity <- Utils.fetch_latest_follow(follower, followed),
          false <- is_nil(follow_activity),
-         {:ok, activity} <- ActivityPub.insert(data, true) do
+         {:ok, activity} <- ActivityPub.accept(%{to: follow_activity.data["to"], type: "Accept", actor: followed.ap_id, object: follow_activity.data["id"], local: false}) do
       if not User.following?(follower, followed) do
         {:ok, follower} = User.follow(follower, followed)
       end
@@ -192,7 +192,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]),
          follow_activity <- Utils.fetch_latest_follow(follower, followed),
          false <- is_nil(follow_activity),
-         {:ok, activity} <- ActivityPub.insert(data, true) do
+         {:ok, activity} <- ActivityPub.accept(%{to: follow_activity.data["to"], type: "Accept", actor: followed.ap_id, object: follow_activity.data["id"], local: false}) do
       User.unfollow(follower, followed)
 
       {:ok, activity}

@@ -404,7 +404,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       accept_data =
         Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
 
-      {:ok, %Activity{data: _}} = Transmogrifier.handle_incoming(accept_data)
+      {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
+      refute activity.local
+
+      assert activity.data["object"] == follow_activity.data["id"]
 
       follower = Repo.get(User, follower.id)
 
@@ -425,7 +428,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       accept_data =
         Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
 
-      {:ok, %Activity{data: _}} = Transmogrifier.handle_incoming(accept_data)
+      {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
+      assert activity.data["object"] == follow_activity.data["id"]
 
       follower = Repo.get(User, follower.id)
 
@@ -444,7 +448,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("actor", followed.ap_id)
         |> Map.put("object", follow_activity.data["id"])
 
-      {:ok, %Activity{data: _}} = Transmogrifier.handle_incoming(accept_data)
+      {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
+      assert activity.data["object"] == follow_activity.data["id"]
 
       follower = Repo.get(User, follower.id)
 
@@ -457,6 +462,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+
+      accept_data =
+        Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
+
+      :error = Transmogrifier.handle_incoming(accept_data)
+
+      follower = Repo.get(User, follower.id)
+
+      refute User.following?(follower, followed) == true
+    end
+
+    test "it fails for incoming rejects which cannot be correlated" do
+      follower = insert(:user)
+      followed = insert(:user, %{info: %{"locked" => true}})
+
+      accept_data =
+        File.read!("test/fixtures/mastodon-reject-activity.json")
         |> Poison.decode!()
         |> Map.put("actor", followed.ap_id)
 
@@ -487,7 +511,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       reject_data =
         Map.put(reject_data, "object", Map.put(reject_data["object"], "actor", follower.ap_id))
 
-      {:ok, %Activity{data: _}} = Transmogrifier.handle_incoming(reject_data)
+      {:ok, activity} = Transmogrifier.handle_incoming(reject_data)
+      refute activity.local
 
       follower = Repo.get(User, follower.id)
 

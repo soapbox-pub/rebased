@@ -95,6 +95,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def reject(%{to: to, actor: actor, object: object} = params) do
+    # only accept false as false value
+    local = !(params[:local] == false)
+
+    with data <- %{"to" => to, "type" => "Reject", "actor" => actor, "object" => object},
+         {:ok, activity} <- insert(data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
   def update(%{to: to, cc: cc, actor: actor, object: object} = params) do
     # only accept false as false value
     local = !(params[:local] == false)
