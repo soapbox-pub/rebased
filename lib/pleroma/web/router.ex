@@ -97,11 +97,13 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/mute", MastodonAPIController, :relationship_noop)
     post("/accounts/:id/unmute", MastodonAPIController, :relationship_noop)
 
+    get("/follow_requests", MastodonAPIController, :follow_requests)
+
     post("/follows", MastodonAPIController, :follow)
 
     get("/blocks", MastodonAPIController, :blocks)
 
-    get("/follow_requests", MastodonAPIController, :empty_array)
+    get("/domain_blocks", MastodonAPIController, :empty_array)
     get("/mutes", MastodonAPIController, :empty_array)
 
     get("/timelines/home", MastodonAPIController, :home_timeline)

@@ -353,6 +353,36 @@ defmodule Pleroma.User do
     {:ok, Repo.all(q)}
   end
 
+  def get_follow_requests_query(%User{} = user) do
+    from(
+      a in Activity,
+      where: fragment(
+        "? ->> 'type' = 'Follow'",
+        a.data
+      ),
+      where: fragment(
+        "? ->> 'state' = 'pending'",
+        a.data
+      ),
+      where: fragment(
+        "? @> ?",
+        a.data,
+        ^%{"object" => user.ap_id}
+      )
+    )
+  end
+
+  def get_follow_requests(%User{} = user) do
+    q = get_follow_requests_query(user)
+    reqs = Repo.all(q)
+
+    users =
+      Enum.map(reqs, fn (req) -> req.actor end)
+      |> Enum.map(fn (ap_id) -> get_by_ap_id(ap_id) end)
+
+    {:ok, users}
+  end
+
   def increase_note_count(%User{} = user) do
     note_count = (user.info["note_count"] || 0) + 1
     new_info = Map.put(user.info, "note_count", note_count)

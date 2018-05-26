@@ -476,6 +476,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def follow_requests(%{assigns: %{user: followed}} = conn, _params) do
+    with {:ok, follow_requests} <- User.get_follow_requests(followed) do
+      render(conn, AccountView, "accounts.json", %{users: follow_requests, as: :user})
+    end
+  end
+
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
          {:ok, follower} <- User.maybe_direct_follow(follower, followed),

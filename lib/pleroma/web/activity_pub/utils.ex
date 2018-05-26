@@ -219,7 +219,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Makes a follow activity data for the given follower and followed
   """
-  def make_follow_data(%User{ap_id: follower_id}, %User{ap_id: followed_id}, activity_id) do
+  def make_follow_data(%User{ap_id: follower_id}, %User{ap_id: followed_id} = followed, activity_id) do
     data = %{
       "type" => "Follow",
       "actor" => follower_id,
@@ -229,6 +229,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     }
 
     if activity_id, do: Map.put(data, "id", activity_id), else: data
+    if User.locked?(followed), do: Map.put(data, "state", "pending"), else: data
   end
 
   def fetch_latest_follow(%User{ap_id: follower_id}, %User{ap_id: followed_id}) do
