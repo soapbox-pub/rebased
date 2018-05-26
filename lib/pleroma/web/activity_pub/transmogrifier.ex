@@ -137,9 +137,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
          %User{} = follower <- User.get_or_fetch_by_ap_id(follower),
          {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
-      ActivityPub.accept(%{to: [follower.ap_id], actor: followed.ap_id, object: data, local: true})
+      if not User.locked?(followed) do
+        ActivityPub.accept(%{to: [follower.ap_id], actor: followed.ap_id, object: data, local: true})
+        User.follow(follower, followed)
+      end
 
-      User.follow(follower, followed)
       {:ok, activity}
     else
       _e -> :error

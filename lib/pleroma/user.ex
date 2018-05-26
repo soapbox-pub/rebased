@@ -252,6 +252,10 @@ defmodule Pleroma.User do
     Enum.member?(follower.following, followed.follower_address)
   end
 
+  def locked?(%User{} = user) do
+    user.info["locked"] || false
+  end
+
   def get_by_ap_id(ap_id) do
     Repo.get_by(User, ap_id: ap_id)
   end
