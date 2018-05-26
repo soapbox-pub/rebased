@@ -394,6 +394,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, follower} = User.follow(follower, followed)
       assert User.following?(follower, followed) == true
 
+      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+
       accept_data =
         File.read!("test/fixtures/mastodon-accept-activity.json")
         |> Poison.decode!()
@@ -447,6 +449,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = Repo.get(User, follower.id)
 
       assert User.following?(follower, followed) == true
+    end
+
+    test "it fails for incoming accepts which cannot be correlated" do
+      follower = insert(:user)
+      followed = insert(:user, %{info: %{"locked" => true}})
+
+      accept_data =
+        File.read!("test/fixtures/mastodon-accept-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", followed.ap_id)
+
+      accept_data =
+        Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
+
+      :error = Transmogrifier.handle_incoming(accept_data)
+
+      follower = Repo.get(User, follower.id)
+
+      refute User.following?(follower, followed) == true
     end
 
     test "it works for incoming rejects which are orphaned" do
