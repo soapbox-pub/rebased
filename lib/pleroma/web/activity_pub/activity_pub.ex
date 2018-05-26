@@ -53,15 +53,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def stream_out(activity) do
+    public = "https://www.w3.org/ns/activitystreams#Public"
+
     if activity.data["type"] in ["Create", "Announce"] do
       Pleroma.Web.Streamer.stream("user", activity)
 
-      if Enum.member?(activity.data["to"], "https://www.w3.org/ns/activitystreams#Public") do
+      if Enum.member?(activity.data["to"], public) do
         Pleroma.Web.Streamer.stream("public", activity)
 
         if activity.local do
           Pleroma.Web.Streamer.stream("public:local", activity)
         end
+      else
+        if !Enum.member?(activity.data["cc"] || [], public) &&
+             !Enum.member?(
+               activity.data["to"],
+               User.get_by_ap_id(activity.data["actor"]).follower_address
+             ),
+           do: Pleroma.Web.Streamer.stream("direct", activity)
       end
     end
   end
@@ -293,6 +302,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  @valid_visibilities ~w[direct unlisted public private]
+
+  defp restrict_visibility(query, %{visibility: "direct"}) do
+    public = "https://www.w3.org/ns/activitystreams#Public"
+
+    from(
+      activity in query,
+      join: sender in User,
+      on: sender.ap_id == activity.actor,
+      # Are non-direct statuses with no to/cc possible?
+      where:
+        fragment(
+          "not (? && ?)",
+          [^public, sender.follower_address],
+          activity.recipients
+        )
+    )
+  end
+
+  defp restrict_visibility(_query, %{visibility: visibility})
+       when visibility not in @valid_visibilities do
+    Logger.error("Could not restrict visibility to #{visibility}")
+  end
+
+  defp restrict_visibility(query, _visibility), do: query
+
   def fetch_user_activities(user, reading_user, params \\ %{}) do
     params =
       params
@@ -447,6 +482,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_recent(opts)
     |> restrict_blocked(opts)
     |> restrict_media(opts)
+    |> restrict_visibility(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do

@@ -124,6 +124,61 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert Repo.get(Activity, id)
   end
 
+  test "posting a direct status", %{conn: conn} do
+    user1 = insert(:user)
+    user2 = insert(:user)
+    content = "direct cofe @#{user2.nickname}"
+
+    conn =
+      conn
+      |> assign(:user, user1)
+      |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
+
+    assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
+    assert activity = Repo.get(Activity, id)
+    assert activity.recipients == [user2.ap_id]
+    assert activity.data["to"] == [user2.ap_id]
+    assert activity.data["cc"] == []
+  end
+
+  test "direct timeline", %{conn: conn} do
+    user_one = insert(:user)
+    user_two = insert(:user)
+
+    {:ok, user_two} = User.follow(user_two, user_one)
+
+    {:ok, direct} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, _follower_only} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "private"
+      })
+
+    # Only direct should be visible here
+    res_conn =
+      conn
+      |> assign(:user, user_two)
+      |> get("api/v1/timelines/direct")
+
+    [status] = json_response(res_conn, 200)
+
+    assert %{"visibility" => "direct"} = status
+    assert status["url"] != direct.data["id"]
+
+    # Both should be visible here
+    res_conn =
+      conn
+      |> assign(:user, user_two)
+      |> get("api/v1/timelines/home")
+
+    [_s1, _s2] = json_response(res_conn, 200)
+  end
+
   test "replying to a status", %{conn: conn} do
     user = insert(:user)
 

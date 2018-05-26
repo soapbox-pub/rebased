@@ -45,6 +45,33 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def direct_note_factory do
+    user2 = insert(:user)
+
+    %Pleroma.Object{data: data} = note_factory()
+    %Pleroma.Object{data: Map.merge(data, %{"to" => [user2.ap_id]})}
+  end
+
+  def direct_note_activity_factory do
+    dm = insert(:direct_note)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+      "type" => "Create",
+      "actor" => dm.data["actor"],
+      "to" => dm.data["to"],
+      "object" => dm.data,
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "context" => dm.data["context"]
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+  end
+
   def note_activity_factory do
     note = insert(:note)
 
