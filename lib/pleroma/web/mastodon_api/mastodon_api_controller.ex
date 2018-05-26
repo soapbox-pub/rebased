@@ -487,9 +487,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with %User{} = follower <- Repo.get(User, id),
          {:ok, follower} <- User.follow(follower, followed),
          %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
          {:ok, _activity} <-
            ActivityPub.accept(%{
-             to: follower.ap_id,
+             to: [follower.ap_id],
              actor: followed.ap_id,
              object: follow_activity.data["id"],
              type: "Accept"
@@ -503,8 +504,25 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  #  def reject_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
-  #  end
+  def reject_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
+    with %User{} = follower <- Repo.get(User, id),
+         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
+         {:ok, _activity} <-
+           ActivityPub.reject(%{
+             to: [follower.ap_id],
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             type: "Reject"
+           }) do
+      render(conn, AccountView, "relationship.json", %{user: followed, target: follower})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
+    end
+  end
 
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
