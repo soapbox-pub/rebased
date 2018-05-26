@@ -146,21 +146,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  defp get_follow_activity(follow_object) do
-    cond do
-      is_map(follow_object) ->
-        {:ok, follow_object}
+  defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
+    with true <- id =~ "follows",
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follower_id),
+         %Activity{} = activity <- Utils.fetch_latest_follow(follower, followed) do
+      {:ok, activity}
+    else
+      _ -> {:error, nil}
+    end
+  end
 
-      is_binary(follow_object) ->
-        object = Activity.get_by_ap_id(follow_object)
+  defp mastodon_follow_hack(_), do: {:error, nil}
 
-        if object do
-          {:ok, object.data}
-        else
-          {:error, nil}
-        end
-
-      true ->
+  defp get_follow_activity(follow_object, followed) do
+    with object_id when not is_nil(object_id) <- Utils.get_ap_id(follow_object),
+         {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(object_id)} do
+      {:ok, activity}
+    else
+      # Can't find the activity. This might a Mastodon 2.3 "Accept"
+      {:activity, nil} ->
+        mastodon_follow_hack(follow_object, followed)
+      _ ->
         {:error, nil}
     end
   end
@@ -169,10 +175,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Accept", "object" => follow_object, "actor" => actor, "id" => id} = data
       ) do
     with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, follow_activity} <- get_follow_activity(follow_object),
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]),
-         follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         false <- is_nil(follow_activity),
+         {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <- ActivityPub.accept(%{to: follow_activity.data["to"], type: "Accept", actor: followed.ap_id, object: follow_activity.data["id"], local: false}) do
       if not User.following?(follower, followed) do
         {:ok, follower} = User.follow(follower, followed)
@@ -188,10 +192,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Reject", "object" => follow_object, "actor" => actor, "id" => id} = data
       ) do
     with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, follow_activity} <- get_follow_activity(follow_object),
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity["actor"]),
-         follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         false <- is_nil(follow_activity),
+         {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <- ActivityPub.accept(%{to: follow_activity.data["to"], type: "Accept", actor: followed.ap_id, object: follow_activity.data["id"], local: false}) do
       User.unfollow(follower, followed)
 

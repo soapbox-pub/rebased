@@ -8,8 +8,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Web.Websub.WebsubClientSubscription
-  alias Pleroma.Web.Websub.WebsubServerSubscription
-  import Ecto.Query
 
   import Pleroma.Factory
   alias Pleroma.Web.CommonAPI
@@ -284,7 +282,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("object", object)
         |> Map.put("actor", activity.data["actor"])
 
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
 
       refute Repo.get(Activity, activity.id)
     end
@@ -401,8 +399,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Poison.decode!()
         |> Map.put("actor", followed.ap_id)
 
+      object = accept_data["object"]
+      |> Map.put("actor", follower.ap_id)
+      |> Map.put("id", follow_activity.data["id"])
+
       accept_data =
-        Map.put(accept_data, "object", Map.put(accept_data["object"], "actor", follower.ap_id))
+        Map.put(accept_data, "object", object)
 
       {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
       refute activity.local
@@ -499,7 +501,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       followed = insert(:user, %{info: %{"locked" => true}})
 
       {:ok, follower} = User.follow(follower, followed)
-      {:ok, follow_activity} = ActivityPub.follow(follower, followed)
+      {:ok, _follow_activity} = ActivityPub.follow(follower, followed)
 
       assert User.following?(follower, followed) == true
 
