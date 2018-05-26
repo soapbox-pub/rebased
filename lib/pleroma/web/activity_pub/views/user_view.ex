@@ -108,7 +108,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         params
       end
 
-    activities = ActivityPub.fetch_public_activities(user, nil, params)
+    activities = ActivityPub.fetch_user_activities(user, nil, params)
     min_id = Enum.at(Enum.reverse(activities), 0).id
     max_id = Enum.at(activities, 0).id
 
