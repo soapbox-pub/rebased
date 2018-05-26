@@ -313,9 +313,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       on: sender.ap_id == activity.actor,
       # Are non-direct statuses with no to/cc possible?
       where:
-        fragment("not coalesce(data->'to' \\? ?, false)", ^public) and
-          fragment("not coalesce(data->'cc' \\? ?, false)", ^public) and
-          fragment("not coalesce(data->'to' \\? ?, false)", sender.follower_address)
+        fragment(
+          "not (? && ?)",
+          [^public, sender.follower_address],
+          activity.recipients
+        )
     )
   end
 
