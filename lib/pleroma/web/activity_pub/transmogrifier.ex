@@ -254,7 +254,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
 
       banner = new_user_data[:info]["banner"]
-      locked = new_user_data[:info]["locked"]
+      locked = new_user_data[:info]["locked"] || false
 
       update_data =
         new_user_data
