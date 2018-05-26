@@ -4,6 +4,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.{CommonAPI, OStatus}
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Comeonin.Pbkdf2
@@ -481,6 +482,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       render(conn, AccountView, "accounts.json", %{users: follow_requests, as: :user})
     end
   end
+
+  def authorize_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
+    with %User{} = follower <- Repo.get(User, id),
+         {:ok, follower} <- User.follow(follower, followed),
+         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, _activity} <-
+           ActivityPub.accept(%{
+             to: follower.ap_id,
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             type: "Accept"
+           }) do
+      render(conn, AccountView, "relationship.json", %{user: followed, target: follower})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
+    end
+  end
+
+  #  def reject_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
+  #  end
 
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
