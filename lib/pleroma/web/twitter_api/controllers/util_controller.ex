@@ -197,8 +197,31 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     json(conn, "job started")
   end
 
+  def change_password(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+      {:ok, user} ->
+        with {:ok, _user} <-
+               User.reset_password(user, %{
+                 password: params["new_password"],
+                 password_confirmation: params["new_password_confirmation"]
+               }) do
+          json(conn, %{status: "success"})
+        else
+          {:error, changeset} ->
+            {_, {error, _}} = Enum.at(changeset.errors, 0)
+            json(conn, %{error: "New password #{error}."})
+
+          _ ->
+            json(conn, %{error: "Unable to change password."})
+        end
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
   def delete_account(%{assigns: %{user: user}} = conn, params) do
-    case CommonAPI.Utils.confirm_current_password(user, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
       {:ok, user} ->
         Task.start(fn -> User.delete(user) end)
         json(conn, %{status: "success"})

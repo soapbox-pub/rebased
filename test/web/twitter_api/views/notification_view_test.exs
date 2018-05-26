@@ -24,7 +24,7 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
 
     {:ok, follower} = User.follow(follower, user)
     {:ok, activity} = ActivityPub.follow(follower, user)
-    Cachex.set(:user_cache, "user_info:#{user.id}", User.user_info(Repo.get!(User, user.id)))
+    Cachex.put(:user_cache, "user_info:#{user.id}", User.user_info(Repo.get!(User, user.id)))
     [follow_notif] = Notification.for_user(user)
 
     represented = %{

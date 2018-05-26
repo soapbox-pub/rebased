@@ -8,6 +8,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Web.TwitterAPI.NotificationView
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Comeonin.Pbkdf2
 
   import Pleroma.Factory
 
@@ -443,7 +444,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "with credentials", %{conn: conn, user: current_user} do
       blocked = insert(:user)
 
-      {:ok, current_user} = User.block(current_user, blocked)
+      {:ok, current_user, blocked} = TwitterAPI.block(current_user, %{"user_id" => blocked.id})
       assert User.blocks?(current_user, blocked)
 
       conn =
@@ -799,6 +800,82 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
     user = Repo.get!(User, user.id)
     assert user.bio == "Hello,<br>World! I<br> am a test."
+  end
+
+  describe "POST /api/pleroma/change_password" do
+    setup [:valid_user]
+
+    test "without credentials", %{conn: conn} do
+      conn = post(conn, "/api/pleroma/change_password")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials and invalid password", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_password", %{
+          "password" => "hi",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "newpass"
+        })
+
+      assert json_response(conn, 200) == %{"error" => "Invalid password."}
+    end
+
+    test "with credentials, valid password and new password and confirmation not matching", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "notnewpass"
+        })
+
+      assert json_response(conn, 200) == %{
+               "error" => "New password does not match confirmation."
+             }
+    end
+
+    test "with credentials, valid password and invalid new password", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "",
+          "new_password_confirmation" => ""
+        })
+
+      assert json_response(conn, 200) == %{
+               "error" => "New password can't be blank."
+             }
+    end
+
+    test "with credentials, valid password and matching new password and confirmation", %{
+      conn: conn,
+      user: current_user
+    } do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/pleroma/change_password", %{
+          "password" => "test",
+          "new_password" => "newpass",
+          "new_password_confirmation" => "newpass"
+        })
+
+      assert json_response(conn, 200) == %{"status" => "success"}
+      fetched_user = Repo.get(User, current_user.id)
+      assert Pbkdf2.checkpw("newpass", fetched_user.password_hash) == true
+    end
   end
 
   describe "POST /api/pleroma/delete_account" do

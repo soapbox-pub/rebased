@@ -7,18 +7,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
-  def normalize_actor(actor) do
-    cond do
-      is_binary(actor) ->
-        actor
-
-      is_map(actor) ->
-        actor["id"]
+  def get_ap_id(object) do
+    case object do
+      %{"id" => id} -> id
+      id -> id
     end
   end
 
   def normalize_params(params) do
-    Map.put(params, "actor", normalize_actor(params["actor"]))
+    Map.put(params, "actor", get_ap_id(params["actor"]))
   end
 
   def make_json_ld_header do
@@ -240,9 +237,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         activity in Activity,
         where:
           fragment(
+            "? ->> 'type' = 'Follow'",
+            activity.data
+          ),
+        where: activity.actor == ^follower_id,
+        where:
+          fragment(
             "? @> ?",
             activity.data,
-            ^%{type: "Follow", actor: follower_id, object: followed_id}
+            ^%{object: followed_id}
           ),
         order_by: [desc: :id],
         limit: 1
@@ -260,7 +263,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     query =
       from(
         activity in Activity,
-        where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
+        where: activity.actor == ^actor,
         # this is to use the index
         where:
           fragment(
@@ -346,13 +349,61 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   #### Unfollow-related helpers
 
-  def make_unfollow_data(follower, followed, follow_activity) do
-    %{
+  def make_unfollow_data(follower, followed, follow_activity, activity_id) do
+    data = %{
       "type" => "Undo",
       "actor" => follower.ap_id,
       "to" => [followed.ap_id],
-      "object" => follow_activity.data["id"]
+      "object" => follow_activity.data
     }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
+  #### Block-related helpers
+  def fetch_latest_block(%User{ap_id: blocker_id}, %User{ap_id: blocked_id}) do
+    query =
+      from(
+        activity in Activity,
+        where:
+          fragment(
+            "? ->> 'type' = 'Block'",
+            activity.data
+          ),
+        where: activity.actor == ^blocker_id,
+        where:
+          fragment(
+            "? @> ?",
+            activity.data,
+            ^%{object: blocked_id}
+          ),
+        order_by: [desc: :id],
+        limit: 1
+      )
+
+    Repo.one(query)
+  end
+
+  def make_block_data(blocker, blocked, activity_id) do
+    data = %{
+      "type" => "Block",
+      "actor" => blocker.ap_id,
+      "to" => [blocked.ap_id],
+      "object" => blocked.ap_id
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
+  def make_unblock_data(blocker, blocked, block_activity, activity_id) do
+    data = %{
+      "type" => "Undo",
+      "actor" => blocker.ap_id,
+      "to" => [blocked.ap_id],
+      "object" => block_activity.data
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
   #### Create-related helpers

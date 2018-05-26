@@ -13,7 +13,7 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   end
 
   def call(conn, _opts) do
-    user = Utils.normalize_actor(conn.params["actor"])
+    user = Utils.get_ap_id(conn.params["actor"])
     Logger.debug("Checking sig for #{user}")
     [signature | _] = get_req_header(conn, "signature")
 

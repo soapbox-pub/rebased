@@ -104,6 +104,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def reject(%{to: to, actor: actor, object: object} = params) do
+    # only accept false as false value
+    local = !(params[:local] == false)
+
+    with data <- %{"to" => to, "type" => "Reject", "actor" => actor, "object" => object},
+         {:ok, activity} <- insert(data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
   def update(%{to: to, cc: cc, actor: actor, object: object} = params) do
     # only accept false as false value
     local = !(params[:local] == false)
@@ -201,12 +212,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def unfollow(follower, followed, local \\ true) do
+  def unfollow(follower, followed, activity_id \\ nil, local \\ true) do
     with %Activity{} = follow_activity <- fetch_latest_follow(follower, followed),
-         unfollow_data <- make_unfollow_data(follower, followed, follow_activity),
+         unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
-         :ok,
-         maybe_federate(activity) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -226,6 +236,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity),
          {:ok, _actor} <- User.decrease_note_count(user) do
+      {:ok, activity}
+    end
+  end
+
+  def block(blocker, blocked, activity_id \\ nil, local \\ true) do
+    follow_activity = fetch_latest_follow(blocker, blocked)
+
+    if follow_activity do
+      unfollow(blocker, blocked, nil, local)
+    end
+
+    with block_data <- make_block_data(blocker, blocked, activity_id),
+         {:ok, activity} <- insert(block_data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
+    end
+  end
+
+  def unblock(blocker, blocked, activity_id \\ nil, local \\ true) do
+    with %Activity{} = block_activity <- fetch_latest_block(blocker, blocked),
+         unblock_data <- make_unblock_data(blocker, blocked, block_activity, activity_id),
+         {:ok, activity} <- insert(unblock_data, local),
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -476,6 +509,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "url" => [%{"href" => data["image"]["url"]}]
         }
 
+    locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
 
     user_data = %{
@@ -483,7 +517,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       info: %{
         "ap_enabled" => true,
         "source_data" => data,
-        "banner" => banner
+        "banner" => banner,
+        "locked" => locked
       },
       avatar: avatar,
       nickname: "#{data["preferredUsername"]}@#{URI.parse(data["id"]).host}",

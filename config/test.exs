@@ -21,7 +21,7 @@ config :pleroma, Pleroma.Repo,
   pool: Ecto.Adapters.SQL.Sandbox
 
 # Reduce hash rounds for testing
-config :comeonin, :pbkdf2_rounds, 1
+config :pbkdf2_elixir, rounds: 1
 
 config :pleroma, :websub, Pleroma.Web.WebsubMock
 config :pleroma, :ostatus, Pleroma.Web.OStatusMock

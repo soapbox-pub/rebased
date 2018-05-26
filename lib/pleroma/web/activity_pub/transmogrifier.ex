@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
 
   import Ecto.Query
 
@@ -145,6 +146,78 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
+    with true <- id =~ "follows",
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follower_id),
+         %Activity{} = activity <- Utils.fetch_latest_follow(follower, followed) do
+      {:ok, activity}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
+  defp mastodon_follow_hack(_), do: {:error, nil}
+
+  defp get_follow_activity(follow_object, followed) do
+    with object_id when not is_nil(object_id) <- Utils.get_ap_id(follow_object),
+         {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(object_id)} do
+      {:ok, activity}
+    else
+      # Can't find the activity. This might a Mastodon 2.3 "Accept"
+      {:activity, nil} ->
+        mastodon_follow_hack(follow_object, followed)
+
+      _ ->
+        {:error, nil}
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Accept", "object" => follow_object, "actor" => actor, "id" => id} = data
+      ) do
+    with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
+         {:ok, activity} <-
+           ActivityPub.accept(%{
+             to: follow_activity.data["to"],
+             type: "Accept",
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             local: false
+           }) do
+      if not User.following?(follower, followed) do
+        {:ok, follower} = User.follow(follower, followed)
+      end
+
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Reject", "object" => follow_object, "actor" => actor, "id" => id} = data
+      ) do
+    with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
+         {:ok, activity} <-
+           ActivityPub.accept(%{
+             to: follow_activity.data["to"],
+             type: "Accept",
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             local: false
+           }) do
+      User.unfollow(follower, followed)
+
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
   def handle_incoming(
         %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = _data
       ) do
@@ -207,11 +280,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => _id} = _data
       ) do
-    object_id =
-      case object_id do
-        %{"id" => id} -> id
-        id -> id
-      end
+    object_id = Utils.get_ap_id(object_id)
 
     with %User{} = _actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
@@ -229,12 +298,67 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "object" => %{"type" => "Announce", "object" => object_id},
           "actor" => actor,
           "id" => id
-        } = data
+        } = _data
       ) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
            get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
          {:ok, activity, _, _} <- ActivityPub.unannounce(actor, object, id, false) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{
+          "type" => "Undo",
+          "object" => %{"type" => "Follow", "object" => followed},
+          "actor" => follower,
+          "id" => id
+        } = _data
+      ) do
+    with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
+         %User{} = follower <- User.get_or_fetch_by_ap_id(follower),
+         {:ok, activity} <- ActivityPub.unfollow(follower, followed, id, false) do
+      User.unfollow(follower, followed)
+      {:ok, activity}
+    else
+      e -> :error
+    end
+  end
+
+  @ap_config Application.get_env(:pleroma, :activitypub)
+  @accept_blocks Keyword.get(@ap_config, :accept_blocks)
+
+  def handle_incoming(
+        %{
+          "type" => "Undo",
+          "object" => %{"type" => "Block", "object" => blocked},
+          "actor" => blocker,
+          "id" => id
+        } = _data
+      ) do
+    with true <- @accept_blocks,
+         %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
+         %User{} = blocker <- User.get_or_fetch_by_ap_id(blocker),
+         {:ok, activity} <- ActivityPub.unblock(blocker, blocked, id, false) do
+      User.unblock(blocker, blocked)
+      {:ok, activity}
+    else
+      e -> :error
+    end
+  end
+
+  def handle_incoming(
+        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = data
+      ) do
+    with true <- @accept_blocks,
+         %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
+         %User{} = blocker = User.get_or_fetch_by_ap_id(blocker),
+         {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
+      User.unfollow(blocker, blocked)
+      User.block(blocker, blocked)
       {:ok, activity}
     else
       e -> :error
@@ -247,7 +371,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "object" => %{"type" => "Like", "object" => object_id},
           "actor" => actor,
           "id" => id
-        } = data
+        } = _data
       ) do
     with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <-
@@ -255,13 +379,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, activity, _, _} <- ActivityPub.unlike(actor, object, id, false) do
       {:ok, activity}
     else
-      e -> :error
+      _e -> :error
     end
   end
-
-  # TODO
-  # Accept
-  # Undo for non-Announce
 
   def handle_incoming(_), do: :error
 
@@ -516,10 +636,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def maybe_fix_user_url(data) do
     if is_map(data["url"]) do
-      data = Map.put(data, "url", data["url"]["href"])
+      Map.put(data, "url", data["url"]["href"])
+    else
+      data
     end
-
-    data
   end
 
   def maybe_fix_user_object(data) do

@@ -73,6 +73,7 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:authenticated_api)
     post("/follow_import", UtilController, :follow_import)
+    post("/change_password", UtilController, :change_password)
     post("/delete_account", UtilController, :delete_account)
   end
 
@@ -103,7 +104,6 @@ defmodule Pleroma.Web.Router do
     get("/domain_blocks", MastodonAPIController, :empty_array)
     get("/follow_requests", MastodonAPIController, :empty_array)
     get("/mutes", MastodonAPIController, :empty_array)
-    get("/lists", MastodonAPIController, :empty_array)
 
     get("/timelines/home", MastodonAPIController, :home_timeline)
 
@@ -125,6 +125,15 @@ defmodule Pleroma.Web.Router do
     get("/notifications/:id", MastodonAPIController, :get_notification)
 
     post("/media", MastodonAPIController, :upload)
+
+    get("/lists", MastodonAPIController, :get_lists)
+    get("/lists/:id", MastodonAPIController, :get_list)
+    delete("/lists/:id", MastodonAPIController, :delete_list)
+    post("/lists", MastodonAPIController, :create_list)
+    put("/lists/:id", MastodonAPIController, :rename_list)
+    get("/lists/:id/accounts", MastodonAPIController, :list_accounts)
+    post("/lists/:id/accounts", MastodonAPIController, :add_to_list)
+    delete("/lists/:id/accounts", MastodonAPIController, :remove_from_list)
   end
 
   scope "/api/web", Pleroma.Web.MastodonAPI do
@@ -142,6 +151,7 @@ defmodule Pleroma.Web.Router do
 
     get("/timelines/public", MastodonAPIController, :public_timeline)
     get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
+    get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
 
     get("/statuses/:id", MastodonAPIController, :get_status)
     get("/statuses/:id/context", MastodonAPIController, :get_context)

@@ -133,7 +133,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,
-      "tag" => tags |> Enum.map(fn {_, tag} -> tag end)
+      "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
     if inReplyTo do
@@ -187,9 +187,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def confirm_current_password(user, params) do
+  def confirm_current_password(user, password) do
     with %User{local: true} = db_user <- Repo.get(User, user.id),
-         true <- Pbkdf2.checkpw(params["password"], db_user.password_hash) do
+         true <- Pbkdf2.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else
       _ -> {:error, "Invalid password."}

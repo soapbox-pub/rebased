@@ -2,7 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Activity, User, Notification, Stats}
   alias Pleroma.Web
-  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView}
+  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.{CommonAPI, OStatus}
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
@@ -284,11 +284,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end
 
     {:ok, activity} =
-      Cachex.get!(
-        :idempotency_cache,
-        idempotency_key,
-        fallback: fn _ -> CommonAPI.post(user, params) end
-      )
+      Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ -> CommonAPI.post(user, params) end)
 
     render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
   end
@@ -442,7 +438,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
-         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
          {:ok, _activity} <- ActivityPub.follow(follower, followed) do
       render(conn, AccountView, "relationship.json", %{user: follower, target: followed})
     else
@@ -455,7 +451,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def follow(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
     with %User{} = followed <- Repo.get_by(User, nickname: uri),
-         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
          {:ok, _activity} <- ActivityPub.follow(follower, followed) do
       render(conn, AccountView, "account.json", %{user: followed})
     else
@@ -466,24 +462,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  # TODO: Clean up and unify
   def unfollow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
-         {:ok, follower, follow_activity} <- User.unfollow(follower, followed),
-         {:ok, _activity} <-
-           ActivityPub.insert(%{
-             "type" => "Undo",
-             "actor" => follower.ap_id,
-             # get latest Follow for these users
-             "object" => follow_activity.data["id"]
-           }) do
+         {:ok, _activity} <- ActivityPub.unfollow(follower, followed),
+         {:ok, follower, _} <- User.unfollow(follower, followed) do
       render(conn, AccountView, "relationship.json", %{user: follower, target: followed})
     end
   end
 
   def block(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
     with %User{} = blocked <- Repo.get(User, id),
-         {:ok, blocker} <- User.block(blocker, blocked) do
+         {:ok, blocker} <- User.block(blocker, blocked),
+         {:ok, _activity} <- ActivityPub.block(blocker, blocked) do
       render(conn, AccountView, "relationship.json", %{user: blocker, target: blocked})
     else
       {:error, message} ->
@@ -495,7 +485,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def unblock(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
     with %User{} = blocked <- Repo.get(User, id),
-         {:ok, blocker} <- User.unblock(blocker, blocked) do
+         {:ok, blocker} <- User.unblock(blocker, blocked),
+         {:ok, _activity} <- ActivityPub.unblock(blocker, blocked) do
       render(conn, AccountView, "relationship.json", %{user: blocker, target: blocked})
     else
       {:error, message} ->
@@ -584,6 +575,102 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     conn
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
+  end
+
+  def get_lists(%{assigns: %{user: user}} = conn, opts) do
+    lists = Pleroma.List.for_user(user, opts)
+    res = ListView.render("lists.json", lists: lists)
+    json(conn, res)
+  end
+
+  def get_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Pleroma.List{} = list <- Pleroma.List.get(id, user) do
+      res = ListView.render("list.json", list: list)
+      json(conn, res)
+    else
+      _e -> json(conn, "error")
+    end
+  end
+
+  def delete_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
+         {:ok, _list} <- Pleroma.List.delete(list) do
+      json(conn, %{})
+    else
+      _e ->
+        json(conn, "error")
+    end
+  end
+
+  def create_list(%{assigns: %{user: user}} = conn, %{"title" => title}) do
+    with {:ok, %Pleroma.List{} = list} <- Pleroma.List.create(title, user) do
+      res = ListView.render("list.json", list: list)
+      json(conn, res)
+    end
+  end
+
+  def add_to_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
+    accounts
+    |> Enum.each(fn account_id ->
+      with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
+           %User{} = followed <- Repo.get(User, account_id) do
+        Pleroma.List.follow(list, followed)
+      end
+    end)
+
+    json(conn, %{})
+  end
+
+  def remove_from_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
+    accounts
+    |> Enum.each(fn account_id ->
+      with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
+           %User{} = followed <- Repo.get(Pleroma.User, account_id) do
+        Pleroma.List.unfollow(list, followed)
+      end
+    end)
+
+    json(conn, %{})
+  end
+
+  def list_accounts(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
+         {:ok, users} = Pleroma.List.get_following(list) do
+      render(conn, AccountView, "accounts.json", %{users: users, as: :user})
+    end
+  end
+
+  def rename_list(%{assigns: %{user: user}} = conn, %{"id" => id, "title" => title}) do
+    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
+         {:ok, list} <- Pleroma.List.rename(list, title) do
+      res = ListView.render("list.json", list: list)
+      json(conn, res)
+    else
+      _e ->
+        json(conn, "error")
+    end
+  end
+
+  def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
+    with %Pleroma.List{title: title, following: following} <- Pleroma.List.get(id, user) do
+      params =
+        params
+        |> Map.put("type", "Create")
+        |> Map.put("blocking_user", user)
+
+      # adding title is a hack to not make empty lists function like a public timeline
+      activities =
+        ActivityPub.fetch_activities([title | following], params)
+        |> Enum.reverse()
+
+      conn
+      |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
+    else
+      _e ->
+        conn
+        |> put_status(403)
+        |> json(%{error: "Error."})
+    end
   end
 
   def index(%{assigns: %{user: user}} = conn, _params) do
