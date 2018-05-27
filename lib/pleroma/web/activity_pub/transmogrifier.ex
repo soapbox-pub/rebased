@@ -456,6 +456,26 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def prepare_outgoing(%{"type" => "Reject"} = data) do
+    with follow_activity <- Activity.get_by_ap_id(data["object"]) do
+      object = %{
+        "actor" => follow_activity.actor,
+        "object" => follow_activity.data["object"],
+        "id" => follow_activity.data["id"],
+        "type" => "Follow"
+      }
+
+      data =
+        data
+        |> Map.put("object", object)
+        |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+
+      IO.inspect(data)
+
+      {:ok, data}
+    end
+  end
+
   def prepare_outgoing(%{"type" => _type} = data) do
     data =
       data
