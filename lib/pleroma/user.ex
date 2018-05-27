@@ -378,6 +378,7 @@ defmodule Pleroma.User do
 
     users =
       Enum.map(reqs, fn (req) -> req.actor end)
+      |> Enum.uniq
       |> Enum.map(fn (ap_id) -> get_by_ap_id(ap_id) end)
 
     {:ok, users}
