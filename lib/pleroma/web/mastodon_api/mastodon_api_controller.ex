@@ -72,6 +72,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         user
       end
 
+    user =
+      if locked = params["locked"] do
+        with locked <- locked == "true",
+             new_info <- Map.put(user.info, "locked", locked),
+             change <- User.info_changeset(user, %{info: new_info}),
+             {:ok, user} <- User.update_and_set_cache(change) do
+          user
+        else
+          _e -> user
+        end
+      else
+        user
+      end
+
     with changeset <- User.update_changeset(user, params),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       if original_user != user do
