@@ -214,6 +214,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def unfollow(follower, followed, activity_id \\ nil, local \\ true) do
     with %Activity{} = follow_activity <- fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- update_follow_state(follow_activity, "cancelled"),
          unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
          :ok <- maybe_federate(activity) do
