@@ -109,9 +109,9 @@ defmodule Pleroma.FormatterTest do
       Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
 
       expected_text =
-        "<span><a href='#{gsimg.ap_id}'>@<span>gsimg</span></a></span> According to <span><a href='#{
+        "<span><a class='mention' href='#{gsimg.ap_id}'>@<span>gsimg</span></a></span> According to <span><a class='mention' href='#{
           "https://archeme/@archaeme"
-        }'>@<span>archaeme</span></a></span>, that is @daggsy. Also hello <span><a href='#{
+        }'>@<span>archaeme</span></a></span>, that is @daggsy. Also hello <span><a class='mention' href='#{
           archaeme_remote.ap_id
         }'>@<span>archaeme</span></a></span>"
 
