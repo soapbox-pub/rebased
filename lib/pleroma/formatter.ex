@@ -200,7 +200,7 @@ defmodule Pleroma.Formatter do
           ap_id = info["source_data"]["url"] || ap_id
 
           short_match = String.split(match, "@") |> tl() |> hd()
-          {uuid, "<span><a href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
+          {uuid, "<span><a class='mention' href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
         end)
 
     {subs, uuid_text}
