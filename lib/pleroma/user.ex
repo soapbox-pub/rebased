@@ -197,6 +197,14 @@ defmodule Pleroma.User do
     end
   end
 
+  def maybe_follow(%User{} = follower, %User{info: info} = followed) do
+    if not following?(follower, followed) do
+      follow(follower, followed)
+    else
+      {:ok, follower}
+    end
+  end
+
   def follow(%User{} = follower, %User{info: info} = followed) do
     ap_followers = followed.follower_address
 

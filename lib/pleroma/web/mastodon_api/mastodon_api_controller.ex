@@ -499,7 +499,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def authorize_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
     with %User{} = follower <- Repo.get(User, id),
-         {:ok, follower} <- User.follow(follower, followed),
+         {:ok, follower} <- User.maybe_follow(follower, followed),
          %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
          {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
          {:ok, _activity} <-
