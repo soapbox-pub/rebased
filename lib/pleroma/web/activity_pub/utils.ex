@@ -233,7 +233,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Makes a follow activity data for the given follower and followed
   """
-  def make_follow_data(%User{ap_id: follower_id}, %User{ap_id: followed_id} = followed, activity_id) do
+  def make_follow_data(
+        %User{ap_id: follower_id},
+        %User{ap_id: followed_id} = followed,
+        activity_id
+      ) do
     data = %{
       "type" => "Follow",
       "actor" => follower_id,

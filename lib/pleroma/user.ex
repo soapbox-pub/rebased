@@ -364,19 +364,22 @@ defmodule Pleroma.User do
   def get_follow_requests_query(%User{} = user) do
     from(
       a in Activity,
-      where: fragment(
-        "? ->> 'type' = 'Follow'",
-        a.data
-      ),
-      where: fragment(
-        "? ->> 'state' = 'pending'",
-        a.data
-      ),
-      where: fragment(
-        "? @> ?",
-        a.data,
-        ^%{"object" => user.ap_id}
-      )
+      where:
+        fragment(
+          "? ->> 'type' = 'Follow'",
+          a.data
+        ),
+      where:
+        fragment(
+          "? ->> 'state' = 'pending'",
+          a.data
+        ),
+      where:
+        fragment(
+          "? @> ?",
+          a.data,
+          ^%{"object" => user.ap_id}
+        )
     )
   end
 
@@ -385,9 +388,9 @@ defmodule Pleroma.User do
     reqs = Repo.all(q)
 
     users =
-      Enum.map(reqs, fn (req) -> req.actor end)
-      |> Enum.uniq
-      |> Enum.map(fn (ap_id) -> get_by_ap_id(ap_id) end)
+      Enum.map(reqs, fn req -> req.actor end)
+      |> Enum.uniq()
+      |> Enum.map(fn ap_id -> get_by_ap_id(ap_id) end)
 
     {:ok, users}
   end
