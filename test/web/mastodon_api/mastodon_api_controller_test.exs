@@ -652,6 +652,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, activity} = ActivityPub.follow(other_user, user)
 
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+
       conn =
         build_conn()
         |> assign(:user, user)
@@ -666,6 +671,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = insert(:user)
 
       {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
 
       conn =
         build_conn()
