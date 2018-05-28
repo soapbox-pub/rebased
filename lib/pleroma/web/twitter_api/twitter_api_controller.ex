@@ -107,6 +107,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def mentions_timeline(%{assigns: %{user: user}} = conn, params) do
+    params =
+      params
+      |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
+      |> Map.put("blocking_user", user)
+
     activities = ActivityPub.fetch_activities([user.ap_id], params)
 
     conn
