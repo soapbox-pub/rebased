@@ -762,6 +762,38 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
+
+    test "it locks an account", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+          "locked" => "true"
+        })
+
+      user = Repo.get!(User, user.id)
+      assert user.info["locked"] == true
+
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
+    test "it unlocks an account", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+          "locked" => "false"
+        })
+
+      user = Repo.get!(User, user.id)
+      assert user.info["locked"] == false
+
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
   end
 
   defp valid_user(_context) do
