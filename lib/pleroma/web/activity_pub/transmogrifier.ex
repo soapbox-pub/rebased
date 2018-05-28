@@ -450,8 +450,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put("object", object)
         |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
 
-      IO.inspect(data)
-
       {:ok, data}
     end
   end
@@ -469,8 +467,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         data
         |> Map.put("object", object)
         |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
-
-      IO.inspect(data)
 
       {:ok, data}
     end
