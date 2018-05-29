@@ -144,7 +144,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, mastodon_emoji)
   end
 
-  defp add_link_headers(conn, method, activities, param \\ false) do
+  defp add_link_headers(conn, method, activities, param \\ nil, params \\ %{}) do
     last = List.last(activities)
     first = List.first(activities)
 
@@ -155,13 +155,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {next_url, prev_url} =
         if param do
           {
-            mastodon_api_url(Pleroma.Web.Endpoint, method, param, max_id: min),
-            mastodon_api_url(Pleroma.Web.Endpoint, method, param, since_id: max)
+            mastodon_api_url(
+              Pleroma.Web.Endpoint,
+              method,
+              param,
+              Map.merge(params, %{max_id: min})
+            ),
+            mastodon_api_url(
+              Pleroma.Web.Endpoint,
+              method,
+              param,
+              Map.merge(params, %{since_id: max})
+            )
           }
         else
           {
-            mastodon_api_url(Pleroma.Web.Endpoint, method, max_id: min),
-            mastodon_api_url(Pleroma.Web.Endpoint, method, since_id: max)
+            mastodon_api_url(
+              Pleroma.Web.Endpoint,
+              method,
+              Map.merge(params, %{max_id: min})
+            ),
+            mastodon_api_url(
+              Pleroma.Web.Endpoint,
+              method,
+              Map.merge(params, %{since_id: max})
+            )
           }
         end
 
@@ -189,10 +207,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def public_timeline(%{assigns: %{user: user}} = conn, params) do
+    local_only = params["local"] in [true, "True", "true", "1"]
+
     params =
       params
       |> Map.put("type", ["Create", "Announce"])
-      |> Map.put("local_only", params["local"] in [true, "True", "true", "1"])
+      |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
 
     activities =
@@ -200,7 +220,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.reverse()
 
     conn
-    |> add_link_headers(:public_timeline, activities)
+    |> add_link_headers(:public_timeline, activities, false, %{"local" => local_only})
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
@@ -225,7 +245,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     activities = Repo.all(query)
 
     conn
-    |> add_link_headers(:user_statuses, activities, user.ap_id)
+    |> add_link_headers(:dm_timeline, activities)
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
@@ -406,10 +426,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def hashtag_timeline(%{assigns: %{user: user}} = conn, params) do
+    local_only = params["local"] in [true, "True", "true", "1"]
+
     params =
       params
       |> Map.put("type", "Create")
-      |> Map.put("local_only", !!params["local"])
+      |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
 
     activities =
@@ -417,7 +439,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.reverse()
 
     conn
-    |> add_link_headers(:hashtag_timeline, activities, params["tag"])
+    |> add_link_headers(:hashtag_timeline, activities, params["tag"], %{"local" => local_only})
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
