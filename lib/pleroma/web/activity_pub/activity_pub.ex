@@ -57,6 +57,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     if activity.data["type"] in ["Create", "Announce"] do
       Pleroma.Web.Streamer.stream("user", activity)
+      Pleroma.Web.Streamer.stream("list", activity)
 
       if Enum.member?(activity.data["to"], public) do
         Pleroma.Web.Streamer.stream("public", activity)
