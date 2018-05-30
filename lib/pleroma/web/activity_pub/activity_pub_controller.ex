@@ -20,10 +20,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def object(conn, %{"uuid" => uuid}) do
     with ap_id <- o_status_url(conn, :object, uuid),
-         %Object{} = object <- Object.get_cached_by_ap_id(ap_id) do
+         %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
+         {_, true} <- {:public?, ActivityPub.is_public?(object)} do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(ObjectView.render("object.json", %{object: object}))
+    else
+      {:public?, false} ->
+        conn
+        |> put_status(404)
+        |> json("Not found")
     end
   end
 
