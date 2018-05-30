@@ -4,6 +4,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
   alias Pleroma.{Repo, User}
   alias Pleroma.Activity
+  alias Pleroma.Web.CommonAPI
 
   describe "/users/:nickname" do
     test "it returns a json representation of the user", %{conn: conn} do
@@ -31,6 +32,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/objects/#{uuid}")
 
       assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
+    end
+
+    test "it returns 404 for non-public messages", %{conn: conn} do
+      note = insert(:direct_note)
+      uuid = String.split(note.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}")
+
+      assert json_response(conn, 404)
     end
   end
 

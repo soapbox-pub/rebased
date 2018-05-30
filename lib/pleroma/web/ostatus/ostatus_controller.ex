@@ -68,37 +68,47 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> send_resp(200, "")
   end
 
-  # TODO: Data leak
   def object(conn, %{"uuid" => uuid} = params) do
     if get_format(conn) == "activity+json" do
       ActivityPubController.object(conn, params)
     else
       with id <- o_status_url(conn, :object, uuid),
            %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id),
+           {_, true} <- {:public?, ActivityPub.is_public?(activity)},
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
           _ -> represent_activity(conn, activity, user)
         end
+      else
+        {:public?, false} ->
+          conn
+          |> put_status(404)
+          |> json("Not found")
       end
     end
   end
 
-  # TODO: Data leak
   def activity(conn, %{"uuid" => uuid}) do
     with id <- o_status_url(conn, :activity, uuid),
          %Activity{} = activity <- Activity.get_by_ap_id(id),
+         {_, true} <- {:public?, ActivityPub.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case get_format(conn) do
         "html" -> redirect(conn, to: "/notice/#{activity.id}")
         _ -> represent_activity(conn, activity, user)
       end
+    else
+      {:public?, false} ->
+        conn
+        |> put_status(404)
+        |> json("Not found")
     end
   end
 
-  # TODO: Data leak
   def notice(conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
+         {_, true} <- {:public?, ActivityPub.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case get_format(conn) do
         "html" ->
@@ -109,6 +119,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
         _ ->
           represent_activity(conn, activity, user)
       end
+    else
+      {:public?, false} ->
+        conn
+        |> put_status(404)
+        |> json("Not found")
     end
   end
 
