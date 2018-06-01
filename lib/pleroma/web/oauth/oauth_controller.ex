@@ -56,12 +56,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   # TODO
   # - proper scope handling
   def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
-    with %App{} = app <-
-           Repo.get_by(
-             App,
-             client_id: params["client_id"],
-             client_secret: params["client_secret"]
-           ),
+    with %App{} = app <- get_app_from_request(conn, params),
          fixed_token = fix_padding(params["code"]),
          %Authorization{} = auth <-
            Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
@@ -86,12 +81,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         conn,
         %{"grant_type" => "password", "name" => name, "password" => password} = params
       ) do
-    with %App{} = app <-
-           Repo.get_by(
-             App,
-             client_id: params["client_id"],
-             client_secret: params["client_secret"]
-           ),
+    with %App{} = app <- get_app_from_request(conn, params),
          %User{} = user <- User.get_cached_by_nickname(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:ok, auth} <- Authorization.create_authorization(app, user),
@@ -114,5 +104,29 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     token
     |> Base.url_decode64!(padding: false)
     |> Base.url_encode64()
+  end
+
+  defp get_app_from_request(conn, params) do
+    # Per RFC 6749, HTTP Basic is preferred to body params
+    {client_id, client_secret} =
+      with ["Basic " <> encoded] <- get_req_header(conn, "authorization"),
+           {:ok, decoded} <- Base.decode64(encoded),
+           [id, secret] <-
+             String.split(decoded, ":")
+             |> Enum.map(fn s -> URI.decode_www_form(s) end) do
+        {id, secret}
+      else
+        _ -> {params["client_id"], params["client_secret"]}
+      end
+
+    if client_id && client_secret do
+      Repo.get_by(
+        App,
+        client_id: client_id,
+        client_secret: client_secret
+      )
+    else
+      nil
+    end
   end
 end
