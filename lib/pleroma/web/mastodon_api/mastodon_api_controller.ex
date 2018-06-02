@@ -236,7 +236,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       conn
       |> add_link_headers(:user_statuses, activities, params["id"])
-      |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
+      |> render(StatusView, "index.json", %{
+        activities: activities,
+        for: reading_user,
+        as: :activity
+      })
     end
   end
 
