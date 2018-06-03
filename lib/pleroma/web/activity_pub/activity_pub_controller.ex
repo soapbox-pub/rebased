@@ -27,9 +27,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> json(ObjectView.render("object.json", %{object: object}))
     else
       {:public?, false} ->
-        conn
-        |> put_status(404)
-        |> json("Not found")
+        {:error, :not_found}
     end
   end
 
@@ -105,6 +103,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
 
     json(conn, "ok")
+  end
+
+  def errors(conn, {:error, :not_found}) do
+    conn
+    |> put_status(404)
+    |> json("Not found")
   end
 
   def errors(conn, _e) do

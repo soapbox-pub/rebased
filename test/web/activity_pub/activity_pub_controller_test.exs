@@ -4,7 +4,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
   alias Pleroma.{Repo, User}
   alias Pleroma.Activity
-  alias Pleroma.Web.CommonAPI
 
   describe "/users/:nickname" do
     test "it returns a json representation of the user", %{conn: conn} do
