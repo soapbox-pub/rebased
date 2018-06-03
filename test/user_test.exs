@@ -361,6 +361,27 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "domain blocking" do
+    test "blocks domains" do
+      user = insert(:user)
+      collateral_user = insert(:user, %{ap_id: "https://awful-and-rude-instance.com/user/bully"})
+
+      {:ok, user} = User.block_domain(user, "awful-and-rude-instance.com")
+
+      assert User.blocks?(user, collateral_user)
+    end
+
+    test "unblocks domains" do
+      user = insert(:user)
+      collateral_user = insert(:user, %{ap_id: "https://awful-and-rude-instance.com/user/bully"})
+
+      {:ok, user} = User.block_domain(user, "awful-and-rude-instance.com")
+      {:ok, user} = User.unblock_domain(user, "awful-and-rude-instance.com")
+
+      refute User.blocks?(user, collateral_user)
+    end
+  end
+
   test "get recipients from activity" do
     actor = insert(:user)
     user = insert(:user, local: true)

@@ -479,7 +479,29 @@ defmodule Pleroma.User do
 
   def blocks?(user, %{ap_id: ap_id}) do
     blocks = user.info["blocks"] || []
-    Enum.member?(blocks, ap_id)
+    domain_blocks = user.info["domain_blocks"] || []
+    %{host: host} = URI.parse(ap_id)
+    Enum.member?(blocks, ap_id) || Enum.any?(domain_blocks, fn domain ->
+      host == domain
+    end)
+  end
+
+  def block_domain(user, domain) do
+    domain_blocks = user.info["domain_blocks"] || []
+    new_blocks = Enum.uniq([domain | domain_blocks])
+    new_info = Map.put(user.info, "domain_blocks", new_blocks)
+
+    cs = User.info_changeset(user, %{info: new_info})
+    update_and_set_cache(cs)
+  end
+
+  def unblock_domain(user, domain) do
+    blocks = user.info["domain_blocks"] || []
+    new_blocks = List.delete(blocks, domain)
+    new_info = Map.put(user.info, "domain_blocks", new_blocks)
+
+    cs = User.info_changeset(user, %{info: new_info})
+    update_and_set_cache(cs)
   end
 
   def local_user_query() do
