@@ -9,11 +9,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def get_by_id_or_ap_id(id) do
     activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
 
-    if activity.data["type"] == "Create" do
-      activity
-    else
-      Activity.get_create_activity_by_object_ap_id(activity.data["object"])
-    end
+    activity &&
+      if activity.data["type"] == "Create" do
+        activity
+      else
+        Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+      end
   end
 
   def get_replied_to_activity(id) when not is_nil(id) do

@@ -260,7 +260,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "with credentials", %{conn: conn, user: current_user} do
       other_user = insert(:user)
 
-      {:ok, activity} =
+      {:ok, _activity} =
         ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
 
       conn =
@@ -509,6 +509,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post("/api/favorites/create/#{note_activity.id}.json")
 
       assert json_response(conn, 200)
+    end
+
+    test "with credentials, invalid param", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/favorites/create/wrong.json")
+
+      assert json_response(conn, 400)
+    end
+
+    test "with credentials, invalid activity", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/favorites/create/1.json")
+
+      assert json_response(conn, 500)
     end
   end
 
@@ -793,7 +811,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   test "Convert newlines to <br> in bio", %{conn: conn} do
     user = insert(:user)
 
-    conn =
+    _conn =
       conn
       |> assign(:user, user)
       |> post("/api/account/update_profile.json", %{
@@ -904,6 +922,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post("/api/pleroma/delete_account", %{"password" => "test"})
 
       assert json_response(conn, 200) == %{"status" => "success"}
+      # Wait a second for the started task to end
+      :timer.sleep(1000)
     end
   end
 end
