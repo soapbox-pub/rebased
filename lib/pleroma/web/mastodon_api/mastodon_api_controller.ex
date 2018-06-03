@@ -10,6 +10,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   import Ecto.Query
   require Logger
 
+  action_fallback(:errors)
+
   def create_app(conn, params) do
     with cs <- App.register_changeset(%App{}, params) |> IO.inspect(),
          {:ok, app} <- Repo.insert(cs) |> IO.inspect() do
@@ -327,27 +329,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def reblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, announce, _activity} = CommonAPI.repeat(ap_id_or_id, user) do
+    with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user) do
       render(conn, StatusView, "status.json", %{activity: announce, for: user, as: :activity})
     end
   end
 
   def unreblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, _, _, %{data: %{"id" => id}}} = CommonAPI.unrepeat(ap_id_or_id, user),
+    with {:ok, _, _, %{data: %{"id" => id}}} <- CommonAPI.unrepeat(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
     end
   end
 
   def fav_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, _fav, %{data: %{"id" => id}}} = CommonAPI.favorite(ap_id_or_id, user),
+    with {:ok, _fav, %{data: %{"id" => id}}} <- CommonAPI.favorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
     end
   end
 
   def unfav_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
-    with {:ok, _, _, %{data: %{"id" => id}}} = CommonAPI.unfavorite(ap_id_or_id, user),
+    with {:ok, _, _, %{data: %{"id" => id}}} <- CommonAPI.unfavorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
     end
@@ -918,5 +920,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       _ ->
         nil
     end
+  end
+
+  def errors(conn, _) do
+    conn
+    |> put_status(500)
+    |> json("Something went wrong")
   end
 end

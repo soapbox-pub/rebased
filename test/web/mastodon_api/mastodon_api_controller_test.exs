@@ -505,6 +505,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert to_string(activity.id) == id
     end
+
+    test "returns 500 for a wrong id", %{conn: conn} do
+      user = insert(:user)
+
+      resp =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses/1/favourite")
+        |> json_response(500)
+
+      assert resp == "Something went wrong"
+    end
   end
 
   describe "unfavoriting" do
