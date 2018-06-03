@@ -1,0 +1,18 @@
+social.domain.tld  {
+  tls user@domain.tld
+
+  log /var/log/caddy/pleroma.log
+
+  cors / {
+    origin https://halcyon.domain.tld
+    origin https://pinafore.domain.tld
+    methods POST,PUT,DELETE,GET,PATCH,OPTIONS
+    allowed_headers Authorization,Content-Type,Idempotency-Key
+    exposed_headers Link,X-RateLimit-Reset,X-RateLimit-Limit,X-RateLimit-Remaining,X-Request-Id
+  }
+
+  proxy / localhost:4000 {
+    websocket
+    transparent
+  }
+}
