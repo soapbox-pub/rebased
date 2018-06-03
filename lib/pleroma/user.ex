@@ -481,9 +481,11 @@ defmodule Pleroma.User do
     blocks = user.info["blocks"] || []
     domain_blocks = user.info["domain_blocks"] || []
     %{host: host} = URI.parse(ap_id)
-    Enum.member?(blocks, ap_id) || Enum.any?(domain_blocks, fn domain ->
-      host == domain
-    end)
+
+    Enum.member?(blocks, ap_id) ||
+      Enum.any?(domain_blocks, fn domain ->
+        host == domain
+      end)
   end
 
   def block_domain(user, domain) do
