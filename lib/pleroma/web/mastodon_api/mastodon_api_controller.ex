@@ -812,6 +812,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             boost_modal: false,
             delete_modal: true,
             auto_play_gif: false,
+            display_sensitive_media: false,
             reduce_motion: false
           },
           compose: %{
