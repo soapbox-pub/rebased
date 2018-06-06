@@ -146,4 +146,15 @@ defmodule Pleroma.Factory do
       subscribers: []
     }
   end
+
+  def oauth_app_factory do
+    %Pleroma.Web.OAuth.App{
+      client_name: "Some client",
+      redirect_uris: "https://example.com/callback",
+      scopes: "read",
+      website: "https://example.com",
+      client_id: "aaabbb==",
+      client_secret: "aaa;/&bbb"
+    }
+  end
 end
