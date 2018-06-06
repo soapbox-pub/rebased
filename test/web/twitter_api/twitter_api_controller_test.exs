@@ -958,4 +958,26 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       :timer.sleep(1000)
     end
   end
+
+  describe "GET /api/pleroma/friend_requests" do
+    test "it lists friend requests" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> get("/api/pleroma/friend_requests")
+
+      assert [relationship] = json_response(conn, 200)
+      assert other_user.id == relationship["id"]
+    end
+  end
 end
