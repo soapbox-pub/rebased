@@ -71,7 +71,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
       json(conn, response)
     else
-      _error -> json(conn, %{error: "Invalid credentials"})
+      _error ->
+        put_status(conn, 400)
+        |> json(%{error: "Invalid credentials"})
     end
   end
 
@@ -96,7 +98,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
       json(conn, response)
     else
-      _error -> json(conn, %{error: "Invalid credentials"})
+      _error ->
+        put_status(conn, 400)
+        |> json(%{error: "Invalid credentials"})
     end
   end
 
