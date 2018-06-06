@@ -253,7 +253,7 @@ defmodule Pleroma.Web.WebFinger do
           String.replace(template, "{uri}", URI.encode(account))
 
         _ ->
-          "http://#{domain}/.well-known/webfinger?resource=acct:#{account}"
+          "https://#{domain}/.well-known/webfinger?resource=acct:#{account}"
       end
 
     with response <-

@@ -32,6 +32,10 @@ defmodule Pleroma.Web.XML do
       :exit, _error ->
         Logger.debug("Couldn't parse XML: #{inspect(text)}")
         :error
+    rescue
+      e ->
+        Logger.debug("Couldn't parse XML: #{inspect(text)}")
+        :error
     end
   end
 end

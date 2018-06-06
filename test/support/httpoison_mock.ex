@@ -4,7 +4,7 @@ defmodule HTTPoisonMock do
   def get(url, body \\ [], headers \\ [])
 
   def get(
-        "http://gerzilla.de/.well-known/webfinger?resource=acct:kaniini@gerzilla.de",
+        "https://gerzilla.de/.well-known/webfinger?resource=acct:kaniini@gerzilla.de",
         [Accept: "application/xrd+xml,application/jrd+json"],
         follow_redirect: true
       ) do
@@ -16,7 +16,7 @@ defmodule HTTPoisonMock do
   end
 
   def get(
-        "http://framatube.org/.well-known/webfinger?resource=acct:framasoft@framatube.org",
+        "https://framatube.org/.well-known/webfinger?resource=acct:framasoft@framatube.org",
         [Accept: "application/xrd+xml,application/jrd+json"],
         follow_redirect: true
       ) do
@@ -28,7 +28,7 @@ defmodule HTTPoisonMock do
   end
 
   def get(
-        "http://gnusocial.de/.well-known/webfinger?resource=acct:winterdienst@gnusocial.de",
+        "https://gnusocial.de/.well-known/webfinger?resource=acct:winterdienst@gnusocial.de",
         [Accept: "application/xrd+xml,application/jrd+json"],
         follow_redirect: true
       ) do
