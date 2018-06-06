@@ -445,7 +445,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       activity in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
       where: fragment("not (?->'to' \\?| ?)", activity.data, ^blocks),
-      where: fragment("not (? ~ ANY(?))", activity.actor, ^domain_blocks)
+      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks)
     )
   end
 
