@@ -980,4 +980,50 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert other_user.id == relationship["id"]
     end
   end
+
+  describe "POST /api/pleroma/friendships/approve" do
+    test "it approves a friend request" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/pleroma/friendships/approve", %{"user_id" => to_string(other_user.id)})
+
+      assert relationship = json_response(conn, 200)
+      assert other_user.id == relationship["id"]
+      assert relationship["follows_you"] == true
+    end
+  end
+
+  describe "POST /api/pleroma/friendships/deny" do
+    test "it denies a friend request" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/pleroma/friendships/deny", %{"user_id" => to_string(other_user.id)})
+
+      assert relationship = json_response(conn, 200)
+      assert other_user.id == relationship["id"]
+      assert relationship["follows_you"] == false
+    end
+  end
 end
