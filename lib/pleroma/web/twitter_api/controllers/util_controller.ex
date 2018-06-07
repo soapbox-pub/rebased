@@ -189,7 +189,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
              {:ok, follower} <- User.follow(follower, followed) do
           ActivityPub.follow(follower, followed)
         else
-          _e -> Logger.debug("follow_import: following #{account} failed")
+          err -> Logger.debug("follow_import: following #{account} failed with #{inspect(err)}")
         end
       end)
     end)
