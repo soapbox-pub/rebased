@@ -144,41 +144,50 @@ defmodule Pleroma.Web.WebFinger do
     end
   end
 
-  defp webfinger_from_xml(doc) do
-    magic_key = XML.string_from_xpath(~s{//Link[@rel="magic-public-key"]/@href}, doc)
+  defp get_magic_key(magic_key) do
     "data:application/magic-public-key," <> magic_key = magic_key
+    {:ok, magic_key}
+  rescue
+    MatchError -> {:error, "Missing magic key data."}
+  end
 
-    topic =
-      XML.string_from_xpath(
-        ~s{//Link[@rel="http://schemas.google.com/g/2010#updates-from"]/@href},
-        doc
-      )
+  defp webfinger_from_xml(doc) do
+    with magic_key <- XML.string_from_xpath(~s{//Link[@rel="magic-public-key"]/@href}, doc),
+         {:ok, magic_key} <- get_magic_key(magic_key),
+         topic <-
+           XML.string_from_xpath(
+             ~s{//Link[@rel="http://schemas.google.com/g/2010#updates-from"]/@href},
+             doc
+           ),
+         subject <- XML.string_from_xpath("//Subject", doc),
+         salmon <- XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc),
+         subscribe_address <-
+           XML.string_from_xpath(
+             ~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template},
+             doc
+           ),
+         ap_id <-
+           XML.string_from_xpath(
+             ~s{//Link[@rel="self" and @type="application/activity+json"]/@href},
+             doc
+           ) do
+      data = %{
+        "magic_key" => magic_key,
+        "topic" => topic,
+        "subject" => subject,
+        "salmon" => salmon,
+        "subscribe_address" => subscribe_address,
+        "ap_id" => ap_id
+      }
 
-    subject = XML.string_from_xpath("//Subject", doc)
-    salmon = XML.string_from_xpath(~s{//Link[@rel="salmon"]/@href}, doc)
+      {:ok, data}
+    else
+      {:error, e} ->
+        {:error, e}
 
-    subscribe_address =
-      XML.string_from_xpath(
-        ~s{//Link[@rel="http://ostatus.org/schema/1.0/subscribe"]/@template},
-        doc
-      )
-
-    ap_id =
-      XML.string_from_xpath(
-        ~s{//Link[@rel="self" and @type="application/activity+json"]/@href},
-        doc
-      )
-
-    data = %{
-      "magic_key" => magic_key,
-      "topic" => topic,
-      "subject" => subject,
-      "salmon" => salmon,
-      "subscribe_address" => subscribe_address,
-      "ap_id" => ap_id
-    }
-
-    {:ok, data}
+      e ->
+        {:error, e}
+    end
   end
 
   defp webfinger_from_json(doc) do
@@ -268,8 +277,11 @@ defmodule Pleroma.Web.WebFinger do
       if doc != :error do
         webfinger_from_xml(doc)
       else
-        {:ok, doc} = Jason.decode(body)
-        webfinger_from_json(doc)
+        with {:ok, doc} <- Jason.decode(body) do
+          webfinger_from_json(doc)
+        else
+          {:error, e} -> e
+        end
       end
     else
       e ->
