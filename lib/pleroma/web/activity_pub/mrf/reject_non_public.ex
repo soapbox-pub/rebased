@@ -17,14 +17,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
           true -> "direct"
         end
 
-      {flag, object_out} =
-        case visibility do
-          "public" -> {:ok, object}
-          "unlisted" -> {:ok, object}
-          _ -> {:reject, nil}
-        end
-
-      {flag, object_out}
+      case visibility do
+        "public" -> {:ok, object}
+        "unlisted" -> {:ok, object}
+        _ -> {:reject, nil}
+      end
     else
       {:ok, object}
     end
