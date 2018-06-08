@@ -12,19 +12,24 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   action_fallback(:errors)
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
-    with {_, %User{} = user} <- {:user, User.get_cached_by_nickname(nickname)} do
-      case get_format(conn) do
-        "html" -> Fallback.RedirectController.redirector(conn, nil)
-        "activity+json" -> ActivityPubController.call(conn, :user)
-        _ -> redirect(conn, external: OStatus.feed_path(user))
-      end
-    else
-      {:user, nil} -> {:error, :not_found}
+    case get_format(conn) do
+      "html" ->
+        Fallback.RedirectController.redirector(conn, nil)
+
+      "activity+json" ->
+        ActivityPubController.call(conn, :user)
+
+      _ ->
+        with %User{} = user <- User.get_cached_by_nickname(nickname) do
+          redirect(conn, external: OStatus.feed_path(user))
+        else
+          nil -> {:error, :not_found}
+        end
     end
   end
 
   def feed(conn, %{"nickname" => nickname} = params) do
-    with {_, %User{} = user} <- {:user, User.get_cached_by_nickname(nickname)} do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       query_params =
         Map.take(params, ["max_id"])
         |> Map.merge(%{"whole_db" => true, "actor_id" => user.ap_id})
@@ -43,7 +48,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
       |> put_resp_content_type("application/atom+xml")
       |> send_resp(200, response)
     else
-      {:user, nil} -> {:error, :not_found}
+      nil -> {:error, :not_found}
     end
   end
 
