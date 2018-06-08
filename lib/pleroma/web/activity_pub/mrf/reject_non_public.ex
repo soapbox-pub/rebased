@@ -5,7 +5,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
   @impl true
   def filter(object) do
     if object["type"] == "Create" do
-      user = User.get_by_ap_id(object["actor"])
+      user = User.get_cached_by_ap_id(object["actor"])
       public = "https://www.w3.org/ns/activitystreams#Public"
 
       # Determine visibility
