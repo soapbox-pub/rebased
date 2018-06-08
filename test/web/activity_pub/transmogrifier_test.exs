@@ -266,6 +266,29 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.bio == "<p>Some bio</p>"
     end
 
+    test "it works for incoming update activities which lock the account" do
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
+
+      object =
+        update_data["object"]
+        |> Map.put("actor", data["actor"])
+        |> Map.put("id", data["actor"])
+        |> Map.put("manuallyApprovesFollowers", true)
+
+      update_data =
+        update_data
+        |> Map.put("actor", data["actor"])
+        |> Map.put("object", object)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(update_data)
+
+      user = User.get_cached_by_ap_id(data["actor"])
+      assert user.info["locked"] == true
+    end
+
     test "it works for incoming deletes" do
       activity = insert(:note_activity)
 
