@@ -174,7 +174,7 @@ defmodule Pleroma.User do
     should_direct_follow =
       cond do
         # if the account is locked, don't pre-create the relationship
-        user_info["locked"] == true ->
+        user_info[:locked] == true ->
           false
 
         # if the users are blocking each other, we shouldn't even be here, but check for it anyway
@@ -193,7 +193,7 @@ defmodule Pleroma.User do
     if should_direct_follow do
       follow(follower, followed)
     else
-      follower
+      {:ok, follower}
     end
   end
 
