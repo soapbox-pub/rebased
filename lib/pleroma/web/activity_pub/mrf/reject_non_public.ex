@@ -10,20 +10,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
       #Determine visibility
       visibility =
         cond do
-          #Public
-          public in object["to"] -> "p"
-          #Unlisted
-          public in object["cc"] -> "u"
-          #Followers-only
-          user.follower_address in object["to"] -> "f"
-          #Direct
-          true -> "d"
+          public in object["to"] -> "public"
+          public in object["cc"] -> "unlisted"
+          user.follower_address in object["to"] -> "followers"
+          true -> "direct"
         end
 
       {flag, object_out} =
         case visibility do
-          "p" -> {:ok, object}
-          "u" -> {:ok, object}
+          "public" -> {:ok, object}
+          "unlisted" -> {:ok, object}
           _ -> {:reject, nil}
         end
 
