@@ -15,6 +15,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("user.json", %{user: user}))
+    else
+      nil -> {:error, :not_found}
     end
   end
 
