@@ -240,17 +240,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def block(blocker, blocked, activity_id \\ nil, local \\ true) do
-    follow_activity = fetch_latest_follow(blocker, blocked)
+  @ap_config Application.get_env(:pleroma, :activitypub)
+  @unfollow_blocked Keyword.get(@ap_config, :unfollow_blocked)
+  @outgoing_blocks Keyword.get(@ap_config, :outgoing_blocks)
 
-    if follow_activity do
-      unfollow(blocker, blocked, nil, local)
+  def block(blocker, blocked, activity_id \\ nil, local \\ true) do
+
+    with true <- unfollow_blocked do
+      follow_activity = fetch_latest_follow(blocker, blocked)
+      if follow_activity do
+        unfollow(blocker, blocked, nil, local)
+      end
     end
 
-    with block_data <- make_block_data(blocker, blocked, activity_id),
-         {:ok, activity} <- insert(block_data, local),
-         :ok <- maybe_federate(activity) do
-      {:ok, activity}
+    with true <- outgoing_blocks do
+      with block_data <- make_block_data(blocker, blocked, activity_id),
+           {:ok, activity} <- insert(block_data, local),
+           :ok <- maybe_federate(activity) do
+        {:ok, activity}
+      end
+    else
+      {:ok, nil}
     end
   end
 
