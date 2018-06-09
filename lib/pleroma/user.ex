@@ -168,6 +168,9 @@ defmodule Pleroma.User do
     end
   end
 
+  @user_config Application.get_env(:pleroma, :user)
+  @deny_follow_blocked Keyword.get(@ap_config, :deny_follow_blocked)
+
   def maybe_direct_follow(%User{} = follower, %User{info: info} = followed) do
     user_info = user_info(followed)
 
@@ -178,7 +181,7 @@ defmodule Pleroma.User do
           false
 
         # if the users are blocking each other, we shouldn't even be here, but check for it anyway
-        User.blocks?(follower, followed) == true or User.blocks?(followed, follower) == true ->
+        deny_follow_blocked and (User.blocks?(follower, followed) or User.blocks?(followed, follower)) ->
           false
 
         # if OStatus, then there is no three-way handshake to follow
@@ -197,6 +200,9 @@ defmodule Pleroma.User do
     end
   end
 
+  @user_config Application.get_env(:pleroma, :user)
+  @deny_follow_blocked Keyword.get(@ap_config, :deny_follow_blocked)
+
   def follow(%User{} = follower, %User{info: info} = followed) do
     ap_followers = followed.follower_address
 
@@ -204,7 +210,7 @@ defmodule Pleroma.User do
       following?(follower, followed) or info["deactivated"] ->
         {:error, "Could not follow user: #{followed.nickname} is already on your list."}
 
-      blocks?(followed, follower) ->
+      deny_follow_blocked and blocks?(followed, follower) ->
         {:error, "Could not follow user: #{followed.nickname} blocked you."}
 
       true ->
