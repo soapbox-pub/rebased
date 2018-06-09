@@ -260,7 +260,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {:ok, activity}
       end
     else
-      {:ok, nil}
+      _e -> {:ok, nil}
     end
   end
 
