@@ -246,14 +246,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
 
-    with true <- unfollow_blocked do
+    with true <- @unfollow_blocked do
       follow_activity = fetch_latest_follow(blocker, blocked)
       if follow_activity do
         unfollow(blocker, blocked, nil, local)
       end
     end
 
-    with true <- outgoing_blocks do
+    with true <- @outgoing_blocks do
       with block_data <- make_block_data(blocker, blocked, activity_id),
            {:ok, activity} <- insert(block_data, local),
            :ok <- maybe_federate(activity) do
