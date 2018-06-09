@@ -62,8 +62,7 @@ config :pleroma, :activitypub,
   unfollow_blocked: true,
   outgoing_blocks: true
 
-config :pleroma, :user,
-  deny_follow_blocked: true
+config :pleroma, :user, deny_follow_blocked: true
 
 config :pleroma, :mrf_simple,
   media_removal: [],

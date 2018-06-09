@@ -181,7 +181,8 @@ defmodule Pleroma.User do
           false
 
         # if the users are blocking each other, we shouldn't even be here, but check for it anyway
-        @deny_follow_blocked and (User.blocks?(follower, followed) or User.blocks?(followed, follower)) ->
+        @deny_follow_blocked and
+            (User.blocks?(follower, followed) or User.blocks?(followed, follower)) ->
           false
 
         # if OStatus, then there is no three-way handshake to follow
