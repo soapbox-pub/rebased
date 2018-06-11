@@ -5,7 +5,7 @@ In the `config/` directory, you will find the following relevant files:
 * `dev.exs`: default additional configuration for `MIX_ENV=dev`
 * `prod.exs`: default additional configuration for `MIX_ENV=prod`
 
-Additionally, you can overload options in the following files:
+You can overload options in the following files:
 * `dev.secret.exs`: custom additional configuration for `MIX_ENV=dev`
 * `prod.secret.exs`: custom additional configuration for `MIX_ENV=prod`
 
