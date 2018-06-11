@@ -35,7 +35,7 @@ Drops all posts. It generally does not make sense to use this in production.
 
 ### SimplePolicy
 
-Versatile policy for applying effects to posts from certain instances.
+Restricts the visibility of posts from certain instances.
 
     config :pleroma, :mrf_simple,
       media_removal: [],
