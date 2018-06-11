@@ -36,6 +36,7 @@ server {
     ssl_certificate           /etc/letsencrypt/live/example.tld/fullchain.pem;
     ssl_certificate_key       /etc/letsencrypt/live/example.tld/privkey.pem;
 
+    # Add TLSv1.0 to support older devices
     ssl_protocols TLSv1.2;
     # Uncomment line below if you want to support older devices (Before Android 4.4.2, IE 8, etc.)
     # ssl_ciphers "HIGH:!aNULL:!MD5 or HIGH:!aNULL:!MD5:!3DES";
