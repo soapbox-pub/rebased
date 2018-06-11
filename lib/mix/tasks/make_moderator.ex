@@ -19,7 +19,7 @@ defmodule Mix.Tasks.SetModerator do
         |> Map.put("is_moderator", !!moderator)
 
       cng = User.info_changeset(user, %{info: info})
-      user = Repo.update!(cng)
+      {:ok, user} = User.update_and_set_cache(cng)
 
       IO.puts("Moderator status of #{nickname}: #{user.info["is_moderator"]}")
     else
