@@ -24,18 +24,27 @@ server {
     # }
 }
 
+# Enable SSL session caching for improved performance
+ssl_session_cache shared:ssl_session_cache:10m;
+
 server {
     listen 443 ssl http2;
     ssl on;
     ssl_session_timeout 5m;
 
+    ssl_trusted_certificate   /etc/letsencrypt/live/example.tld/fullchain.pem;
     ssl_certificate           /etc/letsencrypt/live/example.tld/fullchain.pem;
     ssl_certificate_key       /etc/letsencrypt/live/example.tld/privkey.pem;
 
-    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-    ssl_ciphers "HIGH:!aNULL:!MD5 or HIGH:!aNULL:!MD5:!3DES";
+    ssl_protocols TLSv1.2;
+    # Uncomment line below if you want to support older devices (Before Android 4.4.2, IE 8, etc.)
+    # ssl_ciphers "HIGH:!aNULL:!MD5 or HIGH:!aNULL:!MD5:!3DES";
+    ssl_ciphers "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4";
     ssl_prefer_server_ciphers on;
-
+    ssl_ecdh_curve X25519:prime256v1:secp384r1:secp521r1;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    
     server_name example.tld;
 
     gzip_vary on;
