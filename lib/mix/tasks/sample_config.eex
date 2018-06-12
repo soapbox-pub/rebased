@@ -9,7 +9,7 @@ config :pleroma, :instance,
   email: "<%= email %>",
   limit: 5000,
   registrations_open: true,
-  dedupe_media: true
+  dedupe_media: false
 
 config :pleroma, :media_proxy,
   enabled: false,
