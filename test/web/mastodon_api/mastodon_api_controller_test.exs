@@ -4,6 +4,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.{Repo, User, Activity, Notification}
   alias Pleroma.Web.{OStatus, CommonAPI}
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
   import ExUnit.CaptureLog
@@ -641,6 +642,73 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert [relationship] = json_response(conn, 200)
 
       assert to_string(other_user.id) == relationship["id"]
+    end
+  end
+
+  describe "locked accounts" do
+    test "/api/v1/follow_requests works" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> get("/api/v1/follow_requests")
+
+      assert [relationship] = json_response(conn, 200)
+      assert to_string(other_user.id) == relationship["id"]
+    end
+
+    test "/api/v1/follow_requests/:id/authorize works" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/follow_requests/#{other_user.id}/authorize")
+
+      assert relationship = json_response(conn, 200)
+      assert to_string(other_user.id) == relationship["id"]
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == true
+    end
+
+    test "/api/v1/follow_requests/:id/reject works" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/follow_requests/#{other_user.id}/reject")
+
+      assert relationship = json_response(conn, 200)
+      assert to_string(other_user.id) == relationship["id"]
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
     end
   end
 

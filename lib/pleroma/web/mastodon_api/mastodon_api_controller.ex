@@ -4,6 +4,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.{CommonAPI, OStatus}
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Comeonin.Pbkdf2
@@ -61,6 +62,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         with %Plug.Upload{} <- banner,
              {:ok, object} <- ActivityPub.upload(banner),
              new_info <- Map.put(user.info, "banner", object.data),
+             change <- User.info_changeset(user, %{info: new_info}),
+             {:ok, user} <- User.update_and_set_cache(change) do
+          user
+        else
+          _e -> user
+        end
+      else
+        user
+      end
+
+    user =
+      if locked = params["locked"] do
+        with locked <- locked == "true",
+             new_info <- Map.put(user.info, "locked", locked),
              change <- User.info_changeset(user, %{info: new_info}),
              {:ok, user} <- User.update_and_set_cache(change) do
           user
@@ -473,6 +488,53 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with %User{} = user <- Repo.get(User, id),
          {:ok, followers} <- User.get_friends(user) do
       render(conn, AccountView, "accounts.json", %{users: followers, as: :user})
+    end
+  end
+
+  def follow_requests(%{assigns: %{user: followed}} = conn, _params) do
+    with {:ok, follow_requests} <- User.get_follow_requests(followed) do
+      render(conn, AccountView, "accounts.json", %{users: follow_requests, as: :user})
+    end
+  end
+
+  def authorize_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
+    with %User{} = follower <- Repo.get(User, id),
+         {:ok, follower} <- User.maybe_follow(follower, followed),
+         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
+         {:ok, _activity} <-
+           ActivityPub.accept(%{
+             to: [follower.ap_id],
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             type: "Accept"
+           }) do
+      render(conn, AccountView, "relationship.json", %{user: followed, target: follower})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
+    end
+  end
+
+  def reject_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
+    with %User{} = follower <- Repo.get(User, id),
+         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
+         {:ok, _activity} <-
+           ActivityPub.reject(%{
+             to: [follower.ap_id],
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             type: "Reject"
+           }) do
+      render(conn, AccountView, "relationship.json", %{user: followed, target: follower})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 

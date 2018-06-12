@@ -137,9 +137,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
          %User{} = follower <- User.get_or_fetch_by_ap_id(follower),
          {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
-      ActivityPub.accept(%{to: [follower.ap_id], actor: followed.ap_id, object: data, local: true})
+      if not User.locked?(followed) do
+        ActivityPub.accept(%{
+          to: [follower.ap_id],
+          actor: followed.ap_id,
+          object: data,
+          local: true
+        })
 
-      User.follow(follower, followed)
+        User.follow(follower, followed)
+      end
+
       {:ok, activity}
     else
       _e -> :error
@@ -252,7 +260,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
 
       banner = new_user_data[:info]["banner"]
-      locked = new_user_data[:info]["locked"]
+      locked = new_user_data[:info]["locked"] || false
 
       update_data =
         new_user_data
@@ -430,6 +438,58 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
 
     {:ok, data}
+  end
+
+  # Mastodon Accept/Reject requires a non-normalized object containing the actor URIs,
+  # because of course it does.
+  def prepare_outgoing(%{"type" => "Accept"} = data) do
+    follow_activity_id =
+      if is_binary(data["object"]) do
+        data["object"]
+      else
+        data["object"]["id"]
+      end
+
+    with follow_activity <- Activity.get_by_ap_id(follow_activity_id) do
+      object = %{
+        "actor" => follow_activity.actor,
+        "object" => follow_activity.data["object"],
+        "id" => follow_activity.data["id"],
+        "type" => "Follow"
+      }
+
+      data =
+        data
+        |> Map.put("object", object)
+        |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+
+      {:ok, data}
+    end
+  end
+
+  def prepare_outgoing(%{"type" => "Reject"} = data) do
+    follow_activity_id =
+      if is_binary(data["object"]) do
+        data["object"]
+      else
+        data["object"]["id"]
+      end
+
+    with follow_activity <- Activity.get_by_ap_id(follow_activity_id) do
+      object = %{
+        "actor" => follow_activity.actor,
+        "object" => follow_activity.data["object"],
+        "id" => follow_activity.data["id"],
+        "type" => "Follow"
+      }
+
+      data =
+        data
+        |> Map.put("object", object)
+        |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+
+      {:ok, data}
+    end
   end
 
   def prepare_outgoing(%{"type" => _type} = data) do

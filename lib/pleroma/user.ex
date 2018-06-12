@@ -197,6 +197,14 @@ defmodule Pleroma.User do
     end
   end
 
+  def maybe_follow(%User{} = follower, %User{info: info} = followed) do
+    if not following?(follower, followed) do
+      follow(follower, followed)
+    else
+      {:ok, follower}
+    end
+  end
+
   def follow(%User{} = follower, %User{info: info} = followed) do
     ap_followers = followed.follower_address
 
@@ -250,6 +258,10 @@ defmodule Pleroma.User do
 
   def following?(%User{} = follower, %User{} = followed) do
     Enum.member?(follower.following, followed.follower_address)
+  end
+
+  def locked?(%User{} = user) do
+    user.info["locked"] || false
   end
 
   def get_by_ap_id(ap_id) do
@@ -347,6 +359,40 @@ defmodule Pleroma.User do
     q = get_friends_query(user)
 
     {:ok, Repo.all(q)}
+  end
+
+  def get_follow_requests_query(%User{} = user) do
+    from(
+      a in Activity,
+      where:
+        fragment(
+          "? ->> 'type' = 'Follow'",
+          a.data
+        ),
+      where:
+        fragment(
+          "? ->> 'state' = 'pending'",
+          a.data
+        ),
+      where:
+        fragment(
+          "? @> ?",
+          a.data,
+          ^%{"object" => user.ap_id}
+        )
+    )
+  end
+
+  def get_follow_requests(%User{} = user) do
+    q = get_follow_requests_query(user)
+    reqs = Repo.all(q)
+
+    users =
+      Enum.map(reqs, fn req -> req.actor end)
+      |> Enum.uniq()
+      |> Enum.map(fn ap_id -> get_by_ap_id(ap_id) end)
+
+    {:ok, users}
   end
 
   def increase_note_count(%User{} = user) do

@@ -4,6 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.{Repo, Activity, User, Notification}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Ecto.Changeset
 
   require Logger
@@ -331,6 +332,54 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def friend_requests(conn, params) do
+    with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
+         {:ok, friend_requests} <- User.get_follow_requests(user) do
+      render(conn, UserView, "index.json", %{users: friend_requests, for: conn.assigns[:user]})
+    else
+      _e -> bad_request_reply(conn, "Can't get friend requests")
+    end
+  end
+
+  def approve_friend_request(conn, %{"user_id" => uid} = params) do
+    with followed <- conn.assigns[:user],
+         uid when is_number(uid) <- String.to_integer(uid),
+         %User{} = follower <- Repo.get(User, uid),
+         {:ok, follower} <- User.maybe_follow(follower, followed),
+         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
+         {:ok, _activity} <-
+           ActivityPub.accept(%{
+             to: [follower.ap_id],
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             type: "Accept"
+           }) do
+      render(conn, UserView, "show.json", %{user: follower, for: followed})
+    else
+      e -> bad_request_reply(conn, "Can't approve user: #{inspect(e)}")
+    end
+  end
+
+  def deny_friend_request(conn, %{"user_id" => uid} = params) do
+    with followed <- conn.assigns[:user],
+         uid when is_number(uid) <- String.to_integer(uid),
+         %User{} = follower <- Repo.get(User, uid),
+         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
+         {:ok, _activity} <-
+           ActivityPub.reject(%{
+             to: [follower.ap_id],
+             actor: followed.ap_id,
+             object: follow_activity.data["id"],
+             type: "Reject"
+           }) do
+      render(conn, UserView, "show.json", %{user: follower, for: followed})
+    else
+      e -> bad_request_reply(conn, "Can't deny user: #{inspect(e)}")
+    end
+  end
+
   def friends_ids(%{assigns: %{user: user}} = conn, _params) do
     with {:ok, friends} <- User.get_friends(user) do
       ids =
@@ -355,6 +404,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
         Map.put(params, "bio", bio_brs)
       else
         params
+      end
+
+    user =
+      if locked = params["locked"] do
+        with locked <- locked == "true",
+             new_info <- Map.put(user.info, "locked", locked),
+             change <- User.info_changeset(user, %{info: new_info}),
+             {:ok, user} <- User.update_and_set_cache(change) do
+          user
+        else
+          _e -> user
+        end
+      else
+        user
       end
 
     with changeset <- User.update_changeset(user, params),

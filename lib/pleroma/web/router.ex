@@ -97,11 +97,14 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/mute", MastodonAPIController, :relationship_noop)
     post("/accounts/:id/unmute", MastodonAPIController, :relationship_noop)
 
+    get("/follow_requests", MastodonAPIController, :follow_requests)
+    post("/follow_requests/:id/authorize", MastodonAPIController, :authorize_follow_request)
+    post("/follow_requests/:id/reject", MastodonAPIController, :reject_follow_request)
+
     post("/follows", MastodonAPIController, :follow)
 
     get("/blocks", MastodonAPIController, :blocks)
 
-    get("/follow_requests", MastodonAPIController, :empty_array)
     get("/mutes", MastodonAPIController, :empty_array)
 
     get("/timelines/home", MastodonAPIController, :home_timeline)
@@ -242,6 +245,10 @@ defmodule Pleroma.Web.Router do
     post("/statuses/update", TwitterAPI.Controller, :status_update)
     post("/statuses/retweet/:id", TwitterAPI.Controller, :retweet)
     post("/statuses/destroy/:id", TwitterAPI.Controller, :delete_post)
+
+    get("/pleroma/friend_requests", TwitterAPI.Controller, :friend_requests)
+    post("/pleroma/friendships/approve", TwitterAPI.Controller, :approve_friend_request)
+    post("/pleroma/friendships/deny", TwitterAPI.Controller, :deny_friend_request)
 
     post("/friendships/create", TwitterAPI.Controller, :follow)
     post("/friendships/destroy", TwitterAPI.Controller, :unfollow)
