@@ -74,4 +74,20 @@ defmodule Pleroma.ListTest do
     assert list_two in lists
     refute list_three in lists
   end
+
+  test "getting all lists the user is a member of" do
+    user = insert(:user)
+    other_user = insert(:user)
+    {:ok, list_one} = Pleroma.List.create("title", user)
+    {:ok, list_two} = Pleroma.List.create("other title", user)
+    {:ok, list_three} = Pleroma.List.create("third title", other_user)
+    {:ok, list_one} = Pleroma.List.follow(list_one, other_user)
+    {:ok, list_two} = Pleroma.List.follow(list_two, other_user)
+    {:ok, list_three} = Pleroma.List.follow(list_three, user)
+
+    lists = Pleroma.List.get_lists_from_activity(%Pleroma.Activity{actor: other_user.ap_id})
+    assert list_one in lists
+    assert list_two in lists
+    refute list_three in lists
+  end
 end
