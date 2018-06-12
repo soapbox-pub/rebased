@@ -194,9 +194,7 @@ defmodule Pleroma.Web.Router do
     get("/statuses/show/:id", TwitterAPI.Controller, :fetch_status)
     get("/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation)
 
-    if @registrations_open do
-      post("/account/register", TwitterAPI.Controller, :register)
-    end
+    post("/account/register", TwitterAPI.Controller, :register)
 
     get("/search", TwitterAPI.Controller, :search)
     get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)

@@ -1,11 +1,13 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.{User, Activity, Repo, Object}
+  alias Pleroma.{UserInviteToken, User, Activity, Repo, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.{OStatus, CommonAPI}
   import Ecto.Query
 
+  @instance Application.get_env(:pleroma, :instance)
   @httpoison Application.get_env(:pleroma, :httpoison)
+  @registrations_open Keyword.get(@instance, :registrations_open)
 
   def create_status(%User{} = user, %{"status" => _} = data) do
     CommonAPI.post(user, data)
@@ -124,6 +126,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def register_user(params) do
+    tokenString = params["token"]
+
     params = %{
       nickname: params["nickname"],
       name: params["fullname"],
@@ -133,17 +137,29 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       password_confirmation: params["confirm"]
     }
 
-    changeset = User.register_changeset(%User{}, params)
+    # no need to query DB if registration is open
+    unless @registrations_open || is_nil(tokenString) do
+      token = Repo.get_by(UserInviteToken, %{token: tokenString})
+    end
 
-    with {:ok, user} <- Repo.insert(changeset) do
-      {:ok, user}
-    else
-      {:error, changeset} ->
-        errors =
-          Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-          |> Jason.encode!()
+    cond do
+      @registrations_open || !is_nil(token) && !token.used ->
+        changeset = User.register_changeset(%User{}, params)
 
-        {:error, %{error: errors}}
+        with {:ok, user} <- Repo.insert(changeset) do
+          !@registrations_open && UserInviteToken.mark_as_used(token.token)
+          {:ok, user}
+        else
+          {:error, changeset} ->
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+              |> Jason.encode!()
+
+          {:error, %{error: errors}}
+        end
+
+      !@registrations_open && is_nil(token) -> {:error, "Invalid token"}
+      !@registrations_open && token.used -> {:error, "Expired token"}
     end
   end
 
