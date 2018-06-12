@@ -5,7 +5,7 @@ defmodule Mix.Tasks.SetModerator do
 
   @shortdoc "Set moderator status"
   def run([nickname | rest]) do
-    ensure_started(Repo, [])
+    Application.ensure_all_started(:pleroma)
 
     moderator =
       case rest do
