@@ -496,7 +496,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def upload(file) do
-    data = Upload.store(file)
+    data = Upload.store(file, Application.get_env(:pleroma, :instance)[:dedupe_media])
     Repo.insert(%Object{data: data})
   end
 
