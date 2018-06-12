@@ -143,7 +143,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
 
     cond do
-      @registrations_open || !is_nil(token) && !token.used ->
+      @registrations_open || (!is_nil(token) && !token.used) ->
         changeset = User.register_changeset(%User{}, params)
 
         with {:ok, user} <- Repo.insert(changeset) do
@@ -155,11 +155,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
               Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
               |> Jason.encode!()
 
-          {:error, %{error: errors}}
+            {:error, %{error: errors}}
         end
 
-      !@registrations_open && is_nil(token) -> {:error, "Invalid token"}
-      !@registrations_open && token.used -> {:error, "Expired token"}
+      !@registrations_open && is_nil(token) ->
+        {:error, "Invalid token"}
+
+      !@registrations_open && token.used ->
+        {:error, "Expired token"}
     end
   end
 

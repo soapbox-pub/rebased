@@ -266,8 +266,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     token = Repo.get_by(UserInviteToken, token: token.token)
 
     assert token.used == true
+
     assert UserView.render("show.json", %{user: user}) ==
-      UserView.render("show.json", %{user: fetched_user})
+             UserView.render("show.json", %{user: fetched_user})
   end
 
   @moduletag skip: "needs 'registrations_open: false' in config"
