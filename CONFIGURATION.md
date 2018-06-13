@@ -1,6 +1,7 @@
 # Configuring Pleroma
 
 In the `config/` directory, you will find the following relevant files:
+
 * `config.exs`: default base configuration
 * `dev.exs`: default additional configuration for `MIX_ENV=dev`
 * `prod.exs`: default additional configuration for `MIX_ENV=prod`
@@ -8,6 +9,7 @@ In the `config/` directory, you will find the following relevant files:
 
 Do not modify files in the list above.
 Instead, overload the settings by editing the following files:
+
 * `dev.secret.exs`: custom additional configuration for `MIX_ENV=dev`
 * `prod.secret.exs`: custom additional configuration for `MIX_ENV=prod`
 
@@ -21,6 +23,7 @@ Modify incoming and outgoing posts.
 `rewrite_policy` specifies which MRF policies to apply.
 It can either be a single policy or a list of policies.
 Currently, MRFs availible by default are:
+
 * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`
 * `Pleroma.Web.ActivityPub.MRF.DropPolicy`
 * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`
