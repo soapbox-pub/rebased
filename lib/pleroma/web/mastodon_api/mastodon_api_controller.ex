@@ -621,6 +621,58 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
+  def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+    accounts = User.search(query, params["resolve"] == "true")
+
+    fetched =
+      if Regex.match?(~r/https?:/, query) do
+        with {:ok, activities} <- OStatus.fetch_activity_from_url(query) do
+          activities
+          |> Enum.filter(fn
+            %{data: %{"type" => "Create"}} -> true
+            _ -> false
+          end)
+        else
+          _e -> []
+        end
+      end || []
+
+    q =
+      from(
+        a in Activity,
+        where: fragment("?->>'type' = 'Create'", a.data),
+        where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
+        where:
+          fragment(
+            "to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)",
+            a.data,
+            ^query
+          ),
+        limit: 20,
+        order_by: [desc: :id]
+      )
+
+    statuses = Repo.all(q) ++ fetched
+
+    tags_path = Web.base_url() <> "/tag/"
+
+    tags =
+      String.split(query)
+      |> Enum.uniq()
+      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
+      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
+      |> Enum.map(fn tag -> %{name: tag, url: tags_path <> tag} end)
+
+    res = %{
+      "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
+      "statuses" =>
+        StatusView.render("index.json", activities: statuses, for: user, as: :activity),
+      "hashtags" => tags
+    }
+
+    json(conn, res)
+  end
+
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, params["resolve"] == "true")
 

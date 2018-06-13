@@ -175,6 +175,11 @@ defmodule Pleroma.Web.Router do
     get("/search", MastodonAPIController, :search)
   end
 
+  scope "/api/v2", Pleroma.Web.MastodonAPI do
+    pipe_through(:api)
+    get("/search", MastodonAPIController, :search2)
+  end
+
   scope "/api", Pleroma.Web do
     pipe_through(:config)
 
