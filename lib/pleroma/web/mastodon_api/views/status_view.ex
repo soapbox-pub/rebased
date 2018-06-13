@@ -152,9 +152,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("attachment.json", %{attachment: attachment}) do
-    [attachment | _] = attachment["url"]
-    media_type = attachment["mediaType"] || attachment["mimeType"]
-    href = attachment["href"]
+    [attachment_url | _] = attachment["url"]
+    media_type = attachment_url["mediaType"] || attachment_url["mimeType"]
+    href = attachment_url["href"]
 
     type =
       cond do
