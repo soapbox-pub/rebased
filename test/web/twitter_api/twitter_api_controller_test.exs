@@ -585,7 +585,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
     test "without valid credentials", %{conn: conn} do
       note_activity = insert(:note_activity)
-      conn = post(conn, "/api/statuses/retweet/#{note_activity.id}.json")
+      conn = post(conn, "/api/statuses/unretweet/#{note_activity.id}.json")
       assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
     end
 
