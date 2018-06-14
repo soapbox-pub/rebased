@@ -30,14 +30,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       when not is_nil(in_reply_to_id) do
     case ActivityPub.fetch_object_from_id(in_reply_to_id) do
       {:ok, replied_object} ->
-        activity = Activity.get_create_activity_by_object_ap_id(replied_object.data["id"])
-
-        object
-        |> Map.put("inReplyTo", replied_object.data["id"])
-        |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
-        |> Map.put("inReplyToStatusId", activity.id)
-        |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
-        |> Map.put("context", replied_object.data["context"] || object["conversation"])
+        with %Activity{} = activity <-
+               Activity.get_create_activity_by_object_ap_id(replied_object.data["id"]) do
+          object
+          |> Map.put("inReplyTo", replied_object.data["id"])
+          |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
+          |> Map.put("inReplyToStatusId", activity.id)
+          |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
+          |> Map.put("context", replied_object.data["context"] || object["conversation"])
+        else
+          e ->
+            Logger.error("Couldn't fetch #{object["inReplyTo"]} #{inspect(e)}")
+            object
+        end
 
       e ->
         Logger.error("Couldn't fetch #{object["inReplyTo"]} #{inspect(e)}")
