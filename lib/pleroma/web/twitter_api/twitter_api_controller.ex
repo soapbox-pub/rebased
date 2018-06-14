@@ -240,6 +240,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def unretweet(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
+         {:ok, activity} <- TwitterAPI.unrepeat(user, id) do
+      render(conn, ActivityView, "activity.json", %{activity: activity, for: user})
+    end
+  end
+
   def register(conn, params) do
     with {:ok, user} <- TwitterAPI.register_user(params) do
       render(conn, UserView, "show.json", %{user: user})
