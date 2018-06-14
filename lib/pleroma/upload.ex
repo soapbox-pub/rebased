@@ -86,10 +86,15 @@ defmodule Pleroma.Upload do
   end
 
   defp create_name(uuid, ext, type) do
-    if type == "application/octet-stream" do
-      String.downcase(Enum.join([uuid, ext], "."))
-    else
-      String.downcase(Enum.join([uuid, List.last(String.split(type, "/"))], "."))
+    case type do
+      "application/octet-stream" ->
+        String.downcase(Enum.join([uuid, ext], "."))
+
+      "audio/mpeg" ->
+        String.downcase(Enum.join([uuid, "mp3"], "."))
+
+      _ ->
+        String.downcase(Enum.join([uuid, List.last(String.split(type, "/"))], "."))
     end
   end
 
@@ -105,7 +110,21 @@ defmodule Pleroma.Upload do
     if should_dedupe do
       create_name(uuid, List.last(String.split(file.filename, ".")), type)
     else
-      file.filename
+      unless String.contains?(file.filename, ".") do
+        case type do
+          "image/png" -> file.filename <> ".png"
+          "image/jpeg" -> file.filename <> ".jpg"
+          "image/gif" -> file.filename <> ".gif"
+          "video/webm" -> file.filename <> ".webm"
+          "video/mp4" -> file.filename <> ".mp4"
+          "audio/mpeg" -> file.filename <> ".mp3"
+          "audio/ogg" -> file.filename <> ".ogg"
+          "audio/wav" -> file.filename <> ".wav"
+          _ -> file.filename
+        end
+      else
+        file.filename
+      end
     end
   end
 

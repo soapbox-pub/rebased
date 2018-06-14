@@ -43,5 +43,18 @@ defmodule Pleroma.UploadTest do
       data = Upload.store(file, true)
       assert hd(data["url"])["mediaType"] == "image/jpeg"
     end
+
+    test "adds missing extension" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "an [image"
+      }
+
+      data = Upload.store(file, false)
+      assert data["name"] == "an [image.jpg"
+    end
   end
 end
