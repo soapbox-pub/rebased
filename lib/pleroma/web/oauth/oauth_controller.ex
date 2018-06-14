@@ -81,7 +81,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   # - investigate a way to verify the user wants to grant read/write/follow once scope handling is done
   def token_exchange(
         conn,
-        %{"grant_type" => "password", "name" => name, "password" => password} = params
+        %{"grant_type" => "password", "username" => name, "password" => password} = params
       ) do
     with %App{} = app <- get_app_from_request(conn, params),
          %User{} = user <- User.get_cached_by_nickname(name),
@@ -102,6 +102,18 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         put_status(conn, 400)
         |> json(%{error: "Invalid credentials"})
     end
+  end
+
+  def token_exchange(
+        conn,
+        %{"grant_type" => "password", "name" => name, "password" => password} = params
+      ) do
+    params =
+      params
+      |> Map.delete("name")
+      |> Map.put("username", name)
+
+    token_exchange(conn, params)
   end
 
   defp fix_padding(token) do
