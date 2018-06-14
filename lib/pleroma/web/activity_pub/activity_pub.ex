@@ -199,7 +199,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- maybe_federate(unannounce_activity),
          {:ok, _activity} <- Repo.delete(announce_activity),
          {:ok, object} <- remove_announce_from_object(announce_activity, object) do
-      {:ok, unannounce_activity, announce_activity, object}
+      {:ok, unannounce_activity, object}
     else
       _e -> {:ok, object}
     end

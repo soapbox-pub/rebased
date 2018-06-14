@@ -580,6 +580,40 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "POST /api/statuses/unretweet/:id" do
+    setup [:valid_user]
+
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post(conn, "/api/statuses/unretweet/#{note_activity.id}.json")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: current_user} do
+      note_activity = insert(:note_activity)
+
+      request_path = "/api/statuses/retweet/#{note_activity.id}.json"
+
+      _response =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post(request_path)
+
+      request_path = String.replace(request_path, "retweet", "unretweet")
+
+      response =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post(request_path)
+
+      activity = Repo.get(Activity, note_activity.id)
+      activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
+
+      assert json_response(response, 200) ==
+               ActivityRepresenter.to_map(activity, %{user: activity_user, for: current_user})
+    end
+  end
+
   describe "POST /api/account/register" do
     test "it creates a new user", %{conn: conn} do
       data = %{

@@ -228,6 +228,17 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert status == updated_activity
   end
 
+  test "it unretweets an already retweeted status" do
+    user = insert(:user)
+    note_activity = insert(:note_activity)
+
+    {:ok, _status} = TwitterAPI.repeat(user, note_activity.id)
+    {:ok, status} = TwitterAPI.unrepeat(user, note_activity.id)
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+
+    assert status == updated_activity
+  end
+
   test "it registers a new user and returns the user." do
     data = %{
       "nickname" => "lain",

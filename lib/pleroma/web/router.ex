@@ -244,6 +244,7 @@ defmodule Pleroma.Web.Router do
 
     post("/statuses/update", TwitterAPI.Controller, :status_update)
     post("/statuses/retweet/:id", TwitterAPI.Controller, :retweet)
+    post("/statuses/unretweet/:id", TwitterAPI.Controller, :unretweet)
     post("/statuses/destroy/:id", TwitterAPI.Controller, :delete_post)
 
     get("/pleroma/friend_requests", TwitterAPI.Controller, :friend_requests)
