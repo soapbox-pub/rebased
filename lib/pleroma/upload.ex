@@ -151,6 +151,9 @@ defmodule Pleroma.Upload do
           <<0x49, 0x44, 0x33, _, _, _, _, _>> ->
             "audio/mpeg"
 
+          <<255, 251, _, 68, 0, 0, 0, 0>> ->
+            "audio/mpeg"
+
           <<0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00, 0x00>> ->
             "audio/ogg"
 
