@@ -84,7 +84,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         %{"grant_type" => "password", "name" => name, "password" => password} = params
       ) do
     with %App{} = app <- get_app_from_request(conn, params),
-         %User{} = user <- User.get_cached_by_nickname(name),
+         %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:ok, auth} <- Authorization.create_authorization(app, user),
          {:ok, token} <- Token.exchange_token(app, auth) do
