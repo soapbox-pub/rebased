@@ -2,6 +2,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
   alias Pleroma.User
   @behaviour Pleroma.Web.ActivityPub.MRF
 
+  @mrf_rejectnonpublic Application.get_env(:pleroma, :mrf_rejectnonpublic)
+  @allow_followersonly Keyword.get(@mrf_rejectnonpublic, :allow_followersonly)
+  @allow_direct Keyword.get(@mrf_rejectnonpublic, :allow_direct)
+
   @impl true
   def filter(object) do
     if object["type"] == "Create" do
@@ -18,9 +22,25 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
         end
 
       case visibility do
-        "public" -> {:ok, object}
-        "unlisted" -> {:ok, object}
-        _ -> {:reject, nil}
+        "public" ->
+          {:ok, object}
+
+        "unlisted" ->
+          {:ok, object}
+
+        "followers" ->
+          with true <- @allow_followersonly do
+            {:ok, object}
+          else
+            _e -> {:reject, nil}
+          end
+
+        "direct" ->
+          with true <- @allow_direct do
+            {:ok, object}
+          else
+            _e -> {:reject, nil}
+          end
       end
     else
       {:ok, object}
