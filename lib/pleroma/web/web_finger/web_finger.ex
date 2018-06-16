@@ -25,35 +25,17 @@ defmodule Pleroma.Web.WebFinger do
     |> XmlBuilder.to_doc()
   end
 
-  def webfinger(resource, "JSON") do
+  def webfinger(resource, fmt) when fmt in ["XML", "JSON"] do
     host = Pleroma.Web.Endpoint.host()
     regex = ~r/(acct:)?(?<username>\w+)@#{host}/
 
-    with %{"username" => username} <- Regex.named_captures(regex, resource) do
-      user = User.get_by_nickname(username)
-      {:ok, represent_user(user, "JSON")}
+    with %{"username" => username} <- Regex.named_captures(regex, resource),
+         %User{} = user <- User.get_by_nickname(username) do
+      {:ok, represent_user(user, fmt)}
     else
       _e ->
-        with user when not is_nil(user) <- User.get_cached_by_ap_id(resource) do
-          {:ok, represent_user(user, "JSON")}
-        else
-          _e ->
-            {:error, "Couldn't find user"}
-        end
-    end
-  end
-
-  def webfinger(resource, "XML") do
-    host = Pleroma.Web.Endpoint.host()
-    regex = ~r/(acct:)?(?<username>\w+)@#{host}/
-
-    with %{"username" => username} <- Regex.named_captures(regex, resource) do
-      user = User.get_by_nickname(username)
-      {:ok, represent_user(user, "XML")}
-    else
-      _e ->
-        with user when not is_nil(user) <- User.get_cached_by_ap_id(resource) do
-          {:ok, represent_user(user, "XML")}
+        with %User{} = user <- User.get_cached_by_ap_id(resource) do
+          {:ok, represent_user(user, fmt)}
         else
           _e ->
             {:error, "Couldn't find user"}

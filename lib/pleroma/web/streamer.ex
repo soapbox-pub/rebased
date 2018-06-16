@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
-  alias Pleroma.{User, Notification}
+  alias Pleroma.{User, Notification, Activity, Object}
 
   def init(args) do
     {:ok, args}
@@ -54,6 +54,19 @@ defmodule Pleroma.Web.Streamer do
     Enum.each(recipient_topics || [], fn user_topic ->
       Logger.debug("Trying to push direct message to #{user_topic}\n\n")
       push_to_socket(topics, user_topic, item)
+    end)
+
+    {:noreply, topics}
+  end
+
+  def handle_cast(%{action: :stream, topic: "list", item: item}, topics) do
+    recipient_topics =
+      Pleroma.List.get_lists_from_activity(item)
+      |> Enum.map(fn %{id: id} -> "list:#{id}" end)
+
+    Enum.each(recipient_topics || [], fn list_topic ->
+      Logger.debug("Trying to push message to #{list_topic}\n\n")
+      push_to_socket(topics, list_topic, item)
     end)
 
     {:noreply, topics}
@@ -125,6 +138,34 @@ defmodule Pleroma.Web.Streamer do
     {:noreply, state}
   end
 
+  defp represent_update(%Activity{} = activity, %User{} = user) do
+    %{
+      event: "update",
+      payload:
+        Pleroma.Web.MastodonAPI.StatusView.render(
+          "status.json",
+          activity: activity,
+          for: user
+        )
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
+  def push_to_socket(topics, topic, %Activity{data: %{"type" => "Announce"}} = item) do
+    Enum.each(topics[topic] || [], fn socket ->
+      # Get the current user so we have up-to-date blocks etc.
+      user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
+      blocks = user.info["blocks"] || []
+
+      parent = Object.get_by_ap_id(item.data["object"])
+
+      unless is_nil(parent) or item.actor in blocks or parent.data["actor"] in blocks do
+        send(socket.transport_pid, {:text, represent_update(item, user)})
+      end
+    end)
+  end
+
   def push_to_socket(topics, topic, item) do
     Enum.each(topics[topic] || [], fn socket ->
       # Get the current user so we have up-to-date blocks etc.
@@ -132,20 +173,7 @@ defmodule Pleroma.Web.Streamer do
       blocks = user.info["blocks"] || []
 
       unless item.actor in blocks do
-        json =
-          %{
-            event: "update",
-            payload:
-              Pleroma.Web.MastodonAPI.StatusView.render(
-                "status.json",
-                activity: item,
-                for: user
-              )
-              |> Jason.encode!()
-          }
-          |> Jason.encode!()
-
-        send(socket.transport_pid, {:text, json})
+        send(socket.transport_pid, {:text, represent_update(item, user)})
       end
     end)
   end

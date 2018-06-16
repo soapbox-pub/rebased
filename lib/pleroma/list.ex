@@ -1,7 +1,7 @@
 defmodule Pleroma.List do
   use Ecto.Schema
   import Ecto.{Changeset, Query}
-  alias Pleroma.{User, Repo}
+  alias Pleroma.{User, Repo, Activity}
 
   schema "lists" do
     belongs_to(:user, Pleroma.User)
@@ -54,6 +54,19 @@ defmodule Pleroma.List do
       )
 
     {:ok, Repo.all(q)}
+  end
+
+  # Get lists the activity should be streamed to.
+  def get_lists_from_activity(%Activity{actor: ap_id}) do
+    actor = User.get_cached_by_ap_id(ap_id)
+
+    query =
+      from(
+        l in Pleroma.List,
+        where: fragment("? && ?", l.following, ^[actor.follower_address])
+      )
+
+    Repo.all(query)
   end
 
   def rename(%Pleroma.List{} = list, title) do

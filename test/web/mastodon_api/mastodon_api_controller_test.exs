@@ -4,6 +4,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.{Repo, User, Activity, Notification}
   alias Pleroma.Web.{OStatus, CommonAPI}
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
   import ExUnit.CaptureLog
@@ -644,6 +645,73 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
+  describe "locked accounts" do
+    test "/api/v1/follow_requests works" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> get("/api/v1/follow_requests")
+
+      assert [relationship] = json_response(conn, 200)
+      assert to_string(other_user.id) == relationship["id"]
+    end
+
+    test "/api/v1/follow_requests/:id/authorize works" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/follow_requests/#{other_user.id}/authorize")
+
+      assert relationship = json_response(conn, 200)
+      assert to_string(other_user.id) == relationship["id"]
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == true
+    end
+
+    test "/api/v1/follow_requests/:id/reject works" do
+      user = insert(:user, %{info: %{"locked" => true}})
+      other_user = insert(:user)
+
+      {:ok, activity} = ActivityPub.follow(other_user, user)
+
+      conn =
+        build_conn()
+        |> assign(:user, user)
+        |> post("/api/v1/follow_requests/#{other_user.id}/reject")
+
+      assert relationship = json_response(conn, 200)
+      assert to_string(other_user.id) == relationship["id"]
+
+      user = Repo.get(User, user.id)
+      other_user = Repo.get(User, other_user.id)
+
+      assert User.following?(other_user, user) == false
+    end
+  end
+
   test "account fetching", %{conn: conn} do
     user = insert(:user)
 
@@ -790,6 +858,46 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     other_user_id = to_string(other_user.id)
     assert [%{"id" => ^other_user_id}] = json_response(conn, 200)
+  end
+
+  test "blocking / unblocking a domain", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user, %{ap_id: "https://dogwhistle.zone/@pundit"})
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
+
+    assert %{} = json_response(conn, 200)
+    user = User.get_cached_by_ap_id(user.ap_id)
+    assert User.blocks?(user, other_user)
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+      |> delete("/api/v1/domain_blocks", %{"domain" => "dogwhistle.zone"})
+
+    assert %{} = json_response(conn, 200)
+    user = User.get_cached_by_ap_id(user.ap_id)
+    refute User.blocks?(user, other_user)
+  end
+
+  test "getting a list of domain blocks" do
+    user = insert(:user)
+
+    {:ok, user} = User.block_domain(user, "bad.site")
+    {:ok, user} = User.block_domain(user, "even.worse.site")
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/domain_blocks")
+
+    domain_blocks = json_response(conn, 200)
+
+    assert "bad.site" in domain_blocks
+    assert "even.worse.site" in domain_blocks
   end
 
   test "unimplemented mute endpoints" do

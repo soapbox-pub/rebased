@@ -201,6 +201,14 @@ defmodule Pleroma.User do
     end
   end
 
+  def maybe_follow(%User{} = follower, %User{info: info} = followed) do
+    if not following?(follower, followed) do
+      follow(follower, followed)
+    else
+      {:ok, follower}
+    end
+  end
+
   @user_config Application.get_env(:pleroma, :user)
   @deny_follow_blocked Keyword.get(@user_config, :deny_follow_blocked)
 
@@ -257,6 +265,10 @@ defmodule Pleroma.User do
 
   def following?(%User{} = follower, %User{} = followed) do
     Enum.member?(follower.following, followed.follower_address)
+  end
+
+  def locked?(%User{} = user) do
+    user.info["locked"] || false
   end
 
   def get_by_ap_id(ap_id) do
@@ -354,6 +366,40 @@ defmodule Pleroma.User do
     q = get_friends_query(user)
 
     {:ok, Repo.all(q)}
+  end
+
+  def get_follow_requests_query(%User{} = user) do
+    from(
+      a in Activity,
+      where:
+        fragment(
+          "? ->> 'type' = 'Follow'",
+          a.data
+        ),
+      where:
+        fragment(
+          "? ->> 'state' = 'pending'",
+          a.data
+        ),
+      where:
+        fragment(
+          "? @> ?",
+          a.data,
+          ^%{"object" => user.ap_id}
+        )
+    )
+  end
+
+  def get_follow_requests(%User{} = user) do
+    q = get_follow_requests_query(user)
+    reqs = Repo.all(q)
+
+    users =
+      Enum.map(reqs, fn req -> req.actor end)
+      |> Enum.uniq()
+      |> Enum.map(fn ap_id -> get_by_ap_id(ap_id) end)
+
+    {:ok, users}
   end
 
   def increase_note_count(%User{} = user) do
@@ -486,7 +532,31 @@ defmodule Pleroma.User do
 
   def blocks?(user, %{ap_id: ap_id}) do
     blocks = user.info["blocks"] || []
-    Enum.member?(blocks, ap_id)
+    domain_blocks = user.info["domain_blocks"] || []
+    %{host: host} = URI.parse(ap_id)
+
+    Enum.member?(blocks, ap_id) ||
+      Enum.any?(domain_blocks, fn domain ->
+        host == domain
+      end)
+  end
+
+  def block_domain(user, domain) do
+    domain_blocks = user.info["domain_blocks"] || []
+    new_blocks = Enum.uniq([domain | domain_blocks])
+    new_info = Map.put(user.info, "domain_blocks", new_blocks)
+
+    cs = User.info_changeset(user, %{info: new_info})
+    update_and_set_cache(cs)
+  end
+
+  def unblock_domain(user, domain) do
+    blocks = user.info["domain_blocks"] || []
+    new_blocks = List.delete(blocks, domain)
+    new_info = Map.put(user.info, "domain_blocks", new_blocks)
+
+    cs = User.info_changeset(user, %{info: new_info})
+    update_and_set_cache(cs)
   end
 
   def local_user_query() do

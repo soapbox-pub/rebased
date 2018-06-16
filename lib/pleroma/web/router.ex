@@ -41,7 +41,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :well_known do
-    plug(:accepts, ["xml", "xrd+xml", "json", "jrd+json"])
+    plug(:accepts, ["json", "jrd+json", "xml", "xrd+xml"])
   end
 
   pipeline :config do
@@ -97,12 +97,14 @@ defmodule Pleroma.Web.Router do
     post("/accounts/:id/mute", MastodonAPIController, :relationship_noop)
     post("/accounts/:id/unmute", MastodonAPIController, :relationship_noop)
 
+    get("/follow_requests", MastodonAPIController, :follow_requests)
+    post("/follow_requests/:id/authorize", MastodonAPIController, :authorize_follow_request)
+    post("/follow_requests/:id/reject", MastodonAPIController, :reject_follow_request)
+
     post("/follows", MastodonAPIController, :follow)
 
     get("/blocks", MastodonAPIController, :blocks)
 
-    get("/domain_blocks", MastodonAPIController, :empty_array)
-    get("/follow_requests", MastodonAPIController, :empty_array)
     get("/mutes", MastodonAPIController, :empty_array)
 
     get("/timelines/home", MastodonAPIController, :home_timeline)
@@ -134,6 +136,10 @@ defmodule Pleroma.Web.Router do
     get("/lists/:id/accounts", MastodonAPIController, :list_accounts)
     post("/lists/:id/accounts", MastodonAPIController, :add_to_list)
     delete("/lists/:id/accounts", MastodonAPIController, :remove_from_list)
+
+    get("/domain_blocks", MastodonAPIController, :domain_blocks)
+    post("/domain_blocks", MastodonAPIController, :block_domain)
+    delete("/domain_blocks", MastodonAPIController, :unblock_domain)
   end
 
   scope "/api/web", Pleroma.Web.MastodonAPI do
@@ -238,7 +244,12 @@ defmodule Pleroma.Web.Router do
 
     post("/statuses/update", TwitterAPI.Controller, :status_update)
     post("/statuses/retweet/:id", TwitterAPI.Controller, :retweet)
+    post("/statuses/unretweet/:id", TwitterAPI.Controller, :unretweet)
     post("/statuses/destroy/:id", TwitterAPI.Controller, :delete_post)
+
+    get("/pleroma/friend_requests", TwitterAPI.Controller, :friend_requests)
+    post("/pleroma/friendships/approve", TwitterAPI.Controller, :approve_friend_request)
+    post("/pleroma/friendships/deny", TwitterAPI.Controller, :deny_friend_request)
 
     post("/friendships/create", TwitterAPI.Controller, :follow)
     post("/friendships/destroy", TwitterAPI.Controller, :unfollow)

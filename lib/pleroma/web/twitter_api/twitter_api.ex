@@ -12,14 +12,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def delete(%User{} = user, id) do
-    # TwitterAPI does not have an "unretweet" endpoint; instead this is done
-    # via the "destroy" endpoint.  Therefore, we need to handle
-    # when the status to "delete" is actually an Announce (repeat) object.
-    with %Activity{data: %{"type" => type}} <- Repo.get(Activity, id) do
-      case type do
-        "Announce" -> unrepeat(user, id)
-        _ -> CommonAPI.delete(id, user)
-      end
+    with %Activity{data: %{"type" => type}} <- Repo.get(Activity, id),
+         {:ok, activity} <- CommonAPI.delete(id, user) do
+      {:ok, activity}
     end
   end
 
@@ -70,8 +65,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  defp unrepeat(%User{} = user, ap_id_or_id) do
-    with {:ok, _unannounce, activity, _object} <- CommonAPI.unrepeat(ap_id_or_id, user) do
+  def unrepeat(%User{} = user, ap_id_or_id) do
+    with {:ok, _unannounce, %{data: %{"id" => id}}} <- CommonAPI.unrepeat(ap_id_or_id, user),
+         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
       {:ok, activity}
     end
   end

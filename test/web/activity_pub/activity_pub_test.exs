@@ -318,10 +318,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, announce_activity, object} = ActivityPub.announce(user, object)
       assert object.data["announcement_count"] == 1
 
-      {:ok, unannounce_activity, activity, object} = ActivityPub.unannounce(user, object)
+      {:ok, unannounce_activity, object} = ActivityPub.unannounce(user, object)
       assert object.data["announcement_count"] == 0
-
-      assert activity == announce_activity
 
       assert unannounce_activity.data["to"] == [
                User.ap_followers(user),

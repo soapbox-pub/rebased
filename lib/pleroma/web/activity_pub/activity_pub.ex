@@ -57,6 +57,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     if activity.data["type"] in ["Create", "Announce"] do
       Pleroma.Web.Streamer.stream("user", activity)
+      Pleroma.Web.Streamer.stream("list", activity)
 
       if Enum.member?(activity.data["to"], public) do
         Pleroma.Web.Streamer.stream("public", activity)
@@ -198,7 +199,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- maybe_federate(unannounce_activity),
          {:ok, _activity} <- Repo.delete(announce_activity),
          {:ok, object} <- remove_announce_from_object(announce_activity, object) do
-      {:ok, unannounce_activity, announce_activity, object}
+      {:ok, unannounce_activity, object}
     else
       _e -> {:ok, object}
     end
@@ -214,6 +215,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def unfollow(follower, followed, activity_id \\ nil, local \\ true) do
     with %Activity{} = follow_activity <- fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- update_follow_state(follow_activity, "cancelled"),
          unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
          :ok <- maybe_federate(activity) do
@@ -449,11 +451,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
     blocks = info["blocks"] || []
+    domain_blocks = info["domain_blocks"] || []
 
     from(
       activity in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
-      where: fragment("not (?->'to' \\?| ?)", activity.data, ^blocks)
+      where: fragment("not (?->'to' \\?| ?)", activity.data, ^blocks),
+      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks)
     )
   end
 
@@ -502,7 +506,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def upload(file) do
-    data = Upload.store(file)
+    data = Upload.store(file, Application.get_env(:pleroma, :instance)[:dedupe_media])
     Repo.insert(%Object{data: data})
   end
 

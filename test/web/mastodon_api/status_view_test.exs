@@ -64,11 +64,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("status.json", %{activity: activity})
 
-    assert status.in_reply_to_id == note.id
+    assert status.in_reply_to_id == to_string(note.id)
 
     [status] = StatusView.render("index.json", %{activities: [activity], as: :activity})
 
-    assert status.in_reply_to_id == note.id
+    assert status.in_reply_to_id == to_string(note.id)
   end
 
   test "contains mentions" do
