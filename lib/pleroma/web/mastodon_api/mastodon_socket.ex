@@ -15,8 +15,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
     with token when not is_nil(token) <- params["access_token"],
          %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
          %User{} = user <- Repo.get(User, user_id),
-         stream when stream in ["public", "public:local", "user", "direct", "list"] <-
-           params["stream"] do
+         stream
+         when stream in [
+                "public",
+                "public:local",
+                "public:media",
+                "public:local:media",
+                "user",
+                "direct",
+                "list"
+              ] <- params["stream"] do
       topic = if stream == "list", do: "list:#{params["list"]}", else: stream
 
       socket =
