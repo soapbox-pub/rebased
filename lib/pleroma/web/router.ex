@@ -344,6 +344,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Fallback do
+    get("/registration/:token", RedirectController, :registration_page)
     get("/*path", RedirectController, :redirector)
   end
 end
@@ -357,5 +358,9 @@ defmodule Fallback.RedirectController do
       |> put_resp_content_type("text/html")
       |> send_file(200, "priv/static/index.html")
     end
+  end
+
+  def registration_page(conn, params) do
+    redirector(conn, params)
   end
 end
