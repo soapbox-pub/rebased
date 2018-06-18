@@ -458,7 +458,7 @@ defmodule Pleroma.User do
   end
 
   def get_notified_from_activity(%Activity{recipients: to, data: %{"type" => "Announce"} = data}) do
-    object = Object.get_by_ap_id(data["object"])
+    object = Object.normalize(data["object"])
 
     # ensure that the actor who published the announced object appears only once
     to =
