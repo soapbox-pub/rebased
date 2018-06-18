@@ -102,6 +102,16 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Enum.at(data["object"]["tag"], 2) == "moo"
     end
 
+    test "it works for incoming notices with contentMap" do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity-contentmap.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["object"]["content"] ==
+               "<p><span class=\"h-card\"><a href=\"http://localtesting.pleroma.lol/users/lain\" class=\"u-url mention\">@<span>lain</span></a></span></p>"
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
