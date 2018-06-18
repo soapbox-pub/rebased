@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def insert(map, local \\ true) when is_map(map) do
-    with nil <- Activity.get_by_ap_id(map["id"]),
+    with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map),
          :ok <- check_actor_is_active(map["actor"]),
          {:ok, map} <- MRF.filter(map),
