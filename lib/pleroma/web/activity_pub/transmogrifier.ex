@@ -412,7 +412,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(_), do: :error
 
   def get_obj_helper(id) do
-    if object = Object.get_by_ap_id(id), do: {:ok, object}, else: nil
+    if object = Object.normalize(id), do: {:ok, object}, else: nil
   end
 
   def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) do
