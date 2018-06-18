@@ -184,7 +184,10 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
     retweeted_xml = to_simple_form(retweeted_activity, retweeted_user, true)
 
-    mentions = activity.recipients |> get_mentions
+    mentions =
+      ([retweeted_user.ap_id] ++ activity.recipients)
+      |> Enum.uniq()
+      |> get_mentions()
 
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},
