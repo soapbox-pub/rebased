@@ -430,6 +430,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_media(query, _), do: query
 
+  defp restrict_replies(query, %{"exclude_replies" => val}) when val == "true" or val == "1" do
+    from(
+      activity in query,
+      where: fragment("?->'object'->>'inReplyTo' is null", activity.data)
+    )
+  end
+
+  defp restrict_replies(query, _), do: query
+
   # Only search through last 100_000 activities by default
   defp restrict_recent(query, %{"whole_db" => true}), do: query
 
@@ -487,6 +496,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_blocked(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
+    |> restrict_replies(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
