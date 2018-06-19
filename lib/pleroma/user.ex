@@ -505,12 +505,25 @@ defmodule Pleroma.User do
     Repo.all(q)
   end
 
-  def block(user, %{ap_id: ap_id}) do
-    blocks = user.info["blocks"] || []
-    new_blocks = Enum.uniq([ap_id | blocks])
-    new_info = Map.put(user.info, "blocks", new_blocks)
+  def block(blocker, %User{ap_id: ap_id} = blocked) do
+    # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
+    blocker =
+      if following?(blocker, blocked) do
+        {:ok, blocker, _} = unfollow(blocker, blocked)
+        blocker
+      else
+        blocker
+      end
 
-    cs = User.info_changeset(user, %{info: new_info})
+    if following?(blocked, blocker) do
+      unfollow(blocked, blocker)
+    end
+
+    blocks = blocker.info["blocks"] || []
+    new_blocks = Enum.uniq([ap_id | blocks])
+    new_info = Map.put(blocker.info, "blocks", new_blocks)
+
+    cs = User.info_changeset(blocker, %{info: new_info})
     update_and_set_cache(cs)
   end
 
