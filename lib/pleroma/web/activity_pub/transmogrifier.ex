@@ -24,6 +24,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_in_reply_to
     |> fix_emoji
     |> fix_tag
+    |> fix_content_map
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object)
@@ -106,6 +107,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
     |> Map.put("tag", combined)
   end
+
+  # content map usually only has one language so this will do for now.
+  def fix_content_map(%{"contentMap" => content_map} = object) do
+    content_groups = Map.to_list(content_map)
+    {_, content} = Enum.at(content_groups, 0)
+
+    object
+    |> Map.put("content", content)
+  end
+
+  def fix_content_map(object), do: object
 
   # TODO: validate those with a Ecto scheme
   # - tags
