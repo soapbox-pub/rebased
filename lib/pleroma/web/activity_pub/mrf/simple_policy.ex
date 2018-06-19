@@ -4,6 +4,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   @mrf_policy Application.get_env(:pleroma, :mrf_simple)
 
+  @accept Keyword.get(@mrf_policy, :accept)
+  defp check_accept(actor_info, object) do
+    if length(@accept) > 0 and not actor_info.host in @accept do
+      {:reject, nil}
+    else
+      {:ok, object}
+    end
+  end
+
   @reject Keyword.get(@mrf_policy, :reject)
   defp check_reject(actor_info, object) do
     if actor_info.host in @reject do
@@ -74,7 +83,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   def filter(object) do
     actor_info = URI.parse(object["actor"])
 
-    with {:ok, object} <- check_reject(actor_info, object),
+    with {:ok, object} <- check_accept(actor_info, object),
+         {:ok, object} <- check_reject(actor_info, object),
          {:ok, object} <- check_media_removal(actor_info, object),
          {:ok, object} <- check_media_nsfw(actor_info, object),
          {:ok, object} <- check_ftl_removal(actor_info, object) do
