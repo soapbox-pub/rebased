@@ -359,6 +359,61 @@ defmodule Pleroma.UserTest do
 
       refute User.blocks?(user, blocked_user)
     end
+
+    test "blocks tear down cyclical follow relationships" do
+      blocker = insert(:user)
+      blocked = insert(:user)
+
+      {:ok, blocker} = User.follow(blocker, blocked)
+      {:ok, blocked} = User.follow(blocked, blocker)
+
+      assert User.following?(blocker, blocked)
+      assert User.following?(blocked, blocker)
+
+      {:ok, blocker} = User.block(blocker, blocked)
+      blocked = Repo.get(User, blocked.id)
+
+      assert User.blocks?(blocker, blocked)
+
+      refute User.following?(blocker, blocked)
+      refute User.following?(blocked, blocker)
+    end
+
+    test "blocks tear down blocker->blocked follow relationships" do
+      blocker = insert(:user)
+      blocked = insert(:user)
+
+      {:ok, blocker} = User.follow(blocker, blocked)
+
+      assert User.following?(blocker, blocked)
+      refute User.following?(blocked, blocker)
+
+      {:ok, blocker} = User.block(blocker, blocked)
+      blocked = Repo.get(User, blocked.id)
+
+      assert User.blocks?(blocker, blocked)
+
+      refute User.following?(blocker, blocked)
+      refute User.following?(blocked, blocker)
+    end
+
+    test "blocks tear down blocked->blocker follow relationships" do
+      blocker = insert(:user)
+      blocked = insert(:user)
+
+      {:ok, blocked} = User.follow(blocked, blocker)
+
+      refute User.following?(blocker, blocked)
+      assert User.following?(blocked, blocker)
+
+      {:ok, blocker} = User.block(blocker, blocked)
+      blocked = Repo.get(User, blocked.id)
+
+      assert User.blocks?(blocker, blocked)
+
+      refute User.following?(blocker, blocked)
+      refute User.following?(blocked, blocker)
+    end
   end
 
   describe "domain blocking" do
