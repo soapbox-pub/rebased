@@ -527,6 +527,11 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
+  # helper to handle the block given only an actor's AP id
+  def block(blocker, %{ap_id: ap_id}) do
+    block(blocker, User.get_by_ap_id(ap_id))
+  end
+
   def unblock(user, %{ap_id: ap_id}) do
     blocks = user.info["blocks"] || []
     new_blocks = List.delete(blocks, ap_id)
