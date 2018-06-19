@@ -60,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     expected = %{
       id: to_string(other_user.id),
-      following: true,
+      following: false,
       followed_by: false,
       blocking: true,
       muting: false,
