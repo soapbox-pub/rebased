@@ -65,6 +65,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         if activity.local do
           Pleroma.Web.Streamer.stream("public:local", activity)
         end
+
+        if activity.data["object"]["attachment"] != [] do
+          Pleroma.Web.Streamer.stream("public:media", activity)
+
+          if activity.local do
+            Pleroma.Web.Streamer.stream("public:local:media", activity)
+          end
+        end
       else
         if !Enum.member?(activity.data["cc"] || [], public) &&
              !Enum.member?(
