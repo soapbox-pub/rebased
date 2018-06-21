@@ -110,20 +110,20 @@ defmodule Pleroma.Upload do
     if should_dedupe do
       create_name(uuid, List.last(String.split(file.filename, ".")), type)
     else
-      unless String.contains?(file.filename, ".") do
-        case type do
-          "image/png" -> file.filename <> ".png"
-          "image/jpeg" -> file.filename <> ".jpg"
-          "image/gif" -> file.filename <> ".gif"
-          "video/webm" -> file.filename <> ".webm"
-          "video/mp4" -> file.filename <> ".mp4"
-          "audio/mpeg" -> file.filename <> ".mp3"
-          "audio/ogg" -> file.filename <> ".ogg"
-          "audio/wav" -> file.filename <> ".wav"
-          _ -> file.filename
+      parts = String.split(file.filename, ".")
+
+      new_filename =
+        if length(parts) > 1 do
+          Enum.drop(parts, -1) |> Enum.join(".")
+        else
+          Enum.join(parts)
         end
-      else
-        file.filename
+
+      case type do
+        "application/octet-stream" -> file.filename
+        "audio/mpeg" -> new_filename <> ".mp3"
+        "image/jpeg" -> new_filename <> ".jpg"
+        _ -> Enum.join([new_filename, String.split(type, "/") |> List.last()], ".")
       end
     end
   end
