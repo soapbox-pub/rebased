@@ -49,7 +49,8 @@ Restricts the visibility of posts from certain instances.
       media_removal: [],
       media_nsfw: [],
       federated_timeline_removal: [],
-      reject: []
+      reject: [],
+      accept: []
 
 * `media_removal`: posts from these instances will have attachments 
    removed
@@ -58,6 +59,7 @@ Restricts the visibility of posts from certain instances.
 * `federated_timeline_removal`: posts from these instances will be 
    marked as unlisted
 * `reject`: posts from these instances will be dropped
+* `accept`: if not empty, only posts from these instances will be accepted
 
 ### RejectNonPublic
 

@@ -67,7 +67,8 @@ config :pleroma, :mrf_simple,
   media_removal: [],
   media_nsfw: [],
   federated_timeline_removal: [],
-  reject: []
+  reject: [],
+  accept: []
 
 config :pleroma, :media_proxy,
   enabled: false,
