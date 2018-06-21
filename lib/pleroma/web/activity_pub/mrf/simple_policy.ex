@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   @accept Keyword.get(@mrf_policy, :accept)
   defp check_accept(actor_info, object) do
-    if length(@accept) > 0 and not actor_info.host in @accept do
+    if length(@accept) > 0 and not (actor_info.host in @accept) do
       {:reject, nil}
     else
       {:ok, object}
