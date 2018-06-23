@@ -169,8 +169,8 @@ defmodule Pleroma.User do
   end
 
   def maybe_direct_follow(%User{} = follower, %User{info: info} = followed) do
-    user_config Application.get_env(:pleroma, :user)
-    deny_follow_blocked Keyword.get(user_config, :deny_follow_blocked)
+    user_config = Application.get_env(:pleroma, :user)
+    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
 
     user_info = user_info(followed)
 
@@ -210,8 +210,8 @@ defmodule Pleroma.User do
   end
 
   def follow(%User{} = follower, %User{info: info} = followed) do
-    user_config Application.get_env(:pleroma, :user)
-    deny_follow_blocked Keyword.get(user_config, :deny_follow_blocked)
+    user_config = Application.get_env(:pleroma, :user)
+    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
 
     ap_followers = followed.follower_address
 
