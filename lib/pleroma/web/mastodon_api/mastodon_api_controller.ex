@@ -865,7 +865,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             delete_modal: true,
             auto_play_gif: false,
             display_sensitive_media: false,
-            reduce_motion: false
+            reduce_motion: false,
+            max_toot_chars: Keyword.get(@instance, :limit)
           },
           compose: %{
             me: "#{user.id}",
