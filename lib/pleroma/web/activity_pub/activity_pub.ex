@@ -242,11 +242,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @ap_config Application.get_env(:pleroma, :activitypub)
-  @unfollow_blocked Keyword.get(@ap_config, :unfollow_blocked)
-  @outgoing_blocks Keyword.get(@ap_config, :outgoing_blocks)
-
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
+    @ap_config Application.get_env(:pleroma, :activitypub)
+    @unfollow_blocked Keyword.get(@ap_config, :unfollow_blocked)
+    @outgoing_blocks Keyword.get(@ap_config, :outgoing_blocks)
+
     with true <- @unfollow_blocked do
       follow_activity = fetch_latest_follow(blocker, blocked)
 
