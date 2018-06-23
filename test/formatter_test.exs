@@ -20,10 +20,10 @@ defmodule Pleroma.FormatterTest do
 
   describe ".add_links" do
     test "turning urls into links" do
-      text = "Hey, check out https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla."
+      text = "Hey, check out https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla ."
 
       expected =
-        "Hey, check out <a href=\"https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla\">https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla</a>."
+        "Hey, check out <a href=\"https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla\">https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla</a> ."
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
