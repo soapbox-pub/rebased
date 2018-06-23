@@ -85,6 +85,12 @@ defmodule Pleroma.FormatterTest do
         "<a href=\"https://pleroma.com\">https://pleroma.com</a> <a href=\"https://pleroma.com/sucks\">https://pleroma.com/sucks</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+
+      text = "xmpp:contact@hacktivis.me"
+
+      expected = "<a href=\"xmpp:contact@hacktivis.me\">xmpp:contact@hacktivis.me</a>"
+
+      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
     end
   end
 
