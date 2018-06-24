@@ -170,7 +170,14 @@ defmodule Pleroma.Web.Router do
     get("/accounts/:id/following", MastodonAPIController, :following)
     get("/accounts/:id", MastodonAPIController, :user)
 
+    get("/trends", MastodonAPIController, :empty_array)
+
     get("/search", MastodonAPIController, :search)
+  end
+
+  scope "/api/v2", Pleroma.Web.MastodonAPI do
+    pipe_through(:api)
+    get("/search", MastodonAPIController, :search2)
   end
 
   scope "/api", Pleroma.Web do
