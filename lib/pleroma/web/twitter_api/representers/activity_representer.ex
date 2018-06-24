@@ -191,7 +191,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "tags" => tags,
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive,
-      "visibility" => Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
+      "visibility" => Pleroma.Web.MastodonAPI.StatusView.get_visibility(object),
+      "summary" => object["summary"]
     }
   end
 
