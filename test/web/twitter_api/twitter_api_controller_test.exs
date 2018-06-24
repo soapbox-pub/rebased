@@ -504,6 +504,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         conn
         |> with_credentials(current_user.nickname, "test")
         |> get("/api/qvitter/mutes.json")
+
       current_user = Repo.get(User, current_user.id)
 
       assert [] = json_response(conn, 200)
