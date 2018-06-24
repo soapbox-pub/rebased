@@ -210,6 +210,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render_content(%{"type" => "Article"} = object) do
     summary = object["name"]
+
     content =
       if !!summary and summary != "" do
         "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
