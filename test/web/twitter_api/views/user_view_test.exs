@@ -60,7 +60,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "locked" => false
+      "locked" => false,
+      "default_scope" => "public"
     }
 
     assert represented == UserView.render("show.json", %{user: user})
@@ -96,7 +97,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "locked" => false
+      "locked" => false,
+      "default_scope" => "public"
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
@@ -133,7 +135,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "locked" => false
+      "locked" => false,
+      "default_scope" => "public"
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
@@ -177,7 +180,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "locked" => false
+      "locked" => false,
+      "default_scope" => "public"
     }
 
     blocker = Repo.get(User, blocker.id)
