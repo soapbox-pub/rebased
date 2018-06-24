@@ -228,15 +228,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
-    summary = activity.data["object"]["summary"]
-    content = object["content"]
-
-    content =
-      if !!summary and summary != "" do
-        "<span>#{activity.data["object"]["summary"]}</span><br />#{content}</span>"
-      else
-        content
-      end
+    {summary, content} = render_content(object)
 
     html =
       HtmlSanitizeEx.basic_html(content)
@@ -265,5 +257,36 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "possibly_sensitive" => possibly_sensitive,
       "visibility" => Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
     }
+  end
+
+  def render_content(%{"type" => "Note"} = object) do
+    summary = object["summary"]
+    content =
+      if !!summary and summary != "" do
+        "<p>#{summary}</p>#{object["content"]}"
+      else
+        object["content"]
+      end
+
+    {summary, content}
+  end
+
+  def render_content(%{"type" => "Article"} = object) do
+    summary = object["name"] || object["summary"]
+    content =
+      if !!summary and summary != "" do
+        "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
+      else
+        object["content"]
+      end
+
+    {summary, content}
+  end
+
+  def render_content(object) do
+    summary = object["summary"] || "Unhandled activity type: #{object["type"]}"
+    content = "<p>#{summary}</p>#{object["content"]}"
+
+    {summary, content}
   end
 end
