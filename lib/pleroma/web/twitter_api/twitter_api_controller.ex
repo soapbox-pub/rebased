@@ -404,6 +404,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     json(conn, Jason.encode!([]))
   end
 
+  def raw_empty_array(conn, _params) do
+    json(conn, [])
+  end
+
   def update_profile(%{assigns: %{user: user}} = conn, params) do
     params =
       if bio = params["description"] do
