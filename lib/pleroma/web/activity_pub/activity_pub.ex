@@ -255,12 +255,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end
     end
 
-    with true <- outgoing_blocks do
-      with block_data <- make_block_data(blocker, blocked, activity_id),
-           {:ok, activity} <- insert(block_data, local),
-           :ok <- maybe_federate(activity) do
-        {:ok, activity}
-      end
+    with true <- outgoing_blocks,
+         block_data <- make_block_data(blocker, blocked, activity_id),
+         {:ok, activity} <- insert(block_data, local),
+         :ok <- maybe_federate(activity) do
+      {:ok, activity}
     else
       _e -> {:ok, nil}
     end
