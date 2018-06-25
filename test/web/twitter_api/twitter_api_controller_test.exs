@@ -491,6 +491,26 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /api/qvitter/mutes.json" do
+    setup [:valid_user]
+
+    test "unimplemented mutes without valid credentials", %{conn: conn} do
+      conn = get(conn, "/api/qvitter/mutes.json")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "unimplemented mutes with credentials", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/mutes.json")
+
+      current_user = Repo.get(User, current_user.id)
+
+      assert [] = json_response(conn, 200)
+    end
+  end
+
   describe "POST /api/favorites/create/:id" do
     setup [:valid_user]
 
