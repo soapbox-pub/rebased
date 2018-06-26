@@ -18,6 +18,8 @@ defmodule Pleroma.Upload do
       File.cp!(file.path, result_file)
     end
 
+    strip_exif_data(content_type, file.path)
+
     %{
       "type" => "Image",
       "url" => [
@@ -67,6 +69,8 @@ defmodule Pleroma.Upload do
       File.rename(uuidpath, result_file)
     end
 
+    strip_exif_data(content_type, uuidpath)
+
     %{
       "type" => "Image",
       "url" => [
@@ -80,11 +84,12 @@ defmodule Pleroma.Upload do
     }
   end
 
-  def strip_exif_data(file) do
+  def strip_exif_data(content_type, file) do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
     @do_strip = Keyword.fetch!(settings, :strip_exif)
+    [filetype, ext] = String.split(content_type, "/")
 
-    if @do_strip == true do
+    if filetype == "image" and @do_strip == true do
       Mogrify.open(file) |> Mogrify.custom("strip") |> Mogrify.save(in_place: true)
     end
   end
