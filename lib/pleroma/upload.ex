@@ -18,7 +18,7 @@ defmodule Pleroma.Upload do
       File.cp!(file.path, result_file)
     end
 
-    strip_exif_data(content_type, file.path)
+    strip_exif_data(content_type, result_file)
 
     %{
       "type" => "Image",
@@ -69,7 +69,7 @@ defmodule Pleroma.Upload do
       File.rename(uuidpath, result_file)
     end
 
-    strip_exif_data(content_type, uuidpath)
+    strip_exif_data(content_type, result_file)
 
     %{
       "type" => "Image",
