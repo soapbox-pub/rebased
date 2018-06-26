@@ -4,8 +4,6 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   alias Pleroma.Stats
   alias Pleroma.Web
 
-  @instance Application.get_env(:pleroma, :instance)
-
   def schemas(conn, _params) do
     response = %{
       links: [
@@ -21,6 +19,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
   # Schema definition: https://github.com/jhass/nodeinfo/blob/master/schemas/2.0/schema.json
   def nodeinfo(conn, %{"version" => "2.0"}) do
+    @instance = Application.get_env(:pleroma, :instance)
+    @media_proxy = Application.get_env(:pleroma, :media_proxy)
     stats = Stats.get_stats()
 
     response = %{
@@ -42,7 +42,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         localPosts: stats.status_count || 0
       },
       metadata: %{
-        nodeName: Keyword.get(@instance, :name)
+        nodeName: Keyword.get(@instance, :name),
+        mediaProxy: Keyword.get(@media_proxy, :enabled)
       }
     }
 
