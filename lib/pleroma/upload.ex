@@ -83,8 +83,9 @@ defmodule Pleroma.Upload do
   def strip_exif_data(file) do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
     @do_strip = Keyword.fetch!(settings, :strip_exif)
+
     if @do_strip == true do
-	Mogrify.open(file) |> Mogrify.custom("strip") |> Mogrify.save(in_place: true)	
+      Mogrify.open(file) |> Mogrify.custom("strip") |> Mogrify.save(in_place: true)
     end
   end
 
