@@ -30,24 +30,24 @@ defmodule Pleroma.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.3.0"},
-      {:phoenix_pubsub, "~> 1.0"},
-      {:phoenix_ecto, "~> 3.2"},
-      {:postgrex, ">= 0.0.0"},
-      {:gettext, "~> 0.11"},
-      {:cowboy, "~> 1.0", override: true},
-      {:comeonin, "~> 4.0"},
-      {:pbkdf2_elixir, "~> 0.12"},
-      {:trailing_format_plug, "~> 0.0.5"},
-      {:html_sanitize_ex, "~> 1.3.0-rc1"},
+      {:phoenix, "~> 1.3.3"},
+      {:phoenix_pubsub, "~> 1.0.2"},
+      {:phoenix_ecto, "~> 3.3"},
+      {:postgrex, ">= 0.13.5"},
+      {:gettext, "~> 0.15"},
+      {:cowboy, "~> 1.1.2", override: true},
+      {:comeonin, "~> 4.1.1"},
+      {:pbkdf2_elixir, "~> 0.12.3"},
+      {:trailing_format_plug, "~> 0.0.7"},
+      {:html_sanitize_ex, "~> 1.3.0"},
       {:phoenix_html, "~> 2.10"},
-      {:calendar, "~> 0.16.1"},
-      {:cachex, "~> 3.0"},
-      {:httpoison, "~> 1.1.0"},
+      {:calendar, "~> 0.17.4"},
+      {:cachex, "~> 3.0.2"},
+      {:httpoison, "~> 1.2.0"},
       {:jason, "~> 1.0"},
-      {:ex_machina, "~> 2.0", only: :test},
-      {:credo, "~> 0.7", only: [:dev, :test]},
-      {:mock, "~> 0.3.0", only: :test}
+      {:ex_machina, "~> 2.2", only: :test},
+      {:credo, "~> 0.9.3", only: [:dev, :test]},
+      {:mock, "~> 0.3.1", only: :test}
     ]
   end
 
