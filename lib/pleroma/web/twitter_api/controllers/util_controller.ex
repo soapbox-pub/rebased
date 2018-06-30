@@ -173,23 +173,30 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def emoji(conn, _params) do
-    emoji_dir = Path.join(:code.priv_dir(:pleroma), "static/emoji")
+    static_dir = Path.join(:code.priv_dir(:pleroma), "static")
 
-    shortcode_emoji_glob =
-      Path.join(
-        emoji_dir,
-        Application.get_env(:pleroma, :emoji, []) |>
-          Keyword.get(:glob, "by-shortcode/**/*.png")
-      )
+    emoji_shortcode_glob =
+      Application.get_env(:pleroma, :emoji, [])
+      |> Keyword.get(:shortcode_glob)
+
     shortcode_emoji =
-      Path.wildcard(shortcode_emoji_glob) |>
-      Enum.map(fn path ->
-        shortcode = Path.basename(path, ".png")
-        serve_path = Path.join("/emoji", Path.relative_to(path, emoji_dir))
-        {shortcode, serve_path}
-      end)
+      case emoji_shortcode_glob do
+        nil ->
+          []
 
-    emoji = Enum.into(Formatter.get_custom_emoji(), shortcode_emoji) |> Enum.into(%{})
+        glob ->
+          Path.join(static_dir, glob)
+          |> Path.wildcard()
+          |> Enum.map(fn path ->
+            shortcode = Path.basename(path, ".png")
+            serve_path = Path.join("/", Path.relative_to(path, static_dir))
+            {shortcode, serve_path}
+          end)
+      end
+
+    emoji =
+      Enum.into(Formatter.get_custom_emoji(), shortcode_emoji)
+      |> Enum.into(%{})
 
     json(conn, emoji)
   end
