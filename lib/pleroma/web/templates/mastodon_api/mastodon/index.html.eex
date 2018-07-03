@@ -19,7 +19,7 @@
 <script id='initial-state' type='application/json'><%= raw @initial_state %></script>
 <script src="/packs/application.js"></script>
 </head>
-<body class='app-body no-reduce-motion'>
+<body class='app-body no-reduce-motion system-font'>
   <div class='app-holder' data-props='{&quot;locale&quot;:&quot;en&quot;}' id='mastodon'>
   </div>
 </body>
