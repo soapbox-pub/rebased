@@ -262,6 +262,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
   def render_content(%{"type" => "Note"} = object) do
     summary = object["summary"]
+
     content =
       if !!summary and summary != "" do
         "<p>#{summary}</p>#{object["content"]}"
@@ -274,6 +275,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
   def render_content(%{"type" => "Article"} = object) do
     summary = object["name"] || object["summary"]
+
     content =
       if !!summary and summary != "" do
         "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
