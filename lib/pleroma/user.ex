@@ -607,7 +607,7 @@ defmodule Pleroma.User do
     |> Enum.each(fn activity ->
       case activity.data["type"] do
         "Create" ->
-          ActivityPub.delete(Object.get_by_ap_id(activity.data["object"]["id"]))
+          ActivityPub.delete(Object.normalize(activity.data["object"]))
 
         # TODO: Do something with likes, follows, repeats.
         _ ->

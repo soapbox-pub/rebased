@@ -429,7 +429,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(_), do: :error
 
   def get_obj_helper(id) do
-    if object = Object.get_by_ap_id(id), do: {:ok, object}, else: nil
+    if object = Object.normalize(id), do: {:ok, object}, else: nil
   end
 
   def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) do
@@ -477,14 +477,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # Mastodon Accept/Reject requires a non-normalized object containing the actor URIs,
   # because of course it does.
   def prepare_outgoing(%{"type" => "Accept"} = data) do
-    follow_activity_id =
-      if is_binary(data["object"]) do
-        data["object"]
-      else
-        data["object"]["id"]
-      end
-
-    with follow_activity <- Activity.get_by_ap_id(follow_activity_id) do
+    with follow_activity <- Activity.normalize(data["object"]) do
       object = %{
         "actor" => follow_activity.actor,
         "object" => follow_activity.data["object"],
@@ -502,14 +495,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def prepare_outgoing(%{"type" => "Reject"} = data) do
-    follow_activity_id =
-      if is_binary(data["object"]) do
-        data["object"]
-      else
-        data["object"]["id"]
-      end
-
-    with follow_activity <- Activity.get_by_ap_id(follow_activity_id) do
+    with follow_activity <- Activity.normalize(data["object"]) do
       object = %{
         "actor" => follow_activity.actor,
         "object" => follow_activity.data["object"],
