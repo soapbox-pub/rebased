@@ -4,7 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.{Activity, User}
-  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
+  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView}
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Formatter
 
@@ -164,14 +164,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
-    summary = activity.data["object"]["summary"]
-
-    content =
-      if !!summary and summary != "" do
-        "<span>#{activity.data["object"]["summary"]}</span><br />#{content}</span>"
-      else
-        content
-      end
+    {summary, content} = ActivityView.render_content(object)
 
     html =
       HtmlSanitizeEx.basic_html(content)

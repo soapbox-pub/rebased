@@ -127,7 +127,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
-      content: HtmlSanitizeEx.basic_html(object["content"]),
+      content: render_content(object),
       created_at: created_at,
       reblogs_count: announcement_count,
       favourites_count: like_count,
@@ -205,5 +205,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       true ->
         "direct"
     end
+  end
+
+  def render_content(%{"type" => "Article"} = object) do
+    summary = object["name"]
+
+    content =
+      if !!summary and summary != "" do
+        "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
+      else
+        object["content"]
+      end
+
+    HtmlSanitizeEx.basic_html(content)
+  end
+
+  def render_content(object) do
+    HtmlSanitizeEx.basic_html(object["content"])
   end
 end

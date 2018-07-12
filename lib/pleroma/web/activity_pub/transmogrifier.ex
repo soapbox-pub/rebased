@@ -122,7 +122,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # TODO: validate those with a Ecto scheme
   # - tags
   # - emoji
-  def handle_incoming(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
+  def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
+      when objtype in ["Article", "Note"] do
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
       object = fix_object(data["object"])
