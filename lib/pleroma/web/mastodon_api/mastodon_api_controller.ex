@@ -873,7 +873,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           },
           compose: %{
             me: "#{user.id}",
-            default_privacy: "public",
+            default_privacy: user.info["default_scope"] || "public",
             default_sensitive: false
           },
           media_attachments: %{
