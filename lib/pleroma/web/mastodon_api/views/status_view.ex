@@ -54,8 +54,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     %{
       id: to_string(activity.id),
       uri: object,
-      # TODO: This might be wrong, check with mastodon.
-      url: nil,
+      url: object,
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
