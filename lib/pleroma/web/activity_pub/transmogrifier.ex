@@ -94,8 +94,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_in_reply_to(object), do: object
 
   def fix_context(object) do
+    context = object["context"] || object["conversation"] || Utils.generate_context_id()
+
     object
-    |> Map.put("context", object["conversation"])
+    |> Map.put("context", context)
+    |> Map.put("conversation", context)
   end
 
   def fix_attachments(object) do
@@ -163,7 +166,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - tags
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
-      when objtype in ["Article", "Note"] do
+      when objtype in ["Article", "Note", "Video"] do
     actor = get_actor(data)
 
     data =
