@@ -21,6 +21,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Enum.at(actor, 0)
   end
 
+  def get_actor(%{"actor" => actor_list}) do
+    Enum.find(actor_list, fn %{"type" => type} -> type == "Person" end)
+    |> Map.get("id")
+  end
+
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
