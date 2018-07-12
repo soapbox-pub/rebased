@@ -18,13 +18,26 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   def fix_object(object) do
     object
-    |> Map.put("actor", object["attributedTo"])
+    |> fix_actor
     |> fix_attachments
     |> fix_context
     |> fix_in_reply_to
     |> fix_emoji
     |> fix_tag
     |> fix_content_map
+  end
+
+  def fix_actor(%{"attributedTo" => actor} = object) do
+    # attributedTo can be a list in the case of peertube or plume
+    actor =
+      if is_list(actor) do
+        Enum.at(actor, 0)
+      else
+        actor
+      end
+
+    object
+    |> Map.put("actor", actor)
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object)
@@ -126,7 +139,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       when objtype in ["Article", "Note"] do
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
-      object = fix_object(data["object"])
+      # prefer the activity's actor instead of attributedTo
+      object =
+        fix_object(data["object"])
+        |> Map.put("actor", data["actor"])
 
       params = %{
         to: data["to"],
