@@ -13,6 +13,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   require Logger
 
+  def get_actor(%{"actor" => actor}) when is_binary(actor) do
+    actor
+  end
+
+  def get_actor(%{"actor" => actor}) when is_list(actor) do
+    Enum.at(actor, 0)
+  end
+
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
@@ -28,16 +36,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
-    # attributedTo can be a list in the case of peertube or plume
-    actor =
-      if is_list(actor) do
-        Enum.at(actor, 0)
-      else
-        actor
-      end
-
     object
-    |> Map.put("actor", actor)
+    |> Map.put("actor", get_actor(%{"actor" => actor}))
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object)
@@ -137,12 +137,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
       when objtype in ["Article", "Note"] do
+    actor = get_actor(data)
+    data = Map.put(data, "actor", actor)
+
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
-      # prefer the activity's actor instead of attributedTo
-      object =
-        fix_object(data["object"])
-        |> Map.put("actor", data["actor"])
+      object = fix_object(data["object"])
 
       params = %{
         to: data["to"],
