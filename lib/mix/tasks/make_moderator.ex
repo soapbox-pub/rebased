@@ -1,9 +1,16 @@
 defmodule Mix.Tasks.SetModerator do
+  @moduledoc """
+  Set moderator to a local user
+
+  Usage: ``mix set_moderator <username>``
+
+  Example: ``mix set_moderator lain``
+  """
+
   use Mix.Task
   import Mix.Ecto
   alias Pleroma.{Repo, User}
 
-  @shortdoc "Set moderator status"
   def run([nickname | rest]) do
     Application.ensure_all_started(:pleroma)
 
