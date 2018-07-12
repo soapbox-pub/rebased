@@ -12,6 +12,8 @@ config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Upload, uploads: "uploads"
 
+config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
+
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
