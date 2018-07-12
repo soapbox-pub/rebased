@@ -19,22 +19,22 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
   # Schema definition: https://github.com/jhass/nodeinfo/blob/master/schemas/2.0/schema.json
   def nodeinfo(conn, %{"version" => "2.0"}) do
-    @instance = Application.get_env(:pleroma, :instance)
-    @media_proxy = Application.get_env(:pleroma, :media_proxy)
+    instance = Application.get_env(:pleroma, :instance)
+    media_proxy = Application.get_env(:pleroma, :media_proxy)
     stats = Stats.get_stats()
 
     response = %{
       version: "2.0",
       software: %{
         name: "pleroma",
-        version: Keyword.get(@instance, :version)
+        version: Keyword.get(instance, :version)
       },
       protocols: ["ostatus", "activitypub"],
       services: %{
         inbound: [],
         outbound: []
       },
-      openRegistrations: Keyword.get(@instance, :registrations_open),
+      openRegistrations: Keyword.get(instance, :registrations_open),
       usage: %{
         users: %{
           total: stats.user_count || 0
@@ -42,8 +42,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         localPosts: stats.status_count || 0
       },
       metadata: %{
-        nodeName: Keyword.get(@instance, :name),
-        mediaProxy: Keyword.get(@media_proxy, :enabled)
+        nodeName: Keyword.get(instance, :name),
+        mediaProxy: Keyword.get(media_proxy, :enabled)
       }
     }
 
