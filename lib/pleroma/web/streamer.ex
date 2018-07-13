@@ -158,7 +158,7 @@ defmodule Pleroma.Web.Streamer do
       user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
       blocks = user.info["blocks"] || []
 
-      parent = Object.get_by_ap_id(item.data["object"])
+      parent = Object.normalize(item.data["object"])
 
       unless is_nil(parent) or item.actor in blocks or parent.data["actor"] in blocks do
         send(socket.transport_pid, {:text, represent_update(item, user)})

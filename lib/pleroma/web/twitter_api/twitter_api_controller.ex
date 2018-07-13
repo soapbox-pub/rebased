@@ -431,6 +431,19 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
         user
       end
 
+    user =
+      if default_scope = params["default_scope"] do
+        with new_info <- Map.put(user.info, "default_scope", default_scope),
+             change <- User.info_changeset(user, %{info: new_info}),
+             {:ok, user} <- User.update_and_set_cache(change) do
+          user
+        else
+          _e -> user
+        end
+      else
+        user
+      end
+
     with changeset <- User.update_changeset(user, params),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)

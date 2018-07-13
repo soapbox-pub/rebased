@@ -13,6 +13,6 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert result["id"] == user.ap_id
     assert result["preferredUsername"] == user.nickname
 
-    assert String.contains?(result["publicKey"]["publicKeyPem"], "BEGIN RSA PUBLIC KEY")
+    assert String.contains?(result["publicKey"]["publicKeyPem"], "BEGIN PUBLIC KEY")
   end
 end

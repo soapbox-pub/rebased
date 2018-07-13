@@ -12,7 +12,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("user.json", %{user: user}) do
     {:ok, user} = WebFinger.ensure_keys_present(user)
     {:ok, _, public_key} = Salmon.keys_from_pem(user.info["keys"])
-    public_key = :public_key.pem_entry_encode(:RSAPublicKey, public_key)
+    public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
 
     %{

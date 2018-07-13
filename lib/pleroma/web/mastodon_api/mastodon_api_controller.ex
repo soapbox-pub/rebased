@@ -868,9 +868,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             reduce_motion: false,
             max_toot_chars: Keyword.get(@instance, :limit)
           },
+          rights: %{
+            delete_others_notice: !!user.info["is_moderator"]
+          },
           compose: %{
             me: "#{user.id}",
-            default_privacy: "public",
+            default_privacy: user.info["default_scope"] || "public",
             default_sensitive: false
           },
           media_attachments: %{

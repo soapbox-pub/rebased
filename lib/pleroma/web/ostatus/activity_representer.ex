@@ -246,7 +246,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
     mentions = (activity.recipients || []) |> get_mentions
-    follow_activity = Activity.get_by_ap_id(follow_activity["id"])
+    follow_activity = Activity.normalize(follow_activity)
 
     [
       {:"activity:object-type", ['http://activitystrea.ms/schema/1.0/activity']},

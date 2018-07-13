@@ -107,7 +107,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def activity(conn, %{"uuid" => uuid}) do
     with id <- o_status_url(conn, :activity, uuid),
-         {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(id)},
+         {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
          {_, true} <- {:public?, ActivityPub.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case get_format(conn) do
