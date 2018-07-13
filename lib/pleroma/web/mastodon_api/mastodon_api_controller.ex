@@ -1070,4 +1070,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> put_status(500)
     |> json("Something went wrong")
   end
+
+  def suggestions(conn, _) do
+    conn
+    |> json("SUGGESTIONS!")
+  end
 end
