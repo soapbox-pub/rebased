@@ -1071,8 +1071,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> json("Something went wrong")
   end
 
-  def suggestions(conn, _) do
+  def suggestions(%{assigns: %{user: user}} = conn, _) do
+    res = %{
+      host: (String.replace Web.base_url(), "https://", ""),
+      user: user.nickname
+    }
     conn
-    |> json("SUGGESTIONS!")
+    |> json(res)
   end
 end
