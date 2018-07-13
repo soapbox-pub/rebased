@@ -1072,10 +1072,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
-    res = %{
-      host: (String.replace Web.base_url(), "https://", ""),
-      user: user.nickname
-    }
+    res = [
+      %{
+        username: "vaginaplant",
+        acct: "vaginaplant@3.distsn.org",
+        display_name: "Hakaba Hitoyo",
+        note: "Recommendation Fairness Warrior",
+        avatar: "https://3.distsn.org/media/1c0cbe9d-8b87-496f-b964-1af8116b8f67/D38B0A8B021DC5565D06CF40EBB744E4B7CF8F7F16347094F9CD469348DCC267.jpeg",
+        avatar_static: "https://3.distsn.org/media/1c0cbe9d-8b87-496f-b964-1af8116b8f67/D38B0A8B021DC5565D06CF40EBB744E4B7CF8F7F16347094F9CD469348DCC267.jpeg"
+      },
+      %{
+        username: user.nickname,
+        acct: user.nickname <> "@" <> (String.replace Web.base_url(), "https://", "")
+      }
+    ]
     conn
     |> json(res)
   end
