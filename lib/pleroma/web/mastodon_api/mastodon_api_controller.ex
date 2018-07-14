@@ -1073,10 +1073,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> json("Something went wrong")
   end
 
+  @suggestions Application.get_env(:pleroma, :suggestions)
+
   def suggestions(%{assigns: %{user: user}} = conn, _) do
     host = String.replace Web.base_url(), "https://", ""
     user = user.nickname
-    api = "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-filtered-api.cgi?{{host}}+{{user}}"
+    api = Keyword.get(@suggestions, :third_party_engine, "")
     url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
     with {:ok, %{status_code: 200, body: body}} <-
            @httpoison.get(url),
