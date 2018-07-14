@@ -1081,10 +1081,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     api = Keyword.get(@suggestions, :third_party_engine, "")
     url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
     with {:ok, %{status_code: 200, body: body}} <-
-           @httpoison.get(url),
+           @httpoison.get(url, [], [timeout: 300000, recv_timeout: 300000]),
          {:ok, data} <- Jason.decode(body) do
+      data2 = Enum.slice(data, 0, 40) |> Enum.map(fn(x) ->
+        Map.put(x, "id", User.get_or_fetch(x["acct"]).id)
+      end)
       conn
-      |> json(data)
+      |> json(data2)
     else
       e -> Logger.error("Could not decode user at fetch #{url}, #{inspect(e)}")
     end
