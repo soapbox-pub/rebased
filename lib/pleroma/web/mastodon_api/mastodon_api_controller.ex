@@ -11,6 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   import Ecto.Query
   require Logger
 
+  @httpoison Application.get_env(:pleroma, :httpoison)
+
   action_fallback(:errors)
 
   def create_app(conn, params) do
@@ -1072,21 +1074,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
-    res = [
-      %{
-        username: "vaginaplant",
-        acct: "vaginaplant@3.distsn.org",
-        display_name: "Hakaba Hitoyo",
-        note: "Recommendation Fairness Warrior",
-        avatar: "https://3.distsn.org/media/1c0cbe9d-8b87-496f-b964-1af8116b8f67/D38B0A8B021DC5565D06CF40EBB744E4B7CF8F7F16347094F9CD469348DCC267.jpeg",
-        avatar_static: "https://3.distsn.org/media/1c0cbe9d-8b87-496f-b964-1af8116b8f67/D38B0A8B021DC5565D06CF40EBB744E4B7CF8F7F16347094F9CD469348DCC267.jpeg"
-      },
-      %{
-        username: user.nickname,
-        acct: user.nickname <> "@" <> (String.replace Web.base_url(), "https://", "")
-      }
-    ]
-    conn
-    |> json(res)
+    host = String.replace Web.base_url(), "https://", ""
+    user = user.nickname
+    api = "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-filtered-api.cgi?{{host}}+{{user}}"
+    url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
+    with {:ok, %{status_code: 200, body: body}} <-
+           @httpoison.get(url),
+         {:ok, data} <- Jason.decode(body) do
+      conn
+      |> json(data)
+    else
+      e -> Logger.error("Could not decode user at fetch #{url}, #{inspect(e)}")
+    end
   end
 end
