@@ -1076,16 +1076,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   @suggestions Application.get_env(:pleroma, :suggestions)
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
-    host = String.replace Web.base_url(), "https://", ""
+    host = String.replace(Web.base_url(), "https://", "")
     user = user.nickname
     api = Keyword.get(@suggestions, :third_party_engine, "")
     url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
+
     with {:ok, %{status_code: 200, body: body}} <-
-           @httpoison.get(url, [], [timeout: 300000, recv_timeout: 300000]),
+           @httpoison.get(url, [], timeout: 300_000, recv_timeout: 300_000),
          {:ok, data} <- Jason.decode(body) do
-      data2 = Enum.slice(data, 0, 40) |> Enum.map(fn(x) ->
-        Map.put(x, "id", User.get_or_fetch(x["acct"]).id)
-      end)
+      data2 =
+        Enum.slice(data, 0, 40)
+        |> Enum.map(fn x ->
+          Map.put(x, "id", User.get_or_fetch(x["acct"]).id)
+        end)
+
       conn
       |> json(data2)
     else
