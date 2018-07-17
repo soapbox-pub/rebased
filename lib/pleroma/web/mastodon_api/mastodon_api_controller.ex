@@ -125,7 +125,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     response = %{
       uri: Web.base_url(),
       title: Keyword.get(@instance, :name),
-      description: "A Pleroma instance, an alternative fediverse server",
+      description: Keyword.get(@instance, :description),
       version: "#{@mastodon_api_level} (compatible; #{Keyword.get(@instance, :version)})",
       email: Keyword.get(@instance, :email),
       urls: %{
