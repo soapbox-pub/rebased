@@ -1099,7 +1099,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         conn
         |> json(data2)
       else
-        e -> Logger.error("Could not decode user at fetch #{url}, #{inspect(e)}")
+        e -> Logger.error("Could not retrieve suggestions at fetch #{url}, #{inspect(e)}")
       end
     else
       json(conn, [])
