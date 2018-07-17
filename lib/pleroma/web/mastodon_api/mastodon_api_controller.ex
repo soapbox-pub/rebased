@@ -1076,7 +1076,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   @suggestions Application.get_env(:pleroma, :suggestions)
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
-    host = String.replace(Web.base_url(), "https://", "")
+    host =
+      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
+      |> Keyword.get(:url)
+      |> Keyword.get(:host)
+
     user = user.nickname
     api = Keyword.get(@suggestions, :third_party_engine, "")
     url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
