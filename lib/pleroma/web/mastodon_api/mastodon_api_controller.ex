@@ -1076,28 +1076,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   @suggestions Application.get_env(:pleroma, :suggestions)
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
-    host =
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-      |> Keyword.get(:url)
-      |> Keyword.get(:host)
+    api = Keyword.get(@suggestions, :third_party_engine, false)
 
-    user = user.nickname
-    api = Keyword.get(@suggestions, :third_party_engine, "")
-    url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
+    if api do
+      host =
+        Application.get_env(:pleroma, Pleroma.Web.Endpoint)
+        |> Keyword.get(:url)
+        |> Keyword.get(:host)
 
-    with {:ok, %{status_code: 200, body: body}} <-
-           @httpoison.get(url, [], timeout: 300_000, recv_timeout: 300_000),
-         {:ok, data} <- Jason.decode(body) do
-      data2 =
-        Enum.slice(data, 0, 40)
-        |> Enum.map(fn x ->
-          Map.put(x, "id", User.get_or_fetch(x["acct"]).id)
-        end)
+      user = user.nickname
+      url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
 
-      conn
-      |> json(data2)
+      with {:ok, %{status_code: 200, body: body}} <-
+             @httpoison.get(url, [], timeout: 300_000, recv_timeout: 300_000),
+           {:ok, data} <- Jason.decode(body) do
+        data2 =
+          Enum.slice(data, 0, 40)
+          |> Enum.map(fn x ->
+            Map.put(x, "id", User.get_or_fetch(x["acct"]).id)
+          end)
+
+        conn
+        |> json(data2)
+      else
+        e -> Logger.error("Could not decode user at fetch #{url}, #{inspect(e)}")
+      end
     else
-      e -> Logger.error("Could not decode user at fetch #{url}, #{inspect(e)}")
+      json(conn, [])
     end
   end
 end
