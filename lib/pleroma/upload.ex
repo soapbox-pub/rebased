@@ -19,7 +19,7 @@ defmodule Pleroma.Upload do
     end
 
     %{
-      "type" => "Image",
+      "type" => "Document",
       "url" => [
         %{
           "type" => "Link",
