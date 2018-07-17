@@ -21,6 +21,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   def nodeinfo(conn, %{"version" => "2.0"}) do
     instance = Application.get_env(:pleroma, :instance)
     media_proxy = Application.get_env(:pleroma, :media_proxy)
+    suggestions = Application.get_env(:pleroma, :suggestions)
     stats = Stats.get_stats()
 
     response = %{
@@ -43,7 +44,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       },
       metadata: %{
         nodeName: Keyword.get(instance, :name),
-        mediaProxy: Keyword.get(media_proxy, :enabled)
+        mediaProxy: Keyword.get(media_proxy, :enabled),
+        suggestionsThirdPartyEngine: Keyword.get(@suggestions, :third_party_engine, false)
       }
     }
 
