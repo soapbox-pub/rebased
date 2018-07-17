@@ -95,6 +95,7 @@ config :pleroma, :gopher,
   ip: {0, 0, 0, 0},
   port: 9999
 
+config :pleroma, :suggestions, third_party_engine: false
 # config :pleroma, :suggestions,
 #   third_party_engine:
 #     "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}"
