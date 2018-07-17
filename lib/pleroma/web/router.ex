@@ -127,6 +127,7 @@ defmodule Pleroma.Web.Router do
     get("/notifications/:id", MastodonAPIController, :get_notification)
 
     post("/media", MastodonAPIController, :upload)
+    put("/media/:id", MastodonAPIController, :update_media)
 
     get("/lists", MastodonAPIController, :get_lists)
     get("/lists/:id", MastodonAPIController, :get_list)
