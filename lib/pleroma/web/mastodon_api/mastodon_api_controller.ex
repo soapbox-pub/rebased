@@ -1076,9 +1076,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   @suggestions Application.get_env(:pleroma, :suggestions)
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
-    api = Keyword.get(@suggestions, :third_party_engine, false)
+    if Keyword.get(@suggestions, :enabled, false) do
+      api = Keyword.get(@suggestions, :third_party_engine, false)
 
-    if api do
       host =
         Application.get_env(:pleroma, Pleroma.Web.Endpoint)
         |> Keyword.get(:url)
