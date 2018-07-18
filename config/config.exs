@@ -69,7 +69,8 @@ config :pleroma, :fe,
   redirect_root_login: "/main/friends",
   show_instance_panel: true,
   show_who_to_follow_panel: false,
-  who_to_follow_provider: "https://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-osa-api.cgi?{{host}}+{{user}}",
+  who_to_follow_provider:
+    "https://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-osa-api.cgi?{{host}}+{{user}}",
   who_to_follow_link: "https://vinayaka.distsn.org/?{{host}}+{{user}}",
   scope_options_enabled: false
 
