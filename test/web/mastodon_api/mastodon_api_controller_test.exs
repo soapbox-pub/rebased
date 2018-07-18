@@ -736,16 +736,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       filename: "an_image.jpg"
     }
 
+    desc = "Description of the image"
+
     user = insert(:user)
 
     conn =
       conn
       |> assign(:user, user)
-      |> post("/api/v1/media", %{"file" => file})
+      |> post("/api/v1/media", %{"file" => file, "description" => desc})
 
     assert media = json_response(conn, 200)
 
     assert media["type"] == "image"
+    assert media["description"] == desc
   end
 
   test "hashtag timeline", %{conn: conn} do
