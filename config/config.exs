@@ -98,7 +98,8 @@ config :pleroma, :gopher,
 config :pleroma, :suggestions,
   enabled: false,
   third_party_engine:
-    "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}"
+    "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
+  timeout: 300_000
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -1077,7 +1077,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
     if Keyword.get(@suggestions, :enabled, false) do
-      api = Keyword.get(@suggestions, :third_party_engine, false)
+      api = Keyword.get(@suggestions, :third_party_engine, "")
+      timeout = Keyword.get(@suggestions, :timeout, 5000)
 
       host =
         Application.get_env(:pleroma, Pleroma.Web.Endpoint)
@@ -1088,7 +1089,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
 
       with {:ok, %{status_code: 200, body: body}} <-
-             @httpoison.get(url, [], timeout: 300_000, recv_timeout: 300_000),
+             @httpoison.get(url, [], timeout: timeout, recv_timeout: timeout),
            {:ok, data} <- Jason.decode(body) do
         data2 =
           Enum.slice(data, 0, 40)
