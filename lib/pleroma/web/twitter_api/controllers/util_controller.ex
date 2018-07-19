@@ -126,6 +126,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   @instance Application.get_env(:pleroma, :instance)
+  @instance_fe Application.get_env(:pleroma, :fe)
+  @instance_chat Application.get_env(:pleroma, :chat)
   def config(conn, _params) do
     case get_format(conn) do
       "xml" ->
@@ -148,9 +150,24 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         json(conn, %{
           site: %{
             name: Keyword.get(@instance, :name),
+            description: Keyword.get(@instance, :description),
             server: Web.base_url(),
             textlimit: to_string(Keyword.get(@instance, :limit)),
-            closed: if(Keyword.get(@instance, :registrations_open), do: "0", else: "1")
+            closed: if(Keyword.get(@instance, :registrations_open), do: "0", else: "1"),
+            private: if(Keyword.get(@instance, :public, true), do: "0", else: "1"),
+            pleromafe: %{
+              theme: Keyword.get(@instance_fe, :theme),
+              background: Keyword.get(@instance_fe, :background),
+              logo: Keyword.get(@instance_fe, :logo),
+              redirectRootNoLogin: Keyword.get(@instance_fe, :redirect_root_no_login),
+              redirectRootLogin: Keyword.get(@instance_fe, :redirect_root_login),
+              chatDisabled: !Keyword.get(@instance_chat, :enabled),
+              showInstanceSpecificPanel: Keyword.get(@instance_fe, :show_instance_panel),
+              showWhoToFollowPanel: Keyword.get(@instance_fe, :show_who_to_follow_panel),
+              scopeOptionsEnabled: Keyword.get(@instance_fe, :scope_options_enabled),
+              whoToFollowProvider: Keyword.get(@instance_fe, :who_to_follow_provider),
+              whoToFollowLink: Keyword.get(@instance_fe, :who_to_follow_link)
+            }
           }
         })
     end
