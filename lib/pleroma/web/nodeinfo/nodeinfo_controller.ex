@@ -44,7 +44,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       },
       metadata: %{
         nodeName: Keyword.get(instance, :name),
+        nodeDescription: Keyword.get(instance, :description),
         mediaProxy: Keyword.get(media_proxy, :enabled),
+        private: !Keyword.get(instance, :public, true),
         suggestions: %{
           enabled: Keyword.get(suggestions, :enabled, false),
           thirdPartyEngine: Keyword.get(suggestions, :third_party_engine, ""),
