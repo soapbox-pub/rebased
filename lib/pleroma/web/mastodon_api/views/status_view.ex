@@ -169,7 +169,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       remote_url: href,
       preview_url: MediaProxy.url(href),
       text_url: href,
-      type: type
+      type: type,
+      description: attachment["name"]
     }
   end
 

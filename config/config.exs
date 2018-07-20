@@ -54,6 +54,7 @@ config :pleroma, :instance,
   version: version,
   name: "Pleroma",
   email: "example@example.com",
+  description: "A Pleroma instance, an alternative fediverse server",
   limit: 5000,
   upload_limit: 16_000_000,
   registrations_open: true,
@@ -61,6 +62,19 @@ config :pleroma, :instance,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
   quarantined_instances: []
+
+config :pleroma, :fe,
+  theme: "pleroma-dark",
+  logo: "/static/logo.png",
+  background: "/static/aurora_borealis.jpg",
+  redirect_root_no_login: "/main/all",
+  redirect_root_login: "/main/friends",
+  show_instance_panel: true,
+  show_who_to_follow_panel: false,
+  who_to_follow_provider:
+    "https://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-osa-api.cgi?{{host}}+{{user}}",
+  who_to_follow_link: "https://vinayaka.distsn.org/?{{host}}+{{user}}",
+  scope_options_enabled: false
 
 config :pleroma, :activitypub,
   accept_blocks: true,

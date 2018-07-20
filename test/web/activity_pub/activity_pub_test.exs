@@ -476,6 +476,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  test "it can fetch plume articles" do
+    {:ok, object} =
+      ActivityPub.fetch_object_from_id(
+        "https://baptiste.gelez.xyz/~/PlumeDevelopment/this-month-in-plume-june-2018/"
+      )
+
+    assert object
+  end
+
   describe "update" do
     test "it creates an update activity with the new user data" do
       user = insert(:user)

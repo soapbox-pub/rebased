@@ -21,7 +21,7 @@ defmodule Pleroma.Upload do
     strip_exif_data(content_type, result_file)
 
     %{
-      "type" => "Image",
+      "type" => "Document",
       "url" => [
         %{
           "type" => "Link",
