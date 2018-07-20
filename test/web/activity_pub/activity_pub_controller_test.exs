@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       conn =
         conn
-        |> put_req_header("Accept", "application/activity+json")
+        |> put_req_header("accept", "application/activity+json")
         |> get("/users/#{user.nickname}/outbox")
 
       assert response(conn, 200) =~ note_activity.data["object"]["content"]
