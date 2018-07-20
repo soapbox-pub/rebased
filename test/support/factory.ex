@@ -65,6 +65,26 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def announce_activity_factory do
+    note_activity = insert(:note_activity)
+    user = insert(:user)
+
+    data = %{
+      "type" => "Announce",
+      "actor" => note_activity.actor,
+      "object" => note_activity.data["id"],
+      "to" => [user.follower_address, note_activity.data["actor"]],
+      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "context" => note_activity.data["context"]
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: user.ap_id,
+      recipients: data["to"]
+    }
+  end
+
   def like_activity_factory do
     note_activity = insert(:note_activity)
     user = insert(:user)
