@@ -10,7 +10,9 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
-config :pleroma, Pleroma.Upload, uploads: "uploads"
+config :pleroma, Pleroma.Upload,
+  uploads: "uploads",
+  strip_exif: false
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 

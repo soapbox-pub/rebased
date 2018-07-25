@@ -47,7 +47,8 @@ defmodule Pleroma.Mixfile do
       {:jason, "~> 1.0"},
       {:ex_machina, "~> 2.0", only: :test},
       {:credo, "~> 0.7", only: [:dev, :test]},
-      {:mock, "~> 0.3.0", only: :test}
+      {:mock, "~> 0.3.0", only: :test},
+      {:mogrify, "~> 0.6.1"}
     ]
   end
 
