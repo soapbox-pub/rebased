@@ -199,10 +199,14 @@ defmodule Pleroma.Formatter do
 
   @doc "changes scheme:... urls to html links"
   def add_links({subs, text}) do
+    additionnal_schemes =
+      Application.get_env(:pleroma, :uri_schemes, [])
+      |> Keyword.get(:additionnal_schemes, [])
+
     links =
       text
       |> String.split([" ", "\t", "<br>"])
-      |> Enum.filter(fn word -> String.starts_with?(word, @uri_schemes) end)
+      |> Enum.filter(fn word -> String.starts_with?(word, @uri_schemes ++ additionnal_schemes) end)
       |> Enum.filter(fn word -> Regex.match?(@link_regex, word) end)
       |> Enum.map(fn url -> {Ecto.UUID.generate(), url} end)
       |> Enum.sort_by(fn {_, url} -> -String.length(url) end)

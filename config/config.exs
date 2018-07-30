@@ -16,6 +16,8 @@ config :pleroma, Pleroma.Upload,
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 
+config :pleroma, :uri_schemes, additionnal_schemes: []
+
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
