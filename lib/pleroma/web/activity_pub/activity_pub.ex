@@ -641,8 +641,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Logger.info("Federating #{id} to #{inbox}")
     host = URI.parse(inbox).host
 
+    digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
+
     signature =
-      Pleroma.Web.HTTPSignatures.sign(actor, %{host: host, "content-length": byte_size(json)})
+      Pleroma.Web.HTTPSignatures.sign(actor, %{
+        host: host,
+        "content-length": byte_size(json),
+        digest: digest
+      })
 
     @httpoison.post(
       inbox,
