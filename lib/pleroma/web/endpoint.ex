@@ -35,7 +35,8 @@ defmodule Pleroma.Web.Endpoint do
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
     json_decoder: Jason,
-    length: Application.get_env(:pleroma, :instance) |> Keyword.get(:upload_limit)
+    length: Application.get_env(:pleroma, :instance) |> Keyword.get(:upload_limit),
+    body_reader: {Pleroma.Web.Plugs.DigestPlug, :read_body, []}
   )
 
   plug(Plug.MethodOverride)
