@@ -18,16 +18,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def get_actor(%{"actor" => actor}) when is_list(actor) do
-    Enum.at(actor, 0)
+    if is_binary(Enum.at(actor, 0)) do
+      Enum.at(actor, 0)
+    else
+      Enum.find(actor, fn %{"type" => type} -> type == "Person" end)
+      |> Map.get("id")
+    end
   end
 
   def get_actor(%{"actor" => actor}) when is_map(actor) do
     actor["id"]
-  end
-
-  def get_actor(%{"actor" => actor_list}) do
-    Enum.find(actor_list, fn %{"type" => type} -> type == "Person" end)
-    |> Map.get("id")
   end
 
   @doc """
