@@ -653,7 +653,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     @httpoison.post(
       inbox,
       json,
-      [{"Content-Type", "application/activity+json"}, {"signature", signature}],
+      [
+        {"Content-Type", "application/activity+json"},
+        {"signature", signature},
+        {"digest", digest}
+      ],
       hackney: [pool: :default]
     )
   end
