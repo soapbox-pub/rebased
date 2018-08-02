@@ -113,7 +113,8 @@ config :pleroma, :suggestions,
   enabled: false,
   third_party_engine:
     "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
-  timeout: 300_000
+  timeout: 300_000,
+  web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
