@@ -42,6 +42,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_emoji
     |> fix_tag
     |> fix_content_map
+    |> fix_likes
     |> fix_addressing
   end
 
@@ -65,6 +66,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_actor(%{"attributedTo" => actor} = object) do
     object
     |> Map.put("actor", get_actor(%{"actor" => actor}))
+  end
+
+  def fix_likes(%{"likes" => likes} = object)
+      when is_bitstring(likes) do
+    # Check for standardisation
+    # This is what Peertube does
+    # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+    object
+    |> Map.put("likes", [])
+    |> Map.put("like_count", 0)
+  end
+
+  def fix_likes(object) do
+    object
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object)
