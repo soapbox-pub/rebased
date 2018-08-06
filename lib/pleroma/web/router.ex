@@ -283,6 +283,10 @@ defmodule Pleroma.Web.Router do
     get("/externalprofile/show", TwitterAPI.Controller, :external_profile)
   end
 
+  pipeline :ap_relay do
+    plug(:accepts, ["activity+json"])
+  end
+
   pipeline :ostatus do
     plug(:accepts, ["xml", "atom", "html", "activity+json"])
   end
@@ -319,9 +323,8 @@ defmodule Pleroma.Web.Router do
   end
 
   if @federating do
-    scope "/", Pleroma.Web.ActivityPub do
-      # XXX: not really ostatus either
-      pipe_through(:ostatus)
+    scope "/relay", Pleroma.Web.ActivityPub do
+      pipe_through(:ap_relay)
       get("/", ActivityPubController, :relay)
     end
 

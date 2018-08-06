@@ -638,16 +638,18 @@ defmodule Pleroma.User do
   end
 
   def get_or_create_instance_user do
-    if user = get_by_ap_id(Pleroma.Web.Endpoint.url()) do
+    relay_uri = "#{Pleroma.Web.Endpoint.url()}/relay"
+
+    if user = get_by_ap_id(relay_uri) do
       user
     else
       changes =
         %User{}
         |> cast(%{}, [:ap_id, :nickname, :local])
-        |> put_change(:ap_id, Pleroma.Web.Endpoint.url())
+        |> put_change(:ap_id, relay_uri)
         |> put_change(:nickname, nil)
         |> put_change(:local, true)
-        |> put_change(:follower_address, Pleroma.Web.Endpoint.url() <> "/relay/followers")
+        |> put_change(:follower_address, relay_uri <> "/followers")
 
       {:ok, user} = Repo.insert(changes)
       user
