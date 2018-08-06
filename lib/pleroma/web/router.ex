@@ -323,9 +323,11 @@ defmodule Pleroma.Web.Router do
   end
 
   if @federating do
-    scope "/relay", Pleroma.Web.ActivityPub do
-      pipe_through(:ap_relay)
-      get("/", ActivityPubController, :relay)
+    if @allow_relay do
+      scope "/relay", Pleroma.Web.ActivityPub do
+        pipe_through(:ap_relay)
+        get("/", ActivityPubController, :relay)
+      end
     end
 
     scope "/", Pleroma.Web.ActivityPub do
