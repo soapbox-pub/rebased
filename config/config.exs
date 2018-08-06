@@ -59,6 +59,7 @@ config :pleroma, :instance,
   upload_limit: 16_000_000,
   registrations_open: true,
   federating: true,
+  allow_relay: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
   quarantined_instances: []
