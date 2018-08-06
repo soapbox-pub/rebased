@@ -467,10 +467,15 @@ defmodule Pleroma.User do
 
   def get_notified_from_activity(%Activity{recipients: to, data: %{"type" => "Announce"} = data}) do
     object = Object.normalize(data["object"])
+    actor = User.get_cached_by_ap_id(data["actor"])
 
     # ensure that the actor who published the announced object appears only once
     to =
-      (to ++ [object.data["actor"]])
+      if actor.nickname != nil do
+        (to ++ [object.data["actor"]])
+      else
+        to
+      end
       |> Enum.uniq()
 
     query = get_notified_from_activity_query(to)
