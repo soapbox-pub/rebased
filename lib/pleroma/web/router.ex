@@ -319,12 +319,10 @@ defmodule Pleroma.Web.Router do
   end
 
   if @federating do
-    if @allow_relay do
-      scope "/", Pleroma.Web.ActivityPub do
-        # XXX: not really ostatus either
-        pipe_through(:ostatus)
-        get("/", ActivityPubController, :relay)
-      end
+    scope "/", Pleroma.Web.ActivityPub do
+      # XXX: not really ostatus either
+      pipe_through(:ostatus)
+      get("/", ActivityPubController, :relay)
     end
 
     scope "/", Pleroma.Web.ActivityPub do
