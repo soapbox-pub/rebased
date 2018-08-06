@@ -578,7 +578,11 @@ defmodule Pleroma.User do
   end
 
   def local_user_query() do
-    from(u in User, where: u.local == true)
+    from(
+      u in User,
+      where: u.local == true,
+      where: not is_nil(u.nickname)
+    )
   end
 
   def deactivate(%User{} = user) do
