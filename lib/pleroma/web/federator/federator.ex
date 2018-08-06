@@ -4,6 +4,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Activity
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   require Logger
@@ -69,6 +70,9 @@ defmodule Pleroma.Web.Federator do
 
         Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
         Pleroma.Web.Salmon.publish(actor, activity)
+
+        Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
+        Pleroma.Web.ActivityPub.Relay.publish(activity)
       end
 
       Logger.info(fn -> "Sending #{activity.data["id"]} out via AP" end)

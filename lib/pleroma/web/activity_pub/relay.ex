@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.Relay do
-  alias Pleroma.User
+  alias Pleroma.{User, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   require Logger
 
@@ -29,5 +29,14 @@ defmodule Pleroma.Web.ActivityPub.Relay do
     end
 
     :ok
+  end
+
+  def publish(activity) do
+    with %User{} = user <- get_actor(),
+         %Object{} = object <- Object.normalize(activity.data["object"]["id"]) do
+      ActivityPub.announce(user, object)
+    else
+      e -> Logger.error("error: #{inspect(e)}")
+    end
   end
 end
