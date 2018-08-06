@@ -20,6 +20,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "@context" => "https://www.w3.org/ns/activitystreams",
       "id" => user.ap_id,
       "type" => "Application",
+      "following" => "#{user.ap_id}/relay/following",
+      "followers" => "#{user.ap_id}/relay/followers",
       "inbox" => "#{user.ap_id}/inbox",
       "name" => "Pleroma",
       "summary" => "Virtual actor for Pleroma relay",
