@@ -71,8 +71,10 @@ defmodule Pleroma.Web.Federator do
         Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
         Pleroma.Web.Salmon.publish(actor, activity)
 
-        Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
-        Pleroma.Web.ActivityPub.Relay.publish(activity)
+        if Mix.env() != :test do
+          Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
+          Pleroma.Web.ActivityPub.Relay.publish(activity)
+        end
       end
 
       Logger.info(fn -> "Sending #{activity.data["id"]} out via AP" end)
