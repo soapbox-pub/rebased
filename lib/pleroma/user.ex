@@ -637,6 +637,22 @@ defmodule Pleroma.User do
     end
   end
 
+  def get_or_create_instance_user do
+    if user = get_by_ap_id(Pleroma.Web.Endpoint.url()) do
+      user
+    else
+      changes =
+        %User{}
+        |> cast(%{}, [:ap_id, :nickname, :local])
+        |> put_change(:ap_id, Pleroma.Web.Endpoint.url())
+        |> put_change(:nickname, nil)
+        |> put_change(:local, true)
+
+      {:ok, user} = Repo.insert(changes)
+      user
+    end
+  end
+
   # AP style
   def public_key_from_info(%{
         "source_data" => %{"publicKey" => %{"publicKeyPem" => public_key_pem}}
