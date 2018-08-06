@@ -647,6 +647,7 @@ defmodule Pleroma.User do
         |> put_change(:ap_id, Pleroma.Web.Endpoint.url())
         |> put_change(:nickname, nil)
         |> put_change(:local, true)
+        |> put_change(:follower_address, Pleroma.Web.Endpoint.url() <> "/relay/followers")
 
       {:ok, user} = Repo.insert(changes)
       user
