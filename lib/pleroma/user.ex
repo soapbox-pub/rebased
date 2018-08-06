@@ -77,7 +77,7 @@ defmodule Pleroma.User do
     changes =
       %User{}
       |> cast(params, [:bio, :name, :ap_id, :nickname, :info, :avatar])
-      |> validate_required([:name, :ap_id, :nickname])
+      |> validate_required([:name, :ap_id])
       |> unique_constraint(:nickname)
       |> validate_format(:nickname, @email_regex)
       |> validate_length(:bio, max: 5000)
