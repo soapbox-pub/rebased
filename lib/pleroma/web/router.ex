@@ -319,6 +319,12 @@ defmodule Pleroma.Web.Router do
 
   if @federating do
     scope "/", Pleroma.Web.ActivityPub do
+      # XXX: not really ostatus either
+      pipe_through(:ostatus)
+      get("/", ActivityPubController, :relay)
+    end
+
+    scope "/", Pleroma.Web.ActivityPub do
       pipe_through(:activitypub)
       post("/users/:nickname/inbox", ActivityPubController, :inbox)
       post("/inbox", ActivityPubController, :inbox)

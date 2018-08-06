@@ -107,6 +107,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
+  def relay(conn, params) do
+    with %User{} = user <- User.get_or_create_instance_user(),
+         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("user.json", %{user: user}))
+    else
+      nil -> {:error, :not_found}
+    end
+  end
+
   def errors(conn, {:error, :not_found}) do
     conn
     |> put_status(404)
