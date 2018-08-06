@@ -499,7 +499,8 @@ defmodule Pleroma.User do
               u.nickname,
               u.name
             )
-        }
+        },
+        where: not is_nil(u.nickname)
       )
 
     q =
