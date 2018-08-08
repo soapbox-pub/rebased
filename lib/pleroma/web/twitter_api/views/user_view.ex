@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.UserView do
   use Pleroma.Web, :view
   alias Pleroma.User
+  alias Pleroma.Formatter
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
 
@@ -28,9 +29,19 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
 
     user_info = User.get_cached_user_info(user)
 
+    emoji =
+      (user.info["source_data"]["tag"] || [])
+      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
+      |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
+        {String.trim(name, ":"), url}
+      end)
+
+    bio = HtmlSanitizeEx.strip_tags(user.bio)
+
     data = %{
       "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
-      "description" => HtmlSanitizeEx.strip_tags(user.bio),
+      "description" => bio,
+      "description_html" => bio |> Formatter.emojify(emoji),
       "favourites_count" => 0,
       "followers_count" => user_info[:follower_count],
       "following" => following,
@@ -47,6 +58,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
         "delete_others_notice" => !!user.info["is_moderator"]
       },
       "screen_name" => user.nickname,
+      "screen_name_html" => Formatter.emojify(user.nickname, emoji),
       "statuses_count" => user_info[:note_count],
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => User.banner_url(user) |> MediaProxy.url(),
