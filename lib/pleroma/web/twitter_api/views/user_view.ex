@@ -50,6 +50,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "friends_count" => user_info[:following_count],
       "id" => user.id,
       "name" => user.name,
+      "name_html" => Formatter.emojify(user.name, emoji),
       "profile_image_url" => image,
       "profile_image_url_https" => image,
       "profile_image_url_profile_size" => image,
@@ -58,7 +59,6 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
         "delete_others_notice" => !!user.info["is_moderator"]
       },
       "screen_name" => user.nickname,
-      "screen_name_html" => Formatter.emojify(user.nickname, emoji),
       "statuses_count" => user_info[:note_count],
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => User.banner_url(user) |> MediaProxy.url(),
