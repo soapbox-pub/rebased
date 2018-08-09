@@ -50,7 +50,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "friends_count" => user_info[:following_count],
       "id" => user.id,
       "name" => user.name,
-      "name_html" => Formatter.emojify(user.name, emoji),
+      "name_html" => HtmlSanitizeEx.strip_tags(user.name) |> Formatter.emojify(emoji),
       "profile_image_url" => image,
       "profile_image_url_https" => image,
       "profile_image_url_profile_size" => image,
