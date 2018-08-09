@@ -54,7 +54,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
     String.split(text, "\r")
     |> Enum.map(fn text ->
-      "i#{text}\tfake\(NULL)\t0\r\n"
+      "i#{text}\tfake\t(NULL)\t0\r\n"
     end)
     |> Enum.join("")
   end
