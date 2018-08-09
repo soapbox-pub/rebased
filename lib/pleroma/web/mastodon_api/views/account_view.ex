@@ -13,6 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
     user_info = User.user_info(user)
+    bot = (user.info["source_data"]["type"] || "Person") in ["Application", "Service"]
 
     emojis =
       (user.info["source_data"]["tag"] || [])
@@ -44,6 +45,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       header_static: header,
       emojis: emojis,
       fields: [],
+      bot: bot,
       source: %{
         note: "",
         privacy: "public",
