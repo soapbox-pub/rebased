@@ -211,6 +211,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
+  def render_content(%{"type" => "Video"} = object) do
+    name = object["name"]
+
+    content =
+      if !!name and name != "" do
+        "<p><a href=\"#{object["url"]}\">#{name}</a></p>#{object["content"]}"
+      else
+        object["content"]
+      end
+
+    HtmlSanitizeEx.basic_html(content)
+  end
+
   def render_content(%{"type" => "Article"} = object) do
     summary = object["name"]
 
