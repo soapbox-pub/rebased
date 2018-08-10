@@ -27,6 +27,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       end)
 
+    fields =
+      (user.info["source_data"]["attachment"] || [])
+      |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
+      |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+
     %{
       id: to_string(user.id),
       username: hd(String.split(user.nickname, "@")),
@@ -44,7 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       header: header,
       header_static: header,
       emojis: emojis,
-      fields: [],
+      fields: fields,
       bot: bot,
       source: %{
         note: "",
