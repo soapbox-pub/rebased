@@ -99,6 +99,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       conn
       |> render("followed.html", %{error: false})
     else
+      # Was already following user
+      {:error, "Could not follow user:" <> _rest} ->
+        render(conn, "followed.html", %{error: false})
+
       _e ->
         conn
         |> render("follow_login.html", %{
@@ -117,6 +121,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       conn
       |> render("followed.html", %{error: false})
     else
+      # Was already following user
+      {:error, "Could not follow user:" <> _rest} ->
+        conn
+        |> render("followed.html", %{error: false})
+
       e ->
         Logger.debug("Remote follow failed with error #{inspect(e)}")
 
