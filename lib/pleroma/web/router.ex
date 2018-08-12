@@ -202,9 +202,7 @@ defmodule Pleroma.Web.Router do
     get("/statuses/show/:id", TwitterAPI.Controller, :fetch_status)
     get("/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation)
 
-    if @registrations_open do
-      post("/account/register", TwitterAPI.Controller, :register)
-    end
+    post("/account/register", TwitterAPI.Controller, :register)
 
     get("/search", TwitterAPI.Controller, :search)
     get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)
@@ -356,6 +354,7 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/", Fallback do
+    get("/registration/:token", RedirectController, :registration_page)
     get("/*path", RedirectController, :redirector)
   end
 end
@@ -369,5 +368,9 @@ defmodule Fallback.RedirectController do
       |> put_resp_content_type("text/html")
       |> send_file(200, "priv/static/index.html")
     end
+  end
+
+  def registration_page(conn, params) do
+    redirector(conn, params)
   end
 end
