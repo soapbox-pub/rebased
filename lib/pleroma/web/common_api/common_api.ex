@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.CommonAPI do
-  alias Pleroma.{Repo, Activity, Object}
+  alias Pleroma.{User, Repo, Activity, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Formatter
 
@@ -118,6 +118,18 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def update(user) do
+    user =
+      with emoji <- emoji_from_profile(user),
+           source_data <- (user.info["source_data"] || %{}) |> Map.put("tag", emoji),
+           new_info <- Map.put(user.info, "source_data", source_data),
+           change <- User.info_changeset(user, %{info: new_info}),
+           {:ok, user} <- User.update_and_set_cache(change) do
+        user
+      else
+        _e ->
+          user
+      end
+
     ActivityPub.update(%{
       local: true,
       to: [user.follower_address],
