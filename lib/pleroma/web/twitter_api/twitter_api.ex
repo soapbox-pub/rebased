@@ -134,8 +134,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     }
 
     # no need to query DB if registration is open
-    unless @registrations_open || is_nil(tokenString) do
-      token = Repo.get_by(UserInviteToken, %{token: tokenString})
+    token = unless @registrations_open || is_nil(tokenString) do
+      Repo.get_by(UserInviteToken, %{token: tokenString})
     end
 
     cond do
