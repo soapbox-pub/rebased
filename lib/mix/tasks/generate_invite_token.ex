@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.GenerateInviteToken do
   use Mix.Task
 
-  @shortdoc "Generate password reset link for user"
+  @shortdoc "Generate invite token for user"
   def run([]) do
     Mix.Task.run("app.start")
 
