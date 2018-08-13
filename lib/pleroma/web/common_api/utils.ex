@@ -203,7 +203,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Enum.map(fn {shortcode, url} ->
       %{
         "type" => "Emoji",
-        "icon" => %{"url" => "#{Endpoint.url()}#{url}"},
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},
         "name" => ":#{shortcode}:"
       }
     end)

@@ -37,12 +37,12 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     expected = [
       %{
         "type" => "Emoji",
-        "icon" => %{"url" => "#{Endpoint.url()}/finmoji/128px/perkele-128.png"},
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/finmoji/128px/perkele-128.png"},
         "name" => ":perkele:"
       },
       %{
         "type" => "Emoji",
-        "icon" => %{"url" => "#{Endpoint.url()}/finmoji/128px/karjalanpiirakka-128.png"},
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/finmoji/128px/karjalanpiirakka-128.png"},
         "name" => ":karjalanpiirakka:"
       }
     ]
