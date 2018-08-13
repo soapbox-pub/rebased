@@ -42,7 +42,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "image" => %{
         "type" => "Image",
         "url" => User.banner_url(user)
-      }
+      },
+      "tag" => user.info["source_data"]["tag"] || []
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
