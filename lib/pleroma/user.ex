@@ -472,7 +472,7 @@ defmodule Pleroma.User do
     # ensure that the actor who published the announced object appears only once
     to =
       if actor.nickname != nil do
-        (to ++ [object.data["actor"]])
+        to ++ [object.data["actor"]]
       else
         to
       end
