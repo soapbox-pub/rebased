@@ -3,11 +3,7 @@ defmodule HTTPoisonMock do
 
   def get(url, body \\ [], headers \\ [])
 
-  def get(
-        "https://puckipedia.com/",
-        [Accept: "application/activity+json"],
-        []
-      ) do
+  def get("https://puckipedia.com/", [Accept: "application/activity+json"], _) do
     {:ok,
      %Response{
        status_code: 200,
