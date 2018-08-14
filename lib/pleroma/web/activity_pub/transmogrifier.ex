@@ -21,6 +21,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Enum.at(actor, 0)
   end
 
+  def get_actor(%{"actor" => actor}) when is_map(actor) do
+    actor["id"]
+  end
+
   def get_actor(%{"actor" => actor_list}) do
     Enum.find(actor_list, fn %{"type" => type} -> type == "Person" end)
     |> Map.get("id")
@@ -38,6 +42,24 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_emoji
     |> fix_tag
     |> fix_content_map
+    |> fix_addressing
+  end
+
+  def fix_addressing_list(map, field) do
+    if is_binary(map[field]) do
+      map
+      |> Map.put(field, [map[field]])
+    else
+      map
+    end
+  end
+
+  def fix_addressing(map) do
+    map
+    |> fix_addressing_list("to")
+    |> fix_addressing_list("cc")
+    |> fix_addressing_list("bto")
+    |> fix_addressing_list("bcc")
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
@@ -143,7 +165,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
       when objtype in ["Article", "Note"] do
     actor = get_actor(data)
-    data = Map.put(data, "actor", actor)
+
+    data =
+      Map.put(data, "actor", actor)
+      |> fix_addressing
 
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
