@@ -154,6 +154,12 @@ defmodule Pleroma.Web.Router do
     post("/domain_blocks", MastodonAPIController, :block_domain)
     delete("/domain_blocks", MastodonAPIController, :unblock_domain)
 
+    get("/filters", MastodonAPIController, :get_filters)
+    post("/filters", MastodonAPIController, :create_filter)
+    get("/filters/:id", MastodonAPIController, :get_filter)
+    put("/filters/:id", MastodonAPIController, :update_filter)
+    delete("/filters/:id", MastodonAPIController, :delete_filter)
+
     get("/suggestions", MastodonAPIController, :suggestions)
   end
 
