@@ -11,6 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   import Ecto.Query
   require Logger
 
+  @httpoison Application.get_env(:pleroma, :httpoison)
+
   action_fallback(:errors)
 
   def create_app(conn, params) do
@@ -1096,5 +1098,39 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     conn
     |> put_status(500)
     |> json("Something went wrong")
+  end
+
+  @suggestions Application.get_env(:pleroma, :suggestions)
+
+  def suggestions(%{assigns: %{user: user}} = conn, _) do
+    if Keyword.get(@suggestions, :enabled, false) do
+      api = Keyword.get(@suggestions, :third_party_engine, "")
+      timeout = Keyword.get(@suggestions, :timeout, 5000)
+
+      host =
+        Application.get_env(:pleroma, Pleroma.Web.Endpoint)
+        |> Keyword.get(:url)
+        |> Keyword.get(:host)
+
+      user = user.nickname
+      url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
+
+      with {:ok, %{status_code: 200, body: body}} <-
+             @httpoison.get(url, [], timeout: timeout, recv_timeout: timeout),
+           {:ok, data} <- Jason.decode(body) do
+        data2 =
+          Enum.slice(data, 0, 40)
+          |> Enum.map(fn x ->
+            Map.put(x, "id", User.get_or_fetch(x["acct"]).id)
+          end)
+
+        conn
+        |> json(data2)
+      else
+        e -> Logger.error("Could not retrieve suggestions at fetch #{url}, #{inspect(e)}")
+      end
+    else
+      json(conn, [])
+    end
   end
 end

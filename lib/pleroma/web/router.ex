@@ -141,6 +141,8 @@ defmodule Pleroma.Web.Router do
     get("/domain_blocks", MastodonAPIController, :domain_blocks)
     post("/domain_blocks", MastodonAPIController, :block_domain)
     delete("/domain_blocks", MastodonAPIController, :unblock_domain)
+
+    get("/suggestions", MastodonAPIController, :suggestions)
   end
 
   scope "/api/web", Pleroma.Web.MastodonAPI do
