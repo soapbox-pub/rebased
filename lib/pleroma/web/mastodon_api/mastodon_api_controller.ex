@@ -19,9 +19,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with cs <- App.register_changeset(%App{}, params) |> IO.inspect(),
          {:ok, app} <- Repo.insert(cs) |> IO.inspect() do
       res = %{
-        id: app.id,
+        id: app.id |> to_string,
+        name: app.client_name,
         client_id: app.client_id,
-        client_secret: app.client_secret
+        client_secret: app.client_secret,
+        redirect_uris: app.redirect_uris,
+        website: app.website
       }
 
       json(conn, res)
