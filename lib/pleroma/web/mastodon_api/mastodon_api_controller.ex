@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
-  alias Pleroma.{Repo, Activity, User, Notification, Stats}
+  alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
   alias Pleroma.Web
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView}
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -10,6 +10,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Comeonin.Pbkdf2
   import Ecto.Query
   require Logger
+
+  @httpoison Application.get_env(:pleroma, :httpoison)
 
   action_fallback(:errors)
 
@@ -125,7 +127,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     response = %{
       uri: Web.base_url(),
       title: Keyword.get(@instance, :name),
-      description: "A Pleroma instance, an alternative fediverse server",
+      description: Keyword.get(@instance, :description),
       version: "#{@mastodon_api_level} (compatible; #{Keyword.get(@instance, :version)})",
       email: Keyword.get(@instance, :email),
       urls: %{
@@ -428,13 +430,40 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     render(conn, AccountView, "relationships.json", %{user: user, targets: targets})
   end
 
-  def upload(%{assigns: %{user: _}} = conn, %{"file" => file}) do
-    with {:ok, object} <- ActivityPub.upload(file) do
+  def update_media(%{assigns: %{user: _}} = conn, data) do
+    with %Object{} = object <- Repo.get(Object, data["id"]),
+         true <- is_binary(data["description"]),
+         description <- data["description"] do
+      new_data = %{object.data | "name" => description}
+
+      change = Object.change(object, %{data: new_data})
+      {:ok, media_obj} = Repo.update(change)
+
       data =
-        object.data
+        new_data
         |> Map.put("id", object.id)
 
       render(conn, StatusView, "attachment.json", %{attachment: data})
+    end
+  end
+
+  def upload(%{assigns: %{user: _}} = conn, %{"file" => file} = data) do
+    with {:ok, object} <- ActivityPub.upload(file) do
+      objdata =
+        if Map.has_key?(data, "description") do
+          Map.put(object.data, "name", data["description"])
+        else
+          object.data
+        end
+
+      change = Object.change(object, %{data: objdata})
+      {:ok, object} = Repo.update(change)
+
+      objdata =
+        objdata
+        |> Map.put("id", object.id)
+
+      render(conn, StatusView, "attachment.json", %{attachment: objdata})
     end
   end
 
@@ -873,7 +902,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           },
           compose: %{
             me: "#{user.id}",
-            default_privacy: "public",
+            default_privacy: user.info["default_scope"] || "public",
             default_sensitive: false
           },
           media_attachments: %{
@@ -1069,5 +1098,39 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     conn
     |> put_status(500)
     |> json("Something went wrong")
+  end
+
+  @suggestions Application.get_env(:pleroma, :suggestions)
+
+  def suggestions(%{assigns: %{user: user}} = conn, _) do
+    if Keyword.get(@suggestions, :enabled, false) do
+      api = Keyword.get(@suggestions, :third_party_engine, "")
+      timeout = Keyword.get(@suggestions, :timeout, 5000)
+
+      host =
+        Application.get_env(:pleroma, Pleroma.Web.Endpoint)
+        |> Keyword.get(:url)
+        |> Keyword.get(:host)
+
+      user = user.nickname
+      url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
+
+      with {:ok, %{status_code: 200, body: body}} <-
+             @httpoison.get(url, [], timeout: timeout, recv_timeout: timeout),
+           {:ok, data} <- Jason.decode(body) do
+        data2 =
+          Enum.slice(data, 0, 40)
+          |> Enum.map(fn x ->
+            Map.put(x, "id", User.get_or_fetch(x["acct"]).id)
+          end)
+
+        conn
+        |> json(data2)
+      else
+        e -> Logger.error("Could not retrieve suggestions at fetch #{url}, #{inspect(e)}")
+      end
+    else
+      json(conn, [])
+    end
   end
 end

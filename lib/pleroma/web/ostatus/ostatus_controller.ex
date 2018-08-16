@@ -6,6 +6,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Repo
   alias Pleroma.Web.{OStatus, Federator}
   alias Pleroma.Web.XML
+  alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -90,7 +91,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
-          _ -> represent_activity(conn, activity, user)
+          _ -> represent_activity(conn, nil, activity, user)
         end
       else
         {:public?, false} ->
@@ -107,12 +108,12 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def activity(conn, %{"uuid" => uuid}) do
     with id <- o_status_url(conn, :activity, uuid),
-         {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(id)},
+         {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
          {_, true} <- {:public?, ActivityPub.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      case get_format(conn) do
+      case format = get_format(conn) do
         "html" -> redirect(conn, to: "/notice/#{activity.id}")
-        _ -> represent_activity(conn, activity, user)
+        _ -> represent_activity(conn, format, activity, user)
       end
     else
       {:public?, false} ->
@@ -130,14 +131,14 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     with {_, %Activity{} = activity} <- {:activity, Repo.get(Activity, id)},
          {_, true} <- {:public?, ActivityPub.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      case get_format(conn) do
+      case format = get_format(conn) do
         "html" ->
           conn
           |> put_resp_content_type("text/html")
           |> send_file(200, "priv/static/index.html")
 
         _ ->
-          represent_activity(conn, activity, user)
+          represent_activity(conn, format, activity, user)
       end
     else
       {:public?, false} ->
@@ -151,7 +152,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
-  defp represent_activity(conn, activity, user) do
+  defp represent_activity(conn, "activity+json", activity, user) do
+    conn
+    |> put_resp_header("content-type", "application/activity+json")
+    |> json(ObjectView.render("object.json", %{object: activity}))
+  end
+
+  defp represent_activity(conn, _, activity, user) do
     response =
       activity
       |> ActivityRepresenter.to_simple_form(user, true)

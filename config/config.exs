@@ -10,7 +10,11 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
-config :pleroma, Pleroma.Upload, uploads: "uploads"
+config :pleroma, Pleroma.Upload,
+  uploads: "uploads",
+  strip_exif: false
+
+config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
@@ -50,6 +54,7 @@ config :pleroma, :instance,
   version: version,
   name: "Pleroma",
   email: "example@example.com",
+  description: "A Pleroma instance, an alternative fediverse server",
   limit: 5000,
   upload_limit: 16_000_000,
   registrations_open: true,
@@ -57,6 +62,19 @@ config :pleroma, :instance,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
   quarantined_instances: []
+
+config :pleroma, :fe,
+  theme: "pleroma-dark",
+  logo: "/static/logo.png",
+  background: "/static/aurora_borealis.jpg",
+  redirect_root_no_login: "/main/all",
+  redirect_root_login: "/main/friends",
+  show_instance_panel: true,
+  show_who_to_follow_panel: false,
+  who_to_follow_provider:
+    "https://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-osa-api.cgi?{{host}}+{{user}}",
+  who_to_follow_link: "https://vinayaka.distsn.org/?{{host}}+{{user}}",
+  scope_options_enabled: false
 
 config :pleroma, :activitypub,
   accept_blocks: true,
@@ -92,6 +110,13 @@ config :pleroma, :gopher,
   enabled: false,
   ip: {0, 0, 0, 0},
   port: 9999
+
+config :pleroma, :suggestions,
+  enabled: false,
+  third_party_engine:
+    "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
+  timeout: 300_000,
+  web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

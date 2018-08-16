@@ -20,6 +20,30 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     assert represented["profile_image_url"] == image
   end
 
+  test "A user with emoji in username", %{user: user} do
+    expected =
+      "<img height='32px' width='32px' alt='karjalanpiirakka' title='karjalanpiirakka' src='/file.png' /> man"
+
+    user = %{
+      user
+      | info: %{
+          "source_data" => %{
+            "tag" => [
+              %{
+                "type" => "Emoji",
+                "icon" => %{"url" => "/file.png"},
+                "name" => ":karjalanpiirakka:"
+              }
+            ]
+          }
+        }
+    }
+
+    user = %{user | name: ":karjalanpiirakka: man"}
+    represented = UserView.render("show.json", %{user: user})
+    assert represented["name_html"] == expected
+  end
+
   test "A user" do
     note_activity = insert(:note_activity)
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
@@ -40,7 +64,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
+      "name_html" => user.name,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
+      "description_html" => HtmlSanitizeEx.strip_tags(user.bio),
       "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "favourites_count" => 0,
       "statuses_count" => 1,
@@ -60,7 +86,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "locked" => false
+      "locked" => false,
+      "default_scope" => "public"
     }
 
     assert represented == UserView.render("show.json", %{user: user})
@@ -76,7 +103,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
+      "name_html" => user.name,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
+      "description_html" => HtmlSanitizeEx.strip_tags(user.bio),
       "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "favourites_count" => 0,
       "statuses_count" => 0,
@@ -96,7 +125,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "locked" => false
+      "locked" => false,
+      "default_scope" => "public"
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
@@ -113,7 +143,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "id" => follower.id,
       "name" => follower.name,
       "screen_name" => follower.nickname,
+      "name_html" => follower.name,
       "description" => HtmlSanitizeEx.strip_tags(follower.bio),
+      "description_html" => HtmlSanitizeEx.strip_tags(follower.bio),
       "created_at" => follower.inserted_at |> Utils.format_naive_asctime(),
       "favourites_count" => 0,
       "statuses_count" => 0,
@@ -133,7 +165,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "locked" => false
+      "locked" => false,
+      "default_scope" => "public"
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
@@ -157,7 +190,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "id" => user.id,
       "name" => user.name,
       "screen_name" => user.nickname,
+      "name_html" => user.name,
       "description" => HtmlSanitizeEx.strip_tags(user.bio),
+      "description_html" => HtmlSanitizeEx.strip_tags(user.bio),
       "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "favourites_count" => 0,
       "statuses_count" => 0,
@@ -177,7 +212,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "locked" => false
+      "locked" => false,
+      "default_scope" => "public"
     }
 
     blocker = Repo.get(User, blocker.id)

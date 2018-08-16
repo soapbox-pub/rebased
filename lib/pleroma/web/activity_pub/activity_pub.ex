@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def insert(map, local \\ true) when is_map(map) do
-    with nil <- Activity.get_by_ap_id(map["id"]),
+    with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map),
          :ok <- check_actor_is_active(map["actor"]),
          {:ok, map} <- MRF.filter(map),
@@ -641,13 +641,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Logger.info("Federating #{id} to #{inbox}")
     host = URI.parse(inbox).host
 
+    digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
+
     signature =
-      Pleroma.Web.HTTPSignatures.sign(actor, %{host: host, "content-length": byte_size(json)})
+      Pleroma.Web.HTTPSignatures.sign(actor, %{
+        host: host,
+        "content-length": byte_size(json),
+        digest: digest
+      })
 
     @httpoison.post(
       inbox,
       json,
-      [{"Content-Type", "application/activity+json"}, {"signature", signature}],
+      [
+        {"Content-Type", "application/activity+json"},
+        {"signature", signature},
+        {"digest", digest}
+      ],
       hackney: [pool: :default]
     )
   end
@@ -670,7 +680,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
                recv_timeout: 20000
              ),
            {:ok, data} <- Jason.decode(body),
-           nil <- Object.get_by_ap_id(data["id"]),
+           nil <- Object.normalize(data),
            params <- %{
              "type" => "Create",
              "to" => data["to"],
@@ -679,7 +689,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              "object" => data
            },
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do
-        {:ok, Object.get_by_ap_id(activity.data["object"]["id"])}
+        {:ok, Object.normalize(activity.data["object"])}
       else
         object = %Object{} ->
           {:ok, object}
@@ -688,7 +698,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
           case OStatus.fetch_activity_from_url(id) do
-            {:ok, [activity | _]} -> {:ok, Object.get_by_ap_id(activity.data["object"]["id"])}
+            {:ok, [activity | _]} -> {:ok, Object.normalize(activity.data["object"])}
             e -> e
           end
       end

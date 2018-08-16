@@ -179,6 +179,12 @@
       "css": "globe",
       "code": 59410,
       "src": "fontawesome"
+    },
+    {
+      "uid": "b3a9e2dab4d19ea3b2f628242c926bfe",
+      "css": "brush",
+      "code": 59411,
+      "src": "iconic"
     }
   ]
 }

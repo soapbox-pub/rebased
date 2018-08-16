@@ -12,7 +12,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("user.json", %{user: user}) do
     {:ok, user} = WebFinger.ensure_keys_present(user)
     {:ok, _, public_key} = Salmon.keys_from_pem(user.info["keys"])
-    public_key = :public_key.pem_entry_encode(:RSAPublicKey, public_key)
+    public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
 
     %{
@@ -98,9 +98,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     info = User.user_info(user)
 
     params = %{
-      "type" => ["Create", "Announce"],
-      "actor_id" => user.ap_id,
-      "whole_db" => true,
       "limit" => "10"
     }
 
@@ -111,10 +108,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         params
       end
 
-    activities = ActivityPub.fetch_public_activities(params)
-    min_id = Enum.at(activities, 0).id
-
-    activities = Enum.reverse(activities)
+    activities = ActivityPub.fetch_user_activities(user, nil, params)
+    min_id = Enum.at(Enum.reverse(activities), 0).id
     max_id = Enum.at(activities, 0).id
 
     collection =

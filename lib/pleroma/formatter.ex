@@ -116,7 +116,28 @@ defmodule Pleroma.Formatter do
                       _ -> []
                     end)
 
-  @emoji @finmoji_with_filenames ++ @emoji_from_file
+  @emoji_from_globs (
+                      static_path = Path.join(:code.priv_dir(:pleroma), "static")
+
+                      globs =
+                        Application.get_env(:pleroma, :emoji, [])
+                        |> Keyword.get(:shortcode_globs, [])
+
+                      paths =
+                        Enum.map(globs, fn glob ->
+                          Path.join(static_path, glob)
+                          |> Path.wildcard()
+                        end)
+                        |> Enum.concat()
+
+                      Enum.map(paths, fn path ->
+                        shortcode = Path.basename(path, Path.extname(path))
+                        external_path = Path.join("/", Path.relative_to(path, static_path))
+                        {shortcode, external_path}
+                      end)
+                    )
+
+  @emoji @finmoji_with_filenames ++ @emoji_from_globs ++ @emoji_from_file
 
   def emojify(text, emoji \\ @emoji)
   def emojify(text, nil), do: text
@@ -223,8 +244,8 @@ defmodule Pleroma.Formatter do
 
     subs =
       subs ++
-        Enum.map(tags, fn {_, tag, uuid} ->
-          url = "<a href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>##{tag}</a>"
+        Enum.map(tags, fn {tag_text, tag, uuid} ->
+          url = "<a href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{tag_text}</a>"
           {uuid, url}
         end)
 

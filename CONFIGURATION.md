@@ -13,6 +13,21 @@ Instead, overload the settings by editing the following files:
 * `dev.secret.exs`: custom additional configuration for `MIX_ENV=dev`
 * `prod.secret.exs`: custom additional configuration for `MIX_ENV=prod`
 
+## Uploads configuration
+
+To configure where to upload files, and wether or not 
+you want to remove automatically EXIF data from pictures
+being uploaded.
+
+    config :pleroma, Pleroma.Upload,
+      uploads: "uploads",
+      strip_exif: false
+
+* `uploads`: where to put the uploaded files, relative to pleroma's main directory.
+* `strip_exif`: whether or not to remove EXIF data from uploaded pics automatically. 
+   This needs Imagemagick installed on the system ( apt install imagemagick ).
+
+
 ## Block functionality
 
     config :pleroma, :activitypub,

@@ -2,7 +2,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
   alias Pleroma.Builders.UserBuilder
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
-  alias Pleroma.{Activity, User, Object, Repo}
+  alias Pleroma.{Activity, User, Object, Repo, UserInviteToken}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.ActivityView
 
@@ -255,6 +255,70 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert UserView.render("show.json", %{user: user}) ==
              UserView.render("show.json", %{user: fetched_user})
+  end
+
+  @moduletag skip: "needs 'registrations_open: false' in config"
+  test "it registers a new user via invite token and returns the user." do
+    {:ok, token} = UserInviteToken.create_token()
+
+    data = %{
+      "nickname" => "vinny",
+      "email" => "pasta@pizza.vs",
+      "fullname" => "Vinny Vinesauce",
+      "bio" => "streamer",
+      "password" => "hiptofbees",
+      "confirm" => "hiptofbees",
+      "token" => token.token
+    }
+
+    {:ok, user} = TwitterAPI.register_user(data)
+
+    fetched_user = Repo.get_by(User, nickname: "vinny")
+    token = Repo.get_by(UserInviteToken, token: token.token)
+
+    assert token.used == true
+
+    assert UserView.render("show.json", %{user: user}) ==
+             UserView.render("show.json", %{user: fetched_user})
+  end
+
+  @moduletag skip: "needs 'registrations_open: false' in config"
+  test "it returns an error if invalid token submitted" do
+    data = %{
+      "nickname" => "GrimReaper",
+      "email" => "death@reapers.afterlife",
+      "fullname" => "Reaper Grim",
+      "bio" => "Your time has come",
+      "password" => "scythe",
+      "confirm" => "scythe",
+      "token" => "DudeLetMeInImAFairy"
+    }
+
+    {:error, msg} = TwitterAPI.register_user(data)
+
+    assert msg == "Invalid token"
+    refute Repo.get_by(User, nickname: "GrimReaper")
+  end
+
+  @moduletag skip: "needs 'registrations_open: false' in config"
+  test "it returns an error if expired token submitted" do
+    {:ok, token} = UserInviteToken.create_token()
+    UserInviteToken.mark_as_used(token.token)
+
+    data = %{
+      "nickname" => "GrimReaper",
+      "email" => "death@reapers.afterlife",
+      "fullname" => "Reaper Grim",
+      "bio" => "Your time has come",
+      "password" => "scythe",
+      "confirm" => "scythe",
+      "token" => token.token
+    }
+
+    {:error, msg} = TwitterAPI.register_user(data)
+
+    assert msg == "Expired token"
+    refute Repo.get_by(User, nickname: "GrimReaper")
   end
 
   test "it returns the error on registration problems" do

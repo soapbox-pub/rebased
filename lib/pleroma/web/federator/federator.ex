@@ -95,7 +95,7 @@ defmodule Pleroma.Web.Federator do
     params = Utils.normalize_params(params)
 
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
-         nil <- Activity.get_by_ap_id(params["id"]),
+         nil <- Activity.normalize(params["id"]),
          {:ok, _activity} <- Transmogrifier.handle_incoming(params) do
     else
       %Activity{} ->

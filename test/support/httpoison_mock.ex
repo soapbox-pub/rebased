@@ -3,6 +3,14 @@ defmodule HTTPoisonMock do
 
   def get(url, body \\ [], headers \\ [])
 
+  def get("https://puckipedia.com/", [Accept: "application/activity+json"], _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/puckipedia.com.json")
+     }}
+  end
+
   def get(
         "https://gerzilla.de/.well-known/webfinger?resource=acct:kaniini@gerzilla.de",
         [Accept: "application/xrd+xml,application/jrd+json"],
@@ -733,6 +741,22 @@ defmodule HTTPoisonMock do
      %Response{
        status_code: 200,
        body: File.read!("test/fixtures/httpoison_mock/7369654.atom")
+     }}
+  end
+
+  def get("https://baptiste.gelez.xyz/~/PlumeDevelopment/this-month-in-plume-june-2018/", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/baptiste.gelex.xyz-article.json")
+     }}
+  end
+
+  def get("https://baptiste.gelez.xyz/@/BaptisteGelez", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/baptiste.gelex.xyz-user.json")
      }}
   end
 

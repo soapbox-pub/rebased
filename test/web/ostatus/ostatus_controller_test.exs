@@ -155,6 +155,31 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     assert response(conn, 200)
   end
 
+  test "gets a notice in AS2 format", %{conn: conn} do
+    note_activity = insert(:note_activity)
+    url = "/notice/#{note_activity.id}"
+
+    conn =
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> get(url)
+
+    assert json_response(conn, 200)
+  end
+
+  test "gets an activity in AS2 format", %{conn: conn} do
+    note_activity = insert(:note_activity)
+    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
+    url = "/activities/#{uuid}"
+
+    conn =
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> get(url)
+
+    assert json_response(conn, 200)
+  end
+
   test "404s a private notice", %{conn: conn} do
     note_activity = insert(:direct_note_activity)
     url = "/notice/#{note_activity.id}"

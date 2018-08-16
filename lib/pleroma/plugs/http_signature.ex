@@ -19,12 +19,22 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
 
     cond do
       signature && String.contains?(signature, user) ->
+        # set (request-target) header to the appropriate value
+        # we also replace the digest header with the one we computed
         conn =
           conn
           |> put_req_header(
             "(request-target)",
             String.downcase("#{conn.method}") <> " #{conn.request_path}"
           )
+
+        conn =
+          if conn.assigns[:digest] do
+            conn
+            |> put_req_header("digest", conn.assigns[:digest])
+          else
+            conn
+          end
 
         assign(conn, :valid_signature, HTTPSignatures.validate_conn(conn))
 

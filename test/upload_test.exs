@@ -56,5 +56,31 @@ defmodule Pleroma.UploadTest do
       data = Upload.store(file, false)
       assert data["name"] == "an [image.jpg"
     end
+
+    test "fixes incorrect file extension" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "an [image.blah"
+      }
+
+      data = Upload.store(file, false)
+      assert data["name"] == "an [image.jpg"
+    end
+
+    test "don't modify filename of an unknown type" do
+      File.cp("test/fixtures/test.txt", "test/fixtures/test_tmp.txt")
+
+      file = %Plug.Upload{
+        content_type: "text/plain",
+        path: Path.absname("test/fixtures/test_tmp.txt"),
+        filename: "test.txt"
+      }
+
+      data = Upload.store(file, false)
+      assert data["name"] == "test.txt"
+    end
   end
 end
