@@ -62,6 +62,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
+  describe "/users/:nickname/outbox" do
+    test "it returns a note activity in a collection", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      user = User.get_cached_by_ap_id(note_activity.data["actor"])
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox")
+
+      assert response(conn, 200) =~ note_activity.data["object"]["content"]
+    end
+
+    test "it returns an announce activity in a collection", %{conn: conn} do
+      announce_activity = insert(:announce_activity)
+      user = User.get_cached_by_ap_id(announce_activity.data["actor"])
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox")
+
+      assert response(conn, 200) =~ announce_activity.data["object"]
+    end
+  end
+
   describe "/users/:nickname/followers" do
     test "it returns the followers in a collection", %{conn: conn} do
       user = insert(:user)
