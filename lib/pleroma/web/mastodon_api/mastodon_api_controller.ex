@@ -20,7 +20,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          {:ok, app} <- Repo.insert(cs) |> IO.inspect() do
       res = %{
         id: app.id |> to_string,
-        name: app.name,
+        name: app.client_name,
         client_id: app.client_id,
         client_secret: app.client_secret,
         redirect_uris: app.redirect_uris,
