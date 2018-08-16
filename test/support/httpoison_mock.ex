@@ -3,6 +3,14 @@ defmodule HTTPoisonMock do
 
   def get(url, body \\ [], headers \\ [])
 
+  def get("https://puckipedia.com/", [Accept: "application/activity+json"], _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/puckipedia.com.json")
+     }}
+  end
+
   def get(
         "https://gerzilla.de/.well-known/webfinger?resource=acct:kaniini@gerzilla.de",
         [Accept: "application/xrd+xml,application/jrd+json"],
