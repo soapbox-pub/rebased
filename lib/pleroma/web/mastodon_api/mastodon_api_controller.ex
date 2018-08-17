@@ -23,7 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         name: app.client_name,
         client_id: app.client_id,
         client_secret: app.client_secret,
-        redirect_uris: app.redirect_uris,
+        redirect_uri: app.redirect_uris,
         website: app.website
       }
 
