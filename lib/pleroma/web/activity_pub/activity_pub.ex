@@ -565,7 +565,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_and_prepare_user_from_ap_id(ap_id) do
     with {:ok, %{status_code: 200, body: body}} <-
-           @httpoison.get(ap_id, Accept: "application/activity+json"),
+           @httpoison.get(ap_id, [Accept: "application/activity+json"], follow_redirect: true),
          {:ok, data} <- Jason.decode(body) do
       user_data_from_user_object(data)
     else
