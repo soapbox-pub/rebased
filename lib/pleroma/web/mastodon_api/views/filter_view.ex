@@ -8,11 +8,12 @@ defmodule Pleroma.Web.MastodonAPI.FilterView do
   end
 
   def render("filter.json", %{filter: filter}) do
-    if filter.expires_at do
-      expires_at = Utils.to_masto_date(filter.expires_at)
-    else
-      expires_at = nil
-    end
+    expires_at =
+      if filter.expires_at do
+        Utils.to_masto_date(filter.expires_at)
+      else
+        nil
+      end
 
     %{
       id: to_string(filter.filter_id),
