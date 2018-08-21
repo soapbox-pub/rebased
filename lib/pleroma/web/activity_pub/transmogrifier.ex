@@ -18,16 +18,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def get_actor(%{"actor" => actor}) when is_list(actor) do
-    Enum.at(actor, 0)
+    if is_binary(Enum.at(actor, 0)) do
+      Enum.at(actor, 0)
+    else
+      Enum.find(actor, fn %{"type" => type} -> type == "Person" end)
+      |> Map.get("id")
+    end
   end
 
   def get_actor(%{"actor" => actor}) when is_map(actor) do
     actor["id"]
-  end
-
-  def get_actor(%{"actor" => actor_list}) do
-    Enum.find(actor_list, fn %{"type" => type} -> type == "Person" end)
-    |> Map.get("id")
   end
 
   @doc """
@@ -42,6 +42,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_emoji
     |> fix_tag
     |> fix_content_map
+    |> fix_likes
     |> fix_addressing
   end
 
@@ -65,6 +66,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_actor(%{"attributedTo" => actor} = object) do
     object
     |> Map.put("actor", get_actor(%{"actor" => actor}))
+  end
+
+  def fix_likes(%{"likes" => likes} = object)
+      when is_bitstring(likes) do
+    # Check for standardisation
+    # This is what Peertube does
+    # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+    object
+    |> Map.put("likes", [])
+    |> Map.put("like_count", 0)
+  end
+
+  def fix_likes(object) do
+    object
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object)
@@ -94,8 +109,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_in_reply_to(object), do: object
 
   def fix_context(object) do
+    context = object["context"] || object["conversation"] || Utils.generate_context_id()
+
     object
-    |> Map.put("context", object["conversation"])
+    |> Map.put("context", context)
+    |> Map.put("conversation", context)
   end
 
   def fix_attachments(object) do
@@ -163,7 +181,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - tags
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
-      when objtype in ["Article", "Note"] do
+      when objtype in ["Article", "Note", "Video"] do
     actor = get_actor(data)
 
     data =

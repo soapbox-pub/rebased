@@ -5,7 +5,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.{CommonAPI, OStatus}
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Comeonin.Pbkdf2
   import Ecto.Query
@@ -658,12 +658,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     fetched =
       if Regex.match?(~r/https?:/, query) do
-        with {:ok, activities} <- OStatus.fetch_activity_from_url(query) do
-          activities
-          |> Enum.filter(fn
-            %{data: %{"type" => "Create"}} -> true
-            _ -> false
-          end)
+        with {:ok, object} <- ActivityPub.fetch_object_from_id(query) do
+          [Activity.get_create_activity_by_object_ap_id(object.data["id"])]
         else
           _e -> []
         end
@@ -710,12 +706,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     fetched =
       if Regex.match?(~r/https?:/, query) do
-        with {:ok, activities} <- OStatus.fetch_activity_from_url(query) do
-          activities
-          |> Enum.filter(fn
-            %{data: %{"type" => "Create"}} -> true
-            _ -> false
-          end)
+        with {:ok, object} <- ActivityPub.fetch_object_from_id(query) do
+          [Activity.get_create_activity_by_object_ap_id(object.data["id"])]
         else
           _e -> []
         end

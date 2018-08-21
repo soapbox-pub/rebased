@@ -99,8 +99,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
 
-    attachments =
-      render_many(object["attachment"] || [], StatusView, "attachment.json", as: :attachment)
+    attachment_data = object["attachment"] || []
+    attachment_data = attachment_data ++ if object["type"] == "Video", do: [object], else: []
+    attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
 
     created_at = Utils.to_masto_date(object["published"])
 
@@ -151,7 +152,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("attachment.json", %{attachment: attachment}) do
-    [%{"mediaType" => media_type, "href" => href} | _] = attachment["url"]
+    [attachment_url | _] = attachment["url"]
+    media_type = attachment_url["mediaType"] || attachment_url["mimeType"]
+    href = attachment_url["href"]
 
     type =
       cond do
@@ -206,6 +209,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       true ->
         "direct"
     end
+  end
+
+  def render_content(%{"type" => "Video"} = object) do
+    name = object["name"]
+
+    content =
+      if !!name and name != "" do
+        "<p><a href=\"#{object["url"]}\">#{name}</a></p>#{object["content"]}"
+      else
+        object["content"]
+      end
+
+    HtmlSanitizeEx.basic_html(content)
   end
 
   def render_content(%{"type" => "Article"} = object) do
