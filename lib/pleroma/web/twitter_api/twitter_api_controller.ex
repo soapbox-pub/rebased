@@ -415,15 +415,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       if bio = params["description"] do
         mentions = Formatter.parse_mentions(bio)
         tags = Formatter.parse_tags(bio)
+
         emoji =
           (user.info["source_data"]["tag"] || [])
           |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
           |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
             {String.trim(name, ":"), url}
           end)
+
         bio_html = CommonUtils.format_input(bio, mentions, tags)
-        |> Formatter.emojify(emoji)
-        Map.put(params, "bio", bio_html)
+        Map.put(params, "bio", bio_html |> Formatter.emojify(emoji))
       else
         params
       end
