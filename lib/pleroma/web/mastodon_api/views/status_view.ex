@@ -216,7 +216,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     content =
       if !!name and name != "" do
-        "<p><a href=\"#{object["url"]}\">#{name}</a></p>#{object["content"]}"
+        "<p><a href=\"#{object["id"]}\">#{name}</a></p>#{object["content"]}"
       else
         object["content"]
       end
