@@ -188,7 +188,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     text = "#{user.nickname} favorited a status."
 
-    %{
+    if liked_activity, do: %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => text,
@@ -200,7 +200,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "in_reply_to_status_id" => liked_activity.id,
       "external_url" => activity.data["id"],
       "activity_type" => "like"
-    }
+    }, else: %{}
   end
 
   def render(
