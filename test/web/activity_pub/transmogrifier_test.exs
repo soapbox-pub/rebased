@@ -615,6 +615,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert User.following?(follower, followed) == false
     end
+
+    test "it rejects activities without a valid ID" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+        |> Map.put("id", "")
+
+      :error = Transmogrifier.handle_incoming(data)
+    end
   end
 
   describe "prepare outgoing" do

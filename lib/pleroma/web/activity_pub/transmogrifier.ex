@@ -177,6 +177,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_content_map(object), do: object
 
+  # disallow objects with bogus IDs
+  def handle_incoming(%{"id" => nil}), do: :error
+  def handle_incoming(%{"id" => ""}), do: :error
+  # length of https:// = 8, should validate better, but good enough for now.
+  def handle_incoming(%{"id" => id}) when not (is_binary(id) and length(id) > 8), do: :error
+
   # TODO: validate those with a Ecto scheme
   # - tags
   # - emoji
