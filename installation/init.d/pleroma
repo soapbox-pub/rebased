@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+
+# Requires OpenRC >= 0.35
+directory=~pleroma/pleroma
+
+command=/usr/bin/mix
+command_args="phx.server"
+command_user=pleroma:pleroma
+command_background=1
+
+export PORT=4000
+export MIX_ENV=prod
+
+# Ask process to terminate within 30 seconds, otherwise kill it
+retry="SIGTERM/30 SIGKILL/5"
+
+pidfile="/var/run/pleroma.pid"
+
+depend() {
+    need nginx postgresql
+}
