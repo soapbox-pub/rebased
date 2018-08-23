@@ -1116,7 +1116,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         data2 =
           Enum.slice(data, 0, 40)
           |> Enum.map(fn x ->
-            Map.put(x, "id", User.get_or_fetch(x["acct"]).id)
+            Map.put(
+              x,
+              "id",
+              case User.get_or_fetch(x["acct"]) do
+                %{id: id} -> id
+                _ -> 0
+              end
+            )
           end)
 
         conn
