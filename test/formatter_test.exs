@@ -135,7 +135,7 @@ defmodule Pleroma.FormatterTest do
       assert length(subs) == 1
       Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
 
-      expected_text = "<span><a class='mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"      
+      expected_text = "<span><a class='mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"
       assert expected_text == Formatter.finalize({subs, text})
     end
 
