@@ -123,6 +123,35 @@ defmodule Pleroma.FormatterTest do
 
       assert expected_text == Formatter.finalize({subs, text})
     end
+
+    test "gives a replacement for single-character local nicknames" do
+      text = "@o hi"
+      o = insert(:user, %{nickname: "o"})
+
+      mentions = Formatter.parse_mentions(text)
+
+      {subs, text} = Formatter.add_user_links({[], text}, mentions)
+
+      assert length(subs) == 1
+      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+
+      expected_text = "<span><a class='mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"      
+      assert expected_text == Formatter.finalize({subs, text})
+    end
+
+    test "does not give a replacement for single-character local nicknames who don't exist" do
+      text = "@a hi"
+
+      mentions = Formatter.parse_mentions(text)
+
+      {subs, text} = Formatter.add_user_links({[], text}, mentions)
+
+      assert length(subs) == 0
+      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+
+      expected_text = "@a hi"
+      assert expected_text == Formatter.finalize({subs, text})
+    end
   end
 
   describe ".parse_tags" do
