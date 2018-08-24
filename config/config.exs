@@ -76,7 +76,8 @@ config :pleroma, :fe,
   who_to_follow_provider:
     "https://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-osa-api.cgi?{{host}}+{{user}}",
   who_to_follow_link: "https://vinayaka.distsn.org/?{{host}}+{{user}}",
-  scope_options_enabled: false
+  scope_options_enabled: false,
+  collapse_message_with_subject: false
 
 config :pleroma, :activitypub,
   accept_blocks: true,
