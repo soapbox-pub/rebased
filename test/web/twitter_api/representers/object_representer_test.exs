@@ -23,7 +23,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ObjectReprenterTest do
       id: 6,
       url: "someurl",
       mimetype: "sometype",
-      oembed: false
+      oembed: false,
+      description: nil
     }
 
     assert expected_object == ObjectRepresenter.to_map(object)
@@ -46,7 +47,8 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ObjectReprenterTest do
         "http://mastodon.example.org/system/media_attachments/files/000/000/001/original/8619f31c6edec470.png",
       mimetype: "image/png",
       oembed: false,
-      id: nil
+      id: nil,
+      description: "blabla"
     }
 
     assert expected_object == ObjectRepresenter.to_map(object)
