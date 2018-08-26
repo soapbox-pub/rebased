@@ -13,9 +13,12 @@ defmodule Pleroma.Web.Router do
       :ok,
       cond do
         # First, try logging in as if it was a name
-        user = Repo.get_by(User, %{nickname: username_or_email}) -> user
+        user = Repo.get_by(User, %{nickname: username_or_email}) ->
+          user
+
         # If we get nil, we try using it as an email
-        user = Repo.get_by(User, %{email: username_or_email}) -> user
+        user = Repo.get_by(User, %{email: username_or_email}) ->
+          user
       end
     }
   end
