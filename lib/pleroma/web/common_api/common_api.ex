@@ -61,8 +61,13 @@ defmodule Pleroma.Web.CommonAPI do
       do: visibility
 
   def get_visibility(%{"in_reply_to_status_id" => status_id}) when not is_nil(status_id) do
-    inReplyTo = get_replied_to_activity(status_id)
-    Pleroma.Web.MastodonAPI.StatusView.get_visibility(inReplyTo.data["object"])
+    case get_replied_to_activity(status_id) do
+      nil ->
+        "public"
+
+      inReplyTo ->
+        Pleroma.Web.MastodonAPI.StatusView.get_visibility(inReplyTo.data["object"])
+    end
   end
 
   def get_visibility(_), do: "public"
