@@ -1,6 +1,7 @@
 defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
   alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.{User, Notification}
   import Pleroma.Factory
 
@@ -117,6 +118,126 @@ defmodule Pleroma.NotificationTest do
 
       assert Notification.for_user(other_user) == []
       assert Notification.for_user(third_user) != []
+    end
+  end
+
+  describe "notification lifecycle" do
+    test "liking an activity results in 1 notification, then 0 if the activity is deleted" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+
+      assert length(Notification.for_user(user)) == 0
+
+      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+
+      assert length(Notification.for_user(user)) == 1
+
+      {:ok, _} = CommonAPI.delete(activity.id, user)
+
+      assert length(Notification.for_user(user)) == 0
+    end
+
+    test "liking an activity results in 1 notification, then 0 if the activity is unliked" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+
+      assert length(Notification.for_user(user)) == 0
+
+      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+
+      assert length(Notification.for_user(user)) == 1
+
+      {:ok, _, _, _} = CommonAPI.unfavorite(activity.id, other_user)
+
+      assert length(Notification.for_user(user)) == 0
+    end
+
+    test "repeating an activity results in 1 notification, then 0 if the activity is deleted" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+
+      assert length(Notification.for_user(user)) == 0
+
+      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+
+      assert length(Notification.for_user(user)) == 1
+
+      {:ok, _} = CommonAPI.delete(activity.id, user)
+
+      assert length(Notification.for_user(user)) == 0
+    end
+
+    test "repeating an activity results in 1 notification, then 0 if the activity is unrepeated" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+
+      assert length(Notification.for_user(user)) == 0
+
+      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
+
+      assert length(Notification.for_user(user)) == 1
+
+      {:ok, _, _} = CommonAPI.unrepeat(activity.id, other_user)
+
+      assert length(Notification.for_user(user)) == 0
+    end
+
+    test "liking an activity which is already deleted does not generate a notification" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+
+      assert length(Notification.for_user(user)) == 0
+
+      {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
+
+      assert length(Notification.for_user(user)) == 0
+
+      {:error, _} = CommonAPI.favorite(activity.id, other_user)
+
+      assert length(Notification.for_user(user)) == 0
+    end
+
+    test "repeating an activity which is already deleted does not generate a notification" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+
+      assert length(Notification.for_user(user)) == 0
+
+      {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
+
+      assert length(Notification.for_user(user)) == 0
+
+      {:error, _} = CommonAPI.repeat(activity.id, other_user)
+
+      assert length(Notification.for_user(user)) == 0
+    end
+
+    test "replying to a deleted post without tagging does not generate a notification" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+      {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
+
+      {:ok, _reply_activity} =
+        CommonAPI.post(other_user, %{
+          "status" => "test reply",
+          "in_reply_to_status_id" => activity.id
+        })
+
+      assert length(Notification.for_user(user)) == 0
     end
   end
 end
