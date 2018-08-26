@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.{Repo, Object, Formatter, Activity}
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.Endpoint
   alias Pleroma.User
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
@@ -194,5 +195,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     else
       _ -> {:error, "Invalid password."}
     end
+  end
+
+  def emoji_from_profile(%{info: info} = user) do
+    (Formatter.get_emoji(user.bio) ++ Formatter.get_emoji(user.name))
+    |> Enum.map(fn {shortcode, url} ->
+      %{
+        "type" => "Emoji",
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},
+        "name" => ":#{shortcode}:"
+      }
+    end)
   end
 end
