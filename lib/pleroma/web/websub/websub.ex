@@ -252,4 +252,29 @@ defmodule Pleroma.Web.Websub do
       Pleroma.Web.Federator.enqueue(:request_subscription, sub)
     end)
   end
+
+  def publish_one(%{xml: xml, topic: topic, callback: callback, secret: secret}) do
+    signature = sign(secret || "", xml)
+    Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
+
+    with {:ok, %{status_code: code}} <-
+           @httpoison.post(
+             callback,
+             xml,
+             [
+               {"Content-Type", "application/atom+xml"},
+               {"X-Hub-Signature", "sha1=#{signature}"}
+             ],
+             timeout: 10000,
+             recv_timeout: 20000,
+             hackney: [pool: :default]
+           ) do
+      Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)
+      {:ok, code}
+    else
+      e ->
+        Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)
+        {:error, e}
+    end
+  end
 end

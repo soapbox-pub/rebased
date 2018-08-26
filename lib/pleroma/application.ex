@@ -57,8 +57,9 @@ defmodule Pleroma.Application do
           id: :cachex_idem
         ),
         worker(Pleroma.Web.Federator, []),
-        worker(Pleroma.Stats, []),
-        worker(Pleroma.Gopher.Server, [])
+        worker(Pleroma.Web.Federator.RetryQueue, []),
+        worker(Pleroma.Gopher.Server, []),
+        worker(Pleroma.Stats, [])
       ] ++
         if Mix.env() == :test,
           do: [],

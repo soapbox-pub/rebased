@@ -3,6 +3,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.User
   alias Pleroma.Activity
   alias Pleroma.Web.{WebFinger, Websub}
+  alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -122,29 +123,25 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:publish_single_ap, params) do
-    ActivityPub.publish_one(params)
+    case ActivityPub.publish_one(params) do
+      {:ok, _} ->
+        :ok
+
+      {:error, _} ->
+        RetryQueue.enqueue(params, :activitypub)
+    end
   end
 
-  def handle(:publish_single_websub, %{xml: xml, topic: topic, callback: callback, secret: secret}) do
-    signature = @websub.sign(secret || "", xml)
-    Logger.debug(fn -> "Pushing #{topic} to #{callback}" end)
+  def handle(
+        :publish_single_websub,
+        %{xml: xml, topic: topic, callback: callback, secret: secret} = params
+      ) do
+    case Websub.publish_one(params) do
+      {:ok, _} ->
+        :ok
 
-    with {:ok, %{status_code: code}} <-
-           @httpoison.post(
-             callback,
-             xml,
-             [
-               {"Content-Type", "application/atom+xml"},
-               {"X-Hub-Signature", "sha1=#{signature}"}
-             ],
-             timeout: 10000,
-             recv_timeout: 20000,
-             hackney: [pool: :default]
-           ) do
-      Logger.debug(fn -> "Pushed to #{callback}, code #{code}" end)
-    else
-      e ->
-        Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)
+      {:error, _} ->
+        RetryQueue.enqueue(params, :websub)
     end
   end
 
