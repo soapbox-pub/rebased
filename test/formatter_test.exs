@@ -20,10 +20,10 @@ defmodule Pleroma.FormatterTest do
 
   describe ".add_links" do
     test "turning urls into links" do
-      text = "Hey, check out https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla."
+      text = "Hey, check out https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla ."
 
       expected =
-        "Hey, check out <a href=\"https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla\">https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla</a>."
+        "Hey, check out <a href=\"https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla\">https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla</a> ."
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
@@ -85,6 +85,12 @@ defmodule Pleroma.FormatterTest do
         "<a href=\"https://pleroma.com\">https://pleroma.com</a> <a href=\"https://pleroma.com/sucks\">https://pleroma.com/sucks</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+
+      text = "xmpp:contact@hacktivis.me"
+
+      expected = "<a href=\"xmpp:contact@hacktivis.me\">xmpp:contact@hacktivis.me</a>"
+
+      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
     end
   end
 
@@ -115,6 +121,35 @@ defmodule Pleroma.FormatterTest do
           archaeme_remote.ap_id
         }'>@<span>archaeme</span></a></span>"
 
+      assert expected_text == Formatter.finalize({subs, text})
+    end
+
+    test "gives a replacement for single-character local nicknames" do
+      text = "@o hi"
+      o = insert(:user, %{nickname: "o"})
+
+      mentions = Formatter.parse_mentions(text)
+
+      {subs, text} = Formatter.add_user_links({[], text}, mentions)
+
+      assert length(subs) == 1
+      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+
+      expected_text = "<span><a class='mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"
+      assert expected_text == Formatter.finalize({subs, text})
+    end
+
+    test "does not give a replacement for single-character local nicknames who don't exist" do
+      text = "@a hi"
+
+      mentions = Formatter.parse_mentions(text)
+
+      {subs, text} = Formatter.add_user_links({[], text}, mentions)
+
+      assert length(subs) == 0
+      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+
+      expected_text = "@a hi"
       assert expected_text == Formatter.finalize({subs, text})
     end
   end

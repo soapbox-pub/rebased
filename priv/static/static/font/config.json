@@ -4,7 +4,7 @@
   "css_use_suffix": false,
   "hinting": true,
   "units_per_em": 1000,
-  "ascent": 850,
+  "ascent": 857,
   "glyphs": [
     {
       "uid": "9bd60140934a1eb9236fd7a8ab1ff6ba",
@@ -67,10 +67,10 @@
       "src": "fontawesome"
     },
     {
-      "uid": "9e1c33b6849ceb08db8acfaf02188b7d",
+      "uid": "1a5cfa186647e8c929c2b17b9fc4dac1",
       "css": "plus-squared",
       "code": 59398,
-      "src": "entypo"
+      "src": "font-awesome"
     },
     {
       "uid": "e99461abfef3923546da8d745372c995",
@@ -112,6 +112,12 @@
       "uid": "e15f0d620a7897e2035c18c80142f6d9",
       "css": "link-ext",
       "code": 61582,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "e35de5ea31cd56970498e33efbcb8e36",
+      "css": "link-ext-alt",
+      "code": 61583,
       "src": "fontawesome"
     },
     {
@@ -179,6 +185,12 @@
       "css": "globe",
       "code": 59410,
       "src": "fontawesome"
+    },
+    {
+      "uid": "b3a9e2dab4d19ea3b2f628242c926bfe",
+      "css": "brush",
+      "code": 59411,
+      "src": "iconic"
     }
   ]
 }

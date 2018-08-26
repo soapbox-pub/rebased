@@ -16,7 +16,7 @@ defmodule Pleroma.Formatter do
   def parse_mentions(text) do
     # Modified from https://www.w3.org/TR/html5/forms.html#valid-e-mail-address
     regex =
-      ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/u
+      ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]*@?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/u
 
     Regex.scan(regex, text)
     |> List.flatten()
@@ -165,8 +165,29 @@ defmodule Pleroma.Formatter do
     @emoji
   end
 
-  @link_regex ~r/https?:\/\/[\w\.\/?=\-#\+%&@~'\(\):]+[\w\/]/u
+  @link_regex ~r/[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+/ui
 
+  # IANA got a list https://www.iana.org/assignments/uri-schemes/ but
+  # Stuff like ipfs isn’t in it
+  # There is very niche stuff
+  @uri_schemes [
+    "https://",
+    "http://",
+    "dat://",
+    "dweb://",
+    "gopher://",
+    "ipfs://",
+    "ipns://",
+    "irc:",
+    "ircs:",
+    "magnet:",
+    "mailto:",
+    "mumble:",
+    "ssb://",
+    "xmpp:"
+  ]
+
+  # TODO: make it use something other than @link_regex
   def html_escape(text) do
     Regex.split(@link_regex, text, include_captures: true)
     |> Enum.map_every(2, fn chunk ->
@@ -176,11 +197,18 @@ defmodule Pleroma.Formatter do
     |> Enum.join("")
   end
 
-  @doc "changes http:... links to html links"
+  @doc "changes scheme:... urls to html links"
   def add_links({subs, text}) do
+    additionnal_schemes =
+      Application.get_env(:pleroma, :uri_schemes, [])
+      |> Keyword.get(:additionnal_schemes, [])
+
     links =
-      Regex.scan(@link_regex, text)
-      |> Enum.map(fn [url] -> {Ecto.UUID.generate(), url} end)
+      text
+      |> String.split([" ", "\t", "<br>"])
+      |> Enum.filter(fn word -> String.starts_with?(word, @uri_schemes ++ additionnal_schemes) end)
+      |> Enum.filter(fn word -> Regex.match?(@link_regex, word) end)
+      |> Enum.map(fn url -> {Ecto.UUID.generate(), url} end)
       |> Enum.sort_by(fn {_, url} -> -String.length(url) end)
 
     uuid_text =
@@ -244,8 +272,8 @@ defmodule Pleroma.Formatter do
 
     subs =
       subs ++
-        Enum.map(tags, fn {_, tag, uuid} ->
-          url = "<a href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>##{tag}</a>"
+        Enum.map(tags, fn {tag_text, tag, uuid} ->
+          url = "<a href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{tag_text}</a>"
           {uuid, url}
         end)
 

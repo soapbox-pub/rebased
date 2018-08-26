@@ -54,7 +54,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
     String.split(text, "\r")
     |> Enum.map(fn text ->
-      "i#{text}\tfake\(NULL)\t0\r\n"
+      "i#{text}\tfake\t(NULL)\t0\r\n"
     end)
     |> Enum.join("")
   end
@@ -77,14 +77,14 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
       link("Post ##{activity.id} by #{user.nickname}", "/notices/#{activity.id}") <>
         info("#{like_count} likes, #{announcement_count} repeats") <>
-        "\r\n" <>
+        "i\tfake\t(NULL)\t0\r\n" <>
         info(
           HtmlSanitizeEx.strip_tags(
             String.replace(activity.data["object"]["content"], "<br>", "\r")
           )
         )
     end)
-    |> Enum.join("\r\n")
+    |> Enum.join("i\tfake\t(NULL)\t0\r\n")
   end
 
   def response("") do

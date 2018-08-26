@@ -18,12 +18,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def get_actor(%{"actor" => actor}) when is_list(actor) do
-    Enum.at(actor, 0)
+    if is_binary(Enum.at(actor, 0)) do
+      Enum.at(actor, 0)
+    else
+      Enum.find(actor, fn %{"type" => type} -> type == "Person" end)
+      |> Map.get("id")
+    end
   end
 
-  def get_actor(%{"actor" => actor_list}) do
-    Enum.find(actor_list, fn %{"type" => type} -> type == "Person" end)
-    |> Map.get("id")
+  def get_actor(%{"actor" => actor}) when is_map(actor) do
+    actor["id"]
   end
 
   @doc """
@@ -38,11 +42,44 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_emoji
     |> fix_tag
     |> fix_content_map
+    |> fix_likes
+    |> fix_addressing
+  end
+
+  def fix_addressing_list(map, field) do
+    if is_binary(map[field]) do
+      map
+      |> Map.put(field, [map[field]])
+    else
+      map
+    end
+  end
+
+  def fix_addressing(map) do
+    map
+    |> fix_addressing_list("to")
+    |> fix_addressing_list("cc")
+    |> fix_addressing_list("bto")
+    |> fix_addressing_list("bcc")
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
     object
     |> Map.put("actor", get_actor(%{"actor" => actor}))
+  end
+
+  def fix_likes(%{"likes" => likes} = object)
+      when is_bitstring(likes) do
+    # Check for standardisation
+    # This is what Peertube does
+    # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+    object
+    |> Map.put("likes", [])
+    |> Map.put("like_count", 0)
+  end
+
+  def fix_likes(object) do
+    object
   end
 
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object)
@@ -72,8 +109,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_in_reply_to(object), do: object
 
   def fix_context(object) do
+    context = object["context"] || object["conversation"] || Utils.generate_context_id()
+
     object
-    |> Map.put("context", object["conversation"])
+    |> Map.put("context", context)
+    |> Map.put("conversation", context)
   end
 
   def fix_attachments(object) do
@@ -137,13 +177,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_content_map(object), do: object
 
+  # disallow objects with bogus IDs
+  def handle_incoming(%{"id" => nil}), do: :error
+  def handle_incoming(%{"id" => ""}), do: :error
+  # length of https:// = 8, should validate better, but good enough for now.
+  def handle_incoming(%{"id" => id}) when not (is_binary(id) and length(id) > 8), do: :error
+
   # TODO: validate those with a Ecto scheme
   # - tags
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
-      when objtype in ["Article", "Note"] do
+      when objtype in ["Article", "Note", "Video"] do
     actor = get_actor(data)
-    data = Map.put(data, "actor", actor)
+
+    data =
+      Map.put(data, "actor", actor)
+      |> fix_addressing
 
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do

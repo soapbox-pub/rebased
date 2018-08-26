@@ -99,6 +99,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       conn
       |> render("followed.html", %{error: false})
     else
+      # Was already following user
+      {:error, "Could not follow user:" <> _rest} ->
+        render(conn, "followed.html", %{error: false})
+
       _e ->
         conn
         |> render("follow_login.html", %{
@@ -117,6 +121,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       conn
       |> render("followed.html", %{error: false})
     else
+      # Was already following user
+      {:error, "Could not follow user:" <> _rest} ->
+        conn
+        |> render("followed.html", %{error: false})
+
       e ->
         Logger.debug("Remote follow failed with error #{inspect(e)}")
 
@@ -163,10 +172,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
               redirectRootLogin: Keyword.get(@instance_fe, :redirect_root_login),
               chatDisabled: !Keyword.get(@instance_chat, :enabled),
               showInstanceSpecificPanel: Keyword.get(@instance_fe, :show_instance_panel),
-              showWhoToFollowPanel: Keyword.get(@instance_fe, :show_who_to_follow_panel),
               scopeOptionsEnabled: Keyword.get(@instance_fe, :scope_options_enabled),
-              whoToFollowProvider: Keyword.get(@instance_fe, :who_to_follow_provider),
-              whoToFollowLink: Keyword.get(@instance_fe, :who_to_follow_link)
+              collapseMessageWithSubject:
+                Keyword.get(@instance_fe, :collapse_message_with_subject)
             }
           }
         })

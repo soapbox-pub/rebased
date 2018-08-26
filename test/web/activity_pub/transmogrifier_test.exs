@@ -112,6 +112,15 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "<p><span class=\"h-card\"><a href=\"http://localtesting.pleroma.lol/users/lain\" class=\"u-url mention\">@<span>lain</span></a></span></p>"
     end
 
+    test "it works for incoming notices with to/cc not being an array (kroeg)" do
+      data = File.read!("test/fixtures/kroeg-post-activity.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["object"]["content"] ==
+               "<p>henlo from my Psion netBook</p><p>message sent from my Psion netBook</p>"
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
@@ -605,6 +614,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       follower = Repo.get(User, follower.id)
 
       assert User.following?(follower, followed) == false
+    end
+
+    test "it rejects activities without a valid ID" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+        |> Map.put("id", "")
+
+      :error = Transmogrifier.handle_incoming(data)
     end
   end
 

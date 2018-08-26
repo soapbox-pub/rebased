@@ -7,18 +7,20 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter do
 
     %{
       url: url["href"] |> Pleroma.Web.MediaProxy.url(),
-      mimetype: url["mediaType"],
+      mimetype: url["mediaType"] || url["mimeType"],
       id: data["uuid"],
-      oembed: false
+      oembed: false,
+      description: data["name"]
     }
   end
 
   def to_map(%Object{data: %{"url" => url} = data}, _opts) when is_binary(url) do
     %{
       url: url |> Pleroma.Web.MediaProxy.url(),
-      mimetype: data["mediaType"],
+      mimetype: data["mediaType"] || url["mimeType"],
       id: data["uuid"],
-      oembed: false
+      oembed: false,
+      description: data["name"]
     }
   end
 

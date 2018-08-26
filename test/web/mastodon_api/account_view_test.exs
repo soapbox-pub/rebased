@@ -5,10 +5,22 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   alias Pleroma.User
 
   test "Represent a user account" do
+    source_data = %{
+      "tag" => [
+        %{
+          "type" => "Emoji",
+          "icon" => %{"url" => "/file.png"},
+          "name" => ":karjalanpiirakka:"
+        }
+      ]
+    }
+
     user =
       insert(:user, %{
-        info: %{"note_count" => 5, "follower_count" => 3},
+        info: %{"note_count" => 5, "follower_count" => 3, "source_data" => source_data},
         nickname: "shp@shitposter.club",
+        name: ":karjalanpiirakka: shp",
+        bio: "<script src=\"invalid-html\"></script><span>valid html</span>",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })
 
@@ -22,13 +34,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       followers_count: 3,
       following_count: 0,
       statuses_count: 5,
-      note: user.bio,
+      note: "<span>valid html</span>",
       url: user.ap_id,
       avatar: "http://localhost:4001/images/avi.png",
       avatar_static: "http://localhost:4001/images/avi.png",
       header: "http://localhost:4001/images/banner.png",
       header_static: "http://localhost:4001/images/banner.png",
-      emojis: [],
+      emojis: [
+        %{
+          "static_url" => "/file.png",
+          "url" => "/file.png",
+          "shortcode" => "karjalanpiirakka",
+          "visible_in_picker" => false
+        }
+      ],
       fields: [],
       source: %{
         note: "",

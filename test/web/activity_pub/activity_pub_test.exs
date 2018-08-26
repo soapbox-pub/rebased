@@ -506,6 +506,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  test "it can fetch peertube videos" do
+    {:ok, object} =
+      ActivityPub.fetch_object_from_id(
+        "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
+      )
+
+    assert object
+  end
+
   def data_uri do
     File.read!("test/fixtures/avatar_data_uri")
   end
