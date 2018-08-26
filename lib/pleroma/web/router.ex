@@ -8,8 +8,16 @@ defmodule Pleroma.Web.Router do
   @public Keyword.get(@instance, :public)
   @registrations_open Keyword.get(@instance, :registrations_open)
 
-  def user_fetcher(username) do
-    {:ok, Repo.get_by(User, %{nickname: username})}
+  def user_fetcher(username_or_email) do
+    {
+      :ok,
+      cond do
+        # First, try logging in as if it was a name
+        user = Repo.get_by(User, %{nickname: username_or_email}) -> user
+        # If we get nil, we try using it as an email
+        user = Repo.get_by(User, %{email: username_or_email}) -> user
+      end
+    }
   end
 
   pipeline :api do
