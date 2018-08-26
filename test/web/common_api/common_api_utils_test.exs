@@ -42,7 +42,10 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       },
       %{
         "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/finmoji/128px/karjalanpiirakka-128.png"},
+        "icon" => %{
+          "type" => "Image",
+          "url" => "#{Endpoint.url()}/finmoji/128px/karjalanpiirakka-128.png"
+        },
         "name" => ":karjalanpiirakka:"
       }
     ]
