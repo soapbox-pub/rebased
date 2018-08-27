@@ -11,6 +11,6 @@
   "whoToFollowLink": "https://vinayaka.distsn.org/?{{host}}+{{user}}",
   "whoToFollowLinkDummy2": "https://followlink.osa-p.net/recommend.html",
   "showInstanceSpecificPanel": false,
-  "scopeOptionsEnabled": true,
-  "collapseMessageWithSubject": true
+  "scopeOptionsEnabled": false,
+  "collapseMessageWithSubject": false
 }
