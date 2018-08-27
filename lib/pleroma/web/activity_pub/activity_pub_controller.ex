@@ -3,6 +3,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.{User, Object}
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.Federator
 
   require Logger
@@ -105,6 +106,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
 
     json(conn, "ok")
+  end
+
+  def relay(conn, params) do
+    with %User{} = user <- Relay.get_actor(),
+         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("user.json", %{user: user}))
+    else
+      nil -> {:error, :not_found}
+    end
   end
 
   def errors(conn, {:error, :not_found}) do

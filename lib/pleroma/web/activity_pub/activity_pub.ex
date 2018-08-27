@@ -572,11 +572,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         "locked" => locked
       },
       avatar: avatar,
-      nickname: "#{data["preferredUsername"]}@#{URI.parse(data["id"]).host}",
       name: data["name"],
       follower_address: data["followers"],
       bio: data["summary"]
     }
+
+    # nickname can be nil because of virtual actors
+    user_data =
+      if data["preferredUsername"] do
+        Map.put(
+          user_data,
+          :nickname,
+          "#{data["preferredUsername"]}@#{URI.parse(data["id"]).host}"
+        )
+      else
+        Map.put(user_data, :nickname, nil)
+      end
 
     {:ok, user_data}
   end

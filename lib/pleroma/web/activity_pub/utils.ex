@@ -306,6 +306,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Make announce activity data for the given actor and object
   """
+  # for relayed messages, we only want to send to subscribers
+  def make_announce_data(
+        %User{ap_id: ap_id, nickname: nil} = user,
+        %Object{data: %{"id" => id}} = object,
+        activity_id
+      ) do
+    data = %{
+      "type" => "Announce",
+      "actor" => ap_id,
+      "object" => id,
+      "to" => [user.follower_address],
+      "cc" => [],
+      "context" => object.data["context"]
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
   def make_announce_data(
         %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
@@ -360,7 +378,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
-  def add_announce_to_object(%Activity{data: %{"actor" => actor}}, object) do
+  def add_announce_to_object(
+        %Activity{
+          data: %{"actor" => actor, "cc" => ["https://www.w3.org/ns/activitystreams#Public"]}
+        },
+        object
+      ) do
     announcements =
       if is_list(object.data["announcements"]), do: object.data["announcements"], else: []
 
@@ -368,6 +391,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       update_element_in_object("announcement", announcements, object)
     end
   end
+
+  def add_announce_to_object(_, object), do: {:ok, object}
 
   def remove_announce_from_object(%Activity{data: %{"actor" => actor}}, object) do
     announcements =

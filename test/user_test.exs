@@ -220,7 +220,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it has required fields" do
-      [:name, :nickname, :ap_id]
+      [:name, :ap_id]
       |> Enum.each(fn field ->
         cs = User.remote_user_creation(Map.delete(@valid_remote, field))
         refute cs.valid?
