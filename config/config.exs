@@ -12,7 +12,9 @@ config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Upload,
   uploads: "uploads",
-  strip_exif: false
+  strip_exif: false,
+  use_s3: false,
+  s3_bucket: nil
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 
