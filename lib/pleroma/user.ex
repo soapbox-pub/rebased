@@ -457,13 +457,29 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
+  def get_notified_from_activity_query(to) do
+    from(
+      u in User,
+      where: u.ap_id in ^to,
+      where: u.local == true
+    )
+  end
+
+  def get_notified_from_activity(%Activity{recipients: to, data: %{"type" => "Announce"} = data}) do
+    object = Object.normalize(data["object"])
+
+    # ensure that the actor who published the announced object appears only once
+    to =
+      (to ++ [object.data["actor"]])
+      |> Enum.uniq()
+
+    query = get_notified_from_activity_query(to)
+
+    Repo.all(query)
+  end
+
   def get_notified_from_activity(%Activity{recipients: to}) do
-    query =
-      from(
-        u in User,
-        where: u.ap_id in ^to,
-        where: u.local == true
-      )
+    query = get_notified_from_activity_query(to)
 
     Repo.all(query)
   end

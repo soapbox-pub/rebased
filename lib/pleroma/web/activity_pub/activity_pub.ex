@@ -12,6 +12,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @instance Application.get_env(:pleroma, :instance)
 
+  # For Announce activities, we filter the recipients based on following status for any actors
+  # that match actual users.  See issue #164 for more information about why this is necessary.
+  def get_recipients(%{"type" => "Announce"} = data) do
+    recipients = (data["to"] || []) ++ (data["cc"] || [])
+    actor = User.get_cached_by_ap_id(data["actor"])
+
+    recipients
+    |> Enum.filter(fn recipient ->
+      case User.get_cached_by_ap_id(recipient) do
+        nil ->
+          true
+
+        user ->
+          User.following?(user, actor)
+      end
+    end)
+  end
+
   def get_recipients(data) do
     (data["to"] || []) ++ (data["cc"] || [])
   end
