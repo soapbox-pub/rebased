@@ -9,6 +9,8 @@ defmodule Pleroma.Upload do
     upload_folder = get_upload_path(uuid, should_dedupe)
     url_path = get_url(name, uuid, should_dedupe)
 
+    strip_exif_data(content_type, file.path)
+
     File.mkdir_p!(upload_folder)
     result_file = Path.join(upload_folder, name)
 
@@ -17,8 +19,6 @@ defmodule Pleroma.Upload do
     else
       File.cp!(file.path, result_file)
     end
-
-    strip_exif_data(content_type, result_file)
 
     %{
       "type" => "Document",
