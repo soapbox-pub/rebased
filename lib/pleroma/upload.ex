@@ -1,6 +1,5 @@
 defmodule Pleroma.Upload do
   alias Ecto.UUID
-  import Logger
 
   @storage_backend Application.get_env(:pleroma, Pleroma.Upload)
                    |> Keyword.fetch!(:uploader)
@@ -28,18 +27,14 @@ defmodule Pleroma.Upload do
     }
   end
 
-  # XXX: does this code actually work?  i am skeptical.  --kaniini
   def store(%{"img" => "data:image/" <> image_data}, should_dedupe) do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
 
-    tmp_path = mkupload_for_image(data)
+    # create temp local storage, like plug upload provides.
+    tmp_path = tempfile_for_image(data)
 
     uuid = UUID.generate()
-
-    # create temp local storage, like plug upload provides for us.
-
-    Logger.info(tmp_path)
 
     content_type = get_content_type(tmp_path)
     strip_exif_data(content_type, tmp_path)
@@ -66,9 +61,11 @@ defmodule Pleroma.Upload do
     }
   end
 
-  def mkupload_for_image(data) do
+  def tempfile_for_image(data) do
     {:ok, tmp_path} = Plug.Upload.random_file("profile_pics")
-    :file.write_file(tmp_path, data, [:write, :raw, :exclusive, :binary])
+    {:ok, tmp_file} = File.open(tmp_path, [:write, :raw, :binary])
+    IO.binwrite(tmp_file, data)
+
     tmp_path
   end
 
