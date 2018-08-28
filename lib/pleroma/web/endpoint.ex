@@ -52,7 +52,7 @@ defmodule Pleroma.Web.Endpoint do
     signing_salt: "CqaoopA2",
     secure:
       Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
-    extra: "SameSite=Lax"
+    extra: "SameSite=Strict"
   )
 
   plug(Pleroma.Web.Router)
