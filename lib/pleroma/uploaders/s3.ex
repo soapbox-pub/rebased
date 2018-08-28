@@ -1,6 +1,6 @@
 defmodule Pleroma.Uploaders.S3 do
 
-  def put_file(name, uuid, path, content_type) do
+  def put_file(name, uuid, path, content_type, _should_dedupe) do
 
     settings = Application.get_env(:pleroma, Pleroma.Uploaders.S3)
     bucket = Keyword.fetch!(settings, :bucket)
@@ -12,7 +12,7 @@ defmodule Pleroma.Uploaders.S3 do
 
     s3_name = "#{uuid}/#{name}"
 
-    {:ok, result} =
+    {:ok, _} =
       ExAws.S3.put_object(bucket, s3_name, file_data, [
         {:acl, :public_read},
         {:content_type, content_type}

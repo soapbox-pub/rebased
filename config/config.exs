@@ -11,7 +11,7 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Upload,
-  uploader: Pleroma.Uploaders.Local
+  uploader: Pleroma.Uploaders.Local,
   strip_exif: false
 
 config :pleroma, Pleroma.Uploaders.Local,

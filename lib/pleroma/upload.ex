@@ -1,6 +1,5 @@
 defmodule Pleroma.Upload do
   alias Ecto.UUID
-  alias Pleroma.Web
 
   def store(%Plug.Upload{} = file, should_dedupe) do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
@@ -26,7 +25,7 @@ defmodule Pleroma.Upload do
       "name" => name
     }
   end
-
+  """
   # XXX: does this code actually work?  i am skeptical.  --kaniini
   def store(%{"img" => "data:image/" <> image_data}, should_dedupe) do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
@@ -88,11 +87,12 @@ defmodule Pleroma.Upload do
       "name" => name
     }
   end
+  """
 
   def strip_exif_data(content_type, file) do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
     do_strip = Keyword.fetch!(settings, :strip_exif)
-    [filetype, ext] = String.split(content_type, "/")
+    [filetype, _ext] = String.split(content_type, "/")
 
     if filetype == "image" and do_strip == true do
       Mogrify.open(file) |> Mogrify.custom("strip") |> Mogrify.save(in_place: true)

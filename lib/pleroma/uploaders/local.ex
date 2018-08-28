@@ -1,7 +1,10 @@
 defmodule Pleroma.Uploaders.Local do
-  def put_file(name, uuid, file, content_type) do
 
-    upload_path = get_upload_path(uuid, should_dedupe)
+  alias Pleroma.Web
+
+  def put_file(name, uuid, file, _content_type, should_dedupe) do
+
+    upload_folder = get_upload_path(uuid, should_dedupe)
     url_path = get_url(name, uuid, should_dedupe)
 
     File.mkdir_p!(upload_folder)
