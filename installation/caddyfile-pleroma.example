@@ -22,6 +22,7 @@ social.domain.tld  {
     Referrer-Policy "same-origin"
     Strict-Transport-Security "max-age=31536000; includeSubDomains;"
     Expect-CT "enforce, max-age=2592000"
+    Content-Security-Policy "default-src 'none'; base-uri 'self'; form-action 'self'; img-src 'self' data: https:; media-src 'self' https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' wss://social.domain.tld; upgrade-insecure-requests;"
   }
 
   # If you do not want remote frontends to be able to access your Pleroma backend server, remove these lines.
