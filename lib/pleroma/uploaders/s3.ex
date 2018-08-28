@@ -1,7 +1,7 @@
 defmodule Pleroma.Uploaders.S3 do
+  @behaviour Pleroma.Uploaders.Uploader
 
   def put_file(name, uuid, path, content_type, _should_dedupe) do
-
     settings = Application.get_env(:pleroma, Pleroma.Uploaders.S3)
     bucket = Keyword.fetch!(settings, :bucket)
     public_endpoint = Keyword.fetch!(settings, :public_endpoint)

@@ -14,11 +14,9 @@ config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
   strip_exif: false
 
-config :pleroma, Pleroma.Uploaders.Local,
-  uploads: "uploads"
+config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
-config :pleroma, Pleroma.Uploaders.S3,
-  s3_bucket: nil
+config :pleroma, Pleroma.Uploaders.S3, s3_bucket: nil
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 

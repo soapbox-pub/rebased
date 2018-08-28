@@ -1,9 +1,9 @@
 defmodule Pleroma.Uploaders.Local do
+  @behaviour Pleroma.Uploaders.Uploader
 
   alias Pleroma.Web
 
   def put_file(name, uuid, file, _content_type, should_dedupe) do
-
     upload_folder = get_upload_path(uuid, should_dedupe)
     url_path = get_url(name, uuid, should_dedupe)
 

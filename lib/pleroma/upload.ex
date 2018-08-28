@@ -1,17 +1,17 @@
 defmodule Pleroma.Upload do
   alias Ecto.UUID
 
-  def store(%Plug.Upload{} = file, should_dedupe) do
-    settings = Application.get_env(:pleroma, Pleroma.Upload)
-    storage_backend = Keyword.fetch!(settings, :storage_backend)
+  @storage_backend Application.get_env(:pleroma, Pleroma.Upload)
+                   |> Keyword.fetch!(:uploader)
 
+  def store(%Plug.Upload{} = file, should_dedupe) do
     content_type = get_content_type(file.path)
     uuid = get_uuid(file, should_dedupe)
     name = get_name(file, uuid, content_type, should_dedupe)
 
     strip_exif_data(content_type, file.path)
 
-    url_path = storage_backend.put_file(name, uuid, content_type)
+    url_path = @storage_backend.put_file(name, uuid, file, content_type, should_dedupe)
 
     %{
       "type" => "Document",
@@ -25,6 +25,7 @@ defmodule Pleroma.Upload do
       "name" => name
     }
   end
+
   """
   # XXX: does this code actually work?  i am skeptical.  --kaniini
   def store(%{"img" => "data:image/" <> image_data}, should_dedupe) do
