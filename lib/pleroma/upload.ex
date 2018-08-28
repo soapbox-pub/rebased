@@ -3,6 +3,9 @@ defmodule Pleroma.Upload do
   alias Pleroma.Web
 
   def store(%Plug.Upload{} = file, should_dedupe) do
+    settings = Application.get_env(:pleroma, Pleroma.Upload)
+    use_s3 = Keyword.fetch!(settings, :use_s3)
+
     content_type = get_content_type(file.path)
     uuid = get_uuid(file, should_dedupe)
     name = get_name(file, uuid, content_type, should_dedupe)
@@ -20,6 +23,13 @@ defmodule Pleroma.Upload do
       File.cp!(file.path, result_file)
     end
 
+    url_path =
+      if use_s3 do
+        put_s3_file(name, uuid, result_file, content_type)
+      else
+        url_path
+      end
+
     %{
       "type" => "Document",
       "url" => [
@@ -33,7 +43,11 @@ defmodule Pleroma.Upload do
     }
   end
 
+  # XXX: does this code actually work?  i am skeptical.  --kaniini
   def store(%{"img" => "data:image/" <> image_data}, should_dedupe) do
+    settings = Application.get_env(:pleroma, Pleroma.Upload)
+    use_s3 = Keyword.fetch!(settings, :use_s3)
+
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
     uuid = UUID.generate()
@@ -70,6 +84,13 @@ defmodule Pleroma.Upload do
     end
 
     strip_exif_data(content_type, result_file)
+
+    url_path =
+      if use_s3 do
+        put_s3_file(name, uuid, result_file, content_type)
+      else
+        url_path
+      end
 
     %{
       "type" => "Image",
@@ -202,5 +223,25 @@ defmodule Pleroma.Upload do
       {:ok, type} -> type
       _e -> "application/octet-stream"
     end
+  end
+
+  defp put_s3_file(name, uuid, path, content_type) do
+    settings = Application.get_env(:pleroma, Pleroma.Upload)
+    bucket = Keyword.fetch!(settings, :bucket)
+    public_endpoint = Keyword.fetch!(settings, :public_endpoint)
+
+    {:ok, file_data} = File.read(path)
+
+    File.rm!(path)
+
+    s3_name = "#{uuid}/#{name}"
+
+    {:ok, result} =
+      ExAws.S3.put_object(bucket, s3_name, file_data, [
+        {:acl, :public_read},
+        {:content_type, content_type}
+      ]) |> ExAws.request()
+
+    "#{public_endpoint}/#{bucket}/#{s3_name}"
   end
 end
