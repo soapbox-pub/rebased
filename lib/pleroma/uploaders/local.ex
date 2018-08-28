@@ -3,7 +3,7 @@ defmodule Pleroma.Uploaders.Local do
 
   alias Pleroma.Web
 
-  def put_file(name, uuid, file, _content_type, should_dedupe) do
+  def put_file(name, uuid, tmpfile, _content_type, should_dedupe) do
     upload_folder = get_upload_path(uuid, should_dedupe)
     url_path = get_url(name, uuid, should_dedupe)
 
@@ -12,9 +12,9 @@ defmodule Pleroma.Uploaders.Local do
     result_file = Path.join(upload_folder, name)
 
     if File.exists?(result_file) do
-      File.rm!(file.path)
+      File.rm!(tmpfile)
     else
-      File.cp!(file.path, result_file)
+      File.cp!(tmpfile, result_file)
     end
 
     url_path

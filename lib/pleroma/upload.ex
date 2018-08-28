@@ -1,11 +1,13 @@
 defmodule Pleroma.Upload do
   alias Ecto.UUID
+  import Logger
 
   @storage_backend Application.get_env(:pleroma, Pleroma.Upload)
                    |> Keyword.fetch!(:uploader)
 
   def store(%Plug.Upload{} = file, should_dedupe) do
     content_type = get_content_type(file.path)
+
     uuid = get_uuid(file, should_dedupe)
     name = get_name(file, uuid, content_type, should_dedupe)
 
@@ -26,23 +28,21 @@ defmodule Pleroma.Upload do
     }
   end
 
-  """
   # XXX: does this code actually work?  i am skeptical.  --kaniini
   def store(%{"img" => "data:image/" <> image_data}, should_dedupe) do
-    settings = Application.get_env(:pleroma, Pleroma.Upload)
-    use_s3 = Keyword.fetch!(settings, :use_s3)
-
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
+
+    tmp_path = mkupload_for_image(data)
+
     uuid = UUID.generate()
-    uuidpath = Path.join(upload_path(), uuid)
-    uuid = UUID.generate()
 
-    File.mkdir_p!(upload_path())
+    # create temp local storage, like plug upload provides for us.
 
-    File.write!(uuidpath, data)
+    Logger.info(tmp_path)
 
-    content_type = get_content_type(uuidpath)
+    content_type = get_content_type(tmp_path)
+    strip_exif_data(content_type, tmp_path)
 
     name =
       create_name(
@@ -51,30 +51,7 @@ defmodule Pleroma.Upload do
         content_type
       )
 
-    upload_folder = get_upload_path(uuid, should_dedupe)
-    url_path = get_url(name, uuid, should_dedupe)
-
-    File.mkdir_p!(upload_folder)
-    result_file = Path.join(upload_folder, name)
-
-    if should_dedupe do
-      if !File.exists?(result_file) do
-        File.rename(uuidpath, result_file)
-      else
-        File.rm!(uuidpath)
-      end
-    else
-      File.rename(uuidpath, result_file)
-    end
-
-    strip_exif_data(content_type, result_file)
-
-    url_path =
-      if use_s3 do
-        put_s3_file(name, uuid, result_file, content_type)
-      else
-        url_path
-      end
+    url_path = @storage_backend.put_file(name, uuid, tmp_path, content_type, should_dedupe)
 
     %{
       "type" => "Image",
@@ -88,7 +65,12 @@ defmodule Pleroma.Upload do
       "name" => name
     }
   end
-  """
+
+  def mkupload_for_image(data) do
+    {:ok, tmp_path} = Plug.Upload.random_file("profile_pics")
+    :file.write_file(tmp_path, data, [:write, :raw, :exclusive, :binary])
+    tmp_path
+  end
 
   def strip_exif_data(content_type, file) do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
