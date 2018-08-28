@@ -60,11 +60,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          fixed_token = fix_padding(params["code"]),
          %Authorization{} = auth <-
            Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
-         {:ok, token} <- Token.exchange_token(app, auth) do
+         {:ok, token} <- Token.exchange_token(app, auth),
+         {:ok, inserted_at} <- DateTime.from_naive(token.inserted_at, "Etc/UTC") do
       response = %{
         token_type: "Bearer",
         access_token: token.token,
         refresh_token: token.refresh_token,
+        created_at: DateTime.to_unix(inserted_at),
         expires_in: 60 * 10,
         scope: "read write follow"
       }
