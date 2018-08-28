@@ -240,7 +240,8 @@ defmodule Pleroma.Upload do
       ExAws.S3.put_object(bucket, s3_name, file_data, [
         {:acl, :public_read},
         {:content_type, content_type}
-      ]) |> ExAws.request()
+      ])
+      |> ExAws.request()
 
     "#{public_endpoint}/#{bucket}/#{s3_name}"
   end
