@@ -4,31 +4,15 @@ defmodule Pleroma.Upload do
 
   def store(%Plug.Upload{} = file, should_dedupe) do
     settings = Application.get_env(:pleroma, Pleroma.Upload)
-    use_s3 = Keyword.fetch!(settings, :use_s3)
+    storage_backend = Keyword.fetch!(settings, :storage_backend)
 
     content_type = get_content_type(file.path)
     uuid = get_uuid(file, should_dedupe)
     name = get_name(file, uuid, content_type, should_dedupe)
-    upload_folder = get_upload_path(uuid, should_dedupe)
-    url_path = get_url(name, uuid, should_dedupe)
 
     strip_exif_data(content_type, file.path)
 
-    File.mkdir_p!(upload_folder)
-    result_file = Path.join(upload_folder, name)
-
-    if File.exists?(result_file) do
-      File.rm!(file.path)
-    else
-      File.cp!(file.path, result_file)
-    end
-
-    url_path =
-      if use_s3 do
-        put_s3_file(name, uuid, result_file, content_type)
-      else
-        url_path
-      end
+    url_path = storage_backend.put_file(name, uuid, content_type)
 
     %{
       "type" => "Document",
@@ -115,11 +99,6 @@ defmodule Pleroma.Upload do
     end
   end
 
-  def upload_path do
-    settings = Application.get_env(:pleroma, Pleroma.Upload)
-    Keyword.fetch!(settings, :uploads)
-  end
-
   defp create_name(uuid, ext, type) do
     case type do
       "application/octet-stream" ->
@@ -163,26 +142,6 @@ defmodule Pleroma.Upload do
     end
   end
 
-  defp get_upload_path(uuid, should_dedupe) do
-    if should_dedupe do
-      upload_path()
-    else
-      Path.join(upload_path(), uuid)
-    end
-  end
-
-  defp get_url(name, uuid, should_dedupe) do
-    if should_dedupe do
-      url_for(:cow_uri.urlencode(name))
-    else
-      url_for(Path.join(uuid, :cow_uri.urlencode(name)))
-    end
-  end
-
-  defp url_for(file) do
-    "#{Web.base_url()}/media/#{file}"
-  end
-
   def get_content_type(file) do
     match =
       File.open(file, [:read], fn f ->
@@ -223,26 +182,5 @@ defmodule Pleroma.Upload do
       {:ok, type} -> type
       _e -> "application/octet-stream"
     end
-  end
-
-  defp put_s3_file(name, uuid, path, content_type) do
-    settings = Application.get_env(:pleroma, Pleroma.Upload)
-    bucket = Keyword.fetch!(settings, :bucket)
-    public_endpoint = Keyword.fetch!(settings, :public_endpoint)
-
-    {:ok, file_data} = File.read(path)
-
-    File.rm!(path)
-
-    s3_name = "#{uuid}/#{name}"
-
-    {:ok, result} =
-      ExAws.S3.put_object(bucket, s3_name, file_data, [
-        {:acl, :public_read},
-        {:content_type, content_type}
-      ])
-      |> ExAws.request()
-
-    "#{public_endpoint}/#{bucket}/#{s3_name}"
   end
 end

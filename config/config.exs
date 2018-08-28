@@ -11,9 +11,13 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Upload,
-  uploads: "uploads",
-  strip_exif: false,
-  use_s3: false,
+  uploader: Pleroma.Uploaders.Local
+  strip_exif: false
+
+config :pleroma, Pleroma.Uploaders.Local,
+  uploads: "uploads"
+
+config :pleroma, Pleroma.Uploaders.S3,
   s3_bucket: nil
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
