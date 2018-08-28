@@ -93,6 +93,7 @@ defmodule Pleroma.Web.Router do
     get("/authorize", OAuthController, :authorize)
     post("/authorize", OAuthController, :create_authorization)
     post("/token", OAuthController, :token_exchange)
+    post("/revoke", OAuthController, :token_revoke)
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

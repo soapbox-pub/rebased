@@ -118,6 +118,18 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     token_exchange(conn, params)
   end
 
+  def token_revoke(conn, %{"token" => token} = params) do
+    with %App{} = app <- get_app_from_request(conn, params),
+         %Token{} = token <- Repo.get_by(Token, token: token, app_id: app.id),
+         {:ok, %Token{}} <- Repo.delete(token) do
+      json(conn, %{})
+    else
+      _error ->
+        # RFC 7009: invalid tokens [in the request] do not cause an error response
+        json(conn, %{})
+    end
+  end
+
   defp fix_padding(token) do
     token
     |> Base.url_decode64!(padding: false)
