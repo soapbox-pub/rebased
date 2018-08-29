@@ -60,16 +60,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- check_actor_is_active(map["actor"]),
          {:ok, map} <- MRF.filter(map),
          :ok <- insert_full_object(map) do
-      {recipients, recipients_to, recipients_cc} = get_recipients(map)
+      {recipients, _, _} = get_recipients(map)
 
       {:ok, activity} =
         Repo.insert(%Activity{
           data: map,
           local: local,
           actor: map["actor"],
-          recipients: recipients,
-          recipients_to: recipients_to,
-          recipients_cc: recipients_cc
+          recipients: recipients
         })
 
       Notification.create_notifications(activity)
