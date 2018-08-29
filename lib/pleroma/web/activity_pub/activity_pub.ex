@@ -14,8 +14,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
-  def get_recipients(%{"type" => "Announce"} = data) do
-    recipients = (data["to"] || []) ++ (data["cc"] || [])
+  defp get_recipients(%{"type" => "Announce"} = data) do
+    to = data["to"] || []
+    cc = data["cc"] || []
+    recipients = to ++ cc
     actor = User.get_cached_by_ap_id(data["actor"])
 
     recipients
@@ -28,10 +30,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           User.following?(user, actor)
       end
     end)
+
+    {recipients, to, cc}
   end
 
-  def get_recipients(data) do
-    (data["to"] || []) ++ (data["cc"] || [])
+  defp get_recipients(data) do
+    to = data["to"] || []
+    cc = data["cc"] || []
+    recipients = to ++ cc
+    {recipients, to, cc}
   end
 
   defp check_actor_is_active(actor) do
@@ -53,12 +60,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- check_actor_is_active(map["actor"]),
          {:ok, map} <- MRF.filter(map),
          :ok <- insert_full_object(map) do
+      {recipients, recipients_to, recipients_cc} = get_recipients(map)
+
       {:ok, activity} =
         Repo.insert(%Activity{
           data: map,
           local: local,
           actor: map["actor"],
-          recipients: get_recipients(map)
+          recipients: recipients,
+          recipients_to: recipients_to,
+          recipients_cc: recipients_cc
         })
 
       Notification.create_notifications(activity)

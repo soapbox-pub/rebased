@@ -8,6 +8,8 @@ defmodule Pleroma.Activity do
     field(:local, :boolean, default: true)
     field(:actor, :string)
     field(:recipients, {:array, :string})
+    field(:recipients_to, {:array, :string})
+    field(:recipients_cc, {:array, :string})
     has_many(:notifications, Notification, on_delete: :delete_all)
 
     timestamps()
