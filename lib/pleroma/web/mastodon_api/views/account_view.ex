@@ -28,7 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
     %{
       id: to_string(user.id),
-      username: hd(String.split(user.nickname, "@")),
+      username: username_from_nickname(user.nickname),
       acct: user.nickname,
       display_name: user.name || user.nickname,
       locked: user_info.locked,
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     %{
       id: to_string(user.id),
       acct: user.nickname,
-      username: hd(String.split(user.nickname, "@")),
+      username: username_from_nickname(user.nickname),
       url: user.ap_id
     }
   end
@@ -76,4 +76,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   def render("relationships.json", %{user: user, targets: targets}) do
     render_many(targets, AccountView, "relationship.json", user: user, as: :target)
   end
+
+  defp username_from_nickname(string) when is_binary(string) do
+    hd(String.split(string, "@"))
+  end
+
+  defp username_from_nickname(_), do: nil
 end
