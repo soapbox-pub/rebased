@@ -1,7 +1,8 @@
 defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
-  alias Pleroma.{User, Notification, Activity, Object}
+  alias Pleroma.{User, Notification, Activity, Object, Repo}
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   def init(args) do
     {:ok, args}
@@ -60,8 +61,24 @@ defmodule Pleroma.Web.Streamer do
   end
 
   def handle_cast(%{action: :stream, topic: "list", item: item}, topics) do
+    author = User.get_cached_by_ap_id(item.data["actor"])
+
+    # filter the recipient list if the activity is not public, see #270.
+    recipient_lists =
+      case ActivityPub.is_public?(item) do
+        true ->
+          Pleroma.List.get_lists_from_activity(item)
+
+        _ ->
+          Pleroma.List.get_lists_from_activity(item)
+          |> Enum.filter(fn list ->
+            owner = Repo.get(User, list.user_id)
+            author.follower_address in owner.following
+          end)
+      end
+
     recipient_topics =
-      Pleroma.List.get_lists_from_activity(item)
+      recipient_lists
       |> Enum.map(fn %{id: id} -> "list:#{id}" end)
 
     Enum.each(recipient_topics || [], fn list_topic ->
