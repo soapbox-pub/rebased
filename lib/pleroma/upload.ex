@@ -12,7 +12,7 @@ defmodule Pleroma.Upload do
 
     strip_exif_data(content_type, file.path)
 
-    url_path = @storage_backend.put_file(name, uuid, file, content_type, should_dedupe)
+    url_path = @storage_backend.put_file(name, uuid, file.path, content_type, should_dedupe)
 
     %{
       "type" => "Document",
