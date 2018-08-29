@@ -29,8 +29,7 @@ config :pleroma, Pleroma.Repo,
 # The public S3 endpoint is different depending on region and provider,
 # consult your S3 provider's documentation for details on what to use.
 #
-# config :pleroma, Pleroma.Upload,
-#   use_s3: true,
+# config :pleroma, Pleroma.Uploaders.S3,
 #   bucket: "some-bucket",
 #   public_endpoint: "https://s3.amazonaws.com"
 #
