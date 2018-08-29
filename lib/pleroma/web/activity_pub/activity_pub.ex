@@ -415,11 +415,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       activity in query,
       where:
         fragment(
-          "(? && ?) or (? && ?)",
+          "(?->'to' \\?| ?) or (?->'cc' \\?| ?)",
+          activity.data,
           ^recipients_to,
-          activity.recipients_to,
-          ^recipients_cc,
-          activity.recipients_cc
+          activity.data,
+          ^recipients_cc
         )
     )
   end
