@@ -410,6 +410,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_tag(query, _), do: query
 
+  defp restrict_to_cc(query, recipients_to, recipients_cc) do
+    from(
+      activity in query,
+      where:
+        fragment(
+          "(? && ?) or (? && ?)",
+          ^recipients_to,
+          activity.recipients_to,
+          ^recipients_cc,
+          activity.recipients_cc
+        )
+    )
+  end
+
   defp restrict_recipients(query, [], _user), do: query
 
   defp restrict_recipients(query, recipients, nil) do
@@ -547,6 +561,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_activities(recipients, opts \\ %{}) do
     fetch_activities_query(recipients, opts)
+    |> Repo.all()
+    |> Enum.reverse()
+  end
+
+  def fetch_activities_bounded(recipients_to, recipients_cc, opts \\ %{}) do
+    fetch_activities_query([], opts)
+    |> restrict_to_cc(recipients_to, recipients_cc)
     |> Repo.all()
     |> Enum.reverse()
   end
