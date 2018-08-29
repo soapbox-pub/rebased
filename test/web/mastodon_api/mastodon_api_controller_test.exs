@@ -368,6 +368,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert id == to_string(activity_two.id)
     end
+
+    test "list timeline does not leak non-public statuses for unfollowed users", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, activity_one} = TwitterAPI.create_status(other_user, %{"status" => "Marisa is cute."})
+
+      {:ok, activity_two} =
+        TwitterAPI.create_status(other_user, %{
+          "status" => "Marisa is cute.",
+          "visibility" => "private"
+        })
+
+      {:ok, list} = Pleroma.List.create("name", user)
+      {:ok, list} = Pleroma.List.follow(list, other_user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/timelines/list/#{list.id}")
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+
+      assert id == to_string(activity_one.id)
+    end
   end
 
   describe "notifications" do
