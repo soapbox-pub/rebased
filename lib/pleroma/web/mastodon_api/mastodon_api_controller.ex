@@ -850,9 +850,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> Map.put("type", "Create")
         |> Map.put("blocking_user", user)
 
-      # adding title is a hack to not make empty lists function like a public timeline
+      # we must filter the following list for the user to avoid leaking statuses the user
+      # does not actually have permission to see (for more info, peruse security issue #270).
+      following_to =
+        following
+        |> Enum.filter(fn x -> x in user.following end)
+
       activities =
-        ActivityPub.fetch_activities([title | following], params)
+        ActivityPub.fetch_activities_bounded(following_to, following, params)
         |> Enum.reverse()
 
       conn
