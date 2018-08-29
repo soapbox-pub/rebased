@@ -158,6 +158,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
+  def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
+    nil
+  end
+
   def render("attachment.json", %{attachment: attachment}) do
     [attachment_url | _] = attachment["url"]
     media_type = attachment_url["mediaType"] || attachment_url["mimeType"] || "image"
