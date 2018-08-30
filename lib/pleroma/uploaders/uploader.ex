@@ -6,7 +6,9 @@ defmodule Pleroma.Uploaders.Uploader do
   @doc """
   Put a file to the backend.
 
-  Returns a `String.t` containing the path of the uploaded file.
+  Returns `{:ok, String.t } | {:error, String.t} containing the path of the 
+  uploaded file, or error information if the file failed to be saved to the 
+  respective backend.
   """
   @callback put_file(
               name :: String.t(),
