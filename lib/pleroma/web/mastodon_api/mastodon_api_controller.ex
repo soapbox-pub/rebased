@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
+  alias Pleroma.Web.MediaProxy
   alias Comeonin.Pbkdf2
   import Ecto.Query
   require Logger
@@ -1129,6 +1130,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
                 _ -> 0
               end
             )
+          end)
+          |> Enum.map(fn x ->
+            Map.put(x, "avatar", MediaProxy.url(x["avatar"]))
+          end)
+          |> Enum.map(fn x ->
+            Map.put(x, "avatar_static", MediaProxy.url(x["avatar_static"]))
           end)
 
         conn
