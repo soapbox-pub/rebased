@@ -19,6 +19,6 @@ defmodule Pleroma.Uploaders.S3 do
       ])
       |> ExAws.request()
 
-    "#{public_endpoint}/#{bucket}/#{s3_name}"
+    {:ok, "#{public_endpoint}/#{bucket}/#{s3_name}"}
   end
 end

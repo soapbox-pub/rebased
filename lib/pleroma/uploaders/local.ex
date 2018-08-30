@@ -17,7 +17,7 @@ defmodule Pleroma.Uploaders.Local do
       File.cp!(tmpfile, result_file)
     end
 
-    url_path
+    {:ok, url_path}
   end
 
   def upload_path do

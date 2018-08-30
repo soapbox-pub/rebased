@@ -14,13 +14,5 @@ defmodule Pleroma.Uploaders.Uploader do
               file :: File.t(),
               content_type :: String.t(),
               should_dedupe :: Boolean.t()
-            ) :: String.t()
-
-  @callback put_file(
-              name :: String.t(),
-              uuid :: String.t(),
-              image_data :: String.t(),
-              content_type :: String.t(),
-              should_dedupe :: String.t()
-            ) :: String.t()
+            ) :: {:ok, String.t()} | {:error, String.t()}
 end

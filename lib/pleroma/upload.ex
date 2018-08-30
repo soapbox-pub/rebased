@@ -12,7 +12,8 @@ defmodule Pleroma.Upload do
 
     strip_exif_data(content_type, file.path)
 
-    url_path = @storage_backend.put_file(name, uuid, file.path, content_type, should_dedupe)
+    {:ok, url_path} =
+      @storage_backend.put_file(name, uuid, file.path, content_type, should_dedupe)
 
     %{
       "type" => "Document",
@@ -31,7 +32,6 @@ defmodule Pleroma.Upload do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
 
-    # create temp local storage, like plug upload provides.
     tmp_path = tempfile_for_image(data)
 
     uuid = UUID.generate()
@@ -46,7 +46,7 @@ defmodule Pleroma.Upload do
         content_type
       )
 
-    url_path = @storage_backend.put_file(name, uuid, tmp_path, content_type, should_dedupe)
+    {:ok, url_path} = @storage_backend.put_file(name, uuid, tmp_path, content_type, should_dedupe)
 
     %{
       "type" => "Image",
@@ -61,6 +61,10 @@ defmodule Pleroma.Upload do
     }
   end
 
+  @doc """
+  Creates a tempfile using the Plug.Upload Genserver which cleans them up 
+  automatically.
+  """
   def tempfile_for_image(data) do
     {:ok, tmp_path} = Plug.Upload.random_file("profile_pics")
     {:ok, tmp_file} = File.open(tmp_path, [:write, :raw, :binary])
