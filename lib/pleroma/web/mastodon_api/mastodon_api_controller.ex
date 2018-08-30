@@ -282,7 +282,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
          true <- ActivityPub.visible_for_user?(activity, user) do
-      render(conn, StatusView, "status.json", %{activity: activity, for: user})
+      res = render(conn, StatusView, "status.json", %{activity: activity, for: user})
+
+      if res == nil do
+        conn
+        |> put_status(501)
+        |> json(%{error: "Can't display this status"})
+      else
+        res
+      end
     end
   end
 
