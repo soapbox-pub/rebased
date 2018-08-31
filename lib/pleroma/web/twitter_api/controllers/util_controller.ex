@@ -168,6 +168,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
               theme: Keyword.get(@instance_fe, :theme),
               background: Keyword.get(@instance_fe, :background),
               logo: Keyword.get(@instance_fe, :logo),
+              logoMask: Keyword.get(@instance_fe, :logo_mask),
+              logoMargin: Keyword.get(@instance_fe, :logo_margin),
               redirectRootNoLogin: Keyword.get(@instance_fe, :redirect_root_no_login),
               redirectRootLogin: Keyword.get(@instance_fe, :redirect_root_login),
               chatDisabled: !Keyword.get(@instance_chat, :enabled),
