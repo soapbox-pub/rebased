@@ -423,7 +423,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
             {String.trim(name, ":"), url}
           end)
 
-        bio_html = CommonUtils.format_input(bio, mentions, tags, "text/plain")
+        bio_html = CommonUtils.format_input(bio, mentions, tags)
         Map.put(params, "bio", bio_html |> Formatter.emojify(emoji))
       else
         params
