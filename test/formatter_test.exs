@@ -199,4 +199,14 @@ defmodule Pleroma.FormatterTest do
 
     assert Formatter.get_emoji(text) == [{"moominmamma", "/finmoji/128px/moominmamma-128.png"}]
   end
+
+  test "it returns a nice empty result when no emojis are present" do
+    text = "I love moominamma"
+    assert Formatter.get_emoji(text) == []
+  end
+
+  test "it doesn't die when text is absent" do
+    text = nil
+    assert Formatter.get_emoji(text) == []
+  end
 end
