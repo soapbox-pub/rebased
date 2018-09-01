@@ -780,6 +780,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  # TODO: Use proper query
+  def mutes(%{assigns: %{user: user}} = conn, _) do
+    with muted_users <- user.info["mutes"] || [],
+         accounts <- Enum.map(muted_users, fn ap_id -> User.get_cached_by_ap_id(ap_id) end) do
+      res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
+      json(conn, res)
+    end
+  end
+
   def block(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
     with %User{} = blocked <- Repo.get(User, id),
          {:ok, blocker} <- User.block(blocker, blocked),

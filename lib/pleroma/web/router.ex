@@ -178,7 +178,7 @@ defmodule Pleroma.Web.Router do
 
     get("/blocks", MastodonAPIController, :blocks)
 
-    get("/mutes", MastodonAPIController, :empty_array)
+    get("/mutes", MastodonAPIController, :mutes)
 
     get("/timelines/home", MastodonAPIController, :home_timeline)
 
