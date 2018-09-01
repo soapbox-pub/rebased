@@ -70,7 +70,8 @@ config :pleroma, :instance,
   allow_relay: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
-  quarantined_instances: []
+  quarantined_instances: [],
+  managed_config: true
 
 config :pleroma, :fe,
   theme: "pleroma-dark",

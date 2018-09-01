@@ -156,30 +156,39 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         |> send_resp(200, response)
 
       _ ->
-        json(conn, %{
-          site: %{
-            name: Keyword.get(@instance, :name),
-            description: Keyword.get(@instance, :description),
-            server: Web.base_url(),
-            textlimit: to_string(Keyword.get(@instance, :limit)),
-            closed: if(Keyword.get(@instance, :registrations_open), do: "0", else: "1"),
-            private: if(Keyword.get(@instance, :public, true), do: "0", else: "1"),
-            pleromafe: %{
-              theme: Keyword.get(@instance_fe, :theme),
-              background: Keyword.get(@instance_fe, :background),
-              logo: Keyword.get(@instance_fe, :logo),
-              logoMask: Keyword.get(@instance_fe, :logo_mask),
-              logoMargin: Keyword.get(@instance_fe, :logo_margin),
-              redirectRootNoLogin: Keyword.get(@instance_fe, :redirect_root_no_login),
-              redirectRootLogin: Keyword.get(@instance_fe, :redirect_root_login),
-              chatDisabled: !Keyword.get(@instance_chat, :enabled),
-              showInstanceSpecificPanel: Keyword.get(@instance_fe, :show_instance_panel),
-              scopeOptionsEnabled: Keyword.get(@instance_fe, :scope_options_enabled),
-              collapseMessageWithSubject:
-                Keyword.get(@instance_fe, :collapse_message_with_subject)
-            }
-          }
-        })
+        data = %{
+          name: Keyword.get(@instance, :name),
+          description: Keyword.get(@instance, :description),
+          server: Web.base_url(),
+          textlimit: to_string(Keyword.get(@instance, :limit)),
+          closed: if(Keyword.get(@instance, :registrations_open), do: "0", else: "1"),
+          private: if(Keyword.get(@instance, :public, true), do: "0", else: "1")
+        }
+
+        pleroma_fe = %{
+          theme: Keyword.get(@instance_fe, :theme),
+          background: Keyword.get(@instance_fe, :background),
+          logo: Keyword.get(@instance_fe, :logo),
+          logoMask: Keyword.get(@instance_fe, :logo_mask),
+          logoMargin: Keyword.get(@instance_fe, :logo_margin),
+          redirectRootNoLogin: Keyword.get(@instance_fe, :redirect_root_no_login),
+          redirectRootLogin: Keyword.get(@instance_fe, :redirect_root_login),
+          chatDisabled: !Keyword.get(@instance_chat, :enabled),
+          showInstanceSpecificPanel: Keyword.get(@instance_fe, :show_instance_panel),
+          scopeOptionsEnabled: Keyword.get(@instance_fe, :scope_options_enabled),
+          collapseMessageWithSubject:
+            Keyword.get(@instance_fe, :collapse_message_with_subject)
+        }
+
+        managed_config = Keyword.get(@instance, :managed_config)
+        data =
+          if managed_config do
+            data |> Map.put("pleromafe", pleroma_fe)
+          else
+            data
+          end
+
+        json(conn, %{site: data})
     end
   end
 
