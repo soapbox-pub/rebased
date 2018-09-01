@@ -42,6 +42,10 @@ defmodule Pleroma.Uploaders.Local do
   end
 
   defp url_for(file) do
-    "#{Web.base_url()}/media/#{file}"
+    settings = Application.get_env(:pleroma, Pleroma.Uploaders.Local)
+
+    Keyword.get(settings, :uploads_url)
+    |> String.replace("{{file}}", file)
+    |> String.replace("{{base_url}}", Web.base_url())
   end
 end
