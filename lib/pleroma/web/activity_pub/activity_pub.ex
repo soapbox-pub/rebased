@@ -747,6 +747,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              "actor" => data["attributedTo"],
              "object" => data
            },
+           :ok <- Transmogrifier.contain_origin(id, params),
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do
         {:ok, Object.normalize(activity.data["object"])}
       else

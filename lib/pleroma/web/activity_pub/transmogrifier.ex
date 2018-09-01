@@ -31,6 +31,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   @doc """
+  Checks that an imported AP object's actor matches the domain it came from.
+  """
+  def contain_origin(id, %{"actor" => actor} = params) do
+    id_uri = URI.parse(id)
+    actor_uri = URI.parse(get_actor(params))
+
+    if id_uri.host == actor_uri.host do
+      :ok
+    else
+      :error
+    end
+  end
+
+  @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
   def fix_object(object) do

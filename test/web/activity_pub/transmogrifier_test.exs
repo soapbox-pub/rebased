@@ -798,4 +798,25 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert rewritten["url"] == "http://example.com"
     end
   end
+
+  describe "actor origin containment" do
+    test "it rejects objects with a bogus origin" do
+      {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity.json")
+    end
+
+    test "it rejects activities which reference objects with bogus origins" do
+      user = insert(:user, %{local: false})
+
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "id" => user.ap_id <> "/activities/1234",
+        "actor" => user.ap_id,
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "object" => "https://info.pleroma.site/activity.json",
+        "type" => "Announce"
+      }
+
+      :error = Transmogrifier.handle_incoming(data)
+    end
+  end
 end
