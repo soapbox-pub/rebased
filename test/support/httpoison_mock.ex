@@ -3,6 +3,14 @@ defmodule HTTPoisonMock do
 
   def get(url, body \\ [], headers \\ [])
 
+  def get("https://info.pleroma.site/activity.json", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https__info.pleroma.site_activity.json")
+     }}
+  end
+
   def get("https://puckipedia.com/", [Accept: "application/activity+json"], _) do
     {:ok,
      %Response{
