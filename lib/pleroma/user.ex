@@ -68,7 +68,8 @@ defmodule Pleroma.User do
       following_count: length(user.following) - oneself,
       note_count: user.info["note_count"] || 0,
       follower_count: user.info["follower_count"] || 0,
-      locked: user.info["locked"] || false
+      locked: user.info["locked"] || false,
+      default_scope: user.info["default_scope"] || "public"
     }
   end
 
