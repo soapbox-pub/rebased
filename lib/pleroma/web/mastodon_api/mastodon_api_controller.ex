@@ -654,9 +654,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
-  def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, params["resolve"] == "true")
-
+  def status_search(query) do
     fetched =
       if Regex.match?(~r/https?:/, query) do
         with {:ok, object} <- ActivityPub.fetch_object_from_id(query) do
@@ -681,7 +679,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         order_by: [desc: :id]
       )
 
-    statuses = Repo.all(q) ++ fetched
+    Repo.all(q) ++ fetched
+  end
+
+  def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
+    accounts = User.search(query, params["resolve"] == "true")
+
+    statuses = status_search(query)
 
     tags_path = Web.base_url() <> "/tag/"
 
@@ -705,31 +709,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, params["resolve"] == "true")
 
-    fetched =
-      if Regex.match?(~r/https?:/, query) do
-        with {:ok, object} <- ActivityPub.fetch_object_from_id(query) do
-          [Activity.get_create_activity_by_object_ap_id(object.data["id"])]
-        else
-          _e -> []
-        end
-      end || []
-
-    q =
-      from(
-        a in Activity,
-        where: fragment("?->>'type' = 'Create'", a.data),
-        where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
-        where:
-          fragment(
-            "to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)",
-            a.data,
-            ^query
-          ),
-        limit: 20,
-        order_by: [desc: :id]
-      )
-
-    statuses = Repo.all(q) ++ fetched
+    statuses = status_search(query)
 
     tags =
       String.split(query)
