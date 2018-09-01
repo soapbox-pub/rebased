@@ -33,9 +33,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   @doc """
   Checks that an imported AP object's actor matches the domain it came from.
   """
-  def contain_origin(id, %{"actor" => actor}) do
+  def contain_origin(id, %{"actor" => actor} = params) do
     id_uri = URI.parse(id)
-    actor_uri = URI.parse(actor)
+    actor_uri = URI.parse(get_actor(params))
 
     if id_uri.host == actor_uri.host do
       :ok
