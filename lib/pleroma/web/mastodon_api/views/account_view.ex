@@ -46,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: [],
       source: %{
         note: "",
-        privacy: "public",
+        privacy: user_info.default_scope,
         sensitive: "false"
       }
     }

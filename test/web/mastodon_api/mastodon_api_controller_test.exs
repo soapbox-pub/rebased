@@ -206,7 +206,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/accounts/verify_credentials")
 
-    assert %{"id" => id} = json_response(conn, 200)
+    assert %{"id" => id, "source" => %{"privacy" => "public"}} = json_response(conn, 200)
+    assert id == to_string(user.id)
+  end
+
+  test "verify_credentials default scope unlisted", %{conn: conn} do
+    user = insert(:user, %{info: %{"default_scope" => "unlisted"}})
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/accounts/verify_credentials")
+
+    assert %{"id" => id, "source" => %{"privacy" => "unlisted"}} = json_response(conn, 200)
     assert id == to_string(user.id)
   end
 
@@ -713,6 +725,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == true
+    end
+
+    test "verify_credentials", %{conn: conn} do
+      user = insert(:user, %{info: %{"default_scope" => "private"}})
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/accounts/verify_credentials")
+
+      assert %{"id" => id, "source" => %{"privacy" => "private"}} = json_response(conn, 200)
+      assert id == to_string(user.id)
     end
 
     test "/api/v1/follow_requests/:id/reject works" do
