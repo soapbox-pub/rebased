@@ -154,6 +154,7 @@ defmodule Pleroma.Formatter do
           MediaProxy.url(file)
         }' />"
       )
+      |> HtmlSanitizeEx.basic_html()
     end)
   end
 
