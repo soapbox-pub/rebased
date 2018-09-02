@@ -22,7 +22,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
 
   test "A user with emoji in username", %{user: user} do
     expected =
-      "<img height='32px' width='32px' alt='karjalanpiirakka' title='karjalanpiirakka' src='/file.png' /> man"
+      "<img height=\"32px\" width=\"32px\" alt=\"karjalanpiirakka\" title=\"karjalanpiirakka\" src=\"/file.png\" /> man"
 
     user = %{
       user
