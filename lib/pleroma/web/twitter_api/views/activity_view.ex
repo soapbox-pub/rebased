@@ -181,6 +181,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   def render("activity.json", %{activity: %{data: %{"type" => "Like"}} = activity} = opts) do
     user = get_user(activity.data["actor"], opts)
     liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    liked_activity_id = if liked_activity, do: liked_activity.id, else: nil
 
     created_at =
       activity.data["published"]
@@ -197,7 +198,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "is_post_verb" => false,
       "uri" => "tag:#{activity.data["id"]}:objectType=Favourite",
       "created_at" => created_at,
-      "in_reply_to_status_id" => liked_activity.id,
+      "in_reply_to_status_id" => liked_activity_id,
       "external_url" => activity.data["id"],
       "activity_type" => "like"
     }

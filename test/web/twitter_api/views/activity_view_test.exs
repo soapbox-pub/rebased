@@ -126,6 +126,33 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     assert result == expected
   end
 
+  test "a like activity for deleted post" do
+    user = insert(:user)
+    other_user = insert(:user, %{nickname: "shp"})
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    {:ok, like, _object} = CommonAPI.favorite(activity.id, other_user)
+    CommonAPI.delete(activity.id, user)
+
+    result = ActivityView.render("activity.json", activity: like)
+
+    expected = %{
+      "activity_type" => "like",
+      "created_at" => like.data["published"] |> Utils.date_to_asctime(),
+      "external_url" => like.data["id"],
+      "id" => like.id,
+      "in_reply_to_status_id" => nil,
+      "is_local" => true,
+      "is_post_verb" => false,
+      "statusnet_html" => "shp favorited a status.",
+      "text" => "shp favorited a status.",
+      "uri" => "tag:#{like.data["id"]}:objectType=Favourite",
+      "user" => UserView.render("show.json", user: other_user)
+    }
+
+    assert result == expected
+  end
+
   test "an announce activity" do
     user = insert(:user)
     other_user = insert(:user, %{nickname: "shp"})
