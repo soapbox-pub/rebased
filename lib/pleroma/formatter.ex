@@ -192,7 +192,11 @@ defmodule Pleroma.Formatter do
   ]
 
   # TODO: make it use something other than @link_regex
-  def html_escape(text) do
+  def html_escape(text, "text/html") do
+    HtmlSanitizeEx.basic_html(text)
+  end
+
+  def html_escape(text, "text/plain") do
     Regex.split(@link_regex, text, include_captures: true)
     |> Enum.map_every(2, fn chunk ->
       {:safe, part} = Phoenix.HTML.html_escape(chunk)

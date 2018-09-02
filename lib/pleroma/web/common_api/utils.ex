@@ -63,9 +63,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def make_content_html(status, mentions, attachments, tags, no_attachment_links \\ false) do
+  def make_content_html(
+        status,
+        mentions,
+        attachments,
+        tags,
+        content_type,
+        no_attachment_links \\ false
+      ) do
     status
-    |> format_input(mentions, tags)
+    |> format_input(mentions, tags, content_type)
     |> maybe_add_attachments(attachments, no_attachment_links)
   end
 
@@ -92,14 +99,33 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.join([text | attachment_text], "<br>")
   end
 
-  def format_input(text, mentions, tags) do
+  def format_input(text, mentions, tags, "text/plain") do
     text
-    |> Formatter.html_escape()
+    |> Formatter.html_escape("text/plain")
     |> String.replace(~r/\r?\n/, "<br>")
     |> (&{[], &1}).()
     |> Formatter.add_links()
     |> Formatter.add_user_links(mentions)
     |> Formatter.add_hashtag_links(tags)
+    |> Formatter.finalize()
+  end
+
+  def format_input(text, mentions, tags, "text/html") do
+    text
+    |> Formatter.html_escape("text/html")
+    |> String.replace(~r/\r?\n/, "<br>")
+    |> (&{[], &1}).()
+    |> Formatter.add_user_links(mentions)
+    |> Formatter.finalize()
+  end
+
+  def format_input(text, mentions, tags, "text/markdown") do
+    text
+    |> Earmark.as_html!()
+    |> Formatter.html_escape("text/html")
+    |> String.replace(~r/\r?\n/, "")
+    |> (&{[], &1}).()
+    |> Formatter.add_user_links(mentions)
     |> Formatter.finalize()
   end
 
