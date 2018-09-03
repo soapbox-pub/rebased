@@ -13,6 +13,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
     user_info = User.user_info(user)
+    bot = (user.info["source_data"]["type"] || "Person") in ["Application", "Service"]
 
     emojis =
       (user.info["source_data"]["tag"] || [])
@@ -25,6 +26,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
           "visible_in_picker" => false
         }
       end)
+
+    fields =
+      (user.info["source_data"]["attachment"] || [])
+      |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
+      |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 
     %{
       id: to_string(user.id),
@@ -43,7 +49,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       header: header,
       header_static: header,
       emojis: emojis,
-      fields: [],
+      fields: fields,
+      bot: bot,
       source: %{
         note: "",
         privacy: user_info.default_scope,
