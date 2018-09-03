@@ -1033,7 +1033,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     case activity.data["type"] do
       "Create" ->
         %{
-          id: id,
+          id: id |> to_string,
           type: "mention",
           created_at: created_at,
           account: AccountView.render("account.json", %{user: actor}),
@@ -1044,7 +1044,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
 
         %{
-          id: id,
+          id: id |> to_string,
           type: "favourite",
           created_at: created_at,
           account: AccountView.render("account.json", %{user: actor}),
@@ -1055,7 +1055,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         announced_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
 
         %{
-          id: id,
+          id: id |> to_string,
           type: "reblog",
           created_at: created_at,
           account: AccountView.render("account.json", %{user: actor}),
@@ -1064,7 +1064,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       "Follow" ->
         %{
-          id: id,
+          id: id |> to_string,
           type: "follow",
           created_at: created_at,
           account: AccountView.render("account.json", %{user: actor})
