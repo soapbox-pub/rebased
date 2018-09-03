@@ -889,10 +889,6 @@ defmodule Pleroma.User do
   end
 
   def mute(muter, %User{ap_id: ap_id} = muted) do
-    if following?(muter, muter) do
-      unfollow(muter, muter)
-    end
-
     mutes = muter.info["mutes"] || []
     new_mutes = Enum.uniq([ap_id | mutes])
     new_info = Map.put(muter.info, "mutes", new_mutes)
