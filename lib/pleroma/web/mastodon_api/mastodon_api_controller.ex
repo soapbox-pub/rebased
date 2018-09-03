@@ -1030,6 +1030,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       NaiveDateTime.to_iso8601(created_at)
       |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
 
+    id = id |> to_string
+
     case activity.data["type"] do
       "Create" ->
         %{
