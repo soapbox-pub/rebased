@@ -263,6 +263,125 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
+  describe "filters" do
+    test "creating a filter", %{conn: conn} do
+      user = insert(:user)
+
+      filter = %Pleroma.Filter{
+        phrase: "knights",
+        context: ["home"]
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/filters", %{"phrase" => filter.phrase, context: filter.context})
+
+      assert response = json_response(conn, 200)
+      assert response["phrase"] == filter.phrase
+      assert response["context"] == filter.context
+    end
+
+    test "fetching a list of filters", %{conn: conn} do
+      user = insert(:user)
+
+      query_one = %Pleroma.Filter{
+        user_id: user.id,
+        filter_id: 1,
+        phrase: "knights",
+        context: ["home"]
+      }
+
+      query_two = %Pleroma.Filter{
+        user_id: user.id,
+        filter_id: 2,
+        phrase: "who",
+        context: ["home"]
+      }
+
+      {:ok, filter_one} = Pleroma.Filter.create(query_one)
+      {:ok, filter_two} = Pleroma.Filter.create(query_two)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/filters")
+
+      assert response = json_response(conn, 200)
+    end
+
+    test "get a filter", %{conn: conn} do
+      user = insert(:user)
+
+      query = %Pleroma.Filter{
+        user_id: user.id,
+        filter_id: 2,
+        phrase: "knight",
+        context: ["home"]
+      }
+
+      {:ok, filter} = Pleroma.Filter.create(query)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/filters/#{filter.filter_id}")
+
+      assert response = json_response(conn, 200)
+    end
+
+    test "update a filter", %{conn: conn} do
+      user = insert(:user)
+
+      query = %Pleroma.Filter{
+        user_id: user.id,
+        filter_id: 2,
+        phrase: "knight",
+        context: ["home"]
+      }
+
+      {:ok, filter} = Pleroma.Filter.create(query)
+
+      new = %Pleroma.Filter{
+        phrase: "nii",
+        context: ["home"]
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put("/api/v1/filters/#{query.filter_id}", %{
+          phrase: new.phrase,
+          context: new.context
+        })
+
+      assert response = json_response(conn, 200)
+      assert response["phrase"] == new.phrase
+      assert response["context"] == new.context
+    end
+
+    test "delete a filter", %{conn: conn} do
+      user = insert(:user)
+
+      query = %Pleroma.Filter{
+        user_id: user.id,
+        filter_id: 2,
+        phrase: "knight",
+        context: ["home"]
+      }
+
+      {:ok, filter} = Pleroma.Filter.create(query)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> delete("/api/v1/filters/#{filter.filter_id}")
+
+      assert response = json_response(conn, 200)
+      assert response == %{}
+    end
+  end
+
   describe "lists" do
     test "creating a list", %{conn: conn} do
       user = insert(:user)

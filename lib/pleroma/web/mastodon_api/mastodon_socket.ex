@@ -23,16 +23,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
                 "public:local:media",
                 "user",
                 "direct",
-                "list"
+                "list",
+                "hashtag"
               ] <- params["stream"] do
       topic = if stream == "list", do: "list:#{params["list"]}", else: stream
+      socket_stream = if stream == "hashtag", do: "hashtag:#{params["tag"]}", else: stream
 
       socket =
         socket
         |> assign(:topic, topic)
         |> assign(:user, user)
 
-      Pleroma.Web.Streamer.add_socket(params["stream"], socket)
+      Pleroma.Web.Streamer.add_socket(socket_stream, socket)
       {:ok, socket}
     else
       _e -> :error

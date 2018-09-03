@@ -23,6 +23,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     instance = Application.get_env(:pleroma, :instance)
     media_proxy = Application.get_env(:pleroma, :media_proxy)
     suggestions = Application.get_env(:pleroma, :suggestions)
+    chat = Application.get_env(:pleroma, :chat)
+    gopher = Application.get_env(:pleroma, :gopher)
     stats = Stats.get_stats()
 
     staff_accounts =
@@ -59,7 +61,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           timeout: Keyword.get(suggestions, :timeout, 5000),
           web: Keyword.get(suggestions, :web, "")
         },
-        staffAccounts: staff_accounts
+        staffAccounts: staff_accounts,
+        chat: Keyword.get(chat, :enabled),
+        gopher: Keyword.get(gopher, :enabled)
       }
     }
 
