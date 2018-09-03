@@ -158,9 +158,11 @@ defmodule Pleroma.Formatter do
     end)
   end
 
-  def get_emoji(text) do
+  def get_emoji(text) when is_binary(text) do
     Enum.filter(@emoji, fn {emoji, _} -> String.contains?(text, ":#{emoji}:") end)
   end
+
+  def get_emoji(_), do: []
 
   def get_custom_emoji() do
     @emoji
