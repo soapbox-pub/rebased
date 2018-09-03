@@ -888,13 +888,13 @@ defmodule Pleroma.User do
     )
   end
 
-  def mute(muter, %User{ap_id: ap_id} = muted) do
+  def mute(muter, %User{ap_id: ap_id}) do
     mutes = muter.info["mutes"] || []
     new_mutes = Enum.uniq([ap_id | mutes])
     new_info = Map.put(muter.info, "mutes", new_mutes)
 
-    cs = User.info_changeset(muter, %{info: new_info})
-    update_and_set_cache(cs)
+    User.info_changeset(muter, %{info: new_info})
+    |> update_and_set_cache()
   end
 
   def unmute(user, %{ap_id: ap_id}) do
@@ -902,8 +902,8 @@ defmodule Pleroma.User do
     new_mutes = List.delete(mutes, ap_id)
     new_info = Map.put(user.info, "mutes", new_mutes)
 
-    cs = User.info_changeset(user, %{info: new_info})
-    update_and_set_cache(cs)
+    User.info_changeset(user, %{info: new_info})
+    |> update_and_set_cache()
   end
 
   def block(blocker, %User{ap_id: ap_id} = blocked) do
