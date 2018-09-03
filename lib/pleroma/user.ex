@@ -609,6 +609,14 @@ defmodule Pleroma.User do
     )
   end
 
+  def moderator_user_query() do
+    from(
+      u in User,
+      where: u.local == true,
+      where: fragment("?->'is_moderator' @> 'true'", u.info)
+    )
+  end
+
   def deactivate(%User{} = user) do
     new_info = Map.put(user.info, "deactivated", true)
     cs = User.info_changeset(user, %{info: new_info})

@@ -3,6 +3,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
   alias Pleroma.Stats
   alias Pleroma.Web
+  alias Pleroma.{User, Repo}
 
   def schemas(conn, _params) do
     response = %{
@@ -25,6 +26,11 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     chat = Application.get_env(:pleroma, :chat)
     gopher = Application.get_env(:pleroma, :gopher)
     stats = Stats.get_stats()
+
+    staff_accounts =
+      User.moderator_user_query()
+      |> Repo.all()
+      |> Enum.map(fn u -> u.ap_id end)
 
     response = %{
       version: "2.0",
@@ -55,6 +61,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           timeout: Keyword.get(suggestions, :timeout, 5000),
           web: Keyword.get(suggestions, :web, "")
         },
+        staffAccounts: staff_accounts,
         chat: Keyword.get(chat, :enabled),
         gopher: Keyword.get(gopher, :enabled)
       }
