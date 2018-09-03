@@ -3,6 +3,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
   alias Pleroma.Stats
   alias Pleroma.Web
+  alias Pleroma.{User, Repo}
 
   def schemas(conn, _params) do
     response = %{
@@ -23,6 +24,11 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     media_proxy = Application.get_env(:pleroma, :media_proxy)
     suggestions = Application.get_env(:pleroma, :suggestions)
     stats = Stats.get_stats()
+
+    staff_accounts =
+      User.moderator_user_query()
+      |> Repo.all()
+      |> Enum.map(fn u -> u.ap_id end)
 
     response = %{
       version: "2.0",
@@ -52,7 +58,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           thirdPartyEngine: Keyword.get(suggestions, :third_party_engine, ""),
           timeout: Keyword.get(suggestions, :timeout, 5000),
           web: Keyword.get(suggestions, :web, "")
-        }
+        },
+        staffAccounts: staff_accounts
       }
     }
 
