@@ -17,6 +17,8 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.UserFetcherPlug)
     plug(Pleroma.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.UserEnabledPlug)
+    plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
@@ -28,6 +30,8 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.UserFetcherPlug)
     plug(Pleroma.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.UserEnabledPlug)
+    plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
   end
 
@@ -39,6 +43,8 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.UserFetcherPlug)
     plug(Pleroma.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.UserEnabledPlug)
+    plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
