@@ -888,6 +888,28 @@ defmodule Pleroma.User do
     )
   end
 
+  def mute(muter, %User{ap_id: ap_id} = muted) do
+    if following?(muter, muter) do
+      unfollow(muter, muter)
+    end
+
+    mutes = muter.info["mutes"] || []
+    new_mutes = Enum.uniq([ap_id | mutes])
+    new_info = Map.put(muter.info, "mutes", new_mutes)
+
+    cs = User.info_changeset(muter, %{info: new_info})
+    update_and_set_cache(cs)
+  end
+
+  def unmute(user, %{ap_id: ap_id}) do
+    mutes = user.info["mutes"] || []
+    new_mutes = List.delete(mutes, ap_id)
+    new_info = Map.put(user.info, "mutes", new_mutes)
+
+    cs = User.info_changeset(user, %{info: new_info})
+    update_and_set_cache(cs)
+  end
+
   def block(blocker, %User{ap_id: ap_id} = blocked) do
     # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
     blocker =
@@ -929,6 +951,8 @@ defmodule Pleroma.User do
 
     update_and_set_cache(cng)
   end
+
+  def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.info["mutes"] || [], ap_id)
 
   def blocks?(user, %{ap_id: ap_id}) do
     blocks = user.info.blocks
