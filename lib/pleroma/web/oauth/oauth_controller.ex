@@ -60,11 +60,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          fixed_token = fix_padding(params["code"]),
          %Authorization{} = auth <-
            Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
-         {:ok, token} <- Token.exchange_token(app, auth) do
+         {:ok, token} <- Token.exchange_token(app, auth),
+         {:ok, inserted_at} <- DateTime.from_naive(token.inserted_at, "Etc/UTC") do
       response = %{
         token_type: "Bearer",
         access_token: token.token,
         refresh_token: token.refresh_token,
+        created_at: DateTime.to_unix(inserted_at),
         expires_in: 60 * 10,
         scope: "read write follow"
       }
@@ -114,6 +116,18 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       |> Map.put("username", name)
 
     token_exchange(conn, params)
+  end
+
+  def token_revoke(conn, %{"token" => token} = params) do
+    with %App{} = app <- get_app_from_request(conn, params),
+         %Token{} = token <- Repo.get_by(Token, token: token, app_id: app.id),
+         {:ok, %Token{}} <- Repo.delete(token) do
+      json(conn, %{})
+    else
+      _error ->
+        # RFC 7009: invalid tokens [in the request] do not cause an error response
+        json(conn, %{})
+    end
   end
 
   defp fix_padding(token) do
