@@ -51,7 +51,8 @@ defmodule Pleroma.Mixfile do
       {:ex_machina, "~> 2.2", only: :test},
       {:credo, "~> 0.9.3", only: [:dev, :test]},
       {:mock, "~> 0.3.1", only: :test},
-      {:crypt, git: "https://github.com/msantos/crypt"}
+      {:crypt,
+       git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"}
     ]
   end
 
