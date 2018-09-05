@@ -45,7 +45,7 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
     conn =
       with_mock User,
         reset_password: fn user, %{password: password, password_confirmation: password} ->
-          send(self, :reset_password)
+          send(self(), :reset_password)
           {:ok, user}
         end do
         conn
