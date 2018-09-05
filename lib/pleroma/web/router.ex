@@ -9,47 +9,48 @@ defmodule Pleroma.Web.Router do
   @public Keyword.get(@instance, :public)
   @registrations_open Keyword.get(@instance, :registrations_open)
 
-  def user_fetcher(username_or_email) do
-    {
-      :ok,
-      cond do
-        # First, try logging in as if it was a name
-        user = Repo.get_by(User, %{nickname: username_or_email}) ->
-          user
-
-        # If we get nil, we try using it as an email
-        user = Repo.get_by(User, %{email: username_or_email}) ->
-          user
-      end
-    }
-  end
-
   pipeline :api do
     plug(:accepts, ["json"])
     plug(:fetch_session)
     plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true})
+    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
+    plug(Pleroma.Plugs.UserFetcherPlug)
+    plug(Pleroma.Plugs.SessionAuthenticationPlug)
+    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
   pipeline :authenticated_api do
     plug(:accepts, ["json"])
     plug(:fetch_session)
     plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1})
+    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
+    plug(Pleroma.Plugs.UserFetcherPlug)
+    plug(Pleroma.Plugs.SessionAuthenticationPlug)
+    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
   end
 
   pipeline :mastodon_html do
     plug(:accepts, ["html"])
     plug(:fetch_session)
     plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true})
+    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
+    plug(Pleroma.Plugs.UserFetcherPlug)
+    plug(Pleroma.Plugs.SessionAuthenticationPlug)
+    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
   pipeline :pleroma_html do
     plug(:accepts, ["html"])
     plug(:fetch_session)
     plug(Pleroma.Plugs.OAuthPlug)
-    plug(Pleroma.Plugs.AuthenticationPlug, %{fetcher: &Router.user_fetcher/1, optional: true})
+    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
+    plug(Pleroma.Plugs.UserFetcherPlug)
+    plug(Pleroma.Plugs.SessionAuthenticationPlug)
+    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
   pipeline :well_known do
