@@ -17,11 +17,15 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlug do
         } = conn,
         _
       ) do
-    if :crypt.crypt(password, password_hash) == password_hash do
+    with ^password_hash <- :crypt.crypt(password, password_hash),
+         {:ok, user} <-
+           User.reset_password(auth_user, %{password: password, password_confirmation: password}) do
       conn
-      |> assign(:user, auth_user)
+      |> assign(:auth_user, user)
+      |> assign(:user, user)
     else
-      conn
+      _ ->
+        conn
     end
   end
 

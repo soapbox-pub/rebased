@@ -4,6 +4,8 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
   alias Pleroma.Plugs.LegacyAuthenticationPlug
   alias Pleroma.User
 
+  import Mock
+
   setup do
     # password is "password"
     user = %User{
@@ -30,19 +32,27 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
     assert ret_conn == conn
   end
 
-  test "it authenticates the auth_user if present and password is correct", %{
-    conn: conn,
-    user: user
-  } do
+  test "it authenticates the auth_user if present and password is correct and resets the password",
+       %{
+         conn: conn,
+         user: user
+       } do
     conn =
       conn
       |> assign(:auth_credentials, %{username: "dude", password: "password"})
       |> assign(:auth_user, user)
 
     conn =
-      conn
-      |> LegacyAuthenticationPlug.call(%{})
+      with_mock User,
+        reset_password: fn user, %{password: password, password_confirmation: password} ->
+          send(self, :reset_password)
+          {:ok, user}
+        end do
+        conn
+        |> LegacyAuthenticationPlug.call(%{})
+      end
 
+    assert_received :reset_password
     assert conn.assigns.user == user
   end
 
