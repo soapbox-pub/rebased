@@ -26,6 +26,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     chat = Application.get_env(:pleroma, :chat)
     gopher = Application.get_env(:pleroma, :gopher)
     stats = Stats.get_stats()
+    mrf_simple = Application.get_env(:pleroma, :mrf_simple)
 
     staff_accounts =
       User.moderator_user_query()
@@ -64,7 +65,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         },
         staffAccounts: staff_accounts,
         chat: Keyword.get(chat, :enabled),
-        gopher: Keyword.get(gopher, :enabled)
+        gopher: Keyword.get(gopher, :enabled),
+        mrf_simple: Enum.into(mrf_simple, %{})
       }
     }
 
