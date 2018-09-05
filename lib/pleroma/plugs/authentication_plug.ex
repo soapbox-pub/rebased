@@ -37,4 +37,6 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     Pbkdf2.dummy_checkpw()
     conn
   end
+
+  def call(conn, _), do: conn
 end

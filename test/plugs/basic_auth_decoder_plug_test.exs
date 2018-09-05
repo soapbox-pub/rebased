@@ -1,4 +1,4 @@
-defmodule Pleroma.Plugs.AuthenticationPlugTest do
+defmodule Pleroma.Plugs.BasicAuthDecoderPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Plugs.BasicAuthDecoderPlug
