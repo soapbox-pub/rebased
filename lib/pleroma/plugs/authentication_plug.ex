@@ -14,7 +14,17 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
          {:ok, user} <- opts[:fetcher].(username),
          false <- !!user.info["deactivated"],
          saved_user_id <- get_session(conn, :user_id),
+         legacy_password <- String.starts_with?(user.password_hash, "$6$"),
+         update_legacy_password <-
+           !(Map.has_key?(opts, :update_legacy_password) && opts[:update_legacy_password] == false),
          {:ok, verified_user} <- verify(user, password, saved_user_id) do
+      if legacy_password and update_legacy_password do
+        User.reset_password(verified_user, %{
+          :password => password,
+          :password_confirmation => password
+        })
+      end
+
       conn
       |> assign(:user, verified_user)
       |> put_session(:user_id, verified_user.id)
@@ -34,7 +44,18 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   end
 
   defp verify(user, password, _user_id) do
-    if Pbkdf2.checkpw(password, user.password_hash) do
+    is_legacy = String.starts_with?(user.password_hash, "$6$")
+
+    valid =
+      cond do
+        is_legacy ->
+          :crypt.crypt(password, user.password_hash) == user.password_hash
+
+        true ->
+          Pbkdf2.checkpw(password, user.password_hash)
+      end
+
+    if valid do
       {:ok, user}
     else
       :error

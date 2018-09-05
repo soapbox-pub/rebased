@@ -21,6 +21,13 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
     info: %{"deactivated" => true}
   }
 
+  @legacy %User{
+    id: 1,
+    name: "dude",
+    password_hash:
+      "$6$9psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
+  }
+
   @session_opts [
     store: :cookie,
     key: "_test",
@@ -137,6 +144,27 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
 
       assert %{user: @user} == conn.assigns
       assert get_session(conn, :user_id) == @user.id
+      assert conn.halted == false
+    end
+
+    test "it assigns legacy user", %{conn: conn} do
+      opts = %{
+        optional: true,
+        fetcher: fn _ -> {:ok, @legacy} end,
+        update_legacy_password: false
+      }
+
+      header = basic_auth_enc("dude", "password")
+
+      conn =
+        conn
+        |> Plug.Session.call(Plug.Session.init(@session_opts))
+        |> fetch_session
+        |> put_req_header("authorization", header)
+        |> AuthenticationPlug.call(opts)
+
+      assert %{user: @legacy} == conn.assigns
+      assert get_session(conn, :user_id) == @legacy.id
       assert conn.halted == false
     end
   end
