@@ -44,15 +44,11 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   end
 
   defp verify(user, password, _user_id) do
-    is_legacy = String.starts_with?(user.password_hash, "$6$")
-
     valid =
-      cond do
-        is_legacy ->
-          :crypt.crypt(password, user.password_hash) == user.password_hash
-
-        true ->
-          Pbkdf2.checkpw(password, user.password_hash)
+      if String.starts_with?(user.password_hash, "$6$") do
+        :crypt.crypt(password, user.password_hash) == user.password_hash
+      else
+        Pbkdf2.checkpw(password, user.password_hash)
       end
 
     if valid do
