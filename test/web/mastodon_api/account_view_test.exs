@@ -53,7 +53,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       source: %{
         note: "",
         privacy: "public",
-        sensitive: "false"
+        sensitive: false
       }
     }
 
