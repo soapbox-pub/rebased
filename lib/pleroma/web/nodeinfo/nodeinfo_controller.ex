@@ -64,8 +64,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       end
 
     features = [
-      "pleroma_api_socket",
-      "mastodon_api_socket",
+      "pleroma_api",
+      "mastodon_api",
       "mastodon_api_streaming",
       if Keyword.get(media_proxy, :enabled) do
         "media_proxy"
@@ -74,10 +74,10 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         "gopher"
       end,
       if Keyword.get(chat, :enabled) do
-        "pleroma_api_chat"
+        "chat"
       end,
       if Keyword.get(suggestions, :enabled) do
-        "3rdparty_suggestions"
+        "suggestions"
       end
     ]
 
@@ -112,8 +112,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         },
         staffAccounts: staff_accounts,
         federation: federation_response,
-        postFormats: Keyword.get(instance, :allowed_post_formats)
-        features: features,
+        postFormats: Keyword.get(instance, :allowed_post_formats),
+        features: features
       }
     }
 
