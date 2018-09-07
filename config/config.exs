@@ -14,7 +14,9 @@ config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
   strip_exif: false
 
-config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
+config :pleroma, Pleroma.Uploaders.Local,
+  uploads: "uploads",
+  uploads_url: "{{base_url}}/media/{{file}}"
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
