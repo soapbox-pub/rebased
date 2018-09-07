@@ -49,7 +49,11 @@ defmodule Pleroma.Web.Endpoint do
     Plug.Session,
     store: :cookie,
     key: "_pleroma_key",
-    signing_salt: "CqaoopA2"
+    signing_salt: "CqaoopA2",
+    http_only: true,
+    secure:
+      Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
+    extra: "SameSite=Strict"
   )
 
   plug(Pleroma.Web.Router)

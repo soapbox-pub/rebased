@@ -32,7 +32,8 @@ config :pleroma, Pleroma.Web.Endpoint,
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
-  pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2]
+  pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2],
+  secure_cookie_flag: true
 
 # Configures Elixir's Logger
 config :logger, :console,
