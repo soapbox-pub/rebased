@@ -119,3 +119,13 @@ sub vcl_pipe {
         set bereq.http.connection = req.http.connection;
     }
 }
+
+sub vcl_deliver {
+  set resp.http.X-Frame-Options = "DENY";
+  set resp.http.X-XSS-Protection = "1; mode=block";
+  set resp.http.X-Content-Type-Options = "nosniff";
+  set resp.http.Referrer-Policy = "same-origin";
+  set resp.http.Content-Security-Policy = "default-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: https:; media-src 'self' https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' wss://" + req.http.host + "; upgrade-insecure-requests;";
+  # Uncomment this only after you get HTTPS working.
+  # set resp.http.Strict-Transport-Security= "max-age=31536000; includeSubDomains";
+}
