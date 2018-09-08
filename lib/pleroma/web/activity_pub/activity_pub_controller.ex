@@ -6,10 +6,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator
+  alias Pleroma.Config
 
   require Logger
 
   action_fallback(:errors)
+
+  plug(:relay_active? when action in [:relay])
+
+  def relay_active?(conn, _) do
+    if Config.get([:instance, :allow_relay]) do
+      conn
+    else
+      conn
+      |> put_status(404)
+      |> json(%{error: "not found"})
+      |> halt
+    end
+  end
 
   def user(conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
