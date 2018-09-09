@@ -193,7 +193,7 @@ defmodule Pleroma.Formatter do
 
   # TODO: make it use something other than @link_regex
   def html_escape(text, "text/html") do
-    HtmlSanitizeEx.basic_html(text)
+    HTML.filter_tags(text)
   end
 
   def html_escape(text, "text/plain") do
