@@ -1,7 +1,6 @@
 defmodule Pleroma.Plugs.UserEnabledPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.User
   alias Pleroma.Plugs.UserEnabledPlug
 
   test "doesn't do anything if the user isn't set", %{conn: conn} do
@@ -15,7 +14,7 @@ defmodule Pleroma.Plugs.UserEnabledPlugTest do
   test "with a user that is deactivated, it removes that user", %{conn: conn} do
     conn =
       conn
-      |> assign(:user, %User{info: %{"deactivated" => true}})
+      |> assign(:user, %Pleroma.User{info: %{"deactivated" => true}})
       |> UserEnabledPlug.call(%{})
 
     assert conn.assigns.user == nil
@@ -24,7 +23,7 @@ defmodule Pleroma.Plugs.UserEnabledPlugTest do
   test "with a user that is not deactivated, it does nothing", %{conn: conn} do
     conn =
       conn
-      |> assign(:user, %User{})
+      |> assign(:user, %Pleroma.User{})
 
     ret_conn =
       conn
