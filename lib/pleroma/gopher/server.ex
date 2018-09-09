@@ -35,6 +35,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
   alias Pleroma.User
   alias Pleroma.Activity
   alias Pleroma.Repo
+  alias Pleroma.HTML
 
   @instance Application.get_env(:pleroma, :instance)
   @gopher Application.get_env(:pleroma, :gopher)
@@ -79,7 +80,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
         info("#{like_count} likes, #{announcement_count} repeats") <>
         "i\tfake\t(NULL)\t0\r\n" <>
         info(
-          HtmlSanitizeEx.strip_tags(
+          HTML.strip_tags(
             String.replace(activity.data["object"]["content"], "<br>", "\r")
           )
         )

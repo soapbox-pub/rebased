@@ -5,6 +5,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Repo
+  alias Pleroma.HTML
 
   # TODO: Add cached version.
   defp get_replied_to_activities(activities) do
@@ -111,10 +112,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     emojis =
       (activity.data["object"]["emoji"] || [])
       |> Enum.map(fn {name, url} ->
-        name = HtmlSanitizeEx.strip_tags(name)
+        name = HTML.strip_tags(name)
 
         url =
-          HtmlSanitizeEx.strip_tags(url)
+          HTML.strip_tags(url)
           |> MediaProxy.url()
 
         %{shortcode: name, url: url, static_url: url}
@@ -221,7 +222,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         object["content"]
       end
 
-    HtmlSanitizeEx.basic_html(content)
+    HTML.filter_tags(content)
   end
 
   def render_content(%{"type" => "Article"} = object) do
@@ -234,10 +235,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         object["content"]
       end
 
-    HtmlSanitizeEx.basic_html(content)
+    HTML.filter_tags(content)
   end
 
   def render_content(object) do
-    HtmlSanitizeEx.basic_html(object["content"])
+    HTML.filter_tags(object["content"])
   end
 end

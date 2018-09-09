@@ -4,6 +4,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.HTML
 
   def render("accounts.json", %{users: users} = opts) do
     render_many(users, AccountView, "account.json", opts)
@@ -42,7 +43,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       followers_count: user_info.follower_count,
       following_count: user_info.following_count,
       statuses_count: user_info.note_count,
-      note: HtmlSanitizeEx.basic_html(user.bio) || "",
+      note: HTML.filter_tags(user.bio) || "",
       url: user.ap_id,
       avatar: image,
       avatar_static: image,

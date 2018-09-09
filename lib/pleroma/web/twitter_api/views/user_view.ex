@@ -4,6 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
   alias Pleroma.Formatter
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.HTML
 
   def render("show.json", %{user: user = %User{}} = assigns) do
     render_one(user, Pleroma.Web.TwitterAPI.UserView, "user.json", assigns)
@@ -39,8 +40,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     data = %{
       "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "description" =>
-        HtmlSanitizeEx.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
-      "description_html" => HtmlSanitizeEx.basic_html(user.bio),
+        HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
+      "description_html" => HTML.filter_tags(user.bio),
       "favourites_count" => 0,
       "followers_count" => user_info[:follower_count],
       "following" => following,
@@ -49,7 +50,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "friends_count" => user_info[:following_count],
       "id" => user.id,
       "name" => user.name,
-      "name_html" => HtmlSanitizeEx.strip_tags(user.name) |> Formatter.emojify(emoji),
+      "name_html" => HTML.strip_tags(user.name) |> Formatter.emojify(emoji),
       "profile_image_url" => image,
       "profile_image_url_https" => image,
       "profile_image_url_profile_size" => image,

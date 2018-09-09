@@ -11,6 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Formatter
+  alias Pleroma.HTML
 
   import Ecto.Query
 
@@ -232,7 +233,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     {summary, content} = render_content(object)
 
     html =
-      HtmlSanitizeEx.basic_html(content)
+      HTML.filter_tags(content)
       |> Formatter.emojify(object["emoji"])
 
     %{
@@ -240,7 +241,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => html,
-      "text" => HtmlSanitizeEx.strip_tags(content),
+      "text" => HTML.strip_tags(content),
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,

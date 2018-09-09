@@ -1,6 +1,7 @@
 defmodule Pleroma.Formatter do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.HTML
 
   @tag_regex ~r/\#\w+/u
   def parse_tags(text, data \\ %{}) do
@@ -144,8 +145,8 @@ defmodule Pleroma.Formatter do
 
   def emojify(text, emoji) do
     Enum.reduce(emoji, text, fn {emoji, file}, text ->
-      emoji = HtmlSanitizeEx.strip_tags(emoji)
-      file = HtmlSanitizeEx.strip_tags(file)
+      emoji = HTML.strip_tags(emoji)
+      file = HTML.strip_tags(file)
 
       String.replace(
         text,
@@ -154,7 +155,7 @@ defmodule Pleroma.Formatter do
           MediaProxy.url(file)
         }' />"
       )
-      |> HtmlSanitizeEx.basic_html()
+      |> HTML.filter_tags()
     end)
   end
 
