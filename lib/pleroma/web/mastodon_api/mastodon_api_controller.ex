@@ -1148,6 +1148,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     if Keyword.get(@suggestions, :enabled, false) do
       api = Keyword.get(@suggestions, :third_party_engine, "")
       timeout = Keyword.get(@suggestions, :timeout, 5000)
+      limit = Keyword.get(@suggestions, :limit, 23)
 
       host =
         Application.get_env(:pleroma, Pleroma.Web.Endpoint)
@@ -1161,7 +1162,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
              @httpoison.get(url, [], timeout: timeout, recv_timeout: timeout),
            {:ok, data} <- Jason.decode(body) do
         data2 =
-          Enum.slice(data, 0, 40)
+          Enum.slice(data, 0, limit)
           |> Enum.map(fn x ->
             Map.put(
               x,

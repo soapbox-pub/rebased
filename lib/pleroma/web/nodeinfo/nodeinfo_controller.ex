@@ -59,6 +59,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           enabled: Keyword.get(suggestions, :enabled, false),
           thirdPartyEngine: Keyword.get(suggestions, :third_party_engine, ""),
           timeout: Keyword.get(suggestions, :timeout, 5000),
+          limit: Keyword.get(suggestions, :limit, 23),
           web: Keyword.get(suggestions, :web, "")
         },
         staffAccounts: staff_accounts,
