@@ -39,14 +39,17 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         })
       else
         connector = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
-        url = "#{redirect_uri}#{connector}code=#{auth.token}"
+        url = "#{redirect_uri}#{connector}"
+        url_params = %{:code => auth.token}
 
-        url =
+        url_params =
           if params["state"] do
-            url <> "&state=#{params["state"]}"
+            Map.put(url_params, :state, params["state"])
           else
-            url
+            url_params
           end
+
+        url = "#{url}#{Plug.Conn.Query.encode(url_params)}"
 
         redirect(conn, external: url)
       end
