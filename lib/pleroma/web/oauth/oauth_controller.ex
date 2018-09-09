@@ -49,7 +49,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
             url_params
           end
 
-        url = "#{url}#{Plug.Conn.Query.encode url_params}"
+        url = "#{url}#{Plug.Conn.Query.encode(url_params)}"
 
         redirect(conn, external: url)
       end
