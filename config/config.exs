@@ -76,6 +76,9 @@ config :pleroma, :instance,
   quarantined_instances: [],
   managed_config: true
 
+config :pleroma, :markup,
+  scrub_policy: HtmlSanitizeEx.Scrubber.BasicHTML
+
 config :pleroma, :fe,
   theme: "pleroma-dark",
   logo: "/static/logo.png",
