@@ -1,8 +1,8 @@
 defmodule Pleroma.Plugs.UserEnabledPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  alias Pleroma.Plugs.UserEnabledPlug
   alias Pleroma.User
+  alias Pleroma.Plugs.UserEnabledPlug
 
   test "doesn't do anything if the user isn't set", %{conn: conn} do
     ret_conn =
