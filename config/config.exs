@@ -98,6 +98,7 @@ config :pleroma, :fe,
   redirect_root_login: "/main/friends",
   show_instance_panel: true,
   scope_options_enabled: false,
+  formatting_options_enabled: false,
   collapse_message_with_subject: false
 
 config :pleroma, :activitypub,
