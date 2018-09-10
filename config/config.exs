@@ -77,7 +77,9 @@ config :pleroma, :instance,
   managed_config: true
 
 config :pleroma, :markup,
-  allow_inline_images: false,
+  # XXX - unfortunately, inline images must be enabled by default right now, because
+  # of custom emoji.  Issue #275 discusses defanging that somehow.
+  allow_inline_images: true,
   allow_headings: false,
   allow_tables: false,
   allow_fonts: false,

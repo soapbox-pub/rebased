@@ -37,6 +37,21 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
 
   # microformats
   Meta.allow_tag_with_these_attributes("span", [])
+
+  # allow inline images for custom emoji
+  @markup Application.get_env(:pleroma, :markup)
+  @allow_inline_images Keyword.get(@markup, :allow_inline_images)
+
+  if @allow_inline_images do
+    Meta.allow_tag_with_uri_attributes("img", ["src"], @valid_schemes)
+
+    Meta.allow_tag_with_these_attributes("img", [
+      "width",
+      "height",
+      "title",
+      "alt"
+    ])
+  end
 end
 
 defmodule Pleroma.HTML.Scrubber.Default do
