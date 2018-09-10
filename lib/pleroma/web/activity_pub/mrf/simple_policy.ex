@@ -23,7 +23,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   end
 
   @media_removal Keyword.get(@mrf_policy, :media_removal)
-  defp check_media_removal(actor_info, object) do
+  defp check_media_removal(actor_info, %{"type" => activity_type} = object)
+       when activity_type == "Create" do
     if actor_info.host in @media_removal do
       child_object = Map.delete(object["object"], "attachment")
       object = Map.put(object, "object", child_object)
@@ -33,8 +34,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     end
   end
 
+  defp check_media_removal(actor_info, object), do: {:ok, object}
+
   @media_nsfw Keyword.get(@mrf_policy, :media_nsfw)
-  defp check_media_nsfw(actor_info, object) do
+  defp check_media_nsfw(actor_info, %{"type" => activity_type} = object)
+       when activity_type == "Create" do
     child_object = object["object"]
 
     if actor_info.host in @media_nsfw and child_object["attachment"] != nil and
@@ -48,6 +52,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       {:ok, object}
     end
   end
+
+  defp check_media_nsfw(actor_info, object), do: {:ok, object}
 
   @ftl_removal Keyword.get(@mrf_policy, :federated_timeline_removal)
   defp check_ftl_removal(actor_info, object) do
