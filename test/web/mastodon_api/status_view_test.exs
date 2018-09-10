@@ -47,7 +47,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         %{
           shortcode: "2hu",
           url: "corndog.png",
-          static_url: "corndog.png"
+          static_url: "corndog.png",
+          visible_in_picker: false
         }
       ]
     }
