@@ -77,7 +77,11 @@ config :pleroma, :instance,
   managed_config: true
 
 config :pleroma, :markup,
-  scrub_policy: HtmlSanitizeEx.Scrubber.BasicHTML
+  allow_inline_images: false,
+  allow_headings: false,
+  allow_tables: false,
+  allow_fonts: false,
+  scrub_policy: Pleroma.HTML.Scrubber.Default
 
 config :pleroma, :fe,
   theme: "pleroma-dark",
