@@ -39,8 +39,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
 
     data = %{
       "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
-      "description" =>
-        HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
+      "description" => HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
       "description_html" => HTML.filter_tags(user.bio),
       "favourites_count" => 0,
       "followers_count" => user_info[:follower_count],
