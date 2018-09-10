@@ -355,9 +355,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Update", "object" => %{"type" => "Person"} = object, "actor" => actor_id} =
+        %{"type" => "Update", "object" => %{"type" => object_type} = object, "actor" => actor_id} =
           data
-      ) do
+      )
+      when object_type in ["Person", "Application", "Service", "Organization"] do
     with %User{ap_id: ^actor_id} = actor <- User.get_by_ap_id(object["id"]) do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
 
