@@ -117,7 +117,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           HtmlSanitizeEx.strip_tags(url)
           |> MediaProxy.url()
 
-        %{shortcode: name, url: url, static_url: url}
+        %{shortcode: name, url: url, static_url: url, visible_in_picker: false}
       end)
 
     %{
