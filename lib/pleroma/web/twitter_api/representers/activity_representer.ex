@@ -7,6 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView}
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Formatter
+  alias Pleroma.HTML
 
   defp user_by_ap_id(user_list, ap_id) do
     Enum.find(user_list, fn %{ap_id: user_id} -> ap_id == user_id end)
@@ -167,7 +168,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     {summary, content} = ActivityView.render_content(object)
 
     html =
-      HtmlSanitizeEx.basic_html(content)
+      HTML.filter_tags(content)
       |> Formatter.emojify(object["emoji"])
 
     video =
@@ -184,7 +185,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => html,
-      "text" => HtmlSanitizeEx.strip_tags(content),
+      "text" => HTML.strip_tags(content),
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,
