@@ -83,7 +83,10 @@ config :pleroma, :markup,
   allow_headings: false,
   allow_tables: false,
   allow_fonts: false,
-  scrub_policy: Pleroma.HTML.Scrubber.Default
+  scrub_policy: [
+    Pleroma.HTML.Transform.MediaProxy,
+    Pleroma.HTML.Scrubber.Default
+  ]
 
 config :pleroma, :fe,
   theme: "pleroma-dark",

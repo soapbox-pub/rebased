@@ -3,13 +3,24 @@ defmodule Pleroma.HTML do
 
   @markup Application.get_env(:pleroma, :markup)
 
+  defp get_scrubbers(scrubber) when is_atom(scrubber), do: [scrubber]
+  defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
+  defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
+
+  def get_scrubbers() do
+    Keyword.get(@markup, :scrub_policy)
+    |> get_scrubbers
+  end
+
   def filter_tags(html, scrubber) do
     html |> Scrubber.scrub(scrubber)
   end
 
   def filter_tags(html) do
-    scrubber = Keyword.get(@markup, :scrub_policy)
-    filter_tags(html, scrubber)
+    get_scrubbers()
+    |> Enum.reduce(html, fn scrubber, html ->
+      filter_tags(html, scrubber)
+    end)
   end
 
   def strip_tags(html) do
@@ -130,4 +141,35 @@ defmodule Pleroma.HTML.Scrubber.Default do
   end
 
   Meta.strip_everything_not_covered()
+end
+
+defmodule Pleroma.HTML.Transform.MediaProxy do
+  @moduledoc "Transforms inline image URIs to use MediaProxy."
+
+  alias Pleroma.Web.MediaProxy
+
+  def before_scrub(html), do: html
+
+  def scrub_attribute("img", {"src", "http" <> target}) do
+    media_url =
+      ("http" <> target)
+      |> MediaProxy.url()
+
+    {"src", media_url}
+  end
+
+  def scrub_attribute(tag, attribute), do: attribute
+
+  def scrub({"img", attributes, children}) do
+    attributes =
+      attributes
+      |> Enum.map(fn attr -> scrub_attribute("img", attr) end)
+      |> Enum.reject(&is_nil(&1))
+
+    {"img", attributes, children}
+  end
+
+  def scrub({tag, attributes, children}), do: {tag, attributes, children}
+  def scrub({tag, children}), do: children
+  def scrub(text), do: text
 end
