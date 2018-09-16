@@ -3,13 +3,24 @@ defmodule Pleroma.HTML do
 
   @markup Application.get_env(:pleroma, :markup)
 
+  defp get_scrubbers(scrubber) when is_atom(scrubber), do: [scrubber]
+  defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
+  defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
+
+  def get_scrubbers() do
+    Keyword.get(@markup, :scrub_policy)
+    |> get_scrubbers
+  end
+
   def filter_tags(html, scrubber) do
     html |> Scrubber.scrub(scrubber)
   end
 
   def filter_tags(html) do
-    scrubber = Keyword.get(@markup, :scrub_policy)
-    filter_tags(html, scrubber)
+    get_scrubbers()
+    |> Enum.reduce(html, fn scrubber, html ->
+      filter_tags(html, scrubber)
+    end)
   end
 
   def strip_tags(html) do
