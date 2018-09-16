@@ -3,9 +3,13 @@ defmodule Pleroma.HTML do
 
   @markup Application.get_env(:pleroma, :markup)
 
+  def filter_tags(html, scrubber) do
+    html |> Scrubber.scrub(scrubber)
+  end
+
   def filter_tags(html) do
     scrubber = Keyword.get(@markup, :scrub_policy)
-    html |> Scrubber.scrub(scrubber)
+    filter_tags(html, scrubber)
   end
 
   def strip_tags(html) do

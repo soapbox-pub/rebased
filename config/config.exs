@@ -104,6 +104,8 @@ config :pleroma, :activitypub,
 
 config :pleroma, :user, deny_follow_blocked: true
 
+config :pleroma, :mrf_normalize_markup, scrub_policy: Pleroma.HTML.Scrubber.Default
+
 config :pleroma, :mrf_rejectnonpublic,
   allow_followersonly: false,
   allow_direct: false
