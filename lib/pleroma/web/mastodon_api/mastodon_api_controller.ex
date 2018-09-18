@@ -1189,8 +1189,4 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       json(conn, [])
     end
   end
-
-  def filters(conn, _) do
-    json(conn, [])
-  end
 end
