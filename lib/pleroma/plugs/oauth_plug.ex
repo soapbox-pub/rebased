@@ -18,10 +18,11 @@ defmodule Pleroma.Plugs.OAuthPlug do
       end
 
     with token when not is_nil(token) <- token,
-         %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
+         %Token{user_id: user_id} = token <- Repo.get_by(Token, token: token),
          %User{} = user <- Repo.get(User, user_id),
          false <- !!user.info["deactivated"] do
       conn
+      |> assign(:token, token)
       |> assign(:user, user)
     else
       _ -> conn
