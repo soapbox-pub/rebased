@@ -22,6 +22,7 @@ defmodule Pleroma.User do
     field(:info, :map, default: %{})
     field(:follower_address, :string)
     field(:search_distance, :float, virtual: true)
+    field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
 
     timestamps()
@@ -112,8 +113,12 @@ defmodule Pleroma.User do
   end
 
   def upgrade_changeset(struct, params \\ %{}) do
+    params =
+      params
+      |> Map.put(:last_refreshed_at, NaiveDateTime.utc_now())
+
     struct
-    |> cast(params, [:bio, :name, :info, :follower_address, :avatar])
+    |> cast(params, [:bio, :name, :info, :follower_address, :avatar, :last_refreshed_at])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
     |> validate_length(:bio, max: 5000)
@@ -168,6 +173,16 @@ defmodule Pleroma.User do
       changeset
     end
   end
+
+  def needs_update?(%User{local: true}), do: false
+
+  def needs_update?(%User{local: false, last_refreshed_at: nil}), do: true
+
+  def needs_update?(%User{local: false} = user) do
+    NaiveDateTime.diff(NaiveDateTime.utc_now(), user.last_refreshed_at) >= 86400
+  end
+
+  def needs_update?(_), do: true
 
   def maybe_direct_follow(%User{} = follower, %User{info: info} = followed) do
     user_config = Application.get_env(:pleroma, :user)
@@ -655,7 +670,9 @@ defmodule Pleroma.User do
   end
 
   def get_or_fetch_by_ap_id(ap_id) do
-    if user = get_by_ap_id(ap_id) do
+    user = get_by_ap_id(ap_id)
+
+    if !is_nil(user) and !User.needs_update?(user) do
       user
     else
       ap_try = ActivityPub.make_user_from_ap_id(ap_id)
