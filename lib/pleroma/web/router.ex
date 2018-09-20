@@ -400,6 +400,8 @@ defmodule Pleroma.Web.Router do
   scope "/", Fallback do
     get("/registration/:token", RedirectController, :registration_page)
     get("/*path", RedirectController, :redirector)
+
+    options("/*path", RedirectController, :empty)
   end
 end
 
@@ -416,5 +418,11 @@ defmodule Fallback.RedirectController do
 
   def registration_page(conn, params) do
     redirector(conn, params)
+  end
+
+  def empty(conn, _params) do
+    conn
+    |> put_status(204)
+    |> text("")
   end
 end
