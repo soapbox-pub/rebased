@@ -126,7 +126,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       muting_notifications: false,
       requested: false,
       domain_blocking: false,
-      showing_reblogs: false
+      showing_reblogs: false,
+      endorsed: false
     }
 
     assert expected == AccountView.render("relationship.json", %{user: user, target: other_user})
