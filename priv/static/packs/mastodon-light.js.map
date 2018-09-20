@@ -1,1 +1,1 @@
-{"version":3,"sources":["webpack:///mastodon-light.js"],"names":["webpackJsonp","804","module","exports"],"mappings":"AAAAA,cAAc,KAERC,IACA,SAAUC,EAAQC,OAMrB","file":"mastodon-light.js","sourcesContent":["webpackJsonp([81],{\n\n/***/ 804:\n/***/ (function(module, exports) {\n\n// removed by extract-text-webpack-plugin\n\n/***/ })\n\n},[804]);\n\n\n// WEBPACK FOOTER //\n// mastodon-light.js"],"sourceRoot":""}
+{"version":3,"sources":[],"names":[],"mappings":"","file":"mastodon-light.js","sourceRoot":""}
