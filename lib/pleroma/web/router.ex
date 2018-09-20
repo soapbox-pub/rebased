@@ -172,6 +172,8 @@ defmodule Pleroma.Web.Router do
     delete("/filters/:id", MastodonAPIController, :delete_filter)
 
     get("/suggestions", MastodonAPIController, :suggestions)
+
+    get("/endorsements", MastodonAPIController, :empty_array)
   end
 
   scope "/api/web", Pleroma.Web.MastodonAPI do
