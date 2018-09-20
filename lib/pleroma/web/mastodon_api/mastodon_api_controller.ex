@@ -441,7 +441,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       new_data = %{object.data | "name" => description}
 
       change = Object.change(object, %{data: new_data})
-      {:ok, media_obj} = Repo.update(change)
+      {:ok, _} = Repo.update(change)
 
       data =
         new_data
@@ -1077,7 +1077,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def get_filters(%{assigns: %{user: user}} = conn, params) do
+  def get_filters(%{assigns: %{user: user}} = conn, _) do
     filters = Pleroma.Filter.get_filters(user)
     res = FilterView.render("filters.json", filters: filters)
     json(conn, res)
@@ -1101,7 +1101,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, res)
   end
 
-  def get_filter(%{assigns: %{user: user}} = conn, %{"id" => filter_id} = params) do
+  def get_filter(%{assigns: %{user: user}} = conn, %{"id" => filter_id}) do
     filter = Pleroma.Filter.get(filter_id, user)
     res = FilterView.render("filter.json", filter: filter)
     json(conn, res)
@@ -1126,13 +1126,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, res)
   end
 
-  def delete_filter(%{assigns: %{user: user}} = conn, %{"id" => filter_id} = params) do
+  def delete_filter(%{assigns: %{user: user}} = conn, %{"id" => filter_id}) do
     query = %Pleroma.Filter{
       user_id: user.id,
       filter_id: filter_id
     }
 
-    {:ok, response} = Pleroma.Filter.delete(query)
+    {:ok, _} = Pleroma.Filter.delete(query)
     json(conn, %{})
   end
 
