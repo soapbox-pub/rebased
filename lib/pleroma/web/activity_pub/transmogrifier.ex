@@ -139,9 +139,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("conversation", context)
   end
 
-  def fix_attachments(object) do
+  def fix_attachments(%{"attachment" => attachment} = object) when is_list(attachment) do
     attachments =
-      (object["attachment"] || [])
+      attachment
       |> Enum.map(fn data ->
         url = [%{"type" => "Link", "mediaType" => data["mediaType"], "href" => data["url"]}]
         Map.put(data, "url", url)
@@ -149,6 +149,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("attachment", attachments)
+  end
+
+  def fix_attachments(%{"attachment" => attachment} = object) when is_map(attachment) do
+    attachment =
+      Map.put(attachment, "url", [
+        %{"type" => "Link", "mediaType" => attachment["mediaType"], "href" => attachment["url"]}
+      ])
+
+    Map.put(object, "attachment", attachment)
+  end
+
+  def fix_attachments(object) do
+    object
   end
 
   def fix_emoji(object) do
