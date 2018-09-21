@@ -96,8 +96,17 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
   end
 
-  def fix_in_reply_to(%{"inReplyTo" => in_reply_to_id} = object)
-      when not is_nil(in_reply_to_id) do
+  def fix_in_reply_to(%{"inReplyTo" => in_reply_to} = object)
+      when not is_nil(in_reply_to) do
+    in_reply_to_id =
+      if is_bitstring(in_reply_to) do
+        in_reply_to
+      else
+        if is_map(in_reply_to) && in_reply_to["id"] do
+          in_reply_to["id"]
+        end
+      end
+
     case ActivityPub.fetch_object_from_id(in_reply_to_id) do
       {:ok, replied_object} ->
         with %Activity{} = activity <-
