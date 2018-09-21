@@ -166,6 +166,25 @@ defmodule Pleroma.UserTest do
       fetched_user = User.get_or_fetch_by_nickname("nonexistant")
       assert fetched_user == nil
     end
+
+    test "updates an existing user, if stale" do
+      a_week_ago = NaiveDateTime.add(NaiveDateTime.utc_now(), -604_800)
+
+      orig_user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: "http://mastodon.example.org/users/admin",
+          last_refreshed_at: a_week_ago
+        )
+
+      assert orig_user.last_refreshed_at == a_week_ago
+
+      user = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
+
+      refute user.last_refreshed_at == orig_user.last_refreshed_at
+    end
   end
 
   test "returns an ap_id for a user" do
