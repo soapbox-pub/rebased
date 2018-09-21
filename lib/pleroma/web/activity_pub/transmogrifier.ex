@@ -194,16 +194,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
   end
 
-  def fix_tag(object) do
+  def fix_tag(%{"tag" => tag} = object) when is_list(tag) do
     tags =
-      (object["tag"] || [])
+      tag
       |> Enum.filter(fn data -> data["type"] == "Hashtag" and data["name"] end)
       |> Enum.map(fn data -> String.slice(data["name"], 1..-1) end)
 
-    combined = (object["tag"] || []) ++ tags
+    combined = tag ++ tags
 
     object
     |> Map.put("tag", combined)
+  end
+
+  def fix_tag(object) do
+    object
   end
 
   # content map usually only has one language so this will do for now.
