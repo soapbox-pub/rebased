@@ -164,21 +164,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
   end
 
-  def fix_emoji(object) do
-    tags = object["tag"] || []
+  def fix_emoji(%{"tag" => tags} = object) when is_list(tags) do
     emoji = tags |> Enum.filter(fn data -> data["type"] == "Emoji" and data["icon"] end)
 
     emoji =
       emoji
       |> Enum.reduce(%{}, fn data, mapping ->
-        name = data["name"]
-
-        name =
-          if String.starts_with?(name, ":") do
-            name |> String.slice(1..-2)
-          else
-            name
-          end
+        name = String.trim(data["name"], ":")
 
         mapping |> Map.put(name, data["icon"]["url"])
       end)
@@ -188,6 +180,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("emoji", emoji)
+  end
+
+  def fix_emoji(%{"tag" => %{"type" => "Emoji"} = tag} = object) do
+    name = String.trim(tag["name"], ":")
+    emoji = %{name => tag["icon"]["url"]}
+
+    object
+    |> Map.put("emoji", emoji)
+  end
+
+  def fix_emoji(object) do
+    object
   end
 
   def fix_tag(object) do
