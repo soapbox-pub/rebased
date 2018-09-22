@@ -69,6 +69,8 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
       "alt"
     ])
   end
+
+  Meta.strip_everything_not_covered()
 end
 
 defmodule Pleroma.HTML.Scrubber.Default do
