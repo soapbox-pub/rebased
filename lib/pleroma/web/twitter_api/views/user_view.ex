@@ -64,7 +64,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "background_image" => image_url(user.info["background"]) |> MediaProxy.url(),
       "is_local" => user.local,
       "locked" => !!user.info["locked"],
-      "default_scope" => user.info["default_scope"] || "public"
+      "default_scope" => user.info["default_scope"] || "public",
+      "no_rich_text" => user.info["no_rich_text"] || false
     }
 
     if assigns[:token] do
