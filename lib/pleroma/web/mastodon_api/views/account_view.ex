@@ -10,7 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     render_many(users, AccountView, "account.json", opts)
   end
 
-  def render("account.json", %{user: user}) do
+  def render("account.json", %{user: user} = opts) do
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
     user_info = User.user_info(user)
@@ -33,6 +33,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
       |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 
+    bio = HTML.filter_tags(user.bio, User.html_filter_policy(opts[:for]))
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -43,7 +45,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       followers_count: user_info.follower_count,
       following_count: user_info.following_count,
       statuses_count: user_info.note_count,
-      note: HTML.filter_tags(user.bio) || "",
+      note: bio || "",
       url: user.ap_id,
       avatar: image,
       avatar_static: image,

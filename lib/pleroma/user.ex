@@ -669,6 +669,12 @@ defmodule Pleroma.User do
     :ok
   end
 
+  def html_filter_policy(%User{info: %{"no_rich_text" => true}}) do
+    Pleroma.HTML.Scrubber.TwitterText
+  end
+
+  def html_filter_policy(_), do: nil
+
   def get_or_fetch_by_ap_id(ap_id) do
     user = get_by_ap_id(ap_id)
 

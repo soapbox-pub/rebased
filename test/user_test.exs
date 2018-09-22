@@ -526,4 +526,18 @@ defmodule Pleroma.UserTest do
 
     assert {:ok, %User{}} = User.insert_or_update_user(data)
   end
+
+  describe "per-user rich-text filtering" do
+    test "html_filter_policy returns nil when rich-text is enabled" do
+      user = insert(:user)
+
+      assert nil == User.html_filter_policy(user)
+    end
+
+    test "html_filter_policy returns TwitterText scrubber when rich-text is disabled" do
+      user = insert(:user, %{info: %{"no_rich_text" => true}})
+
+      assert Pleroma.HTML.Scrubber.TwitterText == User.html_filter_policy(user)
+    end
+  end
 end
