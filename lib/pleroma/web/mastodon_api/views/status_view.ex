@@ -122,6 +122,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         %{shortcode: name, url: url, static_url: url, visible_in_picker: false}
       end)
 
+    content =
+      render_content(object)
+      |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
+
     %{
       id: to_string(activity.id),
       uri: object["id"],
@@ -130,7 +134,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
-      content: render_content(object),
+      content: content,
       created_at: created_at,
       reblogs_count: announcement_count,
       replies_count: 0,
@@ -224,7 +228,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         object["content"]
       end
 
-    HTML.filter_tags(content)
+    content
   end
 
   def render_content(%{"type" => "Article"} = object) do
@@ -237,10 +241,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         object["content"]
       end
 
-    HTML.filter_tags(content)
+    content
   end
 
-  def render_content(object) do
-    HTML.filter_tags(object["content"])
-  end
+  def render_content(object), do: object["content"]
 end
