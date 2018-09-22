@@ -858,7 +858,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     if user && token do
       mastodon_emoji = mastodonized_emoji()
-      accounts = Map.put(%{}, user.id, AccountView.render("account.json", %{user: user, for: user}))
+
+      accounts =
+        Map.put(%{}, user.id, AccountView.render("account.json", %{user: user, for: user}))
 
       initial_state =
         %{
