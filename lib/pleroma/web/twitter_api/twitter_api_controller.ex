@@ -444,6 +444,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       end
 
     user =
+      if no_rich_text = params["no_rich_text"] do
+        with no_rich_text <- no_rich_text == "true",
+             new_info <- Map.put(user.info, "no_rich_text", no_rich_text),
+             change <- User.info_changeset(user, %{info: new_info}),
+             {:ok, user} <- User.update_and_set_cache(change) do
+          user
+        else
+          _e -> user
+        end
+      else
+        user
+      end
+
+    user =
       if default_scope = params["default_scope"] do
         with new_info <- Map.put(user.info, "default_scope", default_scope),
              change <- User.info_changeset(user, %{info: new_info}),
