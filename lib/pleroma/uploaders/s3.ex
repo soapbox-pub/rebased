@@ -10,7 +10,7 @@ defmodule Pleroma.Uploaders.S3 do
 
     File.rm!(path)
 
-    s3_name = "#{uuid}/#{name}"
+    s3_name = "#{uuid}/#{encode(name)}"
 
     {:ok, _} =
       ExAws.S3.put_object(bucket, s3_name, file_data, [
@@ -20,5 +20,9 @@ defmodule Pleroma.Uploaders.S3 do
       |> ExAws.request()
 
     {:ok, "#{public_endpoint}/#{bucket}/#{s3_name}"}
+  end
+
+  defp encode(name) do
+    String.replace(name, ~r/[^0-9a-zA-Z!.*'()_-]/, "-")
   end
 end
