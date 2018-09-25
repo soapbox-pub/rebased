@@ -99,12 +99,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_in_reply_to(%{"inReplyTo" => in_reply_to} = object)
       when not is_nil(in_reply_to) do
     in_reply_to_id =
-      if is_bitstring(in_reply_to) do
-        in_reply_to
-      else
-        if is_map(in_reply_to) && in_reply_to["id"] do
-          in_reply_to["id"]
-        end
+      cond do
+        is_bitstring(in_reply_to) -> in_reply_to
+        is_map(in_reply_to) && is_bitstring(in_reply_to["id"]) -> in_reply_to["id"]
+        is_list(in_reply_to) && is_bitstring(Enum.at(in_reply_to, 0)) -> Enum.at(in_reply_to, 0)
+        # Maybe I should output an error too?
+        true -> ""
       end
 
     case ActivityPub.fetch_object_from_id(in_reply_to_id) do
