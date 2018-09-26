@@ -21,13 +21,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     if is_binary(Enum.at(actor, 0)) do
       Enum.at(actor, 0)
     else
-      Enum.find(actor, fn %{"type" => type} -> type == "Person" end)
+      Enum.find(actor, fn %{"type" => type} -> type in ["Person", "Service", "Application"] end)
       |> Map.get("id")
     end
   end
 
-  def get_actor(%{"actor" => actor}) when is_map(actor) do
-    actor["id"]
+  def get_actor(%{"actor" => %{"id" => id}}) when is_bitstring(id) do
+    id
   end
 
   @doc """
@@ -206,8 +206,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("tag", combined)
   end
 
-  def fix_tag(%{"tag" => %{"type" => "Hashtag"} = tag} = object) do
-    combined = [tag ++ String.slice(tag["name"], 1..-1)]
+  def fix_tag(%{"tag" => %{"type" => "Hashtag", "name" => hashtag} = tag} = object) do
+    combined = [tag, String.slice(hashtag, 1..-1)]
 
     object
     |> Map.put("tag", combined)
