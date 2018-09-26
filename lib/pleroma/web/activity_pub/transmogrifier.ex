@@ -167,9 +167,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Map.put(object, "attachment", attachment)
   end
 
-  def fix_attachments(object) do
-    object
-  end
+  def fix_attachments(object), do: object
 
   def fix_emoji(%{"tag" => tags} = object) when is_list(tags) do
     emoji = tags |> Enum.filter(fn data -> data["type"] == "Emoji" and data["icon"] end)
@@ -197,9 +195,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("emoji", emoji)
   end
 
-  def fix_emoji(object) do
-    object
-  end
+  def fix_emoji(object), do: object
 
   def fix_tag(%{"tag" => tag} = object) when is_list(tag) do
     tags =
@@ -220,9 +216,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("tag", combined)
   end
 
-  def fix_tag(object) do
-    object
-  end
+  def fix_tag(object), do: object
 
   # content map usually only has one language so this will do for now.
   def fix_content_map(%{"contentMap" => content_map} = object) do
