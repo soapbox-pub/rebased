@@ -121,6 +121,16 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "<p>henlo from my Psion netBook</p><p>message sent from my Psion netBook</p>"
     end
 
+    test "it works for incoming notices with tag not being an array (kroeg)" do
+      data = File.read!("test/fixtures/https___puckipedia.com_1jjx-ob5r.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["object"]["emoji"] == %{
+               "icon_e_smile" => "https://puckipedia.com/forum/images/smilies/icon_e_smile.png"
+             }
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
