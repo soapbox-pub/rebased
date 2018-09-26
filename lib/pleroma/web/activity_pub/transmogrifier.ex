@@ -206,6 +206,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("tag", combined)
   end
 
+  def fix_tag(%{"tag" => %{"type" => "Hashtag"} = tag} = object) do
+    combined = [tag ++ String.slice(tag["name"], 1..-1)]
+
+    object
+    |> Map.put("tag", combined)
+  end
+
   def fix_tag(object) do
     object
   end
