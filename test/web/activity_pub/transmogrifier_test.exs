@@ -121,15 +121,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "<p>henlo from my Psion netBook</p><p>message sent from my Psion netBook</p>"
     end
 
-    # Broken ;/
-    #
-    #    test "it works for incoming announces with actor being inlined (kroeg)" do
-    #      data = File.read!("test/fixtures/kroeg-announce-with-inline-actor.json") |> Poison.decode!()
-    #
-    #      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
-    #
-    #      assert data["object"]["actor"] == "https://puckipedia.com/"
-    #    end
+    test "it works for incoming announces with actor being inlined (kroeg)" do
+      data = File.read!("test/fixtures/kroeg-announce-with-inline-actor.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "https://puckipedia.com/"
+    end
 
     test "it works for incoming notices with tag not being an array (kroeg)" do
       data = File.read!("test/fixtures/kroeg-array-less-emoji.json") |> Poison.decode!()

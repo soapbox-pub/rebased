@@ -404,6 +404,17 @@ defmodule HTTPoisonMock do
      }}
   end
 
+  def get("http://mastodon.example.org/users/admin/statuses/100787282858396771", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/http___mastodon.example.org_users_admin_status_1234.json"
+         )
+     }}
+  end
+
   def get(
         "https://pawoo.net/.well-known/webfinger",
         [Accept: "application/xrd+xml,application/jrd+json"],

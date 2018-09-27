@@ -114,7 +114,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           ""
       end
 
-    case ActivityPub.fetch_object_from_id(in_reply_to_id) do
+    case fetch_obj_helper(in_reply_to_id) do
       {:ok, replied_object} ->
         with %Activity{} = activity <-
                Activity.get_create_activity_by_object_ap_id(replied_object.data["id"]) do
@@ -323,7 +323,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{"type" => "Accept", "object" => follow_object, "actor" => actor, "id" => id} = data
       ) do
-    with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
+    with actor <- get_actor(data),
+         %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
@@ -347,7 +348,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{"type" => "Reject", "object" => follow_object, "actor" => actor, "id" => id} = data
       ) do
-    with %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
+    with actor <- get_actor(data),
+         %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
@@ -367,11 +369,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = _data
+        %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = data
       ) do
-    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <-
-           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+    with actor <- get_actor(data),
+         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
          {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
       {:ok, activity}
     else
@@ -380,11 +382,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Announce", "object" => object_id, "actor" => actor, "id" => id} = _data
+        %{"type" => "Announce", "object" => object_id, "actor" => actor, "id" => id} = data
       ) do
-    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <-
-           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+    with actor <- get_actor(data),
+         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
          {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false) do
       {:ok, activity}
     else
@@ -428,13 +430,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   # TODO: Make secure.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => _id} = _data
+        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => _id} = data
       ) do
     object_id = Utils.get_ap_id(object_id)
 
-    with %User{} = _actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <-
-           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+    with actor <- get_actor(data),
+         %User{} = _actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
          {:ok, activity} <- ActivityPub.delete(object, false) do
       {:ok, activity}
     else
@@ -448,11 +450,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "object" => %{"type" => "Announce", "object" => object_id},
           "actor" => actor,
           "id" => id
-        } = _data
+        } = data
       ) do
-    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <-
-           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+    with actor <- get_actor(data),
+         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
          {:ok, activity, _} <- ActivityPub.unannounce(actor, object, id, false) do
       {:ok, activity}
     else
@@ -521,11 +523,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "object" => %{"type" => "Like", "object" => object_id},
           "actor" => actor,
           "id" => id
-        } = _data
+        } = data
       ) do
-    with %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <-
-           get_obj_helper(object_id) || ActivityPub.fetch_object_from_id(object_id),
+    with actor <- get_actor(data),
+         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
          {:ok, activity, _, _} <- ActivityPub.unlike(actor, object, id, false) do
       {:ok, activity}
     else
@@ -534,6 +536,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(_), do: :error
+
+  def fetch_obj_helper(id) when is_bitstring(id), do: ActivityPub.fetch_object_from_id(id)
+  def fetch_obj_helper(obj) when is_map(obj), do: ActivityPub.fetch_object_from_id(obj["id"])
 
   def get_obj_helper(id) do
     if object = Object.normalize(id), do: {:ok, object}, else: nil
@@ -630,7 +635,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def maybe_fix_object_url(data) do
     if is_binary(data["object"]) and not String.starts_with?(data["object"], "http") do
-      case ActivityPub.fetch_object_from_id(data["object"]) do
+      case fetch_obj_helper(data["object"]) do
         {:ok, relative_object} ->
           if relative_object.data["external_url"] do
             _data =
