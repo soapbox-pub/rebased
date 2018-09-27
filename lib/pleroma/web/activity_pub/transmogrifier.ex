@@ -30,6 +30,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     id
   end
 
+  def get_actor(%{"actor" => nil, "attributedTo" => actor}) when not is_nil(actor) do
+    get_actor(%{"actor" => actor})
+  end
+
   @doc """
   Checks that an imported AP object's actor matches the domain it came from.
   """
