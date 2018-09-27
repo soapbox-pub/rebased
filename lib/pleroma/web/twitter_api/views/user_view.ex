@@ -37,6 +37,13 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
         {String.trim(name, ":"), url}
       end)
 
+    # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
+    # For example: [{"name": "Pronoun", "value": "she/her"}, …]
+    fields =
+      (user.info["source_data"]["attachment"] || [])
+      |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
+      |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+
     data = %{
       "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "description" => HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
@@ -65,7 +72,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "is_local" => user.local,
       "locked" => !!user.info["locked"],
       "default_scope" => user.info["default_scope"] || "public",
-      "no_rich_text" => user.info["no_rich_text"] || false
+      "no_rich_text" => user.info["no_rich_text"] || false,
+      "fields" => fields
     }
 
     if assigns[:token] do
