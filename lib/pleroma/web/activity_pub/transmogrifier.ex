@@ -159,12 +159,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_attachments(%{"attachment" => attachment} = object) when is_map(attachment) do
-    attachment =
-      Map.put(attachment, "url", [
-        %{"type" => "Link", "mediaType" => attachment["mediaType"], "href" => attachment["url"]}
-      ])
-
-    Map.put(object, "attachment", attachment)
+    Map.put(object, "attachment", [attachment])
+    |> fix_attachments()
   end
 
   def fix_attachments(object), do: object
