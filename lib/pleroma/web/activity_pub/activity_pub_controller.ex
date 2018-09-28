@@ -93,19 +93,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "ok")
   end
 
+  # only accept relayed Creates
+  def inbox(conn, %{"type" => "Create"} = params) do
+    Logger.info(
+      "Signature missing or not from author, relayed Create message, fetching object from source"
+    )
+
+    ActivityPub.fetch_object_from_id(params["object"]["id"])
+
+    json(conn, "ok")
+  end
+
   def inbox(conn, params) do
     headers = Enum.into(conn.req_headers, %{})
 
-    if !String.contains?(headers["signature"] || "", params["actor"]) do
-      Logger.info("Signature not from author, relayed message, fetching from source")
-      ActivityPub.fetch_object_from_id(params["object"]["id"])
-    else
-      Logger.info("Signature error - make sure you are forwarding the HTTP Host header!")
-      Logger.info("Could not validate #{params["actor"]}")
+    if String.contains?(headers["signature"], params["actor"]) do
+      Logger.info(
+        "Signature validation error for: #{params["actor"]}, make sure you are forwarding the HTTP Host header!"
+      )
+
       Logger.info(inspect(conn.req_headers))
     end
 
-    json(conn, "ok")
+    json(conn, "error")
   end
 
   def relay(conn, params) do
