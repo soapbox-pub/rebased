@@ -756,7 +756,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do
         {:ok, Object.normalize(activity.data["object"])}
       else
-        {:reject, nil} ->
+        {:error, {:reject, nil}} ->
           {:reject, nil}
 
         object = %Object{} ->
