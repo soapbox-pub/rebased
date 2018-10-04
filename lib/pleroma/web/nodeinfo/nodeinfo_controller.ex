@@ -28,11 +28,23 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     stats = Stats.get_stats()
     mrf_simple = Application.get_env(:pleroma, :mrf_simple)
 
+    mrf_policies = Keyword.get(instance, :rewrite_policy)
+
     mrf_policies =
-      if(is_list(instance.rewrite_policy)) do
-        instance.rewrite_policy
+      if(is_list(mrf_policies)) do
+        mrf_policies
+        |> Enum.map(fn policy -> to_string(policy) |> String.split(".") |> List.last() end)
       else
-        [instance.rewrite_policy]
+        [to_string(mrf_policies) |> String.split(".") |> List.last()]
+      end
+
+    quarantined = Keyword.get(instance, :quarantined_instances)
+
+    quarantined =
+      if is_list(quarantined) do
+        quarantined
+      else
+        []
       end
 
     staff_accounts =
@@ -76,7 +88,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         federation: %{
           mrf_policies: mrf_policies,
           mrf_simple: mrf_simple,
-          quarantined_instances: instance.quarantined_instances
+          quarantined_instances: quarantined
         }
       }
     }
