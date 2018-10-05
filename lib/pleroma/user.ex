@@ -185,32 +185,7 @@ defmodule Pleroma.User do
   def needs_update?(_), do: true
 
   def maybe_direct_follow(%User{} = follower, %User{info: info} = followed) do
-    user_config = Application.get_env(:pleroma, :user)
-    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
-
-    user_info = user_info(followed)
-
-    should_direct_follow =
-      cond do
-        # if the account is locked, don't pre-create the relationship
-        user_info[:locked] == true ->
-          false
-
-        # if the users are blocking each other, we shouldn't even be here, but check for it anyway
-        deny_follow_blocked and
-            (User.blocks?(follower, followed) or User.blocks?(followed, follower)) ->
-          false
-
-        # if OStatus, then there is no three-way handshake to follow
-        User.ap_enabled?(followed) != true ->
-          true
-
-        # if there are no other reasons not to, just pre-create the relationship
-        true ->
-          true
-      end
-
-    if should_direct_follow do
+    if !User.ap_enabled?(followed) do
       follow(follower, followed)
     else
       {:ok, follower}
