@@ -27,6 +27,29 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     gopher = Application.get_env(:pleroma, :gopher)
     stats = Stats.get_stats()
 
+    mrf_simple =
+      Application.get_env(:pleroma, :mrf_simple)
+      |> Enum.into(%{})
+
+    mrf_policies = Keyword.get(instance, :rewrite_policy)
+
+    mrf_policies =
+      if(is_list(mrf_policies)) do
+        mrf_policies
+        |> Enum.map(fn policy -> to_string(policy) |> String.split(".") |> List.last() end)
+      else
+        [to_string(mrf_policies) |> String.split(".") |> List.last()]
+      end
+
+    quarantined = Keyword.get(instance, :quarantined_instances)
+
+    quarantined =
+      if is_list(quarantined) do
+        quarantined
+      else
+        []
+      end
+
     staff_accounts =
       User.moderator_user_query()
       |> Repo.all()
@@ -64,7 +87,12 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         },
         staffAccounts: staff_accounts,
         chat: Keyword.get(chat, :enabled),
-        gopher: Keyword.get(gopher, :enabled)
+        gopher: Keyword.get(gopher, :enabled),
+        federation: %{
+          mrf_policies: mrf_policies,
+          mrf_simple: mrf_simple,
+          quarantined_instances: quarantined
+        }
       }
     }
 
