@@ -26,7 +26,10 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     chat = Application.get_env(:pleroma, :chat)
     gopher = Application.get_env(:pleroma, :gopher)
     stats = Stats.get_stats()
-    mrf_simple = Application.get_env(:pleroma, :mrf_simple)
+
+    mrf_simple =
+      Application.get_env(:pleroma, :mrf_simple)
+      |> Enum.into(%{})
 
     mrf_policies = Keyword.get(instance, :rewrite_policy)
 
