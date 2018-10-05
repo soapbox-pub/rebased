@@ -74,7 +74,12 @@ config :pleroma, :instance,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
   quarantined_instances: [],
-  managed_config: true
+  managed_config: true,
+  allowed_post_formats: [
+    "text/plain",
+    "text/html",
+    "text/markdown"
+  ]
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
