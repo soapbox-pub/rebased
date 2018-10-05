@@ -738,4 +738,28 @@ defmodule Pleroma.User do
       get_or_fetch_by_nickname(uri_or_nickname)
     end
   end
+
+  # wait a period of time and return newest version of the User structs
+  # this is because we have synchronous follow APIs and need to simulate them
+  # with an async handshake
+  def wait_and_refresh(_, %User{local: true} = a, %User{local: true} = b) do
+    with %User{} = a <- Repo.get(User, a.id),
+         %User{} = b <- Repo.get(User, b.id) do
+      {:ok, a, b}
+    else
+      _e ->
+        :error
+    end
+  end
+
+  def wait_and_refresh(timeout, %User{} = a, %User{} = b) do
+    with :ok <- :timer.sleep(timeout),
+         %User{} = a <- Repo.get(User, a.id),
+         %User{} = b <- Repo.get(User, b.id) do
+      {:ok, a, b}
+    else
+      _e ->
+        :error
+    end
+  end
 end
