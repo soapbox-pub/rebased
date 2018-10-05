@@ -326,6 +326,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- get_actor(data),
          %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
            ActivityPub.accept(%{
@@ -351,6 +352,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- get_actor(data),
          %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
            ActivityPub.accept(%{
