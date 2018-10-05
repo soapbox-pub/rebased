@@ -73,6 +73,11 @@ defmodule Pleroma.Web.CommonAPI do
   def get_visibility(_), do: "public"
 
   @instance Application.get_env(:pleroma, :instance)
+  @allowed_post_formats Keyword.get(@instance, :allowed_post_formats)
+
+  defp get_content_type(content_type) when content_type in @allowed_post_formats, do: content_type
+  defp get_content_type(_), do: "text/plain"
+
   @limit Keyword.get(@instance, :limit)
   def post(user, %{"status" => status} = data) do
     visibility = get_visibility(data)
@@ -85,7 +90,14 @@ defmodule Pleroma.Web.CommonAPI do
          {to, cc} <- to_for_user_and_mentions(user, mentions, inReplyTo, visibility),
          tags <- Formatter.parse_tags(status, data),
          content_html <-
-           make_content_html(status, mentions, attachments, tags, data["no_attachment_links"]),
+           make_content_html(
+             status,
+             mentions,
+             attachments,
+             tags,
+             get_content_type(data["content_type"]),
+             data["no_attachment_links"]
+           ),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
          object <-

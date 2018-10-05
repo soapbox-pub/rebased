@@ -176,6 +176,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           chatDisabled: !Keyword.get(@instance_chat, :enabled),
           showInstanceSpecificPanel: Keyword.get(@instance_fe, :show_instance_panel),
           scopeOptionsEnabled: Keyword.get(@instance_fe, :scope_options_enabled),
+          formattingOptionsEnabled: Keyword.get(@instance_fe, :formatting_options_enabled),
           collapseMessageWithSubject: Keyword.get(@instance_fe, :collapse_message_with_subject)
         }
 

@@ -21,4 +21,36 @@ defmodule Pleroma.Web.CommonAPI.Test do
 
     assert karjalanpiirakka["name"] == ":karjalanpiirakka:"
   end
+
+  describe "posting" do
+    test "it filters out obviously bad tags when accepting a post as HTML" do
+      user = insert(:user)
+
+      post = "<p><b>2hu</b></p><script>alert('xss')</script>"
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => post,
+          "content_type" => "text/html"
+        })
+
+      content = activity.data["object"]["content"]
+      assert content == "<p><b>2hu</b></p>alert('xss')"
+    end
+
+    test "it filters out obviously bad tags when accepting a post as Markdown" do
+      user = insert(:user)
+
+      post = "<p><b>2hu</b></p><script>alert('xss')</script>"
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => post,
+          "content_type" => "text/markdown"
+        })
+
+      content = activity.data["object"]["content"]
+      assert content == "<p><b>2hu</b></p>alert('xss')"
+    end
+  end
 end

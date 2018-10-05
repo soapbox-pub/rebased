@@ -92,7 +92,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           mrf_policies: mrf_policies,
           mrf_simple: mrf_simple,
           quarantined_instances: quarantined
-        }
+        },
+        postFormats: Keyword.get(instance, :allowed_post_formats)
       }
     }
 
