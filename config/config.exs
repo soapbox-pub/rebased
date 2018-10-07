@@ -79,7 +79,8 @@ config :pleroma, :instance,
     "text/plain",
     "text/html",
     "text/markdown"
-  ]
+  ],
+  mrf_transparency: true
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
