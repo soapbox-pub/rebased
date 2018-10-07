@@ -247,11 +247,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => follower_id,
       "to" => [followed_id],
       "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
-      "object" => followed_id
+      "object" => followed_id,
+      "state" => "pending"
     }
 
     data = if activity_id, do: Map.put(data, "id", activity_id), else: data
-    data = if User.locked?(followed), do: Map.put(data, "state", "pending"), else: data
 
     data
   end

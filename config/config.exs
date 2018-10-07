@@ -109,7 +109,8 @@ config :pleroma, :fe,
 config :pleroma, :activitypub,
   accept_blocks: true,
   unfollow_blocked: true,
-  outgoing_blocks: true
+  outgoing_blocks: true,
+  follow_handshake_timeout: 500
 
 config :pleroma, :user, deny_follow_blocked: true
 
