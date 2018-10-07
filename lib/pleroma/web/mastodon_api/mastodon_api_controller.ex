@@ -571,11 +571,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  @activitypub Application.get_env(:pleroma, :activitypub)
+  @follow_handshake_timeout Keyword.get(@activitypub, :follow_handshake_timeout)
+
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
          {:ok, follower} <- User.maybe_direct_follow(follower, followed),
          {:ok, _activity} <- ActivityPub.follow(follower, followed),
-         {:ok, follower, followed} <- User.wait_and_refresh(500, follower, followed) do
+         {:ok, follower, followed} <-
+           User.wait_and_refresh(@follow_handshake_timeout, follower, followed) do
       render(conn, AccountView, "relationship.json", %{user: follower, target: followed})
     else
       {:error, message} ->
