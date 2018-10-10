@@ -83,7 +83,6 @@ defmodule Pleroma.Web.CommonAPI do
     visibility = get_visibility(data)
 
     with status <- String.trim(status),
-         length when length in 1..@limit <- String.length(status),
          attachments <- attachments_from_ids(data["media_ids"]),
          mentions <- Formatter.parse_mentions(status),
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
@@ -100,6 +99,8 @@ defmodule Pleroma.Web.CommonAPI do
            ),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
+         full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
+         length when length in 1..@limit <- String.length(full_payload),
          object <-
            make_note_data(
              user.ap_id,
