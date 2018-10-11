@@ -728,6 +728,7 @@ defmodule Pleroma.User do
     Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
 
+  def ap_enabled?(%User{local: true}), do: true
   def ap_enabled?(%User{info: info}), do: info["ap_enabled"]
   def ap_enabled?(_), do: false
 
