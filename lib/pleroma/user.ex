@@ -184,7 +184,15 @@ defmodule Pleroma.User do
 
   def needs_update?(_), do: true
 
-  def maybe_direct_follow(%User{} = follower, %User{info: info} = followed) do
+  def maybe_direct_follow(%User{} = follower, %User{local: true, info: %{"locked" => true}}) do
+    {:ok, follower}
+  end
+
+  def maybe_direct_follow(%User{} = follower, %User{local: true} = followed) do
+    follow(follower, followed)
+  end
+
+  def maybe_direct_follow(%User{} = follower, %User{} = followed) do
     if !User.ap_enabled?(followed) do
       follow(follower, followed)
     else
