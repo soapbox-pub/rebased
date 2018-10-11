@@ -55,6 +55,15 @@ defmodule Pleroma.UserTest do
     {:error, _} = User.follow(blockee, blocker)
   end
 
+  test "local users do not automatically follow local locked accounts" do
+    follower = insert(:user, info: %{"locked" => true})
+    followed = insert(:user, info: %{"locked" => true})
+
+    {:ok, follower} = User.maybe_direct_follow(follower, followed)
+
+    refute User.following?(follower, followed)
+  end
+
   # This is a somewhat useless test.
   # test "following a remote user will ensure a websub subscription is present" do
   #   user = insert(:user)
