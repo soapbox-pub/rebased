@@ -55,13 +55,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> send(200)
   end
 
+  @shortdoc "Get a account registeration invite token (base64 string)"
   def get_invite_token(conn, _params) do
     {:ok, token} <- Pleroma.UserInviteToken.create_token()
 
     conn
-    |> puts(token)
+    |> json(token.token)
   end
 
+  @shortdoc "Get a password reset token (base64 string) for given nickname"
   def get_password_reset(conn, %{"nickname" => nickname}) do
     (%User{local: true} = user) = User.get_by_nickname(nickname)
     {:ok, token} = Pleroma.PasswordResetToken.create_token(user)
