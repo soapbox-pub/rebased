@@ -1,4 +1,4 @@
-defmodule Pleroma.Web.AdminAPI.Controller do
+defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{User, Repo}
   alias Pleroma.Web.ActivityPub.Relay
