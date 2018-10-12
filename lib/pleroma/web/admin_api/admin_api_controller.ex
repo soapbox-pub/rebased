@@ -62,11 +62,23 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> puts(token)
   end
 
-  def get_password_reset(conn, %{nickname: nickname}) do
+  def get_password_reset(conn, %{"nickname" => nickname}) do
     (%User{local: true} = user) = User.get_by_nickname(nickname)
     {:ok, token} = Pleroma.PasswordResetToken.create_token(user)
 
     conn
-    |> puts(token)
+    |> json(token.token)
+  end
+
+  def errors(conn, {:param_cast, _}) do
+    conn
+    |> put_status(400)
+    |> json("Invalid parameters")
+  end
+
+  def errors(conn, _) do
+    conn
+    |> put_status(500)
+    |> json("Something went wrong")
   end
 end
