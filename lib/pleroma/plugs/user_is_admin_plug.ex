@@ -6,12 +6,14 @@ defmodule Pleroma.Plugs.UserIsAdminPlug do
     options
   end
 
-  def call(%{assigns: %{user: %User{info: %{"is_admin" => false}}}} = conn, _) do
+  def call(%{assigns: %{user: %User{info: %{"is_admin" => true}}}} = conn, _) do
     conn
-    |> assign(:user, nil)
   end
 
   def call(conn, _) do
     conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(403, Jason.encode!(%{error: "Not admin."}))
+    |> halt
   end
 end
