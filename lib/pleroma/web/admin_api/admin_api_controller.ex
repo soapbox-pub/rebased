@@ -7,7 +7,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   action_fallback(:errors)
 
-  def user_delete(conn, %{nickname: nickname}) do
+  def user_delete(conn, %{"nickname" => nickname}) do
     user = User.get_by_nickname(nickname)
 
     if user[:local] == true do
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def user_create(
         conn,
-        %{user: %{nickname: nickname, email: email, password: password} = user}
+        %{user: %{"nickname" => nickname, "email" => email, "password" => password} = user}
       ) do
     new_user = %User{
       nickname: nickname,
@@ -41,14 +41,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> send(200)
   end
 
-  def relay_follow(conn, %{relay_url: target}) do
+  def relay_follow(conn, %{"relay_url" => target}) do
     :ok = Relay.follow(target)
 
     conn
     |> send(200)
   end
 
-  def relay_unfollow(conn, %{relay_url: target}) do
+  def relay_unfollow(conn, %{"relay_url" => target}) do
     :ok = Relay.unfollow(target)
 
     conn
