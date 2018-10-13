@@ -4,7 +4,7 @@ defmodule Pleroma.User do
   import Ecto.{Changeset, Query}
   alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
   alias Comeonin.Pbkdf2
-  alias Pleroma.Web.{OStatus, Websub}
+  alias Pleroma.Web.{OStatus, Websub, OAuth}
   alias Pleroma.Web.ActivityPub.{Utils, ActivityPub}
 
   schema "users" do
@@ -131,6 +131,9 @@ defmodule Pleroma.User do
       |> cast(params, [:password, :password_confirmation])
       |> validate_required([:password, :password_confirmation])
       |> validate_confirmation(:password)
+
+    OAuth.Token.delete_user_tokens(struct)
+    OAuth.Authorization.delete_user_authorizations(struct)
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
