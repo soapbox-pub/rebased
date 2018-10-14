@@ -126,6 +126,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> String.replace(~r/\r?\n/, "")
     |> (&{[], &1}).()
     |> Formatter.add_user_links(mentions)
+    |> Formatter.add_hashtag_links(tags)
     |> Formatter.finalize()
   end
 
