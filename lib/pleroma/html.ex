@@ -3,6 +3,25 @@ defmodule Pleroma.HTML do
 
   @markup Application.get_env(:pleroma, :markup)
 
+  def valid_schemes() do
+    [
+      "https://",
+      "http://",
+      "dat://",
+      "dweb://",
+      "gopher://",
+      "ipfs://",
+      "ipns://",
+      "irc:",
+      "ircs:",
+      "magnet:",
+      "mailto:",
+      "mumble:",
+      "ssb://",
+      "xmpp:"
+    ]
+  end
+
   defp get_scrubbers(scrubber) when is_atom(scrubber), do: [scrubber]
   defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
   defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
@@ -39,28 +58,13 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
 
-  @valid_schemes [
-    "https://",
-    "http://",
-    "dat://",
-    "dweb://",
-    "gopher://",
-    "ipfs://",
-    "ipns://",
-    "irc:",
-    "ircs:",
-    "magnet:",
-    "mailto:",
-    "mumble:",
-    "ssb://",
-    "xmpp:"
-  ]
+  alias Pleroma.HTML
 
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
   # links
-  Meta.allow_tag_with_uri_attributes("a", ["href"], @valid_schemes)
+  Meta.allow_tag_with_uri_attributes("a", ["href"], HTML.valid_schemes())
   Meta.allow_tag_with_these_attributes("a", ["name", "title"])
 
   # paragraphs and linebreaks
@@ -75,7 +79,7 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   @allow_inline_images Keyword.get(@markup, :allow_inline_images)
 
   if @allow_inline_images do
-    Meta.allow_tag_with_uri_attributes("img", ["src"], @valid_schemes)
+    Meta.allow_tag_with_uri_attributes("img", ["src"], HTML.valid_schemes())
 
     Meta.allow_tag_with_these_attributes("img", [
       "width",
@@ -94,12 +98,12 @@ defmodule Pleroma.HTML.Scrubber.Default do
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
 
-  @valid_schemes ["http", "https"]
+  alias Pleroma.HTML
 
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
-  Meta.allow_tag_with_uri_attributes("a", ["href"], @valid_schemes)
+  Meta.allow_tag_with_uri_attributes("a", ["href"], HTML.valid_schemes())
   Meta.allow_tag_with_these_attributes("a", ["name", "title"])
 
   Meta.allow_tag_with_these_attributes("b", [])
@@ -122,7 +126,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   @allow_inline_images Keyword.get(@markup, :allow_inline_images)
 
   if @allow_inline_images do
-    Meta.allow_tag_with_uri_attributes("img", ["src"], @valid_schemes)
+    Meta.allow_tag_with_uri_attributes("img", ["src"], HTML.valid_schemes())
 
     Meta.allow_tag_with_these_attributes("img", [
       "width",
