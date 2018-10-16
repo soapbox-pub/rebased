@@ -39,7 +39,22 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
 
-  @valid_schemes ["http", "https"]
+  @valid_schemes [
+    "https://",
+    "http://",
+    "dat://",
+    "dweb://",
+    "gopher://",
+    "ipfs://",
+    "ipns://",
+    "irc:",
+    "ircs:",
+    "magnet:",
+    "mailto:",
+    "mumble:",
+    "ssb://",
+    "xmpp:"
+  ]
 
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
