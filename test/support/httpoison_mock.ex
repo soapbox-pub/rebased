@@ -3,6 +3,27 @@ defmodule HTTPoisonMock do
 
   def get(url, body \\ [], headers \\ [])
 
+  def get("https://osada.macgirvin.com/channel/mike", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body:
+         File.read!("test/fixtures/httpoison_mock/https___osada.macgirvin.com_channel_mike.json")
+     }}
+  end
+
+  def get(
+        "https://osada.macgirvin.com/.well-known/webfinger?resource=acct:mike@osada.macgirvin.com",
+        _,
+        _
+      ) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/mike@osada.macgirvin.com.json")
+     }}
+  end
+
   def get("https://info.pleroma.site/activity.json", _, _) do
     {:ok,
      %Response{
