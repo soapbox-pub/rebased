@@ -1,5 +1,6 @@
 defmodule Pleroma.FormatterTest do
   alias Pleroma.Formatter
+  alias Pleroma.User
   use Pleroma.DataCase
 
   import Pleroma.Factory
@@ -127,6 +128,24 @@ defmodule Pleroma.FormatterTest do
         }'>@<span>archaeme</span></a></span>, that is @daggsy. Also hello <span><a class='mention' href='#{
           archaeme_remote.ap_id
         }'>@<span>archaeme</span></a></span>"
+
+      assert expected_text == Formatter.finalize({subs, text})
+    end
+
+    test "gives a replacement for user links when the user is using Osada" do
+      mike = User.get_or_fetch("mike@osada.macgirvin.com")
+
+      text = "@mike@osada.macgirvin.com test"
+
+      mentions = Formatter.parse_mentions(text)
+
+      {subs, text} = Formatter.add_user_links({[], text}, mentions)
+
+      assert length(subs) == 1
+      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+
+      expected_text =
+        "<span><a class='mention' href='#{mike.ap_id}'>@<span>mike</span></a></span> test"
 
       assert expected_text == Formatter.finalize({subs, text})
     end
