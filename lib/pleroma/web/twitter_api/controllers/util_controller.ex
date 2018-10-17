@@ -223,7 +223,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       |> Enum.map(fn account ->
         with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
              %User{} = followed <- User.get_or_fetch(account),
-             {:ok, follower} <- User.follow(follower, followed) do
+             {:ok, follower} <- User.maybe_direct_follow(follower, followed) do
           ActivityPub.follow(follower, followed)
         else
           err -> Logger.debug("follow_import: following #{account} failed with #{inspect(err)}")
