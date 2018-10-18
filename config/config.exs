@@ -24,7 +24,23 @@ config :pleroma, Pleroma.Uploaders.S3,
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 
-config :pleroma, :uri_schemes, additionnal_schemes: []
+config :pleroma, :uri_schemes,
+  valid_schemes: [
+    "https",
+    "http",
+    "dat",
+    "dweb",
+    "gopher",
+    "ipfs",
+    "ipns",
+    "irc",
+    "ircs",
+    "magnet",
+    "mailto",
+    "mumble",
+    "ssb",
+    "xmpp"
+  ]
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
