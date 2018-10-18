@@ -69,6 +69,17 @@ defmodule Pleroma.List do
     Repo.all(query)
   end
 
+  # Get lists to which the account belongs.
+  def get_lists_account_belongs(%User{} = owner, account_id) do
+    user = Repo.get(User, account_id)
+    query =
+      from(
+        l in Pleroma.List,
+        where: l.user_id == ^owner.id and fragment("? = ANY(?)", ^user.follower_address, l.following)
+      )
+    Repo.all(query)
+  end
+
   def rename(%Pleroma.List{} = list, title) do
     list
     |> title_changeset(%{title: title})

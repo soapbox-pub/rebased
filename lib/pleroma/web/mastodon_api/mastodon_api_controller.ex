@@ -770,6 +770,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def account_lists(%{assigns: %{user: user}} = conn, %{"id" => account_id}) do
+    lists = Pleroma.List.get_lists_account_belongs(user, account_id)
+    res = ListView.render("lists.json", lists: lists)
+    json(conn, res)
+  end
+
   def delete_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
          {:ok, _list} <- Pleroma.List.delete(list) do
