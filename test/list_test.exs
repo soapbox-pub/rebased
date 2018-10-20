@@ -91,23 +91,23 @@ defmodule Pleroma.ListTest do
     refute list_three in lists
   end
 
-  test "getting onwered lists the user belongs" do
+  test "getting own lists a given user belongs to" do
     owner = insert(:user)
     not_owner = insert(:user)
     member_1 = insert(:user)
     member_2 = insert(:user)
-    {:ok, ownered_list} = Pleroma.List.create("ownered", owner)
-    {:ok, not_ownered_list} = Pleroma.List.create("not ownered", not_owner)
-    {:ok, ownered_list} = Pleroma.List.follow(ownered_list, member_1)
-    {:ok, ownered_list} = Pleroma.List.follow(ownered_list, member_2)
-    {:ok, not_ownered_list} = Pleroma.List.follow(not_ownered_list, member_1)
-    {:ok, not_ownered_list} = Pleroma.List.follow(not_ownered_list, member_2)
+    {:ok, owned_list} = Pleroma.List.create("owned", owner)
+    {:ok, not_owned_list} = Pleroma.List.create("not owned", not_owner)
+    {:ok, owned_list} = Pleroma.List.follow(owned_list, member_1)
+    {:ok, owned_list} = Pleroma.List.follow(owned_list, member_2)
+    {:ok, not_owned_list} = Pleroma.List.follow(not_owned_list, member_1)
+    {:ok, not_owned_list} = Pleroma.List.follow(not_owned_list, member_2)
 
     lists_1 = Pleroma.List.get_lists_account_belongs(owner, member_1.id)
-    assert ownered_list in lists_1
-    refute not_ownered_list in lists_1
+    assert owned_list in lists_1
+    refute not_owned_list in lists_1
     lists_2 = Pleroma.List.get_lists_account_belongs(owner, member_2.id)
-    assert ownered_list in lists_2
-    refute not_ownered_list in lists_2
+    assert owned_list in lists_2
+    refute not_owned_list in lists_2
   end
 end
