@@ -177,7 +177,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           showInstanceSpecificPanel: Keyword.get(@instance_fe, :show_instance_panel),
           scopeOptionsEnabled: Keyword.get(@instance_fe, :scope_options_enabled),
           formattingOptionsEnabled: Keyword.get(@instance_fe, :formatting_options_enabled),
-          collapseMessageWithSubject: Keyword.get(@instance_fe, :collapse_message_with_subject)
+          collapseMessageWithSubject: Keyword.get(@instance_fe, :collapse_message_with_subject),
+          hidePostStats: Keyword.get(@instance_fe, :hide_post_stats),
+          hideUserStats: Keyword.get(@instance_fe, :hide_user_stats)
         }
 
         managed_config = Keyword.get(@instance, :managed_config)
