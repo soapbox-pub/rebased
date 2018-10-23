@@ -43,8 +43,6 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
 
-  alias Pleroma.HTML
-
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
@@ -82,8 +80,6 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
-
-  alias Pleroma.HTML
 
   @markup Application.get_env(:pleroma, :markup)
   @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
@@ -180,6 +176,8 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
 
     {"img", attributes, children}
   end
+
+  def scrub({:comment, children}), do: ""
 
   def scrub({tag, attributes, children}), do: {tag, attributes, children}
   def scrub({tag, children}), do: children
