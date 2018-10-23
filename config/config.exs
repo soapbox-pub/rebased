@@ -121,7 +121,9 @@ config :pleroma, :fe,
   show_instance_panel: true,
   scope_options_enabled: false,
   formatting_options_enabled: false,
-  collapse_message_with_subject: false
+  collapse_message_with_subject: false,
+  hide_post_stats: false,
+  hide_user_stats: false
 
 config :pleroma, :activitypub,
   accept_blocks: true,
