@@ -42,6 +42,10 @@ defmodule Pleroma.User do
     end
   end
 
+  def profile_url(%User{info: %{"source_data" => %{"url" => url}}}), do: url
+  def profile_url(%User{ap_id: ap_id}), do: ap_id
+  def profile_url(_), do: nil
+
   def ap_id(%User{nickname: nickname}) do
     "#{Web.base_url()}/users/#{nickname}"
   end
