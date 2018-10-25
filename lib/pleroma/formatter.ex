@@ -94,9 +94,15 @@ defmodule Pleroma.Formatter do
     "woollysocks"
   ]
 
-  @finmoji_with_filenames Enum.map(@finmoji, fn finmoji ->
-                            {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
-                          end)
+  @instance Application.get_env(:pleroma, :instance)
+
+  @finmoji_with_filenames (if Keyword.get(@instance, :finmoji_enabled) do
+                             Enum.map(@finmoji, fn finmoji ->
+                               {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
+                             end)
+                           else
+                             []
+                           end)
 
   @emoji_from_file (with {:ok, default} <- File.read("config/emoji.txt") do
                       custom =
