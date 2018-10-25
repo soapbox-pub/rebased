@@ -36,6 +36,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "favorited" => false,
       "id" => activity.id,
       "in_reply_to_status_id" => nil,
+      "in_reply_to_screen_name" => nil,
       "is_local" => true,
       "is_post_verb" => true,
       "possibly_sensitive" => false,
