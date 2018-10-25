@@ -1215,4 +1215,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       res
     end
   end
+
+  def try_render(conn, _, _, _) do
+    conn
+    |> put_status(501)
+    |> json(%{error: "Can't display this activity"})
+  end
 end
