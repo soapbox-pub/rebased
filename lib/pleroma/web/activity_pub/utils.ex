@@ -19,6 +19,48 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Map.put(params, "actor", get_ap_id(params["actor"]))
   end
 
+  defp recipient_in_collection(ap_id, coll) when is_binary(coll), do: ap_id == coll
+  defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
+  defp recipient_in_collection(_, _), do: false
+
+  def recipient_in_message(ap_id, params) do
+    cond do
+      recipient_in_collection(ap_id, params["to"]) ->
+        true
+
+      recipient_in_collection(ap_id, params["cc"]) ->
+        true
+
+      recipient_in_collection(ap_id, params["bto"]) ->
+        true
+
+      recipient_in_collection(ap_id, params["bcc"]) ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  defp extract_list(target) when is_binary(target), do: [target]
+  defp extract_list(lst) when is_list(lst), do: lst
+  defp extract_list(_), do: []
+
+  def maybe_splice_recipient(ap_id, params) do
+    need_splice =
+      !recipient_in_collection(ap_id, params["to"]) &&
+        !recipient_in_collection(ap_id, params["cc"])
+
+    cc_list = extract_list(params["cc"])
+
+    if need_splice do
+      params
+      |> Map.put(params, "cc", [ap_id | cc_list])
+    else
+      params
+    end
+  end
+
   def make_json_ld_header do
     %{
       "@context" => [
