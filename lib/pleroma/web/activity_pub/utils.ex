@@ -55,7 +55,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     if need_splice do
       params
-      |> Map.put(params, "cc", [ap_id | cc_list])
+      |> Map.put("cc", [ap_id | cc_list])
     else
       params
     end
