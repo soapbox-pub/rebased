@@ -182,12 +182,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
 
-    reply_user_nickname =
-      if reply_parent do
-        User.get_cached_by_ap_id(reply_parent.actor).nickname
-      else
-        nil
-      end
+    reply_user = reply_parent && User.get_cached_by_ap_id(reply_parent.actor)
 
     %{
       "id" => activity.id,
@@ -199,7 +194,10 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "is_post_verb" => true,
       "created_at" => created_at,
       "in_reply_to_status_id" => object["inReplyToStatusId"],
-      "in_reply_to_screen_name" => reply_user_nickname,
+      "in_reply_to_screen_name" => reply_user && reply_user.nickname,
+      "in_reply_to_profileurl" => User.profile_url(reply_user),
+      "in_reply_to_ostatus_uri" => reply_user && reply_user.ap_id,
+      "in_reply_to_user_id" => reply_user && reply_user.id,
       "statusnet_conversation_id" => conversation_id,
       "attachments" => attachments |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
