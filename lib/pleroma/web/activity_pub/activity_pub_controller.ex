@@ -4,6 +4,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator
 
   require Logger
@@ -87,7 +88,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     outbox(conn, %{"nickname" => nickname, "max_id" => nil})
   end
 
-  # TODO: Ensure that this inbox is a recipient of the message
+  def inbox(%{assigns: %{valid_signature: true}} = conn, %{"nickname" => nickname} = params) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname),
+         true <- Utils.recipient_in_message(user.ap_id, params),
+         params <- Utils.maybe_splice_recipient(user.ap_id, params) do
+      Federator.enqueue(:incoming_ap_doc, params)
+      json(conn, "ok")
+    end
+  end
+
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
     Federator.enqueue(:incoming_ap_doc, params)
     json(conn, "ok")
