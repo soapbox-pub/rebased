@@ -139,6 +139,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",
       "in_reply_to_status_id" => 213_123,
+      "in_reply_to_screen_name" => nil,
       "statusnet_conversation_id" => convo_object.id,
       "attachments" => [
         ObjectRepresenter.to_map(object)

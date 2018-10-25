@@ -180,6 +180,15 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     attachments = (object["attachment"] || []) ++ video
 
+    reply_parent = Activity.get_in_reply_to_activity(activity)
+
+    reply_user_nickname =
+      if reply_parent do
+        User.get_cached_by_ap_id(reply_parent.actor).nickname
+      else
+        nil
+      end
+
     %{
       "id" => activity.id,
       "uri" => activity.data["object"]["id"],
@@ -190,6 +199,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "is_post_verb" => true,
       "created_at" => created_at,
       "in_reply_to_status_id" => object["inReplyToStatusId"],
+      "in_reply_to_screen_name" => reply_user_nickname,
       "statusnet_conversation_id" => conversation_id,
       "attachments" => attachments |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
