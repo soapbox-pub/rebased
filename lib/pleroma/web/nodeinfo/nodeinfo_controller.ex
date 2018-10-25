@@ -63,6 +63,24 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         %{}
       end
 
+    features = [
+      "pleroma_api",
+      "mastodon_api",
+      "mastodon_api_streaming",
+      if Keyword.get(media_proxy, :enabled) do
+        "media_proxy"
+      end,
+      if Keyword.get(gopher, :enabled) do
+        "gopher"
+      end,
+      if Keyword.get(chat, :enabled) do
+        "chat"
+      end,
+      if Keyword.get(suggestions, :enabled) do
+        "suggestions"
+      end
+    ]
+
     response = %{
       version: "2.0",
       software: %{
@@ -84,7 +102,6 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       metadata: %{
         nodeName: Keyword.get(instance, :name),
         nodeDescription: Keyword.get(instance, :description),
-        mediaProxy: Keyword.get(media_proxy, :enabled),
         private: !Keyword.get(instance, :public, true),
         suggestions: %{
           enabled: Keyword.get(suggestions, :enabled, false),
@@ -94,10 +111,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           web: Keyword.get(suggestions, :web, "")
         },
         staffAccounts: staff_accounts,
-        chat: Keyword.get(chat, :enabled),
-        gopher: Keyword.get(gopher, :enabled),
         federation: federation_response,
-        postFormats: Keyword.get(instance, :allowed_post_formats)
+        postFormats: Keyword.get(instance, :allowed_post_formats),
+        features: features
       }
     }
 
