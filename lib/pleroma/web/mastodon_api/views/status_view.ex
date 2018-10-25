@@ -159,7 +159,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
+  def render("status.json", _) do
     nil
   end
 
