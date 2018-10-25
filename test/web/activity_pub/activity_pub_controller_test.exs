@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
-  describe "/users/:nickname/inbox" do
+  describe "/inbox" do
     test "it inserts an incoming activity into the database", %{conn: conn} do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
@@ -55,6 +55,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> assign(:valid_signature, true)
         |> put_req_header("content-type", "application/activity+json")
         |> post("/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      :timer.sleep(500)
+      assert Activity.get_by_ap_id(data["id"])
+    end
+  end
+
+  describe "/users/:nickname/inbox" do
+    test "it inserts an incoming activity into the database", %{conn: conn} do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("bcc", [user.ap_id])
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
       :timer.sleep(500)
