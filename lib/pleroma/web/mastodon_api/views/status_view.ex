@@ -34,6 +34,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       "status.json",
       Map.put(opts, :replied_to_activities, replied_to_activities)
     )
+    |> Enum.filter(fn x -> not is_nil(x) end)
   end
 
   def render(
@@ -156,6 +157,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       language: nil,
       emojis: emojis
     }
+  end
+
+  def render("status.json", _) do
+    nil
   end
 
   def render("attachment.json", %{attachment: attachment}) do

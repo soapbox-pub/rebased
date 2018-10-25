@@ -282,7 +282,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
          true <- ActivityPub.visible_for_user?(activity, user) do
-      render(conn, StatusView, "status.json", %{activity: activity, for: user})
+      try_render(conn, StatusView, "status.json", %{activity: activity, for: user})
     end
   end
 
@@ -345,7 +345,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     {:ok, activity} =
       Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ -> CommonAPI.post(user, params) end)
 
-    render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
+    try_render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
   end
 
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
@@ -361,28 +361,28 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def reblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
     with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user) do
-      render(conn, StatusView, "status.json", %{activity: announce, for: user, as: :activity})
+      try_render(conn, StatusView, "status.json", %{activity: announce, for: user, as: :activity})
     end
   end
 
   def unreblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
     with {:ok, _unannounce, %{data: %{"id" => id}}} <- CommonAPI.unrepeat(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
-      render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
+      try_render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
     end
   end
 
   def fav_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
     with {:ok, _fav, %{data: %{"id" => id}}} <- CommonAPI.favorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
-      render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
+      try_render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
     end
   end
 
   def unfav_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
     with {:ok, _, _, %{data: %{"id" => id}}} <- CommonAPI.unfavorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
-      render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
+      try_render(conn, StatusView, "status.json", %{activity: activity, for: user, as: :activity})
     end
   end
 
@@ -1201,5 +1201,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       json(conn, [])
     end
+  end
+
+  def try_render(conn, renderer, target, params)
+      when is_binary(target) do
+    res = render(conn, renderer, target, params)
+
+    if res == nil do
+      conn
+      |> put_status(501)
+      |> json(%{error: "Can't display this activity"})
+    else
+      res
+    end
+  end
+
+  def try_render(conn, _, _, _) do
+    conn
+    |> put_status(501)
+    |> json(%{error: "Can't display this activity"})
   end
 end
