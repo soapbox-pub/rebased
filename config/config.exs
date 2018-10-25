@@ -96,6 +96,7 @@ config :pleroma, :instance,
     "text/html",
     "text/markdown"
   ],
+  finmoji_enabled: true,
   mrf_transparency: true
 
 config :pleroma, :markup,
