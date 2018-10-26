@@ -493,14 +493,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       {:ok, public_activity} = CommonAPI.post(user3, %{"status" => "hi 1"})
 
-      {:ok, private_activity_1} = CommonAPI.post(user3, %{"status" => "hi 2", "visibility" => "private"})
-      {:ok, private_activity_2} = CommonAPI.post(user2, %{"status" => "hi 3", "visibility" => "private", "in_reply_to_status_id" => private_activity_1.id})
-      {:ok, private_activity_3} = CommonAPI.post(user3, %{"status" => "hi 4", "visibility" => "private", "in_reply_to_status_id" => private_activity_2.id})
+      {:ok, private_activity_1} =
+        CommonAPI.post(user3, %{"status" => "hi 2", "visibility" => "private"})
+
+      {:ok, private_activity_2} =
+        CommonAPI.post(user2, %{
+          "status" => "hi 3",
+          "visibility" => "private",
+          "in_reply_to_status_id" => private_activity_1.id
+        })
+
+      {:ok, private_activity_3} =
+        CommonAPI.post(user3, %{
+          "status" => "hi 4",
+          "visibility" => "private",
+          "in_reply_to_status_id" => private_activity_2.id
+        })
 
       assert user1.following == [user3.ap_id <> "/followers", user1.ap_id]
 
-      activities =
-        ActivityPub.fetch_activities([user1.ap_id | user1.following])
+      activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
 
       assert [public_activity, private_activity_1, private_activity_3] == activities
       assert length(activities) == 3
