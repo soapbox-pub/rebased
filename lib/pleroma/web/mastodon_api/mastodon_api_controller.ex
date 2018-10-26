@@ -223,6 +223,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     activities =
       ActivityPub.fetch_activities([user.ap_id | user.following], params)
+      |> ActivityPub.contain_timeline(user)
       |> Enum.reverse()
 
     conn
