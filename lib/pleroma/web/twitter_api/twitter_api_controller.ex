@@ -79,7 +79,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
 
-    activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
+    activities =
+      ActivityPub.fetch_activities([user.ap_id | user.following], params)
+      |> ActivityPub.contain_timeline(user)
 
     conn
     |> render(ActivityView, "index.json", %{activities: activities, for: user})

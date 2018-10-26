@@ -787,4 +787,37 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     y = activity.data["to"] ++ (activity.data["cc"] || [])
     visible_for_user?(activity, nil) || Enum.any?(x, &(&1 in y))
   end
+
+  # guard
+  def entire_thread_visible_for_user?(nil, user), do: false
+
+  # child
+  def entire_thread_visible_for_user?(
+        %Activity{data: %{"object" => %{"inReplyTo" => _parent_id}}} = tail,
+        user
+      ) do
+    parent = Activity.get_in_reply_to_activity(tail)
+    visible_for_user?(tail, user) && entire_thread_visible_for_user?(parent, user)
+  end
+
+  # root
+  def entire_thread_visible_for_user?(tail, user), do: visible_for_user?(tail, user)
+
+  # filter out broken threads
+  def contain_broken_threads(%Activity{} = activity, %User{} = user) do
+    entire_thread_visible_for_user?(activity, user)
+  end
+
+  # do post-processing on a specific activity
+  def contain_activity(%Activity{} = activity, %User{} = user) do
+    contain_broken_threads(activity, user)
+  end
+
+  # do post-processing on a timeline
+  def contain_timeline(timeline, user) do
+    timeline
+    |> Enum.filter(fn activity ->
+      contain_activity(activity, user)
+    end)
+  end
 end
