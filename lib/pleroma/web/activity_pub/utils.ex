@@ -37,6 +37,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       recipient_in_collection(ap_id, params["bcc"]) ->
         true
 
+      # if the message is unaddressed at all, then assume it is directly addressed
+      # to the recipient
+      !params["to"] && !params["cc"] && !params["bto"] && !params["bcc"] ->
+        true
+
       true ->
         false
     end
