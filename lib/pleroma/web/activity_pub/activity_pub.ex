@@ -793,9 +793,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   # child
   def entire_thread_visible_for_user?(
-        %Activity{data: %{"object" => %{"inReplyTo" => _parent_id}}} = tail,
+        %Activity{data: %{"object" => %{"inReplyTo" => parent_id}}} = tail,
         user
-      ) do
+      )
+      when is_binary(parent_id) do
     parent = Activity.get_in_reply_to_activity(tail)
     visible_for_user?(tail, user) && entire_thread_visible_for_user?(parent, user)
   end
