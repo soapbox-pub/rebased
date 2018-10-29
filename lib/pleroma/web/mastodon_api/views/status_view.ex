@@ -166,7 +166,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   def render("attachment.json", %{attachment: attachment}) do
     [attachment_url | _] = attachment["url"]
     media_type = attachment_url["mediaType"] || attachment_url["mimeType"] || "image"
-    href = attachment_url["href"]
+    href = attachment_url["href"] |> MediaProxy.url()
 
     type =
       cond do
@@ -180,9 +180,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     %{
       id: to_string(attachment["id"] || hash_id),
-      url: MediaProxy.url(href),
+      url: href,
       remote_url: href,
-      preview_url: MediaProxy.url(href),
+      preview_url: href,
       text_url: href,
       type: type,
       description: attachment["name"]

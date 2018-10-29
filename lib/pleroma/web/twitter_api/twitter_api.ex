@@ -3,6 +3,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.{OStatus, CommonAPI}
+  alias Pleroma.Web.MediaProxy
   import Ecto.Query
 
   @instance Application.get_env(:pleroma, :instance)
@@ -97,7 +98,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     {:ok, object} = ActivityPub.upload(file)
 
     url = List.first(object.data["url"])
-    href = url["href"]
+    href = url["href"] |> MediaProxy.url()
     type = url["mediaType"]
 
     case format do
