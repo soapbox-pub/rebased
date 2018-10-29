@@ -622,8 +622,8 @@ defmodule Pleroma.User do
     )
   end
 
-  def deactivate(%User{} = user) do
-    new_info = Map.put(user.info, "deactivated", true)
+  def deactivate(%User{} = user, status \\ true) do
+    new_info = Map.put(user.info, "deactivated", status)
     cs = User.info_changeset(user, %{info: new_info})
     update_and_set_cache(cs)
   end

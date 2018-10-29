@@ -44,7 +44,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_actor_is_active(actor) do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
-           nil <- user.info["deactivated"] do
+           false <- !!user.info["deactivated"] do
         :ok
       else
         _e -> :reject
