@@ -35,6 +35,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_credentials(%{assigns: %{user: user}} = conn, params) do
     original_user = user
 
+    avatar_upload_limit =
+      Application.get_env(:pleroma, :instance)
+      |> Keyword.fetch(:avatar_upload_limit)
+
+    banner_upload_limit =
+      Application.get_env(:pleroma, :instance)
+      |> Keyword.fetch(:banner_upload_limit)
+
     params =
       if bio = params["note"] do
         Map.put(params, "bio", bio)
@@ -52,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user =
       if avatar = params["avatar"] do
         with %Plug.Upload{} <- avatar,
-             {:ok, object} <- ActivityPub.upload(avatar),
+             {:ok, object} <- ActivityPub.upload(avatar, avatar_upload_limit),
              change = Ecto.Changeset.change(user, %{avatar: object.data}),
              {:ok, user} = User.update_and_set_cache(change) do
           user
@@ -66,7 +74,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user =
       if banner = params["header"] do
         with %Plug.Upload{} <- banner,
-             {:ok, object} <- ActivityPub.upload(banner),
+             {:ok, object} <- ActivityPub.upload(banner, banner_upload_limit),
              new_info <- Map.put(user.info, "banner", object.data),
              change <- User.info_changeset(user, %{info: new_info}),
              {:ok, user} <- User.update_and_set_cache(change) do
