@@ -20,7 +20,8 @@ config :pleroma, Pleroma.Uploaders.Local,
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
-  public_endpoint: "https://s3.amazonaws.com"
+  public_endpoint: "https://s3.amazonaws.com",
+  force_media_proxy: false
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 
