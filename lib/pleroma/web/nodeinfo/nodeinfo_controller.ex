@@ -113,6 +113,12 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         staffAccounts: staff_accounts,
         federation: federation_response,
         postFormats: Keyword.get(instance, :allowed_post_formats),
+        uploadLimits: %{
+          general: Keyword.get(instance, :upload_limit),
+          avatar: Keyword.get(instance, :avatar_upload_limit),
+          banner: Keyword.get(instance, :banner_upload_limit),
+          background: Keyword.get(instance, :background_upload_limit)
+        },
         features: features
       }
     }
