@@ -487,11 +487,13 @@ defmodule Pleroma.UserTest do
     assert addressed in recipients
   end
 
-  test ".deactivate deactivates a user" do
+  test ".deactivate can de-activate then re-activate a user" do
     user = insert(:user)
     assert false == !!user.info["deactivated"]
     {:ok, user} = User.deactivate(user)
     assert true == user.info["deactivated"]
+    {:ok, user} = User.deactivate(user, false)
+    assert false == !!user.info["deactivated"]
   end
 
   test ".delete deactivates a user, all follow relationships and all create activities" do
