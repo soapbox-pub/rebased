@@ -36,7 +36,6 @@ defmodule Pleroma.Web.CommonAPI do
 
   def favorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         false <- activity.data["actor"] == user.ap_id,
          object <- Object.normalize(activity.data["object"]["id"]) do
       ActivityPub.like(user, object)
     else
@@ -47,7 +46,6 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unfavorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         false <- activity.data["actor"] == user.ap_id,
          object <- Object.normalize(activity.data["object"]["id"]) do
       ActivityPub.unlike(user, object)
     else
