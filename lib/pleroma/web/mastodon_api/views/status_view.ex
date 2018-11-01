@@ -240,7 +240,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     summary = object["name"]
 
     content =
-      if !!summary and summary != "" do
+      if !!summary and summary != "" and is_bitstring(object["url"]) do
         "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
       else
         object["content"]
