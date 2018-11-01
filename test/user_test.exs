@@ -511,7 +511,7 @@ defmodule Pleroma.UserTest do
     {:ok, _, _} = CommonAPI.favorite(activity.id, follower)
     {:ok, _, _} = CommonAPI.repeat(activity.id, follower)
 
-    :ok = User.delete(user)
+    {:ok, _} = User.delete(user)
 
     followed = Repo.get(User, followed.id)
     follower = Repo.get(User, follower.id)
@@ -549,6 +549,33 @@ defmodule Pleroma.UserTest do
       user = insert(:user, %{info: %{"no_rich_text" => true}})
 
       assert Pleroma.HTML.Scrubber.TwitterText == User.html_filter_policy(user)
+    end
+  end
+
+  describe "caching" do
+    test "invalidate_cache works" do
+      user = insert(:user)
+      user_info = User.get_cached_user_info(user)
+
+      User.invalidate_cache(user)
+
+      {:ok, nil} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+      {:ok, nil} = Cachex.get(:user_cache, "nickname:#{user.nickname}")
+      {:ok, nil} = Cachex.get(:user_cache, "user_info:#{user.id}")
+    end
+
+    test "User.delete() plugs any possible zombie objects" do
+      user = insert(:user)
+
+      {:ok, _} = User.delete(user)
+
+      {:ok, cached_user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+
+      assert cached_user != user
+
+      {:ok, cached_user} = Cachex.get(:user_cache, "nickname:#{user.ap_id}")
+
+      assert cached_user != user
     end
   end
 end

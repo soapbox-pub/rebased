@@ -7,7 +7,7 @@ defmodule Mix.Tasks.RmUser do
     Mix.Task.run("app.start")
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
-      User.delete(user)
+      {:ok, _} = User.delete(user)
     end
   end
 end

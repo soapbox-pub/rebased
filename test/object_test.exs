@@ -42,7 +42,7 @@ defmodule Pleroma.ObjectTest do
 
       Object.delete(cached_object)
 
-      {:ok, nil} = Cachex.get(:user_cache, "object:#{object.data["id"]}")
+      {:ok, nil} = Cachex.get(:object_cache, "object:#{object.data["id"]}")
 
       cached_object = Object.get_cached_by_ap_id(object.data["id"])
 
