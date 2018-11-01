@@ -295,6 +295,7 @@ defmodule Pleroma.User do
   def invalidate_cache(user) do
     Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
+    Cachex.del(:user_cache, "user_info:#{user.id}")
   end
 
   def get_cached_by_ap_id(ap_id) do
