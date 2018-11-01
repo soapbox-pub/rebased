@@ -5,7 +5,6 @@ defmodule Pleroma.Web.Router do
 
   @instance Application.get_env(:pleroma, :instance)
   @federating Keyword.get(@instance, :federating)
-  @allow_relay Keyword.get(@instance, :allow_relay)
   @public Keyword.get(@instance, :public)
   @registrations_open Keyword.get(@instance, :registrations_open)
 
@@ -354,11 +353,9 @@ defmodule Pleroma.Web.Router do
   end
 
   if @federating do
-    if @allow_relay do
-      scope "/relay", Pleroma.Web.ActivityPub do
-        pipe_through(:ap_relay)
-        get("/", ActivityPubController, :relay)
-      end
+    scope "/relay", Pleroma.Web.ActivityPub do
+      pipe_through(:ap_relay)
+      get("/", ActivityPubController, :relay)
     end
 
     scope "/", Pleroma.Web.ActivityPub do
