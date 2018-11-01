@@ -280,6 +280,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert response = json_response(conn, 200)
       assert response["phrase"] == filter.phrase
       assert response["context"] == filter.context
+      assert response["id"] != nil
+      assert response["id"] != ""
     end
 
     test "fetching a list of filters", %{conn: conn} do
