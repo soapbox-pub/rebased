@@ -1,6 +1,6 @@
 defmodule Pleroma.Object do
   use Ecto.Schema
-  alias Pleroma.{Repo, Object}
+  alias Pleroma.{Repo, Object, Activity}
   import Ecto.{Query, Changeset}
 
   schema "objects" do
@@ -51,5 +51,13 @@ defmodule Pleroma.Object do
 
   def context_mapping(context) do
     Object.change(%Object{}, %{data: %{"id" => context}})
+  end
+
+  def delete(%Object{data: %{"id" => id}} = object) do
+    with Repo.delete(object),
+         Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
+         {:ok, true} <- Cachex.del(:user_cache, "object:#{id}") do
+      :ok
+    end
   end
 end
