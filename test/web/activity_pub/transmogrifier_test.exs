@@ -145,6 +145,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert "test" in data["object"]["tag"]
     end
 
+    test "it works for incoming notices with url not being a string (prismo)" do
+      data = File.read!("test/fixtures/prismo-url-map.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["object"]["url"] == "https://prismo.news/posts/83"
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
