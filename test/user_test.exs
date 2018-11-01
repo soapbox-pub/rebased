@@ -511,7 +511,7 @@ defmodule Pleroma.UserTest do
     {:ok, _, _} = CommonAPI.favorite(activity.id, follower)
     {:ok, _, _} = CommonAPI.repeat(activity.id, follower)
 
-    :ok = User.delete(user)
+    {:ok, _} = User.delete(user)
 
     followed = Repo.get(User, followed.id)
     follower = Repo.get(User, follower.id)
