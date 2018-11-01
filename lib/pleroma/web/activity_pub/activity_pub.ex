@@ -273,8 +273,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "to" => [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
     }
 
-    with Repo.delete(object),
-         Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
+    with Object.delete(object),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity),
          {:ok, _actor} <- User.decrease_note_count(user) do
