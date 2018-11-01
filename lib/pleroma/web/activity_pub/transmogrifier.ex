@@ -263,7 +263,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - tags
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
-      when objtype in ["Article", "Note", "Video"] do
+      when objtype in ["Article", "Note", "Video", "Page"] do
     actor = get_actor(data)
 
     data =

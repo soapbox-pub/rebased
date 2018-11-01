@@ -236,7 +236,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     content
   end
 
-  def render_content(%{"type" => "Article"} = object) do
+  def render_content(%{"type" => object_type} = object) when object_type in ["Article", "Page"] do
     summary = object["name"]
 
     content =
