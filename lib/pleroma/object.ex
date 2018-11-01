@@ -57,7 +57,7 @@ defmodule Pleroma.Object do
     with Repo.delete(object),
          Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
          {:ok, true} <- Cachex.del(:user_cache, "object:#{id}") do
-      :ok
+      {:ok, object}
     end
   end
 end
