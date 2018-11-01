@@ -37,7 +37,7 @@ defmodule Pleroma.Object do
     else
       key = "object:#{ap_id}"
 
-      Cachex.fetch!(:user_cache, key, fn _ ->
+      Cachex.fetch!(:object_cache, key, fn _ ->
         object = get_by_ap_id(ap_id)
 
         if object do
@@ -56,7 +56,7 @@ defmodule Pleroma.Object do
   def delete(%Object{data: %{"id" => id}} = object) do
     with Repo.delete(object),
          Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
-         {:ok, true} <- Cachex.del(:user_cache, "object:#{id}") do
+         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
       {:ok, object}
     end
   end
