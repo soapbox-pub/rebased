@@ -657,7 +657,7 @@ defmodule Pleroma.User do
       end
     end)
 
-    :ok
+    {:ok, user}
   end
 
   def html_filter_policy(%User{info: %{"no_rich_text" => true}}) do
