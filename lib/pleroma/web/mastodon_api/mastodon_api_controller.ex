@@ -508,6 +508,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("type", "Create")
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
+      |> Map.put("tag", String.downcase(params["tag"]))
 
     activities =
       ActivityPub.fetch_public_activities(params)
