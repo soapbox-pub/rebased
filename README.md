@@ -70,22 +70,6 @@ Add the following to your `dev.secret.exs` or `prod.secret.exs` if you want to p
 
 This is useful for running pleroma inside Tor or i2p.
 
-## Admin Tasks
-
-### Register a User
-
-Run `mix register_user <name> <nickname> <email> <bio> <password>`. The `name` appears on statuses, while the nickname corresponds to the user, e.g. `@nickname@instance.tld`
-
-### Password reset
-
-Run `mix generate_password_reset username` to generate a password reset link that you can then send to the user.
-
-### Moderators
-
-You can make users moderators. They will then be able to delete any post.
-
-Run `mix set_moderator username [true|false]` to make user a moderator or not.
-
 ## Troubleshooting
 
 ### No incoming federation

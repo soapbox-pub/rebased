@@ -2,7 +2,7 @@ defmodule Mix.Tasks.SetModerator do
   @moduledoc """
   Set moderator to a local user
 
-  Usage: ``mix set_moderator <username>``
+  Usage: ``mix set_moderator <nickname>``
 
   Example: ``mix set_moderator lain``
   """
