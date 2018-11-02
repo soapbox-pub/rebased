@@ -20,7 +20,7 @@ defmodule Pleroma.Mixfile do
       homepage_url: "https://pleroma.social/",
       docs: [
         logo: "priv/static/static/logo.png",
-        extras: ["README.md"],
+        extras: ["README.md", "config/config.md"],
         main: "readme"
       ]
     ]
