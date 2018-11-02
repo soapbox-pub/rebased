@@ -198,6 +198,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
   end
 
+  test "posting a status with an invalid in_reply_to_id", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => ""})
+
+    assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
+
+    activity = Repo.get(Activity, id)
+
+    assert activity
+  end
+
   test "verify_credentials", %{conn: conn} do
     user = insert(:user)
 
