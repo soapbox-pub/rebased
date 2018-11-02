@@ -56,6 +56,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(user.info)
   end
 
+  def right_get(conn, %{"nickname" => nickname}) do
+    user = User.get_by_nickname(nickname)
+
+    conn
+    |> json(user.info)
+  end
+
   def right_add(conn, _) do
     conn
     |> put_status(404)
