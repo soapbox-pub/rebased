@@ -20,10 +20,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(nickname)
   end
 
-  def user_create(
-        conn,
-        %{user: %{"nickname" => nickname, "email" => email, "password" => password} = user}
-      ) do
+  def user_create(conn, %{
+        user: %{"nickname" => nickname, "email" => email, "password" => password} = user
+      }) do
     new_user = %User{
       nickname: nickname,
       name: user.name || nickname,
