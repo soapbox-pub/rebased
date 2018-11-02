@@ -99,11 +99,8 @@ defmodule Pleroma.Web.Router do
     delete("/user", AdminAPIController, :user_delete)
     post("/user", AdminAPIController, :user_create)
 
-    # Maybe put a "rights" endpoint instead?
-    post("/moderator", AdminAPIController, :moderator_make)
-    delete("/moderator", AdminAPIController, :moderator_unmake)
-    post("/admin", AdminAPIController, :admin_make)
-    delete("/admin", AdminAPIController, :admin_unmake)
+    post("/rights/:right/:nickname", AdminAPIController, :right_add)
+    delete("/rights/:right/:nickname", AdminAPIController, :right_delete)
 
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
