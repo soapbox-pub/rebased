@@ -53,7 +53,8 @@ defmodule Pleroma.Mixfile do
       {:credo, "~> 0.9.3", only: [:dev, :test]},
       {:mock, "~> 0.3.1", only: :test},
       {:crypt,
-       git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"}
+       git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
+      {:cors_plug, "~> 1.5"}
     ]
   end
 
