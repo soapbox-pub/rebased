@@ -9,10 +9,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note with null content" do
     note = insert(:note_activity)
-    data = note.data
-    |> put_in(["object", "content"], nil)
-    note = note
-    |> Map.put(:data, data)
+
+    data =
+      note.data
+      |> put_in(["object", "content"], nil)
+
+    note =
+      note
+      |> Map.put(:data, data)
 
     user = User.get_cached_by_ap_id(note.data["actor"])
 
