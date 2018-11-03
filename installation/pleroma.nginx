@@ -31,9 +31,9 @@ server {
     listen 443 ssl http2;
     ssl_session_timeout 5m;
 
-    ssl_trusted_certificate   /etc/letsencrypt/live/example.tld/fullchain.pem;
-    ssl_certificate           /etc/letsencrypt/live/example.tld/fullchain.pem;
-    ssl_certificate_key       /etc/letsencrypt/live/example.tld/privkey.pem;
+    ssl_trusted_certificate   /etc/letsencrypt/live/$server_name/fullchain.pem;
+    ssl_certificate           /etc/letsencrypt/live/$server_name/fullchain.pem;
+    ssl_certificate_key       /etc/letsencrypt/live/$server_name/privkey.pem;
 
     # Add TLSv1.0 to support older devices
     ssl_protocols TLSv1.2;
@@ -46,7 +46,7 @@ server {
     ssl_ecdh_curve X25519:prime256v1:secp384r1:secp521r1;
     ssl_stapling on;
     ssl_stapling_verify on;
-    
+
     server_name example.tld;
 
     gzip_vary on;
@@ -77,8 +77,8 @@ server {
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "same-origin" always;
         add_header X-Download-Options "noopen" always;
-        add_header Content-Security-Policy "default-src 'none'; base-uri 'self'; form-action *; frame-ancestors 'none'; img-src 'self' data: https:; media-src 'self' https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' wss://example.tld; upgrade-insecure-requests;" always;
-        
+        add_header Content-Security-Policy "default-src 'none'; base-uri 'self'; form-action *; frame-ancestors 'none'; img-src 'self' data: https:; media-src 'self' https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' wss://$server_name; upgrade-insecure-requests;" always;
+
         # Uncomment this only after you get HTTPS working.
         # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
