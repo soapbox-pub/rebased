@@ -944,11 +944,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       {:ok, [_activity]} =
         OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
 
-      conn =
+      nconn =
         conn
         |> get("/api/v1/timelines/tag/2hu")
 
-      assert [%{"id" => id}] = json_response(conn, 200)
+      assert [%{"id" => id}] = json_response(nconn, 200)
+
+      assert id == to_string(activity.id)
+
+      # works for different capitalization too
+      nconn =
+        conn
+        |> get("/api/v1/timelines/tag/2HU")
+
+      assert [%{"id" => id}] = json_response(nconn, 200)
 
       assert id == to_string(activity.id)
     end)
