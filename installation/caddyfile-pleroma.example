@@ -1,3 +1,9 @@
+# default Caddyfile config for Pleroma
+#
+# Simple installation instructions:
+# 1. Replace 'pleroma.example.tld' with your instance's domain wherever it appears.
+# 2. Copy this section into your Caddyfile and restart Caddy.
+
 pleroma.example.tld  {
   log /var/log/caddy/pleroma_access.log
   errors /var/log/caddy/pleroma_error.log
@@ -9,7 +15,7 @@ pleroma.example.tld  {
     transparent
   }
 
-  tls user@example.tld {
+  tls {
     # Remove the rest of the lines in here, if you want to support older devices
     key_type p256
     ciphers ECDHE-ECDSA-WITH-CHACHA20-POLY1305 ECDHE-RSA-WITH-CHACHA20-POLY1305 ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-RSA-AES128-GCM-SHA256
