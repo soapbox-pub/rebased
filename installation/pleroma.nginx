@@ -2,7 +2,7 @@
 #
 # Simple installation instructions:
 # 1. Install your TLS certificate, possibly using Let's Encrypt.
-# 2. Replace 'example.tld' with your instance's domain wherever it appears.
+# 2. Replace 'pleroma.example.tld' with your instance's domain wherever it appears.
 # 3. Copy this file to /etc/nginx/sites-available/ and then add a symlink to it
 #    in /etc/nginx/sites-enabled/ and run 'nginx -s reload' or restart nginx.
 
@@ -10,8 +10,8 @@ proxy_cache_path /tmp/pleroma-media-cache levels=1:2 keys_zone=pleroma_media_cac
                  inactive=720m use_temp_path=off;
 
 server {
+    server_name    pleroma.example.tld;
     listen         80;
-    server_name    example.tld;
     return         301 https://$server_name$request_uri;
 
     # Uncomment this if you need to use the 'webroot' method with certbot. Make sure
@@ -47,7 +47,7 @@ server {
     ssl_stapling on;
     ssl_stapling_verify on;
 
-    server_name example.tld;
+    server_name pleroma.example.tld;
 
     gzip_vary on;
     gzip_proxied any;
