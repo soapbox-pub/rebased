@@ -1,10 +1,10 @@
 # default Caddyfile config for Pleroma
 #
 # Simple installation instructions:
-# 1. Replace 'pleroma.example.tld' with your instance's domain wherever it appears.
+# 1. Replace 'example.tld' with your instance's domain wherever it appears.
 # 2. Copy this section into your Caddyfile and restart Caddy.
 
-pleroma.example.tld  {
+example.tld  {
   log /var/log/caddy/pleroma_access.log
   errors /var/log/caddy/pleroma_error.log
 
