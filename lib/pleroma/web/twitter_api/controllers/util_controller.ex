@@ -6,7 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.CommonAPI
   alias Comeonin.Pbkdf2
-  alias Pleroma.Formatter
+  alias Pleroma.{Formatter, Emoji}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.{Repo, PasswordResetToken, User}
 
@@ -212,7 +212,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def emoji(conn, _params) do
-    json(conn, Enum.into(Formatter.get_custom_emoji(), %{}))
+    json(conn, Enum.into(Emoji.get_all(), %{}))
   end
 
   def follow_import(conn, %{"list" => %Plug.Upload{} = listfile}) do

@@ -2,6 +2,7 @@ defmodule Pleroma.Formatter do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
   alias Pleroma.HTML
+  alias Pleroma.Emoji
 
   @tag_regex ~r/\#\w+/u
   def parse_tags(text, data \\ %{}) do
@@ -28,125 +29,12 @@ defmodule Pleroma.Formatter do
     |> Enum.filter(fn {_match, user} -> user end)
   end
 
-  @finmoji [
-    "a_trusted_friend",
-    "alandislands",
-    "association",
-    "auroraborealis",
-    "baby_in_a_box",
-    "bear",
-    "black_gold",
-    "christmasparty",
-    "crosscountryskiing",
-    "cupofcoffee",
-    "education",
-    "fashionista_finns",
-    "finnishlove",
-    "flag",
-    "forest",
-    "four_seasons_of_bbq",
-    "girlpower",
-    "handshake",
-    "happiness",
-    "headbanger",
-    "icebreaker",
-    "iceman",
-    "joulutorttu",
-    "kaamos",
-    "kalsarikannit_f",
-    "kalsarikannit_m",
-    "karjalanpiirakka",
-    "kicksled",
-    "kokko",
-    "lavatanssit",
-    "losthopes_f",
-    "losthopes_m",
-    "mattinykanen",
-    "meanwhileinfinland",
-    "moominmamma",
-    "nordicfamily",
-    "out_of_office",
-    "peacemaker",
-    "perkele",
-    "pesapallo",
-    "polarbear",
-    "pusa_hispida_saimensis",
-    "reindeer",
-    "sami",
-    "sauna_f",
-    "sauna_m",
-    "sauna_whisk",
-    "sisu",
-    "stuck",
-    "suomimainittu",
-    "superfood",
-    "swan",
-    "the_cap",
-    "the_conductor",
-    "the_king",
-    "the_voice",
-    "theoriginalsanta",
-    "tomoffinland",
-    "torillatavataan",
-    "unbreakable",
-    "waiting",
-    "white_nights",
-    "woollysocks"
-  ]
-
   @instance Application.get_env(:pleroma, :instance)
 
-  @finmoji_with_filenames (if Keyword.get(@instance, :finmoji_enabled) do
-                             Enum.map(@finmoji, fn finmoji ->
-                               {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
-                             end)
-                           else
-                             []
-                           end)
+  def emojify(text) do
+    emojify(text, Emoji.get_all())
+  end
 
-  @emoji_from_file (with {:ok, default} <- File.read("config/emoji.txt") do
-                      custom =
-                        with {:ok, custom} <- File.read("config/custom_emoji.txt") do
-                          custom
-                        else
-                          _e -> ""
-                        end
-
-                      (default <> "\n" <> custom)
-                      |> String.trim()
-                      |> String.split(~r/\n+/)
-                      |> Enum.map(fn line ->
-                        [name, file] = String.split(line, ~r/,\s*/)
-                        {name, file}
-                      end)
-                    else
-                      _ -> []
-                    end)
-
-  @emoji_from_globs (
-                      static_path = Path.join(:code.priv_dir(:pleroma), "static")
-
-                      globs =
-                        Application.get_env(:pleroma, :emoji, [])
-                        |> Keyword.get(:shortcode_globs, [])
-
-                      paths =
-                        Enum.map(globs, fn glob ->
-                          Path.join(static_path, glob)
-                          |> Path.wildcard()
-                        end)
-                        |> Enum.concat()
-
-                      Enum.map(paths, fn path ->
-                        shortcode = Path.basename(path, Path.extname(path))
-                        external_path = Path.join("/", Path.relative_to(path, static_path))
-                        {shortcode, external_path}
-                      end)
-                    )
-
-  @emoji @finmoji_with_filenames ++ @emoji_from_globs ++ @emoji_from_file
-
-  def emojify(text, emoji \\ @emoji)
   def emojify(text, nil), do: text
 
   def emojify(text, emoji) do
@@ -166,14 +54,10 @@ defmodule Pleroma.Formatter do
   end
 
   def get_emoji(text) when is_binary(text) do
-    Enum.filter(@emoji, fn {emoji, _} -> String.contains?(text, ":#{emoji}:") end)
+    Enum.filter(Emoji.get_all(), fn {emoji, _} -> String.contains?(text, ":#{emoji}:") end)
   end
 
   def get_emoji(_), do: []
-
-  def get_custom_emoji() do
-    @emoji
-  end
 
   @link_regex ~r/[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+/ui
 
