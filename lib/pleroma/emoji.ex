@@ -41,11 +41,12 @@ defmodule Pleroma.Emoji do
   @doc false
   def init(_) do
     @ets = :ets.new(@ets, @ets_options)
-    {:ok, nil, {:continue, :reload}}
+    GenServer.cast(self(), :reload)
+    {:ok, nil}
   end
 
   @doc false
-  def handle_continue(:reload, state) do
+  def handle_cast(:reload, state) do
     load()
     {:noreply, state}
   end
