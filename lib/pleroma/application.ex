@@ -13,8 +13,7 @@ defmodule Pleroma.Application do
         worker(Pleroma.Config, [Application.get_all_env(:pleroma)]),
         # Start the Ecto repository
         supervisor(Pleroma.Repo, []),
-        # Start the endpoint when the application starts
-        supervisor(Pleroma.Web.Endpoint, []),
+        worker(Pleroma.Emoji, []),
         # Start your own worker by calling: Pleroma.Worker.start_link(arg1, arg2, arg3)
         # worker(Pleroma.Worker, [arg1, arg2, arg3]),
         worker(
@@ -57,8 +56,10 @@ defmodule Pleroma.Application do
           id: :cachex_idem
         ),
         worker(Pleroma.Web.Federator, []),
-        worker(Pleroma.Gopher.Server, []),
-        worker(Pleroma.Stats, [])
+        worker(Pleroma.Stats, []),
+        # Start the endpoint when the application starts
+        supervisor(Pleroma.Web.Endpoint, []),
+        worker(Pleroma.Gopher.Server, [])
       ] ++
         if Mix.env() == :test,
           do: [],

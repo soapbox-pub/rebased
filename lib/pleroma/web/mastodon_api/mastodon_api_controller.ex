@@ -158,7 +158,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   defp mastodonized_emoji do
-    Pleroma.Formatter.get_custom_emoji()
+    Pleroma.Emoji.get_all()
     |> Enum.map(fn {shortcode, relative_url} ->
       url = to_string(URI.merge(Web.base_url(), relative_url))
 
