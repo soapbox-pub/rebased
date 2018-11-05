@@ -153,7 +153,7 @@ defmodule Pleroma.Emoji do
     end)
   end
 
-  defp load_finmoji(_), do: :ok
+  defp load_finmoji(_), do: []
 
   defp load_from_file(file) do
     if File.exists?(file) do
