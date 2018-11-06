@@ -989,7 +989,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with {:ok, app} <- get_or_make_app(),
          %Authorization{} = auth <- Repo.get_by(Authorization, token: code, app_id: app.id),
          {:ok, token} <- Token.exchange_token(app, auth) do
-
       conn
       |> put_session(:oauth_token, token.token)
       |> redirect(to: "/web/getting-started")
