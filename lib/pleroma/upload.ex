@@ -1,9 +1,6 @@
 defmodule Pleroma.Upload do
   alias Ecto.UUID
 
-  @storage_backend Application.get_env(:pleroma, Pleroma.Upload)
-                   |> Keyword.fetch!(:uploader)
-
   def check_file_size(path, nil), do: true
 
   def check_file_size(path, size_limit) do
@@ -21,8 +18,7 @@ defmodule Pleroma.Upload do
          true <- check_file_size(file.path, size_limit) do
       strip_exif_data(content_type, file.path)
 
-      {:ok, url_path} =
-        @storage_backend.put_file(name, uuid, file.path, content_type, should_dedupe)
+      {:ok, url_path} = uploader().put_file(name, uuid, file.path, content_type, should_dedupe)
 
       %{
         "type" => "Document",
@@ -57,8 +53,7 @@ defmodule Pleroma.Upload do
           content_type
         )
 
-      {:ok, url_path} =
-        @storage_backend.put_file(name, uuid, tmp_path, content_type, should_dedupe)
+      {:ok, url_path} = uploader().put_file(name, uuid, tmp_path, content_type, should_dedupe)
 
       %{
         "type" => "Image",
@@ -181,5 +176,9 @@ defmodule Pleroma.Upload do
       {:ok, type} -> type
       _e -> "application/octet-stream"
     end
+  end
+
+  defp uploader() do
+    Pleroma.Config.get!([Pleroma.Upload, :uploader])
   end
 end

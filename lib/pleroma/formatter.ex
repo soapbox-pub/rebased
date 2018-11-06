@@ -29,8 +29,6 @@ defmodule Pleroma.Formatter do
     |> Enum.filter(fn {_match, user} -> user end)
   end
 
-  @instance Application.get_env(:pleroma, :instance)
-
   def emojify(text) do
     emojify(text, Emoji.get_all())
   end

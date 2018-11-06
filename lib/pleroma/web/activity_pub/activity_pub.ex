@@ -10,8 +10,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @httpoison Application.get_env(:pleroma, :httpoison)
 
-  @instance Application.get_env(:pleroma, :instance)
-
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
   defp get_recipients(%{"type" => "Announce"} = data) do
@@ -659,14 +657,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @quarantined_instances Keyword.get(@instance, :quarantined_instances, [])
-
   def should_federate?(inbox, public) do
     if public do
       true
     else
       inbox_info = URI.parse(inbox)
-      inbox_info.host not in @quarantined_instances
+      !Enum.member?(Pleroma.Config.get([:instance, :quarantined_instances], []), inbox_info.host)
     end
   end
 

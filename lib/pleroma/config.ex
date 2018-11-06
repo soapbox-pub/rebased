@@ -1,13 +1,29 @@
 defmodule Pleroma.Config do
-  def get([key]), do: get(key)
-
-  def get([parent_key | keys]) do
-    Application.get_env(:pleroma, parent_key)
-    |> get_in(keys)
+  defmodule Error do
+    defexception [:message]
   end
 
-  def get(key) do
-    Application.get_env(:pleroma, key)
+  def get(key), do: get(key, nil)
+
+  def get([key], default), do: get(key, default)
+
+  def get([parent_key | keys], default) do
+    Application.get_env(:pleroma, parent_key)
+    |> get_in(keys) || default
+  end
+
+  def get(key, default) do
+    Application.get_env(:pleroma, key, default)
+  end
+
+  def get!(key) do
+    value = get(key, nil)
+
+    if value == nil do
+      raise(Error, message: "Missing configuration value: #{inspect(key)}")
+    else
+      value
+    end
   end
 
   def put([key], value), do: put(key, value)
