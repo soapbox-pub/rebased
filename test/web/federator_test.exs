@@ -50,11 +50,7 @@ defmodule Pleroma.Web.FederatorTest do
       activity: activity,
       relay_mock: relay_mock
     } do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:allow_relay, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :allow_relay], false)
 
       with_mocks([relay_mock]) do
         Federator.handle(:publish, activity)
@@ -62,11 +58,7 @@ defmodule Pleroma.Web.FederatorTest do
 
       refute_received :relay_publish
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:allow_relay, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :allow_relay], true)
     end
   end
 end
