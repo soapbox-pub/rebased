@@ -5,6 +5,15 @@ defmodule Pleroma.Web.Websub.WebsubController do
   alias Pleroma.Web.Websub.WebsubClientSubscription
   require Logger
 
+  plug(
+    Pleroma.Web.FederatingPlug
+    when action in [
+           :websub_subscription_request,
+           :websub_subscription_confirmation,
+           :websub_incoming
+         ]
+  )
+
   def websub_subscription_request(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
 

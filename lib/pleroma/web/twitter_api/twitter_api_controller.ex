@@ -11,6 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   require Logger
 
+  plug(:only_if_public_instance when action in [:public_timeline, :public_and_external_timeline])
   action_fallback(:errors)
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
@@ -516,6 +517,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   defp forbidden_json_reply(conn, error_message) do
     json = error_json(conn, error_message)
     json_reply(conn, 403, json)
+  end
+
+  def only_if_public_instance(conn = %{conn: %{assigns: %{user: _user}}}, _), do: conn
+
+  def only_if_public_instance(conn, _) do
+    if Keyword.get(Application.get_env(:pleroma, :instance), :public) do
+      conn
+    else
+      conn
+      |> forbidden_json_reply("Invalid credentials.")
+      |> halt()
+    end
   end
 
   defp error_json(conn, error_message) do

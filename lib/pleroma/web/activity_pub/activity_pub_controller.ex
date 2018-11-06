@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   action_fallback(:errors)
 
+  plug(Pleroma.Web.FederatingPlug when action in [:inbox, :relay])
   plug(:relay_active? when action in [:relay])
 
   def relay_active?(conn, _) do
