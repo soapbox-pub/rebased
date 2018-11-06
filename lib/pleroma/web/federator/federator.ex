@@ -7,7 +7,6 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Config
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
@@ -72,7 +71,7 @@ defmodule Pleroma.Web.Federator do
         Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
         Pleroma.Web.Salmon.publish(actor, activity)
 
-        if Config.get([:instance, :allow_relay]) do
+        if Keyword.get(Application.get_env(:pleroma, :instance), :allow_relay) do
           Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
           Relay.publish(activity)
         end

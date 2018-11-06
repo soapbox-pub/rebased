@@ -1,7 +1,6 @@
 defmodule Pleroma.Web.FederatorTest do
   alias Pleroma.Web.Federator
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Config
   use Pleroma.DataCase
   import Pleroma.Factory
   import Mock
@@ -40,8 +39,6 @@ defmodule Pleroma.Web.FederatorTest do
       activity: activity,
       relay_mock: relay_mock
     } do
-      Config.put([:instance, :allow_relay], true)
-
       with_mocks([relay_mock]) do
         Federator.handle(:publish, activity)
       end
@@ -53,13 +50,15 @@ defmodule Pleroma.Web.FederatorTest do
       activity: activity,
       relay_mock: relay_mock
     } do
-      Config.put([:instance, :allow_relay], false)
+      Pleroma.Config.put([:instance, :allow_relay], false)
 
       with_mocks([relay_mock]) do
         Federator.handle(:publish, activity)
       end
 
       refute_received :relay_publish
+
+      Pleroma.Config.put([:instance, :allow_relay], true)
     end
   end
 end

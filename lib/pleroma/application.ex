@@ -10,7 +10,6 @@ defmodule Pleroma.Application do
     # Define workers and child supervisors to be supervised
     children =
       [
-        worker(Pleroma.Config, [Application.get_all_env(:pleroma)]),
         # Start the Ecto repository
         supervisor(Pleroma.Repo, []),
         worker(Pleroma.Emoji, []),
