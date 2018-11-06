@@ -985,9 +985,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def login(conn, %{"code" => code}) do
+    with {:ok, app} <- get_or_make_app(),
+         %Authorization{} = auth <- Repo.get_by(Authorization, token: code, app_id: app.id),
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      conn
+      |> put_session(:oauth_token, token.token)
+      |> redirect(to: "/web/getting-started")
+    end
+  end
+
   def login(conn, _) do
-    conn
-    |> render(MastodonView, "login.html", %{error: false})
+    with {:ok, app} <- get_or_make_app() do
+      path =
+        o_auth_path(conn, :authorize,
+          response_type: "code",
+          client_id: app.client_id,
+          redirect_uri: ".",
+          scope: app.scopes
+        )
+
+      conn
+      |> redirect(to: path)
+    end
   end
 
   defp get_or_make_app() do
@@ -1003,22 +1023,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           })
 
         Repo.insert(cs)
-    end
-  end
-
-  def login_post(conn, %{"authorization" => %{"name" => name, "password" => password}}) do
-    with %User{} = user <- User.get_by_nickname_or_email(name),
-         true <- Pbkdf2.checkpw(password, user.password_hash),
-         {:ok, app} <- get_or_make_app(),
-         {:ok, auth} <- Authorization.create_authorization(app, user),
-         {:ok, token} <- Token.exchange_token(app, auth) do
-      conn
-      |> put_session(:oauth_token, token.token)
-      |> redirect(to: "/web/getting-started")
-    else
-      _e ->
-        conn
-        |> render(MastodonView, "login.html", %{error: "Wrong username or password"})
     end
   end
 

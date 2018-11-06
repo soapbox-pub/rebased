@@ -33,25 +33,35 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          true <- Pbkdf2.checkpw(password, user.password_hash),
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          {:ok, auth} <- Authorization.create_authorization(app, user) do
-      if redirect_uri == "urn:ietf:wg:oauth:2.0:oob" do
-        render(conn, "results.html", %{
-          auth: auth
-        })
-      else
-        connector = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
-        url = "#{redirect_uri}#{connector}"
-        url_params = %{:code => auth.token}
+      # Special case: Local MastodonFE.
+      redirect_uri =
+        if redirect_uri == "." do
+          mastodon_api_url(conn, :login)
+        else
+          redirect_uri
+        end
 
-        url_params =
-          if params["state"] do
-            Map.put(url_params, :state, params["state"])
-          else
-            url_params
-          end
+      cond do
+        redirect_uri == "urn:ietf:wg:oauth:2.0:oob" ->
+          render(conn, "results.html", %{
+            auth: auth
+          })
 
-        url = "#{url}#{Plug.Conn.Query.encode(url_params)}"
+        true ->
+          connector = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
+          url = "#{redirect_uri}#{connector}"
+          url_params = %{:code => auth.token}
 
-        redirect(conn, external: url)
+          url_params =
+            if params["state"] do
+              Map.put(url_params, :state, params["state"])
+            else
+              url_params
+            end
+
+          url = "#{url}#{Plug.Conn.Query.encode(url_params)}"
+
+          redirect(conn, external: url)
       end
     end
   end
