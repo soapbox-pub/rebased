@@ -331,6 +331,56 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "POST /api/qvitter/statuses/notifications/read" do
+    setup [:valid_user]
+
+    test "without valid credentials", %{conn: conn} do
+      conn = post(conn, "/api/qvitter/statuses/notifications/read", %{"latest_id" => 1_234_567})
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials, without any params", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/qvitter/statuses/notifications/read")
+
+      assert json_response(conn, 400) == %{
+               "error" => "You need to specify latest_id",
+               "request" => "/api/qvitter/statuses/notifications/read"
+             }
+    end
+
+    test "with credentials, with params", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
+      {:ok, _activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+
+      response_conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json")
+
+      [notification] = response = json_response(response_conn, 200)
+
+      assert length(response) == 1
+
+      assert notification["is_seen"] == 0
+
+      response_conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/qvitter/statuses/notifications/read", %{"latest_id" => notification["id"]})
+
+      [notification] = response = json_response(response_conn, 200)
+
+      assert length(response) == 1
+
+      assert notification["is_seen"] == 1
+    end
+  end
+
   describe "GET /statuses/user_timeline.json" do
     setup [:valid_user]
 
