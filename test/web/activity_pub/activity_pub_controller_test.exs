@@ -32,7 +32,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> Keyword.put(:allow_relay, true)
 
       Application.put_env(:pleroma, :instance, instance)
-
     end
   end
 
