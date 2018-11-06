@@ -100,6 +100,56 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert length(response) == 10
     end
+
+    test "returns 403 to unauthenticated request when the instance is not public" do
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, false)
+
+      Application.put_env(:pleroma, :instance, instance)
+
+      conn
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(403)
+
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, true)
+
+      Application.put_env(:pleroma, :instance, instance)
+    end
+
+    test "returns 200 to unauthenticated request when the instance is public" do
+      conn
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(200)
+    end
+  end
+
+  describe "GET /statuses/public_and_external_timeline.json" do
+    test "returns 403 to unauthenticated request when the instance is not public" do
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, false)
+
+      Application.put_env(:pleroma, :instance, instance)
+
+      conn
+      |> get("/api/statuses/public_and_external_timeline.json")
+      |> json_response(403)
+
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, true)
+
+      Application.put_env(:pleroma, :instance, instance)
+    end
+
+    test "returns 200 to unauthenticated request when the instance is public" do
+      conn
+      |> get("/api/statuses/public_and_external_timeline.json")
+      |> json_response(200)
+    end
   end
 
   describe "GET /statuses/show/:id.json" do

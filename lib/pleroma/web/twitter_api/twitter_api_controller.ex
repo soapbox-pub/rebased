@@ -527,6 +527,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     else
       conn
       |> forbidden_json_reply("Invalid credentials.")
+      |> halt()
     end
   end
 
