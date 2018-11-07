@@ -3,10 +3,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.NormalizeMarkup do
 
   @behaviour Pleroma.Web.ActivityPub.MRF
 
-  @mrf_normalize_markup Application.get_env(:pleroma, :mrf_normalize_markup)
-
   def filter(%{"type" => activity_type} = object) when activity_type == "Create" do
-    scrub_policy = Keyword.get(@mrf_normalize_markup, :scrub_policy)
+    scrub_policy = Pleroma.Config.get([:mrf_normalize_markup, :scrub_policy])
 
     child = object["object"]
 

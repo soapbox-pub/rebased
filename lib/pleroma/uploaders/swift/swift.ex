@@ -1,17 +1,15 @@
 defmodule Pleroma.Uploaders.Swift.Client do
   use HTTPoison.Base
 
-  @settings Application.get_env(:pleroma, Pleroma.Uploaders.Swift)
-
   def process_url(url) do
     Enum.join(
-      [Keyword.fetch!(@settings, :storage_url), url],
+      [Pleroma.Config.get!([Pleroma.Uploaders.Swift, :storage_url]), url],
       "/"
     )
   end
 
   def upload_file(filename, body, content_type) do
-    object_url = Keyword.fetch!(@settings, :object_url)
+    object_url = Pleroma.Config.get!([Pleroma.Uploaders.Swift, :object_url])
     token = Pleroma.Uploaders.Swift.Keystone.get_token()
 
     case put("#{filename}", body, "X-Auth-Token": token, "Content-Type": content_type) do

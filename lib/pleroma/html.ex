@@ -1,14 +1,12 @@
 defmodule Pleroma.HTML do
   alias HtmlSanitizeEx.Scrubber
 
-  @markup Application.get_env(:pleroma, :markup)
-
   defp get_scrubbers(scrubber) when is_atom(scrubber), do: [scrubber]
   defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
   defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
 
   def get_scrubbers() do
-    Keyword.get(@markup, :scrub_policy)
+    Pleroma.Config.get([:markup, :scrub_policy])
     |> get_scrubbers
   end
 

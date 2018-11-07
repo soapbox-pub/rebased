@@ -70,15 +70,17 @@ defmodule Pleroma.Web.CommonAPI do
 
   def get_visibility(_), do: "public"
 
-  @instance Application.get_env(:pleroma, :instance)
-  @allowed_post_formats Keyword.get(@instance, :allowed_post_formats)
+  defp get_content_type(content_type) do
+    if Enum.member?(Pleroma.Config.get([:instance, :allowed_post_formats]), content_type) do
+      content_type
+    else
+      "text/plain"
+    end
+  end
 
-  defp get_content_type(content_type) when content_type in @allowed_post_formats, do: content_type
-  defp get_content_type(_), do: "text/plain"
-
-  @limit Keyword.get(@instance, :limit)
   def post(user, %{"status" => status} = data) do
     visibility = get_visibility(data)
+    limit = Pleroma.Config.get([:instance, :limit])
 
     with status <- String.trim(status),
          attachments <- attachments_from_ids(data["media_ids"]),
@@ -98,7 +100,7 @@ defmodule Pleroma.Web.CommonAPI do
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
          full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
-         length when length in 1..@limit <- String.length(full_payload),
+         length when length in 1..limit <- String.length(full_payload),
          object <-
            make_note_data(
              user.ap_id,

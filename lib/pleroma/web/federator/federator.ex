@@ -12,8 +12,6 @@ defmodule Pleroma.Web.Federator do
   @websub Application.get_env(:pleroma, :websub)
   @ostatus Application.get_env(:pleroma, :ostatus)
   @httpoison Application.get_env(:pleroma, :httpoison)
-  @instance Application.get_env(:pleroma, :instance)
-  @federating Keyword.get(@instance, :federating)
   @max_jobs 20
 
   def init(args) do
@@ -147,7 +145,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def enqueue(type, payload, priority \\ 1) do
-    if @federating do
+    if Pleroma.Config.get([:instance, :federating]) do
       if Mix.env() == :test do
         handle(type, payload)
       else

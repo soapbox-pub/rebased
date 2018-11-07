@@ -6,9 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Web.MediaProxy
   import Ecto.Query
 
-  @instance Application.get_env(:pleroma, :instance)
   @httpoison Application.get_env(:pleroma, :httpoison)
-  @registrations_open Keyword.get(@instance, :registrations_open)
 
   def create_status(%User{} = user, %{"status" => _} = data) do
     CommonAPI.post(user, data)
@@ -21,15 +19,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  @activitypub Application.get_env(:pleroma, :activitypub)
-  @follow_handshake_timeout Keyword.get(@activitypub, :follow_handshake_timeout)
-
   def follow(%User{} = follower, params) do
     with {:ok, %User{} = followed} <- get_user(params),
          {:ok, follower} <- User.maybe_direct_follow(follower, followed),
          {:ok, activity} <- ActivityPub.follow(follower, followed),
          {:ok, follower, followed} <-
-           User.wait_and_refresh(@follow_handshake_timeout, follower, followed) do
+           User.wait_and_refresh(
+             Pleroma.Config.get([:activitypub, :follow_handshake_timeout]),
+             follower,
+             followed
+           ) do
       {:ok, follower, followed, activity}
     else
       err -> err
@@ -139,18 +138,20 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       password_confirmation: params["confirm"]
     }
 
+    registrations_open = Pleroma.Config.get([:instance, :registrations_open])
+
     # no need to query DB if registration is open
     token =
-      unless @registrations_open || is_nil(tokenString) do
+      unless registrations_open || is_nil(tokenString) do
         Repo.get_by(UserInviteToken, %{token: tokenString})
       end
 
     cond do
-      @registrations_open || (!is_nil(token) && !token.used) ->
+      registrations_open || (!is_nil(token) && !token.used) ->
         changeset = User.register_changeset(%User{}, params)
 
         with {:ok, user} <- Repo.insert(changeset) do
-          !@registrations_open && UserInviteToken.mark_as_used(token.token)
+          !registrations_open && UserInviteToken.mark_as_used(token.token)
           {:ok, user}
         else
           {:error, changeset} ->
@@ -161,10 +162,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
             {:error, %{error: errors}}
         end
 
-      !@registrations_open && is_nil(token) ->
+      !registrations_open && is_nil(token) ->
         {:error, "Invalid token"}
 
-      !@registrations_open && token.used ->
+      !registrations_open && token.used ->
         {:error, "Expired token"}
     end
   end
