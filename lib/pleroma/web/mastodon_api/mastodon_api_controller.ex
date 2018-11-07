@@ -443,6 +443,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     render(conn, AccountView, "relationships.json", %{user: user, targets: targets})
   end
 
+  # Instead of returning a 400 when no "id" params is present, Mastodon returns an empty array.
+  def relationships(%{assigns: %{user: user}} = conn, _) do
+    conn
+    |> json([])
+  end
+
   def update_media(%{assigns: %{user: _}} = conn, data) do
     with %Object{} = object <- Repo.get(Object, data["id"]),
          true <- is_binary(data["description"]),
