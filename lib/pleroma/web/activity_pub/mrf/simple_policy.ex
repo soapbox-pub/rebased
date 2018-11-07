@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
     cond do
       accepts == [] -> {:ok, object}
+      actor_host == Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
       Enum.member?(accepts, actor_host) -> {:ok, object}
       true -> {:reject, nil}
     end
@@ -22,9 +23,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_media_removal(
          %{host: actor_host} = _actor_info,
-         %{"type" => "Create", "object" => %{"attachement" => child_attachement}} = object
+         %{"type" => "Create", "object" => %{"attachement" => child_attachment}} = object
        )
-       when length(child_attachement) > 0 do
+       when length(child_attachment) > 0 do
     object =
       if Enum.member?(Pleroma.Config.get([:mrf_simple, :media_removal]), actor_host) do
         child_object = Map.delete(object["object"], "attachment")
@@ -68,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
                Pleroma.Config.get([:mrf_simple, :federated_timeline_removal]),
                actor_host
              ),
-           user <- User.get_by_ap_id(object["actor"]),
+           user <- User.get_cached_by_ap_id(object["actor"]),
            true <- "https://www.w3.org/ns/activitystreams#Public" in object["to"],
            true <- user.follower_address in object["cc"] do
         to =
