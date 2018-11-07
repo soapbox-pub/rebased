@@ -133,6 +133,19 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> render(NotificationView, "notification.json", %{notifications: notifications, for: user})
   end
 
+  def notifications_read(%{assigns: %{user: user}} = conn, %{"latest_id" => latest_id} = params) do
+    Notification.set_read_up_to(user, latest_id)
+
+    notifications = Notification.for_user(user, params)
+
+    conn
+    |> render(NotificationView, "notification.json", %{notifications: notifications, for: user})
+  end
+
+  def notifications_read(%{assigns: %{user: user}} = conn, _) do
+    bad_request_reply(conn, "You need to specify latest_id")
+  end
+
   def follow(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.follow(user, params) do
       {:ok, user, followed, _activity} ->

@@ -121,6 +121,41 @@ defmodule Pleroma.NotificationTest do
     end
   end
 
+  describe "set_read_up_to()" do
+    test "it sets all notifications as read up to a specified notification ID" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        TwitterAPI.create_status(user, %{
+          "status" => "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, activity} =
+        TwitterAPI.create_status(user, %{
+          "status" => "hey again @#{other_user.nickname}!"
+        })
+
+      [n2, n1] = notifs = Notification.for_user(other_user)
+      assert length(notifs) == 2
+
+      assert n2.id > n1.id
+
+      {:ok, activity} =
+        TwitterAPI.create_status(user, %{
+          "status" => "hey yet again @#{other_user.nickname}!"
+        })
+
+      Notification.set_read_up_to(other_user, n2.id)
+
+      [n3, n2, n1] = notifs = Notification.for_user(other_user)
+
+      assert n1.seen == true
+      assert n2.seen == true
+      assert n3.seen == false
+    end
+  end
+
   describe "notification lifecycle" do
     test "liking an activity results in 1 notification, then 0 if the activity is deleted" do
       user = insert(:user)

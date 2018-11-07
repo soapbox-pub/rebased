@@ -42,6 +42,20 @@ defmodule Pleroma.Notification do
     Repo.all(query)
   end
 
+  def set_read_up_to(%{id: user_id} = _user, id) do
+    query =
+      from(
+        n in Notification,
+        where: n.user_id == ^user_id,
+        where: n.id <= ^id,
+        update: [
+          set: [seen: true]
+        ]
+      )
+
+    Repo.update_all(query, [])
+  end
+
   def get(%{id: user_id} = _user, id) do
     query =
       from(
