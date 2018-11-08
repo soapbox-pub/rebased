@@ -13,5 +13,6 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
     assert result["to"] == note.data["to"]
     assert result["content"] == note.data["content"]
     assert result["type"] == "Note"
+    assert result["@context"]
   end
 end
