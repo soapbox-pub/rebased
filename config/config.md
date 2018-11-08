@@ -1,5 +1,8 @@
 # Configuration
 
+This file describe the configuration, it is recommended to edit the relevant *.secret.exs file instead of the others founds in the ``config`` directory.
+If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherwise it is ``dev.secret.exs``.
+
 ## Pleroma.Upload
 * `uploader`: Select which `Pleroma.Uploaders` to use
 * `strip_exif`: boolean, uses ImageMagick(!) to strip exif.
@@ -23,7 +26,11 @@
 * `registerations_open`: Enable registerations for anyone, invitations can be used when false.
 * `federating`
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance
-* `rewrite_policy`: Message Rewrite Policy, either one or a list.
+* `rewrite_policy`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
+  * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default)
+  * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production
+  * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See ``:mrf_simple`` section)
+  * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See ``:mrf_rejectnonpublic`` section)
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
@@ -55,6 +62,10 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `reject`: List of instances to reject any activities from
 * `accept`: List of instances to accept any activities from
 
+## :mrf_rejectnonpublic
+* `allow_followersonly`: whether to allow followers-only posts
+* `allow_direct`: whether to allow direct messages
+
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `redirect_on_failure`: Use the original URL when Media Proxy fails to get it
@@ -63,3 +74,9 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `enabled`: Enables the gopher interface
 * `ip`: IP address to bind to
 * `port`: Port to bind to
+
+## :activitypub
+* ``accept_blocks``: Whether to accept incoming block activities from other instances
+* ``unfollow_blocked``: Whether blocks result in people getting unfollowed
+* ``outgoing_blocks``: Whether to federate blocks to other instances
+* ``deny_follow_blocked``: Whether to disallow following an account that has blocked the user in question
