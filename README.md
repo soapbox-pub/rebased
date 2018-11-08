@@ -45,8 +45,6 @@ While we don't provide docker files, other people have written very good ones. T
   * The common and convenient way for adding HTTPS is by using Nginx as a reverse proxy. You can look at example Nginx configuration in `installation/pleroma.nginx`. If you need TLS/SSL certificates for HTTPS, you can look get some for free with letsencrypt: https://letsencrypt.org/
   The simplest way to obtain and install a certificate is to use [Certbot.](https://certbot.eff.org) Depending on your specific setup, certbot may be able to get a certificate and configure your web server automatically.
 
-  * [Not tested with system reboot yet!] You'll also want to set up Pleroma to be run as a systemd service. Example .service file can be found in `installation/pleroma.service` you can put it in `/etc/systemd/system/`.
-
 ## Running
 
 * By default, it listens on port 4000 (TCP), so you can access it on http://localhost:4000/ (if you are on the same machine). In case of an error it will restart automatically.
@@ -55,6 +53,7 @@ While we don't provide docker files, other people have written very good ones. T
 Pleroma comes with two frontends. The first one, Pleroma FE, can be reached by normally visiting the site. The other one, based on the Mastodon project, can be found by visiting the /web path of your site.
 
 ### As systemd service (with provided .service file)
+Example .service file can be found in `installation/pleroma.service` you can put it in `/etc/systemd/system/`.
 Running `service pleroma start`
 Logs can be watched by using `journalctl -fu pleroma.service`
 
