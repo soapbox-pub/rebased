@@ -58,6 +58,11 @@ Pleroma comes with two frontends. The first one, Pleroma FE, can be reached by n
 Running `service pleroma start`
 Logs can be watched by using `journalctl -fu pleroma.service`
 
+### As OpenRC service (with provided RC file)
+Copy ``installation/init.d/pleroma`` to ``/etc/init.d/pleroma``.
+You can add it to the services ran by default with:
+``rc-update add pleroma``
+
 ### Standalone/run by other means
 Run `mix phx.server` in repository's root, it will output log into stdout/stderr
 
