@@ -42,7 +42,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `redirect_root_no_login`: relative URL which indicates where to redirect when a user isn’t logged in.
 * `redirect_root_login`: relative URL which indicates where to redirect when a user is logged in.
 * `show_instance_panel`: Whenether to show the instance’s specific panel.
-* `scope_options_enabled`: Enable setting an notice visibility when posting
+* `scope_options_enabled`: Enable setting an notice visibility and subject/CW when posting
 * `formatting_options_enabled`: Enable setting a formatting different than plain-text (ie. HTML, Markdown) when posting, relates to ``:instance, allowed_post_formats``
 * `collapse_message_with_subjects`: When a message has a subject(aka Content Warning), collapse it by default
 * `hide_post_stats`: Hide notices statistics(repeats, favorites, …)
