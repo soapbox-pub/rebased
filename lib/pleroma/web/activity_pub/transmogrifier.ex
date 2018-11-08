@@ -693,12 +693,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def add_mention_tags(object) do
-    recipients = object["to"] || []
-
     mentions =
-      recipients
-      |> Enum.map(fn ap_id -> User.get_cached_by_ap_id(ap_id) end)
-      |> Enum.filter(& &1)
+      object
+      |> Utils.get_notified_from_object()
       |> Enum.map(fn user ->
         %{"type" => "Mention", "href" => user.ap_id, "name" => "@#{user.nickname}"}
       end)

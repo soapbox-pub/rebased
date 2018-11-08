@@ -95,6 +95,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     "#{Web.base_url()}/#{type}/#{UUID.generate()}"
   end
 
+  def get_notified_from_object(object) do
+    User.get_notified_from_activity(%Activity{data: object}, false)
+  end
+
   def create_context(context) do
     context = context || generate_id("contexts")
     changeset = Object.context_mapping(context)

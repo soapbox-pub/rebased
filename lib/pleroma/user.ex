@@ -482,7 +482,10 @@ defmodule Pleroma.User do
 
   def get_notified_from_activity(activity, local_only \\ true)
 
-  def get_notified_from_activity(%Activity{data: %{"type" => "Announce", "to" => to} = data}, local_only) do
+  def get_notified_from_activity(
+        %Activity{data: %{"type" => "Announce", "to" => to} = data},
+        local_only
+      ) do
     object = Object.normalize(data["object"])
     actor = User.get_cached_by_ap_id(data["actor"])
 
