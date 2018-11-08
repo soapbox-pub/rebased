@@ -472,7 +472,7 @@ defmodule Pleroma.User do
     )
   end
 
-  def get_notified_from_activity(%Activity{recipients: to, data: %{"type" => "Announce"} = data}) do
+  def get_notified_from_activity(%Activity{data: %{"type" => "Announce", "to" => to} = data}) do
     object = Object.normalize(data["object"])
     actor = User.get_cached_by_ap_id(data["actor"])
 
@@ -490,11 +490,13 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def get_notified_from_activity(%Activity{recipients: to}) do
+  def get_notified_from_activity(%Activity{data: %{"to" => to}}) do
     query = get_notified_from_activity_query(to)
 
     Repo.all(query)
   end
+
+  def get_notified_from_activity(_), do: []
 
   def get_recipients_from_activity(%Activity{recipients: to}) do
     query =
