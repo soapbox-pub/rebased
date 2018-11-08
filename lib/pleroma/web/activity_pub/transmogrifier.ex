@@ -604,7 +604,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> Map.put("object", object)
-      |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+      |> Map.merge(Utils.make_json_ld_header())
 
     {:ok, data}
   end
@@ -623,7 +623,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+        |> Map.merge(Utils.make_json_ld_header())
 
       {:ok, data}
     end
@@ -641,7 +641,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+        |> Map.merge(Utils.make_json_ld_header())
 
       {:ok, data}
     end
@@ -651,7 +651,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> maybe_fix_object_url
-      |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+      |> Map.merge(Utils.make_json_ld_header())
 
     {:ok, data}
   end
