@@ -695,7 +695,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
-      assert modified["@context"] == "https://www.w3.org/ns/activitystreams"
+      assert modified["@context"] ==
+               Pleroma.Web.ActivityPub.Utils.make_json_ld_header()["@context"]
+
       assert modified["object"]["conversation"] == modified["context"]
     end
 
