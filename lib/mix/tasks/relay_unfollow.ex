@@ -3,7 +3,7 @@ defmodule Mix.Tasks.RelayUnfollow do
   require Logger
   alias Pleroma.Web.ActivityPub.Relay
 
-  @doc """
+  @moduledoc """
   Unfollows a remote relay
 
   Usage: ``mix relay_follow <relay_url>``

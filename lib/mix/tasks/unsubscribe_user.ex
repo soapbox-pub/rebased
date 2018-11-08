@@ -3,7 +3,7 @@ defmodule Mix.Tasks.UnsubscribeUser do
   alias Pleroma.{User, Repo}
   require Logger
 
-  @doc """
+  @moduledoc """
   Deactivate and Unsubscribe local users from a user
 
   Usage: ``mix unsubscribe_user <nickname>``

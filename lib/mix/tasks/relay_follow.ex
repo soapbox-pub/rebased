@@ -4,7 +4,7 @@ defmodule Mix.Tasks.RelayFollow do
   alias Pleroma.Web.ActivityPub.Relay
 
   @shortdoc "Follows a remote relay"
-  @doc """
+  @moduledoc """
   Follows a remote relay
 
   Usage: ``mix relay_follow <relay_url>``

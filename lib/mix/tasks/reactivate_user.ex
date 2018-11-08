@@ -2,7 +2,7 @@ defmodule Mix.Tasks.ReactivateUser do
   use Mix.Task
   alias Pleroma.User
 
-  @doc """
+  @moduledoc """
   Reactivate a user
 
   Usage: ``mix reactivate_user <nickname>``

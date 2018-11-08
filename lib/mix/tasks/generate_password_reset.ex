@@ -2,7 +2,7 @@ defmodule Mix.Tasks.GeneratePasswordReset do
   use Mix.Task
   alias Pleroma.User
 
-  @doc """
+  @moduledoc """
   Generate password reset link for user
 
   Usage: ``mix generate_password_reset <nickname>``
