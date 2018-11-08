@@ -693,7 +693,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def add_mention_tags(object) do
-    recipients = object["to"] ++ (object["cc"] || [])
+    recipients = object["to"] || []
 
     mentions =
       recipients
