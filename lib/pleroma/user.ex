@@ -464,15 +464,25 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
-  def get_notified_from_activity_query(to) do
+  def get_notified_from_activity_query(to, false) do
     from(
       u in User,
-      where: u.ap_id in ^to,
+      where: u.ap_id in ^to
+    )
+  end
+
+  def get_notified_from_activity_query(to, true) do
+    query = get_notified_from_activity_query(to, false)
+
+    from(
+      u in query,
       where: u.local == true
     )
   end
 
-  def get_notified_from_activity(%Activity{data: %{"type" => "Announce", "to" => to} = data}) do
+  def get_notified_from_activity(activity, local_only \\ true)
+
+  def get_notified_from_activity(%Activity{data: %{"type" => "Announce", "to" => to} = data}, local_only) do
     object = Object.normalize(data["object"])
     actor = User.get_cached_by_ap_id(data["actor"])
 
@@ -485,18 +495,18 @@ defmodule Pleroma.User do
       end
       |> Enum.uniq()
 
-    query = get_notified_from_activity_query(to)
+    query = get_notified_from_activity_query(to, local_only)
 
     Repo.all(query)
   end
 
-  def get_notified_from_activity(%Activity{data: %{"to" => to}}) do
-    query = get_notified_from_activity_query(to)
+  def get_notified_from_activity(%Activity{data: %{"to" => to}}, local_only) do
+    query = get_notified_from_activity_query(to, local_only)
 
     Repo.all(query)
   end
 
-  def get_notified_from_activity(_), do: []
+  def get_notified_from_activity(_, _), do: []
 
   def get_recipients_from_activity(%Activity{recipients: to}) do
     query =
