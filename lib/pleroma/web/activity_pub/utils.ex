@@ -70,7 +70,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
-        "https://litepub.github.io/litepub/context.jsonld"
+        "#{Web.base_url()}/litepub-1.0.jsonld"
       ]
     }
   end
