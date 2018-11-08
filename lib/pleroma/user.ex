@@ -482,28 +482,37 @@ defmodule Pleroma.User do
 
   def get_notified_from_activity(activity, local_only \\ true)
 
-  def get_notified_from_activity(
-        %Activity{data: %{"type" => "Announce", "to" => to} = data},
-        local_only
-      ) do
+  def get_notified_from_activity(%Activity{data: %{"to" => to} = data}, local_only) do
     object = Object.normalize(data["object"])
-    actor = User.get_cached_by_ap_id(data["actor"])
 
-    # ensure that the actor who published the announced object appears only once
-    to =
-      if actor.nickname != nil do
-        to ++ [object.data["actor"]]
+    # somehow, get an AS2 object, preferring the normalized object if we have one
+    object_data =
+      if object do
+        object.data
       else
-        to
+        if is_map(data["object"]) do
+          data["object"]
+        else
+          %{}
+        end
       end
+
+    # finally extract AS2 mentions from this object
+    tagged_mentions =
+      if object_data["tag"] do
+        object_data["tag"]
+        |> Enum.filter(fn x -> is_map(x) end)
+        |> Enum.filter(fn x -> x["type"] == "Mention" end)
+        |> Enum.map(fn x -> x["href"] end)
+      else
+        []
+      end
+
+    # ensure all mentioned users are unique
+    to =
+      (to ++ tagged_mentions)
       |> Enum.uniq()
 
-    query = get_notified_from_activity_query(to, local_only)
-
-    Repo.all(query)
-  end
-
-  def get_notified_from_activity(%Activity{data: %{"to" => to}}, local_only) do
     query = get_notified_from_activity_query(to, local_only)
 
     Repo.all(query)
