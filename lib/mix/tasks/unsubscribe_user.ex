@@ -11,7 +11,6 @@ defmodule Mix.Tasks.UnsubscribeUser do
   Example: ``mix unsubscribe_user lain``
   """
   def run([nickname]) do
-  def run([nickname]) do
     Mix.Task.run("app.start")
 
     with %User{} = user <- User.get_by_nickname(nickname) do
