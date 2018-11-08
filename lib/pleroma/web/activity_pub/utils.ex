@@ -70,18 +70,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
-        "https://w3id.org/security/v1",
-        %{
-          "manuallyApprovesFollowers" => "as:manuallyApprovesFollowers",
-          "sensitive" => "as:sensitive",
-          "Hashtag" => "as:Hashtag",
-          "ostatus" => "http://ostatus.org#",
-          "atomUri" => "ostatus:atomUri",
-          "inReplyToAtomUri" => "ostatus:inReplyToAtomUri",
-          "conversation" => "ostatus:conversation",
-          "toot" => "http://joinmastodon.org/ns#",
-          "Emoji" => "toot:Emoji"
-        }
+        "https://litepub.github.io/litepub/context.jsonld"
       ]
     }
   end
