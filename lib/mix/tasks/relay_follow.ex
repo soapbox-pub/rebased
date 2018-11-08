@@ -4,6 +4,13 @@ defmodule Mix.Tasks.RelayFollow do
   alias Pleroma.Web.ActivityPub.Relay
 
   @shortdoc "Follows a remote relay"
+  @doc """
+  Follows a remote relay
+
+  Usage: ``mix relay_follow <relay_url>``
+
+  Example: ``mix relay_follow https://example.org/relay``
+  """
   def run([target]) do
     Mix.Task.run("app.start")
 
