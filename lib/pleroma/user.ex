@@ -485,44 +485,6 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  def get_notified_from_activity(activity, local_only \\ true)
-
-  def get_notified_from_activity(%Activity{data: %{"to" => to} = data}, local_only) do
-    object = Object.normalize(data["object"])
-
-    # somehow, get an AS2 object, preferring the normalized object if we have one
-    object_data =
-      if object do
-        object.data
-      else
-        if is_map(data["object"]) do
-          data["object"]
-        else
-          %{}
-        end
-      end
-
-    # finally extract AS2 mentions from this object
-    tagged_mentions =
-      if object_data["tag"] do
-        object_data["tag"]
-        |> Enum.filter(fn x -> is_map(x) end)
-        |> Enum.filter(fn x -> x["type"] == "Mention" end)
-        |> Enum.map(fn x -> x["href"] end)
-      else
-        []
-      end
-
-    # ensure all mentioned users are unique
-    to =
-      (to ++ tagged_mentions)
-      |> Enum.uniq()
-
-    get_users_from_set(to, local_only)
-  end
-
-  def get_notified_from_activity(_, _), do: []
-
   def get_recipients_from_activity(%Activity{recipients: to}) do
     query =
       from(
