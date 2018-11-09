@@ -1,6 +1,6 @@
 defmodule Pleroma.Notification do
   use Ecto.Schema
-  alias Pleroma.{User, Activity, Notification, Repo}
+  alias Pleroma.{User, Activity, Notification, Repo, Object}
   import Ecto.Query
 
   schema "notifications" do
@@ -95,7 +95,7 @@ defmodule Pleroma.Notification do
 
   def create_notifications(%Activity{id: _, data: %{"to" => _, "type" => type}} = activity)
       when type in ["Create", "Like", "Announce", "Follow"] do
-    users = User.get_notified_from_activity(activity)
+    users = get_notified_from_activity(activity)
 
     notifications = Enum.map(users, fn user -> create_notification(activity, user) end)
     {:ok, notifications}
@@ -113,4 +113,64 @@ defmodule Pleroma.Notification do
       notification
     end
   end
+
+  def get_notified_from_activity(activity, local_only \\ true)
+
+  def get_notified_from_activity(
+        %Activity{data: %{"to" => _, "type" => type} = data} = activity,
+        local_only
+      )
+      when type in ["Create", "Like", "Announce", "Follow"] do
+    recipients =
+      []
+      |> maybe_notify_to_recipients(activity)
+      |> maybe_notify_mentioned_recipients(activity)
+      |> Enum.uniq()
+
+    User.get_users_from_set(recipients, local_only)
+  end
+
+  def get_notified_from_activity(_, local_only), do: []
+
+  defp maybe_notify_to_recipients(
+         recipients,
+         %Activity{data: %{"to" => to, "type" => type}} = activity
+       ) do
+    recipients ++ to
+  end
+
+  defp maybe_notify_mentioned_recipients(
+         recipients,
+         %Activity{data: %{"to" => to, "type" => type} = data} = activity
+       )
+       when type == "Create" do
+    object = Object.normalize(data["object"])
+
+    object_data =
+      cond do
+        !is_nil(object) ->
+          object.data
+
+        is_map(data["object"]) ->
+          data["object"]
+
+        true ->
+          %{}
+      end
+
+    tagged_mentions = maybe_extract_mentions(object_data)
+
+    recipients ++ tagged_mentions
+  end
+
+  defp maybe_notify_mentioned_recipients(recipients, _), do: recipients
+
+  defp maybe_extract_mentions(%{"tag" => tag}) do
+    tag
+    |> Enum.filter(fn x -> is_map(x) end)
+    |> Enum.filter(fn x -> x["type"] == "Mention" end)
+    |> Enum.map(fn x -> x["href"] end)
+  end
+
+  defp maybe_extract_mentions(_), do: []
 end

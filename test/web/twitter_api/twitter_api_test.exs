@@ -48,7 +48,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
              "https://www.w3.org/ns/activitystreams#Public"
            )
 
-    assert Enum.member?(get_in(activity.data, ["cc"]), "shp")
+    assert Enum.member?(get_in(activity.data, ["to"]), "shp")
     assert activity.local == true
 
     assert %{"moominmamma" => "http://localhost:4001/finmoji/128px/moominmamma-128.png"} =
