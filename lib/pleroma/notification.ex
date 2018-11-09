@@ -114,9 +114,11 @@ defmodule Pleroma.Notification do
     end
   end
 
+  def get_notified_from_activity(activity, local_only \\ true)
+
   def get_notified_from_activity(
         %Activity{data: %{"to" => _, "type" => type} = data} = activity,
-        local_only \\ true
+        local_only
       )
       when type in ["Create", "Like", "Announce", "Follow"] do
     recipients =
@@ -127,6 +129,8 @@ defmodule Pleroma.Notification do
 
     User.get_users_from_set(recipients, local_only)
   end
+
+  def get_notified_from_activity(_, local_only), do: []
 
   defp maybe_notify_to_recipients(
          recipients,
