@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.Utils do
-  alias Pleroma.{Repo, Web, Object, Activity, User}
+  alias Pleroma.{Repo, Web, Object, Activity, User, Notification}
   alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Endpoint
   alias Ecto.{Changeset, UUID}
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def get_notified_from_object(object) do
-    User.get_notified_from_activity(%Activity{data: object}, false)
+    Notification.get_notified_from_activity(%Activity{data: object}, false)
   end
 
   def create_context(context) do
