@@ -95,6 +95,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     "#{Web.base_url()}/#{type}/#{UUID.generate()}"
   end
 
+  def get_notified_from_object(%{"type" => type} = object) when type == "Note" do
+    fake_create_activity = %{
+      "to" => object["to"],
+      "cc" => object["cc"],
+      "type" => "Create",
+      "object" => object
+    }
+
+    Notification.get_notified_from_activity(%Activity{data: fake_create_activity}, false)
+  end
+
   def get_notified_from_object(object) do
     Notification.get_notified_from_activity(%Activity{data: object}, false)
   end
