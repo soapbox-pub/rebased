@@ -6,6 +6,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   import Ecto.Query
   require Logger
 
+  @supported_object_types ["Article", "Note", "Video", "Page"]
+
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
   def get_ap_id(object) do
@@ -95,7 +97,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     "#{Web.base_url()}/#{type}/#{UUID.generate()}"
   end
 
-  def get_notified_from_object(%{"type" => type} = object) when type == "Note" do
+  def get_notified_from_object(%{"type" => type} = object) when type in @supported_object_types do
     fake_create_activity = %{
       "to" => object["to"],
       "cc" => object["cc"],
@@ -179,7 +181,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Inserts a full object if it is contained in an activity.
   """
   def insert_full_object(%{"object" => %{"type" => type} = object_data})
-      when is_map(object_data) and type in ["Article", "Note", "Video", "Page"] do
+      when is_map(object_data) and type in @supported_object_types do
     with {:ok, _} <- Object.create(object_data) do
       :ok
     end
