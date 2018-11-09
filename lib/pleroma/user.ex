@@ -464,20 +464,25 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
-  def get_notified_from_activity_query(to, false) do
+  def get_users_from_set_query(ap_ids, false) do
     from(
       u in User,
-      where: u.ap_id in ^to
+      where: u.ap_id in ^ap_ids
     )
   end
 
-  def get_notified_from_activity_query(to, true) do
-    query = get_notified_from_activity_query(to, false)
+  def get_users_from_set_query(ap_ids, true) do
+    query = get_users_from_set_query(ap_ids, false)
 
     from(
       u in query,
       where: u.local == true
     )
+  end
+
+  def get_users_from_set(ap_ids, local_only \\ true) do
+    get_users_from_set_query(ap_ids, local_only)
+    |> Repo.all()
   end
 
   def get_notified_from_activity(activity, local_only \\ true)
@@ -513,9 +518,7 @@ defmodule Pleroma.User do
       (to ++ tagged_mentions)
       |> Enum.uniq()
 
-    query = get_notified_from_activity_query(to, local_only)
-
-    Repo.all(query)
+    get_users_from_set(to, local_only)
   end
 
   def get_notified_from_activity(_, _), do: []
