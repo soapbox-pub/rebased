@@ -78,7 +78,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       when right in ["moderator", "admin"] do
     if admin_nickname == nickname do
       conn
-      |> post_status(403)
+      |> put_status(403)
       |> json(%{error: "You can't revoke your own admin status."})
     else
       user = User.get_by_nickname(nickname)
@@ -102,17 +102,29 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def relay_follow(conn, %{"relay_url" => target}) do
-    :ok = Relay.follow(target)
+    status = Relay.follow(target)
 
-    conn
-    |> json(target)
+    if status == :ok do
+      conn
+      |> json(target)
+    else
+      conn
+      |> put_status(500)
+      |> json(target)
+    end
   end
 
   def relay_unfollow(conn, %{"relay_url" => target}) do
-    :ok = Relay.unfollow(target)
+    status = Relay.unfollow(target)
 
-    conn
-    |> json(target)
+    if status == :ok do
+      conn
+      |> json(target)
+    else
+      conn
+      |> put_status(500)
+      |> json(target)
+    end
   end
 
   @shortdoc "Get a account registeration invite token (base64 string)"
