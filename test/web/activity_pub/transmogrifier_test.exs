@@ -743,6 +743,39 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified["object"]["inReplyTo"] == "http://gs.example.org:4040/index.php/notice/29"
     end
+
+    test "it strips internal hashtag data" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu"})
+
+      expected_tag = %{
+        "href" => Pleroma.Web.Endpoint.url() <> "/tags/2hu",
+        "type" => "Hashtag",
+        "name" => "#2hu"
+      }
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["object"]["tag"] == [expected_tag]
+    end
+
+    test "it strips internal fields" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert length(modified["object"]["tag"]) == 2
+
+      assert is_nil(modified["object"]["emoji"])
+      assert is_nil(modified["object"]["likes"])
+      assert is_nil(modified["object"]["like_count"])
+      assert is_nil(modified["object"]["announcements"])
+      assert is_nil(modified["object"]["announcement_count"])
+      assert is_nil(modified["object"]["context_id"])
+    end
   end
 
   describe "user upgrade" do
