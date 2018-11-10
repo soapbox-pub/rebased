@@ -14,7 +14,7 @@ defmodule Mix.Tasks.RelayFollow do
   def run([target]) do
     Mix.Task.run("app.start")
 
-    :ok = Relay.follow(target)
+    _status = Relay.follow(target)
 
     # put this task to sleep to allow the genserver to push out the messages
     :timer.sleep(500)
