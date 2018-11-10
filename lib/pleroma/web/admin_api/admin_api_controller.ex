@@ -40,13 +40,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(new_user.nickname)
   end
 
-  def right_add(conn, %{"right" => right, "nickname" => nickname})
-      when right in ["moderator", "admin"] do
+  def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})
+      when permission_group in ["moderator", "admin"] do
     user = User.get_by_nickname(nickname)
 
     info =
       user.info
-      |> Map.put("is_" <> right, true)
+      |> Map.put("is_" <> permission_group, true)
 
     cng = User.info_changeset(user, %{info: info})
     {:ok, user} = User.update_and_set_cache(cng)
@@ -65,17 +65,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def right_add(conn, _) do
     conn
     |> put_status(404)
-    |> json(%{error: "No such right"})
+    |> json(%{error: "No such permission_group"})
   end
 
   def right_delete(
         %{assigns: %{user: %User{:nickname => admin_nickname}}} = conn,
         %{
-          "right" => right,
+          "permission_group" => permission_group,
           "nickname" => nickname
         }
       )
-      when right in ["moderator", "admin"] do
+      when permission_group in ["moderator", "admin"] do
     if admin_nickname == nickname do
       conn
       |> put_status(403)
@@ -85,7 +85,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
       info =
         user.info
-        |> Map.put("is_" <> right, false)
+        |> Map.put("is_" <> permission_group, false)
 
       cng = User.info_changeset(user, %{info: info})
       {:ok, user} = User.update_and_set_cache(cng)
@@ -98,7 +98,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def right_delete(conn, _) do
     conn
     |> put_status(404)
-    |> json(%{error: "No such right"})
+    |> json(%{error: "No such permission_group"})
   end
 
   def relay_follow(conn, %{"relay_url" => target}) do
