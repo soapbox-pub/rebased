@@ -10,7 +10,19 @@ defmodule Pleroma.Mixfile do
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+
+      # Docs
+      name: "Pleroma",
+      source_url: "https://git.pleroma.social/pleroma/pleroma",
+      source_url_pattern:
+        "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
+      homepage_url: "https://pleroma.social/",
+      docs: [
+        logo: "priv/static/static/logo.png",
+        extras: ["README.md", "config/config.md"],
+        main: "readme"
+      ]
     ]
   end
 
@@ -54,7 +66,8 @@ defmodule Pleroma.Mixfile do
       {:mock, "~> 0.3.1", only: :test},
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
-      {:cors_plug, "~> 1.5"}
+      {:cors_plug, "~> 1.5"},
+      {:ex_doc, "> 0.18.3 and < 0.20.0", only: :dev, runtime: false}
     ]
   end
 

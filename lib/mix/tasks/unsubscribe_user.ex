@@ -3,7 +3,13 @@ defmodule Mix.Tasks.UnsubscribeUser do
   alias Pleroma.{User, Repo}
   require Logger
 
-  @shortdoc "Unsubscribe all users from a target and then deactivate them"
+  @moduledoc """
+  Deactivate and Unsubscribe local users from a user
+
+  Usage: ``mix unsubscribe_user <nickname>``
+
+  Example: ``mix unsubscribe_user lain``
+  """
   def run([nickname]) do
     Mix.Task.run("app.start")
 
