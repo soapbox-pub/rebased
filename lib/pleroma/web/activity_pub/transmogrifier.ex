@@ -589,6 +589,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> strip_internal_fields
+    |> strip_internal_tags
   end
 
   #  @doc
@@ -754,6 +756,29 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
     |> Map.put("attachment", attachments)
   end
+
+  defp strip_internal_fields(object) do
+    object
+    |> Map.drop([
+      "likes",
+      "like_count",
+      "announcements",
+      "announcement_count",
+      "emoji",
+      "context_id"
+    ])
+  end
+
+  defp strip_internal_tags(%{"tag" => tags} = object) do
+    tags =
+      tags
+      |> Enum.filter(fn x -> is_map(x) end)
+
+    object
+    |> Map.put("tag", tags)
+  end
+
+  defp strip_internal_tags(object), do: object
 
   defp user_upgrade_task(user) do
     old_follower_address = User.ap_followers(user)
