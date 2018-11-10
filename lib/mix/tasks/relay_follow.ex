@@ -14,11 +14,13 @@ defmodule Mix.Tasks.RelayFollow do
   def run([target]) do
     Mix.Task.run("app.start")
 
-    with :ok <- Relay.follow(target) do
+    {status, message} = Relay.follow(target)
+
+    if :ok == status do
       # put this task to sleep to allow the genserver to push out the messages
       :timer.sleep(500)
     else
-      e -> Mix.puts("Error: #{inspect(e)}")
+      Mix.puts("Error: #{inspect(message)}")
     end
   end
 end

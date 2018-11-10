@@ -102,7 +102,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def relay_follow(conn, %{"relay_url" => target}) do
-    status = Relay.follow(target)
+    {status, message} = Relay.follow(target)
 
     if status == :ok do
       conn
@@ -115,7 +115,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def relay_unfollow(conn, %{"relay_url" => target}) do
-    status = Relay.unfollow(target)
+    {status, message} = Relay.unfollow(target)
 
     if status == :ok do
       conn

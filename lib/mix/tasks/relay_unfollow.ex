@@ -13,11 +13,13 @@ defmodule Mix.Tasks.RelayUnfollow do
   def run([target]) do
     Mix.Task.run("app.start")
 
-    with :ok <- Relay.unfollow(target) do
+    {status, message} = Relay.unfollow(target)
+
+    if :ok == status do
       # put this task to sleep to allow the genserver to push out the messages
       :timer.sleep(500)
     else
-      e -> Mix.puts("Error: #{inspect(e)}")
+      Mix.puts("Error: #{inspect(message)}")
     end
   end
 end
