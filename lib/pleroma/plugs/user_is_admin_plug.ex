@@ -13,7 +13,7 @@ defmodule Pleroma.Plugs.UserIsAdminPlug do
   def call(conn, _) do
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(403, Jason.encode!(%{error: "Not admin."}))
+    |> send_resp(403, Jason.encode!(%{error: "User is not admin."}))
     |> halt
   end
 end
