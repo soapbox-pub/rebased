@@ -68,19 +68,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(%{error: "No such right"})
   end
 
-  def right_delete(conn, %{"right" => right, "nickname" => nickname})
+  def right_delete(
+        %{assigns: %{user: %User{:nickname => admin_nickname}}} = conn,
+        %{
+          "right" => right,
+          "nickname" => nickname
+        }
+      )
       when right in ["moderator", "admin"] do
-    user = User.get_by_nickname(nickname)
+    if admin_nickname == nickname do
+      conn
+      |> post_status(403)
+      |> json(%{error: "You can't revoke your own admin status."})
+    else
+      user = User.get_by_nickname(nickname)
 
-    info =
-      user.info
-      |> Map.put("is_" <> right, false)
+      info =
+        user.info
+        |> Map.put("is_" <> right, false)
 
-    cng = User.info_changeset(user, %{info: info})
-    {:ok, user} = User.update_and_set_cache(cng)
+      cng = User.info_changeset(user, %{info: info})
+      {:ok, user} = User.update_and_set_cache(cng)
 
-    conn
-    |> json(user.info)
+      conn
+      |> json(user.info)
+    end
   end
 
   def right_delete(conn, _) do
