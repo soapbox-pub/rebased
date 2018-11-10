@@ -11,6 +11,8 @@ defmodule Pleroma.Web.Endpoint do
   #
   # You should set gzip to true if you are running phoenix.digest
   # when deploying your static files in production.
+  plug(CORSPlug)
+
   plug(Plug.Static, at: "/media", from: Pleroma.Uploaders.Local.upload_path(), gzip: false)
 
   plug(
@@ -57,7 +59,6 @@ defmodule Pleroma.Web.Endpoint do
     extra: "SameSite=Strict"
   )
 
-  plug(CORSPlug)
   plug(Pleroma.Web.Router)
 
   @doc """
