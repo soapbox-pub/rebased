@@ -44,10 +44,12 @@ defmodule Pleroma.Plugs.CSPPlug do
   end
 
   defp maybe_send_sts_header(conn, true) do
-    max_age = Config.get([:csp, :sts_max_age])
+    max_age_sts = Config.get([:csp, :sts_max_age])
+    max_age_ct = Config.get([:csp, :ct_max_age])
 
     merge_resp_headers(conn, [
-      {"strict-transport-security", "max-age=#{max_age}; includeSubDomains"}
+      {"strict-transport-security", "max-age=#{max_age_sts}; includeSubDomains"},
+      {"expect-ct", "enforce, max-age=#{max_age_ct}"}
     ])
   end
 

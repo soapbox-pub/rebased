@@ -179,7 +179,8 @@ config :pleroma, :suggestions,
 config :pleroma, :csp,
   enabled: true,
   sts: false,
-  sts_max_age: 31_536_000
+  sts_max_age: 31_536_000,
+  ct_max_age: 2_592_000
 
 config :cors_plug,
   max_age: 86_400,
