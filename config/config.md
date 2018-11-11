@@ -85,4 +85,4 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * ``enabled``: Whether the managed content security policy is enabled
 * ``sts``: Whether to additionally send a `Strict-Transport-Security` header
 * ``sts_max_age``: The maximum age for the `Strict-Transport-Security` header if sent
-* ``ct_max_age``: The maximum age for the `Except-CT` header if sent
+* ``ct_max_age``: The maximum age for the `Expect-CT` header if sent
