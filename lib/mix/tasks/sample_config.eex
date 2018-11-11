@@ -25,6 +25,10 @@ config :pleroma, Pleroma.Repo,
   hostname: "localhost",
   pool_size: 10
 
+# Enable Strict-Transport-Security once SSL is working:
+# config :pleroma, :csp,
+#   sts: true
+
 # Configure S3 support if desired.
 # The public S3 endpoint is different depending on region and provider,
 # consult your S3 provider's documentation for details on what to use.
