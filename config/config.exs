@@ -176,6 +176,11 @@ config :pleroma, :suggestions,
   limit: 23,
   web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
 
+config :pleroma, :csp,
+  enabled: true,
+  sts: false,
+  sts_max_age: 31_536_000
+
 config :cors_plug,
   max_age: 86_400,
   methods: ["POST", "PUT", "DELETE", "GET", "PATCH", "OPTIONS"],
