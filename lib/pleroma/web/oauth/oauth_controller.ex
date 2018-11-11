@@ -143,8 +143,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+  # XXX - for whatever reason our token arrives urlencoded, but Plug.Conn should be
+  # decoding it.  Investigate sometime.
   defp fix_padding(token) do
     token
+    |> URI.decode()
     |> Base.url_decode64!(padding: false)
     |> Base.url_encode64()
   end
