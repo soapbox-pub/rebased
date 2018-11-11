@@ -60,16 +60,6 @@ server {
     client_max_body_size 16m;
 
     location / {
-        # if you do not want remote frontends to be able to access your Pleroma backend
-        # server, remove these lines.
-        add_header 'Access-Control-Allow-Methods' 'POST, PUT, DELETE, GET, PATCH, OPTIONS' always;
-        add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Idempotency-Key' always;
-        add_header 'Access-Control-Expose-Headers' 'Link, X-RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, X-Request-Id' always;
-        if ($request_method = OPTIONS) {
-            return 204;
-        }
-        # stop removing lines here.
-
         add_header X-XSS-Protection "1; mode=block" always;
         add_header X-Permitted-Cross-Domain-Policies "none" always;
         add_header X-Frame-Options "DENY" always;

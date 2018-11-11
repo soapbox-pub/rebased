@@ -176,6 +176,20 @@ config :pleroma, :suggestions,
   limit: 23,
   web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
 
+config :cors_plug,
+  max_age: 86_400,
+  methods: ["POST", "PUT", "DELETE", "GET", "PATCH", "OPTIONS"],
+  expose: [
+    "Link",
+    "X-RateLimit-Reset",
+    "X-RateLimit-Limit",
+    "X-RateLimit-Remaining",
+    "X-Request-Id",
+    "Idempotency-Key"
+  ],
+  credentials: true,
+  headers: ["Authorization", "Content-Type", "Idempotency-Key"]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
