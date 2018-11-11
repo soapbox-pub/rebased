@@ -119,8 +119,3 @@ sub vcl_pipe {
         set bereq.http.connection = req.http.connection;
     }
 }
-
-sub vcl_deliver {
-  # Uncomment this only after you get HTTPS working.
-  # set resp.http.Strict-Transport-Security= "max-age=31536000; includeSubDomains";
-}

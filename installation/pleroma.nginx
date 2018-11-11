@@ -60,9 +60,6 @@ server {
     client_max_body_size 16m;
 
     location / {
-        # Uncomment this only after you get HTTPS working.
-        # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
