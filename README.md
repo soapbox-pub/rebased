@@ -2,7 +2,9 @@
 
 ## About Pleroma
 
-Pleroma is an OStatus-compatible social networking server written in Elixir, compatible with GNU Social and Mastodon. It is high-performance and can run on small devices like a Raspberry Pi.
+Pleroma is a microblogging server software that can federate (= exchange messages with) other servers that support the same federation standards (OStatus and ActivityPub). What that means is that you can host a server for yourself or your friends and stay in control of your online identity, but still exchange messages with people on larger servers. Pleroma will federate with all servers that implement either OStatus or ActivityPub, like Friendica, GNU Social, Hubzilla, Mastodon, Misskey, Peertube, and Pixelfed.
+
+Pleroma is written in Elixir, high-performance and can run on small devices like a Raspberry Pi.
 
 For clients it supports both the [GNU Social API with Qvitter extensions](https://twitter-api.readthedocs.io/en/latest/index.html) and the [Mastodon client API](https://github.com/tootsuite/documentation/blob/master/Using-the-API/API.md).
 
