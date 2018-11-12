@@ -80,3 +80,10 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed
 * ``outgoing_blocks``: Whether to federate blocks to other instances
 * ``deny_follow_blocked``: Whether to disallow following an account that has blocked the user in question
+
+## :http_security
+* ``enabled``: Whether the managed content security policy is enabled
+* ``sts``: Whether to additionally send a `Strict-Transport-Security` header
+* ``sts_max_age``: The maximum age for the `Strict-Transport-Security` header if sent
+* ``ct_max_age``: The maximum age for the `Expect-CT` header if sent
+* ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
