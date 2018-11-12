@@ -26,7 +26,7 @@ config :pleroma, Pleroma.Repo,
   pool_size: 10
 
 # Enable Strict-Transport-Security once SSL is working:
-# config :pleroma, :csp,
+# config :pleroma, :http_security,
 #   sts: true
 
 # Configure S3 support if desired.
