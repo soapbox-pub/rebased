@@ -13,6 +13,13 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     [user: user]
   end
 
+  test "A user with only a nickname", %{user: user} do
+    user = %{user | name: nil, nickname: "scarlett@catgirl.science"}
+    represented = UserView.render("show.json", %{user: user})
+    assert represented["name"] == user.nickname
+    assert represented["name_html"] == user.nickname
+  end
+
   test "A user with an avatar object", %{user: user} do
     image = "image"
     user = %{user | avatar: %{"url" => [%{"href" => image}]}}
