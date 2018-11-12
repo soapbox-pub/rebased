@@ -86,3 +86,4 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * ``sts``: Whether to additionally send a `Strict-Transport-Security` header
 * ``sts_max_age``: The maximum age for the `Strict-Transport-Security` header if sent
 * ``ct_max_age``: The maximum age for the `Expect-CT` header if sent
+* ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.

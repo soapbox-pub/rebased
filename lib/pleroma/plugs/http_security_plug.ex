@@ -15,12 +15,14 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
   end
 
   defp headers do
+    referrer_policy = Config.get([:http_security, :referrer_policy])
+
     [
       {"x-xss-protection", "1; mode=block"},
       {"x-permitted-cross-domain-policies", "none"},
       {"x-frame-options", "DENY"},
       {"x-content-type-options", "nosniff"},
-      {"referrer-policy", "same-origin"},
+      {"referrer-policy", referrer_policy},
       {"x-download-options", "noopen"},
       {"content-security-policy", csp_string() <> ";"}
     ]

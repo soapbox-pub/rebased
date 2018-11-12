@@ -58,4 +58,20 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
     assert Conn.get_resp_header(conn, "strict-transport-security") == []
     assert Conn.get_resp_header(conn, "expect-ct") == []
   end
+
+  test "referrer-policy header reflects configured value", %{conn: conn} do
+    conn =
+      conn
+      |> get("/api/v1/instance")
+
+    assert Conn.get_resp_header(conn, "referrer-policy") == ["same-origin"]
+
+    Config.put([:http_security, :referrer_policy], "no-referrer")
+
+    conn =
+      build_conn()
+      |> get("/api/v1/instance")
+
+    assert Conn.get_resp_header(conn, "referrer-policy") == ["no-referrer"]
+  end
 end
