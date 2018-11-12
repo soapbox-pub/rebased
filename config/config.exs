@@ -176,7 +176,7 @@ config :pleroma, :suggestions,
   limit: 23,
   web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
 
-config :pleroma, :csp,
+config :pleroma, :http_security,
   enabled: true,
   sts: false,
   sts_max_age: 31_536_000,

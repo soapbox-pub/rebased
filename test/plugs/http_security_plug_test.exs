@@ -1,10 +1,10 @@
-defmodule Pleroma.Web.Plugs.CSPPlugTest do
+defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
   use Pleroma.Web.ConnCase
   alias Pleroma.Config
   alias Plug.Conn
 
   test "it sends CSP headers when enabled", %{conn: conn} do
-    Config.put([:csp, :enabled], true)
+    Config.put([:http_security, :enabled], true)
 
     conn =
       conn
@@ -20,7 +20,7 @@ defmodule Pleroma.Web.Plugs.CSPPlugTest do
   end
 
   test "it does not send CSP headers when disabled", %{conn: conn} do
-    Config.put([:csp, :enabled], false)
+    Config.put([:http_security, :enabled], false)
 
     conn =
       conn
@@ -36,8 +36,8 @@ defmodule Pleroma.Web.Plugs.CSPPlugTest do
   end
 
   test "it sends STS headers when enabled", %{conn: conn} do
-    Config.put([:csp, :enabled], true)
-    Config.put([:csp, :sts], true)
+    Config.put([:http_security, :enabled], true)
+    Config.put([:http_security, :sts], true)
 
     conn =
       conn
@@ -48,8 +48,8 @@ defmodule Pleroma.Web.Plugs.CSPPlugTest do
   end
 
   test "it does not send STS headers when disabled", %{conn: conn} do
-    Config.put([:csp, :enabled], true)
-    Config.put([:csp, :sts], false)
+    Config.put([:http_security, :enabled], true)
+    Config.put([:http_security, :sts], false)
 
     conn =
       conn

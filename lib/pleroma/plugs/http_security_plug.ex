@@ -1,14 +1,14 @@
-defmodule Pleroma.Plugs.CSPPlug do
+defmodule Pleroma.Plugs.HTTPSecurityPlug do
   alias Pleroma.Config
   import Plug.Conn
 
   def init(opts), do: opts
 
   def call(conn, options) do
-    if Config.get([:csp, :enabled]) do
+    if Config.get([:http_security, :enabled]) do
       conn =
         merge_resp_headers(conn, headers())
-        |> maybe_send_sts_header(Config.get([:csp, :sts]))
+        |> maybe_send_sts_header(Config.get([:http_security, :sts]))
     else
       conn
     end
@@ -44,8 +44,8 @@ defmodule Pleroma.Plugs.CSPPlug do
   end
 
   defp maybe_send_sts_header(conn, true) do
-    max_age_sts = Config.get([:csp, :sts_max_age])
-    max_age_ct = Config.get([:csp, :ct_max_age])
+    max_age_sts = Config.get([:http_security, :sts_max_age])
+    max_age_ct = Config.get([:http_security, :ct_max_age])
 
     merge_resp_headers(conn, [
       {"strict-transport-security", "max-age=#{max_age_sts}; includeSubDomains"},

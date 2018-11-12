@@ -81,7 +81,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * ``outgoing_blocks``: Whether to federate blocks to other instances
 * ``deny_follow_blocked``: Whether to disallow following an account that has blocked the user in question
 
-## :csp
+## :http_security
 * ``enabled``: Whether the managed content security policy is enabled
 * ``sts``: Whether to additionally send a `Strict-Transport-Security` header
 * ``sts_max_age``: The maximum age for the `Strict-Transport-Security` header if sent
