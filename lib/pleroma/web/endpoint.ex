@@ -46,13 +46,18 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.MethodOverride)
   plug(Plug.Head)
 
+  cookie_name =
+    if Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
+      do: "__Host-pleroma_key",
+      else: "pleroma_key"
+
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
   plug(
     Plug.Session,
     store: :cookie,
-    key: "_pleroma_key",
+    key: cookie_name,
     signing_salt: "CqaoopA2",
     http_only: true,
     secure:
