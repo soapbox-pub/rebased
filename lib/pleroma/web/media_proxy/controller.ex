@@ -30,7 +30,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
 
     with true <- Keyword.get(config, :enabled, false),
          {:ok, url} <- Pleroma.Web.MediaProxy.decode_url(sig, url),
-         filename <- Path.basename(url),
+         filename <- Path.basename(URI.parse(url).path),
          true <-
            if(Map.get(params, "filename"),
              do: filename == Path.basename(conn.request_path),
