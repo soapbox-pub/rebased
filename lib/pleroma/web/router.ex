@@ -270,6 +270,7 @@ defmodule Pleroma.Web.Router do
     get("/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline)
     get("/statuses/mentions", TwitterAPI.Controller, :mentions_timeline)
     get("/statuses/mentions_timeline", TwitterAPI.Controller, :mentions_timeline)
+    get("/statuses/dm_timeline", TwitterAPI.Controller, :dm_timeline)
     get("/qvitter/statuses/notifications", TwitterAPI.Controller, :notifications)
 
     # XXX: this is really a pleroma API, but we want to keep the pleroma namespace clean
