@@ -378,12 +378,12 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :remote_media do
-    plug(:accepts, ["html"])
   end
 
   scope "/proxy/", Pleroma.Web.MediaProxy do
     pipe_through(:remote_media)
     get("/:sig/:url", MediaProxyController, :remote)
+    get("/:sig/:url/:filename", MediaProxyController, :remote)
   end
 
   scope "/", Fallback do

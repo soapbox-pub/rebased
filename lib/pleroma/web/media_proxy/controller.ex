@@ -11,15 +11,47 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     error: "public, must-revalidate, max-age=160"
   }
 
-  def remote(conn, %{"sig" => sig, "url" => url}) do
+  # Content-types that will not be returned as content-disposition attachments
+  # Override with :media_proxy, :safe_content_types in the configuration
+  @safe_content_types [
+    "image/gif",
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/svg+xml",
+    "audio/mpeg",
+    "audio/mp3",
+    "video/webm",
+    "video/mp4"
+  ]
+
+  def remote(conn, params = %{"sig" => sig, "url" => url}) do
     config = Application.get_env(:pleroma, :media_proxy, [])
 
     with true <- Keyword.get(config, :enabled, false),
          {:ok, url} <- Pleroma.Web.MediaProxy.decode_url(sig, url),
-         {:ok, content_type, body} <- proxy_request(url) do
+         filename <- Path.basename(url),
+         true <-
+           if(Map.get(params, "filename"),
+             do: filename == Path.basename(conn.request_path),
+             else: true
+           ),
+         {:ok, content_type, body} <- proxy_request(url),
+         safe_content_type <-
+           Enum.member?(
+             Keyword.get(config, :safe_content_types, @safe_content_types),
+             content_type
+           ) do
       conn
       |> put_resp_content_type(content_type)
       |> set_cache_header(:default)
+      |> put_resp_header(
+        "content-security-policy",
+        "default-src 'none'; style-src 'unsafe-inline'; media-src data:; img-src 'self' data:"
+      )
+      |> put_resp_header("x-xss-protection", "1; mode=block")
+      |> put_resp_header("x-content-type-options", "nosniff")
+      |> put_attachement_header(safe_content_type, filename)
       |> send_resp(200, body)
     else
       false ->
@@ -92,6 +124,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   # TODO: the body is passed here as well because some hosts do not provide a content-type.
   # At some point we may want to use magic numbers to discover the content-type and reply a proper one.
   defp proxy_request_content_type(headers, _body) do
-    headers["Content-Type"] || headers["content-type"] || "image/jpeg"
+    headers["Content-Type"] || headers["content-type"] || "application/octet-stream"
+  end
+
+  defp put_attachement_header(conn, true, _), do: conn
+
+  defp put_attachement_header(conn, false, filename) do
+    put_resp_header(conn, "content-disposition", "attachment; filename='#{filename}'")
   end
 end
