@@ -248,9 +248,15 @@ defmodule Pleroma.Web.Router do
     )
 
     get("/statuses/networkpublic_timeline", TwitterAPI.Controller, :public_and_external_timeline)
+
   end
 
-  scope "/api", Pleroma.Web do
+  scope "/api", Pleroma.Web, as: :twitter_api_search do
+    pipe_through(:api)
+    get("/pleroma/search_user", TwitterAPI.Controller, :search_user)
+  end
+
+  scope "/api", Pleroma.Web, as: :authenticated_twitter_api do
     pipe_through(:authenticated_api)
 
     get("/account/verify_credentials", TwitterAPI.Controller, :verify_credentials)
