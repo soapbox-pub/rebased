@@ -3,8 +3,8 @@
   ["fa %s s",     "fa %s s"],
   ["fa %s min",   "fa %s min"],
   ["fa %s h",     "fa %s h"],
-  ["fa %s dia",   "fa %s jorns"],
+  ["fa %s jorn",   "fa %s jorns"],
   ["fa %s setm.", "fa %s setm."],
   ["fa %s mes",   "fa %s meses"],
-  ["fa %s any",   "fa %s ans"]
+  ["fa %s an",   "fa %s ans"]
 ]
