@@ -126,6 +126,19 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> render(ActivityView, "index.json", %{activities: activities, for: user})
   end
 
+  def dm_timeline(%{assigns: %{user: user}} = conn, params) do
+    query =
+      ActivityPub.fetch_activities_query(
+        [user.ap_id],
+        Map.merge(params, %{"type" => "Create", visibility: "direct"})
+      )
+
+    activities = Repo.all(query)
+
+    conn
+    |> render(ActivityView, "index.json", %{activities: activities, for: user})
+  end
+
   def notifications(%{assigns: %{user: user}} = conn, params) do
     notifications = Notification.for_user(user, params)
 

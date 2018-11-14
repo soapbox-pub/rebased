@@ -278,9 +278,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def dm_timeline(%{assigns: %{user: user}} = conn, _params) do
+  def dm_timeline(%{assigns: %{user: user}} = conn, params) do
     query =
-      ActivityPub.fetch_activities_query([user.ap_id], %{"type" => "Create", visibility: "direct"})
+      ActivityPub.fetch_activities_query(
+        [user.ap_id],
+        Map.merge(params, %{"type" => "Create", visibility: "direct"})
+      )
 
     activities = Repo.all(query)
 

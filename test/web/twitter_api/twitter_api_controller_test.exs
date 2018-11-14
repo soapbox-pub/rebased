@@ -271,6 +271,36 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /statuses/dm_timeline.json" do
+    test "it show direct messages", %{conn: conn} do
+      user_one = insert(:user)
+      user_two = insert(:user)
+
+      {:ok, user_two} = User.follow(user_two, user_one)
+
+      {:ok, direct} =
+        CommonAPI.post(user_one, %{
+          "status" => "Hi @#{user_two.nickname}!",
+          "visibility" => "direct"
+        })
+
+      {:ok, _follower_only} =
+        CommonAPI.post(user_one, %{
+          "status" => "Hi @#{user_two.nickname}!",
+          "visibility" => "private"
+        })
+
+      # Only direct should be visible here
+      res_conn =
+        conn
+        |> assign(:user, user_two)
+        |> get("/api/statuses/dm_timeline.json")
+
+      [status] = json_response(res_conn, 200)
+      assert status["id"] == direct.id
+    end
+  end
+
   describe "GET /statuses/mentions.json" do
     setup [:valid_user]
 

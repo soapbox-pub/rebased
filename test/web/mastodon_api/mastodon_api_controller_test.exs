@@ -178,6 +178,32 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> get("api/v1/timelines/home")
 
     [_s1, _s2] = json_response(res_conn, 200)
+
+    # Test pagination
+    Enum.each(1..20, fn _ ->
+      {:ok, _} =
+        CommonAPI.post(user_one, %{
+          "status" => "Hi @#{user_two.nickname}!",
+          "visibility" => "direct"
+        })
+    end)
+
+    res_conn =
+      conn
+      |> assign(:user, user_two)
+      |> get("api/v1/timelines/direct")
+
+    statuses = json_response(res_conn, 200)
+    assert length(statuses) == 20
+
+    res_conn =
+      conn
+      |> assign(:user, user_two)
+      |> get("api/v1/timelines/direct", %{max_id: List.last(statuses)["id"]})
+
+    [status] = json_response(res_conn, 200)
+
+    assert status["url"] != direct.data["id"]
   end
 
   test "replying to a status", %{conn: conn} do
