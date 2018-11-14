@@ -15,7 +15,7 @@ defmodule Pleroma.Web.MediaProxy do
       base64 = Base.url_encode64(url, @base64_opts)
       sig = :crypto.hmac(:sha, secret, base64)
       sig64 = sig |> Base.url_encode64(@base64_opts)
-      filename = Path.basename(url)
+      filename = Path.basename(URI.parse(url).path)
 
       Keyword.get(config, :base_url, Pleroma.Web.base_url()) <>
         "/proxy/#{sig64}/#{base64}/#{filename}"
