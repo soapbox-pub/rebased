@@ -35,6 +35,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_credentials(%{assigns: %{user: user}} = conn, params) do
     original_user = user
 
+    avatar_upload_limit =
+      Application.get_env(:pleroma, :instance)
+      |> Keyword.fetch(:avatar_upload_limit)
+
+    banner_upload_limit =
+      Application.get_env(:pleroma, :instance)
+      |> Keyword.fetch(:banner_upload_limit)
+
     params =
       if bio = params["note"] do
         Map.put(params, "bio", bio)
@@ -52,7 +60,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user =
       if avatar = params["avatar"] do
         with %Plug.Upload{} <- avatar,
-             {:ok, object} <- ActivityPub.upload(avatar),
+             {:ok, object} <- ActivityPub.upload(avatar, avatar_upload_limit),
              change = Ecto.Changeset.change(user, %{avatar: object.data}),
              {:ok, user} = User.update_and_set_cache(change) do
           user
@@ -66,7 +74,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user =
       if banner = params["header"] do
         with %Plug.Upload{} <- banner,
-             {:ok, object} <- ActivityPub.upload(banner),
+             {:ok, object} <- ActivityPub.upload(banner, banner_upload_limit),
              new_info <- Map.put(user.info, "banner", object.data),
              change <- User.info_changeset(user, %{info: new_info}),
              {:ok, user} <- User.update_and_set_cache(change) do
@@ -124,22 +132,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  @instance Application.get_env(:pleroma, :instance)
   @mastodon_api_level "2.5.0"
 
   def masto_instance(conn, _params) do
+    instance = Pleroma.Config.get(:instance)
+
     response = %{
       uri: Web.base_url(),
-      title: Keyword.get(@instance, :name),
-      description: Keyword.get(@instance, :description),
-      version: "#{@mastodon_api_level} (compatible; #{Keyword.get(@instance, :version)})",
-      email: Keyword.get(@instance, :email),
+      title: Keyword.get(instance, :name),
+      description: Keyword.get(instance, :description),
+      version: "#{@mastodon_api_level} (compatible; #{Keyword.get(instance, :version)})",
+      email: Keyword.get(instance, :email),
       urls: %{
         streaming_api: String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws")
       },
       stats: Stats.get_stats(),
       thumbnail: Web.base_url() <> "/instance/thumbnail.jpeg",
-      max_toot_chars: Keyword.get(@instance, :limit)
+      max_toot_chars: Keyword.get(instance, :limit)
     }
 
     json(conn, response)
@@ -150,7 +159,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   defp mastodonized_emoji do
-    Pleroma.Formatter.get_custom_emoji()
+    Pleroma.Emoji.get_all()
     |> Enum.map(fn {shortcode, relative_url} ->
       url = to_string(URI.merge(Web.base_url(), relative_url))
 
@@ -269,9 +278,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def dm_timeline(%{assigns: %{user: user}} = conn, _params) do
+  def dm_timeline(%{assigns: %{user: user}} = conn, params) do
     query =
-      ActivityPub.fetch_activities_query([user.ap_id], %{"type" => "Create", visibility: "direct"})
+      ActivityPub.fetch_activities_query(
+        [user.ap_id],
+        Map.merge(params, %{"type" => "Create", visibility: "direct"})
+      )
 
     activities = Repo.all(query)
 
@@ -435,6 +447,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     render(conn, AccountView, "relationships.json", %{user: user, targets: targets})
   end
 
+  # Instead of returning a 400 when no "id" params is present, Mastodon returns an empty array.
+  def relationships(%{assigns: %{user: user}} = conn, _) do
+    conn
+    |> json([])
+  end
+
   def update_media(%{assigns: %{user: _}} = conn, data) do
     with %Object{} = object <- Repo.get(Object, data["id"]),
          true <- is_binary(data["description"]),
@@ -500,6 +518,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("type", "Create")
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
+      |> Map.put("tag", String.downcase(params["tag"]))
 
     activities =
       ActivityPub.fetch_public_activities(params)
@@ -572,15 +591,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  @activitypub Application.get_env(:pleroma, :activitypub)
-  @follow_handshake_timeout Keyword.get(@activitypub, :follow_handshake_timeout)
-
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
          {:ok, follower} <- User.maybe_direct_follow(follower, followed),
          {:ok, _activity} <- ActivityPub.follow(follower, followed),
          {:ok, follower, followed} <-
-           User.wait_and_refresh(@follow_handshake_timeout, follower, followed) do
+           User.wait_and_refresh(
+             Pleroma.Config.get([:activitypub, :follow_handshake_timeout]),
+             follower,
+             followed
+           ) do
       render(conn, AccountView, "relationship.json", %{user: follower, target: followed})
     else
       {:error, message} ->
@@ -871,6 +891,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     if user && token do
       mastodon_emoji = mastodonized_emoji()
 
+      limit = Pleroma.Config.get([:instance, :limit])
+
       accounts =
         Map.put(%{}, user.id, AccountView.render("account.json", %{user: user, for: user}))
 
@@ -890,7 +912,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             auto_play_gif: false,
             display_sensitive_media: false,
             reduce_motion: false,
-            max_toot_chars: Keyword.get(@instance, :limit)
+            max_toot_chars: limit
           },
           rights: %{
             delete_others_notice: !!user.info["is_moderator"]
@@ -950,7 +972,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           push_subscription: nil,
           accounts: accounts,
           custom_emojis: mastodon_emoji,
-          char_limit: Keyword.get(@instance, :limit)
+          char_limit: limit
         }
         |> Jason.encode!()
 
@@ -976,9 +998,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def login(conn, %{"code" => code}) do
+    with {:ok, app} <- get_or_make_app(),
+         %Authorization{} = auth <- Repo.get_by(Authorization, token: code, app_id: app.id),
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      conn
+      |> put_session(:oauth_token, token.token)
+      |> redirect(to: "/web/getting-started")
+    end
+  end
+
   def login(conn, _) do
-    conn
-    |> render(MastodonView, "login.html", %{error: false})
+    with {:ok, app} <- get_or_make_app() do
+      path =
+        o_auth_path(conn, :authorize,
+          response_type: "code",
+          client_id: app.client_id,
+          redirect_uri: ".",
+          scope: app.scopes
+        )
+
+      conn
+      |> redirect(to: path)
+    end
   end
 
   defp get_or_make_app() do
@@ -994,22 +1036,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           })
 
         Repo.insert(cs)
-    end
-  end
-
-  def login_post(conn, %{"authorization" => %{"name" => name, "password" => password}}) do
-    with %User{} = user <- User.get_by_nickname_or_email(name),
-         true <- Pbkdf2.checkpw(password, user.password_hash),
-         {:ok, app} <- get_or_make_app(),
-         {:ok, auth} <- Authorization.create_authorization(app, user),
-         {:ok, token} <- Token.exchange_token(app, auth) do
-      conn
-      |> put_session(:oauth_token, token.token)
-      |> redirect(to: "/web/getting-started")
-    else
-      _e ->
-        conn
-        |> render(MastodonView, "login.html", %{error: "Wrong username or password"})
     end
   end
 
@@ -1156,18 +1182,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> json("Something went wrong")
   end
 
-  @suggestions Application.get_env(:pleroma, :suggestions)
-
   def suggestions(%{assigns: %{user: user}} = conn, _) do
-    if Keyword.get(@suggestions, :enabled, false) do
-      api = Keyword.get(@suggestions, :third_party_engine, "")
-      timeout = Keyword.get(@suggestions, :timeout, 5000)
-      limit = Keyword.get(@suggestions, :limit, 23)
+    suggestions = Pleroma.Config.get(:suggestions)
 
-      host =
-        Application.get_env(:pleroma, Pleroma.Web.Endpoint)
-        |> Keyword.get(:url)
-        |> Keyword.get(:host)
+    if Keyword.get(suggestions, :enabled, false) do
+      api = Keyword.get(suggestions, :third_party_engine, "")
+      timeout = Keyword.get(suggestions, :timeout, 5000)
+      limit = Keyword.get(suggestions, :limit, 23)
+
+      host = Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host])
 
       user = user.nickname
       url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)

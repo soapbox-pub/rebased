@@ -7,13 +7,12 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.OStatus
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
   @ostatus Application.get_env(:pleroma, :ostatus)
   @httpoison Application.get_env(:pleroma, :httpoison)
-  @instance Application.get_env(:pleroma, :instance)
-  @federating Keyword.get(@instance, :federating)
   @max_jobs 20
 
   def init(args) do
@@ -65,15 +64,17 @@ defmodule Pleroma.Web.Federator do
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
 
       if ActivityPub.is_public?(activity) do
-        Logger.info(fn -> "Sending #{activity.data["id"]} out via WebSub" end)
-        Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
+        if OStatus.is_representable?(activity) do
+          Logger.info(fn -> "Sending #{activity.data["id"]} out via WebSub" end)
+          Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
-        Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
-        Pleroma.Web.Salmon.publish(actor, activity)
+          Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
+          Pleroma.Web.Salmon.publish(actor, activity)
+        end
 
-        if Mix.env() != :test do
+        if Keyword.get(Application.get_env(:pleroma, :instance), :allow_relay) do
           Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
-          Pleroma.Web.ActivityPub.Relay.publish(activity)
+          Relay.publish(activity)
         end
       end
 
@@ -147,7 +148,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def enqueue(type, payload, priority \\ 1) do
-    if @federating do
+    if Pleroma.Config.get([:instance, :federating]) do
       if Mix.env() == :test do
         handle(type, payload)
       else

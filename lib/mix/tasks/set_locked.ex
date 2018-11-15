@@ -1,9 +1,18 @@
 defmodule Mix.Tasks.SetLocked do
+  @moduledoc """
+  Lock a local user
+
+  The local user will then have to manually accept/reject followers. This can also be done by the user into their settings.
+
+  Usage: ``mix set_locked <username>``
+
+  Example: ``mix set_locked lain``
+  """
+
   use Mix.Task
   import Mix.Ecto
   alias Pleroma.{Repo, User}
 
-  @shortdoc "Set locked status"
   def run([nickname | rest]) do
     ensure_started(Repo, [])
 

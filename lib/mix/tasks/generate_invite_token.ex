@@ -1,7 +1,14 @@
 defmodule Mix.Tasks.GenerateInviteToken do
   use Mix.Task
 
-  @shortdoc "Generate invite token for user"
+  @moduledoc """
+  Generates invite token
+
+  This is in the form of a URL to be used by the Invited user to register themselves.
+
+  ## Usage
+  ``mix generate_invite_token``
+  """
   def run([]) do
     Mix.Task.run("app.start")
 

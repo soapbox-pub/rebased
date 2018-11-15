@@ -61,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       reblog: reblogged,
-      content: reblogged[:content],
+      content: reblogged[:content] || "",
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,
@@ -166,7 +166,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   def render("attachment.json", %{attachment: attachment}) do
     [attachment_url | _] = attachment["url"]
     media_type = attachment_url["mediaType"] || attachment_url["mimeType"] || "image"
-    href = attachment_url["href"]
+    href = attachment_url["href"] |> MediaProxy.url()
 
     type =
       cond do
@@ -180,9 +180,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     %{
       id: to_string(attachment["id"] || hash_id),
-      url: MediaProxy.url(href),
+      url: href,
       remote_url: href,
-      preview_url: MediaProxy.url(href),
+      preview_url: href,
       text_url: href,
       type: type,
       description: attachment["name"]
@@ -230,24 +230,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       if !!name and name != "" do
         "<p><a href=\"#{object["id"]}\">#{name}</a></p>#{object["content"]}"
       else
-        object["content"]
+        object["content"] || ""
       end
 
     content
   end
 
-  def render_content(%{"type" => "Article"} = object) do
+  def render_content(%{"type" => object_type} = object) when object_type in ["Article", "Page"] do
     summary = object["name"]
 
     content =
-      if !!summary and summary != "" do
+      if !!summary and summary != "" and is_bitstring(object["url"]) do
         "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
       else
-        object["content"]
+        object["content"] || ""
       end
 
     content
   end
 
-  def render_content(object), do: object["content"]
+  def render_content(object), do: object["content"] || ""
 end

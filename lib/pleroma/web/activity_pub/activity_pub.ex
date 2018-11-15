@@ -10,8 +10,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @httpoison Application.get_env(:pleroma, :httpoison)
 
-  @instance Application.get_env(:pleroma, :instance)
-
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
   defp get_recipients(%{"type" => "Announce"} = data) do
@@ -44,7 +42,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_actor_is_active(actor) do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
-           nil <- user.info["deactivated"] do
+           false <- !!user.info["deactivated"] do
         :ok
       else
         _e -> :reject
@@ -273,8 +271,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       "to" => [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
     }
 
-    with Repo.delete(object),
-         Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
+    with {:ok, _} <- Object.delete(object),
          {:ok, activity} <- insert(data, local),
          :ok <- maybe_federate(activity),
          {:ok, _actor} <- User.decrease_note_count(user) do
@@ -575,9 +572,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
-  def upload(file) do
-    data = Upload.store(file, Application.get_env(:pleroma, :instance)[:dedupe_media])
-    Repo.insert(%Object{data: data})
+  def upload(file, size_limit \\ nil) do
+    with data <-
+           Upload.store(file, Application.get_env(:pleroma, :instance)[:dedupe_media], size_limit),
+         false <- is_nil(data) do
+      Repo.insert(%Object{data: data})
+    end
   end
 
   def user_data_from_user_object(data) do
@@ -657,14 +657,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  @quarantined_instances Keyword.get(@instance, :quarantined_instances, [])
-
   def should_federate?(inbox, public) do
     if public do
       true
     else
       inbox_info = URI.parse(inbox)
-      inbox_info.host not in @quarantined_instances
+      !Enum.member?(Pleroma.Config.get([:instance, :quarantined_instances], []), inbox_info.host)
     end
   end
 
@@ -793,9 +791,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   # child
   def entire_thread_visible_for_user?(
-        %Activity{data: %{"object" => %{"inReplyTo" => _parent_id}}} = tail,
+        %Activity{data: %{"object" => %{"inReplyTo" => parent_id}}} = tail,
         user
-      ) do
+      )
+      when is_binary(parent_id) do
     parent = Activity.get_in_reply_to_activity(tail)
     visible_for_user?(tail, user) && entire_thread_visible_for_user?(parent, user)
   end

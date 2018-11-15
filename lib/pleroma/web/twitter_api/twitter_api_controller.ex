@@ -11,6 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   require Logger
 
+  plug(:only_if_public_instance when action in [:public_timeline, :public_and_external_timeline])
   action_fallback(:errors)
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
@@ -125,11 +126,37 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> render(ActivityView, "index.json", %{activities: activities, for: user})
   end
 
+  def dm_timeline(%{assigns: %{user: user}} = conn, params) do
+    query =
+      ActivityPub.fetch_activities_query(
+        [user.ap_id],
+        Map.merge(params, %{"type" => "Create", visibility: "direct"})
+      )
+
+    activities = Repo.all(query)
+
+    conn
+    |> render(ActivityView, "index.json", %{activities: activities, for: user})
+  end
+
   def notifications(%{assigns: %{user: user}} = conn, params) do
     notifications = Notification.for_user(user, params)
 
     conn
     |> render(NotificationView, "notification.json", %{notifications: notifications, for: user})
+  end
+
+  def notifications_read(%{assigns: %{user: user}} = conn, %{"latest_id" => latest_id} = params) do
+    Notification.set_read_up_to(user, latest_id)
+
+    notifications = Notification.for_user(user, params)
+
+    conn
+    |> render(NotificationView, "notification.json", %{notifications: notifications, for: user})
+  end
+
+  def notifications_read(%{assigns: %{user: user}} = conn, _) do
+    bad_request_reply(conn, "You need to specify latest_id")
   end
 
   def follow(%{assigns: %{user: user}} = conn, params) do
@@ -263,7 +290,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
-    {:ok, object} = ActivityPub.upload(params)
+    upload_limit =
+      Application.get_env(:pleroma, :instance)
+      |> Keyword.fetch(:avatar_upload_limit)
+
+    {:ok, object} = ActivityPub.upload(params, upload_limit)
     change = Changeset.change(user, %{avatar: object.data})
     {:ok, user} = User.update_and_set_cache(change)
     CommonAPI.update(user)
@@ -272,7 +303,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def update_banner(%{assigns: %{user: user}} = conn, params) do
-    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}),
+    upload_limit =
+      Application.get_env(:pleroma, :instance)
+      |> Keyword.fetch(:banner_upload_limit)
+
+    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, upload_limit),
          new_info <- Map.put(user.info, "banner", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
          {:ok, user} <- User.update_and_set_cache(change) do
@@ -286,7 +321,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def update_background(%{assigns: %{user: user}} = conn, params) do
-    with {:ok, object} <- ActivityPub.upload(params),
+    upload_limit =
+      Application.get_env(:pleroma, :instance)
+      |> Keyword.fetch(:background_upload_limit)
+
+    with {:ok, object} <- ActivityPub.upload(params, upload_limit),
          new_info <- Map.put(user.info, "background", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
          {:ok, _user} <- User.update_and_set_cache(change) do
@@ -504,6 +543,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   defp forbidden_json_reply(conn, error_message) do
     json = error_json(conn, error_message)
     json_reply(conn, 403, json)
+  end
+
+  def only_if_public_instance(conn = %{conn: %{assigns: %{user: _user}}}, _), do: conn
+
+  def only_if_public_instance(conn, _) do
+    if Keyword.get(Application.get_env(:pleroma, :instance), :public) do
+      conn
+    else
+      conn
+      |> forbidden_json_reply("Invalid credentials.")
+      |> halt()
+    end
   end
 
   defp error_json(conn, error_message) do

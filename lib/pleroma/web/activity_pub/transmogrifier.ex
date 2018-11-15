@@ -57,6 +57,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
     |> fix_actor
     |> fix_attachments
+    |> fix_url
     |> fix_context
     |> fix_in_reply_to
     |> fix_emoji
@@ -171,6 +172,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_attachments(object), do: object
 
+  def fix_url(%{"url" => url} = object) when is_map(url) do
+    object
+    |> Map.put("url", url["href"])
+  end
+
+  def fix_url(%{"url" => url} = object) when is_list(url) do
+    first_element = Enum.at(url, 0)
+
+    url_string =
+      cond do
+        is_bitstring(first_element) -> first_element
+        is_map(first_element) -> first_element["href"] || ""
+        true -> ""
+      end
+
+    object
+    |> Map.put("url", url_string)
+  end
+
+  def fix_url(object), do: object
+
   def fix_emoji(%{"tag" => tags} = object) when is_list(tags) do
     emoji = tags |> Enum.filter(fn data -> data["type"] == "Emoji" and data["icon"] end)
 
@@ -241,7 +263,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - tags
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
-      when objtype in ["Article", "Note", "Video"] do
+      when objtype in ["Article", "Note", "Video", "Page"] do
     actor = get_actor(data)
 
     data =
@@ -484,9 +506,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  @ap_config Application.get_env(:pleroma, :activitypub)
-  @accept_blocks Keyword.get(@ap_config, :accept_blocks)
-
   def handle_incoming(
         %{
           "type" => "Undo",
@@ -495,7 +514,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "id" => id
         } = _data
       ) do
-    with true <- @accept_blocks,
+    with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
          %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
          %User{} = blocker <- User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.unblock(blocker, blocked, id, false) do
@@ -509,7 +528,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = data
       ) do
-    with true <- @accept_blocks,
+    with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
          %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
          %User{} = blocker = User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
@@ -570,6 +589,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
+    |> strip_internal_fields
+    |> strip_internal_tags
   end
 
   #  @doc
@@ -585,7 +606,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> Map.put("object", object)
-      |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+      |> Map.merge(Utils.make_json_ld_header())
 
     {:ok, data}
   end
@@ -604,7 +625,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+        |> Map.merge(Utils.make_json_ld_header())
 
       {:ok, data}
     end
@@ -622,7 +643,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       data =
         data
         |> Map.put("object", object)
-        |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+        |> Map.merge(Utils.make_json_ld_header())
 
       {:ok, data}
     end
@@ -632,7 +653,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       data
       |> maybe_fix_object_url
-      |> Map.put("@context", "https://www.w3.org/ns/activitystreams")
+      |> Map.merge(Utils.make_json_ld_header())
 
     {:ok, data}
   end
@@ -674,12 +695,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def add_mention_tags(object) do
-    recipients = object["to"] ++ (object["cc"] || [])
-
     mentions =
-      recipients
-      |> Enum.map(fn ap_id -> User.get_cached_by_ap_id(ap_id) end)
-      |> Enum.filter(& &1)
+      object
+      |> Utils.get_notified_from_object()
       |> Enum.map(fn user ->
         %{"type" => "Mention", "href" => user.ap_id, "name" => "@#{user.nickname}"}
       end)
@@ -738,6 +756,29 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
     |> Map.put("attachment", attachments)
   end
+
+  defp strip_internal_fields(object) do
+    object
+    |> Map.drop([
+      "likes",
+      "like_count",
+      "announcements",
+      "announcement_count",
+      "emoji",
+      "context_id"
+    ])
+  end
+
+  defp strip_internal_tags(%{"tag" => tags} = object) do
+    tags =
+      tags
+      |> Enum.filter(fn x -> is_map(x) end)
+
+    object
+    |> Map.put("tag", tags)
+  end
+
+  defp strip_internal_tags(object), do: object
 
   defp user_upgrade_task(user) do
     old_follower_address = User.ap_followers(user)

@@ -1,4 +1,10 @@
-social.domain.tld  {
+# default Caddyfile config for Pleroma
+#
+# Simple installation instructions:
+# 1. Replace 'example.tld' with your instance's domain wherever it appears.
+# 2. Copy this section into your Caddyfile and restart Caddy.
+
+example.tld  {
   log /var/log/caddy/pleroma_access.log
   errors /var/log/caddy/pleroma_error.log
 
@@ -9,33 +15,11 @@ social.domain.tld  {
     transparent
   }
 
-  tls user@domain.tld {
+  tls {
     # Remove the rest of the lines in here, if you want to support older devices
     key_type p256
     ciphers ECDHE-ECDSA-WITH-CHACHA20-POLY1305 ECDHE-RSA-WITH-CHACHA20-POLY1305 ECDHE-ECDSA-AES256-GCM-SHA384 ECDHE-RSA-AES256-GCM-SHA384 ECDHE-ECDSA-AES128-GCM-SHA256 ECDHE-RSA-AES128-GCM-SHA256
   }
-
-  header / {
-    X-XSS-Protection "1; mode=block"
-    X-Frame-Options "DENY"
-    X-Content-Type-Options "nosniff"
-    Referrer-Policy "same-origin"
-    Strict-Transport-Security "max-age=31536000; includeSubDomains;"
-    Expect-CT "enforce, max-age=2592000"
-    Content-Security-Policy "default-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: https:; media-src 'self' https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self' wss://social.domain.tld; upgrade-insecure-requests;"
-  }
-
-  # If you do not want remote frontends to be able to access your Pleroma backend server, remove these lines.
-  # If you want to allow all origins access, remove the origin lines.
-  # To use this directive, you need the http.cors plugin for Caddy.
-  cors / {
-    origin https://halcyon.domain.tld
-    origin https://pinafore.domain.tld
-    methods POST,PUT,DELETE,GET,PATCH,OPTIONS
-    allowed_headers Authorization,Content-Type,Idempotency-Key
-    exposed_headers Link,X-RateLimit-Reset,X-RateLimit-Limit,X-RateLimit-Remaining,X-Request-Id
-  }
-  # Stop removing lines here.
 
   # If you do not want to use the mediaproxy function, remove these lines.
   # To use this directive, you need the http.cache plugin for Caddy.

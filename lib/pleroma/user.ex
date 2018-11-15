@@ -295,6 +295,7 @@ defmodule Pleroma.User do
   def invalidate_cache(user) do
     Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
+    Cachex.del(:user_cache, "user_info:#{user.id}")
   end
 
   def get_cached_by_ap_id(ap_id) do
@@ -463,36 +464,25 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
-  def get_notified_from_activity_query(to) do
+  def get_users_from_set_query(ap_ids, false) do
     from(
       u in User,
-      where: u.ap_id in ^to,
+      where: u.ap_id in ^ap_ids
+    )
+  end
+
+  def get_users_from_set_query(ap_ids, true) do
+    query = get_users_from_set_query(ap_ids, false)
+
+    from(
+      u in query,
       where: u.local == true
     )
   end
 
-  def get_notified_from_activity(%Activity{recipients: to, data: %{"type" => "Announce"} = data}) do
-    object = Object.normalize(data["object"])
-    actor = User.get_cached_by_ap_id(data["actor"])
-
-    # ensure that the actor who published the announced object appears only once
-    to =
-      if actor.nickname != nil do
-        to ++ [object.data["actor"]]
-      else
-        to
-      end
-      |> Enum.uniq()
-
-    query = get_notified_from_activity_query(to)
-
-    Repo.all(query)
-  end
-
-  def get_notified_from_activity(%Activity{recipients: to}) do
-    query = get_notified_from_activity_query(to)
-
-    Repo.all(query)
+  def get_users_from_set(ap_ids, local_only \\ true) do
+    get_users_from_set_query(ap_ids, local_only)
+    |> Repo.all()
   end
 
   def get_recipients_from_activity(%Activity{recipients: to}) do
@@ -622,8 +612,8 @@ defmodule Pleroma.User do
     )
   end
 
-  def deactivate(%User{} = user) do
-    new_info = Map.put(user.info, "deactivated", true)
+  def deactivate(%User{} = user, status \\ true) do
+    new_info = Map.put(user.info, "deactivated", status)
     cs = User.info_changeset(user, %{info: new_info})
     update_and_set_cache(cs)
   end
@@ -656,7 +646,7 @@ defmodule Pleroma.User do
       end
     end)
 
-    :ok
+    {:ok, user}
   end
 
   def html_filter_policy(%User{info: %{"no_rich_text" => true}}) do

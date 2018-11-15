@@ -145,6 +145,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert "test" in data["object"]["tag"]
     end
 
+    test "it works for incoming notices with url not being a string (prismo)" do
+      data = File.read!("test/fixtures/prismo-url-map.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["object"]["url"] == "https://prismo.news/posts/83"
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
@@ -695,7 +703,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
-      assert modified["@context"] == "https://www.w3.org/ns/activitystreams"
+      assert modified["@context"] ==
+               Pleroma.Web.ActivityPub.Utils.make_json_ld_header()["@context"]
+
       assert modified["object"]["conversation"] == modified["context"]
     end
 
@@ -732,6 +742,39 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["object"]["inReplyTo"] == "http://gs.example.org:4040/index.php/notice/29"
+    end
+
+    test "it strips internal hashtag data" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu"})
+
+      expected_tag = %{
+        "href" => Pleroma.Web.Endpoint.url() <> "/tags/2hu",
+        "type" => "Hashtag",
+        "name" => "#2hu"
+      }
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["object"]["tag"] == [expected_tag]
+    end
+
+    test "it strips internal fields" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert length(modified["object"]["tag"]) == 2
+
+      assert is_nil(modified["object"]["emoji"])
+      assert is_nil(modified["object"]["likes"])
+      assert is_nil(modified["object"]["like_count"])
+      assert is_nil(modified["object"]["announcements"])
+      assert is_nil(modified["object"]["announcement_count"])
+      assert is_nil(modified["object"]["context_id"])
     end
   end
 

@@ -20,7 +20,8 @@ config :pleroma, Pleroma.Uploaders.Local,
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
-  public_endpoint: "https://s3.amazonaws.com"
+  public_endpoint: "https://s3.amazonaws.com",
+  force_media_proxy: false
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 
@@ -84,6 +85,9 @@ config :pleroma, :instance,
   description: "A Pleroma instance, an alternative fediverse server",
   limit: 5000,
   upload_limit: 16_000_000,
+  avatar_upload_limit: 2_000_000,
+  background_upload_limit: 4_000_000,
+  banner_upload_limit: 4_000_000,
   registrations_open: true,
   federating: true,
   allow_relay: true,
@@ -171,6 +175,27 @@ config :pleroma, :suggestions,
   timeout: 300_000,
   limit: 23,
   web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
+
+config :pleroma, :http_security,
+  enabled: true,
+  sts: false,
+  sts_max_age: 31_536_000,
+  ct_max_age: 2_592_000,
+  referrer_policy: "same-origin"
+
+config :cors_plug,
+  max_age: 86_400,
+  methods: ["POST", "PUT", "DELETE", "GET", "PATCH", "OPTIONS"],
+  expose: [
+    "Link",
+    "X-RateLimit-Reset",
+    "X-RateLimit-Limit",
+    "X-RateLimit-Remaining",
+    "X-Request-Id",
+    "Idempotency-Key"
+  ],
+  credentials: true,
+  headers: ["Authorization", "Content-Type", "Idempotency-Key"]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -100,6 +100,56 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert length(response) == 10
     end
+
+    test "returns 403 to unauthenticated request when the instance is not public" do
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, false)
+
+      Application.put_env(:pleroma, :instance, instance)
+
+      conn
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(403)
+
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, true)
+
+      Application.put_env(:pleroma, :instance, instance)
+    end
+
+    test "returns 200 to unauthenticated request when the instance is public" do
+      conn
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(200)
+    end
+  end
+
+  describe "GET /statuses/public_and_external_timeline.json" do
+    test "returns 403 to unauthenticated request when the instance is not public" do
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, false)
+
+      Application.put_env(:pleroma, :instance, instance)
+
+      conn
+      |> get("/api/statuses/public_and_external_timeline.json")
+      |> json_response(403)
+
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, true)
+
+      Application.put_env(:pleroma, :instance, instance)
+    end
+
+    test "returns 200 to unauthenticated request when the instance is public" do
+      conn
+      |> get("/api/statuses/public_and_external_timeline.json")
+      |> json_response(200)
+    end
   end
 
   describe "GET /statuses/show/:id.json" do
@@ -221,6 +271,36 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /statuses/dm_timeline.json" do
+    test "it show direct messages", %{conn: conn} do
+      user_one = insert(:user)
+      user_two = insert(:user)
+
+      {:ok, user_two} = User.follow(user_two, user_one)
+
+      {:ok, direct} =
+        CommonAPI.post(user_one, %{
+          "status" => "Hi @#{user_two.nickname}!",
+          "visibility" => "direct"
+        })
+
+      {:ok, _follower_only} =
+        CommonAPI.post(user_one, %{
+          "status" => "Hi @#{user_two.nickname}!",
+          "visibility" => "private"
+        })
+
+      # Only direct should be visible here
+      res_conn =
+        conn
+        |> assign(:user, user_two)
+        |> get("/api/statuses/dm_timeline.json")
+
+      [status] = json_response(res_conn, 200)
+      assert status["id"] == direct.id
+    end
+  end
+
   describe "GET /statuses/mentions.json" do
     setup [:valid_user]
 
@@ -278,6 +358,56 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  notifications: Notification.for_user(current_user),
                  for: current_user
                })
+    end
+  end
+
+  describe "POST /api/qvitter/statuses/notifications/read" do
+    setup [:valid_user]
+
+    test "without valid credentials", %{conn: conn} do
+      conn = post(conn, "/api/qvitter/statuses/notifications/read", %{"latest_id" => 1_234_567})
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials, without any params", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/qvitter/statuses/notifications/read")
+
+      assert json_response(conn, 400) == %{
+               "error" => "You need to specify latest_id",
+               "request" => "/api/qvitter/statuses/notifications/read"
+             }
+    end
+
+    test "with credentials, with params", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
+      {:ok, _activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+
+      response_conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json")
+
+      [notification] = response = json_response(response_conn, 200)
+
+      assert length(response) == 1
+
+      assert notification["is_seen"] == 0
+
+      response_conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/qvitter/statuses/notifications/read", %{"latest_id" => notification["id"]})
+
+      [notification] = response = json_response(response_conn, 200)
+
+      assert length(response) == 1
+
+      assert notification["is_seen"] == 1
     end
   end
 

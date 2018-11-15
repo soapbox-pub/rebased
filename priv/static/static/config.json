@@ -12,5 +12,6 @@
   "formattingOptionsEnabled": false,
   "collapseMessageWithSubject": false,
   "hidePostStats": false,
-  "hideUserStats": false
+  "hideUserStats": false,
+  "loginMethod": "password"
 }

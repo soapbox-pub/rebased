@@ -5,6 +5,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.{Repo, User}
   alias Pleroma.Activity
 
+  describe "/relay" do
+    test "with the relay active, it returns the relay user", %{conn: conn} do
+      res =
+        conn
+        |> get(activity_pub_path(conn, :relay))
+        |> json_response(200)
+
+      assert res["id"] =~ "/relay"
+    end
+
+    test "with the relay disabled, it returns 404", %{conn: conn} do
+      Pleroma.Config.put([:instance, :allow_relay], false)
+
+      res =
+        conn
+        |> get(activity_pub_path(conn, :relay))
+        |> json_response(404)
+
+      Pleroma.Config.put([:instance, :allow_relay], true)
+    end
+  end
+
   describe "/users/:nickname" do
     test "it returns a json representation of the user", %{conn: conn} do
       user = insert(:user)

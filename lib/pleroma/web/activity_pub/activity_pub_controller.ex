@@ -11,6 +11,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   action_fallback(:errors)
 
+  plug(Pleroma.Web.FederatingPlug when action in [:inbox, :relay])
+  plug(:relay_active? when action in [:relay])
+
+  def relay_active?(conn, _) do
+    if Keyword.get(Application.get_env(:pleroma, :instance), :allow_relay) do
+      conn
+    else
+      conn
+      |> put_status(404)
+      |> json(%{error: "not found"})
+      |> halt
+    end
+  end
+
   def user(conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do

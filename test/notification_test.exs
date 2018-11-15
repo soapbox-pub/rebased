@@ -3,6 +3,7 @@ defmodule Pleroma.NotificationTest do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.CommonAPI
   alias Pleroma.{User, Notification}
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   import Pleroma.Factory
 
   describe "create_notifications" do
@@ -118,6 +119,135 @@ defmodule Pleroma.NotificationTest do
 
       assert Notification.for_user(other_user) == []
       assert Notification.for_user(third_user) != []
+    end
+  end
+
+  describe "set_read_up_to()" do
+    test "it sets all notifications as read up to a specified notification ID" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        TwitterAPI.create_status(user, %{
+          "status" => "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, activity} =
+        TwitterAPI.create_status(user, %{
+          "status" => "hey again @#{other_user.nickname}!"
+        })
+
+      [n2, n1] = notifs = Notification.for_user(other_user)
+      assert length(notifs) == 2
+
+      assert n2.id > n1.id
+
+      {:ok, activity} =
+        TwitterAPI.create_status(user, %{
+          "status" => "hey yet again @#{other_user.nickname}!"
+        })
+
+      Notification.set_read_up_to(other_user, n2.id)
+
+      [n3, n2, n1] = notifs = Notification.for_user(other_user)
+
+      assert n1.seen == true
+      assert n2.seen == true
+      assert n3.seen == false
+    end
+  end
+
+  describe "notification target determination" do
+    test "it sends notifications to addressed users in new messages" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "hey @#{other_user.nickname}!"
+        })
+
+      assert other_user in Notification.get_notified_from_activity(activity)
+    end
+
+    test "it sends notifications to mentioned users in new messages" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      create_activity = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "actor" => user.ap_id,
+        "object" => %{
+          "type" => "Note",
+          "content" => "message with a Mention tag, but no explicit tagging",
+          "tag" => [
+            %{
+              "type" => "Mention",
+              "href" => other_user.ap_id,
+              "name" => other_user.nickname
+            }
+          ],
+          "attributedTo" => user.ap_id
+        }
+      }
+
+      {:ok, activity} = Transmogrifier.handle_incoming(create_activity)
+
+      assert other_user in Notification.get_notified_from_activity(activity)
+    end
+
+    test "it does not send notifications to users who are only cc in new messages" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      create_activity = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [other_user.ap_id],
+        "actor" => user.ap_id,
+        "object" => %{
+          "type" => "Note",
+          "content" => "hi everyone",
+          "attributedTo" => user.ap_id
+        }
+      }
+
+      {:ok, activity} = Transmogrifier.handle_incoming(create_activity)
+
+      assert other_user not in Notification.get_notified_from_activity(activity)
+    end
+
+    test "it does not send notification to mentioned users in likes" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      {:ok, activity_one} =
+        CommonAPI.post(user, %{
+          "status" => "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, activity_two, _} = CommonAPI.favorite(activity_one.id, third_user)
+
+      assert other_user not in Notification.get_notified_from_activity(activity_two)
+    end
+
+    test "it does not send notification to mentioned users in announces" do
+      user = insert(:user)
+      other_user = insert(:user)
+      third_user = insert(:user)
+
+      {:ok, activity_one} =
+        CommonAPI.post(user, %{
+          "status" => "hey @#{other_user.nickname}!"
+        })
+
+      {:ok, activity_two, _} = CommonAPI.repeat(activity_one.id, third_user)
+
+      assert other_user not in Notification.get_notified_from_activity(activity_two)
     end
   end
 
