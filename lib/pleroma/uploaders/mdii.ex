@@ -10,12 +10,11 @@ defmodule Pleroma.Uploaders.Mdii do
     {:ok, file_data} = File.read(path)
 
     File.rm!(path)
-    
+
     extension = Regex.replace(~r/^image\//, content_type, "")
     query = "https://#{host_name}/mdii.cgi?#{extension}"
 
-    with {:ok, %{status_code: 200, body: body}} <-
-           @httpoison.post(query, file_data) do
+    with {:ok, %{status_code: 200, body: body}} <- @httpoison.post(query, file_data) do
       remote_file_name = body
       public_url = "https://#{host_name}/#{remote_file_name}.#{extension}"
       {:ok, public_url}
