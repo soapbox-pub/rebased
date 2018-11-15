@@ -15,7 +15,7 @@ defmodule Pleroma.Uploaders.Mdii do
     query = "https://#{host_name}/mdii.cgi?#{extension}"
 
     with {:ok, %{status_code: 200, body: body}} <-
-           @httpoison.get(url, file_data) do
+           @httpoison.post(query, file_data) do
       remote_file_name = body
       public_url = "https://#{host_name}/#{remote_file_name}.#{extension}"
       {:ok, public_url}
