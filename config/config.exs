@@ -23,7 +23,9 @@ config :pleroma, Pleroma.Uploaders.S3,
   public_endpoint: "https://s3.amazonaws.com",
   force_media_proxy: false
 
-config :pleroma, Pleroma.Uploaders.Mdii, host_name: "mdii.sakura.ne.jp"
+config :pleroma, Pleroma.Uploaders.Mdii,
+  cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
+  files: "https://mdii.sakura.ne.jp"
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 
