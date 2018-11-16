@@ -60,6 +60,8 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
   end
 
   test "referrer-policy header reflects configured value", %{conn: conn} do
+    Config.put([:http_security, :enabled], true)
+
     conn =
       conn
       |> get("/api/v1/instance")
