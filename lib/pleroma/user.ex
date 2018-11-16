@@ -498,7 +498,7 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def search(query, resolve) do
+  def search(query, resolve \\ false) do
     # strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 

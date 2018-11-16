@@ -578,4 +578,16 @@ defmodule Pleroma.UserTest do
       assert cached_user != user
     end
   end
+
+  describe "User.search" do
+    test "finds a user, ranking by similarity" do
+      user = insert(:user, %{name: "lain"})
+      user_two = insert(:user, %{name: "ean"})
+      user_three = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social"})
+      user_four = insert(:user, %{nickname: "lain@pleroma.soykaf.com"})
+
+      assert user_four ==
+               User.search("lain@ple") |> List.first() |> Map.put(:search_distance, nil)
+    end
+  end
 end
