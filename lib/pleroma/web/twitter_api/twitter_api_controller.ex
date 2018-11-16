@@ -529,6 +529,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> render(ActivityView, "index.json", %{activities: activities, for: user})
   end
 
+  def search_user(%{assigns: %{user: user}} = conn, %{"query" => query}) do
+    users = User.search(query, true)
+
+    conn
+    |> render(UserView, "index.json", %{users: users, for: user})
+  end
+
   defp bad_request_reply(conn, error_message) do
     json = error_json(conn, error_message)
     json_reply(conn, 400, json)

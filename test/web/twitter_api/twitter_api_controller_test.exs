@@ -1211,4 +1211,20 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert relationship["follows_you"] == false
     end
   end
+
+  describe "GET /api/pleroma/search_user" do
+    test "it returns users, ordered by similarity", %{conn: conn} do
+      user = insert(:user, %{name: "eal"})
+      user_two = insert(:user, %{name: "ean"})
+      user_three = insert(:user, %{name: "ebn"})
+
+      resp =
+        conn
+        |> get(twitter_api_search__path(conn, :search_user), query: "eal")
+        |> json_response(200)
+
+      assert length(resp) == 3
+      assert [user.id, user_two.id, user_three.id] == Enum.map(resp, fn %{"id" => id} -> id end)
+    end
+  end
 end
