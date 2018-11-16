@@ -130,7 +130,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     query =
       ActivityPub.fetch_activities_query(
         [user.ap_id],
-        Map.merge(params, %{"type" => "Create", visibility: "direct"})
+        Map.merge(params, %{"type" => "Create", "user" => user, visibility: "direct"})
       )
 
     activities = Repo.all(query)
