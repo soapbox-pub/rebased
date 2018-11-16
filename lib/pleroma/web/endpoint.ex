@@ -1,9 +1,7 @@
 defmodule Pleroma.Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :pleroma
 
-  if Application.get_env(:pleroma, :chat) |> Keyword.get(:enabled) do
-    socket("/socket", Pleroma.Web.UserSocket)
-  end
+  socket("/socket", Pleroma.Web.UserSocket)
 
   socket("/api/v1", Pleroma.Web.MastodonAPI.MastodonSocket)
 
@@ -58,7 +56,7 @@ defmodule Pleroma.Web.Endpoint do
     Plug.Session,
     store: :cookie,
     key: cookie_name,
-    signing_salt: "CqaoopA2",
+    signing_salt: {Pleroma.Config, :get, [[__MODULE__, :signing_salt], "CqaoopA2"]},
     http_only: true,
     secure:
       Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),

@@ -31,10 +31,12 @@ defmodule Pleroma.Object do
   def normalize(ap_id) when is_binary(ap_id), do: Object.get_by_ap_id(ap_id)
   def normalize(_), do: nil
 
-  def get_cached_by_ap_id(ap_id) do
-    if Mix.env() == :test do
+  if Mix.env() == :test do
+    def get_cached_by_ap_id(ap_id) do
       get_by_ap_id(ap_id)
-    else
+    end
+  else
+    def get_cached_by_ap_id(ap_id) do
       key = "object:#{ap_id}"
 
       Cachex.fetch!(:object_cache, key, fn _ ->

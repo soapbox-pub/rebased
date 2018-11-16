@@ -4,9 +4,7 @@ defmodule Pleroma.Web.UserSocket do
 
   ## Channels
   # channel "room:*", Pleroma.Web.RoomChannel
-  if Application.get_env(:pleroma, :chat) |> Keyword.get(:enabled) do
-    channel("chat:*", Pleroma.Web.ChatChannel)
-  end
+  channel("chat:*", Pleroma.Web.ChatChannel)
 
   ## Transports
   transport(:websocket, Phoenix.Transports.WebSocket)
@@ -24,7 +22,8 @@ defmodule Pleroma.Web.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   def connect(%{"token" => token}, socket) do
-    with {:ok, user_id} <- Phoenix.Token.verify(socket, "user socket", token, max_age: 84600),
+    with true <- Pleroma.Config.get([:chat, :enabled]),
+         {:ok, user_id} <- Phoenix.Token.verify(socket, "user socket", token, max_age: 84600),
          %User{} = user <- Pleroma.Repo.get(User, user_id) do
       {:ok, assign(socket, :user_name, user.nickname)}
     else

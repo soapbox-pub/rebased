@@ -3,6 +3,7 @@ defmodule Pleroma.Application do
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
+  @env Mix.env()
   def start(_type, _args) do
     import Supervisor.Spec
     import Cachex.Spec
@@ -60,7 +61,7 @@ defmodule Pleroma.Application do
         worker(Pleroma.Stats, []),
         worker(Pleroma.Gopher.Server, [])
       ] ++
-        if Mix.env() == :test,
+        if @env == :test,
           do: [],
           else:
             [worker(Pleroma.Web.Streamer, [])] ++
