@@ -284,6 +284,12 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
           "visibility" => "direct"
         })
 
+      {:ok, direct_two} =
+        CommonAPI.post(user_two, %{
+          "status" => "Hi @#{user_one.nickname}!",
+          "visibility" => "direct"
+        })
+
       {:ok, _follower_only} =
         CommonAPI.post(user_one, %{
           "status" => "Hi @#{user_two.nickname}!",
@@ -296,8 +302,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> assign(:user, user_two)
         |> get("/api/statuses/dm_timeline.json")
 
-      [status] = json_response(res_conn, 200)
-      assert status["id"] == direct.id
+      [status, status_two] = json_response(res_conn, 200)
+      assert status["id"] == direct_two.id
+      assert status_two["id"] == direct.id
     end
   end
 
