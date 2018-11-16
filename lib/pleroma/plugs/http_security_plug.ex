@@ -32,7 +32,6 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
     [
       "default-src 'none'",
       "base-uri 'self'",
-      "form-action *",
       "frame-ancestors 'none'",
       "img-src 'self' data: https:",
       "media-src 'self' https:",
