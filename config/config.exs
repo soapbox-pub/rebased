@@ -23,7 +23,7 @@ config :pleroma, Pleroma.Uploaders.S3,
   public_endpoint: "https://s3.amazonaws.com",
   force_media_proxy: false
 
-config :pleroma, Pleroma.Uploaders.Mdii,
+config :pleroma, Pleroma.Uploaders.MDII,
   cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
   files: "https://mdii.sakura.ne.jp"
 

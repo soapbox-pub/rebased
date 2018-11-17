@@ -1,12 +1,13 @@
-defmodule Pleroma.Uploaders.Mdii do
+defmodule Pleroma.Uploaders.MDII do
+  alias Pleroma.Config
+
   @behaviour Pleroma.Uploaders.Uploader
 
   @httpoison Application.get_env(:pleroma, :httpoison)
 
   def put_file(name, uuid, path, content_type, _should_dedupe) do
-    settings = Application.get_env(:pleroma, Pleroma.Uploaders.Mdii)
-    cgi = Keyword.fetch!(settings, :cgi)
-    files = Keyword.fetch!(settings, :files)
+    cgi = Pleroma.Config.get([Pleroma.Uploaders.MDII, :cgi])
+    files = Pleroma.Config.get([Pleroma.Uploaders.MDII, :files])
 
     {:ok, file_data} = File.read(path)
 
