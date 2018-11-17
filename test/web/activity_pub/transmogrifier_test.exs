@@ -874,8 +874,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it rejects activities which reference objects with bogus origins" do
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
-        "id" => "https://mastodon.example.org/users/admin/activities/1234",
-        "actor" => "https://mastodon.example.org/users/admin",
+        "id" => "http://mastodon.example.org/users/admin/activities/1234",
+        "actor" => "http://mastodon.example.org/users/admin",
         "to" => ["https://www.w3.org/ns/activitystreams#Public"],
         "object" => "https://info.pleroma.site/activity.json",
         "type" => "Announce"
