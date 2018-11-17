@@ -732,16 +732,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     else
       Logger.info("Fetching #{id} via AP")
 
-      with true <- String.starts_with?(id, "http"),
-           {:ok, %{body: body, status_code: code}} when code in 200..299 <-
-             @httpoison.get(
-               id,
-               [Accept: "application/activity+json"],
-               follow_redirect: true,
-               timeout: 10000,
-               recv_timeout: 20000
-             ),
-           {:ok, data} <- Jason.decode(body),
+      with {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
            nil <- Object.normalize(data),
            params <- %{
              "type" => "Create",
@@ -768,6 +759,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
             e -> e
           end
       end
+    end
+  end
+
+  def fetch_and_contain_remote_object_from_id(id) do
+    Logger.info("Fetching #{id} via AP")
+
+    with true <- String.starts_with?(id, "http"),
+         {:ok, %{body: body, status_code: code}} when code in 200..299 <-
+           @httpoison.get(
+             id,
+             [Accept: "application/activity+json"],
+             follow_redirect: true,
+             timeout: 10000,
+             recv_timeout: 20000
+           ),
+         {:ok, data} <- Jason.decode(body),
+         :ok <- Transmogrifier.contain_origin_from_id(id, data) do
+      {:ok, data}
+    else
+      e ->
+        {:error, e}
     end
   end
 

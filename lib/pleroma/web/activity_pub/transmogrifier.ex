@@ -50,6 +50,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def contain_origin_from_id(id, %{"id" => nil}), do: :error
+
+  def contain_origin_from_id(id, %{"id" => other_id} = params) do
+    id_uri = URI.parse(id)
+    other_uri = URI.parse(other_id)
+
+    if id_uri.host == other_uri.host do
+      :ok
+    else
+      :error
+    end
+  end
+
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
