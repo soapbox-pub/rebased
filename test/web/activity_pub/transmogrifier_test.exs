@@ -361,6 +361,26 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute Repo.get(Activity, activity.id)
     end
 
+    test "it fails for incoming deletes with spoofed origin" do
+      activity = insert(:note_activity)
+
+      data =
+        File.read!("test/fixtures/mastodon-delete.json")
+        |> Poison.decode!()
+
+      object =
+        data["object"]
+        |> Map.put("id", activity.data["object"]["id"])
+
+      data =
+        data
+        |> Map.put("object", object)
+
+      :error = Transmogrifier.handle_incoming(data)
+
+      assert Repo.get(Activity, activity.id)
+    end
+
     test "it works for incoming unannounces with an existing notice" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})

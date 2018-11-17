@@ -467,15 +467,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  # TODO: Make secure.
+  # TODO: We presently assume that any actor on the same origin domain as the object being
+  # deleted has the rights to delete that object.  A better way to validate whether or not
+  # the object should be deleted is to refetch the object URI, which should return either
+  # an error or a tombstone.  This would allow us to verify that a deletion actually took
+  # place.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => _id} = data
+        %{"type" => "Delete", "object" => object_id, "actor" => _actor, "id" => _id} = data
       ) do
     object_id = Utils.get_ap_id(object_id)
 
     with actor <- get_actor(data),
-         %User{} = _actor <- User.get_or_fetch_by_ap_id(actor),
+         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+         :ok <- contain_origin(actor.ap_id, object.data),
          {:ok, activity} <- ActivityPub.delete(object, false) do
       {:ok, activity}
     else
