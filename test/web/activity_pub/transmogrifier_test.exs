@@ -967,5 +967,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:error, _} = User.get_or_fetch_by_ap_id("https://n1u.moe/users/rye")
     end
+
+    test "all objects with fake directions are rejected by the object fetcher" do
+      {:error, _} =
+        ActivityPub.fetch_and_contain_remote_object_from_id(
+          "https://info.pleroma.site/activity4.json"
+        )
+    end
   end
 end
