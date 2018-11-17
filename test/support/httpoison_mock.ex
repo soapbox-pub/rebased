@@ -756,6 +756,14 @@ defmodule HTTPoisonMock do
      }}
   end
 
+  def get("https://n1u.moe/users/rye", [Accept: "application/activity+json"], _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/rye.json")
+     }}
+  end
+
   def get(
         "https://mst3k.interlinked.me/users/luciferMysticus",
         [Accept: "application/activity+json"],
