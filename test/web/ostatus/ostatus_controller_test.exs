@@ -2,6 +2,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.{User, Repo}
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus.ActivityRepresenter
 
   test "decodes a salmon", %{conn: conn} do
@@ -165,6 +166,32 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       |> get(url)
 
     assert json_response(conn, 200)
+  end
+
+  test "only gets a notice in AS2 format for Create messages", %{conn: conn} do
+    note_activity = insert(:note_activity)
+    url = "/notice/#{note_activity.id}"
+
+    conn =
+      conn
+      |> put_req_header("accept", "application/activity+json")
+      |> get(url)
+
+    assert json_response(conn, 200)
+
+    user = insert(:user)
+
+    {:ok, like_activity, _} = CommonAPI.favorite(note_activity.id, user)
+    url = "/notice/#{like_activity.id}"
+
+    assert like_activity.data["type"] == "Like"
+
+    conn =
+      build_conn()
+      |> put_req_header("accept", "application/activity+json")
+      |> get(url)
+
+    assert response(conn, 404)
   end
 
   test "gets an activity in AS2 format", %{conn: conn} do
