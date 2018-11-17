@@ -918,4 +918,42 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       :error = Transmogrifier.handle_incoming(data)
     end
   end
+
+  describe "general origin containment" do
+    test "contain_origin_from_id() catches obvious spoofing attempts" do
+      data = %{
+        "id" => "http://example.com/~alyssa/activities/1234.json"
+      }
+
+      :error =
+        Transmogrifier.contain_origin_from_id(
+          "http://example.org/~alyssa/activities/1234.json",
+          data
+        )
+    end
+
+    test "contain_origin_from_id() allows alternate IDs within the same origin domain" do
+      data = %{
+        "id" => "http://example.com/~alyssa/activities/1234.json"
+      }
+
+      :ok =
+        Transmogrifier.contain_origin_from_id(
+          "http://example.com/~alyssa/activities/1234",
+          data
+        )
+    end
+
+    test "contain_origin_from_id() allows matching IDs" do
+      data = %{
+        "id" => "http://example.com/~alyssa/activities/1234.json"
+      }
+
+      :ok =
+        Transmogrifier.contain_origin_from_id(
+          "http://example.com/~alyssa/activities/1234.json",
+          data
+        )
+    end
+  end
 end
