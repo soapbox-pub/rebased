@@ -106,15 +106,18 @@ defmodule Pleroma.Web.Federator do
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.normalize(params["id"]),
          :ok <- Transmogrifier.contain_origin_from_id(params["actor"], params),
-         {:ok, _activity} <- Transmogrifier.handle_incoming(params) do
+         {:ok, activity} <- Transmogrifier.handle_incoming(params) do
+      {:ok, activity}
     else
       %Activity{} ->
         Logger.info("Already had #{params["id"]}")
+        :error
 
       _e ->
         # Just drop those for now
         Logger.info("Unhandled activity")
         Logger.info(Poison.encode!(params, pretty: 2))
+        :error
     end
   end
 
