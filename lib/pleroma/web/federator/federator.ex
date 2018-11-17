@@ -101,8 +101,11 @@ defmodule Pleroma.Web.Federator do
 
     params = Utils.normalize_params(params)
 
+    # NOTE: we use the actor ID to do the containment, this is fine because an
+    # actor shouldn't be acting on objects outside their own AP server.
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.normalize(params["id"]),
+         :ok <- Transmogrifier.contain_origin_from_id(params["actor"], params),
          {:ok, _activity} <- Transmogrifier.handle_incoming(params) do
     else
       %Activity{} ->
