@@ -747,7 +747,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              "type" => "Create",
              "to" => data["to"],
              "cc" => data["cc"],
-             "actor" => data["attributedTo"],
+             "actor" => data["actor"] || data["attributedTo"],
              "object" => data
            },
            :ok <- Transmogrifier.contain_origin(id, params),
