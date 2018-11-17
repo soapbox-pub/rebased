@@ -628,9 +628,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_and_prepare_user_from_ap_id(ap_id) do
-    with {:ok, %{status_code: 200, body: body}} <-
-           @httpoison.get(ap_id, [Accept: "application/activity+json"], follow_redirect: true),
-         {:ok, data} <- Jason.decode(body) do
+    with {:ok, data} <- fetch_and_contain_remote_object_from_id(ap_id) do
       user_data_from_user_object(data)
     else
       e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
