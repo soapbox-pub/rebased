@@ -69,8 +69,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_object(object) do
     object
     |> fix_actor
-    |> fix_attachments
     |> fix_url
+    |> fix_attachments
     |> fix_context
     |> fix_in_reply_to
     |> fix_emoji
@@ -200,8 +200,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         true -> ""
       end
 
-    object
-    |> Map.put("url", url_string)
+    if Map.get(object, "type") == "Video" do
+      object
+      |> Map.delete("url")
+      |> Map.put("attachment", url_string)
+    else
+      object
+      |> Map.put("url", url_string)
+    end
   end
 
   def fix_url(object), do: object
