@@ -48,6 +48,14 @@ defmodule HTTPoisonMock do
      }}
   end
 
+  def get("https://info.pleroma.site/activity3.json", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https__info.pleroma.site_activity3.json")
+     }}
+  end
+
   def get("https://info.pleroma.site/actor.json", _, _) do
     {:ok,
      %Response{

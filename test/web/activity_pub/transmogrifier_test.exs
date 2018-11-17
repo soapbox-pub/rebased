@@ -884,17 +884,34 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       :error = Transmogrifier.handle_incoming(data)
     end
 
-    test "it rejects objects when the ID does not match the fetched URI" do
+    test "it rejects objects when attributedTo is wrong (variant 1)" do
       {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity2.json")
     end
 
-    test "it rejects activities which reference objects by mismatched URI" do
+    test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
         "id" => "http://mastodon.example.org/users/admin/activities/1234",
         "actor" => "http://mastodon.example.org/users/admin",
         "to" => ["https://www.w3.org/ns/activitystreams#Public"],
         "object" => "https://info.pleroma.site/activity2.json",
+        "type" => "Announce"
+      }
+
+      :error = Transmogrifier.handle_incoming(data)
+    end
+
+    test "it rejects objects when attributedTo is wrong (variant 2)" do
+      {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity3.json")
+    end
+
+    test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "id" => "http://mastodon.example.org/users/admin/activities/1234",
+        "actor" => "http://mastodon.example.org/users/admin",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "object" => "https://info.pleroma.site/activity3.json",
         "type" => "Announce"
       }
 
