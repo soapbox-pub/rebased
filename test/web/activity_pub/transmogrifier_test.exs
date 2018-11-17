@@ -162,6 +162,36 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"]["url"] == "https://prismo.news/posts/83"
     end
 
+    test "it cleans up incoming notices which are not really DMs" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      to = [user.ap_id, other_user.ap_id]
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("to", to)
+        |> Map.put("cc", [])
+
+      object =
+        data["object"]
+        |> Map.put("to", to)
+        |> Map.put("cc", [])
+
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["to"] == []
+      assert data["cc"] == to
+
+      object = data["object"]
+
+      assert object["to"] == []
+      assert object["cc"] == to
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
