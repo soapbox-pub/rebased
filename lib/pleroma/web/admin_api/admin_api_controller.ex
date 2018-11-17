@@ -10,7 +10,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def user_delete(conn, %{"nickname" => nickname}) do
     user = User.get_by_nickname(nickname)
 
-    if user[:local] == true do
+    if user.local == true do
       User.delete(user)
     else
       User.delete(user)
@@ -20,21 +20,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(nickname)
   end
 
-  def user_create(conn, %{
-        user: %{"nickname" => nickname, "email" => email, "password" => password} = user
-      }) do
-    new_user = %User{
+  def user_create(
+        conn,
+        %{"nickname" => nickname, "email" => email, "password" => password}
+      ) do
+    new_user = %{
       nickname: nickname,
-      name: user.name || nickname,
+      name: nickname,
       email: email,
       password: password,
       password_confirmation: password,
-      bio: user.bio || "."
+      bio: "."
     }
 
     User.register_changeset(%User{}, new_user)
-
-    Repo.insert!(new_user)
+    |> Repo.insert!()
 
     conn
     |> json(new_user.nickname)
