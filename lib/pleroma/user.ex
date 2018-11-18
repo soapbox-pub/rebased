@@ -19,11 +19,11 @@ defmodule Pleroma.User do
     field(:ap_id, :string)
     field(:avatar, :map)
     field(:local, :boolean, default: true)
-    field(:info, :map, default: %{})
     field(:follower_address, :string)
     field(:search_distance, :float, virtual: true)
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
+    embeds_one :info, Pleroma.User.Info
 
     timestamps()
   end
@@ -71,10 +71,10 @@ defmodule Pleroma.User do
 
     %{
       following_count: length(user.following) - oneself,
-      note_count: user.info["note_count"] || 0,
-      follower_count: user.info["follower_count"] || 0,
-      locked: user.info["locked"] || false,
-      default_scope: user.info["default_scope"] || "public"
+      note_count: user.info.note_count,
+      follower_count: user.info.follower_count,
+      locked: user.info.locked,
+      default_scope: user.info.default_scope
     }
   end
 
@@ -613,9 +613,11 @@ defmodule Pleroma.User do
   end
 
   def deactivate(%User{} = user, status \\ true) do
-    new_info = Map.put(user.info, "deactivated", status)
-    cs = User.info_changeset(user, %{info: new_info})
-    update_and_set_cache(cs)
+    info_cng = User.Info.set_activation_status(user.info, status)
+    cng = change(user)
+    |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
   end
 
   def delete(%User{} = user) do
