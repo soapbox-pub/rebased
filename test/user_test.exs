@@ -41,7 +41,7 @@ defmodule Pleroma.UserTest do
 
   test "can't follow a deactivated users" do
     user = insert(:user)
-    followed = insert(:user, info: %{"deactivated" => true})
+    followed = insert(:user, info: %{deactivated: true})
 
     {:error, _} = User.follow(user, followed)
   end
