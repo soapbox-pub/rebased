@@ -222,7 +222,7 @@ defmodule Pleroma.User do
     ap_followers = followed.follower_address
 
     cond do
-      following?(follower, followed) or info["deactivated"] ->
+      following?(follower, followed) or info.deactivated ->
         {:error, "Could not follow user: #{followed.nickname} is already on your list."}
 
       deny_follow_blocked and blocks?(followed, follower) ->

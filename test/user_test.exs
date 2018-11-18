@@ -34,7 +34,7 @@ defmodule Pleroma.UserTest do
     user = Repo.get(User, user.id)
 
     followed = User.get_by_ap_id(followed.ap_id)
-    assert followed.info["follower_count"] == 1
+    assert followed.info.follower_count == 1
 
     assert User.ap_followers(followed) in user.following
   end
@@ -358,11 +358,11 @@ defmodule Pleroma.UserTest do
 
       User.follow(follower, user)
 
-      assert user.info["follower_count"] == nil
+      assert user.info.follower_count == 0
 
       {:ok, user} = User.update_follower_count(user)
 
-      assert user.info["follower_count"] == 1
+      assert user.info.follower_count == 1
     end
   end
 
@@ -517,7 +517,7 @@ defmodule Pleroma.UserTest do
     follower = Repo.get(User, follower.id)
     user = Repo.get(User, user.id)
 
-    assert user.info["deactivated"]
+    assert user.info.deactivated
 
     refute User.following?(user, followed)
     refute User.following?(followed, follower)
