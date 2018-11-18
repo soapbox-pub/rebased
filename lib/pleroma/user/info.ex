@@ -4,6 +4,7 @@ defmodule Pleroma.User.Info do
 
   embedded_schema do
     field(:banner, :map, default: %{})
+    field(:background, :string, default: nil)
     field(:source_data, :map, default: %{})
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
