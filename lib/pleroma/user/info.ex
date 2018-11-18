@@ -90,4 +90,10 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:source_data])
   end
+
+  # Receives data from user_data_from_user_object
+  def user_upgrade(info, params) do
+    info
+    |> cast(params, [:ap_enabled, :source_data, :banner, :locked])
+  end
 end

@@ -185,12 +185,14 @@ defmodule Pleroma.UserTest do
           local: false,
           nickname: "admin@mastodon.example.org",
           ap_id: "http://mastodon.example.org/users/admin",
-          last_refreshed_at: a_week_ago
+          last_refreshed_at: a_week_ago,
+          info: %{}
         )
 
       assert orig_user.last_refreshed_at == a_week_ago
 
       user = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
+      assert user.info.source_data["endpoints"]
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
     end

@@ -128,12 +128,17 @@ defmodule Pleroma.User do
       params
       |> Map.put(:last_refreshed_at, NaiveDateTime.utc_now())
 
+    info_cng =
+      struct.info
+      |> User.Info.user_upgrade(params[:info])
+
     struct
-    |> cast(params, [:bio, :name, :info, :follower_address, :avatar, :last_refreshed_at])
+    |> cast(params, [:bio, :name, :follower_address, :avatar, :last_refreshed_at])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
     |> validate_length(:bio, max: 5000)
     |> validate_length(:name, max: 100)
+    |> put_embed(:info, info_cng)
   end
 
   def password_update_changeset(struct, params) do
