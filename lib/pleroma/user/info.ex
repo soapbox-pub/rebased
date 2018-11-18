@@ -41,4 +41,20 @@ defmodule Pleroma.User.Info do
     |> cast(params, [:follower_count])
     |> validate_required([:follower_count])
   end
+
+  def set_blocks(info, blocks) do
+    params = %{blocks: blocks}
+
+    info
+    |> cast(params, [:blocks])
+    |> validate_required([:blocks])
+  end
+
+  def add_to_block(info, blocked) do
+    set_blocks(info, Enum.uniq([blocked | info.blocks]))
+  end
+
+  def remove_from_block(info, blocked) do
+    set_blocks(info, List.delete(info.blocks, blocked))
+  end
 end

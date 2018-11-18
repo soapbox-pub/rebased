@@ -550,12 +550,15 @@ defmodule Pleroma.User do
       unfollow(blocked, blocker)
     end
 
-    blocks = blocker.info["blocks"] || []
-    new_blocks = Enum.uniq([ap_id | blocks])
-    new_info = Map.put(blocker.info, "blocks", new_blocks)
+    info_cng =
+      blocker.info
+      |> User.Info.add_to_block(ap_id)
 
-    cs = User.info_changeset(blocker, %{info: new_info})
-    update_and_set_cache(cs)
+    cng =
+      change(blocker)
+      |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
   end
 
   # helper to handle the block given only an actor's AP id
@@ -563,18 +566,21 @@ defmodule Pleroma.User do
     block(blocker, User.get_by_ap_id(ap_id))
   end
 
-  def unblock(user, %{ap_id: ap_id}) do
-    blocks = user.info["blocks"] || []
-    new_blocks = List.delete(blocks, ap_id)
-    new_info = Map.put(user.info, "blocks", new_blocks)
+  def unblock(blocker, %{ap_id: ap_id}) do
+    info_cng =
+      blocker.info
+      |> User.Info.remove_from_block(ap_id)
 
-    cs = User.info_changeset(user, %{info: new_info})
-    update_and_set_cache(cs)
+    cng =
+      change(blocker)
+      |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
   end
 
   def blocks?(user, %{ap_id: ap_id}) do
-    blocks = user.info["blocks"] || []
-    domain_blocks = user.info["domain_blocks"] || []
+    blocks = user.info.blocks
+    domain_blocks = user.info.domain_blocks
     %{host: host} = URI.parse(ap_id)
 
     Enum.member?(blocks, ap_id) ||
@@ -584,7 +590,7 @@ defmodule Pleroma.User do
   end
 
   def block_domain(user, domain) do
-    domain_blocks = user.info["domain_blocks"] || []
+    domain_blocks = user.info.domain_blocks
     new_blocks = Enum.uniq([domain | domain_blocks])
     new_info = Map.put(user.info, "domain_blocks", new_blocks)
 
