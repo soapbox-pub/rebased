@@ -15,7 +15,7 @@ defmodule Pleroma.User.Info do
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
-    field(:keys, :map, default: %{})
+    field(:keys, :string, default: nil)
   end
 
   def set_activation_status(info, deactivated) do
@@ -60,5 +60,13 @@ defmodule Pleroma.User.Info do
 
   def remove_from_block(info, blocked) do
     set_blocks(info, List.delete(info.blocks, blocked))
+  end
+
+  def set_keys(info, keys) do
+    params = %{keys: keys}
+
+    info
+    |> cast(params, [:keys])
+    |> validate_required([:keys])
   end
 end

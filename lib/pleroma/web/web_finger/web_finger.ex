@@ -113,16 +113,20 @@ defmodule Pleroma.Web.WebFinger do
 
   # This seems a better fit in Salmon
   def ensure_keys_present(user) do
-    info = user.info || %{}
+    info = user.info
 
-    if info["keys"] do
+    if info.keys do
       {:ok, user}
     else
       {:ok, pem} = Salmon.generate_rsa_pem()
-      info = Map.put(info, "keys", pem)
 
-      Ecto.Changeset.change(user, info: info)
-      |> User.update_and_set_cache()
+      info_cng = info
+      |> Pleroma.User.Info.set_keys(pem)
+
+      cng = Ecto.Changeset.change(user)
+      |> Ecto.Changeset.put_embed(:info, info_cng)
+
+      User.update_and_set_cache(cng)
     end
   end
 
