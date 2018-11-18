@@ -62,11 +62,32 @@ defmodule Pleroma.User.Info do
     set_blocks(info, List.delete(info.blocks, blocked))
   end
 
+  def set_domain_blocks(info, domain_blocks) do
+    params = %{domain_blocks: domain_blocks}
+
+    info
+    |> cast(params, [:domain_blocks])
+    |> validate_required([:domain_blocks])
+  end
+
+  def add_to_domain_block(info, domain_blocked) do
+    set_domain_blocks(info, Enum.uniq([domain_blocked | info.domain_blocks]))
+  end
+
+  def remove_from_domain_block(info, domain_blocked) do
+    set_domain_blocks(info, List.delete(info.domain_blocks, domain_blocked))
+  end
+
   def set_keys(info, keys) do
     params = %{keys: keys}
 
     info
     |> cast(params, [:keys])
     |> validate_required([:keys])
+  end
+
+  def remote_user_creation(info, params) do
+    info
+    |> cast(params, [:source_data])
   end
 end

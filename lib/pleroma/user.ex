@@ -36,13 +36,13 @@ defmodule Pleroma.User do
   end
 
   def banner_url(user) do
-    case user.info["banner"] do
+    case user.info.banner do
       %{"url" => [%{"href" => href} | _]} -> href
       _ -> "#{Web.base_url()}/images/banner.png"
     end
   end
 
-  def profile_url(%User{info: %{"source_data" => %{"url" => url}}}), do: url
+  def profile_url(%User{info: %{source_data: %{"url" => url}}}), do: url
   def profile_url(%User{ap_id: ap_id}), do: ap_id
   def profile_url(_), do: nil
 
@@ -80,18 +80,24 @@ defmodule Pleroma.User do
 
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
   def remote_user_creation(params) do
+    params = params
+    |> Map.put(:info, params[:info] || %{})
+
+    info_cng = User.Info.remote_user_creation(%User.Info{}, params[:info])
+
     changes =
-      %User{}
-      |> cast(params, [:bio, :name, :ap_id, :nickname, :info, :avatar])
+      %User{info: %{}}
+      |> cast(params, [:bio, :name, :ap_id, :nickname, :avatar])
       |> validate_required([:name, :ap_id])
       |> unique_constraint(:nickname)
       |> validate_format(:nickname, @email_regex)
       |> validate_length(:bio, max: 5000)
       |> validate_length(:name, max: 100)
       |> put_change(:local, false)
+      |> put_embed(:info, info_cng)
 
     if changes.valid? do
-      case changes.changes[:info]["source_data"] do
+      case info_cng.changes[:source_data] do
         %{"followers" => followers} ->
           changes
           |> put_change(:follower_address, followers)
@@ -592,21 +598,23 @@ defmodule Pleroma.User do
   end
 
   def block_domain(user, domain) do
-    domain_blocks = user.info.domain_blocks
-    new_blocks = Enum.uniq([domain | domain_blocks])
-    new_info = Map.put(user.info, "domain_blocks", new_blocks)
+    info_cng = user.info
+    |> User.Info.add_to_domain_block(domain)
 
-    cs = User.info_changeset(user, %{info: new_info})
-    update_and_set_cache(cs)
+    cng = change(user)
+    |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
   end
 
   def unblock_domain(user, domain) do
-    blocks = user.info["domain_blocks"] || []
-    new_blocks = List.delete(blocks, domain)
-    new_info = Map.put(user.info, "domain_blocks", new_blocks)
+    info_cng = user.info
+    |> User.Info.remove_from_domain_block(domain)
 
-    cs = User.info_changeset(user, %{info: new_info})
-    update_and_set_cache(cs)
+    cng = change(user)
+    |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
   end
 
   def local_user_query() do
@@ -700,7 +708,7 @@ defmodule Pleroma.User do
       user
     else
       changes =
-        %User{}
+        %User{info: %{}}
         |> cast(%{}, [:ap_id, :nickname, :local])
         |> put_change(:ap_id, relay_uri)
         |> put_change(:nickname, nil)
@@ -745,13 +753,14 @@ defmodule Pleroma.User do
     data =
       data
       |> Map.put(:name, blank?(data[:name]) || data[:nickname])
+      |> Map.put(:info, data[:info] || %{})
 
     cs = User.remote_user_creation(data)
     Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
 
   def ap_enabled?(%User{local: true}), do: true
-  def ap_enabled?(%User{info: info}), do: info["ap_enabled"]
+  def ap_enabled?(%User{info: info}), do: info.ap_enabled
   def ap_enabled?(_), do: false
 
   def get_or_fetch(uri_or_nickname) do
