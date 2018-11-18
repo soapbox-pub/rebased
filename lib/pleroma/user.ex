@@ -23,7 +23,7 @@ defmodule Pleroma.User do
     field(:search_distance, :float, virtual: true)
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
-    embeds_one :info, Pleroma.User.Info
+    embeds_one(:info, Pleroma.User.Info)
 
     timestamps()
   end
@@ -412,16 +412,20 @@ defmodule Pleroma.User do
 
   def increase_note_count(%User{} = user) do
     info_cng = User.Info.add_to_note_count(user.info, 1)
-    cng = change(user)
-    |> put_embed(:info, info_cng)
+
+    cng =
+      change(user)
+      |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
   end
 
   def decrease_note_count(%User{} = user) do
     info_cng = User.Info.add_to_note_count(user.info, -1)
-    cng = change(user)
-    |> put_embed(:info, info_cng)
+
+    cng =
+      change(user)
+      |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
   end
@@ -454,11 +458,13 @@ defmodule Pleroma.User do
 
     follower_count = Repo.one(follower_count_query)
 
-    info_cng = user.info
-    |> User.Info.set_follower_count(follower_count)
+    info_cng =
+      user.info
+      |> User.Info.set_follower_count(follower_count)
 
-    cng = change(user)
-    |> put_embed(:info, info_cng)
+    cng =
+      change(user)
+      |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
   end
@@ -613,8 +619,10 @@ defmodule Pleroma.User do
 
   def deactivate(%User{} = user, status \\ true) do
     info_cng = User.Info.set_activation_status(user.info, status)
-    cng = change(user)
-    |> put_embed(:info, info_cng)
+
+    cng =
+      change(user)
+      |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
   end
