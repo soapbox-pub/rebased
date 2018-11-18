@@ -56,8 +56,8 @@ defmodule Pleroma.UserTest do
   end
 
   test "local users do not automatically follow local locked accounts" do
-    follower = insert(:user, info: %{"locked" => true})
-    followed = insert(:user, info: %{"locked" => true})
+    follower = insert(:user, info: %{locked: true})
+    followed = insert(:user, info: %{locked: true})
 
     {:ok, follower} = User.maybe_direct_follow(follower, followed)
 
