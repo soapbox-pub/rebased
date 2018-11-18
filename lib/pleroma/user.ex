@@ -454,11 +454,13 @@ defmodule Pleroma.User do
 
     follower_count = Repo.one(follower_count_query)
 
-    new_info = Map.put(user.info, "follower_count", follower_count)
+    info_cng = user.info
+    |> User.Info.set_follower_count(follower_count)
 
-    cs = info_changeset(user, %{info: new_info})
+    cng = change(user)
+    |> put_embed(:info, info_cng)
 
-    update_and_set_cache(cs)
+    update_and_set_cache(cng)
   end
 
   def get_users_from_set_query(ap_ids, false) do

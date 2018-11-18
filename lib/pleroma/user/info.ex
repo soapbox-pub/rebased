@@ -32,4 +32,12 @@ defmodule Pleroma.User.Info do
     |> cast(params, [:note_count])
     |> validate_required([:note_count])
   end
+
+  def set_follower_count(info, number) do
+    params = %{follower_count: Enum.max([0, number])}
+
+    info
+    |> cast(params, [:follower_count])
+    |> validate_required([:follower_count])
+  end
 end
