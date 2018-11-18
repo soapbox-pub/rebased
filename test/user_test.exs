@@ -322,34 +322,34 @@ defmodule Pleroma.UserTest do
       note = insert(:note)
       user = User.get_by_ap_id(note.data["actor"])
 
-      assert user.info["note_count"] == nil
+      assert user.info.note_count == 0
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info["note_count"] == 1
+      assert user.info.note_count == 1
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info["note_count"] == 2
+      assert user.info.note_count == 2
     end
 
     test "it decreases the info->note_count property" do
       note = insert(:note)
       user = User.get_by_ap_id(note.data["actor"])
 
-      assert user.info["note_count"] == nil
+      assert user.info.note_count == 0
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info["note_count"] == 1
+      assert user.info.note_count == 1
 
       {:ok, user} = User.decrease_note_count(user)
 
-      assert user.info["note_count"] == 0
+      assert user.info.note_count == 0
 
       {:ok, user} = User.decrease_note_count(user)
 
-      assert user.info["note_count"] == 0
+      assert user.info.note_count == 0
     end
 
     test "it sets the info->follower_count property" do

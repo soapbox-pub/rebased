@@ -24,4 +24,12 @@ defmodule Pleroma.User.Info do
     |> cast(params, [:deactivated])
     |> validate_required([:deactivated])
   end
+
+  def add_to_note_count(info, number) do
+    params = %{note_count: Enum.max([0, info.note_count + number])}
+
+    info
+    |> cast(params, [:note_count])
+    |> validate_required([:note_count])
+  end
 end

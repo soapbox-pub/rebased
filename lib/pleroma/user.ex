@@ -411,22 +411,19 @@ defmodule Pleroma.User do
   end
 
   def increase_note_count(%User{} = user) do
-    note_count = (user.info["note_count"] || 0) + 1
-    new_info = Map.put(user.info, "note_count", note_count)
+    info_cng = User.Info.add_to_note_count(user.info, 1)
+    cng = change(user)
+    |> put_embed(:info, info_cng)
 
-    cs = info_changeset(user, %{info: new_info})
-
-    update_and_set_cache(cs)
+    update_and_set_cache(cng)
   end
 
   def decrease_note_count(%User{} = user) do
-    note_count = user.info["note_count"] || 0
-    note_count = if note_count <= 0, do: 0, else: note_count - 1
-    new_info = Map.put(user.info, "note_count", note_count)
+    info_cng = User.Info.add_to_note_count(user.info, -1)
+    cng = change(user)
+    |> put_embed(:info, info_cng)
 
-    cs = info_changeset(user, %{info: new_info})
-
-    update_and_set_cache(cs)
+    update_and_set_cache(cng)
   end
 
   def update_note_count(%User{} = user) do
