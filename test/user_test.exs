@@ -311,11 +311,11 @@ defmodule Pleroma.UserTest do
 
       user = User.get_by_ap_id(note.data["actor"])
 
-      assert user.info["note_count"] == nil
+      assert user.info.note_count == 0
 
       {:ok, user} = User.update_note_count(user)
 
-      assert user.info["note_count"] == 1
+      assert user.info.note_count == 1
     end
 
     test "it increases the info->note_count property" do

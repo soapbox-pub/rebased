@@ -27,6 +27,10 @@ defmodule Pleroma.User.Info do
   end
 
   def add_to_note_count(info, number) do
+    set_note_count(info, info.note_count + number)
+  end
+
+  def set_note_count(info, number) do
     params = %{note_count: Enum.max([0, number])}
 
     info

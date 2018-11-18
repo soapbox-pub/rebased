@@ -440,11 +440,13 @@ defmodule Pleroma.User do
 
     note_count = Repo.one(note_count_query)
 
-    new_info = Map.put(user.info, "note_count", note_count)
+    info_cng = User.Info.set_note_count(user.info, note_count)
 
-    cs = info_changeset(user, %{info: new_info})
+    cng =
+      change(user)
+      |> put_embed(:info, info_cng)
 
-    update_and_set_cache(cs)
+    update_and_set_cache(cng)
   end
 
   def update_follower_count(%User{} = user) do
