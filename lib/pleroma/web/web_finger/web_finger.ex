@@ -120,11 +120,13 @@ defmodule Pleroma.Web.WebFinger do
     else
       {:ok, pem} = Salmon.generate_rsa_pem()
 
-      info_cng = info
-      |> Pleroma.User.Info.set_keys(pem)
+      info_cng =
+        info
+        |> Pleroma.User.Info.set_keys(pem)
 
-      cng = Ecto.Changeset.change(user)
-      |> Ecto.Changeset.put_embed(:info, info_cng)
+      cng =
+        Ecto.Changeset.change(user)
+        |> Ecto.Changeset.put_embed(:info, info_cng)
 
       User.update_and_set_cache(cng)
     end

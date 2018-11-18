@@ -80,8 +80,9 @@ defmodule Pleroma.User do
 
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
   def remote_user_creation(params) do
-    params = params
-    |> Map.put(:info, params[:info] || %{})
+    params =
+      params
+      |> Map.put(:info, params[:info] || %{})
 
     info_cng = User.Info.remote_user_creation(%User.Info{}, params[:info])
 
@@ -598,21 +599,25 @@ defmodule Pleroma.User do
   end
 
   def block_domain(user, domain) do
-    info_cng = user.info
-    |> User.Info.add_to_domain_block(domain)
+    info_cng =
+      user.info
+      |> User.Info.add_to_domain_block(domain)
 
-    cng = change(user)
-    |> put_embed(:info, info_cng)
+    cng =
+      change(user)
+      |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
   end
 
   def unblock_domain(user, domain) do
-    info_cng = user.info
-    |> User.Info.remove_from_domain_block(domain)
+    info_cng =
+      user.info
+      |> User.Info.remove_from_domain_block(domain)
 
-    cng = change(user)
-    |> put_embed(:info, info_cng)
+    cng =
+      change(user)
+      |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
   end
