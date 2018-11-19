@@ -128,7 +128,7 @@ defmodule Pleroma.Web.Federator do
         :ok
 
       {:error, _} ->
-        RetryQueue.enqueue(params, :activitypub)
+        RetryQueue.enqueue(params, ActivityPub)
     end
   end
 
@@ -141,7 +141,7 @@ defmodule Pleroma.Web.Federator do
         :ok
 
       {:error, _} ->
-        RetryQueue.enqueue(params, :websub)
+        RetryQueue.enqueue(params, Websub)
     end
   end
 
