@@ -6,27 +6,28 @@ defmodule Pleroma.Gopher.Server do
     config = Pleroma.Config.get(:gopher, [])
     ip = Keyword.get(config, :ip, {0, 0, 0, 0})
     port = Keyword.get(config, :port, 1234)
-    GenServer.start_link(__MODULE__, [ip, port], [])
+
+    if Keyword.get(config, :enabled, false) do
+      GenServer.start_link(__MODULE__, [ip, port], [])
+    else
+      Logger.info("Gopher server disabled")
+      :ignore
+    end
   end
 
   def init([ip, port]) do
-    if Pleroma.Config.get([:gopher, :enabled], false) do
-      Logger.info("Starting gopher server on #{port}")
+    Logger.info("Starting gopher server on #{port}")
 
-      :ranch.start_listener(
-        :gopher,
-        100,
-        :ranch_tcp,
-        [port: port],
-        __MODULE__.ProtocolHandler,
-        []
-      )
+    :ranch.start_listener(
+      :gopher,
+      100,
+      :ranch_tcp,
+      [port: port],
+      __MODULE__.ProtocolHandler,
+      []
+    )
 
-      {:ok, %{ip: ip, port: port}}
-    else
-      Logger.info("Gopher server disabled")
-      {:ok, nil}
-    end
+    {:ok, %{ip: ip, port: port}}
   end
 end
 
