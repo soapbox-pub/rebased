@@ -286,7 +286,7 @@ defmodule Pleroma.User do
   end
 
   def locked?(%User{} = user) do
-    user.info["locked"] || false
+    user.info.locked || false
   end
 
   def get_by_ap_id(ap_id) do
