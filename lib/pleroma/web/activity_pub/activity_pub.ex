@@ -509,8 +509,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
-    blocks = info["blocks"] || []
-    domain_blocks = info["domain_blocks"] || []
+    blocks = info.blocks || []
+    domain_blocks = info.domain_blocks || []
 
     from(
       activity in query,
@@ -678,7 +678,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     remote_inboxes =
       (Pleroma.Web.Salmon.remote_users(activity) ++ followers)
       |> Enum.filter(fn user -> User.ap_enabled?(user) end)
-      |> Enum.map(fn %{info: %{"source_data" => data}} ->
+      |> Enum.map(fn %{info: %{source_data: data}} ->
         (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
       end)
       |> Enum.uniq()

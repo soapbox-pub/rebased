@@ -12,7 +12,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   # the instance itself is not a Person, but instead an Application
   def render("user.json", %{user: %{nickname: nil} = user}) do
     {:ok, user} = WebFinger.ensure_keys_present(user)
-    {:ok, _, public_key} = Salmon.keys_from_pem(user.info["keys"])
+    {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
 
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
   def render("user.json", %{user: user}) do
     {:ok, user} = WebFinger.ensure_keys_present(user)
-    {:ok, _, public_key} = Salmon.keys_from_pem(user.info["keys"])
+    {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
 
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "name" => user.name,
       "summary" => user.bio,
       "url" => user.ap_id,
-      "manuallyApprovesFollowers" => user.info["locked"] || false,
+      "manuallyApprovesFollowers" => user.info.locked,
       "publicKey" => %{
         "id" => "#{user.ap_id}#main-key",
         "owner" => user.ap_id,
@@ -72,7 +72,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "type" => "Image",
         "url" => User.banner_url(user)
       },
-      "tag" => user.info["source_data"]["tag"] || []
+      "tag" => user.info.source_data["tag"] || []
     }
     |> Map.merge(Utils.make_json_ld_header())
   end

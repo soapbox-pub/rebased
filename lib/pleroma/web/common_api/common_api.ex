@@ -135,12 +135,13 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  # Updates the emojis for a user based on their profile
   def update(user) do
     user =
       with emoji <- emoji_from_profile(user),
-           source_data <- (user.info["source_data"] || %{}) |> Map.put("tag", emoji),
-           new_info <- Map.put(user.info, "source_data", source_data),
-           change <- User.info_changeset(user, %{info: new_info}),
+           source_data <- (user.info.source_data || %{}) |> Map.put("tag", emoji),
+           info_cng <- Pleroma.User.Info.set_source_data(user.info, source_data),
+           change <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
            {:ok, user} <- User.update_and_set_cache(change) do
         user
       else

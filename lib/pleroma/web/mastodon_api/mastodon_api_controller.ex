@@ -71,34 +71,34 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         user
       end
 
-    user =
-      if banner = params["header"] do
-        with %Plug.Upload{} <- banner,
-             {:ok, object} <- ActivityPub.upload(banner, banner_upload_limit),
-             new_info <- Map.put(user.info, "banner", object.data),
-             change <- User.info_changeset(user, %{info: new_info}),
-             {:ok, user} <- User.update_and_set_cache(change) do
-          user
-        else
-          _e -> user
-        end
-      else
-        user
-      end
+    # user =
+    #   if banner = params["header"] do
+    #     with %Plug.Upload{} <- banner,
+    #          {:ok, object} <- ActivityPub.upload(banner, banner_upload_limit),
+    #          new_info <- Map.put(user.info, "banner", object.data),
+    #          change <- User.info_changeset(user, %{info: new_info}),
+    #          {:ok, user} <- User.update_and_set_cache(change) do
+    #       user
+    #     else
+    #       _e -> user
+    #     end
+    #   else
+    #     user
+    #   end
 
-    user =
-      if locked = params["locked"] do
-        with locked <- locked == "true",
-             new_info <- Map.put(user.info, "locked", locked),
-             change <- User.info_changeset(user, %{info: new_info}),
-             {:ok, user} <- User.update_and_set_cache(change) do
-          user
-        else
-          _e -> user
-        end
-      else
-        user
-      end
+    # user =
+    #   if locked = params["locked"] do
+    #     with locked <- locked == "true",
+    #          new_info <- Map.put(user.info, "locked", locked),
+    #          change <- User.info_changeset(user, %{info: new_info}),
+    #          {:ok, user} <- User.update_and_set_cache(change) do
+    #       user
+    #     else
+    #       _e -> user
+    #     end
+    #   else
+    #     user
+    #   end
 
     with changeset <- User.update_changeset(user, params),
          {:ok, user} <- User.update_and_set_cache(changeset) do
@@ -659,7 +659,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   # TODO: Use proper query
   def blocks(%{assigns: %{user: user}} = conn, _) do
-    with blocked_users <- user.info["blocks"] || [],
+    with blocked_users <- user.info.blocks || [],
          accounts <- Enum.map(blocked_users, fn ap_id -> User.get_cached_by_ap_id(ap_id) end) do
       res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
       json(conn, res)
@@ -667,7 +667,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def domain_blocks(%{assigns: %{user: %{info: info}}} = conn, _) do
-    json(conn, info["domain_blocks"] || [])
+    json(conn, info.domain_blocks || [])
   end
 
   def block_domain(%{assigns: %{user: blocker}} = conn, %{"domain" => domain}) do
@@ -915,11 +915,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             max_toot_chars: limit
           },
           rights: %{
-            delete_others_notice: !!user.info["is_moderator"]
+            delete_others_notice: !!user.info.is_moderator
           },
           compose: %{
             me: "#{user.id}",
-            default_privacy: user.info["default_scope"] || "public",
+            default_privacy: user.info.default_scope,
             default_sensitive: false
           },
           media_attachments: %{
@@ -939,7 +939,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             ]
           },
           settings:
-            Map.get(user.info, "settings") ||
+            Map.get(user.info, :settings) ||
               %{
                 onboarded: true,
                 home: %{

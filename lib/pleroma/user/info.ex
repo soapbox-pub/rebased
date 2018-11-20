@@ -17,6 +17,7 @@ defmodule Pleroma.User.Info do
     field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
     field(:keys, :string, default: nil)
+    field(:settings, :map, default: nil)
   end
 
   def set_activation_status(info, deactivated) do
@@ -97,9 +98,11 @@ defmodule Pleroma.User.Info do
     ])
   end
 
-  # Receives data from user_data_from_user_object
-  def user_upgrade(info, params) do
+  def set_source_data(info, source_data) do
+    params = %{source_data: source_data}
+
     info
-    |> cast(params, [:ap_enabled, :source_data, :banner, :locked])
+    |> cast(params, [:source_data])
+    |> validate_required([:source_data])
   end
 end
