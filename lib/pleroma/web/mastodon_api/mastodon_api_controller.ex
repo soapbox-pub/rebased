@@ -659,7 +659,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   # TODO: Use proper query
   def blocks(%{assigns: %{user: user}} = conn, _) do
-    with blocked_users <- user.info["blocks"] || [],
+    with blocked_users <- user.info.blocks || [],
          accounts <- Enum.map(blocked_users, fn ap_id -> User.get_cached_by_ap_id(ap_id) end) do
       res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
       json(conn, res)
@@ -667,7 +667,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def domain_blocks(%{assigns: %{user: %{info: info}}} = conn, _) do
-    json(conn, info["domain_blocks"] || [])
+    json(conn, info.domain_blocks || [])
   end
 
   def block_domain(%{assigns: %{user: blocker}} = conn, %{"domain" => domain}) do
@@ -915,11 +915,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             max_toot_chars: limit
           },
           rights: %{
-            delete_others_notice: !!user.info["is_moderator"]
+            delete_others_notice: !!user.info.is_moderator
           },
           compose: %{
             me: "#{user.id}",
-            default_privacy: user.info["default_scope"] || "public",
+            default_privacy: user.info.default_scope || "public",
             default_sensitive: false
           },
           media_attachments: %{
