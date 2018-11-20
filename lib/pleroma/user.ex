@@ -61,9 +61,7 @@ defmodule Pleroma.User do
   end
 
   def info_changeset(struct, params \\ %{}) do
-    struct
-    |> cast(params, [:info])
-    |> validate_required([:info])
+    raise "NOT VALID ANYMORE"
   end
 
   def user_info(%User{} = user) do
