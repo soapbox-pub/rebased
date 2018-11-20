@@ -89,7 +89,12 @@ defmodule Pleroma.User.Info do
 
   def remote_user_creation(info, params) do
     info
-    |> cast(params, [:source_data])
+    |> cast(params, [
+      :ap_enabled,
+      :source_data,
+      :banner,
+      :locked
+    ])
   end
 
   # Receives data from user_data_from_user_object

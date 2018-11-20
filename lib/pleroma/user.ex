@@ -87,7 +87,7 @@ defmodule Pleroma.User do
     info_cng = User.Info.remote_user_creation(%User.Info{}, params[:info])
 
     changes =
-      %User{info: %{}}
+      %User{}
       |> cast(params, [:bio, :name, :ap_id, :nickname, :avatar])
       |> validate_required([:name, :ap_id])
       |> unique_constraint(:nickname)
@@ -718,7 +718,7 @@ defmodule Pleroma.User do
       user
     else
       changes =
-        %User{info: %{}}
+        %User{info: %User.Info{}}
         |> cast(%{}, [:ap_id, :nickname, :local])
         |> put_change(:ap_id, relay_uri)
         |> put_change(:nickname, nil)
@@ -763,9 +763,9 @@ defmodule Pleroma.User do
     data =
       data
       |> Map.put(:name, blank?(data[:name]) || data[:nickname])
-      |> Map.put(:info, data[:info] || %{})
 
     cs = User.remote_user_creation(data)
+
     Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
 
