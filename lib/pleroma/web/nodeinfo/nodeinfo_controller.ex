@@ -86,8 +86,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     response = %{
       version: "2.0",
       software: %{
-        name: "pleroma",
-        version: Keyword.get(instance, :version)
+        name: Pleroma.Application.name(),
+        version: Pleroma.Application.version()
       },
       protocols: ["ostatus", "activitypub"],
       services: %{

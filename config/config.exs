@@ -72,18 +72,10 @@ config :pleroma, :websub, Pleroma.Web.Websub
 config :pleroma, :ostatus, Pleroma.Web.OStatus
 config :pleroma, :httpoison, Pleroma.HTTP
 
-version =
-  with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
-    "Pleroma #{Mix.Project.config()[:version]} #{String.trim(version)}"
-  else
-    _ -> "Pleroma #{Mix.Project.config()[:version]} dev"
-  end
-
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http, proxy_url: nil
 
 config :pleroma, :instance,
-  version: version,
   name: "Pleroma",
   email: "example@example.com",
   description: "A Pleroma instance, an alternative fediverse server",

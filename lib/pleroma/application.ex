@@ -1,6 +1,12 @@
 defmodule Pleroma.Application do
   use Application
 
+  @name "Pleroma"
+  @version Mix.Project.config()[:version]
+  def name, do: @name
+  def version, do: @version
+  def named_version(), do: @name <> " " <> @version
+
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
