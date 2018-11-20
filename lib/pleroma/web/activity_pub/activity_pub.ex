@@ -509,8 +509,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
-    blocks = info["blocks"] || []
-    domain_blocks = info["domain_blocks"] || []
+    blocks = info.blocks || []
+    domain_blocks = info.domain_blocks || []
 
     from(
       activity in query,
