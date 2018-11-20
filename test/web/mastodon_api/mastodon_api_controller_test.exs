@@ -252,7 +252,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "verify_credentials default scope unlisted", %{conn: conn} do
-    user = insert(:user, %{info: %{"default_scope" => "unlisted"}})
+    user = insert(:user, %{info: %{default_scope: "unlisted"}})
 
     conn =
       conn
@@ -845,7 +845,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   describe "locked accounts" do
     test "/api/v1/follow_requests works" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user, %{info: %{locked: true}})
       other_user = insert(:user)
 
       {:ok, activity} = ActivityPub.follow(other_user, user)
@@ -865,7 +865,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/authorize works" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user, %{info: %{locked: true}})
       other_user = insert(:user)
 
       {:ok, activity} = ActivityPub.follow(other_user, user)
@@ -890,7 +890,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "verify_credentials", %{conn: conn} do
-      user = insert(:user, %{info: %{"default_scope" => "private"}})
+      user = insert(:user, %{info: %{default_scope: "private"}})
 
       conn =
         conn
@@ -902,7 +902,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/reject works" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user, %{info: %{locked: true}})
       other_user = insert(:user)
 
       {:ok, activity} = ActivityPub.follow(other_user, user)
