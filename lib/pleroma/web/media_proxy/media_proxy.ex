@@ -3,6 +3,8 @@ defmodule Pleroma.Web.MediaProxy do
 
   def url(nil), do: nil
 
+  def url(""), do: nil
+
   def url(url = "/" <> _), do: url
 
   def url(url) do
@@ -15,10 +17,10 @@ defmodule Pleroma.Web.MediaProxy do
       base64 = Base.url_encode64(url, @base64_opts)
       sig = :crypto.hmac(:sha, secret, base64)
       sig64 = sig |> Base.url_encode64(@base64_opts)
-      filename = Path.basename(URI.parse(url).path)
+      filename = if path = URI.parse(url).path, do: "/" <> Path.basename(path), else: ""
 
       Keyword.get(config, :base_url, Pleroma.Web.base_url()) <>
-        "/proxy/#{sig64}/#{base64}/#{filename}"
+        "/proxy/#{sig64}/#{base64}#{filename}"
     end
   end
 
