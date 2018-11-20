@@ -150,11 +150,15 @@ defmodule Pleroma.Web.Federator do
     {:error, "Don't know what to do with this"}
   end
 
-  def enqueue(type, payload, priority \\ 1) do
-    if Pleroma.Config.get([:instance, :federating]) do
-      if Mix.env() == :test do
+  if Mix.env() == :test do
+    def enqueue(type, payload, priority \\ 1) do
+      if Pleroma.Config.get([:instance, :federating]) do
         handle(type, payload)
-      else
+      end
+    end
+  else
+    def enqueue(type, payload, priority \\ 1) do
+      if Pleroma.Config.get([:instance, :federating]) do
         GenServer.cast(__MODULE__, {:enqueue, type, payload, priority})
       end
     end

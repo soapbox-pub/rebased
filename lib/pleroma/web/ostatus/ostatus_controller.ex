@@ -136,7 +136,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
         "html" ->
           conn
           |> put_resp_content_type("text/html")
-          |> send_file(200, "priv/static/index.html")
+          |> send_file(200, Application.app_dir(:pleroma, "priv/static/index.html"))
 
         _ ->
           represent_activity(conn, format, activity, user)
