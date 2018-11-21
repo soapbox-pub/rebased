@@ -141,7 +141,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       uri: Web.base_url(),
       title: Keyword.get(instance, :name),
       description: Keyword.get(instance, :description),
-      version: "#{@mastodon_api_level} (compatible; #{Keyword.get(instance, :version)})",
+      version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
         streaming_api: String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws")
