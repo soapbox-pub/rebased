@@ -31,6 +31,21 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
   end
 
+  pipeline :admin_api do
+    plug(:accepts, ["json"])
+    plug(:fetch_session)
+    plug(Pleroma.Plugs.OAuthPlug)
+    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
+    plug(Pleroma.Plugs.UserFetcherPlug)
+    plug(Pleroma.Plugs.SessionAuthenticationPlug)
+    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
+    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.UserEnabledPlug)
+    plug(Pleroma.Plugs.SetUserSessionIdPlug)
+    plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
+    plug(Pleroma.Plugs.UserIsAdminPlug)
+  end
+
   pipeline :mastodon_html do
     plug(:accepts, ["html"])
     plug(:fetch_session)
@@ -77,6 +92,23 @@ defmodule Pleroma.Web.Router do
     get("/password_reset/:token", UtilController, :show_password_reset)
     post("/password_reset", UtilController, :password_reset)
     get("/emoji", UtilController, :emoji)
+  end
+
+  scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
+    pipe_through(:admin_api)
+    delete("/user", AdminAPIController, :user_delete)
+    post("/user", AdminAPIController, :user_create)
+
+    get("/permission_group/:nickname", AdminAPIController, :right_get)
+    get("/permission_group/:nickname/:permission_group", AdminAPIController, :right_get)
+    post("/permission_group/:nickname/:permission_group", AdminAPIController, :right_add)
+    delete("/permission_group/:nickname/:permission_group", AdminAPIController, :right_delete)
+
+    post("/relay", AdminAPIController, :relay_follow)
+    delete("/relay", AdminAPIController, :relay_unfollow)
+
+    get("/invite_token", AdminAPIController, :get_invite_token)
+    get("/password_reset", AdminAPIController, :get_password_reset)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
