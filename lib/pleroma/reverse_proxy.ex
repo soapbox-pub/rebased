@@ -1,8 +1,8 @@
 defmodule Pleroma.ReverseProxy do
-  @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since if-none-match range)
+  @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since if-unmodified-since if-none-match if-range range)
   @resp_cache_headers ~w(etag date last-modified cache-control)
   @keep_resp_headers @resp_cache_headers ++
-                       ~w(content-type content-disposition accept-ranges vary)
+                       ~w(content-type content-disposition content-encoding content-range accept-ranges vary)
   @default_cache_control_header "public, max-age=1209600"
   @valid_resp_codes [200, 206, 304]
   @max_read_duration :timer.minutes(2)
@@ -226,8 +226,10 @@ defmodule Pleroma.ReverseProxy do
   end
 
   defp get_content_type(headers) do
-    {_, content_type} = List.keyfind(headers, "content-type", 0, {"content-type", "application/octet-stream"})
-    [content_type | _] =  String.split(content_type, ";")
+    {_, content_type} =
+      List.keyfind(headers, "content-type", 0, {"content-type", "application/octet-stream"})
+
+    [content_type | _] = String.split(content_type, ";")
     content_type
   end
 
@@ -259,12 +261,11 @@ defmodule Pleroma.ReverseProxy do
   end
 
   defp build_resp_headers(headers, opts) do
-    headers =
-      headers
-      |> Enum.filter(fn {k, _} -> k in @keep_resp_headers end)
-      |> build_resp_cache_headers(opts)
-      |> build_resp_content_disposition_header(opts)
-      |> (fn headers -> headers ++ Keyword.get(opts, :resp_headers, []) end).()
+    headers
+    |> Enum.filter(fn {k, _} -> k in @keep_resp_headers end)
+    |> build_resp_cache_headers(opts)
+    |> build_resp_content_disposition_header(opts)
+    |> (fn headers -> headers ++ Keyword.get(opts, :resp_headers, []) end).()
   end
 
   defp build_resp_cache_headers(headers, opts) do
@@ -324,7 +325,6 @@ defmodule Pleroma.ReverseProxy do
     if duration > max do
       {:error, :read_duration_exceeded}
     else
-      Logger.debug("Duration #{inspect(duration)}")
       {:ok, {duration, :erlang.system_time(:millisecond)}}
     end
   end
