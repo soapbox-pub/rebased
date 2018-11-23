@@ -9,7 +9,7 @@ config :pleroma, Pleroma.Web.Endpoint,
 # Print only warnings and errors during test
 config :logger, level: :warn
 
-config :pleroma, Pleroma.Upload, uploads: "test/uploads"
+config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
 # Configure your database
 config :pleroma, Pleroma.Repo,

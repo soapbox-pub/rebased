@@ -294,7 +294,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       Application.get_env(:pleroma, :instance)
       |> Keyword.fetch(:avatar_upload_limit)
 
-    {:ok, object} = ActivityPub.upload(params, upload_limit)
+    {:ok, object} = ActivityPub.upload(params, size_limit: upload_limit)
     change = Changeset.change(user, %{avatar: object.data})
     {:ok, user} = User.update_and_set_cache(change)
     CommonAPI.update(user)
@@ -307,7 +307,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       Application.get_env(:pleroma, :instance)
       |> Keyword.fetch(:banner_upload_limit)
 
-    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, upload_limit),
+    with {:ok, object} <-
+           ActivityPub.upload(%{"img" => params["banner"]}, size_limit: upload_limit),
          new_info <- Map.put(user.info, "banner", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
          {:ok, user} <- User.update_and_set_cache(change) do
@@ -325,7 +326,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       Application.get_env(:pleroma, :instance)
       |> Keyword.fetch(:background_upload_limit)
 
-    with {:ok, object} <- ActivityPub.upload(params, upload_limit),
+    with {:ok, object} <- ActivityPub.upload(params, size_limit: upload_limit),
          new_info <- Map.put(user.info, "background", object.data),
          change <- User.info_changeset(user, %{info: new_info}),
          {:ok, _user} <- User.update_and_set_cache(change) do

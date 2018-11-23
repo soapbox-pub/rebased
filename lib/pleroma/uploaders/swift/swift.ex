@@ -14,7 +14,7 @@ defmodule Pleroma.Uploaders.Swift.Client do
 
     case put("#{filename}", body, "X-Auth-Token": token, "Content-Type": content_type) do
       {:ok, %HTTPoison.Response{status_code: 201}} ->
-        {:ok, "#{object_url}/#{filename}"}
+        {:ok, {:file, filename}}
 
       {:ok, %HTTPoison.Response{status_code: 401}} ->
         {:error, "Unauthorized, Bad Token"}

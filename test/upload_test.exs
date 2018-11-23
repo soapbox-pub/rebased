@@ -2,7 +2,35 @@ defmodule Pleroma.UploadTest do
   alias Pleroma.Upload
   use Pleroma.DataCase
 
-  describe "Storing a file" do
+  describe "Storing a file with the Local uploader" do
+    setup do
+      uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
+
+      unless uploader == Pleroma.Uploaders.Local do
+        on_exit(fn ->
+          Pleroma.Config.put([Pleroma.Upload, :uploader], uploader)
+        end)
+      end
+
+      :ok
+    end
+
+    test "returns a media url" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "image.jpg"
+      }
+
+      {:ok, data} = Upload.store(file)
+
+      assert %{"url" => [%{"href" => url}]} = data
+
+      assert String.starts_with?(url, Pleroma.Web.base_url() <> "/media/")
+    end
+
     test "copies the file to the configured folder with deduping" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
@@ -12,7 +40,7 @@ defmodule Pleroma.UploadTest do
         filename: "an [image.jpg"
       }
 
-      data = Upload.store(file, true)
+      {:ok, data} = Upload.store(file, dedupe: true)
 
       assert data["name"] ==
                "e7a6d0cf595bff76f14c9a98b6c199539559e8b844e02e51e5efcfd1f614a2df.jpeg"
@@ -27,7 +55,7 @@ defmodule Pleroma.UploadTest do
         filename: "an [image.jpg"
       }
 
-      data = Upload.store(file, false)
+      {:ok, data} = Upload.store(file, dedupe: false)
       assert data["name"] == "an [image.jpg"
     end
 
@@ -40,7 +68,7 @@ defmodule Pleroma.UploadTest do
         filename: "an [image.jpg"
       }
 
-      data = Upload.store(file, true)
+      {:ok, data} = Upload.store(file, dedupe: true)
       assert hd(data["url"])["mediaType"] == "image/jpeg"
     end
 
@@ -53,7 +81,7 @@ defmodule Pleroma.UploadTest do
         filename: "an [image"
       }
 
-      data = Upload.store(file, false)
+      {:ok, data} = Upload.store(file, dedupe: false)
       assert data["name"] == "an [image.jpg"
     end
 
@@ -66,7 +94,7 @@ defmodule Pleroma.UploadTest do
         filename: "an [image.blah"
       }
 
-      data = Upload.store(file, false)
+      {:ok, data} = Upload.store(file, dedupe: false)
       assert data["name"] == "an [image.jpg"
     end
 
@@ -79,7 +107,7 @@ defmodule Pleroma.UploadTest do
         filename: "test.txt"
       }
 
-      data = Upload.store(file, false)
+      {:ok, data} = Upload.store(file, dedupe: false)
       assert data["name"] == "test.txt"
     end
   end

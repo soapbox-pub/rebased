@@ -12,16 +12,15 @@ config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
-  strip_exif: false
+  strip_exif: false,
+  proxy_remote: false,
+  proxy_opts: [inline_content_types: true, keep_user_agent: true]
 
-config :pleroma, Pleroma.Uploaders.Local,
-  uploads: "uploads",
-  uploads_url: "{{base_url}}/media/{{file}}"
+config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
-  public_endpoint: "https://s3.amazonaws.com",
-  force_media_proxy: false
+  public_endpoint: "https://s3.amazonaws.com"
 
 config :pleroma, Pleroma.Uploaders.MDII,
   cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
@@ -150,9 +149,11 @@ config :pleroma, :mrf_simple,
 
 config :pleroma, :media_proxy,
   enabled: false,
-  redirect_on_failure: true
-
-# base_url: "https://cache.pleroma.social"
+  # base_url: "https://cache.pleroma.social",
+  proxy_opts: [
+    # inline_content_types: [] | false | true,
+    # http: [:insecure]
+  ]
 
 config :pleroma, :chat, enabled: true
 

@@ -97,7 +97,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     {:ok, object} = ActivityPub.upload(file)
 
     url = List.first(object.data["url"])
-    href = url["href"] |> MediaProxy.url()
+    href = url["href"]
     type = url["mediaType"]
 
     case format do

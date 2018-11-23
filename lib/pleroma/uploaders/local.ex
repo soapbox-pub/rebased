@@ -3,9 +3,12 @@ defmodule Pleroma.Uploaders.Local do
 
   alias Pleroma.Web
 
-  def put_file(name, uuid, tmpfile, _content_type, should_dedupe) do
-    upload_folder = get_upload_path(uuid, should_dedupe)
-    url_path = get_url(name, uuid, should_dedupe)
+  def get_file(_) do
+    {:ok, {:static_dir, upload_path()}}
+  end
+
+  def put_file(name, uuid, tmpfile, _content_type, opts) do
+    upload_folder = get_upload_path(uuid, opts.dedupe)
 
     File.mkdir_p!(upload_folder)
 
@@ -17,12 +20,11 @@ defmodule Pleroma.Uploaders.Local do
       File.cp!(tmpfile, result_file)
     end
 
-    {:ok, url_path}
+    {:ok, {:file, get_url(name, uuid, opts.dedupe)}}
   end
 
   def upload_path do
-    settings = Application.get_env(:pleroma, Pleroma.Uploaders.Local)
-    Keyword.fetch!(settings, :uploads)
+    Pleroma.Config.get!([__MODULE__, :uploads])
   end
 
   defp get_upload_path(uuid, should_dedupe) do
@@ -35,17 +37,9 @@ defmodule Pleroma.Uploaders.Local do
 
   defp get_url(name, uuid, should_dedupe) do
     if should_dedupe do
-      url_for(:cow_uri.urlencode(name))
+      :cow_uri.urlencode(name)
     else
-      url_for(Path.join(uuid, :cow_uri.urlencode(name)))
+      Path.join(uuid, :cow_uri.urlencode(name))
     end
-  end
-
-  defp url_for(file) do
-    settings = Application.get_env(:pleroma, Pleroma.Uploaders.Local)
-
-    Keyword.get(settings, :uploads_url)
-    |> String.replace("{{file}}", file)
-    |> String.replace("{{base_url}}", Web.base_url())
   end
 end
