@@ -45,6 +45,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
     end
   end
 
+  def connect(%{"stream" => stream} = params, socket)
+      when stream in ["public", "public:local", "hashtag"] do
+    topic =
+      case stream do
+        "hashtag" -> "hashtag:#{params["tag"]}"
+        _ -> stream
+      end
+
+    with socket =
+           socket
+           |> assign(:topic, topic) do
+      Pleroma.Web.Streamer.add_socket(topic, socket)
+      {:ok, socket}
+    else
+      _e -> :error
+    end
+  end
+
   def id(_), do: nil
 
   def handle(:text, message, _state) do
