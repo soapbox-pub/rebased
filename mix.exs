@@ -95,7 +95,7 @@ defmodule Pleroma.Mixfile do
     {git_tag, git_pre_release} =
       with {tag, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=0"]),
            tag = String.trim(tag),
-           {describe, 0} <- System.cmd("git", ["describe", "--tags"]),
+           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
            describe = String.trim(describe),
            ahead <- String.replace(describe, tag, "") do
         {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
