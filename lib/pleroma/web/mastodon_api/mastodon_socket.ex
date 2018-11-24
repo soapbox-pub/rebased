@@ -11,9 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
     timeout: :infinity
   )
 
-  def connect(params, socket) do
-    with token when not is_nil(token) <- params["access_token"],
-         %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
+  def connect(%{"access_token" => token} = params, socket) do
+    with %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
          %User{} = user <- Repo.get(User, user_id),
          stream
          when stream in [
