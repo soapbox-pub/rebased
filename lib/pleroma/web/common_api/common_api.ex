@@ -6,7 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   import Pleroma.Web.CommonAPI.Utils
 
   def delete(activity_id, user) do
-    with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, activity_id),
+    with %Activity{data: %{"object" => object_id}} <- Repo.get(Activity, activity_id),
          %Object{} = object <- Object.normalize(object_id),
          true <- user.info.is_moderator || user.ap_id == object.data["actor"],
          {:ok, delete} <- ActivityPub.delete(object) do
@@ -16,7 +16,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def repeat(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity.data["object"]) do
       ActivityPub.announce(user, object)
     else
       _ ->
@@ -26,7 +26,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unrepeat(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity.data["object"]) do
       ActivityPub.unannounce(user, object)
     else
       _ ->
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def favorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity.data["object"]) do
       ActivityPub.like(user, object)
     else
       _ ->
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unfavorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity.data["object"]) do
       ActivityPub.unlike(user, object)
     else
       _ ->
