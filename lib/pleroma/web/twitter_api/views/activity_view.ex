@@ -225,8 +225,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     conversation_id = get_context_id(activity, opts)
 
-    tags = activity.data["object"]["tag"] || []
-    possibly_sensitive = activity.data["object"]["sensitive"] || Enum.member?(tags, "nsfw")
+    tags = object.data["tag"] || []
+    possibly_sensitive = object.data["sensitive"] || Enum.member?(tags, "nsfw")
 
     tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
@@ -242,7 +242,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     %{
       "id" => activity.id,
-      "uri" => activity.data["object"]["id"],
+      "uri" => object.data["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => html,
       "text" => HTML.strip_tags(content),
