@@ -464,7 +464,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def favourited_by(conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => %{"likes" => likes}}} <- Repo.get(Activity, id) do
+    with %Activity{data: %{"object" => object}} <- Repo.get(Activity, id),
+         %Object{data: %{"likes" => likes}} <- Object.normalize(object) do
       q = from(u in User, where: u.ap_id in ^likes)
       users = Repo.all(q)
       render(conn, AccountView, "accounts.json", %{users: users, as: :user})
@@ -474,7 +475,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def reblogged_by(conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => %{"announcements" => announces}}} <- Repo.get(Activity, id) do
+    with %Activity{data: %{"object" => object}} <- Repo.get(Activity, id),
+         %Object{data: %{"announcements" => announces}} <- Object.normalize(object) do
       q = from(u in User, where: u.ap_id in ^announces)
       users = Repo.all(q)
       render(conn, AccountView, "accounts.json", %{users: users, as: :user})
