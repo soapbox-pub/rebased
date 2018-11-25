@@ -77,8 +77,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      assert is_binary(activity.data["object"]["id"])
-      assert %Object{} = Object.get_by_ap_id(activity.data["object"]["id"])
+      object = Object.normalize(activity.data["object"])
+
+      assert is_binary(object.data["id"])
+      assert %Object{} = Object.get_by_ap_id(activity.data["object"])
     end
   end
 

@@ -15,34 +15,36 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming note - GS, Salmon" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
 
     user = User.get_by_ap_id(activity.data["actor"])
     assert user.info.note_count == 1
     assert activity.data["type"] == "Create"
-    assert activity.data["object"]["type"] == "Note"
+    assert object.data["type"] == "Note"
 
-    assert activity.data["object"]["id"] ==
+    assert object.data["id"] ==
              "tag:gs.example.org:4040,2017-04-23:noticeId=29:objectType=note"
 
     assert activity.data["published"] == "2017-04-23T14:51:03+00:00"
-    assert activity.data["object"]["published"] == "2017-04-23T14:51:03+00:00"
+    assert object.data["published"] == "2017-04-23T14:51:03+00:00"
 
     assert activity.data["context"] ==
              "tag:gs.example.org:4040,2017-04-23:objectType=thread:nonce=f09e22f58abd5c7b"
 
     assert "http://pleroma.example.org:4000/users/lain3" in activity.data["to"]
-    assert activity.data["object"]["emoji"] == %{"marko" => "marko.png", "reimu" => "reimu.png"}
+    assert object.data["emoji"] == %{"marko" => "marko.png", "reimu" => "reimu.png"}
     assert activity.local == false
   end
 
   test "handle incoming notes - GS, subscription" do
     incoming = File.read!("test/fixtures/ostatus_incoming_post.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
 
     assert activity.data["type"] == "Create"
-    assert activity.data["object"]["type"] == "Note"
-    assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"]["content"] == "Will it blend?"
+    assert object.data["type"] == "Note"
+    assert object.data["actor"] == "https://social.heldscal.la/user/23211"
+    assert object.data["content"] == "Will it blend?"
     user = User.get_cached_by_ap_id(activity.data["actor"])
     assert User.ap_followers(user) in activity.data["to"]
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
@@ -51,20 +53,22 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming notes with attachments - GS, subscription" do
     incoming = File.read!("test/fixtures/incoming_websub_gnusocial_attachments.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
 
     assert activity.data["type"] == "Create"
-    assert activity.data["object"]["type"] == "Note"
-    assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"]["attachment"] |> length == 2
-    assert activity.data["object"]["external_url"] == "https://social.heldscal.la/notice/2020923"
+    assert object.data["type"] == "Note"
+    assert object.data["actor"] == "https://social.heldscal.la/user/23211"
+    assert object.data["attachment"] |> length == 2
+    assert object.data["external_url"] == "https://social.heldscal.la/notice/2020923"
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming notes with tags" do
     incoming = File.read!("test/fixtures/ostatus_incoming_post_tag.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
 
-    assert activity.data["object"]["tag"] == ["nsfw"]
+    assert object.data["tag"] == ["nsfw"]
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
@@ -79,10 +83,11 @@ defmodule Pleroma.Web.OStatusTest do
 
     incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
 
     assert activity.data["type"] == "Create"
-    assert activity.data["object"]["type"] == "Note"
-    assert activity.data["object"]["actor"] == "https://mastodon.social/users/lambadalambda"
+    assert object.data["type"] == "Note"
+    assert object.data["actor"] == "https://mastodon.social/users/lambadalambda"
     assert activity.data["context"] == "2hu"
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
@@ -90,42 +95,47 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming notes - Mastodon, with CW" do
     incoming = File.read!("test/fixtures/mastodon-note-cw.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
 
     assert activity.data["type"] == "Create"
-    assert activity.data["object"]["type"] == "Note"
-    assert activity.data["object"]["actor"] == "https://mastodon.social/users/lambadalambda"
-    assert activity.data["object"]["summary"] == "technologic"
+    assert object.data["type"] == "Note"
+    assert object.data["actor"] == "https://mastodon.social/users/lambadalambda"
+    assert object.data["summary"] == "technologic"
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
 
   test "handle incoming unlisted messages, put public into cc" do
     incoming = File.read!("test/fixtures/mastodon-note-unlisted.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
+
     refute "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["cc"]
-    refute "https://www.w3.org/ns/activitystreams#Public" in activity.data["object"]["to"]
-    assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["object"]["cc"]
+    refute "https://www.w3.org/ns/activitystreams#Public" in object.data["to"]
+    assert "https://www.w3.org/ns/activitystreams#Public" in object.data["cc"]
   end
 
   test "handle incoming retweets - Mastodon, with CW" do
     incoming = File.read!("test/fixtures/cw_retweet.xml")
     {:ok, [[_activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+    retweeted_object = Object.normalize(retweeted_activity.data["object"])
 
-    assert retweeted_activity.data["object"]["summary"] == "Hey."
+    assert retweeted_object.data["summary"] == "Hey."
   end
 
   test "handle incoming notes - GS, subscription, reply" do
     incoming = File.read!("test/fixtures/ostatus_incoming_reply.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
 
     assert activity.data["type"] == "Create"
-    assert activity.data["object"]["type"] == "Note"
-    assert activity.data["object"]["actor"] == "https://social.heldscal.la/user/23211"
+    assert object.data["type"] == "Note"
+    assert object.data["actor"] == "https://social.heldscal.la/user/23211"
 
-    assert activity.data["object"]["content"] ==
+    assert object.data["content"] ==
              "@<a href=\"https://gs.archae.me/user/4687\" class=\"h-card u-url p-nickname mention\" title=\"shpbot\">shpbot</a> why not indeed."
 
-    assert activity.data["object"]["inReplyTo"] ==
+    assert object.data["inReplyTo"] ==
              "tag:gs.archae.me,2017-04-30:noticeId=778260:objectType=note"
 
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
@@ -137,17 +147,19 @@ defmodule Pleroma.Web.OStatusTest do
 
     assert activity.data["type"] == "Announce"
     assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    assert activity.data["object"] == retweeted_activity.data["object"]
     assert "https://pleroma.soykaf.com/users/lain" in activity.data["to"]
     refute activity.local
 
     retweeted_activity = Repo.get(Activity, retweeted_activity.id)
+    retweeted_object = Object.normalize(retweeted_activity.data["object"])
+
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
     refute retweeted_activity.local
-    assert retweeted_activity.data["object"]["announcement_count"] == 1
-    assert String.contains?(retweeted_activity.data["object"]["content"], "mastodon")
-    refute String.contains?(retweeted_activity.data["object"]["content"], "Test account")
+    assert retweeted_object.data["announcement_count"] == 1
+    assert String.contains?(retweeted_object.data["content"], "mastodon")
+    refute String.contains?(retweeted_object.data["content"], "Test account")
   end
 
   test "handle incoming retweets - GS, subscription - local message" do
@@ -179,10 +191,11 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming retweets - Mastodon, salmon" do
     incoming = File.read!("test/fixtures/share.xml")
     {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
+    retweeted_object = Object.normalize(retweeted_activity.data["object"])
 
     assert activity.data["type"] == "Announce"
     assert activity.data["actor"] == "https://mastodon.social/users/lambadalambda"
-    assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    assert activity.data["object"] == retweeted_activity.data["object"]
 
     assert activity.data["id"] ==
              "tag:mastodon.social,2017-05-03:objectId=4934452:objectType=Status"
@@ -191,7 +204,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
     refute retweeted_activity.local
-    refute String.contains?(retweeted_activity.data["object"]["content"], "Test account")
+    refute String.contains?(retweeted_object.data["content"], "Test account")
   end
 
   test "handle incoming favorites - GS, websub" do
@@ -201,7 +214,7 @@ defmodule Pleroma.Web.OStatusTest do
 
       assert activity.data["type"] == "Like"
       assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-      assert activity.data["object"] == favorited_activity.data["object"]["id"]
+      assert activity.data["object"] == favorited_activity.data["object"]
 
       assert activity.data["id"] ==
                "tag:social.heldscal.la,2017-05-05:fave:23211:comment:2061643:2017-05-05T09:12:50+00:00"
@@ -210,7 +223,7 @@ defmodule Pleroma.Web.OStatusTest do
       assert favorited_activity.data["type"] == "Create"
       assert favorited_activity.data["actor"] == "https://shitposter.club/user/1"
 
-      assert favorited_activity.data["object"]["id"] ==
+      assert favorited_activity.data["object"] ==
                "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
 
       refute favorited_activity.local
@@ -245,16 +258,17 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming replies" do
     incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
+    object = Object.normalize(activity.data["object"])
 
     assert activity.data["type"] == "Create"
-    assert activity.data["object"]["type"] == "Note"
+    assert object.data["type"] == "Note"
 
-    assert activity.data["object"]["inReplyTo"] ==
+    assert object.data["inReplyTo"] ==
              "http://pleroma.example.org:4000/objects/55bce8fc-b423-46b1-af71-3759ab4670bc"
 
     assert "http://pleroma.example.org:4000/users/lain5" in activity.data["to"]
 
-    assert activity.data["object"]["id"] ==
+    assert object.data["id"] ==
              "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
 
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
@@ -466,7 +480,7 @@ defmodule Pleroma.Web.OStatusTest do
 
         assert activity.data["actor"] == "https://shitposter.club/user/1"
 
-        assert activity.data["object"]["id"] ==
+        assert activity.data["object"] ==
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
       end)
     end
@@ -475,7 +489,7 @@ defmodule Pleroma.Web.OStatusTest do
       url = "https://social.sakamoto.gq/objects/0ccc1a2c-66b0-4305-b23a-7f7f2b040056"
       {:ok, [activity]} = OStatus.fetch_activity_from_url(url)
       assert activity.data["actor"] == "https://social.sakamoto.gq/users/eal"
-      assert activity.data["object"]["id"] == url
+      assert activity.data["object"] == url
     end
   end
 

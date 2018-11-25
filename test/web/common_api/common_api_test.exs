@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.CommonAPI.Test do
   use Pleroma.DataCase
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.User
+  alias Pleroma.{User, Object}
 
   import Pleroma.Factory
 
@@ -9,7 +9,9 @@ defmodule Pleroma.Web.CommonAPI.Test do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu #2HU"})
 
-    assert activity.data["object"]["tag"] == ["2hu"]
+    object = Object.normalize(activity.data["object"])
+
+    assert object.data["tag"] == ["2hu"]
   end
 
   test "it adds emoji when updating profiles" do
@@ -34,8 +36,10 @@ defmodule Pleroma.Web.CommonAPI.Test do
           "content_type" => "text/html"
         })
 
-      content = activity.data["object"]["content"]
-      assert content == "<p><b>2hu</b></p>alert('xss')"
+      object =
+        Object.normalize(activity.data["object"])
+
+      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
 
     test "it filters out obviously bad tags when accepting a post as Markdown" do
@@ -49,8 +53,10 @@ defmodule Pleroma.Web.CommonAPI.Test do
           "content_type" => "text/markdown"
         })
 
-      content = activity.data["object"]["content"]
-      assert content == "<p><b>2hu</b></p>alert('xss')"
+      object =
+        Object.normalize(activity.data["object"])
+
+      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
   end
 end
