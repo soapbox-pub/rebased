@@ -81,6 +81,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
     if activity.data["type"] in ["Create", "Announce"] do
+      object = Object.normalize(activity.data["object"])
+
       Pleroma.Web.Streamer.stream("user", activity)
       Pleroma.Web.Streamer.stream("list", activity)
 
@@ -91,12 +93,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           Pleroma.Web.Streamer.stream("public:local", activity)
         end
 
-        activity.data["object"]
+        object.data
         |> Map.get("tag", [])
         |> Enum.filter(fn tag -> is_bitstring(tag) end)
         |> Enum.map(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
 
-        if activity.data["object"]["attachment"] != [] do
+        if object.data["attachment"] != [] do
           Pleroma.Web.Streamer.stream("public:media", activity)
 
           if activity.local do
