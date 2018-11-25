@@ -167,14 +167,14 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
-    {summary, content} = ActivityView.render_content(object)
+    {summary, content} = ActivityView.render_content(object.data)
 
     html =
       HTML.filter_tags(content, User.html_filter_policy(opts[:for]))
       |> Formatter.emojify(object.data["emoji"])
 
     video =
-      if object["type"] == "Video" do
+      if object.data["type"] == "Video" do
         vid = [object.data]
       else
         []

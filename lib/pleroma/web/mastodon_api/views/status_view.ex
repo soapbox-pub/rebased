@@ -134,7 +134,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     %{
       id: to_string(activity.id),
       uri: object.data["id"],
-      url: object.data["external_url"] || object["id"],
+      url: object.data["external_url"] || object.data["id"],
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
@@ -149,7 +149,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       muted: false,
       sensitive: sensitive,
       spoiler_text: object.data["summary"] || "",
-      visibility: get_visibility(object),
+      visibility: get_visibility(object.data),
       media_attachments: attachments |> Enum.take(4),
       mentions: mentions,
       # fix,
