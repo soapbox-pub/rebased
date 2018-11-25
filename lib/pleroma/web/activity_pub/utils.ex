@@ -180,14 +180,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Inserts a full object if it is contained in an activity.
   """
-  def insert_full_object(%{"object" => %{"type" => type} = object_data})
+  def insert_full_object(%{"object" => %{"type" => type} = object_data} = map)
       when is_map(object_data) and type in @supported_object_types do
-    with {:ok, _} <- Object.create(object_data) do
-      :ok
+    with {:ok, object} <- Object.create(object_data) do
+      map =
+        map
+        |> Map.put("object", object.data["id"])
+
+      {:ok, map}
     end
   end
 
-  def insert_full_object(_), do: :ok
+  def insert_full_object(map), do: {:ok, map}
 
   def update_object_in_activities(%{data: %{"id" => id}} = object) do
     # TODO

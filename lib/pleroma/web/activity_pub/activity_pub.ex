@@ -57,7 +57,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          map <- lazy_put_activity_defaults(map),
          :ok <- check_actor_is_active(map["actor"]),
          {:ok, map} <- MRF.filter(map),
-         :ok <- insert_full_object(map) do
+         {:ok, map} <- insert_full_object(map) do
       {recipients, _, _} = get_recipients(map)
 
       {:ok, activity} =
