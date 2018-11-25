@@ -141,7 +141,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   end
 
   def to_map(
-        %Activity{data: %{"object" => %{"content" => content} = object}} = activity,
+        %Activity{data: %{"object" => object}} = activity,
         %{user: user} = opts
       ) do
     object = Object.normalize(object)

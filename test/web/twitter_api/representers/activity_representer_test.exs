@@ -87,6 +87,26 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
 
     {:ok, convo_object} = Object.context_mapping("2hu") |> Repo.insert()
 
+    note_object = %{
+      "id" => "https://example.com/id/1",
+      "published" => date,
+      "type" => "Note",
+      "content" => content_html,
+      "summary" => "2hu",
+      "inReplyToStatusId" => 213_123,
+      "attachment" => [object.data],
+      "external_url" => "some url",
+      "like_count" => 5,
+      "announcement_count" => 3,
+      "context" => "2hu",
+      "tag" => ["content", "mentioning", "nsfw"],
+      "emoji" => %{
+        "2hu" => "corndog.png"
+      }
+    }
+
+    Object.create(note_object)
+
     to = [
       User.ap_followers(user),
       "https://www.w3.org/ns/activitystreams#Public",
@@ -100,24 +120,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
         "id" => "id",
         "to" => to,
         "actor" => User.ap_id(user),
-        "object" => %{
-          "published" => date,
-          "type" => "Note",
-          "content" => content_html,
-          "summary" => "2hu",
-          "inReplyToStatusId" => 213_123,
-          "attachment" => [
-            object
-          ],
-          "external_url" => "some url",
-          "like_count" => 5,
-          "announcement_count" => 3,
-          "context" => "2hu",
-          "tag" => ["content", "mentioning", "nsfw"],
-          "emoji" => %{
-            "2hu" => "corndog.png"
-          }
-        },
+        "object" => note_object["id"],
         "published" => date,
         "context" => "2hu"
       },
@@ -158,7 +161,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "tags" => ["nsfw", "content", "mentioning"],
       "activity_type" => "post",
       "possibly_sensitive" => true,
-      "uri" => activity.data["object"]["id"],
+      "uri" => note_object["id"],
       "visibility" => "direct",
       "summary" => "2hu"
     }
