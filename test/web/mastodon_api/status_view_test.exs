@@ -2,21 +2,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
-  alias Pleroma.User
+  alias Pleroma.{Repo, User, Object}
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
   test "a note with null content" do
     note = insert(:note_activity)
+    note_object = Object.normalize(note.data["object"])
 
     data =
-      note.data
-      |> put_in(["object", "content"], nil)
+      note_object.data
+      |> Map.put("content", nil)
 
-    note =
-      note
-      |> Map.put(:data, data)
+    Object.change(note_object, %{data: data})
+    |> Repo.update()
 
     user = User.get_cached_by_ap_id(note.data["actor"])
 
