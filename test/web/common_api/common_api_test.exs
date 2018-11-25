@@ -36,8 +36,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
           "content_type" => "text/html"
         })
 
-      object =
-        Object.normalize(activity.data["object"])
+      object = Object.normalize(activity.data["object"])
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
@@ -53,8 +52,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
           "content_type" => "text/markdown"
         })
 
-      object =
-        Object.normalize(activity.data["object"])
+      object = Object.normalize(activity.data["object"])
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end

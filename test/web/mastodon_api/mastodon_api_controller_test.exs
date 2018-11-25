@@ -2,7 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Activity, Notification}
+  alias Pleroma.{Repo, User, Activity, Notification, Object}
   alias Pleroma.Web.{OStatus, CommonAPI}
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -219,9 +219,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
 
     activity = Repo.get(Activity, id)
+    object = Object.normalize(activity.data["object"])
 
     assert activity.data["context"] == replied_to.data["context"]
-    assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
+    assert object.data["inReplyToStatusId"] == replied_to.id
   end
 
   test "posting a status with an invalid in_reply_to_id", %{conn: conn} do

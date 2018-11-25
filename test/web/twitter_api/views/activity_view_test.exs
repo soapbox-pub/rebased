@@ -7,7 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Repo
-  alias Pleroma.Activity
+  alias Pleroma.{Activity, Object}
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -19,10 +19,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     other_user = insert(:user, %{nickname: "shp"})
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+    object = Object.normalize(activity.data["object"])
 
     result = ActivityView.render("activity.json", activity: activity)
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = TwitterAPI.context_to_conversation_id(object.data["context"])
 
     expected = %{
       "activity_type" => "post",
@@ -30,8 +31,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "attentions" => [
         UserView.render("show.json", %{user: other_user})
       ],
-      "created_at" => activity.data["object"]["published"] |> Utils.date_to_asctime(),
-      "external_url" => activity.data["object"]["id"],
+      "created_at" => object.data["published"] |> Utils.date_to_asctime(),
+      "external_url" => object.data["id"],
       "fave_num" => 0,
       "favorited" => false,
       "id" => activity.id,
@@ -50,7 +51,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
         "Hey <span><a href=\"#{other_user.ap_id}\">@<span>shp</span></a></span>!",
       "tags" => [],
       "text" => "Hey @shp!",
-      "uri" => activity.data["object"]["id"],
+      "uri" => object.data["id"],
       "user" => UserView.render("show.json", %{user: user}),
       "visibility" => "direct",
       "summary" => nil
@@ -63,8 +64,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     user = insert(:user)
     other_user = insert(:user, %{nickname: "shp"})
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    object = Object.normalize(activity.data["object"])
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = TwitterAPI.context_to_conversation_id(object.data["context"])
 
     mocks = [
       {
@@ -162,9 +164,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     other_user = insert(:user, %{nickname: "shp"})
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
-    {:ok, announce, _object} = CommonAPI.repeat(activity.id, other_user)
+    {:ok, announce, object} = CommonAPI.repeat(activity.id, other_user)
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = TwitterAPI.context_to_conversation_id(object.data["context"])
 
     activity = Repo.get(Activity, activity.id)
 

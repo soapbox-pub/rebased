@@ -22,8 +22,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
 
-    assert object.data["id"] ==
-             "tag:gs.example.org:4040,2017-04-23:noticeId=29:objectType=note"
+    assert object.data["id"] == "tag:gs.example.org:4040,2017-04-23:noticeId=29:objectType=note"
 
     assert activity.data["published"] == "2017-04-23T14:51:03+00:00"
     assert object.data["published"] == "2017-04-23T14:51:03+00:00"
@@ -268,8 +267,7 @@ defmodule Pleroma.Web.OStatusTest do
 
     assert "http://pleroma.example.org:4000/users/lain5" in activity.data["to"]
 
-    assert object.data["id"] ==
-             "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
+    assert object.data["id"] == "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
 
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
   end
