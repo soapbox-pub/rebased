@@ -1,6 +1,6 @@
 defmodule Pleroma.Activity do
   use Ecto.Schema
-  alias Pleroma.{Repo, Activity, Notification}
+  alias Pleroma.{Repo, Activity, Notification, Object}
   import Ecto.Query
 
   schema "activities" do
@@ -83,9 +83,13 @@ defmodule Pleroma.Activity do
   def normalize(ap_id) when is_binary(ap_id), do: Activity.get_by_ap_id(ap_id)
   def normalize(_), do: nil
 
-  def get_in_reply_to_activity(%Activity{data: %{"object" => %{"inReplyTo" => ap_id}}}) do
+  defp get_in_reply_to_activity_from_object(%Object{data: %{"inReplyTo" => ap_id}}) do
     get_create_activity_by_object_ap_id(ap_id)
   end
 
-  def get_in_reply_to_activity(_), do: nil
+  defp get_in_reply_to_activity_from_object(_), do: nil
+
+  def get_in_reply_to_activity(%Activity{data: %{"object" => object}}) do
+    get_in_reply_to_activity_from_object(Object.normalize(object))
+  end
 end
