@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.MastodonAPI.StatusView do
   use Pleroma.Web, :view
   alias Pleroma.Web.MastodonAPI.{AccountView, StatusView}
-  alias Pleroma.{User, Activity}
+  alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Repo
@@ -11,8 +11,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_replied_to_activities(activities) do
     activities
     |> Enum.map(fn
-      %{data: %{"type" => "Create", "object" => %{"inReplyTo" => inReplyTo}}} ->
-        inReplyTo != "" && inReplyTo
+      %{data: %{"type" => "Create", "object" => object}} ->
+        object = Object.normalize(object)
+        object.data["inReplyTo"] != "" && object.data["inReplyTo"]
 
       _ ->
         nil
@@ -21,7 +22,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Activity.create_activity_by_object_id_query()
     |> Repo.all()
     |> Enum.reduce(%{}, fn activity, acc ->
-      Map.put(acc, activity.data["object"]["id"], activity)
+      object = Object.normalize(activity.data["object"])
+      Map.put(acc, object.data["id"], activity)
     end)
   end
 
@@ -85,13 +87,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
+    object = Object.normalize(object)
+
     user = User.get_cached_by_ap_id(activity.data["actor"])
 
-    like_count = object["like_count"] || 0
-    announcement_count = object["announcement_count"] || 0
+    like_count = object.data["like_count"] || 0
+    announcement_count = object.data["announcement_count"] || 0
 
-    tags = object["tag"] || []
-    sensitive = object["sensitive"] || Enum.member?(tags, "nsfw")
+    tags = object.data["tag"] || []
+    sensitive = object.data["sensitive"] || Enum.member?(tags, "nsfw")
 
     mentions =
       activity.recipients
@@ -99,20 +103,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
 
-    repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
-    favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
+    repeated = opts[:for] && opts[:for].ap_id in (object.data["announcements"] || [])
+    favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
-    attachment_data = object["attachment"] || []
-    attachment_data = attachment_data ++ if object["type"] == "Video", do: [object], else: []
+    attachment_data = object.data["attachment"] || []
+    attachment_data = attachment_data ++ if object.data["type"] == "Video", do: [object], else: []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
 
-    created_at = Utils.to_masto_date(object["published"])
+    created_at = Utils.to_masto_date(object.data["published"])
 
     reply_to = get_reply_to(activity, opts)
     reply_to_user = reply_to && User.get_cached_by_ap_id(reply_to.data["actor"])
 
     emojis =
-      (activity.data["object"]["emoji"] || [])
+      (object.data["emoji"] || [])
       |> Enum.map(fn {name, url} ->
         name = HTML.strip_tags(name)
 
@@ -124,13 +128,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end)
 
     content =
-      render_content(object)
+      render_content(object.data)
       |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
 
     %{
       id: to_string(activity.id),
-      uri: object["id"],
-      url: object["external_url"] || object["id"],
+      uri: object.data["id"],
+      url: object.data["external_url"] || object["id"],
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
@@ -144,7 +148,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourited: !!favorited,
       muted: false,
       sensitive: sensitive,
-      spoiler_text: object["summary"] || "",
+      spoiler_text: object.data["summary"] || "",
       visibility: get_visibility(object),
       media_attachments: attachments |> Enum.take(4),
       mentions: mentions,
@@ -190,13 +194,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
-    _id = activity.data["object"]["inReplyTo"]
-    replied_to_activities[activity.data["object"]["inReplyTo"]]
+    object = Object.normalize(activity.data["object"])
+    replied_to_activities[object.data["inReplyTo"]]
   end
 
   def get_reply_to(%{data: %{"object" => object}}, _) do
-    if object["inReplyTo"] && object["inReplyTo"] != "" do
-      Activity.get_create_activity_by_object_ap_id(object["inReplyTo"])
+    object = Object.normalize(object)
+
+    if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
+      Activity.get_create_activity_by_object_ap_id(object.data["inReplyTo"])
     else
       nil
     end
