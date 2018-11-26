@@ -39,6 +39,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       "font-src 'self'",
       "script-src 'self'",
       "connect-src 'self' " <> String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws"),
+      "manifest-src 'self'",
       "upgrade-insecure-requests"
     ]
     |> Enum.join("; ")
