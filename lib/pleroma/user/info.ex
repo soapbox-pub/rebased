@@ -18,6 +18,8 @@ defmodule Pleroma.User.Info do
     field(:is_moderator, :boolean, default: false)
     field(:keys, :string, default: nil)
     field(:settings, :map, default: nil)
+    field(:magic_key, :string, default: nil)
+    # topic, subject, salmon, subscribe_address
   end
 
   def set_activation_status(info, deactivated) do
@@ -94,7 +96,8 @@ defmodule Pleroma.User.Info do
       :ap_enabled,
       :source_data,
       :banner,
-      :locked
+      :locked,
+      :magic_key
     ])
   end
 
@@ -104,7 +107,8 @@ defmodule Pleroma.User.Info do
       :ap_enabled,
       :source_data,
       :banner,
-      :locked
+      :locked,
+      :magic_key
     ])
   end
 

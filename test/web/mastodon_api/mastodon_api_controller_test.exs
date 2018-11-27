@@ -1105,7 +1105,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute User.blocks?(user, other_user)
   end
 
-  test "getting a list of domain blocks" do
+  test "getting a list of domain blocks", %{conn: conn} do
     user = insert(:user)
 
     {:ok, user} = User.block_domain(user, "bad.site")

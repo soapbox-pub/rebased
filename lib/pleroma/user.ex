@@ -112,6 +112,7 @@ defmodule Pleroma.User do
     end
   end
 
+  # TODO: Check if this still used
   def update_changeset(struct, params \\ %{}) do
     struct
     |> cast(params, [:bio, :name])
@@ -730,7 +731,7 @@ defmodule Pleroma.User do
 
   # AP style
   def public_key_from_info(%{
-        "source_data" => %{"publicKey" => %{"publicKeyPem" => public_key_pem}}
+        source_data: %{"publicKey" => %{"publicKeyPem" => public_key_pem}}
       }) do
     key =
       :public_key.pem_decode(public_key_pem)
@@ -741,7 +742,7 @@ defmodule Pleroma.User do
   end
 
   # OStatus Magic Key
-  def public_key_from_info(%{"magic_key" => magic_key}) do
+  def public_key_from_info(%{magic_key: magic_key}) do
     {:ok, Pleroma.Web.Salmon.decode_key(magic_key)}
   end
 
