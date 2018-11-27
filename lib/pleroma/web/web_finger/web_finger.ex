@@ -45,7 +45,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def represent_user(user, "JSON") do
     {:ok, user} = ensure_keys_present(user)
-    {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
+    {:ok, _private, public} = Salmon.keys_from_pem(user.info.keys)
     magic_key = Salmon.encode_key(public)
 
     %{
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def represent_user(user, "XML") do
     {:ok, user} = ensure_keys_present(user)
-    {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
+    {:ok, _private, public} = Salmon.keys_from_pem(user.info.keys)
     magic_key = Salmon.encode_key(public)
 
     {
