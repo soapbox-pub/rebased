@@ -98,6 +98,16 @@ defmodule Pleroma.User.Info do
     ])
   end
 
+  def user_upgrade(info, params) do
+    info
+    |> cast(params, [
+      :ap_enabled,
+      :source_data,
+      :banner,
+      :locked
+    ])
+  end
+
   def set_source_data(info, source_data) do
     params = %{source_data: source_data}
 
