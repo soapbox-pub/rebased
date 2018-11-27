@@ -19,7 +19,8 @@ defmodule Pleroma.User.Info do
     field(:keys, :string, default: nil)
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
-    # topic, subject, salmon, subscribe_address
+    field(:uri, :string, default: nil)
+    # topic, subject, salmon, subscribe_address, uri
   end
 
   def set_activation_status(info, deactivated) do
@@ -97,7 +98,8 @@ defmodule Pleroma.User.Info do
       :source_data,
       :banner,
       :locked,
-      :magic_key
+      :magic_key,
+      :uri
     ])
   end
 

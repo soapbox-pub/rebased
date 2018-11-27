@@ -17,7 +17,7 @@ defmodule Pleroma.Web.OStatusTest do
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
     user = User.get_by_ap_id(activity.data["actor"])
-    assert user.info["note_count"] == 1
+    assert user.info.note_count == 1
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"
 
@@ -319,7 +319,7 @@ defmodule Pleroma.Web.OStatusTest do
       assert user.name == "Constance Variable"
       assert user.nickname == "lambadalambda@social.heldscal.la"
       assert user.local == false
-      assert user.info["uri"] == uri
+      assert user.info.uri == uri
       assert user.ap_id == uri
       assert user.bio == "Call me Deacon Blues."
       assert user.avatar["type"] == "Image"
