@@ -87,3 +87,16 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * ``sts_max_age``: The maximum age for the `Strict-Transport-Security` header if sent
 * ``ct_max_age``: The maximum age for the `Expect-CT` header if sent
 * ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
+
+## :mrf_user_allowlist
+
+The keys in this section are the domain names that the policy should apply to.
+Each key should be assigned a list of users that should be allowed through by
+their ActivityPub ID.
+
+An example:
+
+```
+config :pleroma, :mrf_user_allowlist,
+  "example.org": ["https://example.org/users/admin"]
+```
