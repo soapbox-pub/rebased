@@ -73,7 +73,8 @@ defmodule Pleroma.Web.Streamer do
           Pleroma.List.get_lists_from_activity(item)
           |> Enum.filter(fn list ->
             owner = Repo.get(User, list.user_id)
-            author.follower_address in owner.following
+
+            ActivityPub.visible_for_user?(item, owner)
           end)
       end
 
