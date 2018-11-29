@@ -93,7 +93,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           to: ["user1", "user1", "user2"],
           actor: user,
           context: "",
-          object: %{}
+          object: %{
+            "to" => ["user1", "user1", "user2"],
+            "type" => "Note",
+            "content" => "testing"
+          }
         })
 
       assert activity.data["to"] == ["user1", "user2"]
