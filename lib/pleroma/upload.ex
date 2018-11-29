@@ -1,31 +1,73 @@
 defmodule Pleroma.Upload do
+  @moduledoc """
+  # Upload
+
+  Options:
+  * `:type`: presets for activity type (defaults to Document) and size limits from app configuration
+  * `:description`: upload alternative text
+  * `:uploader`: override uploader
+  * `:filters`: override filters
+  * `:size_limit`: override size limit
+  * `:activity_type`: override activity type
+
+  The `%Pleroma.Upload{}` struct: all documented fields are meant to be overwritten in filters:
+
+  * `:id` - the upload id.
+  * `:name` - the upload file name.
+  * `:path` - the upload path: set at first to `id/name` but can be changed. Keep in mind that the path
+    is once created permanent and changing it (especially in uploaders) is probably a bad idea!
+  * `:tempfile` - path to the temporary file. Prefer in-place changes on the file rather than changing the
+  path as the temporary file is also tracked by `Plug.Upload{}` and automatically deleted once the request is over.
+
+  Related behaviors:
+
+  * `Pleroma.Uploaders.Uploader`
+  * `Pleroma.Upload.Filter`
+
+  """
   alias Ecto.UUID
   require Logger
 
-  @type upload_option ::
-          {:dedupe, boolean()} | {:size_limit, non_neg_integer()} | {:uploader, module()}
-  @type upload_source ::
-          Plug.Upload.t() | data_uri_string() ::
-          String.t() | {:from_local, name :: String.t(), uuid :: String.t(), path :: String.t()}
+  @type source ::
+          Plug.Upload.t() | data_uri_string ::
+          String.t() | {:from_local, name :: String.t(), id :: String.t(), path :: String.t()}
 
-  @spec store(upload_source, options :: [upload_option()]) :: {:ok, Map.t()} | {:error, any()}
+  @type option ::
+          {:type, :avatar | :banner | :background}
+          | {:description, String.t()}
+          | {:activity_type, String.t()}
+          | {:size_limit, nil | non_neg_integer()}
+          | {:uploader, module()}
+          | {:filters, [module()]}
+
+  @type t :: %__MODULE__{
+          id: String.t(),
+          name: String.t(),
+          tempfile: String.t(),
+          content_type: String.t(),
+          path: String.t()
+        }
+  defstruct [:id, :name, :tempfile, :content_type, :path]
+
+  @spec store(source, options :: [option()]) :: {:ok, Map.t()} | {:error, any()}
   def store(upload, opts \\ []) do
     opts = get_opts(opts)
 
-    with {:ok, name, uuid, path, content_type} <- process_upload(upload, opts),
-         _ <- strip_exif_data(content_type, path),
-         {:ok, url_spec} <- opts.uploader.put_file(name, uuid, path, content_type, opts) do
+    with {:ok, upload} <- prepare_upload(upload, opts),
+         upload = %__MODULE__{upload | path: upload.path || "#{upload.id}/#{upload.name}"},
+         {:ok, upload} <- Pleroma.Upload.Filter.filter(opts.filters, upload),
+         {:ok, url_spec} <- Pleroma.Uploaders.Uploader.put_file(opts.uploader, upload) do
       {:ok,
        %{
-         "type" => "Image",
+         "type" => opts.activity_type,
          "url" => [
            %{
              "type" => "Link",
-             "mediaType" => content_type,
+             "mediaType" => upload.content_type,
              "href" => url_from_spec(url_spec)
            }
          ],
-         "name" => name
+         "name" => Map.get(opts, :description) || upload.name
        }}
     else
       {:error, error} ->
@@ -38,40 +80,98 @@ defmodule Pleroma.Upload do
   end
 
   defp get_opts(opts) do
-    %{
-      dedupe: Keyword.get(opts, :dedupe, Pleroma.Config.get([:instance, :dedupe_media])),
-      size_limit: Keyword.get(opts, :size_limit, Pleroma.Config.get([:instance, :upload_limit])),
-      uploader: Keyword.get(opts, :uploader, Pleroma.Config.get([__MODULE__, :uploader]))
+    {size_limit, activity_type} =
+      case Keyword.get(opts, :type) do
+        :banner ->
+          {Pleroma.Config.get!([:instance, :banner_upload_limit]), "Image"}
+
+        :avatar ->
+          {Pleroma.Config.get!([:instance, :avatar_upload_limit]), "Image"}
+
+        :background ->
+          {Pleroma.Config.get!([:instance, :background_upload_limit]), "Image"}
+
+        _ ->
+          {Pleroma.Config.get!([:instance, :upload_limit]), "Document"}
+      end
+
+    opts = %{
+      activity_type: Keyword.get(opts, :activity_type, activity_type),
+      size_limit: Keyword.get(opts, :size_limit, size_limit),
+      uploader: Keyword.get(opts, :uploader, Pleroma.Config.get([__MODULE__, :uploader])),
+      filters: Keyword.get(opts, :filters, Pleroma.Config.get([__MODULE__, :filters])),
+      description: Keyword.get(opts, :description)
     }
+
+    # TODO: 1.0+ : remove old config compatibility
+    opts =
+      if Pleroma.Config.get([__MODULE__, :strip_exif]) == true &&
+           !Enum.member?(opts.filters, Pleroma.Upload.Filter.Mogrify) do
+        Logger.warn("""
+        Pleroma: configuration `:instance, :strip_exif` is deprecated, please instead set:
+
+          :instance, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Mogrify]]
+
+          :pleroma, Pleroma.Upload.Mogrify, args: "strip"
+        """)
+
+        Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: "strip")
+        Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Mogrify])
+      else
+        opts
+      end
+
+    opts =
+      if Pleroma.Config.get([:instance, :dedupe_media]) == true &&
+           !Enum.member?(opts.filters, Pleroma.Upload.Filter.Dedupe) do
+        Logger.warn("""
+        Pleroma: configuration `:instance, :dedupe_media` is deprecated, please instead set:
+
+          :instance, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Dedupe]]
+        """)
+
+        Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Dedupe])
+      else
+        opts
+      end
   end
 
-  defp process_upload(%Plug.Upload{} = file, opts) do
+  defp prepare_upload(%Plug.Upload{} = file, opts) do
     with :ok <- check_file_size(file.path, opts.size_limit),
-         uuid <- get_uuid(file, opts.dedupe),
-         content_type <- get_content_type(file.path),
-         name <- get_name(file, uuid, content_type, opts.dedupe) do
-      {:ok, name, uuid, file.path, content_type}
+         {:ok, content_type, name} <- Pleroma.MIME.file_mime_type(file.path, file.filename) do
+      {:ok,
+       %__MODULE__{
+         id: UUID.generate(),
+         name: name,
+         tempfile: file.path,
+         content_type: content_type
+       }}
     end
   end
 
-  defp process_upload(%{"img" => "data:image/" <> image_data}, opts) do
+  defp prepare_upload(%{"img" => "data:image/" <> image_data}, opts) do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
     hash = String.downcase(Base.encode16(:crypto.hash(:sha256, data)))
 
     with :ok <- check_binary_size(data, opts.size_limit),
          tmp_path <- tempfile_for_image(data),
-         content_type <- get_content_type(tmp_path),
-         uuid <- UUID.generate(),
-         name <- create_name(hash, parsed["filetype"], content_type) do
-      {:ok, name, uuid, tmp_path, content_type}
+         {:ok, content_type, name} <-
+           Pleroma.MIME.bin_mime_type(data, hash <> "." <> parsed["filetype"]) do
+      {:ok,
+       %__MODULE__{
+         id: UUID.generate(),
+         name: name,
+         tempfile: tmp_path,
+         content_type: content_type
+       }}
     end
   end
 
   # For Mix.Tasks.MigrateLocalUploads
-  defp process_upload({:from_local, name, uuid, path}, _opts) do
-    with content_type <- get_content_type(path) do
-      {:ok, name, uuid, path, content_type}
+  defp prepare_upload(upload = %__MODULE__{tempfile: path}, _opts) do
+    with {:ok, content_type} <- Pleroma.MIME.file_mime_type(path) do
+      {:ok, %__MODULE__{upload | content_type: content_type}}
     end
   end
 
@@ -102,119 +202,6 @@ defmodule Pleroma.Upload do
     IO.binwrite(tmp_file, data)
 
     tmp_path
-  end
-
-  defp strip_exif_data(content_type, file) do
-    settings = Application.get_env(:pleroma, Pleroma.Upload)
-    do_strip = Keyword.fetch!(settings, :strip_exif)
-    [filetype, _ext] = String.split(content_type, "/")
-
-    if filetype == "image" and do_strip == true do
-      Mogrify.open(file) |> Mogrify.custom("strip") |> Mogrify.save(in_place: true)
-    end
-  end
-
-  defp create_name(uuid, ext, type) do
-    extension =
-      cond do
-        type == "application/octect-stream" -> ext
-        ext = mime_extension(ext) -> ext
-        true -> String.split(type, "/") |> List.last()
-      end
-
-    [uuid, extension]
-    |> Enum.join(".")
-    |> String.downcase()
-  end
-
-  defp mime_extension(type) do
-    List.first(MIME.extensions(type))
-  end
-
-  defp get_uuid(file, should_dedupe) do
-    if should_dedupe do
-      Base.encode16(:crypto.hash(:sha256, File.read!(file.path)))
-    else
-      UUID.generate()
-    end
-  end
-
-  defp get_name(file, uuid, type, should_dedupe) do
-    if should_dedupe do
-      create_name(uuid, List.last(String.split(file.filename, ".")), type)
-    else
-      parts = String.split(file.filename, ".")
-
-      new_filename =
-        if length(parts) > 1 do
-          Enum.drop(parts, -1) |> Enum.join(".")
-        else
-          Enum.join(parts)
-        end
-
-      cond do
-        type == "application/octet-stream" ->
-          file.filename
-
-        ext = mime_extension(type) ->
-          new_filename <> "." <> ext
-
-        true ->
-          Enum.join([new_filename, String.split(type, "/") |> List.last()], ".")
-      end
-    end
-  end
-
-  def get_content_type(file) do
-    match =
-      File.open(file, [:read], fn f ->
-        case IO.binread(f, 8) do
-          <<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A>> ->
-            "image/png"
-
-          <<0x47, 0x49, 0x46, 0x38, _, 0x61, _, _>> ->
-            "image/gif"
-
-          <<0xFF, 0xD8, 0xFF, _, _, _, _, _>> ->
-            "image/jpeg"
-
-          <<0x1A, 0x45, 0xDF, 0xA3, _, _, _, _>> ->
-            "video/webm"
-
-          <<0x00, 0x00, 0x00, _, 0x66, 0x74, 0x79, 0x70>> ->
-            "video/mp4"
-
-          <<0x49, 0x44, 0x33, _, _, _, _, _>> ->
-            "audio/mpeg"
-
-          <<255, 251, _, 68, 0, 0, 0, 0>> ->
-            "audio/mpeg"
-
-          <<0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00, 0x00>> ->
-            case IO.binread(f, 27) do
-              <<_::size(160), 0x80, 0x74, 0x68, 0x65, 0x6F, 0x72, 0x61>> ->
-                "video/ogg"
-
-              _ ->
-                "audio/ogg"
-            end
-
-          <<0x52, 0x49, 0x46, 0x46, _, _, _, _>> ->
-            "audio/wav"
-
-          _ ->
-            "application/octet-stream"
-        end
-      end)
-
-    case match do
-      {:ok, type} -> type
-      _e -> "application/octet-stream"
-    end
-  end
-
-  defp uploader() do
-    Pleroma.Config.get!([Pleroma.Upload, :uploader])
   end
 
   defp url_from_spec({:file, path}) do

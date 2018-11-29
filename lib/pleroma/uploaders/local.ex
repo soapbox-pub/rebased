@@ -7,39 +7,28 @@ defmodule Pleroma.Uploaders.Local do
     {:ok, {:static_dir, upload_path()}}
   end
 
-  def put_file(name, uuid, tmpfile, _content_type, opts) do
-    upload_folder = get_upload_path(uuid, opts.dedupe)
+  def put_file(upload) do
+    {local_path, file} =
+      case Enum.reverse(String.split(upload.path, "/", trim: true)) do
+        [file] ->
+          {upload_path(), file}
 
-    File.mkdir_p!(upload_folder)
+        [file | folders] ->
+          path = Path.join([upload_path()] ++ Enum.reverse(folders))
+          File.mkdir_p!(path)
+          {path, file}
+      end
 
-    result_file = Path.join(upload_folder, name)
+    result_file = Path.join(local_path, file)
 
-    if File.exists?(result_file) do
-      File.rm!(tmpfile)
-    else
-      File.cp!(tmpfile, result_file)
+    unless File.exists?(result_file) do
+      File.cp!(upload.tempfile, result_file)
     end
 
-    {:ok, {:file, get_url(name, uuid, opts.dedupe)}}
+    :ok
   end
 
   def upload_path do
     Pleroma.Config.get!([__MODULE__, :uploads])
-  end
-
-  defp get_upload_path(uuid, should_dedupe) do
-    if should_dedupe do
-      upload_path()
-    else
-      Path.join(upload_path(), uuid)
-    end
-  end
-
-  defp get_url(name, uuid, should_dedupe) do
-    if should_dedupe do
-      :cow_uri.urlencode(name)
-    else
-      Path.join(uuid, :cow_uri.urlencode(name))
-    end
   end
 end

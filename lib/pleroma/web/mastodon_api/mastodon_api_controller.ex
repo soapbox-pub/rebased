@@ -35,14 +35,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_credentials(%{assigns: %{user: user}} = conn, params) do
     original_user = user
 
-    avatar_upload_limit =
-      Application.get_env(:pleroma, :instance)
-      |> Keyword.fetch(:avatar_upload_limit)
-
-    banner_upload_limit =
-      Application.get_env(:pleroma, :instance)
-      |> Keyword.fetch(:banner_upload_limit)
-
     params =
       if bio = params["note"] do
         Map.put(params, "bio", bio)
@@ -60,7 +52,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user =
       if avatar = params["avatar"] do
         with %Plug.Upload{} <- avatar,
-             {:ok, object} <- ActivityPub.upload(avatar, size_limit: avatar_upload_limit),
+             {:ok, object} <- ActivityPub.upload(avatar, type: :avatar),
              change = Ecto.Changeset.change(user, %{avatar: object.data}),
              {:ok, user} = User.update_and_set_cache(change) do
           user
@@ -74,7 +66,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user =
       if banner = params["header"] do
         with %Plug.Upload{} <- banner,
-             {:ok, object} <- ActivityPub.upload(banner, size_limit: banner_upload_limit),
+             {:ok, object} <- ActivityPub.upload(banner, type: :banner),
              new_info <- Map.put(user.info, "banner", object.data),
              change <- User.info_changeset(user, %{info: new_info}),
              {:ok, user} <- User.update_and_set_cache(change) do
@@ -471,19 +463,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def upload(%{assigns: %{user: _}} = conn, %{"file" => file} = data) do
-    with {:ok, object} <- ActivityPub.upload(file) do
-      objdata =
-        if Map.has_key?(data, "description") do
-          Map.put(object.data, "name", data["description"])
-        else
-          object.data
-        end
-
-      change = Object.change(object, %{data: objdata})
+    with {:ok, object} <- ActivityPub.upload(file, description: Map.get(data, "description")) do
+      change = Object.change(object, %{data: object.data})
       {:ok, object} = Repo.update(change)
 
       objdata =
-        objdata
+        object.data
         |> Map.put("id", object.id)
 
       render(conn, StatusView, "attachment.json", %{attachment: objdata})

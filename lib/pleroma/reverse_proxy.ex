@@ -101,7 +101,7 @@ defmodule Pleroma.ReverseProxy do
       end
 
     with {:ok, code, headers, client} <- request(method, url, req_headers, hackney_opts),
-         :ok <- header_lenght_constraint(headers, Keyword.get(opts, :max_body_length)) do
+         :ok <- header_length_constraint(headers, Keyword.get(opts, :max_body_length)) do
       response(conn, client, url, code, headers, opts)
     else
       {:ok, code, headers} ->
@@ -298,7 +298,7 @@ defmodule Pleroma.ReverseProxy do
     end
   end
 
-  defp header_lenght_constraint(headers, limit) when is_integer(limit) and limit > 0 do
+  defp header_length_constraint(headers, limit) when is_integer(limit) and limit > 0 do
     with {_, size} <- List.keyfind(headers, "content-length", 0),
          {size, _} <- Integer.parse(size),
          true <- size <= limit do
@@ -312,7 +312,7 @@ defmodule Pleroma.ReverseProxy do
     end
   end
 
-  defp header_lenght_constraint(_, _), do: :ok
+  defp header_length_constraint(_, _), do: :ok
 
   defp body_size_constraint(size, limit) when is_integer(limit) and limit > 0 and size >= limit do
     {:error, :body_too_large}

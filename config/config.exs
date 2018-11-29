@@ -10,11 +10,19 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
+# Upload configuration
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
-  strip_exif: false,
+  # filters: [Pleroma.Upload.DedupeFilter, Pleroma.Upload.MogrifyFilter],
+  filters: [],
   proxy_remote: false,
-  proxy_opts: [inline_content_types: true, keep_user_agent: true]
+  proxy_opts: []
+
+# Strip Exif
+# Also put Pleroma.Upload.MogrifyFilter in the `filters` list of Pleroma.Upload configuration.
+# config :pleroma, Pleroma.Upload.MogrifyFilter,
+#  args: "strip"
+#  Pleroma.Upload.MogrifyFilter: [args: "strip"]
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 

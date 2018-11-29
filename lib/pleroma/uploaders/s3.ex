@@ -15,20 +15,18 @@ defmodule Pleroma.Uploaders.S3 do
       ])}}
   end
 
-  def put_file(name, uuid, path, content_type, _opts) do
+  def put_file(upload = %Pleroma.Upload{}) do
     config = Pleroma.Config.get([__MODULE__])
     bucket = Keyword.get(config, :bucket)
 
-    {:ok, file_data} = File.read(path)
+    {:ok, file_data} = File.read(upload.tempfile)
 
-    File.rm!(path)
-
-    s3_name = "#{uuid}/#{strict_encode(name)}"
+    s3_name = strict_encode(upload.path)
 
     op =
       ExAws.S3.put_object(bucket, s3_name, file_data, [
         {:acl, :public_read},
-        {:content_type, content_type}
+        {:content_type, upload.content_type}
       ])
 
     case ExAws.request(op) do

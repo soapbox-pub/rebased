@@ -34,33 +34,50 @@ defmodule Mix.Tasks.MigrateLocalUploads do
       :timer.sleep(:timer.seconds(5))
     end
 
-    uploads = File.ls!(local_path)
+    uploads =
+      File.ls!(local_path)
+      |> Enum.map(fn id ->
+        root_path = Path.join(local_path, id)
+
+        cond do
+          File.dir?(root_path) ->
+            files = for file <- File.ls!(root_path), do: {id, file, Path.join([root_path, file])}
+
+            case List.first(files) do
+              {id, file, path} ->
+                {%Pleroma.Upload{id: id, name: file, path: id <> "/" <> file, tempfile: path},
+                 root_path}
+
+              _ ->
+                nil
+            end
+
+          File.exists?(root_path) ->
+            file = Path.basename(id)
+            [hash, ext] = String.split(id, ".")
+            {%Pleroma.Upload{id: hash, name: file, path: file, tempfile: root_path}, root_path}
+
+          true ->
+            nil
+        end
+      end)
+      |> Enum.filter(& &1)
+
     total_count = length(uploads)
+    Logger.info("Found #{total_count} uploads")
 
     uploads
     |> Task.async_stream(
-      fn uuid ->
-        u_path = Path.join(local_path, uuid)
+      fn {upload, root_path} ->
+        case Upload.store(upload, uploader: uploader, filters: [], size_limit: nil) do
+          {:ok, _} ->
+            if delete?, do: File.rm_rf!(root_path)
+            Logger.debug("uploaded: #{inspect(upload.path)} #{inspect(upload)}")
+            :ok
 
-        {name, path} =
-          cond do
-            File.dir?(u_path) ->
-              files = for file <- File.ls!(u_path), do: {{file, uuid}, Path.join([u_path, file])}
-              List.first(files)
-
-            File.exists?(u_path) ->
-              # {uuid, u_path}
-              raise "should_dedupe local storage not supported yet sorry"
-          end
-
-        {:ok, _} =
-          Upload.store({:from_local, name, path}, should_dedupe: false, uploader: uploader)
-
-        if delete? do
-          File.rm_rf!(u_path)
+          error ->
+            Logger.error("failed to upload #{inspect(upload.path)}: #{inspect(error)}")
         end
-
-        Logger.debug("uploaded: #{inspect(name)}")
       end,
       timeout: 150_000
     )
@@ -75,6 +92,6 @@ defmodule Mix.Tasks.MigrateLocalUploads do
   end
 
   def run(_) do
-    Logger.error("Usage: migrate_local_uploads UploaderName [--delete]")
+    Logger.error("Usage: migrate_local_uploads S3|Swift [--delete]")
   end
 end
