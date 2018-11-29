@@ -20,8 +20,6 @@ defmodule Pleroma.UploadTest do
       :ok
     end
 
-    OH - HELLO - EAL
-
     test "returns a media url" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
