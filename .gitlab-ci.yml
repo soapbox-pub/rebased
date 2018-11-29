@@ -8,7 +8,9 @@ variables:
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
+
 cache:
+  key: ${CI_COMMIT_REF_SLUG}
   paths:
           - deps
           - _build
