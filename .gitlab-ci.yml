@@ -8,7 +8,9 @@ variables:
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
-
+cache:
+  paths:
+          - deps
 stages:
   - lint
   - test
