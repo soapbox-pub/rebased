@@ -799,18 +799,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   # guard
   def entire_thread_visible_for_user?(nil, user), do: false
 
-  # child
+  # child / root
   def entire_thread_visible_for_user?(
-        %Activity{data: %{"object" => %{"inReplyTo" => parent_id}}} = tail,
+        %Activity{data: %{"object" => object_id}} = tail,
         user
-      )
-      when is_binary(parent_id) do
+      ) do
     parent = Activity.get_in_reply_to_activity(tail)
-    visible_for_user?(tail, user) && entire_thread_visible_for_user?(parent, user)
-  end
 
-  # root
-  def entire_thread_visible_for_user?(tail, user), do: visible_for_user?(tail, user)
+    cond do
+      !is_nil(parent) ->
+        visible_for_user?(tail, user) && entire_thread_visible_for_user?(parent, user)
+
+      true ->
+        visible_for_user?(tail, user)
+    end
+  end
 
   # filter out broken threads
   def contain_broken_threads(%Activity{} = activity, %User{} = user) do
