@@ -11,6 +11,7 @@ variables:
 cache:
   paths:
           - deps
+          - _build
 stages:
   - lint
   - test
