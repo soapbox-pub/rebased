@@ -1,7 +1,7 @@
 defmodule Pleroma.Activity do
   use Ecto.Schema
   alias Pleroma.{Repo, Activity, Notification, Object}
-  import Ecto.Query
+  import Ecto.{Query, Changeset}
 
   schema "activities" do
     field(:data, :map)
@@ -20,6 +20,13 @@ defmodule Pleroma.Activity do
         where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id))
       )
     )
+  end
+
+  def change(struct, params \\ %{}) do
+    struct
+    |> cast(params, [:data])
+    |> validate_required([:data])
+    |> unique_constraint(:ap_id, name: :activities_unique_apid_index)
   end
 
   # TODO:
