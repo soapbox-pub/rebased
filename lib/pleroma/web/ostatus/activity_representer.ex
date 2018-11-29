@@ -47,23 +47,16 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     end)
   end
 
-  defp get_links(%{local: true, data: data}) do
+  defp get_links(%{local: true}, %{"id" => object_id}) do
     h = fn str -> [to_charlist(str)] end
 
     [
-      {:link, [type: ['application/atom+xml'], href: h.(data["object"]["id"]), rel: 'self'], []},
-      {:link, [type: ['text/html'], href: h.(data["object"]["id"]), rel: 'alternate'], []}
+      {:link, [type: ['application/atom+xml'], href: h.(object_id), rel: 'self'], []},
+      {:link, [type: ['text/html'], href: h.(object_id), rel: 'alternate'], []}
     ]
   end
 
-  defp get_links(%{
-         local: false,
-         data: %{
-           "object" => %{
-             "external_url" => external_url
-           }
-         }
-       }) do
+  defp get_links(%{local: false}, %{"external_url" => external_url}) do
     h = fn str -> [to_charlist(str)] end
 
     [
@@ -71,7 +64,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     ]
   end
 
-  defp get_links(_activity), do: []
+  defp get_links(_activity, _object_data), do: []
 
   defp get_emoji_links(emojis) do
     Enum.map(emojis, fn {emoji, file} ->
@@ -81,7 +74,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
 
   def to_simple_form(activity, user, with_author \\ false)
 
-  def to_simple_form(%{data: %{"object" => %{"type" => "Note"}}} = activity, user, with_author) do
+  def to_simple_form(%{data: %{"type" => "Create"}} = activity, user, with_author) do
     h = fn str -> [to_charlist(str)] end
 
     object = Object.normalize(activity.data["object"])
@@ -136,7 +129,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:link, [ref: h.(activity.data["context"]), rel: 'ostatus:conversation'], []}
     ] ++
       summary ++
-      get_links(activity) ++
+      get_links(activity, object.data) ++
       categories ++ attachments ++ in_reply_to ++ author ++ mentions ++ emoji_links
   end
 
