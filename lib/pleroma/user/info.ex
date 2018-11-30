@@ -114,6 +114,15 @@ defmodule Pleroma.User.Info do
     ])
   end
 
+  def profile_update(info, params) do
+    info
+    |> cast(params, [
+      :locked,
+      :no_rich_text,
+      :default_scope
+    ])
+  end
+
   def set_source_data(info, source_data) do
     params = %{source_data: source_data}
 

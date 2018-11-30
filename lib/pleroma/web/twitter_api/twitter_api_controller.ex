@@ -437,67 +437,52 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     json(conn, [])
   end
 
+  defp build_info_cng(user, params) do
+    info_params =
+      ["no_rich_text", "locked"]
+      |> Enum.reduce(%{}, fn key, res ->
+        if value = params[key] do
+          Map.put(res, key, value == "true")
+        else
+          res
+        end
+      end)
+
+    info_params =
+      if value = params["default_scope"] do
+        Map.put(info_params, "default_scope", value)
+      else
+        info_params
+      end
+
+    User.Info.profile_update(user.info, info_params)
+  end
+
+  defp add_profile_emoji(user, params) do
+    if bio = params["description"] do
+      mentions = Formatter.parse_mentions(bio)
+      tags = Formatter.parse_tags(bio)
+
+      emoji =
+        (user.info.source_data["tag"] || [])
+        |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
+        |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
+          {String.trim(name, ":"), url}
+        end)
+
+      bio_html = CommonUtils.format_input(bio, mentions, tags, "text/plain")
+      Map.put(params, "bio", bio_html |> Formatter.emojify(emoji))
+    else
+      params
+    end
+  end
+
   def update_profile(%{assigns: %{user: user}} = conn, params) do
-    params =
-      if bio = params["description"] do
-        mentions = Formatter.parse_mentions(bio)
-        tags = Formatter.parse_tags(bio)
-
-        emoji =
-          (user.info["source_data"]["tag"] || [])
-          |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
-          |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
-            {String.trim(name, ":"), url}
-          end)
-
-        bio_html = CommonUtils.format_input(bio, mentions, tags, "text/plain")
-        Map.put(params, "bio", bio_html |> Formatter.emojify(emoji))
-      else
-        params
-      end
-
-    user =
-      if locked = params["locked"] do
-        with locked <- locked == "true",
-             new_info <- Map.put(user.info, "locked", locked),
-             change <- User.info_changeset(user, %{info: new_info}),
-             {:ok, user} <- User.update_and_set_cache(change) do
-          user
-        else
-          _e -> user
-        end
-      else
-        user
-      end
-
-    user =
-      if no_rich_text = params["no_rich_text"] do
-        with no_rich_text <- no_rich_text == "true",
-             new_info <- Map.put(user.info, "no_rich_text", no_rich_text),
-             change <- User.info_changeset(user, %{info: new_info}),
-             {:ok, user} <- User.update_and_set_cache(change) do
-          user
-        else
-          _e -> user
-        end
-      else
-        user
-      end
-
-    user =
-      if default_scope = params["default_scope"] do
-        with new_info <- Map.put(user.info, "default_scope", default_scope),
-             change <- User.info_changeset(user, %{info: new_info}),
-             {:ok, user} <- User.update_and_set_cache(change) do
-          user
-        else
-          _e -> user
-        end
-      else
-        user
-      end
+    params = add_profile_emoji(user, params)
+    info_cng = build_info_cng(user, params)
 
     with changeset <- User.update_changeset(user, params),
+         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)
       render(conn, UserView, "user.json", %{user: user, for: user})

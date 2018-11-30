@@ -67,7 +67,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "GET /statuses/public_timeline.json" do
     test "returns statuses", %{conn: conn} do
-      {:ok, user} = UserBuilder.insert()
+      user = insert(:user)
       activities = ActivityBuilder.insert_list(30, %{}, %{user: user})
       ActivityBuilder.insert_list(10, %{}, %{user: user})
       since_id = List.last(activities).id
@@ -571,7 +571,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post("/api/blocks/destroy.json", %{user_id: blocked.id})
 
       current_user = Repo.get(User, current_user.id)
-      assert current_user.info["blocks"] == []
+      assert current_user.info.blocks == []
 
       assert json_response(conn, 200) ==
                UserView.render("show.json", %{user: blocked, for: current_user})
@@ -946,7 +946,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         })
 
       user = Repo.get!(User, user.id)
-      assert user.info["locked"] == true
+      assert user.info.locked == true
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
@@ -962,7 +962,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         })
 
       user = Repo.get!(User, user.id)
-      assert user.info["locked"] == false
+      assert user.info.locked == false
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
@@ -1136,7 +1136,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user, %{info: %{"locked" => true}})
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
       other_user = Repo.get(User, other_user.id)
@@ -1158,7 +1158,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user, %{info: %{"locked" => true}})
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
       other_user = Repo.get(User, other_user.id)
@@ -1181,7 +1181,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user, %{info: %{"locked" => true}})
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
       other_user = Repo.get(User, other_user.id)
