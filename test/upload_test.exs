@@ -134,5 +134,19 @@ defmodule Pleroma.UploadTest do
       {:ok, data} = Upload.store(file)
       assert data["name"] == "test.txt"
     end
+
+    test "copies the file to the configured folder with anonymizing filename" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "an [image.jpg"
+      }
+
+      {:ok, data} = Upload.store(file, filters: [Pleroma.Upload.Filter.AnonymizeFilename])
+
+      refute data["name"] == "an [image.jpg"
+    end
   end
 end
