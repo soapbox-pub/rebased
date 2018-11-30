@@ -350,20 +350,6 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def update_most_recent_notification(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with id when is_number(id) <- String.to_integer(id),
-         info <- user.info,
-         mrn <- max(id, user.info["most_recent_notification"] || 0),
-         updated_info <- Map.put(info, "most_recent_notification", mrn),
-         changeset <- User.info_changeset(user, %{info: updated_info}),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
-      conn
-      |> json_reply(200, Jason.encode!(mrn))
-    else
-      _e -> bad_request_reply(conn, "Can't update.")
-    end
-  end
-
   def followers(conn, params) do
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
          {:ok, followers} <- User.get_followers(user) do

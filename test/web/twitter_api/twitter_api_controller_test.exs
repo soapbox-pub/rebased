@@ -31,26 +31,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
-  describe "POST /api/account/most_recent_notification" do
-    setup [:valid_user]
-
-    test "without valid credentials", %{conn: conn} do
-      conn = post(conn, "/api/account/most_recent_notification.json")
-      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
-    end
-
-    test "with credentials", %{conn: conn, user: user} do
-      conn =
-        conn
-        |> with_credentials(user.nickname, "test")
-        |> post("/api/account/most_recent_notification.json", %{id: "200"})
-
-      assert json_response(conn, 200)
-      user = User.get_by_nickname(user.nickname)
-      assert user.info["most_recent_notification"] == 200
-    end
-  end
-
   describe "POST /statuses/update.json" do
     setup [:valid_user]
 
