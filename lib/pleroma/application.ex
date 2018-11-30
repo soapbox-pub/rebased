@@ -8,6 +8,11 @@ defmodule Pleroma.Application do
   def version, do: @version
   def named_version(), do: @name <> " " <> @version
 
+  def user_agent() do
+    info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"
+    named_version() <> "; " <> info
+  end
+
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
   @env Mix.env()

@@ -1,10 +1,15 @@
 defmodule Pleroma.Uploaders.Swift do
   @behaviour Pleroma.Uploaders.Uploader
 
-  def put_file(name, uuid, tmp_path, content_type, _should_dedupe) do
-    {:ok, file_data} = File.read(tmp_path)
-    remote_name = "#{uuid}/#{name}"
+  def get_file(name) do
+    {:ok, {:url, Path.join([Pleroma.Config.get!([__MODULE__, :object_url]), name])}}
+  end
 
-    Pleroma.Uploaders.Swift.Client.upload_file(remote_name, file_data, content_type)
+  def put_file(upload) do
+    Pleroma.Uploaders.Swift.Client.upload_file(
+      upload.path,
+      File.read!(upload.tmpfile),
+      upload.content_type
+    )
   end
 end
