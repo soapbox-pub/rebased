@@ -5,6 +5,7 @@ defmodule Pleroma.Upload do
   Options:
   * `:type`: presets for activity type (defaults to Document) and size limits from app configuration
   * `:description`: upload alternative text
+  * `:base_url`: override base url
   * `:uploader`: override uploader
   * `:filters`: override filters
   * `:size_limit`: override size limit
@@ -64,7 +65,7 @@ defmodule Pleroma.Upload do
            %{
              "type" => "Link",
              "mediaType" => upload.content_type,
-             "href" => url_from_spec(url_spec)
+             "href" => url_from_spec(opts.base_url, url_spec)
            }
          ],
          "name" => Map.get(opts, :description) || upload.name
@@ -100,7 +101,13 @@ defmodule Pleroma.Upload do
       size_limit: Keyword.get(opts, :size_limit, size_limit),
       uploader: Keyword.get(opts, :uploader, Pleroma.Config.get([__MODULE__, :uploader])),
       filters: Keyword.get(opts, :filters, Pleroma.Config.get([__MODULE__, :filters])),
-      description: Keyword.get(opts, :description)
+      description: Keyword.get(opts, :description),
+      base_url:
+        Keyword.get(
+          opts,
+          :base_url,
+          Pleroma.Config.get([__MODULE__, :base_url], Pleroma.Web.base_url())
+        )
     }
 
     # TODO: 1.0+ : remove old config compatibility
@@ -204,8 +211,8 @@ defmodule Pleroma.Upload do
     tmp_path
   end
 
-  defp url_from_spec({:file, path}) do
-    [Pleroma.Web.base_url(), "media", path]
+  defp url_from_spec(base_url, {:file, path}) do
+    [base_url, "media", path]
     |> Path.join()
   end
 

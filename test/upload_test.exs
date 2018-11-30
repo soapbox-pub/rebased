@@ -36,6 +36,24 @@ defmodule Pleroma.UploadTest do
       assert String.starts_with?(url, Pleroma.Web.base_url() <> "/media/")
     end
 
+    test "returns a media url with configured base_url" do
+      base_url = "https://cache.pleroma.social"
+
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "image.jpg"
+      }
+
+      {:ok, data} = Upload.store(file, base_url: base_url)
+
+      assert %{"url" => [%{"href" => url}]} = data
+
+      assert String.starts_with?(url, base_url <> "/media/")
+    end
+
     test "copies the file to the configured folder with deduping" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
