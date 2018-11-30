@@ -447,7 +447,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       update_data =
         new_user_data
         |> Map.take([:name, :bio, :avatar])
-        |> Map.put(:info, Map.merge(actor.info, %{"banner" => banner, "locked" => locked}))
+        |> Map.put(:info, %{"banner" => banner, "locked" => locked})
 
       actor
       |> User.upgrade_changeset(update_data)
