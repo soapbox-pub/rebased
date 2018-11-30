@@ -1,8 +1,9 @@
 defmodule Pleroma.MIME do
   @moduledoc """
-  Returns the mime-type of a binary and optionally a normalized file-name. Requires at least (the first) 8 bytes.
+  Returns the mime-type of a binary and optionally a normalized file-name.
   """
   @default "application/octet-stream"
+  @read_bytes 31
 
   @spec file_mime_type(String.t()) ::
           {:ok, content_type :: String.t(), filename :: String.t()} | {:error, any()} | :error
@@ -16,7 +17,7 @@ defmodule Pleroma.MIME do
   @spec file_mime_type(String.t()) :: {:ok, String.t()} | {:error, any()} | :error
   def file_mime_type(filename) do
     File.open(filename, [:read], fn f ->
-      check_mime_type(IO.binread(f, 8))
+      check_mime_type(IO.binread(f, @read_bytes))
     end)
   end
 
@@ -28,7 +29,7 @@ defmodule Pleroma.MIME do
   end
 
   @spec bin_mime_type(binary()) :: {:ok, String.t()} | :error
-  def bin_mime_type(<<head::binary-size(8), _::binary>>) do
+  def bin_mime_type(<<head::binary-size(@read_bytes), _::binary>>) do
     {:ok, check_mime_type(head)}
   end
 
@@ -58,39 +59,46 @@ defmodule Pleroma.MIME do
     end
   end
 
-  defp check_mime_type(<<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A>>) do
+  defp check_mime_type(<<0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, _::binary>>) do
     "image/png"
   end
 
-  defp check_mime_type(<<0x47, 0x49, 0x46, 0x38, _, 0x61, _, _>>) do
+  defp check_mime_type(<<0x47, 0x49, 0x46, 0x38, _, 0x61, _::binary>>) do
     "image/gif"
   end
 
-  defp check_mime_type(<<0xFF, 0xD8, 0xFF, _, _, _, _, _>>) do
+  defp check_mime_type(<<0xFF, 0xD8, 0xFF, _::binary>>) do
     "image/jpeg"
   end
 
-  defp check_mime_type(<<0x1A, 0x45, 0xDF, 0xA3, _, _, _, _>>) do
+  defp check_mime_type(<<0x1A, 0x45, 0xDF, 0xA3, _::binary>>) do
     "video/webm"
   end
 
-  defp check_mime_type(<<0x00, 0x00, 0x00, _, 0x66, 0x74, 0x79, 0x70>>) do
+  defp check_mime_type(<<0x00, 0x00, 0x00, _, 0x66, 0x74, 0x79, 0x70, _::binary>>) do
     "video/mp4"
   end
 
-  defp check_mime_type(<<0x49, 0x44, 0x33, _, _, _, _, _>>) do
+  defp check_mime_type(<<0x49, 0x44, 0x33, _::binary>>) do
     "audio/mpeg"
   end
 
-  defp check_mime_type(<<255, 251, _, 68, 0, 0, 0, 0>>) do
+  defp check_mime_type(<<255, 251, _, 68, 0, 0, 0, 0, _::binary>>) do
     "audio/mpeg"
   end
 
-  defp check_mime_type(<<0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00, 0x00>>) do
+  defp check_mime_type(
+         <<0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00, 0x00, _::size(160), 0x80, 0x74, 0x68, 0x65,
+           0x6F, 0x72, 0x61, _::binary>>
+       ) do
+    "video/ogg"
+  end
+
+  defp check_mime_type(<<0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00, 0x00, _::binary>>) do
     "audio/ogg"
   end
 
-  defp check_mime_type(<<0x52, 0x49, 0x46, 0x46, _, _, _, _>>) do
+  defp check_mime_type(<<0x52, 0x49, 0x46, 0x46, _::binary>>) do
     "audio/wav"
   end
 
