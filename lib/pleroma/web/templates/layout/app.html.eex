@@ -2,7 +2,9 @@
 <html>
   <head>
     <meta charset=utf-8 />
-    <title>Pleroma</title>
+    <title>
+    <%= Application.get_env(:pleroma, :instance)[:name] %>
+    </title>
     <style>
       body {
         background-color: #282c37;

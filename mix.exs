@@ -4,7 +4,7 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: "0.9.0",
+      version: version("0.9.0"),
       elixir: "~> 1.4",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -83,5 +83,52 @@ defmodule Pleroma.Mixfile do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
+  end
+
+  # Builds a version string made of:
+  # * the application version
+  # * a pre-release if ahead of the tag: the describe string (-count-commithash)
+  # * build info:
+  #   * a build name if `PLEROMA_BUILD_NAME` or `:pleroma, :build_name` is defined
+  #   * the mix environment if different than prod
+  defp version(version) do
+    {git_tag, git_pre_release} =
+      with {tag, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=0"]),
+           tag = String.trim(tag),
+           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
+           describe = String.trim(describe),
+           ahead <- String.replace(describe, tag, "") do
+        {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
+      else
+        _ -> {nil, nil}
+      end
+
+    if git_tag && version != git_tag do
+      Mix.shell().error(
+        "Application version #{inspect(version)} does not match git tag #{inspect(git_tag)}"
+      )
+    end
+
+    build_name =
+      cond do
+        name = Application.get_env(:pleroma, :build_name) -> name
+        name = System.get_env("PLEROMA_BUILD_NAME") -> name
+        true -> nil
+      end
+
+    env_name = if Mix.env() != :prod, do: to_string(Mix.env())
+
+    build =
+      [build_name, env_name]
+      |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.join("-")
+      |> (fn
+            "" -> nil
+            string -> "+" <> string
+          end).()
+
+    [version, git_pre_release, build]
+    |> Enum.filter(fn string -> string && string != "" end)
+    |> Enum.join()
   end
 end

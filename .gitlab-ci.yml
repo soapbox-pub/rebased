@@ -9,6 +9,11 @@ variables:
   POSTGRES_PASSWORD: postgres
   DB_HOST: postgres
 
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+          - deps
+          - _build
 stages:
   - lint
   - test

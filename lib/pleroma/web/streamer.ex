@@ -73,7 +73,8 @@ defmodule Pleroma.Web.Streamer do
           Pleroma.List.get_lists_from_activity(item)
           |> Enum.filter(fn list ->
             owner = Repo.get(User, list.user_id)
-            author.follower_address in owner.following
+
+            ActivityPub.visible_for_user?(item, owner)
           end)
       end
 
@@ -169,16 +170,33 @@ defmodule Pleroma.Web.Streamer do
     |> Jason.encode!()
   end
 
+  defp represent_update(%Activity{} = activity) do
+    %{
+      event: "update",
+      payload:
+        Pleroma.Web.MastodonAPI.StatusView.render(
+          "status.json",
+          activity: activity
+        )
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
   def push_to_socket(topics, topic, %Activity{data: %{"type" => "Announce"}} = item) do
     Enum.each(topics[topic] || [], fn socket ->
       # Get the current user so we have up-to-date blocks etc.
-      user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
-      blocks = user.info.blocks || []
+      if socket.assigns[:user] do
+        user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
+        blocks = user.info.blocks || []
 
-      parent = Object.normalize(item.data["object"])
+        parent = Object.normalize(item.data["object"])
 
-      unless is_nil(parent) or item.actor in blocks or parent.data["actor"] in blocks do
-        send(socket.transport_pid, {:text, represent_update(item, user)})
+        unless is_nil(parent) or item.actor in blocks or parent.data["actor"] in blocks do
+          send(socket.transport_pid, {:text, represent_update(item, user)})
+        end
+      else
+        send(socket.transport_pid, {:text, represent_update(item)})
       end
     end)
   end
@@ -186,11 +204,15 @@ defmodule Pleroma.Web.Streamer do
   def push_to_socket(topics, topic, item) do
     Enum.each(topics[topic] || [], fn socket ->
       # Get the current user so we have up-to-date blocks etc.
-      user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
-      blocks = user.info.blocks || []
+      if socket.assigns[:user] do
+        user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
+        blocks = user.info.blocks || []
 
-      unless item.actor in blocks do
-        send(socket.transport_pid, {:text, represent_update(item, user)})
+        unless item.actor in blocks do
+          send(socket.transport_pid, {:text, represent_update(item, user)})
+        end
+      else
+        send(socket.transport_pid, {:text, represent_update(item)})
       end
     end)
   end

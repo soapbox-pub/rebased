@@ -1,8 +1,15 @@
 defmodule Pleroma.Application do
   use Application
 
+  @name "Pleroma"
+  @version Mix.Project.config()[:version]
+  def name, do: @name
+  def version, do: @version
+  def named_version(), do: @name <> " " <> @version
+
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
+  @env Mix.env()
   def start(_type, _args) do
     import Supervisor.Spec
     import Cachex.Spec
@@ -57,10 +64,11 @@ defmodule Pleroma.Application do
           id: :cachex_idem
         ),
         worker(Pleroma.Web.Federator, []),
-        worker(Pleroma.Stats, []),
-        worker(Pleroma.Gopher.Server, [])
+        worker(Pleroma.Web.Federator.RetryQueue, []),
+        worker(Pleroma.Gopher.Server, []),
+        worker(Pleroma.Stats, [])
       ] ++
-        if Mix.env() == :test,
+        if @env == :test,
           do: [],
           else:
             [worker(Pleroma.Web.Streamer, [])] ++

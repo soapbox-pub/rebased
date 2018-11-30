@@ -3,6 +3,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.User
   alias Pleroma.Activity
   alias Pleroma.Web.{WebFinger, Websub}
+  alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -122,29 +123,25 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle(:publish_single_ap, params) do
-    ActivityPub.publish_one(params)
+    case ActivityPub.publish_one(params) do
+      {:ok, _} ->
+        :ok
+
+      {:error, _} ->
+        RetryQueue.enqueue(params, ActivityPub)
+    end
   end
 
-  def handle(:publish_single_websub, %{xml: xml, topic: topic, callback: callback, secret: secret}) do
-    signature = @websub.sign(secret || "", xml)
-    Logger.debug(fn -> "Pushing #{topic} to #{callback}" end)
+  def handle(
+        :publish_single_websub,
+        %{xml: xml, topic: topic, callback: callback, secret: secret} = params
+      ) do
+    case Websub.publish_one(params) do
+      {:ok, _} ->
+        :ok
 
-    with {:ok, %{status_code: code}} <-
-           @httpoison.post(
-             callback,
-             xml,
-             [
-               {"Content-Type", "application/atom+xml"},
-               {"X-Hub-Signature", "sha1=#{signature}"}
-             ],
-             timeout: 10000,
-             recv_timeout: 20000,
-             hackney: [pool: :default]
-           ) do
-      Logger.debug(fn -> "Pushed to #{callback}, code #{code}" end)
-    else
-      e ->
-        Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)
+      {:error, _} ->
+        RetryQueue.enqueue(params, Websub)
     end
   end
 
@@ -153,11 +150,15 @@ defmodule Pleroma.Web.Federator do
     {:error, "Don't know what to do with this"}
   end
 
-  def enqueue(type, payload, priority \\ 1) do
-    if Pleroma.Config.get([:instance, :federating]) do
-      if Mix.env() == :test do
+  if Mix.env() == :test do
+    def enqueue(type, payload, priority \\ 1) do
+      if Pleroma.Config.get([:instance, :federating]) do
         handle(type, payload)
-      else
+      end
+    end
+  else
+    def enqueue(type, payload, priority \\ 1) do
+      if Pleroma.Config.get([:instance, :federating]) do
         GenServer.cast(__MODULE__, {:enqueue, type, payload, priority})
       end
     end

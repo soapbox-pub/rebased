@@ -162,7 +162,13 @@ defmodule Pleroma.Upload do
             "audio/mpeg"
 
           <<0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00, 0x00>> ->
-            "audio/ogg"
+            case IO.binread(f, 27) do
+              <<_::size(160), 0x80, 0x74, 0x68, 0x65, 0x6F, 0x72, 0x61>> ->
+                "video/ogg"
+
+              _ ->
+                "audio/ogg"
+            end
 
           <<0x52, 0x49, 0x46, 0x46, _, _, _, _>> ->
             "audio/wav"

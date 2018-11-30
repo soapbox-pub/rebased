@@ -4,6 +4,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   alias Pleroma.Stats
   alias Pleroma.Web
   alias Pleroma.{User, Repo}
+  alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.MRF
 
   plug(Pleroma.Web.FederatingPlug)
@@ -52,6 +53,10 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       |> Repo.all()
       |> Enum.map(fn u -> u.ap_id end)
 
+    mrf_user_allowlist =
+      Config.get([:mrf_user_allowlist], [])
+      |> Enum.into(%{}, fn {k, v} -> {k, length(v)} end)
+
     mrf_transparency = Keyword.get(instance, :mrf_transparency)
 
     federation_response =
@@ -59,6 +64,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         %{
           mrf_policies: mrf_policies,
           mrf_simple: mrf_simple,
+          mrf_user_allowlist: mrf_user_allowlist,
           quarantined_instances: quarantined
         }
       else
@@ -86,8 +92,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     response = %{
       version: "2.0",
       software: %{
-        name: "pleroma",
-        version: Keyword.get(instance, :version)
+        name: Pleroma.Application.name(),
+        version: Pleroma.Application.version()
       },
       protocols: ["ostatus", "activitypub"],
       services: %{
