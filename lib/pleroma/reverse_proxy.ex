@@ -5,7 +5,7 @@ defmodule Pleroma.ReverseProxy do
                        ~w(content-type content-disposition content-encoding content-range accept-ranges vary)
   @default_cache_control_header "public, max-age=1209600"
   @valid_resp_codes [200, 206, 304]
-  @max_read_duration :timer.minutes(2)
+  @max_read_duration :timer.seconds(30)
   @max_body_length :infinity
   @methods ~w(GET HEAD)
 
