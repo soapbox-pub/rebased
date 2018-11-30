@@ -20,6 +20,8 @@ defmodule Pleroma.User.Info do
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
     field(:uri, :string, default: nil)
+    field(:topic, :string, default: nil)
+    field(:hub, :string, default: nil)
     # topic, subject, salmon, subscribe_address, uri
   end
 
@@ -99,7 +101,9 @@ defmodule Pleroma.User.Info do
       :banner,
       :locked,
       :magic_key,
-      :uri
+      :uri,
+      :hub,
+      :topic
     ])
   end
 

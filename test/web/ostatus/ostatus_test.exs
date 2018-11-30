@@ -447,7 +447,7 @@ defmodule Pleroma.Web.OStatusTest do
     end
   end
 
-  test "it doesn't add nil in the do field" do
+  test "it doesn't add nil in the to field" do
     incoming = File.read!("test/fixtures/nil_mention_entry.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
