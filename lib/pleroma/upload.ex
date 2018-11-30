@@ -110,9 +110,9 @@ defmodule Pleroma.Upload do
         Logger.warn("""
         Pleroma: configuration `:instance, :strip_exif` is deprecated, please instead set:
 
-          :instance, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Mogrify]]
+          :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Mogrify]]
 
-          :pleroma, Pleroma.Upload.Mogrify, args: "strip"
+          :pleroma, Pleroma.Upload.Filter.Mogrify, args: "strip"
         """)
 
         Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: "strip")
@@ -127,7 +127,7 @@ defmodule Pleroma.Upload do
         Logger.warn("""
         Pleroma: configuration `:instance, :dedupe_media` is deprecated, please instead set:
 
-          :instance, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Dedupe]]
+          :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Dedupe]]
         """)
 
         Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Dedupe])
