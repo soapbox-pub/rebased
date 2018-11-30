@@ -226,25 +226,21 @@ defmodule Pleroma.Web.OStatus do
     old_data = %{
       avatar: user.avatar,
       bio: user.bio,
-      name: user.name,
-      info: user.info
+      name: user.name
     }
 
     with false <- user.local,
          avatar <- make_avatar_object(doc),
          bio <- string_from_xpath("//author[1]/summary", doc),
          name <- string_from_xpath("//author[1]/poco:displayName", doc),
-         info <-
-           Map.put(user.info, "banner", make_avatar_object(doc, "header") || user.info["banner"]),
          new_data <- %{
            avatar: avatar || old_data.avatar,
            name: name || old_data.name,
-           bio: bio || old_data.bio,
-           info: info || old_data.info
+           bio: bio || old_data.bio
          },
          false <- new_data == old_data do
       change = Ecto.Changeset.change(user, new_data)
-      Repo.update(change)
+      User.update_and_set_cache(change)
     else
       _ ->
         {:ok, user}
