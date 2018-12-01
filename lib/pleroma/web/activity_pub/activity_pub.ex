@@ -1,5 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
+  alias Pleroma.Object.Containment
   alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Federator
@@ -739,7 +740,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              "actor" => data["actor"] || data["attributedTo"],
              "object" => data
            },
-           :ok <- Transmogrifier.contain_origin(id, params),
+           :ok <- Containment.contain_origin(id, params),
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do
         {:ok, Object.normalize(activity.data["object"])}
       else
@@ -773,7 +774,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              recv_timeout: 20000
            ),
          {:ok, data} <- Jason.decode(body),
-         :ok <- Transmogrifier.contain_origin_from_id(id, data) do
+         :ok <- Containment.contain_origin_from_id(id, data) do
       {:ok, data}
     else
       e ->
