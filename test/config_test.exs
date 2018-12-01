@@ -53,4 +53,19 @@ defmodule Pleroma.ConfigTest do
     assert Pleroma.Config.get([:instance, :config_test]) == true
     assert Pleroma.Config.get([:instance, :config_nested_test, :x]) == true
   end
+
+  test "delete/1 with a key" do
+    Pleroma.Config.put([:delete_me], :delete_me)
+    Pleroma.Config.delete([:delete_me])
+    assert Pleroma.Config.get([:delete_me]) == nil
+  end
+
+  test "delete/2 with a list of keys" do
+    Pleroma.Config.put([:delete_me], hello: "world", world: "Hello")
+    Pleroma.Config.delete([:delete_me, :world])
+    assert Pleroma.Config.get([:delete_me]) == [hello: "world"]
+    Pleroma.Config.put([:delete_me, :delete_me], hello: "world", world: "Hello")
+    Pleroma.Config.delete([:delete_me, :delete_me, :world])
+    assert Pleroma.Config.get([:delete_me, :delete_me]) == [hello: "world"]
+  end
 end

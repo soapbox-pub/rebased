@@ -5,11 +5,19 @@ If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherw
 
 ## Pleroma.Upload
 * `uploader`: Select which `Pleroma.Uploaders` to use
-* `strip_exif`: boolean, uses ImageMagick(!) to strip exif.
+* `filters`: List of `Pleroma.Upload.Filter` to use.
+* `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
+* `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
+* `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
+
+Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ## Pleroma.Uploaders.Local
 * `uploads`: Which directory to store the user-uploads in, relative to pleroma’s working directory
-* `uploads_url`: The URL to access a user-uploaded file, ``{{base_url}}`` is replaced to the instance URL and ``{{file}}`` to the filename. Useful when you want to proxy the media files via another host.
+
+## Pleroma.Upload.Filter.Mogrify
+
+* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", {"impode", "1"}]`.
 
 ## :uri_schemes
 * `valid_schemes`: List of the scheme part that is considered valid to be an URL
@@ -68,7 +76,8 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
-* `redirect_on_failure`: Use the original URL when Media Proxy fails to get it
+* `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
+* `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
 
 ## :gopher
 * `enabled`: Enables the gopher interface

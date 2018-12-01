@@ -1,135 +1,34 @@
 defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   use Pleroma.Web, :controller
-  require Logger
+  alias Pleroma.{Web.MediaProxy, ReverseProxy}
 
-  @httpoison Application.get_env(:pleroma, :httpoison)
+  @default_proxy_opts [max_body_length: 25 * 1_048_576]
 
-  @max_body_length 25 * 1_048_576
-
-  @cache_control %{
-    default: "public, max-age=1209600",
-    error: "public, must-revalidate, max-age=160"
-  }
-
-  # Content-types that will not be returned as content-disposition attachments
-  # Override with :media_proxy, :safe_content_types in the configuration
-  @safe_content_types [
-    "image/gif",
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/svg+xml",
-    "audio/mpeg",
-    "audio/mp3",
-    "video/webm",
-    "video/mp4"
-  ]
-
-  def remote(conn, params = %{"sig" => sig, "url" => url}) do
-    config = Application.get_env(:pleroma, :media_proxy, [])
-
-    with true <- Keyword.get(config, :enabled, false),
-         {:ok, url} <- Pleroma.Web.MediaProxy.decode_url(sig, url),
+  def remote(conn, params = %{"sig" => sig64, "url" => url64}) do
+    with config <- Pleroma.Config.get([:media_proxy]),
+         true <- Keyword.get(config, :enabled, false),
+         {:ok, url} <- MediaProxy.decode_url(sig64, url64),
          filename <- Path.basename(URI.parse(url).path),
-         true <-
-           if(Map.get(params, "filename"),
-             do: filename == Path.basename(conn.request_path),
-             else: true
-           ),
-         {:ok, content_type, body} <- proxy_request(url),
-         safe_content_type <-
-           Enum.member?(
-             Keyword.get(config, :safe_content_types, @safe_content_types),
-             content_type
-           ) do
-      conn
-      |> put_resp_content_type(content_type)
-      |> set_cache_header(:default)
-      |> put_resp_header(
-        "content-security-policy",
-        "default-src 'none'; style-src 'unsafe-inline'; media-src data:; img-src 'self' data:"
-      )
-      |> put_resp_header("x-xss-protection", "1; mode=block")
-      |> put_resp_header("x-content-type-options", "nosniff")
-      |> put_attachement_header(safe_content_type, filename)
-      |> send_resp(200, body)
+         :ok <- filename_matches(Map.has_key?(params, "filename"), conn.request_path, url) do
+      ReverseProxy.call(conn, url, Keyword.get(config, :proxy_opts, @default_proxy_length))
     else
       false ->
-        send_error(conn, 404)
+        send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))
 
       {:error, :invalid_signature} ->
-        send_error(conn, 403)
+        send_resp(conn, 403, Plug.Conn.Status.reason_phrase(403))
 
-      {:error, {:http, _, url}} ->
-        redirect_or_error(conn, url, Keyword.get(config, :redirect_on_failure, true))
+      {:wrong_filename, filename} ->
+        redirect(conn, external: MediaProxy.build_url(sig64, url64, filename))
     end
   end
 
-  defp proxy_request(link) do
-    headers = [
-      {"user-agent",
-       "Pleroma/MediaProxy; #{Pleroma.Web.base_url()} <#{
-         Application.get_env(:pleroma, :instance)[:email]
-       }>"}
-    ]
+  def filename_matches(has_filename, path, url) do
+    filename = MediaProxy.filename(url)
 
-    options =
-      @httpoison.process_request_options([:insecure, {:follow_redirect, true}]) ++
-        [{:pool, :default}]
-
-    with {:ok, 200, headers, client} <- :hackney.request(:get, link, headers, "", options),
-         headers = Enum.into(headers, Map.new()),
-         {:ok, body} <- proxy_request_body(client),
-         content_type <- proxy_request_content_type(headers, body) do
-      {:ok, content_type, body}
-    else
-      {:ok, status, _, _} ->
-        Logger.warn("MediaProxy: request failed, status #{status}, link: #{link}")
-        {:error, {:http, :bad_status, link}}
-
-      {:error, error} ->
-        Logger.warn("MediaProxy: request failed, error #{inspect(error)}, link: #{link}")
-        {:error, {:http, error, link}}
+    cond do
+      has_filename && filename && Path.basename(path) != filename -> {:wrong_filename, filename}
+      true -> :ok
     end
-  end
-
-  defp set_cache_header(conn, key) do
-    Plug.Conn.put_resp_header(conn, "cache-control", @cache_control[key])
-  end
-
-  defp redirect_or_error(conn, url, true), do: redirect(conn, external: url)
-  defp redirect_or_error(conn, url, _), do: send_error(conn, 502, "Media proxy error: " <> url)
-
-  defp send_error(conn, code, body \\ "") do
-    conn
-    |> set_cache_header(:error)
-    |> send_resp(code, body)
-  end
-
-  defp proxy_request_body(client), do: proxy_request_body(client, <<>>)
-
-  defp proxy_request_body(client, body) when byte_size(body) < @max_body_length do
-    case :hackney.stream_body(client) do
-      {:ok, data} -> proxy_request_body(client, <<body::binary, data::binary>>)
-      :done -> {:ok, body}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp proxy_request_body(client, _) do
-    :hackney.close(client)
-    {:error, :body_too_large}
-  end
-
-  # TODO: the body is passed here as well because some hosts do not provide a content-type.
-  # At some point we may want to use magic numbers to discover the content-type and reply a proper one.
-  defp proxy_request_content_type(headers, _body) do
-    headers["Content-Type"] || headers["content-type"] || "application/octet-stream"
-  end
-
-  defp put_attachement_header(conn, true, _), do: conn
-
-  defp put_attachement_header(conn, false, filename) do
-    put_resp_header(conn, "content-disposition", "attachment; filename='#{filename}'")
   end
 end

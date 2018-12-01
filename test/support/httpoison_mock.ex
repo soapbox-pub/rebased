@@ -1,6 +1,8 @@
 defmodule HTTPoisonMock do
   alias HTTPoison.Response
 
+  def process_request_options(options), do: options
+
   def get(url, body \\ [], headers \\ [])
 
   def get("https://prismo.news/@mxb", _, _) do

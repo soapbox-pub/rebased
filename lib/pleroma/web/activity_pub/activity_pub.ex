@@ -572,10 +572,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
-  def upload(file, size_limit \\ nil) do
-    with data <-
-           Upload.store(file, Application.get_env(:pleroma, :instance)[:dedupe_media], size_limit),
-         false <- is_nil(data) do
+  def upload(file, opts \\ []) do
+    with {:ok, data} <- Upload.store(file, opts) do
       Repo.insert(%Object{data: data})
     end
   end

@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Endpoint do
   plug(CORSPlug)
   plug(Pleroma.Plugs.HTTPSecurityPlug)
 
-  plug(Plug.Static, at: "/media", from: Pleroma.Uploaders.Local.upload_path(), gzip: false)
+  plug(Pleroma.Plugs.UploadedMedia)
 
   plug(
     Plug.Static,
