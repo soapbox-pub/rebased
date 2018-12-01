@@ -39,9 +39,9 @@ defmodule Mix.Tasks.CompactDatabase do
     max = Repo.aggregate(Activity, :max, :id)
     Logger.info("Considering #{max} activities")
 
-    chunks = 0..(round(max / 100))
+    chunks = 0..round(max / 100)
 
-    Enum.each(chunks, fn (i) ->
+    Enum.each(chunks, fn i ->
       min = i * 100
       max = min + 100
 
