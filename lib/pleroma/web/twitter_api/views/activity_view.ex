@@ -207,15 +207,17 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
   def render(
         "activity.json",
-        %{activity: %{data: %{"type" => "Create", "object" => object}} = activity} = opts
+        %{activity: %{data: %{"type" => "Create", "object" => object_id}} = activity} = opts
       ) do
     user = get_user(activity.data["actor"], opts)
 
-    created_at = object["published"] |> Utils.date_to_asctime()
-    like_count = object["like_count"] || 0
-    announcement_count = object["announcement_count"] || 0
-    favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
-    repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
+    object = Object.normalize(object_id)
+
+    created_at = object.data["published"] |> Utils.date_to_asctime()
+    like_count = object.data["like_count"] || 0
+    announcement_count = object.data["announcement_count"] || 0
+    favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
+    repeated = opts[:for] && opts[:for].ap_id in (object.data["announcements"] || [])
 
     attentions =
       activity.recipients
@@ -230,11 +232,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
-    {summary, content} = render_content(object)
+    {summary, content} = render_content(object.data)
 
     html =
       HTML.filter_tags(content, User.html_filter_policy(opts[:for]))
-      |> Formatter.emojify(object["emoji"])
+      |> Formatter.emojify(object.data["emoji"])
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
 
@@ -249,19 +251,19 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,
-      "in_reply_to_status_id" => object["inReplyToStatusId"],
+      "in_reply_to_status_id" => object.data["inReplyToStatusId"],
       "in_reply_to_screen_name" => reply_user && reply_user.nickname,
       "in_reply_to_profileurl" => User.profile_url(reply_user),
       "in_reply_to_ostatus_uri" => reply_user && reply_user.ap_id,
       "in_reply_to_user_id" => reply_user && reply_user.id,
       "statusnet_conversation_id" => conversation_id,
-      "attachments" => (object["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
+      "attachments" => (object.data["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
       "fave_num" => like_count,
       "repeat_num" => announcement_count,
       "favorited" => !!favorited,
       "repeated" => !!repeated,
-      "external_url" => object["external_url"] || object["id"],
+      "external_url" => object.data["external_url"] || object.data["id"],
       "tags" => tags,
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive,
