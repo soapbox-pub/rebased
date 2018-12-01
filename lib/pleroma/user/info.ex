@@ -16,6 +16,7 @@ defmodule Pleroma.User.Info do
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
+    field(:is_admin, :boolean, default: false)
     field(:keys, :string, default: nil)
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
@@ -133,5 +134,13 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:source_data])
     |> validate_required([:source_data])
+  end
+
+  def admin_api_update(info, params) do
+    info
+    |> cast(params, [
+      :is_moderator,
+      :is_admin
+    ])
   end
 end

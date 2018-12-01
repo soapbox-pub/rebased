@@ -45,21 +45,29 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     user = User.get_by_nickname(nickname)
 
     info =
-      user.info
+      %{}
       |> Map.put("is_" <> permission_group, true)
 
-    cng = User.info_changeset(user, %{info: info})
+    info_cng = User.Info.admin_api_update(user.info, info)
+
+    cng =
+      Ecto.Changeset.change(user)
+      |> Ecto.Changeset.put_embed(:info, info_cng)
+
     {:ok, user} = User.update_and_set_cache(cng)
 
     conn
-    |> json(user.info)
+    |> json(info)
   end
 
   def right_get(conn, %{"nickname" => nickname}) do
     user = User.get_by_nickname(nickname)
 
     conn
-    |> json(user.info)
+    |> json(%{
+      is_moderator: user.info.is_moderator,
+      is_admin: user.info.is_admin
+    })
   end
 
   def right_add(conn, _) do
@@ -84,14 +92,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       user = User.get_by_nickname(nickname)
 
       info =
-        user.info
+        %{}
         |> Map.put("is_" <> permission_group, false)
 
-      cng = User.info_changeset(user, %{info: info})
+      info_cng = User.Info.admin_api_update(user.info, info)
+
+      cng =
+        Ecto.Changeset.change(user)
+        |> Ecto.Changeset.put_embed(:info, info_cng)
+
       {:ok, user} = User.update_and_set_cache(cng)
 
       conn
-      |> json(user.info)
+      |> json(info)
     end
   end
 
