@@ -72,6 +72,7 @@ config :mime, :types, %{
 config :pleroma, :websub, Pleroma.Web.Websub
 config :pleroma, :ostatus, Pleroma.Web.OStatus
 config :pleroma, :httpoison, Pleroma.HTTP
+config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http, proxy_url: nil

@@ -173,7 +173,7 @@ defmodule Pleroma.Web.Websub do
 
   def gather_feed_data(topic, getter \\ &@httpoison.get/1) do
     with {:ok, response} <- getter.(topic),
-         status_code when status_code in 200..299 <- response.status_code,
+         status_code when status_code in 200..299 <- response.status,
          body <- response.body,
          doc <- XML.parse_document(body),
          uri when not is_nil(uri) <- XML.string_from_xpath("/feed/author[1]/uri", doc),
@@ -221,7 +221,7 @@ defmodule Pleroma.Web.Websub do
 
     task = Task.async(websub_checker)
 
-    with {:ok, %{status_code: 202}} <-
+    with {:ok, %{status: 202}} <-
            poster.(websub.hub, {:form, data}, "Content-type": "application/x-www-form-urlencoded"),
          {:ok, websub} <- Task.yield(task, timeout) do
       {:ok, websub}
@@ -257,7 +257,7 @@ defmodule Pleroma.Web.Websub do
     signature = sign(secret || "", xml)
     Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
 
-    with {:ok, %{status_code: code}} <-
+    with {:ok, %{status: code}} <-
            @httpoison.post(
              callback,
              xml,
@@ -265,9 +265,11 @@ defmodule Pleroma.Web.Websub do
                {"Content-Type", "application/atom+xml"},
                {"X-Hub-Signature", "sha1=#{signature}"}
              ],
-             timeout: 10000,
-             recv_timeout: 20000,
-             hackney: [pool: :default]
+             adapter: [
+               timeout: 10000,
+               recv_timeout: 20000,
+               pool: :default
+             ]
            ) do
       Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)
       {:ok, code}
