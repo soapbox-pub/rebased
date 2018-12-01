@@ -11,6 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Formatter
+  alias Pleroma.HTML
 
   import Ecto.Query
 
@@ -181,6 +182,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   def render("activity.json", %{activity: %{data: %{"type" => "Like"}} = activity} = opts) do
     user = get_user(activity.data["actor"], opts)
     liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    liked_activity_id = if liked_activity, do: liked_activity.id, else: nil
 
     created_at =
       activity.data["published"]
@@ -197,7 +199,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "is_post_verb" => false,
       "uri" => "tag:#{activity.data["id"]}:objectType=Favourite",
       "created_at" => created_at,
-      "in_reply_to_status_id" => liked_activity.id,
+      "in_reply_to_status_id" => liked_activity_id,
       "external_url" => activity.data["id"],
       "activity_type" => "like"
     }
@@ -231,19 +233,27 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     {summary, content} = render_content(object)
 
     html =
-      HtmlSanitizeEx.basic_html(content)
+      HTML.filter_tags(content, User.html_filter_policy(opts[:for]))
       |> Formatter.emojify(object["emoji"])
+
+    reply_parent = Activity.get_in_reply_to_activity(activity)
+
+    reply_user = reply_parent && User.get_cached_by_ap_id(reply_parent.actor)
 
     %{
       "id" => activity.id,
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => html,
-      "text" => HtmlSanitizeEx.strip_tags(content),
+      "text" => HTML.strip_tags(content),
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,
       "in_reply_to_status_id" => object["inReplyToStatusId"],
+      "in_reply_to_screen_name" => reply_user && reply_user.nickname,
+      "in_reply_to_profileurl" => User.profile_url(reply_user),
+      "in_reply_to_ostatus_uri" => reply_user && reply_user.ap_id,
+      "in_reply_to_user_id" => reply_user && reply_user.id,
       "statusnet_conversation_id" => conversation_id,
       "attachments" => (object["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
@@ -273,11 +283,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     {summary, content}
   end
 
-  def render_content(%{"type" => "Article"} = object) do
+  def render_content(%{"type" => object_type} = object) when object_type in ["Article", "Page"] do
     summary = object["name"] || object["summary"]
 
     content =
-      if !!summary and summary != "" do
+      if !!summary and summary != "" and is_bitstring(object["url"]) do
         "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
       else
         object["content"]

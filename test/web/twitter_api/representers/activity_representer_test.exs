@@ -126,7 +126,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     }
 
     expected_html =
-      "<p>2hu</p>alert('YAY')Some <img height='32px' width='32px' alt='2hu' title='2hu' src='corndog.png' /> content mentioning <a href=\"#{
+      "<p>2hu</p>alert('YAY')Some <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" /> content mentioning <a href=\"#{
         mentioned_user.ap_id
       }\">@shp</a>"
 
@@ -139,6 +139,10 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",
       "in_reply_to_status_id" => 213_123,
+      "in_reply_to_screen_name" => nil,
+      "in_reply_to_user_id" => nil,
+      "in_reply_to_profileurl" => nil,
+      "in_reply_to_ostatus_uri" => nil,
       "statusnet_conversation_id" => convo_object.id,
       "attachments" => [
         ObjectRepresenter.to_map(object)

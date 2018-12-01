@@ -4,196 +4,50 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
   alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
 
-  defp fetch_nil(_name) do
-    {:ok, nil}
+  setup %{conn: conn} do
+    user = %User{
+      id: 1,
+      name: "dude",
+      password_hash: Comeonin.Pbkdf2.hashpwsalt("guy")
+    }
+
+    conn =
+      conn
+      |> assign(:auth_user, user)
+
+    %{user: user, conn: conn}
   end
 
-  @user %User{
-    id: 1,
-    name: "dude",
-    password_hash: Comeonin.Pbkdf2.hashpwsalt("guy")
-  }
+  test "it does nothing if a user is assigned", %{conn: conn} do
+    conn =
+      conn
+      |> assign(:user, %User{})
 
-  @deactivated %User{
-    id: 1,
-    name: "dude",
-    password_hash: Comeonin.Pbkdf2.hashpwsalt("guy"),
-    info: %{"deactivated" => true}
-  }
+    ret_conn =
+      conn
+      |> AuthenticationPlug.call(%{})
 
-  @session_opts [
-    store: :cookie,
-    key: "_test",
-    signing_salt: "cooldude"
-  ]
-
-  defp fetch_user(_name) do
-    {:ok, @user}
+    assert ret_conn == conn
   end
 
-  defp basic_auth_enc(username, password) do
-    "Basic " <> Base.encode64("#{username}:#{password}")
+  test "with a correct password in the credentials, it assigns the auth_user", %{conn: conn} do
+    conn =
+      conn
+      |> assign(:auth_credentials, %{password: "guy"})
+      |> AuthenticationPlug.call(%{})
+
+    assert conn.assigns.user == conn.assigns.auth_user
   end
 
-  describe "without an authorization header" do
-    test "it halts the application" do
-      conn =
-        build_conn()
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> AuthenticationPlug.call(%{})
+  test "with a wrong password in the credentials, it does nothing", %{conn: conn} do
+    conn =
+      conn
+      |> assign(:auth_credentials, %{password: "wrong"})
 
-      assert conn.status == 403
-      assert conn.halted == true
-    end
+    ret_conn =
+      conn
+      |> AuthenticationPlug.call(%{})
 
-    test "it assigns a nil user if the 'optional' option is used" do
-      conn =
-        build_conn()
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> AuthenticationPlug.call(%{optional: true})
-
-      assert %{user: nil} == conn.assigns
-    end
-  end
-
-  describe "with an authorization header for a nonexisting user" do
-    test "it halts the application" do
-      conn =
-        build_conn()
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> AuthenticationPlug.call(%{fetcher: &fetch_nil/1})
-
-      assert conn.status == 403
-      assert conn.halted == true
-    end
-
-    test "it assigns a nil user if the 'optional' option is used" do
-      conn =
-        build_conn()
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> AuthenticationPlug.call(%{optional: true, fetcher: &fetch_nil/1})
-
-      assert %{user: nil} == conn.assigns
-    end
-  end
-
-  describe "with an incorrect authorization header for a enxisting user" do
-    test "it halts the application" do
-      opts = %{
-        fetcher: &fetch_user/1
-      }
-
-      header = basic_auth_enc("dude", "man")
-
-      conn =
-        build_conn()
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> put_req_header("authorization", header)
-        |> AuthenticationPlug.call(opts)
-
-      assert conn.status == 403
-      assert conn.halted == true
-    end
-
-    test "it assigns a nil user if the 'optional' option is used" do
-      opts = %{
-        optional: true,
-        fetcher: &fetch_user/1
-      }
-
-      header = basic_auth_enc("dude", "man")
-
-      conn =
-        build_conn()
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> put_req_header("authorization", header)
-        |> AuthenticationPlug.call(opts)
-
-      assert %{user: nil} == conn.assigns
-    end
-  end
-
-  describe "with a correct authorization header for an existing user" do
-    test "it assigns the user", %{conn: conn} do
-      opts = %{
-        optional: true,
-        fetcher: &fetch_user/1
-      }
-
-      header = basic_auth_enc("dude", "guy")
-
-      conn =
-        conn
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> put_req_header("authorization", header)
-        |> AuthenticationPlug.call(opts)
-
-      assert %{user: @user} == conn.assigns
-      assert get_session(conn, :user_id) == @user.id
-      assert conn.halted == false
-    end
-  end
-
-  describe "with a correct authorization header for an deactiviated user" do
-    test "it halts the appication", %{conn: conn} do
-      opts = %{
-        optional: false,
-        fetcher: fn _ -> @deactivated end
-      }
-
-      header = basic_auth_enc("dude", "guy")
-
-      conn =
-        conn
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> put_req_header("authorization", header)
-        |> AuthenticationPlug.call(opts)
-
-      assert conn.status == 403
-      assert conn.halted == true
-    end
-  end
-
-  describe "with a user_id in the session for an existing user" do
-    test "it assigns the user", %{conn: conn} do
-      opts = %{
-        optional: true,
-        fetcher: &fetch_user/1
-      }
-
-      header = basic_auth_enc("dude", "THIS IS WRONG")
-
-      conn =
-        conn
-        |> Plug.Session.call(Plug.Session.init(@session_opts))
-        |> fetch_session
-        |> put_session(:user_id, @user.id)
-        |> put_req_header("authorization", header)
-        |> AuthenticationPlug.call(opts)
-
-      assert %{user: @user} == conn.assigns
-      assert get_session(conn, :user_id) == @user.id
-      assert conn.halted == false
-    end
-  end
-
-  describe "with an assigned user" do
-    test "it does nothing, returning the incoming conn", %{conn: conn} do
-      conn =
-        conn
-        |> assign(:user, @user)
-
-      conn_result = AuthenticationPlug.call(conn, %{})
-
-      assert conn == conn_result
-    end
+    assert conn == ret_conn
   end
 end

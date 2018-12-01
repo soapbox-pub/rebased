@@ -456,4 +456,28 @@ defmodule Pleroma.Web.OStatusTest do
              "https://www.w3.org/ns/activitystreams#Public"
            ]
   end
+
+  describe "is_representable?" do
+    test "Note objects are representable" do
+      note_activity = insert(:note_activity)
+
+      assert OStatus.is_representable?(note_activity)
+    end
+
+    test "Article objects are not representable" do
+      note_activity = insert(:note_activity)
+
+      note_object = Object.normalize(note_activity.data["object"])
+
+      note_data =
+        note_object.data
+        |> Map.put("type", "Article")
+
+      cs = Object.change(note_object, %{data: note_data})
+      {:ok, article_object} = Repo.update(cs)
+
+      # the underlying object is now an Article instead of a note, so this should fail
+      refute OStatus.is_representable?(note_activity)
+    end
+  end
 end

@@ -7,6 +7,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
+  test "a note with null content" do
+    note = insert(:note_activity)
+
+    data =
+      note.data
+      |> put_in(["object", "content"], nil)
+
+    note =
+      note
+      |> Map.put(:data, data)
+
+    user = User.get_cached_by_ap_id(note.data["actor"])
+
+    status = StatusView.render("status.json", %{activity: note})
+
+    assert status.content == ""
+  end
+
   test "a note activity" do
     note = insert(:note_activity)
     user = User.get_cached_by_ap_id(note.data["actor"])
@@ -28,6 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       content: HtmlSanitizeEx.basic_html(note.data["object"]["content"]),
       created_at: created_at,
       reblogs_count: 0,
+      replies_count: 0,
       favourites_count: 0,
       reblogged: false,
       favourited: false,
@@ -47,7 +66,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         %{
           shortcode: "2hu",
           url: "corndog.png",
-          static_url: "corndog.png"
+          static_url: "corndog.png",
+          visible_in_picker: false
         }
       ]
     }

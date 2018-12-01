@@ -1,6 +1,8 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.{Repo, Object, Formatter, Activity}
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.User
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
@@ -17,6 +19,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       end
   end
 
+  def get_replied_to_activity(""), do: nil
+
   def get_replied_to_activity(id) when not is_nil(id) do
     Repo.get(Activity, id)
   end
@@ -30,21 +34,29 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def to_for_user_and_mentions(user, mentions, inReplyTo, "public") do
-    to = ["https://www.w3.org/ns/activitystreams#Public"]
-
     mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
-    cc = [user.follower_address | mentioned_users]
+
+    to = ["https://www.w3.org/ns/activitystreams#Public" | mentioned_users]
+    cc = [user.follower_address]
 
     if inReplyTo do
-      {to, Enum.uniq([inReplyTo.data["actor"] | cc])}
+      {Enum.uniq([inReplyTo.data["actor"] | to]), cc}
     else
       {to, cc}
     end
   end
 
   def to_for_user_and_mentions(user, mentions, inReplyTo, "unlisted") do
-    {to, cc} = to_for_user_and_mentions(user, mentions, inReplyTo, "public")
-    {cc, to}
+    mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
+
+    to = [user.follower_address | mentioned_users]
+    cc = ["https://www.w3.org/ns/activitystreams#Public"]
+
+    if inReplyTo do
+      {Enum.uniq([inReplyTo.data["actor"] | to]), cc}
+    else
+      {to, cc}
+    end
   end
 
   def to_for_user_and_mentions(user, mentions, inReplyTo, "private") do
@@ -62,9 +74,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def make_content_html(status, mentions, attachments, tags, no_attachment_links \\ false) do
+  def make_content_html(
+        status,
+        mentions,
+        attachments,
+        tags,
+        content_type,
+        no_attachment_links \\ false
+      ) do
     status
-    |> format_input(mentions, tags)
+    |> format_input(mentions, tags, content_type)
     |> maybe_add_attachments(attachments, no_attachment_links)
   end
 
@@ -80,8 +99,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def add_attachments(text, attachments) do
     attachment_text =
       Enum.map(attachments, fn
-        %{"url" => [%{"href" => href} | _]} ->
-          name = URI.decode(Path.basename(href))
+        %{"url" => [%{"href" => href} | _]} = attachment ->
+          name = attachment["name"] || URI.decode(Path.basename(href))
+          href = MediaProxy.url(href)
           "<a href=\"#{href}\" class='attachment'>#{shortname(name)}</a>"
 
         _ ->
@@ -91,12 +111,32 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.join([text | attachment_text], "<br>")
   end
 
-  def format_input(text, mentions, tags) do
+  def format_input(text, mentions, tags, "text/plain") do
     text
-    |> Formatter.html_escape()
+    |> Formatter.html_escape("text/plain")
     |> String.replace(~r/\r?\n/, "<br>")
     |> (&{[], &1}).()
     |> Formatter.add_links()
+    |> Formatter.add_user_links(mentions)
+    |> Formatter.add_hashtag_links(tags)
+    |> Formatter.finalize()
+  end
+
+  def format_input(text, mentions, tags, "text/html") do
+    text
+    |> Formatter.html_escape("text/html")
+    |> String.replace(~r/\r?\n/, "<br>")
+    |> (&{[], &1}).()
+    |> Formatter.add_user_links(mentions)
+    |> Formatter.finalize()
+  end
+
+  def format_input(text, mentions, tags, "text/markdown") do
+    text
+    |> Earmark.as_html!()
+    |> Formatter.html_escape("text/html")
+    |> String.replace(~r/\r?\n/, "")
+    |> (&{[], &1}).()
     |> Formatter.add_user_links(mentions)
     |> Formatter.add_hashtag_links(tags)
     |> Formatter.finalize()
@@ -194,5 +234,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     else
       _ -> {:error, "Invalid password."}
     end
+  end
+
+  def emoji_from_profile(%{info: info} = user) do
+    (Formatter.get_emoji(user.bio) ++ Formatter.get_emoji(user.name))
+    |> Enum.map(fn {shortcode, url} ->
+      %{
+        "type" => "Emoji",
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},
+        "name" => ":#{shortcode}:"
+      }
+    end)
   end
 end

@@ -1,10 +1,22 @@
 defmodule Pleroma.Application do
   use Application
+  import Supervisor.Spec
+
+  @name "Pleroma"
+  @version Mix.Project.config()[:version]
+  def name, do: @name
+  def version, do: @version
+  def named_version(), do: @name <> " " <> @version
+
+  def user_agent() do
+    info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"
+    named_version() <> "; " <> info
+  end
 
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
+  @env Mix.env()
   def start(_type, _args) do
-    import Supervisor.Spec
     import Cachex.Spec
 
     # Define workers and child supervisors to be supervised
@@ -12,18 +24,31 @@ defmodule Pleroma.Application do
       [
         # Start the Ecto repository
         supervisor(Pleroma.Repo, []),
-        # Start the endpoint when the application starts
-        supervisor(Pleroma.Web.Endpoint, []),
-        # Start your own worker by calling: Pleroma.Worker.start_link(arg1, arg2, arg3)
-        # worker(Pleroma.Worker, [arg1, arg2, arg3]),
-        worker(Cachex, [
-          :user_cache,
+        worker(Pleroma.Emoji, []),
+        worker(
+          Cachex,
           [
-            default_ttl: 25000,
-            ttl_interval: 1000,
-            limit: 2500
-          ]
-        ]),
+            :user_cache,
+            [
+              default_ttl: 25000,
+              ttl_interval: 1000,
+              limit: 2500
+            ]
+          ],
+          id: :cachex_user
+        ),
+        worker(
+          Cachex,
+          [
+            :object_cache,
+            [
+              default_ttl: 25000,
+              ttl_interval: 1000,
+              limit: 2500
+            ]
+          ],
+          id: :cachex_object
+        ),
         worker(
           Cachex,
           [
@@ -39,19 +64,17 @@ defmodule Pleroma.Application do
           ],
           id: :cachex_idem
         ),
+        worker(Pleroma.Web.Federator.RetryQueue, []),
         worker(Pleroma.Web.Federator, []),
-        worker(Pleroma.Gopher.Server, []),
         worker(Pleroma.Stats, [])
       ] ++
-        if Mix.env() == :test,
-          do: [],
-          else:
-            [worker(Pleroma.Web.Streamer, [])] ++
-              if(
-                !chat_enabled(),
-                do: [],
-                else: [worker(Pleroma.Web.ChatChannel.ChatChannelState, [])]
-              )
+        streamer_child() ++
+        chat_child() ++
+        [
+          # Start the endpoint when the application starts
+          supervisor(Pleroma.Web.Endpoint, []),
+          worker(Pleroma.Gopher.Server, [])
+        ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
@@ -59,7 +82,20 @@ defmodule Pleroma.Application do
     Supervisor.start_link(children, opts)
   end
 
-  defp chat_enabled do
-    Application.get_env(:pleroma, :chat, []) |> Keyword.get(:enabled)
+  if Mix.env() == :test do
+    defp streamer_child(), do: []
+    defp chat_child(), do: []
+  else
+    defp streamer_child() do
+      [worker(Pleroma.Web.Streamer, [])]
+    end
+
+    defp chat_child() do
+      if Pleroma.Config.get([:chat, :enabled]) do
+        [worker(Pleroma.Web.ChatChannel.ChatChannelState, [])]
+      else
+        []
+      end
+    end
   end
 end

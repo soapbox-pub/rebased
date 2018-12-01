@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.CommonAPI do
-  alias Pleroma.{Repo, Activity, Object}
+  alias Pleroma.{User, Repo, Activity, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Formatter
 
@@ -36,7 +36,6 @@ defmodule Pleroma.Web.CommonAPI do
 
   def favorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         false <- activity.data["actor"] == user.ap_id,
          object <- Object.normalize(activity.data["object"]["id"]) do
       ActivityPub.like(user, object)
     else
@@ -47,7 +46,6 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unfavorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         false <- activity.data["actor"] == user.ap_id,
          object <- Object.normalize(activity.data["object"]["id"]) do
       ActivityPub.unlike(user, object)
     else
@@ -61,28 +59,48 @@ defmodule Pleroma.Web.CommonAPI do
       do: visibility
 
   def get_visibility(%{"in_reply_to_status_id" => status_id}) when not is_nil(status_id) do
-    inReplyTo = get_replied_to_activity(status_id)
-    Pleroma.Web.MastodonAPI.StatusView.get_visibility(inReplyTo.data["object"])
+    case get_replied_to_activity(status_id) do
+      nil ->
+        "public"
+
+      inReplyTo ->
+        Pleroma.Web.MastodonAPI.StatusView.get_visibility(inReplyTo.data["object"])
+    end
   end
 
   def get_visibility(_), do: "public"
 
-  @instance Application.get_env(:pleroma, :instance)
-  @limit Keyword.get(@instance, :limit)
+  defp get_content_type(content_type) do
+    if Enum.member?(Pleroma.Config.get([:instance, :allowed_post_formats]), content_type) do
+      content_type
+    else
+      "text/plain"
+    end
+  end
+
   def post(user, %{"status" => status} = data) do
     visibility = get_visibility(data)
+    limit = Pleroma.Config.get([:instance, :limit])
 
     with status <- String.trim(status),
-         length when length in 1..@limit <- String.length(status),
          attachments <- attachments_from_ids(data["media_ids"]),
          mentions <- Formatter.parse_mentions(status),
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
          {to, cc} <- to_for_user_and_mentions(user, mentions, inReplyTo, visibility),
          tags <- Formatter.parse_tags(status, data),
          content_html <-
-           make_content_html(status, mentions, attachments, tags, data["no_attachment_links"]),
+           make_content_html(
+             status,
+             mentions,
+             attachments,
+             tags,
+             get_content_type(data["content_type"]),
+             data["no_attachment_links"]
+           ),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
+         full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
+         length when length in 1..limit <- String.length(full_payload),
          object <-
            make_note_data(
              user.ap_id,
@@ -118,6 +136,18 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def update(user) do
+    user =
+      with emoji <- emoji_from_profile(user),
+           source_data <- (user.info["source_data"] || %{}) |> Map.put("tag", emoji),
+           new_info <- Map.put(user.info, "source_data", source_data),
+           change <- User.info_changeset(user, %{info: new_info}),
+           {:ok, user} <- User.update_and_set_cache(change) do
+        user
+      else
+        _e ->
+          user
+      end
+
     ActivityPub.update(%{
       local: true,
       to: [user.follower_address],

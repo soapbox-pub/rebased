@@ -49,10 +49,48 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         }
       ],
       fields: [],
+      bot: false,
       source: %{
         note: "",
         privacy: "public",
-        sensitive: "false"
+        sensitive: false
+      }
+    }
+
+    assert expected == AccountView.render("account.json", %{user: user})
+  end
+
+  test "Represent a Service(bot) account" do
+    user =
+      insert(:user, %{
+        info: %{"note_count" => 5, "follower_count" => 3, "source_data" => %{"type" => "Service"}},
+        nickname: "shp@shitposter.club",
+        inserted_at: ~N[2017-08-15 15:47:06.597036]
+      })
+
+    expected = %{
+      id: to_string(user.id),
+      username: "shp",
+      acct: user.nickname,
+      display_name: user.name,
+      locked: false,
+      created_at: "2017-08-15T15:47:06.000Z",
+      followers_count: 3,
+      following_count: 0,
+      statuses_count: 5,
+      note: user.bio,
+      url: user.ap_id,
+      avatar: "http://localhost:4001/images/avi.png",
+      avatar_static: "http://localhost:4001/images/avi.png",
+      header: "http://localhost:4001/images/banner.png",
+      header_static: "http://localhost:4001/images/banner.png",
+      emojis: [],
+      fields: [],
+      bot: true,
+      source: %{
+        note: "",
+        privacy: "public",
+        sensitive: false
       }
     }
 
@@ -85,8 +123,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       followed_by: false,
       blocking: true,
       muting: false,
+      muting_notifications: false,
       requested: false,
-      domain_blocking: false
+      domain_blocking: false,
+      showing_reblogs: false,
+      endorsed: false
     }
 
     assert expected == AccountView.render("relationship.json", %{user: user, target: other_user})

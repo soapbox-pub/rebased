@@ -10,8 +10,8 @@ proxy_cache_path /tmp/pleroma-media-cache levels=1:2 keys_zone=pleroma_media_cac
                  inactive=720m use_temp_path=off;
 
 server {
-    listen         80;
     server_name    example.tld;
+    listen         80;
     return         301 https://$server_name$request_uri;
 
     # Uncomment this if you need to use the 'webroot' method with certbot. Make sure
@@ -46,7 +46,7 @@ server {
     ssl_ecdh_curve X25519:prime256v1:secp384r1:secp521r1;
     ssl_stapling on;
     ssl_stapling_verify on;
-    
+
     server_name example.tld;
 
     gzip_vary on;
@@ -60,27 +60,6 @@ server {
     client_max_body_size 16m;
 
     location / {
-        # if you do not want remote frontends to be able to access your Pleroma backend
-        # server, remove these lines.
-        add_header 'Access-Control-Allow-Origin' '*' always;
-        add_header 'Access-Control-Allow-Methods' 'POST, PUT, DELETE, GET, PATCH, OPTIONS' always;
-        add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Idempotency-Key' always;
-        add_header 'Access-Control-Expose-Headers' 'Link, X-RateLimit-Reset, X-RateLimit-Limit, X-RateLimit-Remaining, X-Request-Id' always;
-        if ($request_method = OPTIONS) {
-            return 204;
-        }
-        # stop removing lines here.
-
-        add_header X-XSS-Protection "1; mode=block";
-        add_header X-Permitted-Cross-Domain-Policies none;
-        add_header X-Frame-Options DENY;
-        add_header X-Content-Type-Options nosniff;
-        add_header Referrer-Policy same-origin;
-        add_header X-Download-Options noopen;
-        
-        # Uncomment this only after you get HTTPS working.
-        # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
-
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -91,10 +70,12 @@ server {
         client_max_body_size 16m;
     }
 
-    location /proxy {
+    location ~ ^/(media|proxy) {
         proxy_cache pleroma_media_cache;
         proxy_cache_lock on;
         proxy_ignore_client_abort on;
+        proxy_buffering off;
+        chunked_transfer_encoding on;
         proxy_pass http://localhost:4000;
     }
 }

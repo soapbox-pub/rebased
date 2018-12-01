@@ -2,15 +2,16 @@
   "theme": "pleroma-dark",
   "background": "/static/aurora_borealis.jpg",
   "logo": "/static/logo.png",
+  "logoMask": true,
+  "logoMargin": ".1em",
   "redirectRootNoLogin": "/main/all",
   "redirectRootLogin": "/main/friends",
   "chatDisabled": false,
-  "showWhoToFollowPanel": false,
-  "whoToFollowProvider": "https://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-osa-api.cgi?{{host}}+{{user}}",
-  "whoToFollowProviderDummy2": "https://followlink.osa-p.net/api/get_recommend.json?acct=@{{user}}@{{host}}",
-  "whoToFollowLink": "https://vinayaka.distsn.org/?{{host}}+{{user}}",
-  "whoToFollowLinkDummy2": "https://followlink.osa-p.net/recommend.html",
   "showInstanceSpecificPanel": false,
   "scopeOptionsEnabled": false,
-  "collapseMessageWithSubject": false
+  "formattingOptionsEnabled": false,
+  "collapseMessageWithSubject": false,
+  "hidePostStats": false,
+  "hideUserStats": false,
+  "loginMethod": "password"
 }

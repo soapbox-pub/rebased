@@ -1,6 +1,8 @@
 defmodule Pleroma.Web.OAuth.Token do
   use Ecto.Schema
 
+  import Ecto.Query
+
   alias Pleroma.{User, Repo}
   alias Pleroma.Web.OAuth.{Token, App, Authorization}
 
@@ -34,5 +36,13 @@ defmodule Pleroma.Web.OAuth.Token do
     }
 
     Repo.insert(token)
+  end
+
+  def delete_user_tokens(%User{id: user_id}) do
+    from(
+      t in Pleroma.Web.OAuth.Token,
+      where: t.user_id == ^user_id
+    )
+    |> Repo.delete_all()
   end
 end

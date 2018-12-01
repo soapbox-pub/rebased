@@ -6,7 +6,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.CommonAPI
   alias Comeonin.Pbkdf2
-  alias Pleroma.Formatter
+  alias Pleroma.{Formatter, Emoji}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.{Repo, PasswordResetToken, User}
 
@@ -134,19 +134,20 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
-  @instance Application.get_env(:pleroma, :instance)
-  @instance_fe Application.get_env(:pleroma, :fe)
-  @instance_chat Application.get_env(:pleroma, :chat)
   def config(conn, _params) do
+    instance = Pleroma.Config.get(:instance)
+    instance_fe = Pleroma.Config.get(:fe)
+    instance_chat = Pleroma.Config.get(:chat)
+
     case get_format(conn) do
       "xml" ->
         response = """
         <config>
           <site>
-            <name>#{Keyword.get(@instance, :name)}</name>
+            <name>#{Keyword.get(instance, :name)}</name>
             <site>#{Web.base_url()}</site>
-            <textlimit>#{Keyword.get(@instance, :limit)}</textlimit>
-            <closed>#{!Keyword.get(@instance, :registrations_open)}</closed>
+            <textlimit>#{Keyword.get(instance, :limit)}</textlimit>
+            <closed>#{!Keyword.get(instance, :registrations_open)}</closed>
           </site>
         </config>
         """
@@ -156,34 +157,47 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         |> send_resp(200, response)
 
       _ ->
-        json(conn, %{
-          site: %{
-            name: Keyword.get(@instance, :name),
-            description: Keyword.get(@instance, :description),
-            server: Web.base_url(),
-            textlimit: to_string(Keyword.get(@instance, :limit)),
-            closed: if(Keyword.get(@instance, :registrations_open), do: "0", else: "1"),
-            private: if(Keyword.get(@instance, :public, true), do: "0", else: "1"),
-            pleromafe: %{
-              theme: Keyword.get(@instance_fe, :theme),
-              background: Keyword.get(@instance_fe, :background),
-              logo: Keyword.get(@instance_fe, :logo),
-              redirectRootNoLogin: Keyword.get(@instance_fe, :redirect_root_no_login),
-              redirectRootLogin: Keyword.get(@instance_fe, :redirect_root_login),
-              chatDisabled: !Keyword.get(@instance_chat, :enabled),
-              showInstanceSpecificPanel: Keyword.get(@instance_fe, :show_instance_panel),
-              showWhoToFollowPanel: Keyword.get(@instance_fe, :show_who_to_follow_panel),
-              scopeOptionsEnabled: Keyword.get(@instance_fe, :scope_options_enabled),
-              whoToFollowProvider: Keyword.get(@instance_fe, :who_to_follow_provider),
-              whoToFollowLink: Keyword.get(@instance_fe, :who_to_follow_link)
-            }
-          }
-        })
+        data = %{
+          name: Keyword.get(instance, :name),
+          description: Keyword.get(instance, :description),
+          server: Web.base_url(),
+          textlimit: to_string(Keyword.get(instance, :limit)),
+          closed: if(Keyword.get(instance, :registrations_open), do: "0", else: "1"),
+          private: if(Keyword.get(instance, :public, true), do: "0", else: "1")
+        }
+
+        pleroma_fe = %{
+          theme: Keyword.get(instance_fe, :theme),
+          background: Keyword.get(instance_fe, :background),
+          logo: Keyword.get(instance_fe, :logo),
+          logoMask: Keyword.get(instance_fe, :logo_mask),
+          logoMargin: Keyword.get(instance_fe, :logo_margin),
+          redirectRootNoLogin: Keyword.get(instance_fe, :redirect_root_no_login),
+          redirectRootLogin: Keyword.get(instance_fe, :redirect_root_login),
+          chatDisabled: !Keyword.get(instance_chat, :enabled),
+          showInstanceSpecificPanel: Keyword.get(instance_fe, :show_instance_panel),
+          scopeOptionsEnabled: Keyword.get(instance_fe, :scope_options_enabled),
+          formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
+          collapseMessageWithSubject: Keyword.get(instance_fe, :collapse_message_with_subject),
+          hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
+          hideUserStats: Keyword.get(instance_fe, :hide_user_stats)
+        }
+
+        managed_config = Keyword.get(instance, :managed_config)
+
+        data =
+          if managed_config do
+            data |> Map.put("pleromafe", pleroma_fe)
+          else
+            data
+          end
+
+        json(conn, %{site: data})
     end
   end
 
   def version(conn, _params) do
-    version = Keyword.get(@instance, :version)
+    version = Pleroma.Application.named_version()
 
     case get_format(conn) do
       "xml" ->
@@ -199,7 +213,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def emoji(conn, _params) do
-    json(conn, Enum.into(Formatter.get_custom_emoji(), %{}))
+    json(conn, Enum.into(Emoji.get_all(), %{}))
   end
 
   def follow_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
@@ -212,7 +226,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       |> Enum.map(fn account ->
         with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
              %User{} = followed <- User.get_or_fetch(account),
-             {:ok, follower} <- User.follow(follower, followed) do
+             {:ok, follower} <- User.maybe_direct_follow(follower, followed) do
           ActivityPub.follow(follower, followed)
         else
           err -> Logger.debug("follow_import: following #{account} failed with #{inspect(err)}")

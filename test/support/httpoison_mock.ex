@@ -1,7 +1,78 @@
 defmodule HTTPoisonMock do
   alias HTTPoison.Response
 
+  def process_request_options(options), do: options
+
   def get(url, body \\ [], headers \\ [])
+
+  def get("https://prismo.news/@mxb", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___prismo.news__mxb.json")
+     }}
+  end
+
+  def get("https://osada.macgirvin.com/channel/mike", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body:
+         File.read!("test/fixtures/httpoison_mock/https___osada.macgirvin.com_channel_mike.json")
+     }}
+  end
+
+  def get(
+        "https://osada.macgirvin.com/.well-known/webfinger?resource=acct:mike@osada.macgirvin.com",
+        _,
+        _
+      ) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/mike@osada.macgirvin.com.json")
+     }}
+  end
+
+  def get("https://info.pleroma.site/activity.json", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https__info.pleroma.site_activity.json")
+     }}
+  end
+
+  def get("https://info.pleroma.site/activity2.json", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https__info.pleroma.site_activity2.json")
+     }}
+  end
+
+  def get("https://info.pleroma.site/activity3.json", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https__info.pleroma.site_activity3.json")
+     }}
+  end
+
+  def get("https://info.pleroma.site/activity4.json", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https__info.pleroma.site_activity4.json")
+     }}
+  end
+
+  def get("https://info.pleroma.site/actor.json", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___info.pleroma.site_actor.json")
+     }}
+  end
 
   def get("https://puckipedia.com/", [Accept: "application/activity+json"], _) do
     {:ok,
@@ -396,6 +467,17 @@ defmodule HTTPoisonMock do
      }}
   end
 
+  def get("http://mastodon.example.org/users/admin/statuses/100787282858396771", _, _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/http___mastodon.example.org_users_admin_status_1234.json"
+         )
+     }}
+  end
+
   def get(
         "https://pawoo.net/.well-known/webfinger",
         [Accept: "application/xrd+xml,application/jrd+json"],
@@ -677,6 +759,14 @@ defmodule HTTPoisonMock do
   end
 
   def get("https://niu.moe/users/rye", [Accept: "application/activity+json"], _) do
+    {:ok,
+     %Response{
+       status_code: 200,
+       body: File.read!("test/fixtures/httpoison_mock/rye.json")
+     }}
+  end
+
+  def get("https://n1u.moe/users/rye", [Accept: "application/activity+json"], _) do
     {:ok,
      %Response{
        status_code: 200,

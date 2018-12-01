@@ -121,6 +121,38 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "<p>henlo from my Psion netBook</p><p>message sent from my Psion netBook</p>"
     end
 
+    test "it works for incoming announces with actor being inlined (kroeg)" do
+      data = File.read!("test/fixtures/kroeg-announce-with-inline-actor.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "https://puckipedia.com/"
+    end
+
+    test "it works for incoming notices with tag not being an array (kroeg)" do
+      data = File.read!("test/fixtures/kroeg-array-less-emoji.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["object"]["emoji"] == %{
+               "icon_e_smile" => "https://puckipedia.com/forum/images/smilies/icon_e_smile.png"
+             }
+
+      data = File.read!("test/fixtures/kroeg-array-less-hashtag.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert "test" in data["object"]["tag"]
+    end
+
+    test "it works for incoming notices with url not being a string (prismo)" do
+      data = File.read!("test/fixtures/prismo-url-map.json") |> Poison.decode!()
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["object"]["url"] == "https://prismo.news/posts/83"
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
@@ -327,6 +359,26 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
 
       refute Repo.get(Activity, activity.id)
+    end
+
+    test "it fails for incoming deletes with spoofed origin" do
+      activity = insert(:note_activity)
+
+      data =
+        File.read!("test/fixtures/mastodon-delete.json")
+        |> Poison.decode!()
+
+      object =
+        data["object"]
+        |> Map.put("id", activity.data["object"]["id"])
+
+      data =
+        data
+        |> Map.put("object", object)
+
+      :error = Transmogrifier.handle_incoming(data)
+
+      assert Repo.get(Activity, activity.id)
     end
 
     test "it works for incoming unannounces with an existing notice" do
@@ -671,7 +723,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
-      assert modified["@context"] == "https://www.w3.org/ns/activitystreams"
+      assert modified["@context"] ==
+               Pleroma.Web.ActivityPub.Utils.make_json_ld_header()["@context"]
+
       assert modified["object"]["conversation"] == modified["context"]
     end
 
@@ -708,6 +762,39 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["object"]["inReplyTo"] == "http://gs.example.org:4040/index.php/notice/29"
+    end
+
+    test "it strips internal hashtag data" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu"})
+
+      expected_tag = %{
+        "href" => Pleroma.Web.Endpoint.url() <> "/tags/2hu",
+        "type" => "Hashtag",
+        "name" => "#2hu"
+      }
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["object"]["tag"] == [expected_tag]
+    end
+
+    test "it strips internal fields" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert length(modified["object"]["tag"]) == 2
+
+      assert is_nil(modified["object"]["emoji"])
+      assert is_nil(modified["object"]["likes"])
+      assert is_nil(modified["object"]["like_count"])
+      assert is_nil(modified["object"]["announcements"])
+      assert is_nil(modified["object"]["announcement_count"])
+      assert is_nil(modified["object"]["context_id"])
     end
   end
 
@@ -796,6 +883,116 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       rewritten = Transmogrifier.maybe_fix_user_object(data)
       assert rewritten["url"] == "http://example.com"
+    end
+  end
+
+  describe "actor origin containment" do
+    test "it rejects objects with a bogus origin" do
+      {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity.json")
+    end
+
+    test "it rejects activities which reference objects with bogus origins" do
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "id" => "http://mastodon.example.org/users/admin/activities/1234",
+        "actor" => "http://mastodon.example.org/users/admin",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "object" => "https://info.pleroma.site/activity.json",
+        "type" => "Announce"
+      }
+
+      :error = Transmogrifier.handle_incoming(data)
+    end
+
+    test "it rejects objects when attributedTo is wrong (variant 1)" do
+      {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity2.json")
+    end
+
+    test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "id" => "http://mastodon.example.org/users/admin/activities/1234",
+        "actor" => "http://mastodon.example.org/users/admin",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "object" => "https://info.pleroma.site/activity2.json",
+        "type" => "Announce"
+      }
+
+      :error = Transmogrifier.handle_incoming(data)
+    end
+
+    test "it rejects objects when attributedTo is wrong (variant 2)" do
+      {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity3.json")
+    end
+
+    test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do
+      data = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "id" => "http://mastodon.example.org/users/admin/activities/1234",
+        "actor" => "http://mastodon.example.org/users/admin",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "object" => "https://info.pleroma.site/activity3.json",
+        "type" => "Announce"
+      }
+
+      :error = Transmogrifier.handle_incoming(data)
+    end
+  end
+
+  describe "general origin containment" do
+    test "contain_origin_from_id() catches obvious spoofing attempts" do
+      data = %{
+        "id" => "http://example.com/~alyssa/activities/1234.json"
+      }
+
+      :error =
+        Transmogrifier.contain_origin_from_id(
+          "http://example.org/~alyssa/activities/1234.json",
+          data
+        )
+    end
+
+    test "contain_origin_from_id() allows alternate IDs within the same origin domain" do
+      data = %{
+        "id" => "http://example.com/~alyssa/activities/1234.json"
+      }
+
+      :ok =
+        Transmogrifier.contain_origin_from_id(
+          "http://example.com/~alyssa/activities/1234",
+          data
+        )
+    end
+
+    test "contain_origin_from_id() allows matching IDs" do
+      data = %{
+        "id" => "http://example.com/~alyssa/activities/1234.json"
+      }
+
+      :ok =
+        Transmogrifier.contain_origin_from_id(
+          "http://example.com/~alyssa/activities/1234.json",
+          data
+        )
+    end
+
+    test "users cannot be collided through fake direction spoofing attempts" do
+      user =
+        insert(:user, %{
+          nickname: "rye@niu.moe",
+          local: false,
+          ap_id: "https://niu.moe/users/rye",
+          follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})
+        })
+
+      {:error, _} = User.get_or_fetch_by_ap_id("https://n1u.moe/users/rye")
+    end
+
+    test "all objects with fake directions are rejected by the object fetcher" do
+      {:error, _} =
+        ActivityPub.fetch_and_contain_remote_object_from_id(
+          "https://info.pleroma.site/activity4.json"
+        )
     end
   end
 end

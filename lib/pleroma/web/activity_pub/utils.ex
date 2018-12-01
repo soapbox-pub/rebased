@@ -1,10 +1,12 @@
 defmodule Pleroma.Web.ActivityPub.Utils do
-  alias Pleroma.{Repo, Web, Object, Activity, User}
+  alias Pleroma.{Repo, Web, Object, Activity, User, Notification}
   alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Endpoint
   alias Ecto.{Changeset, UUID}
   import Ecto.Query
   require Logger
+
+  @supported_object_types ["Article", "Note", "Video", "Page"]
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
@@ -19,22 +21,58 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Map.put(params, "actor", get_ap_id(params["actor"]))
   end
 
+  defp recipient_in_collection(ap_id, coll) when is_binary(coll), do: ap_id == coll
+  defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
+  defp recipient_in_collection(_, _), do: false
+
+  def recipient_in_message(ap_id, params) do
+    cond do
+      recipient_in_collection(ap_id, params["to"]) ->
+        true
+
+      recipient_in_collection(ap_id, params["cc"]) ->
+        true
+
+      recipient_in_collection(ap_id, params["bto"]) ->
+        true
+
+      recipient_in_collection(ap_id, params["bcc"]) ->
+        true
+
+      # if the message is unaddressed at all, then assume it is directly addressed
+      # to the recipient
+      !params["to"] && !params["cc"] && !params["bto"] && !params["bcc"] ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  defp extract_list(target) when is_binary(target), do: [target]
+  defp extract_list(lst) when is_list(lst), do: lst
+  defp extract_list(_), do: []
+
+  def maybe_splice_recipient(ap_id, params) do
+    need_splice =
+      !recipient_in_collection(ap_id, params["to"]) &&
+        !recipient_in_collection(ap_id, params["cc"])
+
+    cc_list = extract_list(params["cc"])
+
+    if need_splice do
+      params
+      |> Map.put("cc", [ap_id | cc_list])
+    else
+      params
+    end
+  end
+
   def make_json_ld_header do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
-        "https://w3id.org/security/v1",
-        %{
-          "manuallyApprovesFollowers" => "as:manuallyApprovesFollowers",
-          "sensitive" => "as:sensitive",
-          "Hashtag" => "as:Hashtag",
-          "ostatus" => "http://ostatus.org#",
-          "atomUri" => "ostatus:atomUri",
-          "inReplyToAtomUri" => "ostatus:inReplyToAtomUri",
-          "conversation" => "ostatus:conversation",
-          "toot" => "http://joinmastodon.org/ns#",
-          "Emoji" => "toot:Emoji"
-        }
+        "#{Web.base_url()}/schemas/litepub-0.1.jsonld"
       ]
     }
   end
@@ -57,6 +95,21 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def generate_id(type) do
     "#{Web.base_url()}/#{type}/#{UUID.generate()}"
+  end
+
+  def get_notified_from_object(%{"type" => type} = object) when type in @supported_object_types do
+    fake_create_activity = %{
+      "to" => object["to"],
+      "cc" => object["cc"],
+      "type" => "Create",
+      "object" => object
+    }
+
+    Notification.get_notified_from_activity(%Activity{data: fake_create_activity}, false)
+  end
+
+  def get_notified_from_object(object) do
+    Notification.get_notified_from_activity(%Activity{data: object}, false)
   end
 
   def create_context(context) do
@@ -128,7 +181,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Inserts a full object if it is contained in an activity.
   """
   def insert_full_object(%{"object" => %{"type" => type} = object_data})
-      when is_map(object_data) and type in ["Article", "Note", "Video"] do
+      when is_map(object_data) and type in @supported_object_types do
     with {:ok, _} <- Object.create(object_data) do
       :ok
     end
@@ -247,11 +300,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => follower_id,
       "to" => [followed_id],
       "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
-      "object" => followed_id
+      "object" => followed_id,
+      "state" => "pending"
     }
 
     data = if activity_id, do: Map.put(data, "id", activity_id), else: data
-    data = if User.locked?(followed), do: Map.put(data, "state", "pending"), else: data
 
     data
   end
@@ -306,6 +359,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Make announce activity data for the given actor and object
   """
+  # for relayed messages, we only want to send to subscribers
+  def make_announce_data(
+        %User{ap_id: ap_id, nickname: nil} = user,
+        %Object{data: %{"id" => id}} = object,
+        activity_id
+      ) do
+    data = %{
+      "type" => "Announce",
+      "actor" => ap_id,
+      "object" => id,
+      "to" => [user.follower_address],
+      "cc" => [],
+      "context" => object.data["context"]
+    }
+
+    if activity_id, do: Map.put(data, "id", activity_id), else: data
+  end
+
   def make_announce_data(
         %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
@@ -360,7 +431,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     if activity_id, do: Map.put(data, "id", activity_id), else: data
   end
 
-  def add_announce_to_object(%Activity{data: %{"actor" => actor}}, object) do
+  def add_announce_to_object(
+        %Activity{
+          data: %{"actor" => actor, "cc" => ["https://www.w3.org/ns/activitystreams#Public"]}
+        },
+        object
+      ) do
     announcements =
       if is_list(object.data["announcements"]), do: object.data["announcements"], else: []
 
@@ -368,6 +444,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       update_element_in_object("announcement", announcements, object)
     end
   end
+
+  def add_announce_to_object(_, object), do: {:ok, object}
 
   def remove_announce_from_object(%Activity{data: %{"actor" => actor}}, object) do
     announcements =

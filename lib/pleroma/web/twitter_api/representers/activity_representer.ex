@@ -7,6 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView}
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Formatter
+  alias Pleroma.HTML
 
   defp user_by_ap_id(user_list, ap_id) do
     Enum.find(user_list, fn %{ap_id: user_id} -> ap_id == user_id end)
@@ -167,7 +168,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     {summary, content} = ActivityView.render_content(object)
 
     html =
-      HtmlSanitizeEx.basic_html(content)
+      HTML.filter_tags(content, User.html_filter_policy(opts[:for]))
       |> Formatter.emojify(object["emoji"])
 
     video =
@@ -179,16 +180,24 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     attachments = (object["attachment"] || []) ++ video
 
+    reply_parent = Activity.get_in_reply_to_activity(activity)
+
+    reply_user = reply_parent && User.get_cached_by_ap_id(reply_parent.actor)
+
     %{
       "id" => activity.id,
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => html,
-      "text" => HtmlSanitizeEx.strip_tags(content),
+      "text" => HTML.strip_tags(content),
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,
       "in_reply_to_status_id" => object["inReplyToStatusId"],
+      "in_reply_to_screen_name" => reply_user && reply_user.nickname,
+      "in_reply_to_profileurl" => User.profile_url(reply_user),
+      "in_reply_to_ostatus_uri" => reply_user && reply_user.ap_id,
+      "in_reply_to_user_id" => reply_user && reply_user.id,
       "statusnet_conversation_id" => conversation_id,
       "attachments" => attachments |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,

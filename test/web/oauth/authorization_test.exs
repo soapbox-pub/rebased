@@ -55,4 +55,26 @@ defmodule Pleroma.Web.OAuth.AuthorizationTest do
 
     assert {:error, "token expired"} == Authorization.use_token(expired_auth)
   end
+
+  test "delete authorizations" do
+    {:ok, app} =
+      Repo.insert(
+        App.register_changeset(%App{}, %{
+          client_name: "client",
+          scopes: "scope",
+          redirect_uris: "url"
+        })
+      )
+
+    user = insert(:user)
+
+    {:ok, auth} = Authorization.create_authorization(app, user)
+    {:ok, auth} = Authorization.use_token(auth)
+
+    {auths, _} = Authorization.delete_user_authorizations(user)
+
+    {_, invalid} = Authorization.use_token(auth)
+
+    assert auth != invalid
+  end
 end

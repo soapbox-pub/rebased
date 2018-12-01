@@ -476,6 +476,54 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "timeline post-processing" do
+    test "it filters broken threads" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user)
+
+      {:ok, user1} = User.follow(user1, user3)
+      assert User.following?(user1, user3)
+
+      {:ok, user2} = User.follow(user2, user3)
+      assert User.following?(user2, user3)
+
+      {:ok, user3} = User.follow(user3, user2)
+      assert User.following?(user3, user2)
+
+      {:ok, public_activity} = CommonAPI.post(user3, %{"status" => "hi 1"})
+
+      {:ok, private_activity_1} =
+        CommonAPI.post(user3, %{"status" => "hi 2", "visibility" => "private"})
+
+      {:ok, private_activity_2} =
+        CommonAPI.post(user2, %{
+          "status" => "hi 3",
+          "visibility" => "private",
+          "in_reply_to_status_id" => private_activity_1.id
+        })
+
+      {:ok, private_activity_3} =
+        CommonAPI.post(user3, %{
+          "status" => "hi 4",
+          "visibility" => "private",
+          "in_reply_to_status_id" => private_activity_2.id
+        })
+
+      assert user1.following == [user3.ap_id <> "/followers", user1.ap_id]
+
+      activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
+
+      assert [public_activity, private_activity_1, private_activity_3] == activities
+      assert length(activities) == 3
+
+      activities = ActivityPub.contain_timeline(activities, user1)
+
+      assert [public_activity, private_activity_1] == activities
+      assert length(activities) == 2
+    end
+  end
+
   test "it can fetch plume articles" do
     {:ok, object} =
       ActivityPub.fetch_object_from_id(

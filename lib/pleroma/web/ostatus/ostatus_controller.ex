@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.OStatus.OStatusController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.{User, Activity}
+  alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
   alias Pleroma.Repo
   alias Pleroma.Web.{OStatus, Federator}
@@ -10,6 +10,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ActivityPub
 
+  plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
   action_fallback(:errors)
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
@@ -135,7 +136,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
         "html" ->
           conn
           |> put_resp_content_type("text/html")
-          |> send_file(200, "priv/static/index.html")
+          |> send_file(200, Application.app_dir(:pleroma, "priv/static/index.html"))
 
         _ ->
           represent_activity(conn, format, activity, user)
@@ -152,10 +153,21 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
-  defp represent_activity(conn, "activity+json", activity, user) do
+  defp represent_activity(
+         conn,
+         "activity+json",
+         %Activity{data: %{"type" => "Create"}} = activity,
+         user
+       ) do
+    object = Object.normalize(activity.data["object"])
+
     conn
     |> put_resp_header("content-type", "application/activity+json")
-    |> json(ObjectView.render("object.json", %{object: activity}))
+    |> json(ObjectView.render("object.json", %{object: object}))
+  end
+
+  defp represent_activity(conn, "activity+json", _, _) do
+    {:error, :not_found}
   end
 
   defp represent_activity(conn, _, activity, user) do

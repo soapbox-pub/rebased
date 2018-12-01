@@ -9,6 +9,35 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.ActivityPub.Utils
   import Ecto.Query
 
+  # the instance itself is not a Person, but instead an Application
+  def render("user.json", %{user: %{nickname: nil} = user}) do
+    {:ok, user} = WebFinger.ensure_keys_present(user)
+    {:ok, _, public_key} = Salmon.keys_from_pem(user.info["keys"])
+    public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
+    public_key = :public_key.pem_encode([public_key])
+
+    %{
+      "id" => user.ap_id,
+      "type" => "Application",
+      "following" => "#{user.ap_id}/following",
+      "followers" => "#{user.ap_id}/followers",
+      "inbox" => "#{user.ap_id}/inbox",
+      "name" => "Pleroma",
+      "summary" => "Virtual actor for Pleroma relay",
+      "url" => user.ap_id,
+      "manuallyApprovesFollowers" => false,
+      "publicKey" => %{
+        "id" => "#{user.ap_id}#main-key",
+        "owner" => user.ap_id,
+        "publicKeyPem" => public_key
+      },
+      "endpoints" => %{
+        "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
+      }
+    }
+    |> Map.merge(Utils.make_json_ld_header())
+  end
+
   def render("user.json", %{user: user}) do
     {:ok, user} = WebFinger.ensure_keys_present(user)
     {:ok, _, public_key} = Salmon.keys_from_pem(user.info["keys"])
@@ -42,7 +71,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "image" => %{
         "type" => "Image",
         "url" => User.banner_url(user)
-      }
+      },
+      "tag" => user.info["source_data"]["tag"] || []
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
