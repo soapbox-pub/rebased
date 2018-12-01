@@ -116,8 +116,8 @@ defmodule Pleroma.Formatter do
       subs ++
         Enum.map(mentions, fn {match, %User{ap_id: ap_id, info: info}, uuid} ->
           ap_id =
-            if is_binary(info["source_data"]["url"]) do
-              info["source_data"]["url"]
+            if is_binary(info.source_data["url"]) do
+              info.source_data["url"]
             else
               ap_id
             end

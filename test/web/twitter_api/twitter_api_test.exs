@@ -10,7 +10,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "create a status" do
     user = insert(:user)
-    _mentioned_user = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
+    _mentioned_user = insert(:user, %{nickname: "shp", ap_id: "shp"})
 
     object_data = %{
       "type" => "Image",
@@ -67,7 +67,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     user = User.get_by_ap_id(user.ap_id)
 
-    assert user.info["note_count"] == 1
+    assert user.info.note_count == 1
   end
 
   test "create a status that is a reply" do
@@ -116,7 +116,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert User.ap_followers(followed) in user.following
 
     followed = User.get_by_ap_id(followed.ap_id)
-    assert followed.info["follower_count"] == 1
+    assert followed.info.follower_count == 1
 
     {:error, msg} = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
     assert msg == "Could not follow user: #{followed.nickname} is already on your list."
@@ -169,7 +169,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user, _unblocked} = TwitterAPI.block(user, %{"user_id" => unblocked.id})
 
     {:ok, user, _unblocked} = TwitterAPI.unblock(user, %{"user_id" => unblocked.id})
-    assert user.info["blocks"] == []
+    assert user.info.blocks == []
   end
 
   test "Unblock another user using screen_name" do
@@ -178,7 +178,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user, _unblocked} = TwitterAPI.block(user, %{"screen_name" => unblocked.nickname})
 
     {:ok, user, _unblocked} = TwitterAPI.unblock(user, %{"screen_name" => unblocked.nickname})
-    assert user.info["blocks"] == []
+    assert user.info.blocks == []
   end
 
   test "upload a file" do

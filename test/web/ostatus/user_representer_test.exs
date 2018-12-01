@@ -6,7 +6,7 @@ defmodule Pleroma.Web.OStatus.UserRepresenterTest do
   alias Pleroma.User
 
   test "returns a user with id, uri, name and link" do
-    user = build(:user, nickname: "レイン")
+    user = insert(:user, %{nickname: "レイン"})
     tuple = UserRepresenter.to_simple_form(user)
 
     res = :xmerl.export_simple_content(tuple, :xmerl_xml) |> to_string

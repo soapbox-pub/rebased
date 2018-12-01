@@ -188,7 +188,7 @@ defmodule Pleroma.Web.Streamer do
       # Get the current user so we have up-to-date blocks etc.
       if socket.assigns[:user] do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
-        blocks = user.info["blocks"] || []
+        blocks = user.info.blocks || []
 
         parent = Object.normalize(item.data["object"])
 
@@ -206,7 +206,7 @@ defmodule Pleroma.Web.Streamer do
       # Get the current user so we have up-to-date blocks etc.
       if socket.assigns[:user] do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
-        blocks = user.info["blocks"] || []
+        blocks = user.info.blocks || []
 
         unless item.actor in blocks do
           send(socket.transport_pid, {:text, represent_update(item, user)})

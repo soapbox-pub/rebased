@@ -297,12 +297,6 @@ defmodule Pleroma.Web.Router do
     post("/account/update_profile_banner", TwitterAPI.Controller, :update_banner)
     post("/qvitter/update_background_image", TwitterAPI.Controller, :update_background)
 
-    post(
-      "/account/most_recent_notification",
-      TwitterAPI.Controller,
-      :update_most_recent_notification
-    )
-
     get("/statuses/home_timeline", TwitterAPI.Controller, :friends_timeline)
     get("/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline)
     get("/statuses/mentions", TwitterAPI.Controller, :mentions_timeline)

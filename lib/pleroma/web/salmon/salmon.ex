@@ -157,7 +157,7 @@ defmodule Pleroma.Web.Salmon do
     |> Enum.filter(fn user -> user && !user.local end)
   end
 
-  defp send_to_user(%{info: %{"salmon" => salmon}}, feed, poster) do
+  defp send_to_user(%{info: %{salmon: salmon}}, feed, poster) do
     with {:ok, %{status_code: code}} <-
            poster.(
              salmon,
@@ -185,7 +185,7 @@ defmodule Pleroma.Web.Salmon do
   ]
   def publish(user, activity, poster \\ &@httpoison.post/4)
 
-  def publish(%{info: %{"keys" => keys}} = user, %{data: %{"type" => type}} = activity, poster)
+  def publish(%{info: %{keys: keys}} = user, %{data: %{"type" => type}} = activity, poster)
       when type in @supported_activities do
     feed = ActivityRepresenter.to_simple_form(activity, user, true)
 
