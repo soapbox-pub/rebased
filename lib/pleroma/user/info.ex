@@ -23,6 +23,7 @@ defmodule Pleroma.User.Info do
     field(:uri, :string, default: nil)
     field(:topic, :string, default: nil)
     field(:hub, :string, default: nil)
+    field(:salmon, :string, default: nil)
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -30,11 +31,7 @@ defmodule Pleroma.User.Info do
     # avatar -> Where is this used?
     # fqn -> Where is this used?
     # host -> Where is this used?
-    # name -> Where is this used?
-    # nickname -> Where is this used?
-    # salmon -> Where is this used?
     # subject _> Where is this used?
-    # subscribe_address -> Where is this used?
   end
 
   def set_activation_status(info, deactivated) do
@@ -115,7 +112,8 @@ defmodule Pleroma.User.Info do
       :magic_key,
       :uri,
       :hub,
-      :topic
+      :topic,
+      :salmon
     ])
   end
 

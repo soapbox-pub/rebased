@@ -1163,7 +1163,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "GET /api/pleroma/friend_requests" do
     test "it lists friend requests" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
@@ -1185,7 +1185,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "POST /api/pleroma/friendships/approve" do
     test "it approves a friend request" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
@@ -1208,7 +1208,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "POST /api/pleroma/friendships/deny" do
     test "it denies a friend request" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user)
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)

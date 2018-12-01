@@ -548,7 +548,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "html_filter_policy returns TwitterText scrubber when rich-text is disabled" do
-      user = insert(:user, %{info: %{"no_rich_text" => true}})
+      user = insert(:user, %{info: %{no_rich_text: true}})
 
       assert Pleroma.HTML.Scrubber.TwitterText == User.html_filter_policy(user)
     end

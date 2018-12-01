@@ -329,6 +329,38 @@ defmodule Pleroma.Web.OStatusTest do
       assert user == user_again
     end
 
+    test "find_or_make_user sets all the nessary input fields" do
+      uri = "https://social.heldscal.la/user/23211"
+      {:ok, user} = OStatus.find_or_make_user(uri)
+
+      assert user.info ==
+               %Pleroma.User.Info{
+                 id: user.info.id,
+                 ap_enabled: false,
+                 background: nil,
+                 banner: %{},
+                 blocks: [],
+                 deactivated: false,
+                 default_scope: "public",
+                 domain_blocks: [],
+                 follower_count: 0,
+                 is_admin: false,
+                 is_moderator: false,
+                 keys: nil,
+                 locked: false,
+                 no_rich_text: false,
+                 note_count: 0,
+                 settings: nil,
+                 source_data: %{},
+                 hub: "https://social.heldscal.la/main/push/hub",
+                 magic_key:
+                   "RSA.uzg6r1peZU0vXGADWxGJ0PE34WvmhjUmydbX5YYdOiXfODVLwCMi1umGoqUDm-mRu4vNEdFBVJU1CpFA7dKzWgIsqsa501i2XqElmEveXRLvNRWFB6nG03Q5OUY2as8eE54BJm0p20GkMfIJGwP6TSFb-ICp3QjzbatuSPJ6xCE=.AQAB",
+                 salmon: "https://social.heldscal.la/main/salmon/user/23211",
+                 topic: "https://social.heldscal.la/api/statuses/user_timeline/23211.atom",
+                 uri: "https://social.heldscal.la/user/23211"
+               }
+    end
+
     test "find_make_or_update_user takes an author element and returns an updated user" do
       uri = "https://social.heldscal.la/user/23211"
 
