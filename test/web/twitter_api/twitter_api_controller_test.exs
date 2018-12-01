@@ -12,6 +12,36 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   import Pleroma.Factory
 
+  describe "POST /api/account/update_profile_banner" do
+    test "it updates the banner", %{conn: conn} do
+      user = insert(:user)
+
+      new_banner =
+        "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post(authenticated_twitter_api__path(conn, :update_banner), %{"banner" => new_banner})
+        |> json_response(200)
+    end
+  end
+
+  describe "POST /api/qvitter/update_background_image" do
+    test "it updates the background", %{conn: conn} do
+      user = insert(:user)
+
+      new_bg =
+        "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post(authenticated_twitter_api__path(conn, :update_background), %{"img" => new_bg})
+        |> json_response(200)
+    end
+  end
+
   describe "POST /api/account/verify_credentials" do
     setup [:valid_user]
 

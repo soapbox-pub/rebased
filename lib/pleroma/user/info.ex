@@ -23,7 +23,18 @@ defmodule Pleroma.User.Info do
     field(:uri, :string, default: nil)
     field(:topic, :string, default: nil)
     field(:hub, :string, default: nil)
-    # topic, subject, salmon, subscribe_address, uri
+
+    # Found in the wild
+    # ap_id -> Where is this used?
+    # bio -> Where is this used?
+    # avatar -> Where is this used?
+    # fqn -> Where is this used?
+    # host -> Where is this used?
+    # name -> Where is this used?
+    # nickname -> Where is this used?
+    # salmon -> Where is this used?
+    # subject _> Where is this used?
+    # subscribe_address -> Where is this used?
   end
 
   def set_activation_status(info, deactivated) do
@@ -124,7 +135,8 @@ defmodule Pleroma.User.Info do
     |> cast(params, [
       :locked,
       :no_rich_text,
-      :default_scope
+      :default_scope,
+      :banner
     ])
   end
 

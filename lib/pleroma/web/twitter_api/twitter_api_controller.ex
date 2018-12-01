@@ -300,9 +300,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def update_banner(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
-         new_info <- Map.put(user.info, "banner", object.data),
-         change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, user} <- User.update_and_set_cache(change) do
+         new_info <- %{"banner" => object.data},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)
       %{"url" => [%{"href" => href} | _]} = object.data
       response = %{url: href} |> Jason.encode!()
@@ -314,9 +315,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def update_background(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(params, type: :background),
-         new_info <- Map.put(user.info, "background", object.data),
-         change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, _user} <- User.update_and_set_cache(change) do
+         new_info <- %{"background" => object.data},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
       %{"url" => [%{"href" => href} | _]} = object.data
       response = %{url: href} |> Jason.encode!()
 
