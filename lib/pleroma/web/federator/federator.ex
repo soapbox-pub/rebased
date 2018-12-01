@@ -2,6 +2,7 @@ defmodule Pleroma.Web.Federator do
   use GenServer
   alias Pleroma.User
   alias Pleroma.Activity
+  alias Pleroma.Object.Containment
   alias Pleroma.Web.{WebFinger, Websub}
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -106,7 +107,7 @@ defmodule Pleroma.Web.Federator do
     # actor shouldn't be acting on objects outside their own AP server.
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.normalize(params["id"]),
-         :ok <- Transmogrifier.contain_origin_from_id(params["actor"], params),
+         :ok <- Containment.contain_origin_from_id(params["actor"], params),
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
       {:ok, activity}
     else
