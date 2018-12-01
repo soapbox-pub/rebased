@@ -122,7 +122,7 @@ defmodule Mix.Tasks.Pleroma.User do
     Mix.Task.run("app.start")
 
     with user <- User.get_by_nickname(nickname) do
-      User.deactivate(user)
+      User.deactivate(user, !user.info["deactivated"])
     end
   end
 
