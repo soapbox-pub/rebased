@@ -32,67 +32,55 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  defp add_if_present(
+         map,
+         params,
+         params_field,
+         map_field,
+         value_function \\ fn x -> {:ok, x} end
+       ) do
+    if Map.has_key?(params, params_field) do
+      case value_function.(params[params_field]) do
+        {:ok, new_value} -> Map.put(map, map_field, new_value)
+        :error -> map
+      end
+    else
+      map
+    end
+  end
+
   def update_credentials(%{assigns: %{user: user}} = conn, params) do
     original_user = user
 
-    params =
-      if bio = params["note"] do
-        Map.put(params, "bio", bio)
-      else
-        params
-      end
-
-    params =
-      if name = params["display_name"] do
-        Map.put(params, "name", name)
-      else
-        params
-      end
-
-    user =
-      if avatar = params["avatar"] do
-        with %Plug.Upload{} <- avatar,
-             {:ok, object} <- ActivityPub.upload(avatar, type: :avatar),
-             change = Ecto.Changeset.change(user, %{avatar: object.data}),
-             {:ok, user} = User.update_and_set_cache(change) do
-          user
+    user_params =
+      %{}
+      |> add_if_present(params, "display_name", :name)
+      |> add_if_present(params, "note", :bio)
+      |> add_if_present(params, "avatar", :avatar, fn value ->
+        with %Plug.Upload{} <- value,
+             {:ok, object} <- ActivityPub.upload(value, type: :avatar) do
+          {:ok, object.data}
         else
-          _e -> user
+          _ -> :error
         end
-      else
-        user
-      end
+      end)
 
-    # user =
-    #   if banner = params["header"] do
-    #     with %Plug.Upload{} <- banner,
-    #          {:ok, object} <- ActivityPub.upload(banner, type: :banner),
-    #          new_info <- Map.put(user.info, "banner", object.data),
-    #          change <- User.info_changeset(user, %{info: new_info}),
-    #          {:ok, user} <- User.update_and_set_cache(change) do
-    #       user
-    #     else
-    #       _e -> user
-    #     end
-    #   else
-    #     user
-    #   end
+    info_params =
+      %{}
+      |> add_if_present(params, "locked", :locked, fn value -> {:ok, value == "true"} end)
+      |> add_if_present(params, "header", :banner, fn value ->
+        with %Plug.Upload{} <- value,
+             {:ok, object} <- ActivityPub.upload(value, type: :banner) do
+          {:ok, object.data}
+        else
+          _ -> :error
+        end
+      end)
 
-    # user =
-    #   if locked = params["locked"] do
-    #     with locked <- locked == "true",
-    #          new_info <- Map.put(user.info, "locked", locked),
-    #          change <- User.info_changeset(user, %{info: new_info}),
-    #          {:ok, user} <- User.update_and_set_cache(change) do
-    #       user
-    #     else
-    #       _e -> user
-    #     end
-    #   else
-    #     user
-    #   end
+    info_cng = User.Info.mastodon_profile_update(user.info, info_params)
 
-    with changeset <- User.update_changeset(user, params),
+    with changeset <- User.update_changeset(user, user_params),
+         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       if original_user != user do
         CommonAPI.update(user)

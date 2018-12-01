@@ -128,6 +128,14 @@ defmodule Pleroma.User.Info do
     ])
   end
 
+  def mastodon_profile_update(info, params) do
+    info
+    |> cast(params, [
+      :locked,
+      :banner
+    ])
+  end
+
   def set_source_data(info, source_data) do
     params = %{source_data: source_data}
 

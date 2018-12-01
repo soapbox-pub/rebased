@@ -112,10 +112,9 @@ defmodule Pleroma.User do
     end
   end
 
-  # TODO: Check if this still used
   def update_changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:bio, :name])
+    |> cast(params, [:bio, :name, :avatar])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
     |> validate_length(:bio, max: 5000)

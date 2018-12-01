@@ -1263,6 +1263,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["note"] == "I drink #cofe"
     end
 
+    test "updates the user's locking status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{locked: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["locked"] == true
+    end
+
     test "updates the user's name", %{conn: conn} do
       user = insert(:user)
 
@@ -1289,8 +1301,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", %{"avatar" => new_avatar})
 
-      assert user = json_response(conn, 200)
-      assert user["avatar"] != "https://placehold.it/48x48"
+      assert user_response = json_response(conn, 200)
+      assert user_response["avatar"] != User.avatar_url(user)
     end
 
     test "updates the user's banner", %{conn: conn} do
@@ -1307,8 +1319,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> patch("/api/v1/accounts/update_credentials", %{"header" => new_header})
 
-      assert user = json_response(conn, 200)
-      assert user["header"] != "https://placehold.it/700x335"
+      assert user_response = json_response(conn, 200)
+      assert user_response["header"] != User.banner_url(user)
     end
   end
 
