@@ -15,6 +15,7 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--bio BIO` - the user's bio
   - `--password PASSWORD` - the user's password
   - `--moderator`/`--no-moderator` - whether the user is a moderator
+  - `--admin`/`--no-admin` - whether the user is an admin
 
   ## Delete the user's account.
 
@@ -35,6 +36,7 @@ defmodule Mix.Tasks.Pleroma.User do
   Options:
   - `--locked`/`--no-locked` - whether the user's account is locked
   - `--moderator`/`--no-moderator` - whether the user is a moderator
+  - `--admin`/`--no-admin` - whether the user is an admin
   """
 
   def run(["new", nickname, email | rest]) do
@@ -154,6 +156,7 @@ defmodule Mix.Tasks.Pleroma.User do
         rest,
         strict: [
           moderator: :boolean,
+          admin: :boolean,
           locked: :boolean
         ]
       )
@@ -166,6 +169,11 @@ defmodule Mix.Tasks.Pleroma.User do
     case Keyword.get(options, :locked) do
       nil -> nil
       value -> set_locked(nickname, value)
+    end
+
+    case Keyword.get(options, :admin) do
+      nil -> nil
+      value -> set_admin(nickname, value)
     end
   end
 
@@ -181,6 +189,24 @@ defmodule Mix.Tasks.Pleroma.User do
       {:ok, user} = User.update_and_set_cache(cng)
 
       Mix.shell().info("Moderator status of #{nickname}: #{user.info["is_moderator"]}")
+    else
+      _ ->
+        Mix.shell().error("No local user #{nickname}")
+    end
+  end
+
+  defp set_admin(nickname, value) do
+    Application.ensure_all_started(:pleroma)
+
+    with %User{local: true} = user <- User.get_by_nickname(nickname) do
+      info =
+        user.info
+        |> Map.put("is_admin", value)
+
+      cng = User.info_changeset(user, %{info: info})
+      {:ok, user} = User.update_and_set_cache(cng)
+
+      Mix.shell().info("Admin status of #{nickname}: #{user.info["is_admin"]}")
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")
