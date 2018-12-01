@@ -894,10 +894,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "actor origin containment" do
-    test "it rejects objects with a bogus origin" do
-      {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity.json")
-    end
-
     test "it rejects activities which reference objects with bogus origins" do
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
@@ -911,10 +907,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       :error = Transmogrifier.handle_incoming(data)
     end
 
-    test "it rejects objects when attributedTo is wrong (variant 1)" do
-      {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity2.json")
-    end
-
     test "it rejects activities which reference objects that have an incorrect attribution (variant 1)" do
       data = %{
         "@context" => "https://www.w3.org/ns/activitystreams",
@@ -926,10 +918,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       }
 
       :error = Transmogrifier.handle_incoming(data)
-    end
-
-    test "it rejects objects when attributedTo is wrong (variant 2)" do
-      {:error, _} = ActivityPub.fetch_object_from_id("https://info.pleroma.site/activity3.json")
     end
 
     test "it rejects activities which reference objects that have an incorrect attribution (variant 2)" do

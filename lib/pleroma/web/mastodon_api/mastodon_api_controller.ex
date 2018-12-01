@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
+  alias Pleroma.Object.Fetcher
   alias Pleroma.Web
   alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView, FilterView}
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -658,7 +659,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def status_search(query) do
     fetched =
       if Regex.match?(~r/https?:/, query) do
-        with {:ok, object} <- ActivityPub.fetch_object_from_id(query) do
+        with {:ok, object} <- Fetcher.fetch_object_from_id(query) do
           [Activity.get_create_activity_by_object_ap_id(object.data["id"])]
         else
           _e -> []
@@ -986,7 +987,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def login(conn, _) do
     with {:ok, app} <- get_or_make_app() do
       path =
-        o_auth_path(conn, :authorize,
+        o_auth_path(
+          conn,
+          :authorize,
           response_type: "code",
           client_id: app.client_id,
           redirect_uri: ".",

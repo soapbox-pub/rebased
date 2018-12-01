@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
   alias Pleroma.{User, Object}
+  alias Pleroma.Object.Fetcher
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
@@ -122,7 +123,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       "Signature missing or not from author, relayed Create message, fetching object from source"
     )
 
-    ActivityPub.fetch_object_from_id(params["object"]["id"])
+    Fetcher.fetch_object_from_id(params["object"]["id"])
 
     json(conn, "ok")
   end

@@ -4,7 +4,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   alias Pleroma.User
   alias Pleroma.Object
-  alias Pleroma.Object.Containment
+  alias Pleroma.Object.{Containment, Fetcher}
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -529,8 +529,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(_), do: :error
 
-  def fetch_obj_helper(id) when is_bitstring(id), do: ActivityPub.fetch_object_from_id(id)
-  def fetch_obj_helper(obj) when is_map(obj), do: ActivityPub.fetch_object_from_id(obj["id"])
+  def fetch_obj_helper(id) when is_bitstring(id), do: Fetcher.fetch_object_from_id(id)
+  def fetch_obj_helper(obj) when is_map(obj), do: Fetcher.fetch_object_from_id(obj["id"])
 
   def get_obj_helper(id) do
     if object = Object.normalize(id), do: {:ok, object}, else: nil
