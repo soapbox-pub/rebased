@@ -502,10 +502,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
-  # TODO: Pagination
   def followers(conn, %{"id" => id}) do
     with %User{} = user <- Repo.get(User, id),
          {:ok, followers} <- User.get_followers(user) do
+      followers = if(user.info.hide_network, do: [], else: followers)
       render(conn, AccountView, "accounts.json", %{users: followers, as: :user})
     end
   end
@@ -513,6 +513,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def following(conn, %{"id" => id}) do
     with %User{} = user <- Repo.get(User, id),
          {:ok, followers} <- User.get_friends(user) do
+      followers = if(user.info.hide_network, do: [], else: followers)
       render(conn, AccountView, "accounts.json", %{users: followers, as: :user})
     end
   end
