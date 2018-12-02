@@ -112,7 +112,6 @@ defmodule Mix.Tasks.Pleroma.User do
       if generated_password? do
         run(["reset_password", nickname])
       end
-
     else
       Mix.shell().info("User will not be created.")
     end
