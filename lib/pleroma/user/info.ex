@@ -24,6 +24,7 @@ defmodule Pleroma.User.Info do
     field(:topic, :string, default: nil)
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
+    field(:hide_network, :boolean, default: false)
 
     # Found in the wild
     # ap_id -> Where is this used?
