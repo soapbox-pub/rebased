@@ -184,7 +184,7 @@ defmodule Pleroma.Web.WebsubTest do
     websub = insert(:websub_client_subscription, %{hub: hub, topic: topic})
 
     poster = fn ^hub, {:form, _data}, _headers ->
-      {:ok, %{status_code: 202}}
+      {:ok, %{status: 202}}
     end
 
     {:error, websub} = Websub.request_subscription(websub, poster, 1000)
@@ -193,7 +193,7 @@ defmodule Pleroma.Web.WebsubTest do
     websub = insert(:websub_client_subscription, %{hub: hub, topic: topic})
 
     poster = fn ^hub, {:form, _data}, _headers ->
-      {:ok, %{status_code: 400}}
+      {:ok, %{status: 400}}
     end
 
     {:error, websub} = Websub.request_subscription(websub, poster, 1000)

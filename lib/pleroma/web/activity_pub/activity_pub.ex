@@ -762,7 +762,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Logger.info("Fetching #{id} via AP")
 
     with true <- String.starts_with?(id, "http"),
-         {:ok, %{body: body, status_code: code}} when code in 200..299 <-
+         {:ok, %{body: body, status: code}} when code in 200..299 <-
            @httpoison.get(
              id,
              [Accept: "application/activity+json"],

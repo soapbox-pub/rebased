@@ -173,7 +173,7 @@ defmodule Pleroma.Web.Websub do
 
   def gather_feed_data(topic, getter \\ &@httpoison.get/1) do
     with {:ok, response} <- getter.(topic),
-         status_code when status_code in 200..299 <- response.status,
+         status when status in 200..299 <- response.status,
          body <- response.body,
          doc <- XML.parse_document(body),
          uri when not is_nil(uri) <- XML.string_from_xpath("/feed/author[1]/uri", doc),
