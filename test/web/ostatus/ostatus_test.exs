@@ -337,7 +337,7 @@ defmodule Pleroma.Web.OStatusTest do
                %Pleroma.User.Info{
                  id: user.info.id,
                  ap_enabled: false,
-                 background: nil,
+                 background: %{},
                  banner: %{},
                  blocks: [],
                  deactivated: false,
