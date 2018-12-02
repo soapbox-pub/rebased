@@ -13,13 +13,7 @@ defmodule Pleroma.Web.WebsubTest do
   import Tesla.Mock
 
   setup do
-     mock fn
-      %{method: :get, url: "https://mastodon.social/users/lambadalambda.atom"} ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/lambadalambda.atom")}
-      %{method: :post, url: "http://example.org/needs_refresh"} ->
-        %Tesla.Env{status: 200, body: ""}
-     end
-
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
 
