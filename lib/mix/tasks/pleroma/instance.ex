@@ -145,7 +145,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
     end
   end
 
-
   defp escape_sh_path(path) do
     ~S(') <> String.replace(path, ~S('), ~S(\')) <> ~S(')
   end

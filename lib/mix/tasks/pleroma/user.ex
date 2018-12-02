@@ -16,7 +16,7 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--password PASSWORD` - the user's password
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
-  
+
   ## Generate an invite link.
     
      mix pleroma.user invite
@@ -276,9 +276,9 @@ defmodule Mix.Tasks.Pleroma.User do
     else
       _ ->
         Mix.shell().error("Could not create invite token.")
+    end
   end
 
-  end
   defp set_locked(nickname, value) do
     Mix.Ecto.ensure_started(Repo, [])
 
