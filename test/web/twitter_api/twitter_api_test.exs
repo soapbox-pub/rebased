@@ -257,6 +257,34 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
              UserView.render("show.json", %{user: fetched_user})
   end
 
+  test "it registers a new user and parses mentions in the bio" do
+    data1 = %{
+      "nickname" => "john",
+      "email" => "john@gmail.com",
+      "fullname" => "John Doe",
+      "bio" => "test",
+      "password" => "bear",
+      "confirm" => "bear"
+    }
+
+    {:ok, user1} = TwitterAPI.register_user(data1)
+
+    data2 = %{
+      "nickname" => "lain",
+      "email" => "lain@wired.jp",
+      "fullname" => "lain iwakura",
+      "bio" => "@john test",
+      "password" => "bear",
+      "confirm" => "bear"
+    }
+
+    {:ok, user2} = TwitterAPI.register_user(data2)
+
+    expected_text = "<span><a class='mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
+
+    assert user2.bio == expected_text
+  end
+
   @moduletag skip: "needs 'registrations_open: false' in config"
   test "it registers a new user via invite token and returns the user." do
     {:ok, token} = UserInviteToken.create_token()

@@ -949,18 +949,19 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "POST /api/account/update_profile.json" do
     test "it updates a user's profile", %{conn: conn} do
       user = insert(:user)
+      user2 = insert(:user)
 
       conn =
         conn
         |> assign(:user, user)
         |> post("/api/account/update_profile.json", %{
           "name" => "new name",
-          "description" => "new description"
+          "description" => "hi @#{user2.nickname}"
         })
 
       user = Repo.get!(User, user.id)
       assert user.name == "new name"
-      assert user.bio == "new description"
+      assert user.bio == "hi <span><a class='mention' href='#{user2.ap_id}'>@<span>#{user2.nickname}</span></a></span>"
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
