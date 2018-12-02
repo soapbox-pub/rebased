@@ -47,7 +47,8 @@ defmodule Mix.Tasks.Pleroma.User do
           name: :string,
           bio: :string,
           password: :string,
-          moderator: :boolean
+          moderator: :boolean,
+          admin: :boolean
         ]
       )
 
@@ -64,6 +65,7 @@ defmodule Mix.Tasks.Pleroma.User do
       end
 
     moderator? = Keyword.get(options, :moderator, false)
+    admin? = Keyword.get(options, :admin, false)
 
     Mix.shell().info("""
     A user will be created with the following information:
@@ -75,6 +77,7 @@ defmodule Mix.Tasks.Pleroma.User do
       - name: #{name}
       - bio: #{bio}
       - moderator: #{if(moderator?, do: "true", else: "false")}
+      - admin: #{if(admin?, do: "true", else: "false")}
     """)
 
     proceed? = Mix.shell().yes?("Continue?")
@@ -102,9 +105,14 @@ defmodule Mix.Tasks.Pleroma.User do
         run(["set", nickname, "--moderator"])
       end
 
+      if admin? do
+        run(["set", nickname, "--admin"])
+      end
+
       if generated_password? do
         run(["reset_password", nickname])
       end
+
     else
       Mix.shell().info("User will not be created.")
     end
@@ -115,16 +123,22 @@ defmodule Mix.Tasks.Pleroma.User do
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
       User.delete(user)
+      Mix.shell().info("User #{nickname} deleted.")
+    else
+      _ ->
+        Mix.shell().error("No local user #{nickname}")
     end
-
-    Mix.shell().info("User #{nickname} deleted.")
   end
 
   def run(["toggle_activated", nickname]) do
     Mix.Task.run("app.start")
 
-    with user <- User.get_by_nickname(nickname) do
+    with %User{local: true} = user <- User.get_by_nickname(nickname) do
       User.deactivate(user, !user.info["deactivated"])
+      Mix.shell().info("Activation status of #{nickname}: #{user.info["deactivated"]}")
+    else
+      _ ->
+        Mix.shell().error("No local user #{nickname}")
     end
   end
 
