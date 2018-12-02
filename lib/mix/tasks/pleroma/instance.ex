@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
   Manages Pleroma instance.
 
   ## Generate a new instance.
-  
+
     mix pleroma.instance new [OPTION...]
 
   If any options are left unspecified, you will be prompted interactively
@@ -161,4 +161,3 @@ defmodule Mix.Tasks.Pleroma.Instance do
     ~S(') <> String.replace(path, ~S('), ~S(\')) <> ~S(')
   end
 end
-
