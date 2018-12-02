@@ -280,7 +280,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user2} = TwitterAPI.register_user(data2)
 
-    expected_text = "<span><a class='mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
+    expected_text =
+      "<span><a class='mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
 
     assert user2.bio == expected_text
   end
