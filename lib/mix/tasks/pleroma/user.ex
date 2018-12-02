@@ -132,12 +132,12 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["toggle_activated", nickname]) do
     Mix.Task.run("app.start")
 
-    with %User{local: true} = user <- User.get_by_nickname(nickname) do
+    with %User{} = user <- User.get_by_nickname(nickname) do
       User.deactivate(user, !user.info["deactivated"])
       Mix.shell().info("Activation status of #{nickname}: #{user.info["deactivated"]}")
     else
       _ ->
-        Mix.shell().error("No local user #{nickname}")
+        Mix.shell().error("No user #{nickname}")
     end
   end
 
@@ -160,6 +160,35 @@ defmodule Mix.Tasks.Pleroma.User do
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")
+    end
+  end
+
+  def run(["unsubscribe", nickname]) do
+    Mix.Task.run("app.start")
+
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      Mix.shell().info("Deactivating #{user.nickname}")
+      User.deactivate(user)
+
+      {:ok, friends} = User.get_friends(user)
+
+      Enum.each(friends, fn friend ->
+        user = Repo.get(User, user.id)
+
+        Mix.shell().info("Unsubscribing #{friend.nickname} from #{user.nickname}")
+        User.unfollow(user, friend)
+      end)
+
+      :timer.sleep(500)
+
+      user = Repo.get(User, user.id)
+
+      if length(user.following) == 0 do
+        Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")
+      end
+    else
+      _ ->
+        Mix.shell().error("No user #{nickname}")
     end
   end
 
