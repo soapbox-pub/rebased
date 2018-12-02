@@ -1,14 +1,16 @@
-defmodule Mix.Tasks.Pleroma.Gen.Instance do
+defmodule Mix.Tasks.Pleroma.Instance do
   use Mix.Task
+  alias Pleroma.{Repo, User}
 
-  @shortdoc "Generates the configuration for a new instance"
+  @shortdoc "Manages Pleroma instance"
   @moduledoc """
-  Generates the configuration for a new instance.
+  Manages Pleroma instance.
 
-  If any options are left unspecified, you will be prompted interactively. This
-  means the simplest invocation would be
+  ## Generate a new instance.
+  
+    mix pleroma.instance new [OPTION...]
 
-      mix pleroma.gen.instance
+  If any options are left unspecified, you will be prompted interactively
 
   ## Options
 
@@ -24,7 +26,7 @@ defmodule Mix.Tasks.Pleroma.Gen.Instance do
   - `--dbpass DBPASS` - the password to use for the database connection
   """
 
-  def run(rest) do
+  def run(["new" | rest]) do
     {options, [], []} =
       OptionParser.parse(
         rest,
@@ -159,3 +161,4 @@ defmodule Mix.Tasks.Pleroma.Gen.Instance do
     ~S(') <> String.replace(path, ~S('), ~S(\')) <> ~S(')
   end
 end
+
