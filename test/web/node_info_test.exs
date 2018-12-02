@@ -4,7 +4,7 @@ defmodule Pleroma.Web.NodeInfoTest do
   import Pleroma.Factory
 
   test "nodeinfo shows staff accounts", %{conn: conn} do
-    user = insert(:user, %{local: true, info: %{"is_moderator" => true}})
+    user = insert(:user, %{local: true, info: %{is_moderator: true}})
 
     conn =
       conn
@@ -15,7 +15,7 @@ defmodule Pleroma.Web.NodeInfoTest do
     assert user.ap_id in result["metadata"]["staffAccounts"]
   end
 
-  test "returns 404 when federation is disabled" do
+  test "returns 404 when federation is disabled", %{conn: conn} do
     instance =
       Application.get_env(:pleroma, :instance)
       |> Keyword.put(:federating, false)
@@ -37,7 +37,7 @@ defmodule Pleroma.Web.NodeInfoTest do
     Application.put_env(:pleroma, :instance, instance)
   end
 
-  test "returns 200 when federation is enabled" do
+  test "returns 200 when federation is enabled", %{conn: conn} do
     conn
     |> get("/.well-known/nodeinfo")
     |> json_response(200)

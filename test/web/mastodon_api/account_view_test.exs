@@ -17,7 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     user =
       insert(:user, %{
-        info: %{"note_count" => 5, "follower_count" => 3, "source_data" => source_data},
+        info: %{note_count: 5, follower_count: 3, source_data: source_data},
         nickname: "shp@shitposter.club",
         name: ":karjalanpiirakka: shp",
         bio: "<script src=\"invalid-html\"></script><span>valid html</span>",
@@ -63,7 +63,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "Represent a Service(bot) account" do
     user =
       insert(:user, %{
-        info: %{"note_count" => 5, "follower_count" => 3, "source_data" => %{"type" => "Service"}},
+        info: %{note_count: 5, follower_count: 3, source_data: %{"type" => "Service"}},
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })

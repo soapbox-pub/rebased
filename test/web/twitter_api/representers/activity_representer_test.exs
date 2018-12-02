@@ -58,7 +58,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   end
 
   test "an activity" do
-    {:ok, user} = UserBuilder.insert()
+    user = insert(:user)
     #   {:ok, mentioned_user } = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
     mentioned_user = insert(:user, %{nickname: "shp"})
 

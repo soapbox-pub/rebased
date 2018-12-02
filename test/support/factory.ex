@@ -7,7 +7,8 @@ defmodule Pleroma.Factory do
       email: sequence(:email, &"user#{&1}@example.com"),
       nickname: sequence(:nickname, &"nick#{&1}"),
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
-      bio: sequence(:bio, &"Tester Number #{&1}")
+      bio: sequence(:bio, &"Tester Number #{&1}"),
+      info: %{}
     }
 
     %{

@@ -34,14 +34,14 @@ defmodule Pleroma.UserTest do
     user = Repo.get(User, user.id)
 
     followed = User.get_by_ap_id(followed.ap_id)
-    assert followed.info["follower_count"] == 1
+    assert followed.info.follower_count == 1
 
     assert User.ap_followers(followed) in user.following
   end
 
   test "can't follow a deactivated users" do
     user = insert(:user)
-    followed = insert(:user, info: %{"deactivated" => true})
+    followed = insert(:user, info: %{deactivated: true})
 
     {:error, _} = User.follow(user, followed)
   end
@@ -56,8 +56,8 @@ defmodule Pleroma.UserTest do
   end
 
   test "local users do not automatically follow local locked accounts" do
-    follower = insert(:user, info: %{"locked" => true})
-    followed = insert(:user, info: %{"locked" => true})
+    follower = insert(:user, info: %{locked: true})
+    followed = insert(:user, info: %{locked: true})
 
     {:ok, follower} = User.maybe_direct_follow(follower, followed)
 
@@ -185,12 +185,14 @@ defmodule Pleroma.UserTest do
           local: false,
           nickname: "admin@mastodon.example.org",
           ap_id: "http://mastodon.example.org/users/admin",
-          last_refreshed_at: a_week_ago
+          last_refreshed_at: a_week_ago,
+          info: %{}
         )
 
       assert orig_user.last_refreshed_at == a_week_ago
 
       user = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
+      assert user.info.source_data["endpoints"]
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
     end
@@ -311,45 +313,45 @@ defmodule Pleroma.UserTest do
 
       user = User.get_by_ap_id(note.data["actor"])
 
-      assert user.info["note_count"] == nil
+      assert user.info.note_count == 0
 
       {:ok, user} = User.update_note_count(user)
 
-      assert user.info["note_count"] == 1
+      assert user.info.note_count == 1
     end
 
     test "it increases the info->note_count property" do
       note = insert(:note)
       user = User.get_by_ap_id(note.data["actor"])
 
-      assert user.info["note_count"] == nil
+      assert user.info.note_count == 0
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info["note_count"] == 1
+      assert user.info.note_count == 1
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info["note_count"] == 2
+      assert user.info.note_count == 2
     end
 
     test "it decreases the info->note_count property" do
       note = insert(:note)
       user = User.get_by_ap_id(note.data["actor"])
 
-      assert user.info["note_count"] == nil
+      assert user.info.note_count == 0
 
       {:ok, user} = User.increase_note_count(user)
 
-      assert user.info["note_count"] == 1
+      assert user.info.note_count == 1
 
       {:ok, user} = User.decrease_note_count(user)
 
-      assert user.info["note_count"] == 0
+      assert user.info.note_count == 0
 
       {:ok, user} = User.decrease_note_count(user)
 
-      assert user.info["note_count"] == 0
+      assert user.info.note_count == 0
     end
 
     test "it sets the info->follower_count property" do
@@ -358,11 +360,11 @@ defmodule Pleroma.UserTest do
 
       User.follow(follower, user)
 
-      assert user.info["follower_count"] == nil
+      assert user.info.follower_count == 0
 
       {:ok, user} = User.update_follower_count(user)
 
-      assert user.info["follower_count"] == 1
+      assert user.info.follower_count == 1
     end
   end
 
@@ -489,11 +491,11 @@ defmodule Pleroma.UserTest do
 
   test ".deactivate can de-activate then re-activate a user" do
     user = insert(:user)
-    assert false == !!user.info["deactivated"]
+    assert false == user.info.deactivated
     {:ok, user} = User.deactivate(user)
-    assert true == user.info["deactivated"]
+    assert true == user.info.deactivated
     {:ok, user} = User.deactivate(user, false)
-    assert false == !!user.info["deactivated"]
+    assert false == user.info.deactivated
   end
 
   test ".delete deactivates a user, all follow relationships and all create activities" do
@@ -517,7 +519,7 @@ defmodule Pleroma.UserTest do
     follower = Repo.get(User, follower.id)
     user = Repo.get(User, user.id)
 
-    assert user.info["deactivated"]
+    assert user.info.deactivated
 
     refute User.following?(user, followed)
     refute User.following?(followed, follower)
@@ -546,7 +548,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "html_filter_policy returns TwitterText scrubber when rich-text is disabled" do
-      user = insert(:user, %{info: %{"no_rich_text" => true}})
+      user = insert(:user, %{info: %{no_rich_text: true}})
 
       assert Pleroma.HTML.Scrubber.TwitterText == User.html_filter_policy(user)
     end

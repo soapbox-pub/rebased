@@ -31,14 +31,16 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     # Set a wrong magic-key for a user so it has to refetch
     salmon_user = User.get_by_ap_id("http://gs.example.org:4040/index.php/user/1")
     # Wrong key
-    info =
-      salmon_user.info
-      |> Map.put(
-        "magic_key",
-        "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwrong1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
-      )
+    info_cng =
+      User.Info.remote_user_creation(salmon_user.info, %{
+        magic_key:
+          "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwrong1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
+      })
 
-    Repo.update(User.info_changeset(salmon_user, %{info: info}))
+    cng =
+      Ecto.Changeset.change(salmon_user)
+      |> Ecto.Changeset.put_embed(:info, info_cng)
+      |> Repo.update()
 
     conn =
       build_conn()
