@@ -16,6 +16,10 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--password PASSWORD` - the user's password
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
+  
+  ## Generate an invite link.
+    
+     mix pleroma.user invite
 
   ## Delete the user's account.
 
@@ -255,6 +259,26 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
+  def run(["invite"]) do
+    Mix.Task.run("app.start")
+
+    with {:ok, token} <- Pleroma.UserInviteToken.create_token() do
+      Mix.shell().info("Generated user invite token")
+
+      url =
+        Pleroma.Web.Router.Helpers.redirect_url(
+          Pleroma.Web.Endpoint,
+          :registration_page,
+          token.token
+        )
+
+      IO.puts(url)
+    else
+      _ ->
+        Mix.shell().error("Could not create invite token.")
+  end
+
+  end
   defp set_locked(nickname, value) do
     Mix.Ecto.ensure_started(Repo, [])
 

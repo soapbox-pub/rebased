@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
   @moduledoc """
   Manages Pleroma instance.
 
-  ## Generate a new instance.
+  ## Generate a new instance config.
 
     mix pleroma.instance new [OPTION...]
 
@@ -144,6 +144,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
       )
     end
   end
+
 
   defp escape_sh_path(path) do
     ~S(') <> String.replace(path, ~S('), ~S(\')) <> ~S(')
