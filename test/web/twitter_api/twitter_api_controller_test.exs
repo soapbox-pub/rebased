@@ -24,6 +24,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> assign(:user, user)
         |> post(authenticated_twitter_api__path(conn, :update_banner), %{"banner" => new_banner})
         |> json_response(200)
+
+      user = Repo.get(User, user.id)
+      assert user.info.banner["type"] == "Image"
     end
   end
 
@@ -39,6 +42,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> assign(:user, user)
         |> post(authenticated_twitter_api__path(conn, :update_background), %{"img" => new_bg})
         |> json_response(200)
+
+      user = Repo.get(User, user.id)
+      assert user.info.background["type"] == "Image"
     end
   end
 
