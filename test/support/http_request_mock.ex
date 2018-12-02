@@ -1,4 +1,6 @@
 defmodule HttpRequestMock do
+  require Logger
+
   def request(
         %Tesla.Env{
           url: url,
@@ -12,7 +14,7 @@ defmodule HttpRequestMock do
       res
     else
       {_, r} = error ->
-        IO.warn(r)
+        Logger.warn(r)
         error
     end
   end
@@ -21,45 +23,381 @@ defmodule HttpRequestMock do
   #
   def get(url, query \\ [], body \\ [], headers \\ [])
 
-  def get("https://social.heldscal.la/api/statuses/user_timeline/23211.atom", _, _, _) do
-    {:ok, %Tesla.Env{
-        status: 200,
-        body: File.read!(
-          "test/fixtures/httpoison_mock/https___social.heldscal.la_api_statuses_user_timeline_23211.atom.xml"
-        )}}
+  def get("https://pleroma.soykaf.com/users/lain/feed.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/https___pleroma.soykaf.com_users_lain_feed.atom.xml"
+         )
+     }}
   end
 
-  def get("https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/23211", _, _, _) do
-    {:ok, %Tesla.Env{
-        status: 200,
-        body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_user_23211.xml")}}
+  def get(url, _, _, Accept: "application/xrd+xml,application/jrd+json")
+      when url in [
+             "https://pleroma.soykaf.com/.well-known/webfinger?resource=acct:https://pleroma.soykaf.com/users/lain",
+             "https://pleroma.soykaf.com/.well-known/webfinger?resource=https://pleroma.soykaf.com/users/lain"
+           ] do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___pleroma.soykaf.com_users_lain.xml")
+     }}
+  end
+
+  def get("https://shitposter.club/api/statuses/user_timeline/1.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/https___shitposter.club_api_statuses_user_timeline_1.atom.xml"
+         )
+     }}
+  end
+
+  def get(
+        "https://shitposter.club/.well-known/webfinger?resource=https://shitposter.club/user/1",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___shitposter.club_user_1.xml")
+     }}
+  end
+
+  def get("https://shitposter.club/notice/2827873", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!("test/fixtures/httpoison_mock/https___shitposter.club_notice_2827873.html")
+     }}
+  end
+
+  def get("https://shitposter.club/api/statuses/show/2827873.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/https___shitposter.club_api_statuses_show_2827873.atom.xml"
+         )
+     }}
+  end
+
+  def get("https://testing.pleroma.lol/objects/b319022a-4946-44c5-9de9-34801f95507b", _, _, _) do
+    {:ok, %Tesla.Env{status: 200}}
+  end
+
+  def get("https://shitposter.club/api/statuses/user_timeline/5381.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/spc_5381.atom")
+     }}
+  end
+
+  def get(
+        "https://shitposter.club/.well-known/webfinger?resource=https://shitposter.club/user/5381",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/spc_5381_xrd.xml")
+     }}
+  end
+
+  def get("http://shitposter.club/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/shitposter.club_host_meta")
+     }}
+  end
+
+  def get("https://shitposter.club/api/statuses/show/7369654.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/7369654.atom")
+     }}
+  end
+
+  def get("https://shitposter.club/notice/4027863", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/7369654.html")
+     }}
+  end
+
+  def get("https://social.sakamoto.gq/users/eal/feed.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/sakamoto_eal_feed.atom")
+     }}
+  end
+
+  def get("http://social.sakamoto.gq/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/social.sakamoto.gq_host_meta")
+     }}
+  end
+
+  def get(
+        "https://social.sakamoto.gq/.well-known/webfinger?resource=https://social.sakamoto.gq/users/eal",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/eal_sakamoto.xml")
+     }}
+  end
+
+  def get("https://social.sakamoto.gq/objects/0ccc1a2c-66b0-4305-b23a-7f7f2b040056", _, _,
+        Accept: "application/atom+xml"
+      ) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/httpoison_mock/sakamoto.atom")}}
+  end
+
+  def get("http://mastodon.social/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/mastodon.social_host_meta")
+     }}
+  end
+
+  def get(
+        "https://mastodon.social/.well-known/webfinger?resource=https://mastodon.social/users/lambadalambda",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/https___mastodon.social_users_lambadalambda.xml"
+         )
+     }}
+  end
+
+  def get("http://gs.example.org/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/gs.example.org_host_meta")
+     }}
+  end
+
+  def get(
+        "http://gs.example.org/.well-known/webfinger?resource=http://gs.example.org:4040/index.php/user/1",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/http___gs.example.org_4040_index.php_user_1.xml"
+         )
+     }}
+  end
+
+  def get("http://gs.example.org/index.php/api/statuses/user_timeline/1.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/http__gs.example.org_index.php_api_statuses_user_timeline_1.atom.xml"
+         )
+     }}
+  end
+
+  def get("https://social.heldscal.la/api/statuses/user_timeline/29191.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/https___social.heldscal.la_api_statuses_user_timeline_29191.atom.xml"
+         )
+     }}
+  end
+
+  def get("http://squeet.me/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{status: 200, body: File.read!("test/fixtures/httpoison_mock/squeet.me_host_meta")}}
+  end
+
+  def get("https://squeet.me/xrd?uri=lain@squeet.me", _, _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/lain_squeet.me_webfinger.xml")
+     }}
+  end
+
+  def get(
+        "https://social.heldscal.la/.well-known/webfinger?resource=shp@social.heldscal.la",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/shp@social.heldscal.la.xml")
+     }}
+  end
+
+  def get("http://framatube.org/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/framatube.org_host_meta")
+     }}
+  end
+
+  def get("http://framatube.org/main/xrd?uri=framasoft@framatube.org", _, _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       headers: [{"content-type", "application/json"}],
+       body: File.read!("test/fixtures/httpoison_mock/framasoft@framatube.org.json")
+     }}
+  end
+
+  def get("http://gnusocial.de/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/gnusocial.de_host_meta")
+     }}
+  end
+
+  def get("http://gnusocial.de/main/xrd?uri=winterdienst@gnusocial.de", _, _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/winterdienst_webfinger.json")
+     }}
+  end
+
+  def get("http://status.alpicola.com/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/status.alpicola.com_host_meta")
+     }}
+  end
+
+  def get("http://macgirvin.com/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/macgirvin.com_host_meta")
+     }}
+  end
+
+  def get("http://gerzilla.de/.well-known/host-meta", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/gerzilla.de_host_meta")
+     }}
+  end
+
+  def get("https://gerzilla.de/xrd/?uri=kaniini@gerzilla.de", _, _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       headers: [{"content-type", "application/json"}],
+       body: File.read!("test/fixtures/httpoison_mock/kaniini@gerzilla.de.json")
+     }}
+  end
+
+  def get("https://social.heldscal.la/api/statuses/user_timeline/23211.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/https___social.heldscal.la_api_statuses_user_timeline_23211.atom.xml"
+         )
+     }}
+  end
+
+  def get(
+        "https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/23211",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_user_23211.xml")
+     }}
   end
 
   def get("http://social.heldscal.la/.well-known/host-meta", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/httpoison_mock/social.heldscal.la_host_meta")}}
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/social.heldscal.la_host_meta")
+     }}
   end
 
   def get("https://social.heldscal.la/.well-known/host-meta", _, _, _) do
-    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/httpoison_mock/social.heldscal.la_host_meta")}}
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/social.heldscal.la_host_meta")
+     }}
   end
 
   def get("https://mastodon.social/users/lambadalambda.atom", _, _, _) do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/lambadalambda.atom")}}
   end
 
-  def get("https://social.heldscal.la/user/23211", _, _, [Accept: "application/activity+json"]) do
-    {:ok,
-     Tesla.Mock.json(%{"id" => "https://social.heldscal.la/user/23211"}, status: 200)
-    }
+  def get("https://social.heldscal.la/user/23211", _, _, Accept: "application/activity+json") do
+    {:ok, Tesla.Mock.json(%{"id" => "https://social.heldscal.la/user/23211"}, status: 200)}
   end
 
   def get(url, query, body, headers) do
     {:error,
      "Not implemented the mock response for get #{inspect(url)}, #{query}, #{inspect(body)}, #{
-     inspect(headers)
+       inspect(headers)
      }"}
   end
-
 
   # POST Requests
   #

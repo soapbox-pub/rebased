@@ -5,6 +5,12 @@ defmodule Pleroma.Web.OStatusTest do
   alias Pleroma.{Object, Repo, User, Activity}
   import Pleroma.Factory
   import ExUnit.CaptureLog
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "don't insert create notes twice" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")

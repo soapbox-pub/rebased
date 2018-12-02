@@ -15,6 +15,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
+
   test "decodes a salmon" do
     {:ok, salmon} = File.read("test/fixtures/salmon.xml")
     {:ok, doc} = Salmon.decode_and_validate(@magickey, salmon)

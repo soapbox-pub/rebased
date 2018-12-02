@@ -2,6 +2,12 @@ defmodule Pleroma.Web.WebFingerTest do
   use Pleroma.DataCase
   alias Pleroma.Web.WebFinger
   import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   describe "host meta" do
     test "returns a link to the xml lrdd" do
