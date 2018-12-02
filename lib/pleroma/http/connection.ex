@@ -1,5 +1,6 @@
 defmodule Pleroma.HTTP.Connection do
   @hackney_options [pool: :default]
+  @adapter Application.get_env(:tesla, :adapter)
 
   @doc """
   Configure a client connection
@@ -10,7 +11,7 @@ defmodule Pleroma.HTTP.Connection do
   """
   @spec new(Keyword.t()) :: Tesla.Env.client()
   def new(opts \\ []) do
-    Tesla.client([], {Tesla.Adapter.Hackney, hackney_options(opts)})
+    Tesla.client([], {@adapter, hackney_options(opts)})
   end
 
   # fetch Hackney options
