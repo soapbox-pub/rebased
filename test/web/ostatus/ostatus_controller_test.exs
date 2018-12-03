@@ -4,6 +4,12 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   alias Pleroma.{User, Repo}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus.ActivityRepresenter
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "decodes a salmon", %{conn: conn} do
     user = insert(:user)

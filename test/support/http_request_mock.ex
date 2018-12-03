@@ -23,6 +23,34 @@ defmodule HttpRequestMock do
   #
   def get(url, query \\ [], body \\ [], headers \\ [])
 
+  def get("http://gs.example.org:4040/index.php/user/1", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: "{\"id\": 1}"
+     }}
+  end
+
+  def get("https://squeet.me/xrd/?uri=lain@squeet.me", _, _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/lain_squeet.me_webfinger.xml")
+     }}
+  end
+
+  def get("https://mst3k.interlinked.me/users/luciferMysticus", _, _,
+        Accept: "application/activity+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/lucifermysticus.json")
+     }}
+  end
+
   def get("https://prismo.news/@mxb", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -31,8 +59,9 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://hubzilla.example.org/channel/kaniini",
-    _, _, [Accept: "application/activity+json"]) do
+  def get("https://hubzilla.example.org/channel/kaniini", _, _,
+        Accept: "application/activity+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -40,7 +69,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://niu.moe/users/rye", _, _, [Accept: "application/activity+json"]) do
+  def get("https://niu.moe/users/rye", _, _, Accept: "application/activity+json") do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -52,20 +81,20 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!(
-         "test/fixtures/httpoison_mock/http___mastodon.example.org_users_admin_status_1234.json"
-       )
+       body:
+         File.read!(
+           "test/fixtures/httpoison_mock/http___mastodon.example.org_users_admin_status_1234.json"
+         )
      }}
   end
 
-  def get("https://puckipedia.com/", _, _, [Accept: "application/activity+json"]) do
+  def get("https://puckipedia.com/", _, _, Accept: "application/activity+json") do
     {:ok,
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/httpoison_mock/puckipedia.com.json")
      }}
   end
-
 
   def get("https://peertube.moe/accounts/7even", _, _, _) do
     {:ok,
@@ -99,8 +128,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-
-  def get("http://mastodon.example.org/users/admin", _, _, [Accept: "application/activity+json"]) do
+  def get("http://mastodon.example.org/users/admin", _, _, Accept: "application/activity+json") do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -108,8 +136,9 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://mastodon.example.org/@admin/99541947525187367",
-    _, _, [Accept: "application/activity+json"]) do
+  def get("http://mastodon.example.org/@admin/99541947525187367", _, _,
+        Accept: "application/activity+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -125,7 +154,7 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://mstdn.io/users/mayuutann", _, _, [Accept: "application/activity+json"]) do
+  def get("https://mstdn.io/users/mayuutann", _, _, Accept: "application/activity+json") do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -133,15 +162,15 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://mstdn.io/users/mayuutann/statuses/99568293732299394",
-    _, _, [Accept: "application/activity+json"]) do
+  def get("https://mstdn.io/users/mayuutann/statuses/99568293732299394", _, _,
+        Accept: "application/activity+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/httpoison_mock/mayumayupost.json")
      }}
   end
-
 
   def get("https://pleroma.soykaf.com/users/lain/feed.atom", _, _, _) do
     {:ok,
