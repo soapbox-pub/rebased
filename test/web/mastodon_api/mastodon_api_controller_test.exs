@@ -1253,14 +1253,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   describe "updating credentials" do
     test "updates the user's bio", %{conn: conn} do
       user = insert(:user)
+      user2 = insert(:user)
 
       conn =
         conn
         |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{"note" => "I drink #cofe"})
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "note" => "I drink #cofe with @#{user2.nickname}"
+        })
 
       assert user = json_response(conn, 200)
-      assert user["note"] == "I drink #cofe"
+
+      assert user["note"] ==
+               "I drink <a href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span><a href=\"#{
+                 user2.ap_id
+               }\">@<span>#{user2.nickname}</span></a></span>"
     end
 
     test "updates the user's locking status", %{conn: conn} do
