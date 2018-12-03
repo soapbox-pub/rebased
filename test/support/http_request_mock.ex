@@ -23,6 +23,126 @@ defmodule HttpRequestMock do
   #
   def get(url, query \\ [], body \\ [], headers \\ [])
 
+  def get("https://prismo.news/@mxb", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___prismo.news__mxb.json")
+     }}
+  end
+
+  def get("https://hubzilla.example.org/channel/kaniini",
+    _, _, [Accept: "application/activity+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/kaniini@hubzilla.example.org.json")
+     }}
+  end
+
+  def get("https://niu.moe/users/rye", _, _, [Accept: "application/activity+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/rye.json")
+     }}
+  end
+
+  def get("http://mastodon.example.org/users/admin/statuses/100787282858396771", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!(
+         "test/fixtures/httpoison_mock/http___mastodon.example.org_users_admin_status_1234.json"
+       )
+     }}
+  end
+
+  def get("https://puckipedia.com/", _, _, [Accept: "application/activity+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/puckipedia.com.json")
+     }}
+  end
+
+
+  def get("https://peertube.moe/accounts/7even", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/7even.json")
+     }}
+  end
+
+  def get("https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/peertube.moe-vid.json")
+     }}
+  end
+
+  def get("https://baptiste.gelez.xyz/@/BaptisteGelez", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/baptiste.gelex.xyz-user.json")
+     }}
+  end
+
+  def get("https://baptiste.gelez.xyz/~/PlumeDevelopment/this-month-in-plume-june-2018/", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/baptiste.gelex.xyz-article.json")
+     }}
+  end
+
+
+  def get("http://mastodon.example.org/users/admin", _, _, [Accept: "application/activity+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/admin@mastdon.example.org.json")
+     }}
+  end
+
+  def get("http://mastodon.example.org/@admin/99541947525187367",
+    _, _, [Accept: "application/activity+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/mastodon-note-object.json")
+     }}
+  end
+
+  def get("https://shitposter.club/notice/7369654", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/7369654.html")
+     }}
+  end
+
+  def get("https://mstdn.io/users/mayuutann", _, _, [Accept: "application/activity+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/mayumayu.json")
+     }}
+  end
+
+  def get("https://mstdn.io/users/mayuutann/statuses/99568293732299394",
+    _, _, [Accept: "application/activity+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/mayumayupost.json")
+     }}
+  end
+
+
   def get("https://pleroma.soykaf.com/users/lain/feed.atom", _, _, _) do
     {:ok,
      %Tesla.Env{
