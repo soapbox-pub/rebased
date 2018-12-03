@@ -4,6 +4,8 @@ defmodule Pleroma.User do
   import Ecto.{Changeset, Query}
   alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
   alias Comeonin.Pbkdf2
+  alias Pleroma.Formatter
+  alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
   alias Pleroma.Web.{OStatus, Websub, OAuth}
   alias Pleroma.Web.ActivityPub.{Utils, ActivityPub}
 
@@ -801,5 +803,19 @@ defmodule Pleroma.User do
       _e ->
         :error
     end
+  end
+
+  def parse_bio(bio, user \\ %User{info: %{source_data: %{}}}) do
+    mentions = Formatter.parse_mentions(bio)
+    tags = Formatter.parse_tags(bio)
+
+    emoji =
+      (user.info.source_data["tag"] || [])
+      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
+      |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
+        {String.trim(name, ":"), url}
+      end)
+
+    CommonUtils.format_input(bio, mentions, tags, "text/plain") |> Formatter.emojify(emoji)
   end
 end

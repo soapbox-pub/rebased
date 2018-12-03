@@ -55,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user_params =
       %{}
       |> add_if_present(params, "display_name", :name)
-      |> add_if_present(params, "note", :bio)
+      |> add_if_present(params, "note", :bio, fn value -> {:ok, User.parse_bio(value)} end)
       |> add_if_present(params, "avatar", :avatar, fn value ->
         with %Plug.Upload{} <- value,
              {:ok, object} <- ActivityPub.upload(value, type: :avatar) do
