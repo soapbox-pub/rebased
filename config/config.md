@@ -39,6 +39,7 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
   * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production
   * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See ``:mrf_simple`` section)
   * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See ``:mrf_rejectnonpublic`` section)
+  * `Pleroma.Web.ActivityPub.MRF.EnsureRePrepended`: Rewrites posts to ensure that replies to posts with subjects do not have an identical subject and instead begin with re:.
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
