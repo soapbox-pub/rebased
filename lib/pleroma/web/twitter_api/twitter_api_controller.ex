@@ -232,9 +232,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     with %Object{} = object <- Repo.get(Object, id), is_binary(description) do
       new_data = Map.put(object.data, "name", description)
-
-      change = Object.change(object, %{data: new_data})
-      {:ok, _} = Repo.update(change)
+      {:ok, _} = object |> Object.change(%{data: new_data}) |> Repo.update()
     end
 
     conn
