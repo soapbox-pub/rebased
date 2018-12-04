@@ -4,7 +4,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
   alias Pleroma.{Repo, User}
   alias Pleroma.Activity
-
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
   describe "/relay" do
     test "with the relay active, it returns the relay user", %{conn: conn} do
       res =

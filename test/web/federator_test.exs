@@ -5,6 +5,11 @@ defmodule Pleroma.Web.FederatorTest do
   import Pleroma.Factory
   import Mock
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "enqueues an element according to priority" do
     queue = [%{item: 1, priority: 2}]
 

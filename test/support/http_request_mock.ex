@@ -14,7 +14,7 @@ defmodule HttpRequestMock do
       res
     else
       {_, r} = error ->
-        Logger.warn(r)
+        #Logger.warn(r)
         error
     end
   end
@@ -22,6 +22,25 @@ defmodule HttpRequestMock do
   # GET Requests
   #
   def get(url, query \\ [], body \\ [], headers \\ [])
+
+  def get("https://osada.macgirvin.com/channel/mike", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!(
+         "test/fixtures/httpoison_mock/https___osada.macgirvin.com_channel_mike.json"
+       )
+     }}
+  end
+
+  def get("https://osada.macgirvin.com/.well-known/webfinger?resource=acct:mike@osada.macgirvin.com", _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/mike@osada.macgirvin.com.json")
+     }}
+  end
+
   def get("https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/29191",
     _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
     {:ok,
@@ -87,14 +106,6 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/httpoison_mock/nonexistant@social.heldscal.la.xml")
-     }}
-  end
-
-  def get("http://gs.example.org:4040/index.php/user/1", _, _, Accept: "application/activity+json") do
-    {:ok,
-     %Tesla.Env{
-       status: 200,
-       body: "{\"id\": 1}"
      }}
   end
 
