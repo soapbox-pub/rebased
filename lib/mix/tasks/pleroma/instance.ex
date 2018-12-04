@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
   ## Generate a new instance config.
 
-    mix pleroma.instance new [OPTION...]
+    mix pleroma.instance gen [OPTION...]
 
   If any options are left unspecified, you will be prompted interactively
 
@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
   - `--dbpass DBPASS` - the password to use for the database connection
   """
 
-  def run(["new" | rest]) do
+  def run(["gen" | rest]) do
     {options, [], []} =
       OptionParser.parse(
         rest,

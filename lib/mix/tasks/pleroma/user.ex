@@ -197,6 +197,8 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   def run(["set", nickname | rest]) do
+    Application.ensure_all_started(:pleroma)
+
     {options, [], []} =
       OptionParser.parse(
         rest,
@@ -207,56 +209,58 @@ defmodule Mix.Tasks.Pleroma.User do
         ]
       )
 
-    case Keyword.get(options, :moderator) do
-      nil -> nil
-      value -> set_moderator(nickname, value)
-    end
-
-    case Keyword.get(options, :locked) do
-      nil -> nil
-      value -> set_locked(nickname, value)
-    end
-
-    case Keyword.get(options, :admin) do
-      nil -> nil
-      value -> set_admin(nickname, value)
-    end
-  end
-
-  defp set_moderator(nickname, value) do
-    Application.ensure_all_started(:pleroma)
-
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
-      info =
-        user.info
-        |> Map.put("is_moderator", value)
+      case Keyword.get(options, :moderator) do
+        nil -> nil
+        value -> set_moderator(user, value)
+      end
 
-      cng = User.info_changeset(user, %{info: info})
-      {:ok, user} = User.update_and_set_cache(cng)
+      case Keyword.get(options, :locked) do
+        nil -> nil
+        value -> set_locked(user, value)
+      end
 
-      Mix.shell().info("Moderator status of #{nickname}: #{user.info["is_moderator"]}")
+      case Keyword.get(options, :admin) do
+        nil -> nil
+        value -> set_admin(user, value)
+      end
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")
     end
   end
 
-  defp set_admin(nickname, value) do
-    Application.ensure_all_started(:pleroma)
+  defp set_moderator(user, value) do
+    info =
+      user.info
+      |> Map.put("is_moderator", value)
 
-    with %User{local: true} = user <- User.get_by_nickname(nickname) do
-      info =
-        user.info
-        |> Map.put("is_admin", value)
+    cng = User.info_changeset(user, %{info: info})
+    {:ok, user} = User.update_and_set_cache(cng)
 
-      cng = User.info_changeset(user, %{info: info})
-      {:ok, user} = User.update_and_set_cache(cng)
+    Mix.shell().info("Moderator status of #{user.nickname}: #{user.info["is_moderator"]}")
+  end
 
-      Mix.shell().info("Admin status of #{nickname}: #{user.info["is_admin"]}")
-    else
-      _ ->
-        Mix.shell().error("No local user #{nickname}")
-    end
+  defp set_admin(user, value) do
+    info =
+      user.info
+      |> Map.put("is_admin", value)
+
+    cng = User.info_changeset(user, %{info: info})
+    {:ok, user} = User.update_and_set_cache(cng)
+
+    Mix.shell().info("Admin status of #{user.nickname}: #{user.info["is_admin"]}")
+  end
+
+  defp set_locked(user, value) do
+    info =
+      user.info
+      |> Map.put("locked", value)
+
+    cng = User.info_changeset(user, %{info: info})
+    user = Repo.update!(cng)
+
+    IO.puts("Locked status of #{user.nickname}: #{user.info["locked"]}")
   end
 
   def run(["invite"]) do
@@ -276,24 +280,6 @@ defmodule Mix.Tasks.Pleroma.User do
     else
       _ ->
         Mix.shell().error("Could not create invite token.")
-    end
-  end
-
-  defp set_locked(nickname, value) do
-    Mix.Ecto.ensure_started(Repo, [])
-
-    with %User{local: true} = user <- User.get_by_nickname(nickname) do
-      info =
-        user.info
-        |> Map.put("locked", value)
-
-      cng = User.info_changeset(user, %{info: info})
-      user = Repo.update!(cng)
-
-      IO.puts("Locked status of #{nickname}: #{user.info["locked"]}")
-    else
-      _ ->
-        IO.puts("No local user #{nickname}")
     end
   end
 end
