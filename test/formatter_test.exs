@@ -4,6 +4,7 @@ defmodule Pleroma.FormatterTest do
   use Pleroma.DataCase
 
   import Pleroma.Factory
+
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok

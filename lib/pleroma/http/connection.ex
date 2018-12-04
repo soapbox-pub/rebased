@@ -1,4 +1,8 @@
 defmodule Pleroma.HTTP.Connection do
+  @moduledoc """
+  Connection for http-requests.
+  """
+
   @hackney_options [pool: :default]
   @adapter Application.get_env(:tesla, :adapter)
 

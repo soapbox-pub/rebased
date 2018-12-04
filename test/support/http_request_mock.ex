@@ -14,7 +14,7 @@ defmodule HttpRequestMock do
       res
     else
       {_, r} = error ->
-        #Logger.warn(r)
+        # Logger.warn(r)
         error
     end
   end
@@ -27,13 +27,17 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
-       body: File.read!(
-         "test/fixtures/httpoison_mock/https___osada.macgirvin.com_channel_mike.json"
-       )
+       body:
+         File.read!("test/fixtures/httpoison_mock/https___osada.macgirvin.com_channel_mike.json")
      }}
   end
 
-  def get("https://osada.macgirvin.com/.well-known/webfinger?resource=acct:mike@osada.macgirvin.com", _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+  def get(
+        "https://osada.macgirvin.com/.well-known/webfinger?resource=acct:mike@osada.macgirvin.com",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -41,8 +45,12 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/29191",
-    _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+  def get(
+        "https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/29191",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -58,8 +66,12 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://pawoo.net/.well-known/webfinger?resource=acct:https://pawoo.net/users/pekorino",
-    _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+  def get(
+        "https://pawoo.net/.well-known/webfinger?resource=acct:https://pawoo.net/users/pekorino",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -67,7 +79,12 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://social.stopwatchingus-heidelberg.de/api/statuses/user_timeline/18330.atom", _, _, _) do
+  def get(
+        "https://social.stopwatchingus-heidelberg.de/api/statuses/user_timeline/18330.atom",
+        _,
+        _,
+        _
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -75,8 +92,12 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://social.stopwatchingus-heidelberg.de/.well-known/webfinger?resource=acct:https://social.stopwatchingus-heidelberg.de/user/18330",
-    _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+  def get(
+        "https://social.stopwatchingus-heidelberg.de/.well-known/webfinger?resource=acct:https://social.stopwatchingus-heidelberg.de/user/18330",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -92,8 +113,12 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://mamot.fr/.well-known/webfinger?resource=acct:https://mamot.fr/users/Skruyb",
-    _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+  def get(
+        "https://mamot.fr/.well-known/webfinger?resource=acct:https://mamot.fr/users/Skruyb",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -101,7 +126,12 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://social.heldscal.la/.well-known/webfinger?resource=nonexistant@social.heldscal.la", _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+  def get(
+        "https://social.heldscal.la/.well-known/webfinger?resource=nonexistant@social.heldscal.la",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
     {:ok,
      %Tesla.Env{
        status: 200,

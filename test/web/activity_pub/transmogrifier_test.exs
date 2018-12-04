@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
   import Pleroma.Factory
   alias Pleroma.Web.CommonAPI
+
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok

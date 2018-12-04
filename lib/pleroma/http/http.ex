@@ -1,8 +1,10 @@
 defmodule Pleroma.HTTP do
-  require HTTPoison
   alias Pleroma.HTTP.Connection
   alias Pleroma.HTTP.RequestBuilder, as: Builder
 
+  @doc """
+  Builds and perform http request.
+  """
   def request(method, url, body \\ "", headers \\ [], options \\ []) do
     options =
       process_request_options(options)
@@ -19,6 +21,7 @@ defmodule Pleroma.HTTP do
   end
 
   defp process_sni_options(options, nil), do: options
+
   defp process_sni_options(options, url) do
     uri = URI.parse(url)
     host = uri.host |> to_charlist()
