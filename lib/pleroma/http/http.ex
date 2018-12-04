@@ -1,9 +1,24 @@
 defmodule Pleroma.HTTP do
+  @moduledoc """
+
+  """
+
   alias Pleroma.HTTP.Connection
   alias Pleroma.HTTP.RequestBuilder, as: Builder
 
   @doc """
   Builds and perform http request.
+
+  # Arguments:
+  `method` - :get, :post, :put, :delete
+  `url`
+  `body`
+  `headers` - a keyworld list of headers, e.g. `[{"content-type", "text/plain"}]`
+  `options` - custom, per-request middleware or adapter options
+
+  # Returns:
+  `{:ok, %Tesla.Env{}}` or `{:error, error}`
+
   """
   def request(method, url, body \\ "", headers \\ [], options \\ []) do
     options =
@@ -43,9 +58,19 @@ defmodule Pleroma.HTTP do
     end
   end
 
+  @doc """
+  Performs GET request.
+
+  See `Pleroma.HTTP.request/5`
+  """
   def get(url, headers \\ [], options \\ []),
     do: request(:get, url, "", headers, options)
 
+  @doc """
+  Performs POST request.
+
+  See `Pleroma.HTTP.request/5`
+  """
   def post(url, body, headers \\ [], options \\ []),
     do: request(:post, url, body, headers, options)
 end
