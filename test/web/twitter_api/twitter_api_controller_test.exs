@@ -1260,14 +1260,13 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       object = insert(:note)
       description = "Informative description of the image. Initial: #{object.data["name"]}}"
 
-      _conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/media/metadata/create.json", %{
-          "media_id" => object.id,
-          "alt_text" => %{"text" => description}
-        })
-        |> json_response(:no_content)
+      conn
+      |> assign(:user, user)
+      |> post("/api/media/metadata/create.json", %{
+        "media_id" => object.id,
+        "alt_text" => %{"text" => description}
+      })
+      |> json_response(:no_content)
 
       object = Repo.get!(Object, object.id)
       assert object.data["name"] == description
