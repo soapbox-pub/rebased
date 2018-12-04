@@ -49,4 +49,22 @@ defmodule Pleroma.ObjectTest do
       refute object == cached_object
     end
   end
+
+  describe "normalizer" do
+    test "fetches unknown objects by default" do
+      %Object{} = object = Object.normalize("http://mastodon.example.org/@admin/99541947525187367")
+
+      assert object.data["url"] == "http://mastodon.example.org/@admin/99541947525187367"
+    end
+
+    test "fetches unknown objects when fetch_remote is explicitly true" do
+      %Object{} = object = Object.normalize("http://mastodon.example.org/@admin/99541947525187367", true)
+
+      assert object.data["url"] == "http://mastodon.example.org/@admin/99541947525187367"
+    end
+
+    test "does not fetch unknown objects when fetch_remote is false" do
+      assert is_nil(Object.normalize("http://mastodon.example.org/@admin/99541947525187367", false))
+    end
+  end
 end
