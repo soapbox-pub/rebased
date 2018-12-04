@@ -85,7 +85,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           ""
       end
 
-    case fetch_obj_helper(in_reply_to_id) do
+    case get_obj_helper(in_reply_to_id) do
       {:ok, replied_object} ->
         with %Activity{} = activity <-
                Activity.get_create_activity_by_object_ap_id(replied_object.data["id"]) do
@@ -363,7 +363,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with actor <- Containment.get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+         {:ok, object} <- get_obj_helper(object_id),
          {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
       {:ok, activity}
     else
@@ -376,7 +376,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with actor <- Containment.get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+         {:ok, object} <- get_obj_helper(object_id),
          {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false) do
       {:ok, activity}
     else
@@ -430,7 +430,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     with actor <- Containment.get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+         {:ok, object} <- get_obj_helper(object_id),
          :ok <- Containment.contain_origin(actor.ap_id, object.data),
          {:ok, activity} <- ActivityPub.delete(object, false) do
       {:ok, activity}
@@ -449,7 +449,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with actor <- Containment.get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+         {:ok, object} <- get_obj_helper(object_id),
          {:ok, activity, _} <- ActivityPub.unannounce(actor, object, id, false) do
       {:ok, activity}
     else
@@ -519,7 +519,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with actor <- Containment.get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+         {:ok, object} <- get_obj_helper(object_id),
          {:ok, activity, _, _} <- ActivityPub.unlike(actor, object, id, false) do
       {:ok, activity}
     else
@@ -528,9 +528,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(_), do: :error
-
-  def fetch_obj_helper(id) when is_bitstring(id), do: Fetcher.fetch_object_from_id(id)
-  def fetch_obj_helper(obj) when is_map(obj), do: Fetcher.fetch_object_from_id(obj["id"])
 
   def get_obj_helper(id) do
     if object = Object.normalize(id), do: {:ok, object}, else: nil
@@ -629,7 +626,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def maybe_fix_object_url(data) do
     if is_binary(data["object"]) and not String.starts_with?(data["object"], "http") do
-      case fetch_obj_helper(data["object"]) do
+      case get_obj_helper(data["object"]) do
         {:ok, relative_object} ->
           if relative_object.data["external_url"] do
             _data =
