@@ -18,6 +18,7 @@ defmodule Pleroma.HTTP do
     |> (&Tesla.request(Connection.new(), &1)).()
   end
 
+  defp process_sni_options(options, nil), do: options
   defp process_sni_options(options, url) do
     uri = URI.parse(url)
     host = uri.host |> to_charlist()

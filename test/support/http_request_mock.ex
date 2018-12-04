@@ -22,6 +22,73 @@ defmodule HttpRequestMock do
   # GET Requests
   #
   def get(url, query \\ [], body \\ [], headers \\ [])
+  def get("https://social.heldscal.la/.well-known/webfinger?resource=https://social.heldscal.la/user/29191",
+    _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___social.heldscal.la_user_29191.xml")
+     }}
+  end
+
+  def get("https://pawoo.net/users/pekorino.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___pawoo.net_users_pekorino.atom")
+     }}
+  end
+
+  def get("https://pawoo.net/.well-known/webfinger?resource=acct:https://pawoo.net/users/pekorino",
+    _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___pawoo.net_users_pekorino.xml")
+     }}
+  end
+
+  def get("https://social.stopwatchingus-heidelberg.de/api/statuses/user_timeline/18330.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/atarifrosch_feed.xml")
+     }}
+  end
+
+  def get("https://social.stopwatchingus-heidelberg.de/.well-known/webfinger?resource=acct:https://social.stopwatchingus-heidelberg.de/user/18330",
+    _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/atarifrosch_webfinger.xml")
+     }}
+  end
+
+  def get("https://mamot.fr/users/Skruyb.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/https___mamot.fr_users_Skruyb.atom")
+     }}
+  end
+
+  def get("https://mamot.fr/.well-known/webfinger?resource=acct:https://mamot.fr/users/Skruyb",
+    _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/skruyb@mamot.fr.atom")
+     }}
+  end
+
+  def get("https://social.heldscal.la/.well-known/webfinger?resource=nonexistant@social.heldscal.la", _, _, [Accept: "application/xrd+xml,application/jrd+json"]) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/nonexistant@social.heldscal.la.xml")
+     }}
+  end
 
   def get("http://gs.example.org:4040/index.php/user/1", _, _, Accept: "application/activity+json") do
     {:ok,

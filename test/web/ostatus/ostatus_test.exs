@@ -5,10 +5,9 @@ defmodule Pleroma.Web.OStatusTest do
   alias Pleroma.{Object, Repo, User, Activity}
   import Pleroma.Factory
   import ExUnit.CaptureLog
-  import Tesla.Mock
 
-  setup do
-    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
 

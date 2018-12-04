@@ -9,6 +9,11 @@ defmodule Pleroma.UserTest do
   import Pleroma.Factory
   import Ecto.Query
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "ap_id returns the activity pub id for the user" do
     user = UserBuilder.build()
 
