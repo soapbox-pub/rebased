@@ -7,6 +7,12 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
   alias Pleroma.Web.OStatus
 
   import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "an external note activity" do
     incoming = File.read!("test/fixtures/mastodon-note-cw.xml")

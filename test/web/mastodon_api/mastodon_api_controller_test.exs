@@ -8,6 +8,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   import Pleroma.Factory
   import ExUnit.CaptureLog
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "the home timeline", %{conn: conn} do
     user = insert(:user)

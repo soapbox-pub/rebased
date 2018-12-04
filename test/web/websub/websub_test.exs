@@ -10,6 +10,12 @@ defmodule Pleroma.Web.WebsubTest do
   alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   import Pleroma.Factory
   alias Pleroma.Web.Router.Helpers
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "a verification of a request that is accepted" do
     sub = insert(:websub_subscription)
@@ -26,8 +32,8 @@ defmodule Pleroma.Web.WebsubTest do
       assert String.to_integer(seconds) > 0
 
       {:ok,
-       %HTTPoison.Response{
-         status_code: 200,
+       %Tesla.Env{
+         status: 200,
          body: challenge
        }}
     end
@@ -41,8 +47,8 @@ defmodule Pleroma.Web.WebsubTest do
 
     getter = fn _path, _headers, _options ->
       {:ok,
-       %HTTPoison.Response{
-         status_code: 500,
+       %Tesla.Env{
+         status: 500,
          body: ""
        }}
     end
@@ -113,12 +119,7 @@ defmodule Pleroma.Web.WebsubTest do
   test "discovers the hub and canonical url" do
     topic = "https://mastodon.social/users/lambadalambda.atom"
 
-    getter = fn ^topic ->
-      doc = File.read!("test/fixtures/lambadalambda.atom")
-      {:ok, %{status_code: 200, body: doc}}
-    end
-
-    {:ok, discovered} = Websub.gather_feed_data(topic, getter)
+    {:ok, discovered} = Websub.gather_feed_data(topic)
 
     expected = %{
       "hub" => "https://mastodon.social/api/push",
@@ -158,7 +159,7 @@ defmodule Pleroma.Web.WebsubTest do
                  websub.id
                )
 
-      {:ok, %{status_code: 202}}
+      {:ok, %{status: 202}}
     end
 
     task = Task.async(fn -> Websub.request_subscription(websub, poster) end)
@@ -177,7 +178,7 @@ defmodule Pleroma.Web.WebsubTest do
     websub = insert(:websub_client_subscription, %{hub: hub, topic: topic})
 
     poster = fn ^hub, {:form, _data}, _headers ->
-      {:ok, %{status_code: 202}}
+      {:ok, %{status: 202}}
     end
 
     {:error, websub} = Websub.request_subscription(websub, poster, 1000)
@@ -186,7 +187,7 @@ defmodule Pleroma.Web.WebsubTest do
     websub = insert(:websub_client_subscription, %{hub: hub, topic: topic})
 
     poster = fn ^hub, {:form, _data}, _headers ->
-      {:ok, %{status_code: 400}}
+      {:ok, %{status: 400}}
     end
 
     {:error, websub} = Websub.request_subscription(websub, poster, 1000)
@@ -209,6 +210,7 @@ defmodule Pleroma.Web.WebsubTest do
         insert(:websub_client_subscription, %{
           valid_until: NaiveDateTime.add(now, 2 * day),
           topic: "http://example.org/still_good",
+          hub: "http://example.org/still_good",
           state: "accepted"
         })
 
@@ -216,6 +218,7 @@ defmodule Pleroma.Web.WebsubTest do
         insert(:websub_client_subscription, %{
           valid_until: NaiveDateTime.add(now, day - 100),
           topic: "http://example.org/needs_refresh",
+          hub: "http://example.org/needs_refresh",
           state: "accepted"
         })
 

@@ -1168,7 +1168,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       user = user.nickname
       url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
 
-      with {:ok, %{status_code: 200, body: body}} <-
+      with {:ok, %{status: 200, body: body}} <-
              @httpoison.get(url, [], timeout: timeout, recv_timeout: timeout),
            {:ok, data} <- Jason.decode(body) do
         data2 =
