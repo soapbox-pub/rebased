@@ -4,7 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
-  alias Pleroma.{Repo, Activity, User, Notification}
+  alias Pleroma.{Repo, Activity, Object, User, Notification}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Ecto.Changeset
@@ -224,6 +224,22 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       conn
       |> render(ActivityView, "index.json", %{activities: activities, for: user})
     end
+  end
+
+  @doc "https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-metadata-create"
+  def update_media(%{assigns: %{user: _}} = conn, %{"media_id" => id} = data) do
+    description = get_in(data, ["alt_text", "text"]) || data["name"] || data["description"]
+
+    with %Object{} = object <- Repo.get(Object, id), is_binary(description) do
+      new_data = Map.put(object.data, "name", description)
+
+      change = Object.change(object, %{data: new_data})
+      {:ok, _} = Repo.update(change)
+    end
+
+    conn
+    |> put_status(:no_content)
+    |> json("")
   end
 
   def upload(conn, %{"media" => media}) do

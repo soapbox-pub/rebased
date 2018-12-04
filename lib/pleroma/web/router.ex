@@ -324,6 +324,7 @@ defmodule Pleroma.Web.Router do
 
     post("/statusnet/media/upload", TwitterAPI.Controller, :upload)
     post("/media/upload", TwitterAPI.Controller, :upload_json)
+    post("/media/metadata/create", TwitterAPI.Controller, :update_media)
 
     post("/favorites/create/:id", TwitterAPI.Controller, :favorite)
     post("/favorites/create", TwitterAPI.Controller, :favorite)

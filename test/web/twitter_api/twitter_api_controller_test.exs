@@ -1253,4 +1253,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [user.id, user_two.id, user_three.id] == Enum.map(resp, fn %{"id" => id} -> id end)
     end
   end
+
+  describe "POST /api/media/metadata/create" do
+    test "it updates `data[name]` of referenced Object with provided value", %{conn: conn} do
+      user = insert(:user)
+      object = insert(:note)
+      description = "Informative description of the image. Initial: #{object.data["name"]}}"
+
+      _conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/media/metadata/create.json", %{
+          "media_id" => object.id,
+          "alt_text" => %{"text" => description}
+        })
+        |> json_response(:no_content)
+
+      object = Repo.get!(Object, object.id)
+      assert object.data["name"] == description
+    end
+  end
 end
