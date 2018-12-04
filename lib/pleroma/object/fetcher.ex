@@ -17,7 +17,7 @@ defmodule Pleroma.Object.Fetcher do
       Logger.info("Fetching #{id} via AP")
 
       with {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
-           nil <- Object.normalize(data),
+           nil <- Object.normalize(data, false),
            params <- %{
              "type" => "Create",
              "to" => data["to"],
@@ -27,7 +27,7 @@ defmodule Pleroma.Object.Fetcher do
            },
            :ok <- Containment.contain_origin(id, params),
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do
-        {:ok, Object.normalize(activity.data["object"])}
+        {:ok, Object.normalize(activity.data["object"], false)}
       else
         {:error, {:reject, nil}} ->
           {:reject, nil}
@@ -39,10 +39,19 @@ defmodule Pleroma.Object.Fetcher do
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
           case OStatus.fetch_activity_from_url(id) do
-            {:ok, [activity | _]} -> {:ok, Object.normalize(activity.data["object"])}
+            {:ok, [activity | _]} -> {:ok, Object.normalize(activity.data["object"], false)}
             e -> e
           end
       end
+    end
+  end
+
+  def fetch_object_from_id!(id) do
+    with {:ok, object} <- fetch_object_from_id(id) do
+      object
+    else
+      _e ->
+        nil
     end
   end
 

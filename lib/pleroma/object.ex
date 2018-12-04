@@ -1,6 +1,7 @@
 defmodule Pleroma.Object do
   use Ecto.Schema
   alias Pleroma.{Repo, Object, Activity}
+  alias Pleroma.Object.Fetcher
   import Ecto.{Query, Changeset}
 
   schema "objects" do
@@ -27,9 +28,12 @@ defmodule Pleroma.Object do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
   end
 
-  def normalize(obj) when is_map(obj), do: normalize(obj["id"])
-  def normalize(ap_id) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
-  def normalize(_), do: nil
+  def normalize(_, fetch_remote \\ true)
+
+  def normalize(obj, fetch_remote) when is_map(obj), do: normalize(obj["id"], fetch_remote)
+  def normalize(ap_id, true) when is_binary(ap_id), do: Fetcher.fetch_object_from_id!(ap_id)
+  def normalize(ap_id, false) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
+  def normalize(obj, _), do: nil
 
   if Mix.env() == :test do
     def get_cached_by_ap_id(ap_id) do
