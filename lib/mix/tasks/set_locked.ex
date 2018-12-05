@@ -8,13 +8,13 @@ defmodule Mix.Tasks.SetLocked do
 
   Example: ``mix set_locked lain``
   """
-
+  
   use Mix.Task
-  import Mix.Ecto
+  import Ecto.Changeset
   alias Pleroma.{Repo, User}
 
   def run([nickname | rest]) do
-    ensure_started(Repo, [])
+    Application.ensure_all_started(:pleroma)
 
     locked =
       case rest do
@@ -23,14 +23,12 @@ defmodule Mix.Tasks.SetLocked do
       end
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
-      info =
-        user.info
-        |> Map.put("locked", !!locked)
+      info_cng = User.Info.profile_update(user.info, %{locked: !!locked})
+      user_cng = Ecto.Changeset.change(user)
+      |> put_embed(:info, info_cng) 
+      {:ok, user} = User.update_and_set_cache(user_cng)
 
-      cng = User.info_changeset(user, %{info: info})
-      user = Repo.update!(cng)
-
-      IO.puts("locked status of #{nickname}: #{user.info["locked"]}")
+      IO.puts("Locked status of #{nickname}: #{user.info.locked}")
     else
       _ ->
         IO.puts("No local user #{nickname}")
