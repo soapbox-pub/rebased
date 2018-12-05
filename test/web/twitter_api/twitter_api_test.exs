@@ -182,13 +182,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   end
 
   test "upload a file" do
+    user = insert(:user)
     file = %Plug.Upload{
       content_type: "image/jpg",
       path: Path.absname("test/fixtures/image.jpg"),
       filename: "an_image.jpg"
     }
 
-    response = TwitterAPI.upload(file)
+    response = TwitterAPI.upload(file, user)
 
     assert is_binary(response)
   end

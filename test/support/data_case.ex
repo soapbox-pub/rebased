@@ -36,6 +36,23 @@ defmodule Pleroma.DataCase do
     :ok
   end
 
+  def ensure_local_uploader(_context) do
+    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
+    filters = Pleroma.Config.get([Pleroma.Upload, :filters])
+
+    unless uploader == Pleroma.Uploaders.Local || filters != [] do
+      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      Pleroma.Config.put([Pleroma.Upload, :filters], [])
+
+      on_exit(fn ->
+        Pleroma.Config.put([Pleroma.Upload, :uploader], uploader)
+        Pleroma.Config.put([Pleroma.Upload, :filters], filters)
+      end)
+    end
+
+    :ok
+  end
+
   @doc """
   A helper that transform changeset errors to a map of messages.
 

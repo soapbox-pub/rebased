@@ -804,7 +804,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       }
 
       media =
-        TwitterAPI.upload(file, "json")
+        TwitterAPI.upload(file, user, "json")
         |> Poison.decode!()
 
       {:ok, image_post} =

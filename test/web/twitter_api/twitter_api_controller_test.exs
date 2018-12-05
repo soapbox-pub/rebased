@@ -1254,15 +1254,74 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
-  describe "POST /api/media/metadata/create" do
-    test "it updates `data[name]` of referenced Object with provided value", %{conn: conn} do
+  describe "POST /api/media/upload" do
+    setup context do
+      Pleroma.DataCase.ensure_local_uploader(context)
+    end
+
+    test "it performs the upload and sets `data[actor]` with AP id of uploader user", %{
+      conn: conn
+    } do
       user = insert(:user)
+
+      upload_filename = "test/fixtures/image_tmp.jpg"
+      File.cp!("test/fixtures/image.jpg", upload_filename)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname(upload_filename),
+        filename: "image.jpg"
+      }
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/octet-stream")
+        |> post("/api/media/upload", %{
+          "media" => file
+        })
+        |> json_response(:ok)
+
+      assert response["media_id"]
+      object = Repo.get(Object, response["media_id"])
+      assert object
+      assert object.data["actor"] == User.ap_id(user)
+    end
+  end
+
+  describe "POST /api/media/metadata/create" do
+    setup do
       object = insert(:note)
-      description = "Informative description of the image. Initial: #{object.data["name"]}}"
+      user = User.get_by_ap_id(object.data["actor"])
+      %{object: object, user: user}
+    end
+
+    test "it returns :forbidden status on attempt to modify someone else's upload", %{
+      conn: conn,
+      object: object
+    } do
+      initial_description = object.data["name"]
+      another_user = insert(:user)
+
+      conn
+      |> assign(:user, another_user)
+      |> post("/api/media/metadata/create", %{"media_id" => object.id})
+      |> json_response(:forbidden)
+
+      object = Repo.get(Object, object.id)
+      assert object.data["name"] == initial_description
+    end
+
+    test "it updates `data[name]` of referenced Object with provided value", %{
+      conn: conn,
+      object: object,
+      user: user
+    } do
+      description = "Informative description of the image. Initial value: #{object.data["name"]}}"
 
       conn
       |> assign(:user, user)
-      |> post("/api/media/metadata/create.json", %{
+      |> post("/api/media/metadata/create", %{
         "media_id" => object.id,
         "alt_text" => %{"text" => description}
       })

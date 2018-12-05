@@ -230,34 +230,47 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   Updates metadata of uploaded media object.
   Derived from [Twitter API endpoint](https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-metadata-create).
   """
-  def update_media(%{assigns: %{user: _}} = conn, %{"media_id" => id} = data) do
+  def update_media(%{assigns: %{user: user}} = conn, %{"media_id" => id} = data) do
+    object = Repo.get(Object, id)
     description = get_in(data, ["alt_text", "text"]) || data["name"] || data["description"]
 
-    with %Object{} = object <- Repo.get(Object, id),
-         is_binary(description) do
-      new_data = Map.put(object.data, "name", description)
+    {conn, status, response_body} =
+      cond do
+        !object ->
+          {halt(conn), :not_found, ""}
 
-      {:ok, _} =
-        object
-        |> Object.change(%{data: new_data})
-        |> Repo.update()
-    end
+        object.data["actor"] != User.ap_id(user) ->
+          {halt(conn), :forbidden, "You can only update your own uploads."}
+
+        !is_binary(description) ->
+          {conn, :not_modified, ""}
+
+        true ->
+          new_data = Map.put(object.data, "name", description)
+
+          {:ok, _} =
+            object
+            |> Object.change(%{data: new_data})
+            |> Repo.update()
+
+          {conn, :no_content, ""}
+      end
 
     conn
-    |> put_status(:no_content)
-    |> json("")
+    |> put_status(status)
+    |> json(response_body)
   end
 
-  def upload(conn, %{"media" => media}) do
-    response = TwitterAPI.upload(media)
+  def upload(%{assigns: %{user: user}} = conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media, user)
 
     conn
     |> put_resp_content_type("application/atom+xml")
     |> send_resp(200, response)
   end
 
-  def upload_json(conn, %{"media" => media}) do
-    response = TwitterAPI.upload(media, "json")
+  def upload_json(%{assigns: %{user: user}} = conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media, user, "json")
 
     conn
     |> json_reply(200, response)
