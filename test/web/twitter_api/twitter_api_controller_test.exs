@@ -1268,7 +1268,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       })
       |> json_response(:no_content)
 
-      object = Repo.get!(Object, object.id)
+      object = Repo.get(Object, object.id)
       assert object.data["name"] == description
     end
   end
