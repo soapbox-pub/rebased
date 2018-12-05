@@ -47,7 +47,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "repeated" => false,
       "statusnet_conversation_id" => convo_id,
       "statusnet_html" =>
-        "Hey <span><a href=\"#{other_user.ap_id}\">@<span>shp</span></a></span>!",
+        "Hey <span><a data-user=\"#{other_user.id}\" href=\"#{other_user.ap_id}\">@<span>shp</span></a></span>!",
       "tags" => [],
       "text" => "Hey @shp!",
       "uri" => activity.data["object"]["id"],
