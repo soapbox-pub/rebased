@@ -45,7 +45,7 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   Meta.strip_comments()
 
   # links
-  Meta.allow_tag_with_uri_attributes("a", ["href"], @valid_schemes)
+  Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
   Meta.allow_tag_with_these_attributes("a", ["name", "title"])
 
   # paragraphs and linebreaks
