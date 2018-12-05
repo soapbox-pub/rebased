@@ -183,6 +183,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "upload a file" do
     user = insert(:user)
+
     file = %Plug.Upload{
       content_type: "image/jpg",
       path: Path.absname("test/fixtures/image.jpg"),
