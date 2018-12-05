@@ -590,7 +590,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/notifications")
 
       expected_response =
-        "hi <span><a href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
+        "hi <span><a data-user=\"#{user.id}\" href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
 
       assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
       assert response == expected_response
@@ -611,7 +611,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/notifications/#{notification.id}")
 
       expected_response =
-        "hi <span><a href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
+        "hi <span><a data-user=\"#{user.id}\" href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
 
       assert %{"status" => %{"content" => response}} = json_response(conn, 200)
       assert response == expected_response
@@ -1271,7 +1271,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               "I drink <a href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span><a href=\"#{
+               "I drink <a data-tag=\"cofe\" href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span><a data-user=\"#{user2.id}\" href=\"#{
                  user2.ap_id
                }\">@<span>#{user2.nickname}</span></a></span>"
     end
