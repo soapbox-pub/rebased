@@ -861,6 +861,67 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       result = json_response(conn, 200)
       assert Enum.sort(expected) == Enum.sort(result)
     end
+
+    test "it returns a given user's followers with user_id", %{conn: conn} do
+      user = insert(:user)
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      conn =
+        conn
+        |> assign(:user, not_follower)
+        |> get("/api/statuses/followers", %{"user_id" => user.id})
+
+      assert MapSet.equal?(
+               MapSet.new(json_response(conn, 200)),
+               MapSet.new(
+                 UserView.render("index.json", %{
+                   users: [follower_one, follower_two],
+                   for: not_follower
+                 })
+               )
+             )
+    end
+
+    test "it returns empty for a hidden network", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_network: true}})
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      conn =
+        conn
+        |> assign(:user, not_follower)
+        |> get("/api/statuses/followers", %{"user_id" => user.id})
+
+      assert [] == json_response(conn, 200)
+    end
+
+    test "it returns the followers for a hidden network if requested by the user themselves", %{
+      conn: conn
+    } do
+      user = insert(:user, %{info: %{hide_network: true}})
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/followers", %{"user_id" => user.id})
+
+      refute [] == json_response(conn, 200)
+    end
   end
 
   describe "GET /api/statuses/friends" do
@@ -903,6 +964,42 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  UserView.render("index.json", %{users: [followed_one, followed_two], for: user})
                )
              )
+    end
+
+    test "it returns empty for a hidden network", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_network: true}})
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      conn =
+        conn
+        |> assign(:user, not_followed)
+        |> get("/api/statuses/friends", %{"user_id" => user.id})
+
+      assert [] == json_response(conn, 200)
+    end
+
+    test "it returns friends for a hidden network if the user themselves request it", %{
+      conn: conn
+    } do
+      user = insert(:user, %{info: %{hide_network: true}})
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/friends", %{"user_id" => user.id})
+
+      refute [] == json_response(conn, 200)
     end
 
     test "it returns a given user's friends with screen_name", %{conn: conn} do
@@ -973,6 +1070,30 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  user2.nickname
                }</span></a></span>"
 
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
+    test "it sets and un-sets hide_network", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> post("/api/account/update_profile.json", %{
+        "hide_network" => "true"
+      })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.hide_network == true
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+          "hide_network" => "false"
+        })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.hide_network == false
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
 

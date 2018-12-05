@@ -340,18 +340,32 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def followers(conn, params) do
-    with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
+  def followers(%{assigns: %{user: for_user}} = conn, params) do
+    with {:ok, user} <- TwitterAPI.get_user(for_user, params),
          {:ok, followers} <- User.get_followers(user) do
+      followers =
+        cond do
+          for_user && user.id == for_user.id -> followers
+          user.info.hide_network -> []
+          true -> followers
+        end
+
       render(conn, UserView, "index.json", %{users: followers, for: conn.assigns[:user]})
     else
       _e -> bad_request_reply(conn, "Can't get followers")
     end
   end
 
-  def friends(conn, params) do
+  def friends(%{assigns: %{user: for_user}} = conn, params) do
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
          {:ok, friends} <- User.get_friends(user) do
+      friends =
+        cond do
+          for_user && user.id == for_user.id -> friends
+          user.info.hide_network -> []
+          true -> friends
+        end
+
       render(conn, UserView, "index.json", %{users: friends, for: conn.assigns[:user]})
     else
       _e -> bad_request_reply(conn, "Can't get friends")
@@ -429,7 +443,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp build_info_cng(user, params) do
     info_params =
-      ["no_rich_text", "locked"]
+      ["no_rich_text", "locked", "hide_network"]
       |> Enum.reduce(%{}, fn key, res ->
         if value = params[key] do
           Map.put(res, key, value == "true")

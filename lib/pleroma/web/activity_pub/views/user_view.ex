@@ -82,7 +82,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     query = from(user in query, select: [:ap_id])
     following = Repo.all(query)
 
-    collection(following, "#{user.ap_id}/following", page)
+    collection(following, "#{user.ap_id}/following", page, !user.info.hide_network)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -95,7 +95,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "id" => "#{user.ap_id}/following",
       "type" => "OrderedCollection",
       "totalItems" => length(following),
-      "first" => collection(following, "#{user.ap_id}/following", 1)
+      "first" => collection(following, "#{user.ap_id}/following", 1, !user.info.hide_network)
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
@@ -105,7 +105,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     query = from(user in query, select: [:ap_id])
     followers = Repo.all(query)
 
-    collection(followers, "#{user.ap_id}/followers", page)
+    collection(followers, "#{user.ap_id}/followers", page, !user.info.hide_network)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "id" => "#{user.ap_id}/followers",
       "type" => "OrderedCollection",
       "totalItems" => length(followers),
-      "first" => collection(followers, "#{user.ap_id}/followers", 1)
+      "first" => collection(followers, "#{user.ap_id}/followers", 1, !user.info.hide_network)
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
@@ -172,7 +172,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     end
   end
 
-  def collection(collection, iri, page, total \\ nil) do
+  def collection(collection, iri, page, show_items \\ true, total \\ nil) do
     offset = (page - 1) * 10
     items = Enum.slice(collection, offset, 10)
     items = Enum.map(items, fn user -> user.ap_id end)
@@ -183,7 +183,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "type" => "OrderedCollectionPage",
       "partOf" => iri,
       "totalItems" => total,
-      "orderedItems" => items
+      "orderedItems" => if(show_items, do: items, else: [])
     }
 
     if offset < total do
