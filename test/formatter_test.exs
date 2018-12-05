@@ -5,6 +5,11 @@ defmodule Pleroma.FormatterTest do
 
   import Pleroma.Factory
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   describe ".add_hashtag_links" do
     test "turns hashtags into links" do
       text = "I love #cofe and #2hu"

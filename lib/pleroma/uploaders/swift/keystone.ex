@@ -25,10 +25,10 @@ defmodule Pleroma.Uploaders.Swift.Keystone do
            ["Content-Type": "application/json"],
            hackney: [:insecure]
          ) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
         body["access"]["token"]["id"]
 
-      {:ok, %HTTPoison.Response{status_code: _}} ->
+      {:ok, %Tesla.Env{status: _}} ->
         ""
     end
   end

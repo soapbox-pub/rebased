@@ -7,6 +7,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Builders.ActivityBuilder
 
   import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   describe "building a user from his ap id" do
     test "it returns a user" do

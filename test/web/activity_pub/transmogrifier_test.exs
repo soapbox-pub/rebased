@@ -12,6 +12,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   import Pleroma.Factory
   alias Pleroma.Web.CommonAPI
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   describe "handle_incoming" do
     test "it ignores an incoming notice if we already have it" do
       activity = insert(:note_activity)

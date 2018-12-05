@@ -9,6 +9,11 @@ defmodule Pleroma.UserTest do
   import Pleroma.Factory
   import Ecto.Query
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "ap_id returns the activity pub id for the user" do
     user = UserBuilder.build()
 
@@ -143,6 +148,18 @@ defmodule Pleroma.UserTest do
              ]
 
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
+    end
+
+    test "it ensures info is not nil" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+
+      assert changeset.valid?
+
+      {:ok, user} =
+        changeset
+        |> Repo.insert()
+
+      refute is_nil(user.info)
     end
   end
 

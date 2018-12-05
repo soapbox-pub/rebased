@@ -17,7 +17,15 @@ defmodule Pleroma.Web.Federator.RetryQueue do
   end
 
   def start_link() do
-    GenServer.start_link(__MODULE__, %{delivered: 0, dropped: 0}, name: __MODULE__)
+    enabled = Pleroma.Config.get([:retry_queue, :enabled], false)
+
+    if enabled do
+      Logger.info("Starting retry queue")
+      GenServer.start_link(__MODULE__, %{delivered: 0, dropped: 0}, name: __MODULE__)
+    else
+      Logger.info("Retry queue disabled")
+      :ignore
+    end
   end
 
   def enqueue(data, transport, retries \\ 0) do

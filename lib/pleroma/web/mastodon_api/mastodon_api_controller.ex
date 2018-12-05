@@ -55,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user_params =
       %{}
       |> add_if_present(params, "display_name", :name)
-      |> add_if_present(params, "note", :bio)
+      |> add_if_present(params, "note", :bio, fn value -> {:ok, User.parse_bio(value)} end)
       |> add_if_present(params, "avatar", :avatar, fn value ->
         with %Plug.Upload{} <- value,
              {:ok, object} <- ActivityPub.upload(value, type: :avatar) do
@@ -1181,7 +1181,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       user = user.nickname
       url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
 
-      with {:ok, %{status_code: 200, body: body}} <-
+      with {:ok, %{status: 200, body: body}} <-
              @httpoison.get(url, [], timeout: timeout, recv_timeout: timeout),
            {:ok, data} <- Jason.decode(body) do
         data2 =

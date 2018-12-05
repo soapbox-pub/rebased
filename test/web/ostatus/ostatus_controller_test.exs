@@ -5,6 +5,11 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus.ActivityRepresenter
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "decodes a salmon", %{conn: conn} do
     user = insert(:user)
     salmon = File.read!("test/fixtures/salmon.xml")

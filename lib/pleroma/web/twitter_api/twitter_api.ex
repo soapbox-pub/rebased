@@ -132,7 +132,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     params = %{
       nickname: params["nickname"],
       name: params["fullname"],
-      bio: params["bio"],
+      bio: User.parse_bio(params["bio"]),
       email: params["email"],
       password: params["password"],
       password_confirmation: params["confirm"]

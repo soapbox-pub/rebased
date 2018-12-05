@@ -220,7 +220,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def find_lrdd_template(domain) do
-    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <-
+    with {:ok, %{status: status, body: body}} when status in 200..299 <-
            @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
       get_template_from_xml(body)
     else
@@ -259,7 +259,7 @@ defmodule Pleroma.Web.WebFinger do
              [Accept: "application/xrd+xml,application/jrd+json"],
              follow_redirect: true
            ),
-         {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response do
+         {:ok, %{status: status, body: body}} when status in 200..299 <- response do
       doc = XML.parse_document(body)
 
       if doc != :error do

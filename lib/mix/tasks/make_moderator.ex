@@ -8,7 +8,7 @@ defmodule Mix.Tasks.SetModerator do
   """
 
   use Mix.Task
-  import Mix.Ecto
+  import Ecto.Changeset
   alias Pleroma.{Repo, User}
 
   def run([nickname | rest]) do
@@ -21,14 +21,15 @@ defmodule Mix.Tasks.SetModerator do
       end
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
-      info =
-        user.info
-        |> Map.put("is_moderator", !!moderator)
+      info_cng = User.Info.admin_api_update(user.info, %{is_moderator: !!moderator})
 
-      cng = User.info_changeset(user, %{info: info})
-      {:ok, user} = User.update_and_set_cache(cng)
+      user_cng =
+        Ecto.Changeset.change(user)
+        |> put_embed(:info, info_cng)
 
-      IO.puts("Moderator status of #{nickname}: #{user.info["is_moderator"]}")
+      {:ok, user} = User.update_and_set_cache(user_cng)
+
+      IO.puts("Moderator status of #{nickname}: #{user.info.is_moderator}")
     else
       _ ->
         IO.puts("No local user #{nickname}")
