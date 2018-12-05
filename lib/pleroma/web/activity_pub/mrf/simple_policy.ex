@@ -23,7 +23,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_media_removal(
          %{host: actor_host} = _actor_info,
-         %{"type" => "Create", "object" => %{"attachement" => child_attachment}} = object
+         %{"type" => "Create", "object" => %{"attachment" => child_attachment}} = object
        )
        when length(child_attachment) > 0 do
     object =

@@ -5,12 +5,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   @default_proxy_opts [max_body_length: 25 * 1_048_576]
 
   def remote(conn, params = %{"sig" => sig64, "url" => url64}) do
-    with config <- Pleroma.Config.get([:media_proxy]),
+    with config <- Pleroma.Config.get([:media_proxy], []),
          true <- Keyword.get(config, :enabled, false),
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
          filename <- Path.basename(URI.parse(url).path),
          :ok <- filename_matches(Map.has_key?(params, "filename"), conn.request_path, url) do
-      ReverseProxy.call(conn, url, Keyword.get(config, :proxy_opts, @default_proxy_length))
+      ReverseProxy.call(conn, url, Keyword.get(config, :proxy_opts, @default_proxy_opts))
     else
       false ->
         send_resp(conn, 404, Plug.Conn.Status.reason_phrase(404))

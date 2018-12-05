@@ -20,7 +20,7 @@ defmodule Pleroma.Uploaders.MDII do
     extension = String.split(upload.name, ".") |> List.last()
     query = "#{cgi}?#{extension}"
 
-    with {:ok, %{status_code: 200, body: body}} <- @httpoison.post(query, file_data) do
+    with {:ok, %{status: 200, body: body}} <- @httpoison.post(query, file_data) do
       remote_file_name = String.split(body) |> List.first()
       public_url = "#{files}/#{remote_file_name}.#{extension}"
       {:ok, {:url, public_url}}

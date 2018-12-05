@@ -146,7 +146,7 @@ defmodule Pleroma.Web.Websub do
   end
 
   def subscribe(subscriber, subscribed, requester \\ &request_subscription/1) do
-    topic = subscribed.info["topic"]
+    topic = subscribed.info.topic
     # FIXME: Race condition, use transactions
     {:ok, subscription} =
       with subscription when not is_nil(subscription) <-
@@ -158,7 +158,7 @@ defmodule Pleroma.Web.Websub do
         _e ->
           subscription = %WebsubClientSubscription{
             topic: topic,
-            hub: subscribed.info["hub"],
+            hub: subscribed.info.hub,
             subscribers: [subscriber.ap_id],
             state: "requested",
             secret: :crypto.strong_rand_bytes(8) |> Base.url_encode64(),
@@ -173,7 +173,7 @@ defmodule Pleroma.Web.Websub do
 
   def gather_feed_data(topic, getter \\ &@httpoison.get/1) do
     with {:ok, response} <- getter.(topic),
-         status_code when status_code in 200..299 <- response.status_code,
+         status when status in 200..299 <- response.status,
          body <- response.body,
          doc <- XML.parse_document(body),
          uri when not is_nil(uri) <- XML.string_from_xpath("/feed/author[1]/uri", doc),
@@ -221,7 +221,7 @@ defmodule Pleroma.Web.Websub do
 
     task = Task.async(websub_checker)
 
-    with {:ok, %{status_code: 202}} <-
+    with {:ok, %{status: 202}} <-
            poster.(websub.hub, {:form, data}, "Content-type": "application/x-www-form-urlencoded"),
          {:ok, websub} <- Task.yield(task, timeout) do
       {:ok, websub}
@@ -257,7 +257,7 @@ defmodule Pleroma.Web.Websub do
     signature = sign(secret || "", xml)
     Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
 
-    with {:ok, %{status_code: code}} <-
+    with {:ok, %{status: code}} <-
            @httpoison.post(
              callback,
              xml,
@@ -265,9 +265,11 @@ defmodule Pleroma.Web.Websub do
                {"Content-Type", "application/atom+xml"},
                {"X-Hub-Signature", "sha1=#{signature}"}
              ],
-             timeout: 10000,
-             recv_timeout: 20000,
-             hackney: [pool: :default]
+             adapter: [
+               timeout: 10000,
+               recv_timeout: 20000,
+               pool: :default
+             ]
            ) do
       Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)
       {:ok, code}

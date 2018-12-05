@@ -5,6 +5,11 @@ defmodule Pleroma.FormatterTest do
 
   import Pleroma.Factory
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   describe ".add_hashtag_links" do
     test "turns hashtags into links" do
       text = "I love #cofe and #2hu"
@@ -110,7 +115,7 @@ defmodule Pleroma.FormatterTest do
       archaeme =
         insert(:user, %{
           nickname: "archaeme",
-          info: %{"source_data" => %{"url" => "https://archeme/@archaeme"}}
+          info: %Pleroma.User.Info{source_data: %{"url" => "https://archeme/@archaeme"}}
         })
 
       archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})

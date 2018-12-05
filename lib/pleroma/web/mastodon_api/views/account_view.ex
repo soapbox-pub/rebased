@@ -14,10 +14,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
     user_info = User.user_info(user)
-    bot = (user.info["source_data"]["type"] || "Person") in ["Application", "Service"]
+    bot = (user.info.source_data["type"] || "Person") in ["Application", "Service"]
 
     emojis =
-      (user.info["source_data"]["tag"] || [])
+      (user.info.source_data["tag"] || [])
       |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
       |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
         %{
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       end)
 
     fields =
-      (user.info["source_data"]["attachment"] || [])
+      (user.info.source_data["attachment"] || [])
       |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
       |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 

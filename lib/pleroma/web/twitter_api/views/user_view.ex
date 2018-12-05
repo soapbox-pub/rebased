@@ -31,7 +31,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     user_info = User.get_cached_user_info(user)
 
     emoji =
-      (user.info["source_data"]["tag"] || [])
+      (user.info.source_data["tag"] || [])
       |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
       |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
         {String.trim(name, ":"), url}
@@ -40,7 +40,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
     # For example: [{"name": "Pronoun", "value": "she/her"}, …]
     fields =
-      (user.info["source_data"]["attachment"] || [])
+      (user.info.source_data["attachment"] || [])
       |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
       |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 
@@ -66,17 +66,17 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
       "rights" => %{
-        "delete_others_notice" => !!user.info["is_moderator"]
+        "delete_others_notice" => !!user.info.is_moderator
       },
       "screen_name" => user.nickname,
       "statuses_count" => user_info[:note_count],
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => User.banner_url(user) |> MediaProxy.url(),
-      "background_image" => image_url(user.info["background"]) |> MediaProxy.url(),
+      "background_image" => image_url(user.info.background) |> MediaProxy.url(),
       "is_local" => user.local,
-      "locked" => !!user.info["locked"],
-      "default_scope" => user.info["default_scope"] || "public",
-      "no_rich_text" => user.info["no_rich_text"] || false,
+      "locked" => user.info.locked,
+      "default_scope" => user.info.default_scope,
+      "no_rich_text" => user.info.no_rich_text,
       "fields" => fields
     }
 

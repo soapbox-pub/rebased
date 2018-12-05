@@ -49,11 +49,10 @@ config :pleroma, Pleroma.Repo,
   hostname: "localhost",
   pool_size: 10
 
-try do
+if File.exists?("./config/dev.secret.exs") do
   import_config "dev.secret.exs"
-rescue
-  _ ->
-    IO.puts(
-      "!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs"
-    )
+else
+  IO.puts(
+    "!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs"
+  )
 end

@@ -17,7 +17,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
 
     CommonAPI.update(user)
     user = User.get_cached_by_ap_id(user.ap_id)
-    [karjalanpiirakka] = user.info["source_data"]["tag"]
+    [karjalanpiirakka] = user.info.source_data["tag"]
 
     assert karjalanpiirakka["name"] == ":karjalanpiirakka:"
   end

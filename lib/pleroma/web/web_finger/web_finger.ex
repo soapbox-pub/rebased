@@ -45,7 +45,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def represent_user(user, "JSON") do
     {:ok, user} = ensure_keys_present(user)
-    {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
+    {:ok, _private, public} = Salmon.keys_from_pem(user.info.keys)
     magic_key = Salmon.encode_key(public)
 
     %{
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def represent_user(user, "XML") do
     {:ok, user} = ensure_keys_present(user)
-    {:ok, _private, public} = Salmon.keys_from_pem(user.info["keys"])
+    {:ok, _private, public} = Salmon.keys_from_pem(user.info.keys)
     magic_key = Salmon.encode_key(public)
 
     {
@@ -113,16 +113,22 @@ defmodule Pleroma.Web.WebFinger do
 
   # This seems a better fit in Salmon
   def ensure_keys_present(user) do
-    info = user.info || %{}
+    info = user.info
 
-    if info["keys"] do
+    if info.keys do
       {:ok, user}
     else
       {:ok, pem} = Salmon.generate_rsa_pem()
-      info = Map.put(info, "keys", pem)
 
-      Ecto.Changeset.change(user, info: info)
-      |> User.update_and_set_cache()
+      info_cng =
+        info
+        |> Pleroma.User.Info.set_keys(pem)
+
+      cng =
+        Ecto.Changeset.change(user)
+        |> Ecto.Changeset.put_embed(:info, info_cng)
+
+      User.update_and_set_cache(cng)
     end
   end
 
@@ -214,7 +220,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def find_lrdd_template(domain) do
-    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <-
+    with {:ok, %{status: status, body: body}} when status in 200..299 <-
            @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
       get_template_from_xml(body)
     else
@@ -253,7 +259,7 @@ defmodule Pleroma.Web.WebFinger do
              [Accept: "application/xrd+xml,application/jrd+json"],
              follow_redirect: true
            ),
-         {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response do
+         {:ok, %{status: status, body: body}} when status in 200..299 <- response do
       doc = XML.parse_document(body)
 
       if doc != :error do

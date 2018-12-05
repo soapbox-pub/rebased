@@ -132,7 +132,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     params = %{
       nickname: params["nickname"],
       name: params["fullname"],
-      bio: params["bio"],
+      bio: User.parse_bio(params["bio"]),
       email: params["email"],
       password: params["password"],
       password_confirmation: params["confirm"]
@@ -148,7 +148,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     cond do
       registrations_open || (!is_nil(token) && !token.used) ->
-        changeset = User.register_changeset(%User{}, params)
+        changeset = User.register_changeset(%User{info: %{}}, params)
 
         with {:ok, user} <- Repo.insert(changeset) do
           !registrations_open && UserInviteToken.mark_as_used(token.token)
@@ -279,14 +279,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def get_external_profile(for_user, uri) do
     with %User{} = user <- User.get_or_fetch(uri) do
-      spawn(fn ->
-        with url <- user.info["topic"],
-             {:ok, %{body: body}} <-
-               @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000) do
-          OStatus.handle_incoming(body)
-        end
-      end)
-
       {:ok, UserView.render("show.json", %{user: user, for: for_user})}
     else
       _e ->

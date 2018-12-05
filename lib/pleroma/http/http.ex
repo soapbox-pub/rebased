@@ -1,13 +1,41 @@
 defmodule Pleroma.HTTP do
-  require HTTPoison
+  @moduledoc """
 
+  """
+
+  alias Pleroma.HTTP.Connection
+  alias Pleroma.HTTP.RequestBuilder, as: Builder
+
+  @doc """
+  Builds and perform http request.
+
+  # Arguments:
+  `method` - :get, :post, :put, :delete
+  `url`
+  `body`
+  `headers` - a keyworld list of headers, e.g. `[{"content-type", "text/plain"}]`
+  `options` - custom, per-request middleware or adapter options
+
+  # Returns:
+  `{:ok, %Tesla.Env{}}` or `{:error, error}`
+
+  """
   def request(method, url, body \\ "", headers \\ [], options \\ []) do
     options =
       process_request_options(options)
       |> process_sni_options(url)
 
-    HTTPoison.request(method, url, body, headers, options)
+    %{}
+    |> Builder.method(method)
+    |> Builder.headers(headers)
+    |> Builder.opts(options)
+    |> Builder.url(url)
+    |> Builder.add_param(:body, :body, body)
+    |> Enum.into([])
+    |> (&Tesla.request(Connection.new(), &1)).()
   end
+
+  defp process_sni_options(options, nil), do: options
 
   defp process_sni_options(options, url) do
     uri = URI.parse(url)
@@ -22,7 +50,7 @@ defmodule Pleroma.HTTP do
   def process_request_options(options) do
     config = Application.get_env(:pleroma, :http, [])
     proxy = Keyword.get(config, :proxy_url, nil)
-    options = options ++ [hackney: [pool: :default]]
+    options = options ++ [adapter: [pool: :default]]
 
     case proxy do
       nil -> options
@@ -30,8 +58,19 @@ defmodule Pleroma.HTTP do
     end
   end
 
-  def get(url, headers \\ [], options \\ []), do: request(:get, url, "", headers, options)
+  @doc """
+  Performs GET request.
 
+  See `Pleroma.HTTP.request/5`
+  """
+  def get(url, headers \\ [], options \\ []),
+    do: request(:get, url, "", headers, options)
+
+  @doc """
+  Performs POST request.
+
+  See `Pleroma.HTTP.request/5`
+  """
   def post(url, body, headers \\ [], options \\ []),
     do: request(:post, url, body, headers, options)
 end

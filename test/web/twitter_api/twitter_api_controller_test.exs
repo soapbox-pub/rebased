@@ -12,6 +12,42 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   import Pleroma.Factory
 
+  describe "POST /api/account/update_profile_banner" do
+    test "it updates the banner", %{conn: conn} do
+      user = insert(:user)
+
+      new_banner =
+        "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post(authenticated_twitter_api__path(conn, :update_banner), %{"banner" => new_banner})
+        |> json_response(200)
+
+      user = Repo.get(User, user.id)
+      assert user.info.banner["type"] == "Image"
+    end
+  end
+
+  describe "POST /api/qvitter/update_background_image" do
+    test "it updates the background", %{conn: conn} do
+      user = insert(:user)
+
+      new_bg =
+        "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post(authenticated_twitter_api__path(conn, :update_background), %{"img" => new_bg})
+        |> json_response(200)
+
+      user = Repo.get(User, user.id)
+      assert user.info.background["type"] == "Image"
+    end
+  end
+
   describe "POST /api/account/verify_credentials" do
     setup [:valid_user]
 
@@ -28,26 +64,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert response = json_response(conn, 200)
       assert response == UserView.render("show.json", %{user: user, token: response["token"]})
-    end
-  end
-
-  describe "POST /api/account/most_recent_notification" do
-    setup [:valid_user]
-
-    test "without valid credentials", %{conn: conn} do
-      conn = post(conn, "/api/account/most_recent_notification.json")
-      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
-    end
-
-    test "with credentials", %{conn: conn, user: user} do
-      conn =
-        conn
-        |> with_credentials(user.nickname, "test")
-        |> post("/api/account/most_recent_notification.json", %{id: "200"})
-
-      assert json_response(conn, 200)
-      user = User.get_by_nickname(user.nickname)
-      assert user.info["most_recent_notification"] == 200
     end
   end
 
@@ -87,7 +103,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "GET /statuses/public_timeline.json" do
     test "returns statuses", %{conn: conn} do
-      {:ok, user} = UserBuilder.insert()
+      user = insert(:user)
       activities = ActivityBuilder.insert_list(30, %{}, %{user: user})
       ActivityBuilder.insert_list(10, %{}, %{user: user})
       since_id = List.last(activities).id
@@ -591,7 +607,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post("/api/blocks/destroy.json", %{user_id: blocked.id})
 
       current_user = Repo.get(User, current_user.id)
-      assert current_user.info["blocks"] == []
+      assert current_user.info.blocks == []
 
       assert json_response(conn, 200) ==
                UserView.render("show.json", %{user: blocked, for: current_user})
@@ -939,18 +955,21 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "POST /api/account/update_profile.json" do
     test "it updates a user's profile", %{conn: conn} do
       user = insert(:user)
+      user2 = insert(:user)
 
       conn =
         conn
         |> assign(:user, user)
         |> post("/api/account/update_profile.json", %{
           "name" => "new name",
-          "description" => "new description"
+          "description" => "hi @#{user2.nickname}"
         })
 
       user = Repo.get!(User, user.id)
       assert user.name == "new name"
-      assert user.bio == "new description"
+
+      assert user.bio ==
+               "hi <span><a class='mention' href='#{user2.ap_id}'>@<span>#{user2.nickname}</span></a></span>"
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
@@ -966,7 +985,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         })
 
       user = Repo.get!(User, user.id)
-      assert user.info["locked"] == true
+      assert user.info.locked == true
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
@@ -982,7 +1001,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         })
 
       user = Repo.get!(User, user.id)
-      assert user.info["locked"] == false
+      assert user.info.locked == false
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
@@ -1153,10 +1172,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "GET /api/pleroma/friend_requests" do
     test "it lists friend requests" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
       other_user = Repo.get(User, other_user.id)
@@ -1175,10 +1194,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "POST /api/pleroma/friendships/approve" do
     test "it approves a friend request" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
       other_user = Repo.get(User, other_user.id)
@@ -1198,10 +1217,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "POST /api/pleroma/friendships/deny" do
     test "it denies a friend request" do
-      user = insert(:user, %{info: %{"locked" => true}})
+      user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
       other_user = Repo.get(User, other_user.id)
