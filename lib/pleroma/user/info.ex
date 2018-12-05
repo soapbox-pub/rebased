@@ -136,7 +136,7 @@ defmodule Pleroma.User.Info do
       :no_rich_text,
       :default_scope,
       :banner,
-      :hide_network
+      :hide_network,
       :background
     ])
   end
