@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
+  import Ecto.Changeset
   alias Pleroma.{Repo, User}
 
   @shortdoc "Manages Pleroma users"
@@ -235,10 +236,14 @@ defmodule Mix.Tasks.Pleroma.User do
       user.info
       |> Map.put("is_moderator", value)
 
-    cng = User.info_changeset(user, %{info: info})
-    {:ok, user} = User.update_and_set_cache(cng)
+    info_cng = User.Info.admin_api_update(user.info, %{is_moderator: value})
+    user_cng = 
+               Ecto.Changeset.change(user)
+               |> put_embed(:info, info_cng)
 
-    Mix.shell().info("Moderator status of #{user.nickname}: #{user.info["is_moderator"]}")
+    {:ok, user} = User.update_and_set_cache(user_cng)
+
+    Mix.shell().info("Moderator status of #{user.nickname}: #{user.info.is_moderator}")
   end
 
   defp set_admin(user, value) do
@@ -246,10 +251,14 @@ defmodule Mix.Tasks.Pleroma.User do
       user.info
       |> Map.put("is_admin", value)
 
-    cng = User.info_changeset(user, %{info: info})
-    {:ok, user} = User.update_and_set_cache(cng)
+    info_cng = User.Info.admin_api_update(user.info, %{is_admin: value})
+    user_cng = 
+               Ecto.Changeset.change(user)
+               |> put_embed(:info, info_cng)
 
-    Mix.shell().info("Admin status of #{user.nickname}: #{user.info["is_admin"]}")
+    {:ok, user} = User.update_and_set_cache(user_cng)
+
+    Mix.shell().info("Admin status of #{user.nickname}: #{user.info.is_moderator}")
   end
 
   defp set_locked(user, value) do
@@ -257,10 +266,14 @@ defmodule Mix.Tasks.Pleroma.User do
       user.info
       |> Map.put("locked", value)
 
-    cng = User.info_changeset(user, %{info: info})
-    user = Repo.update!(cng)
+    info_cng = User.Info.user_upgrade(user.info, %{locked: value})
+    user_cng = 
+               Ecto.Changeset.change(user)
+               |> put_embed(:info, info_cng)
 
-    IO.puts("Locked status of #{user.nickname}: #{user.info["locked"]}")
+    {:ok, user} = User.update_and_set_cache(user_cng)
+
+    Mix.shell().info("Locked status of #{user.nickname}: #{user.info.locked}")
   end
 
   def run(["invite"]) do
