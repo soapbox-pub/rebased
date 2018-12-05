@@ -18,8 +18,11 @@ defmodule Mix.Tasks.SetAdmin do
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
       info_cng = User.Info.admin_api_update(user.info, %{is_admin: !!admin})
-      user_cng = Ecto.Changeset.change(user)
-      |> put_embed(:info, info_cng) 
+
+      user_cng =
+        Ecto.Changeset.change(user)
+        |> put_embed(:info, info_cng)
+
       {:ok, user} = User.update_and_set_cache(user_cng)
 
       IO.puts("Admin status of #{nickname}: #{user.info.is_admin}")

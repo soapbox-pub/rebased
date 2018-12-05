@@ -22,8 +22,11 @@ defmodule Mix.Tasks.SetModerator do
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
       info_cng = User.Info.admin_api_update(user.info, %{is_moderator: !!moderator})
-      user_cng = Ecto.Changeset.change(user)
-      |> put_embed(:info, info_cng) 
+
+      user_cng =
+        Ecto.Changeset.change(user)
+        |> put_embed(:info, info_cng)
+
       {:ok, user} = User.update_and_set_cache(user_cng)
 
       IO.puts("Moderator status of #{nickname}: #{user.info.is_moderator}")
