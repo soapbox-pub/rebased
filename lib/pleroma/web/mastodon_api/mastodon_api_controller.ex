@@ -1169,7 +1169,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
 
       with {:ok, %{status: 200, body: body}} <-
-             @httpoison.get(url, [], timeout: timeout, recv_timeout: timeout),
+             @httpoison.get(
+               url,
+               [],
+               follow_redirect: true,
+               adapter: [
+                 timeout: timeout,
+                 recv_timeout: timeout
+               ]
+             ),
            {:ok, data} <- Jason.decode(body) do
         data2 =
           Enum.slice(data, 0, limit)
