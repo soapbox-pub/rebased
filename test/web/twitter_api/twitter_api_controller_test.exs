@@ -1024,6 +1024,30 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
 
+    test "it sets and un-sets hide_network", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> post("/api/account/update_profile.json", %{
+        "hide_network" => "true"
+      })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.hide_network == true
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+          "hide_network" => "false"
+        })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.hide_network == false
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
     test "it locks an account", %{conn: conn} do
       user = insert(:user)
 

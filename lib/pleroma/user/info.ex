@@ -135,7 +135,8 @@ defmodule Pleroma.User.Info do
       :locked,
       :no_rich_text,
       :default_scope,
-      :banner
+      :banner,
+      :hide_network
     ])
   end
 
