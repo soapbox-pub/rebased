@@ -198,7 +198,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   def run(["set", nickname | rest]) do
-    Application.ensure_all_started(:pleroma)
+    Mix.Task.run("app.start")
 
     {options, [], []} =
       OptionParser.parse(
