@@ -897,6 +897,25 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert [] == json_response(conn, 200)
     end
+
+    test "it returns the followers for a hidden network if requested by the user themselves", %{
+      conn: conn
+    } do
+      user = insert(:user, %{info: %{hide_network: true}})
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/followers", %{"user_id" => user.id})
+
+      refute [] == json_response(conn, 200)
+    end
   end
 
   describe "GET /api/statuses/friends" do
@@ -956,6 +975,25 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> get("/api/statuses/friends", %{"user_id" => user.id})
 
       assert [] == json_response(conn, 200)
+    end
+
+    test "it returns friends for a hidden network if the user themselves request it", %{
+      conn: conn
+    } do
+      user = insert(:user, %{info: %{hide_network: true}})
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/friends", %{"user_id" => user.id})
+
+      refute [] == json_response(conn, 200)
     end
 
     test "it returns a given user's friends with screen_name", %{conn: conn} do
