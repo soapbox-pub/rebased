@@ -226,13 +226,21 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  @doc "https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-metadata-create"
+  @doc """
+  Updates metadata of uploaded media object.
+  Derived from [Twitter API endpoint](https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-metadata-create).
+  """
   def update_media(%{assigns: %{user: _}} = conn, %{"media_id" => id} = data) do
     description = get_in(data, ["alt_text", "text"]) || data["name"] || data["description"]
 
-    with %Object{} = object <- Repo.get(Object, id), is_binary(description) do
+    with %Object{} = object <- Repo.get(Object, id),
+         is_binary(description) do
       new_data = Map.put(object.data, "name", description)
-      {:ok, _} = object |> Object.change(%{data: new_data}) |> Repo.update()
+
+      {:ok, _} =
+        object
+        |> Object.change(%{data: new_data})
+        |> Repo.update()
     end
 
     conn
