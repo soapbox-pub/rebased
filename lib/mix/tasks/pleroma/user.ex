@@ -237,9 +237,10 @@ defmodule Mix.Tasks.Pleroma.User do
       |> Map.put("is_moderator", value)
 
     info_cng = User.Info.admin_api_update(user.info, %{is_moderator: value})
-    user_cng = 
-               Ecto.Changeset.change(user)
-               |> put_embed(:info, info_cng)
+
+    user_cng =
+      Ecto.Changeset.change(user)
+      |> put_embed(:info, info_cng)
 
     {:ok, user} = User.update_and_set_cache(user_cng)
 
@@ -252,9 +253,10 @@ defmodule Mix.Tasks.Pleroma.User do
       |> Map.put("is_admin", value)
 
     info_cng = User.Info.admin_api_update(user.info, %{is_admin: value})
-    user_cng = 
-               Ecto.Changeset.change(user)
-               |> put_embed(:info, info_cng)
+
+    user_cng =
+      Ecto.Changeset.change(user)
+      |> put_embed(:info, info_cng)
 
     {:ok, user} = User.update_and_set_cache(user_cng)
 
@@ -267,9 +269,10 @@ defmodule Mix.Tasks.Pleroma.User do
       |> Map.put("locked", value)
 
     info_cng = User.Info.user_upgrade(user.info, %{locked: value})
-    user_cng = 
-               Ecto.Changeset.change(user)
-               |> put_embed(:info, info_cng)
+
+    user_cng =
+      Ecto.Changeset.change(user)
+      |> put_embed(:info, info_cng)
 
     {:ok, user} = User.update_and_set_cache(user_cng)
 
