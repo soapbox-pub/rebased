@@ -1271,9 +1271,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               "I drink <a data-tag=\"cofe\" href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span><a data-user=\"#{user2.id}\" href=\"#{
-                 user2.ap_id
-               }\">@<span>#{user2.nickname}</span></a></span>"
+               "I drink <a data-tag=\"cofe\" href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span><a data-user=\"#{
+                 user2.id
+               }\" href=\"#{user2.ap_id}\">@<span>#{user2.nickname}</span></a></span>"
     end
 
     test "updates the user's locking status", %{conn: conn} do

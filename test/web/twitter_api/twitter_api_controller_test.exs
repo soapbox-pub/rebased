@@ -969,7 +969,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert user.name == "new name"
 
       assert user.bio ==
-               "hi <span><a data-user='#{user2.id}' class='mention' href='#{user2.ap_id}'>@<span>#{user2.nickname}</span></a></span>"
+               "hi <span><a data-user='#{user2.id}' class='mention' href='#{user2.ap_id}'>@<span>#{
+                 user2.nickname
+               }</span></a></span>"
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
