@@ -149,6 +149,18 @@ defmodule Pleroma.UserTest do
 
       assert changeset.changes.follower_address == "#{changeset.changes.ap_id}/followers"
     end
+
+    test "it ensures info is not nil" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+
+      assert changeset.valid?
+
+      {:ok, user} =
+        changeset
+        |> Repo.insert()
+
+      refute is_nil(user.info)
+    end
   end
 
   describe "fetching a user from nickname or trying to build one" do
