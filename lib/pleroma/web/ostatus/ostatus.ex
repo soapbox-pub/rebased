@@ -350,11 +350,7 @@ defmodule Pleroma.Web.OStatus do
            @httpoison.get(
              url,
              [Accept: "application/atom+xml"],
-             follow_redirect: true,
-             adapter: [
-               timeout: 10000,
-               recv_timeout: 20000
-             ]
+             follow_redirect: true
            ) do
       Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body)
@@ -369,8 +365,7 @@ defmodule Pleroma.Web.OStatus do
     Logger.debug("Trying to fetch #{url}")
 
     with true <- String.starts_with?(url, "http"),
-         {:ok, %{body: body}} <-
-           @httpoison.get(url, [], follow_redirect: true, timeout: 10000, recv_timeout: 20000),
+         {:ok, %{body: body}} <- @httpoison.get(url, [], follow_redirect: true),
          {:ok, atom_url} <- get_atom_url(body) do
       fetch_activity_from_atom_url(atom_url)
     else

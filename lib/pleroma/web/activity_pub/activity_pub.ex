@@ -766,9 +766,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            @httpoison.get(
              id,
              [Accept: "application/activity+json"],
-             follow_redirect: true,
-             timeout: 10000,
-             recv_timeout: 20000
+             follow_redirect: true
            ),
          {:ok, data} <- Jason.decode(body),
          :ok <- Transmogrifier.contain_origin_from_id(id, data) do
