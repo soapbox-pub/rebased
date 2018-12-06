@@ -232,10 +232,6 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_moderator(user, value) do
-    info =
-      user.info
-      |> Map.put("is_moderator", value)
-
     info_cng = User.Info.admin_api_update(user.info, %{is_moderator: value})
 
     user_cng =
@@ -248,10 +244,6 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_admin(user, value) do
-    info =
-      user.info
-      |> Map.put("is_admin", value)
-
     info_cng = User.Info.admin_api_update(user.info, %{is_admin: value})
 
     user_cng =
@@ -264,10 +256,6 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   defp set_locked(user, value) do
-    info =
-      user.info
-      |> Map.put("locked", value)
-
     info_cng = User.Info.user_upgrade(user.info, %{locked: value})
 
     user_cng =
