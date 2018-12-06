@@ -27,6 +27,12 @@ config :pleroma, :websub, Pleroma.Web.WebsubMock
 config :pleroma, :ostatus, Pleroma.Web.OStatusMock
 config :tesla, adapter: Tesla.Mock
 
+config :web_push_encryption, :vapid_details,
+  subject: "mailto:administrator@example.com",
+  public_key:
+    "BLH1qVhJItRGCfxgTtONfsOKDc9VRAraXw-3NsmjMngWSh7NxOizN6bkuRA7iLTMPS82PjwJAr3UoK9EC1IFrz4",
+  private_key: "_-XZ0iebPrRfZ_o0-IatTdszYa8VCH1yLN-JauK7HHA"
+
 try do
   import_config "test.secret.exs"
 rescue
