@@ -2,7 +2,13 @@ defmodule Mix.Tasks.GeneratePasswordReset do
   use Mix.Task
   alias Pleroma.User
 
-  @shortdoc "Generate password reset link for user"
+  @moduledoc """
+  Generate password reset link for user
+
+  Usage: ``mix generate_password_reset <nickname>``
+
+  Example: ``mix generate_password_reset lain``
+  """
   def run([nickname]) do
     Mix.Task.run("app.start")
 

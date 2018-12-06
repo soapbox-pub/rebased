@@ -72,6 +72,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("relationship.json", %{user: user, target: target}) do
+    follow_activity = Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, target)
+
+    requested =
+      if follow_activity do
+        follow_activity.data["state"] == "pending"
+      else
+        false
+      end
+
     %{
       id: to_string(target.id),
       following: User.following?(user, target),
@@ -79,7 +88,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       blocking: User.blocks?(user, target),
       muting: false,
       muting_notifications: false,
-      requested: false,
+      requested: requested,
       domain_blocking: false,
       showing_reblogs: false,
       endorsed: false

@@ -4,7 +4,7 @@ defmodule Pleroma.User do
   import Ecto.{Changeset, Query}
   alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
   alias Comeonin.Pbkdf2
-  alias Pleroma.Web.{OStatus, Websub}
+  alias Pleroma.Web.{OStatus, Websub, OAuth}
   alias Pleroma.Web.ActivityPub.{Utils, ActivityPub}
 
   schema "users" do
@@ -41,6 +41,10 @@ defmodule Pleroma.User do
       _ -> "#{Web.base_url()}/images/banner.png"
     end
   end
+
+  def profile_url(%User{info: %{"source_data" => %{"url" => url}}}), do: url
+  def profile_url(%User{ap_id: ap_id}), do: ap_id
+  def profile_url(_), do: nil
 
   def ap_id(%User{nickname: nickname}) do
     "#{Web.base_url()}/users/#{nickname}"
@@ -132,6 +136,9 @@ defmodule Pleroma.User do
       |> validate_required([:password, :password_confirmation])
       |> validate_confirmation(:password)
 
+    OAuth.Token.delete_user_tokens(struct)
+    OAuth.Authorization.delete_user_authorizations(struct)
+
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
 
@@ -184,33 +191,16 @@ defmodule Pleroma.User do
 
   def needs_update?(_), do: true
 
-  def maybe_direct_follow(%User{} = follower, %User{info: info} = followed) do
-    user_config = Application.get_env(:pleroma, :user)
-    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
+  def maybe_direct_follow(%User{} = follower, %User{local: true, info: %{"locked" => true}}) do
+    {:ok, follower}
+  end
 
-    user_info = user_info(followed)
+  def maybe_direct_follow(%User{} = follower, %User{local: true} = followed) do
+    follow(follower, followed)
+  end
 
-    should_direct_follow =
-      cond do
-        # if the account is locked, don't pre-create the relationship
-        user_info[:locked] == true ->
-          false
-
-        # if the users are blocking each other, we shouldn't even be here, but check for it anyway
-        deny_follow_blocked and
-            (User.blocks?(follower, followed) or User.blocks?(followed, follower)) ->
-          false
-
-        # if OStatus, then there is no three-way handshake to follow
-        User.ap_enabled?(followed) != true ->
-          true
-
-        # if there are no other reasons not to, just pre-create the relationship
-        true ->
-          true
-      end
-
-    if should_direct_follow do
+  def maybe_direct_follow(%User{} = follower, %User{} = followed) do
+    if !User.ap_enabled?(followed) do
       follow(follower, followed)
     else
       {:ok, follower}
@@ -305,6 +295,7 @@ defmodule Pleroma.User do
   def invalidate_cache(user) do
     Cachex.del(:user_cache, "ap_id:#{user.ap_id}")
     Cachex.del(:user_cache, "nickname:#{user.nickname}")
+    Cachex.del(:user_cache, "user_info:#{user.id}")
   end
 
   def get_cached_by_ap_id(ap_id) do
@@ -473,36 +464,25 @@ defmodule Pleroma.User do
     update_and_set_cache(cs)
   end
 
-  def get_notified_from_activity_query(to) do
+  def get_users_from_set_query(ap_ids, false) do
     from(
       u in User,
-      where: u.ap_id in ^to,
+      where: u.ap_id in ^ap_ids
+    )
+  end
+
+  def get_users_from_set_query(ap_ids, true) do
+    query = get_users_from_set_query(ap_ids, false)
+
+    from(
+      u in query,
       where: u.local == true
     )
   end
 
-  def get_notified_from_activity(%Activity{recipients: to, data: %{"type" => "Announce"} = data}) do
-    object = Object.normalize(data["object"])
-    actor = User.get_cached_by_ap_id(data["actor"])
-
-    # ensure that the actor who published the announced object appears only once
-    to =
-      if actor.nickname != nil do
-        to ++ [object.data["actor"]]
-      else
-        to
-      end
-      |> Enum.uniq()
-
-    query = get_notified_from_activity_query(to)
-
-    Repo.all(query)
-  end
-
-  def get_notified_from_activity(%Activity{recipients: to}) do
-    query = get_notified_from_activity_query(to)
-
-    Repo.all(query)
+  def get_users_from_set(ap_ids, local_only \\ true) do
+    get_users_from_set_query(ap_ids, local_only)
+    |> Repo.all()
   end
 
   def get_recipients_from_activity(%Activity{recipients: to}) do
@@ -518,7 +498,7 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def search(query, resolve) do
+  def search(query, resolve \\ false) do
     # strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
@@ -632,8 +612,8 @@ defmodule Pleroma.User do
     )
   end
 
-  def deactivate(%User{} = user) do
-    new_info = Map.put(user.info, "deactivated", true)
+  def deactivate(%User{} = user, status \\ true) do
+    new_info = Map.put(user.info, "deactivated", status)
     cs = User.info_changeset(user, %{info: new_info})
     update_and_set_cache(cs)
   end
@@ -666,7 +646,7 @@ defmodule Pleroma.User do
       end
     end)
 
-    :ok
+    {:ok, user}
   end
 
   def html_filter_policy(%User{info: %{"no_rich_text" => true}}) do
@@ -753,6 +733,7 @@ defmodule Pleroma.User do
     Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
   end
 
+  def ap_enabled?(%User{local: true}), do: true
   def ap_enabled?(%User{info: info}), do: info["ap_enabled"]
   def ap_enabled?(_), do: false
 
@@ -761,6 +742,30 @@ defmodule Pleroma.User do
       get_or_fetch_by_ap_id(uri_or_nickname)
     else
       get_or_fetch_by_nickname(uri_or_nickname)
+    end
+  end
+
+  # wait a period of time and return newest version of the User structs
+  # this is because we have synchronous follow APIs and need to simulate them
+  # with an async handshake
+  def wait_and_refresh(_, %User{local: true} = a, %User{local: true} = b) do
+    with %User{} = a <- Repo.get(User, a.id),
+         %User{} = b <- Repo.get(User, b.id) do
+      {:ok, a, b}
+    else
+      _e ->
+        :error
+    end
+  end
+
+  def wait_and_refresh(timeout, %User{} = a, %User{} = b) do
+    with :ok <- :timer.sleep(timeout),
+         %User{} = a <- Repo.get(User, a.id),
+         %User{} = b <- Repo.get(User, b.id) do
+      {:ok, a, b}
+    else
+      _e ->
+        :error
     end
   end
 end

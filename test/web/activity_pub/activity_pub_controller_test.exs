@@ -5,6 +5,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.{Repo, User}
   alias Pleroma.Activity
 
+  describe "/relay" do
+    test "with the relay active, it returns the relay user", %{conn: conn} do
+      res =
+        conn
+        |> get(activity_pub_path(conn, :relay))
+        |> json_response(200)
+
+      assert res["id"] =~ "/relay"
+    end
+
+    test "with the relay disabled, it returns 404", %{conn: conn} do
+      Pleroma.Config.put([:instance, :allow_relay], false)
+
+      res =
+        conn
+        |> get(activity_pub_path(conn, :relay))
+        |> json_response(404)
+
+      Pleroma.Config.put([:instance, :allow_relay], true)
+    end
+  end
+
   describe "/users/:nickname" do
     test "it returns a json representation of the user", %{conn: conn} do
       user = insert(:user)
@@ -46,7 +68,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
-  describe "/users/:nickname/inbox" do
+  describe "/inbox" do
     test "it inserts an incoming activity into the database", %{conn: conn} do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
@@ -55,6 +77,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> assign(:valid_signature, true)
         |> put_req_header("content-type", "application/activity+json")
         |> post("/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      :timer.sleep(500)
+      assert Activity.get_by_ap_id(data["id"])
+    end
+  end
+
+  describe "/users/:nickname/inbox" do
+    test "it inserts an incoming activity into the database", %{conn: conn} do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("bcc", [user.ap_id])
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
       :timer.sleep(500)

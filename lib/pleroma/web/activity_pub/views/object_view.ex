@@ -1,27 +1,34 @@
 defmodule Pleroma.Web.ActivityPub.ObjectView do
   use Pleroma.Web, :view
+  alias Pleroma.{Object, Activity}
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
-  def render("object.json", %{object: object}) do
-    base = %{
-      "@context" => [
-        "https://www.w3.org/ns/activitystreams",
-        "https://w3id.org/security/v1",
-        %{
-          "manuallyApprovesFollowers" => "as:manuallyApprovesFollowers",
-          "sensitive" => "as:sensitive",
-          "Hashtag" => "as:Hashtag",
-          "ostatus" => "http://ostatus.org#",
-          "atomUri" => "ostatus:atomUri",
-          "inReplyToAtomUri" => "ostatus:inReplyToAtomUri",
-          "conversation" => "ostatus:conversation",
-          "toot" => "http://joinmastodon.org/ns#",
-          "Emoji" => "toot:Emoji"
-        }
-      ]
-    }
+  def render("object.json", %{object: %Object{} = object}) do
+    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
 
     additional = Transmogrifier.prepare_object(object.data)
+    Map.merge(base, additional)
+  end
+
+  def render("object.json", %{object: %Activity{data: %{"type" => "Create"}} = activity}) do
+    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
+    object = Object.normalize(activity.data["object"])
+
+    additional =
+      Transmogrifier.prepare_object(activity.data)
+      |> Map.put("object", Transmogrifier.prepare_object(object.data))
+
+    Map.merge(base, additional)
+  end
+
+  def render("object.json", %{object: %Activity{} = activity}) do
+    base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
+    object = Object.normalize(activity.data["object"])
+
+    additional =
+      Transmogrifier.prepare_object(activity.data)
+      |> Map.put("object", object.data["id"])
+
     Map.merge(base, additional)
   end
 end

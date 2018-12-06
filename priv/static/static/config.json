@@ -10,5 +10,8 @@
   "showInstanceSpecificPanel": false,
   "scopeOptionsEnabled": false,
   "formattingOptionsEnabled": false,
-  "collapseMessageWithSubject": false
+  "collapseMessageWithSubject": false,
+  "hidePostStats": false,
+  "hideUserStats": false,
+  "loginMethod": "password"
 }

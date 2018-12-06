@@ -31,6 +31,10 @@ config :web_push_encryption, :vapid_details,
   public_key: "<%= web_push_public_key %>",
   private_key: "<%= web_push_private_key %>"
 
+# Enable Strict-Transport-Security once SSL is working:
+# config :pleroma, :http_security,
+#   sts: true
+
 # Configure S3 support if desired.
 # The public S3 endpoint is different depending on region and provider,
 # consult your S3 provider's documentation for details on what to use.
@@ -52,9 +56,9 @@ config :web_push_encryption, :vapid_details,
 
 
 # Configure Openstack Swift support if desired.
-# 
-# Many openstack deployments are different, so config is left very open with 
-# no assumptions made on which provider you're using. This should allow very 
+#
+# Many openstack deployments are different, so config is left very open with
+# no assumptions made on which provider you're using. This should allow very
 # wide support without needing separate handlers for OVH, Rackspace, etc.
 #
 # config :pleroma, Pleroma.Uploaders.Swift,

@@ -4,13 +4,25 @@ defmodule Pleroma.Mixfile do
   def project do
     [
       app: :pleroma,
-      version: "0.9.0",
+      version: version("0.9.0"),
       elixir: "~> 1.4",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+
+      # Docs
+      name: "Pleroma",
+      source_url: "https://git.pleroma.social/pleroma/pleroma",
+      source_url_pattern:
+        "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
+      homepage_url: "https://pleroma.social/",
+      docs: [
+        logo: "priv/static/static/logo.png",
+        extras: ["README.md", "config/config.md"],
+        main: "readme"
+      ]
     ]
   end
 
@@ -48,11 +60,14 @@ defmodule Pleroma.Mixfile do
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.0"},
       {:ex_aws_s3, "~> 2.0"},
+      {:earmark, "~> 1.2"},
       {:ex_machina, "~> 2.2", only: :test},
       {:credo, "~> 0.9.3", only: [:dev, :test]},
       {:mock, "~> 0.3.1", only: :test},
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
+      {:cors_plug, "~> 1.5"},
+      {:ex_doc, "> 0.18.3 and < 0.20.0", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"}
     ]
   end
@@ -69,5 +84,52 @@ defmodule Pleroma.Mixfile do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate", "test"]
     ]
+  end
+
+  # Builds a version string made of:
+  # * the application version
+  # * a pre-release if ahead of the tag: the describe string (-count-commithash)
+  # * build info:
+  #   * a build name if `PLEROMA_BUILD_NAME` or `:pleroma, :build_name` is defined
+  #   * the mix environment if different than prod
+  defp version(version) do
+    {git_tag, git_pre_release} =
+      with {tag, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=0"]),
+           tag = String.trim(tag),
+           {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
+           describe = String.trim(describe),
+           ahead <- String.replace(describe, tag, "") do
+        {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
+      else
+        _ -> {nil, nil}
+      end
+
+    if git_tag && version != git_tag do
+      Mix.shell().error(
+        "Application version #{inspect(version)} does not match git tag #{inspect(git_tag)}"
+      )
+    end
+
+    build_name =
+      cond do
+        name = Application.get_env(:pleroma, :build_name) -> name
+        name = System.get_env("PLEROMA_BUILD_NAME") -> name
+        true -> nil
+      end
+
+    env_name = if Mix.env() != :prod, do: to_string(Mix.env())
+
+    build =
+      [build_name, env_name]
+      |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.join("-")
+      |> (fn
+            "" -> nil
+            string -> "+" <> string
+          end).()
+
+    [version, git_pre_release, build]
+    |> Enum.filter(fn string -> string && string != "" end)
+    |> Enum.join()
   end
 end

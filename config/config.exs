@@ -20,17 +20,39 @@ config :pleroma, Pleroma.Uploaders.Local,
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
-  public_endpoint: "https://s3.amazonaws.com"
+  public_endpoint: "https://s3.amazonaws.com",
+  force_media_proxy: false
+
+config :pleroma, Pleroma.Uploaders.MDII,
+  cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
+  files: "https://mdii.sakura.ne.jp"
 
 config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
 
-config :pleroma, :uri_schemes, additionnal_schemes: []
+config :pleroma, :uri_schemes,
+  valid_schemes: [
+    "https",
+    "http",
+    "dat",
+    "dweb",
+    "gopher",
+    "ipfs",
+    "ipns",
+    "irc",
+    "ircs",
+    "magnet",
+    "mailto",
+    "mumble",
+    "ssb",
+    "xmpp"
+  ]
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
+  signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
   pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2],
   secure_cookie_flag: true
@@ -51,30 +73,32 @@ config :pleroma, :websub, Pleroma.Web.Websub
 config :pleroma, :ostatus, Pleroma.Web.OStatus
 config :pleroma, :httpoison, Pleroma.HTTP
 
-version =
-  with {version, 0} <- System.cmd("git", ["rev-parse", "HEAD"]) do
-    "Pleroma #{Mix.Project.config()[:version]} #{String.trim(version)}"
-  else
-    _ -> "Pleroma #{Mix.Project.config()[:version]} dev"
-  end
-
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http, proxy_url: nil
 
 config :pleroma, :instance,
-  version: version,
   name: "Pleroma",
   email: "example@example.com",
   description: "A Pleroma instance, an alternative fediverse server",
   limit: 5000,
   upload_limit: 16_000_000,
+  avatar_upload_limit: 2_000_000,
+  background_upload_limit: 4_000_000,
+  banner_upload_limit: 4_000_000,
   registrations_open: true,
   federating: true,
   allow_relay: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
   quarantined_instances: [],
-  managed_config: true
+  managed_config: true,
+  allowed_post_formats: [
+    "text/plain",
+    "text/html",
+    "text/markdown"
+  ],
+  finmoji_enabled: true,
+  mrf_transparency: true
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -98,12 +122,16 @@ config :pleroma, :fe,
   redirect_root_login: "/main/friends",
   show_instance_panel: true,
   scope_options_enabled: false,
-  collapse_message_with_subject: false
+  formatting_options_enabled: false,
+  collapse_message_with_subject: false,
+  hide_post_stats: false,
+  hide_user_stats: false
 
 config :pleroma, :activitypub,
   accept_blocks: true,
   unfollow_blocked: true,
-  outgoing_blocks: true
+  outgoing_blocks: true,
+  follow_handshake_timeout: 500
 
 config :pleroma, :user, deny_follow_blocked: true
 
@@ -144,6 +172,27 @@ config :pleroma, :suggestions,
   timeout: 300_000,
   limit: 23,
   web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
+
+config :pleroma, :http_security,
+  enabled: true,
+  sts: false,
+  sts_max_age: 31_536_000,
+  ct_max_age: 2_592_000,
+  referrer_policy: "same-origin"
+
+config :cors_plug,
+  max_age: 86_400,
+  methods: ["POST", "PUT", "DELETE", "GET", "PATCH", "OPTIONS"],
+  expose: [
+    "Link",
+    "X-RateLimit-Reset",
+    "X-RateLimit-Limit",
+    "X-RateLimit-Remaining",
+    "X-Request-Id",
+    "Idempotency-Key"
+  ],
+  credentials: true,
+  headers: ["Authorization", "Content-Type", "Idempotency-Key"]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

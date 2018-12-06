@@ -2,60 +2,76 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   alias Pleroma.User
   @behaviour Pleroma.Web.ActivityPub.MRF
 
-  @mrf_policy Application.get_env(:pleroma, :mrf_simple)
+  defp check_accept(%{host: actor_host} = _actor_info, object) do
+    accepts = Pleroma.Config.get([:mrf_simple, :accept])
 
-  @accept Keyword.get(@mrf_policy, :accept)
-  defp check_accept(%{host: actor_host} = actor_info, object)
-       when length(@accept) > 0 and not (actor_host in @accept) do
-    {:reject, nil}
+    cond do
+      accepts == [] -> {:ok, object}
+      actor_host == Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
+      Enum.member?(accepts, actor_host) -> {:ok, object}
+      true -> {:reject, nil}
+    end
   end
 
-  defp check_accept(actor_info, object), do: {:ok, object}
-
-  @reject Keyword.get(@mrf_policy, :reject)
-  defp check_reject(%{host: actor_host} = actor_info, object) when actor_host in @reject do
-    {:reject, nil}
+  defp check_reject(%{host: actor_host} = _actor_info, object) do
+    if Enum.member?(Pleroma.Config.get([:mrf_simple, :reject]), actor_host) do
+      {:reject, nil}
+    else
+      {:ok, object}
+    end
   end
 
-  defp check_reject(actor_info, object), do: {:ok, object}
+  defp check_media_removal(
+         %{host: actor_host} = _actor_info,
+         %{"type" => "Create", "object" => %{"attachement" => child_attachment}} = object
+       )
+       when length(child_attachment) > 0 do
+    object =
+      if Enum.member?(Pleroma.Config.get([:mrf_simple, :media_removal]), actor_host) do
+        child_object = Map.delete(object["object"], "attachment")
+        Map.put(object, "object", child_object)
+      else
+        object
+      end
 
-  @media_removal Keyword.get(@mrf_policy, :media_removal)
-  defp check_media_removal(%{host: actor_host} = actor_info, %{"type" => "Create"} = object)
-       when actor_host in @media_removal do
-    child_object = Map.delete(object["object"], "attachment")
-    object = Map.put(object, "object", child_object)
     {:ok, object}
   end
 
-  defp check_media_removal(actor_info, object), do: {:ok, object}
+  defp check_media_removal(_actor_info, object), do: {:ok, object}
 
-  @media_nsfw Keyword.get(@mrf_policy, :media_nsfw)
   defp check_media_nsfw(
-         %{host: actor_host} = actor_info,
+         %{host: actor_host} = _actor_info,
          %{
            "type" => "Create",
            "object" => %{"attachment" => child_attachment} = child_object
          } = object
        )
-       when actor_host in @media_nsfw and length(child_attachment) > 0 do
-    tags = (child_object["tag"] || []) ++ ["nsfw"]
-    child_object = Map.put(child_object, "tags", tags)
-    child_object = Map.put(child_object, "sensitive", true)
-    object = Map.put(object, "object", child_object)
+       when length(child_attachment) > 0 do
+    object =
+      if Enum.member?(Pleroma.Config.get([:mrf_simple, :media_nsfw]), actor_host) do
+        tags = (child_object["tag"] || []) ++ ["nsfw"]
+        child_object = Map.put(child_object, "tags", tags)
+        child_object = Map.put(child_object, "sensitive", true)
+        Map.put(object, "object", child_object)
+      else
+        object
+      end
+
     {:ok, object}
   end
 
-  defp check_media_nsfw(actor_info, object), do: {:ok, object}
+  defp check_media_nsfw(_actor_info, object), do: {:ok, object}
 
-  @ftl_removal Keyword.get(@mrf_policy, :federated_timeline_removal)
-  defp check_ftl_removal(%{host: actor_host} = actor_info, object)
-       when actor_host in @ftl_removal do
-    user = User.get_by_ap_id(object["actor"])
-
-    # flip to/cc relationship to make the post unlisted
+  defp check_ftl_removal(%{host: actor_host} = _actor_info, object) do
     object =
-      if "https://www.w3.org/ns/activitystreams#Public" in object["to"] and
-           user.follower_address in object["cc"] do
+      with true <-
+             Enum.member?(
+               Pleroma.Config.get([:mrf_simple, :federated_timeline_removal]),
+               actor_host
+             ),
+           user <- User.get_cached_by_ap_id(object["actor"]),
+           true <- "https://www.w3.org/ns/activitystreams#Public" in object["to"],
+           true <- user.follower_address in object["cc"] do
         to =
           List.delete(object["to"], "https://www.w3.org/ns/activitystreams#Public") ++
             [user.follower_address]
@@ -68,13 +84,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
         |> Map.put("to", to)
         |> Map.put("cc", cc)
       else
-        object
+        _ -> object
       end
 
     {:ok, object}
   end
-
-  defp check_ftl_removal(actor_info, object), do: {:ok, object}
 
   @impl true
   def filter(object) do

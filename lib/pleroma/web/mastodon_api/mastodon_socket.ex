@@ -11,9 +11,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
     timeout: :infinity
   )
 
-  def connect(params, socket) do
-    with token when not is_nil(token) <- params["access_token"],
-         %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
+  def connect(%{"access_token" => token} = params, socket) do
+    with %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
          %User{} = user <- Repo.get(User, user_id),
          stream
          when stream in [
@@ -26,15 +25,37 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
                 "list",
                 "hashtag"
               ] <- params["stream"] do
-      topic = if stream == "list", do: "list:#{params["list"]}", else: stream
-      socket_stream = if stream == "hashtag", do: "hashtag:#{params["tag"]}", else: stream
+      topic =
+        case stream do
+          "hashtag" -> "hashtag:#{params["tag"]}"
+          "list" -> "list:#{params["list"]}"
+          _ -> stream
+        end
 
       socket =
         socket
         |> assign(:topic, topic)
         |> assign(:user, user)
 
-      Pleroma.Web.Streamer.add_socket(socket_stream, socket)
+      Pleroma.Web.Streamer.add_socket(topic, socket)
+      {:ok, socket}
+    else
+      _e -> :error
+    end
+  end
+
+  def connect(%{"stream" => stream} = params, socket)
+      when stream in ["public", "public:local", "hashtag"] do
+    topic =
+      case stream do
+        "hashtag" -> "hashtag:#{params["tag"]}"
+        _ -> stream
+      end
+
+    with socket =
+           socket
+           |> assign(:topic, topic) do
+      Pleroma.Web.Streamer.add_socket(topic, socket)
       {:ok, socket}
     else
       _e -> :error

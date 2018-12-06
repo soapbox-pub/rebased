@@ -178,6 +178,32 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> get("api/v1/timelines/home")
 
     [_s1, _s2] = json_response(res_conn, 200)
+
+    # Test pagination
+    Enum.each(1..20, fn _ ->
+      {:ok, _} =
+        CommonAPI.post(user_one, %{
+          "status" => "Hi @#{user_two.nickname}!",
+          "visibility" => "direct"
+        })
+    end)
+
+    res_conn =
+      conn
+      |> assign(:user, user_two)
+      |> get("api/v1/timelines/direct")
+
+    statuses = json_response(res_conn, 200)
+    assert length(statuses) == 20
+
+    res_conn =
+      conn
+      |> assign(:user, user_two)
+      |> get("api/v1/timelines/direct", %{max_id: List.last(statuses)["id"]})
+
+    [status] = json_response(res_conn, 200)
+
+    assert status["url"] != direct.data["id"]
   end
 
   test "replying to a status", %{conn: conn} do
@@ -196,6 +222,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert activity.data["context"] == replied_to.data["context"]
     assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
+  end
+
+  test "posting a status with an invalid in_reply_to_id", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => ""})
+
+    assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
+
+    activity = Repo.get(Activity, id)
+
+    assert activity
   end
 
   test "verify_credentials", %{conn: conn} do
@@ -280,6 +321,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert response = json_response(conn, 200)
       assert response["phrase"] == filter.phrase
       assert response["context"] == filter.context
+      assert response["id"] != nil
+      assert response["id"] != ""
     end
 
     test "fetching a list of filters", %{conn: conn} do
@@ -927,11 +970,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       {:ok, [_activity]} =
         OStatus.fetch_activity_from_url("https://shitposter.club/notice/2827873")
 
-      conn =
+      nconn =
         conn
         |> get("/api/v1/timelines/tag/2hu")
 
-      assert [%{"id" => id}] = json_response(conn, 200)
+      assert [%{"id" => id}] = json_response(nconn, 200)
+
+      assert id == to_string(activity.id)
+
+      # works for different capitalization too
+      nconn =
+        conn
+        |> get("/api/v1/timelines/tag/2HU")
+
+      assert [%{"id" => id}] = json_response(nconn, 200)
 
       assert id == to_string(activity.id)
     end)

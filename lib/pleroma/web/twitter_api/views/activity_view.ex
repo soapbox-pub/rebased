@@ -236,6 +236,10 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       HTML.filter_tags(content, User.html_filter_policy(opts[:for]))
       |> Formatter.emojify(object["emoji"])
 
+    reply_parent = Activity.get_in_reply_to_activity(activity)
+
+    reply_user = reply_parent && User.get_cached_by_ap_id(reply_parent.actor)
+
     %{
       "id" => activity.id,
       "uri" => activity.data["object"]["id"],
@@ -246,6 +250,10 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "is_post_verb" => true,
       "created_at" => created_at,
       "in_reply_to_status_id" => object["inReplyToStatusId"],
+      "in_reply_to_screen_name" => reply_user && reply_user.nickname,
+      "in_reply_to_profileurl" => User.profile_url(reply_user),
+      "in_reply_to_ostatus_uri" => reply_user && reply_user.ap_id,
+      "in_reply_to_user_id" => reply_user && reply_user.id,
       "statusnet_conversation_id" => conversation_id,
       "attachments" => (object["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
@@ -275,11 +283,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     {summary, content}
   end
 
-  def render_content(%{"type" => "Article"} = object) do
+  def render_content(%{"type" => object_type} = object) when object_type in ["Article", "Page"] do
     summary = object["name"] || object["summary"]
 
     content =
-      if !!summary and summary != "" do
+      if !!summary and summary != "" and is_bitstring(object["url"]) do
         "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
       else
         object["content"]

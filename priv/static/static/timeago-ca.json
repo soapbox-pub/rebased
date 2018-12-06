@@ -1,0 +1,10 @@
+[
+  "ara mateix",
+  ["fa %s s",     "fa %s s"],
+  ["fa %s min",   "fa %s min"],
+  ["fa %s h",     "fa %s h"],
+  ["fa %s dia",   "fa %s dies"],
+  ["fa %s setm.", "fa %s setm."],
+  ["fa %s mes",   "fa %s mesos"],
+  ["fa %s any",   "fa %s anys"]
+]

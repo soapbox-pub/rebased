@@ -1,7 +1,15 @@
 defmodule Mix.Tasks.GenerateConfig do
   use Mix.Task
 
-  @shortdoc "Generates a new config"
+  @moduledoc """
+  Generate a new config
+
+  ## Usage
+  ``mix generate_config``
+
+  This mix task is interactive, and will overwrite the config present at ``config/generated_config.exs``.
+  """
+
   def run(_) do
     IO.puts("Answer a few questions to generate a new config\n")
     IO.puts("--- THIS WILL OVERWRITE YOUR config/generated_config.exs! ---\n")

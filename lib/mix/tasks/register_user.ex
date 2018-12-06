@@ -1,4 +1,12 @@
 defmodule Mix.Tasks.RegisterUser do
+  @moduledoc """
+  Manually register a local user
+
+  Usage: ``mix register_user <name> <nickname> <email> <bio> <password>``
+
+  Example: ``mix register_user 仮面の告白 lain lain@example.org "blushy-crushy fediverse idol + pleroma dev" pleaseDontHeckLain``
+  """
+
   use Mix.Task
   alias Pleroma.{Repo, User}
 

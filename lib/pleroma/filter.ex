@@ -36,6 +36,34 @@ defmodule Pleroma.Filter do
     Repo.all(query)
   end
 
+  def create(%Pleroma.Filter{user_id: user_id, filter_id: nil} = filter) do
+    # If filter_id wasn't given, use the max filter_id for this user plus 1.
+    # XXX This could result in a race condition if a user tries to add two 
+    # different filters for their account from two different clients at the 
+    # same time, but that should be unlikely. 
+
+    max_id_query =
+      from(
+        f in Pleroma.Filter,
+        where: f.user_id == ^user_id,
+        select: max(f.filter_id)
+      )
+
+    filter_id =
+      case Repo.one(max_id_query) do
+        # Start allocating from 1
+        nil ->
+          1
+
+        max_id ->
+          max_id + 1
+      end
+
+    filter
+    |> Map.put(:filter_id, filter_id)
+    |> Repo.insert()
+  end
+
   def create(%Pleroma.Filter{} = filter) do
     Repo.insert(filter)
   end

@@ -4,7 +4,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
   alias Pleroma.{User, Repo}
   alias Pleroma.Web.OAuth.{Authorization, App}
 
-  import Ecto.{Changeset}
+  import Ecto.{Changeset, Query}
 
   schema "oauth_authorizations" do
     field(:token, :string)
@@ -45,4 +45,12 @@ defmodule Pleroma.Web.OAuth.Authorization do
   end
 
   def use_token(%Authorization{used: true}), do: {:error, "already used"}
+
+  def delete_user_authorizations(%User{id: user_id}) do
+    from(
+      a in Pleroma.Web.OAuth.Authorization,
+      where: a.user_id == ^user_id
+    )
+    |> Repo.delete_all()
+  end
 end

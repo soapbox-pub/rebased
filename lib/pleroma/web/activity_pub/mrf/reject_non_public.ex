@@ -2,10 +2,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
   alias Pleroma.User
   @behaviour Pleroma.Web.ActivityPub.MRF
 
-  @mrf_rejectnonpublic Application.get_env(:pleroma, :mrf_rejectnonpublic)
-  @allow_followersonly Keyword.get(@mrf_rejectnonpublic, :allow_followersonly)
-  @allow_direct Keyword.get(@mrf_rejectnonpublic, :allow_direct)
-
   @impl true
   def filter(%{"type" => "Create"} = object) do
     user = User.get_cached_by_ap_id(object["actor"])
@@ -20,6 +16,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
         true -> "direct"
       end
 
+    policy = Pleroma.Config.get(:mrf_rejectnonpublic)
+
     case visibility do
       "public" ->
         {:ok, object}
@@ -28,14 +26,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
         {:ok, object}
 
       "followers" ->
-        with true <- @allow_followersonly do
+        with true <- Keyword.get(policy, :allow_followersonly) do
           {:ok, object}
         else
           _e -> {:reject, nil}
         end
 
       "direct" ->
-        with true <- @allow_direct do
+        with true <- Keyword.get(policy, :allow_direct) do
           {:ok, object}
         else
           _e -> {:reject, nil}

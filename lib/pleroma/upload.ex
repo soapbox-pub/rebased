@@ -1,64 +1,74 @@
 defmodule Pleroma.Upload do
   alias Ecto.UUID
 
-  @storage_backend Application.get_env(:pleroma, Pleroma.Upload)
-                   |> Keyword.fetch!(:uploader)
+  def check_file_size(path, nil), do: true
 
-  def store(%Plug.Upload{} = file, should_dedupe) do
-    content_type = get_content_type(file.path)
-
-    uuid = get_uuid(file, should_dedupe)
-    name = get_name(file, uuid, content_type, should_dedupe)
-
-    strip_exif_data(content_type, file.path)
-
-    {:ok, url_path} =
-      @storage_backend.put_file(name, uuid, file.path, content_type, should_dedupe)
-
-    %{
-      "type" => "Document",
-      "url" => [
-        %{
-          "type" => "Link",
-          "mediaType" => content_type,
-          "href" => url_path
-        }
-      ],
-      "name" => name
-    }
+  def check_file_size(path, size_limit) do
+    {:ok, %{size: size}} = File.stat(path)
+    size <= size_limit
   end
 
-  def store(%{"img" => "data:image/" <> image_data}, should_dedupe) do
+  def store(file, should_dedupe, size_limit \\ nil)
+
+  def store(%Plug.Upload{} = file, should_dedupe, size_limit) do
+    content_type = get_content_type(file.path)
+
+    with uuid <- get_uuid(file, should_dedupe),
+         name <- get_name(file, uuid, content_type, should_dedupe),
+         true <- check_file_size(file.path, size_limit) do
+      strip_exif_data(content_type, file.path)
+
+      {:ok, url_path} = uploader().put_file(name, uuid, file.path, content_type, should_dedupe)
+
+      %{
+        "type" => "Document",
+        "url" => [
+          %{
+            "type" => "Link",
+            "mediaType" => content_type,
+            "href" => url_path
+          }
+        ],
+        "name" => name
+      }
+    else
+      _e -> nil
+    end
+  end
+
+  def store(%{"img" => "data:image/" <> image_data}, should_dedupe, size_limit) do
     parsed = Regex.named_captures(~r/(?<filetype>jpeg|png|gif);base64,(?<data>.*)/, image_data)
     data = Base.decode64!(parsed["data"], ignore: :whitespace)
 
-    tmp_path = tempfile_for_image(data)
+    with tmp_path <- tempfile_for_image(data),
+         uuid <- UUID.generate(),
+         true <- check_file_size(tmp_path, size_limit) do
+      content_type = get_content_type(tmp_path)
+      strip_exif_data(content_type, tmp_path)
 
-    uuid = UUID.generate()
+      name =
+        create_name(
+          String.downcase(Base.encode16(:crypto.hash(:sha256, data))),
+          parsed["filetype"],
+          content_type
+        )
 
-    content_type = get_content_type(tmp_path)
-    strip_exif_data(content_type, tmp_path)
+      {:ok, url_path} = uploader().put_file(name, uuid, tmp_path, content_type, should_dedupe)
 
-    name =
-      create_name(
-        String.downcase(Base.encode16(:crypto.hash(:sha256, data))),
-        parsed["filetype"],
-        content_type
-      )
-
-    {:ok, url_path} = @storage_backend.put_file(name, uuid, tmp_path, content_type, should_dedupe)
-
-    %{
-      "type" => "Image",
-      "url" => [
-        %{
-          "type" => "Link",
-          "mediaType" => content_type,
-          "href" => url_path
-        }
-      ],
-      "name" => name
-    }
+      %{
+        "type" => "Image",
+        "url" => [
+          %{
+            "type" => "Link",
+            "mediaType" => content_type,
+            "href" => url_path
+          }
+        ],
+        "name" => name
+      }
+    else
+      _e -> nil
+    end
   end
 
   @doc """
@@ -152,7 +162,13 @@ defmodule Pleroma.Upload do
             "audio/mpeg"
 
           <<0x4F, 0x67, 0x67, 0x53, 0x00, 0x02, 0x00, 0x00>> ->
-            "audio/ogg"
+            case IO.binread(f, 27) do
+              <<_::size(160), 0x80, 0x74, 0x68, 0x65, 0x6F, 0x72, 0x61>> ->
+                "video/ogg"
+
+              _ ->
+                "audio/ogg"
+            end
 
           <<0x52, 0x49, 0x46, 0x46, _, _, _, _>> ->
             "audio/wav"
@@ -166,5 +182,9 @@ defmodule Pleroma.Upload do
       {:ok, type} -> type
       _e -> "application/octet-stream"
     end
+  end
+
+  defp uploader() do
+    Pleroma.Config.get!([Pleroma.Upload, :uploader])
   end
 end

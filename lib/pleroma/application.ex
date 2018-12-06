@@ -1,8 +1,15 @@
 defmodule Pleroma.Application do
   use Application
 
+  @name "Pleroma"
+  @version Mix.Project.config()[:version]
+  def name, do: @name
+  def version, do: @version
+  def named_version(), do: @name <> " " <> @version
+
   # See http://elixir-lang.org/docs/stable/elixir/Application.html
   # for more information on OTP Applications
+  @env Mix.env()
   def start(_type, _args) do
     import Supervisor.Spec
     import Cachex.Spec
@@ -12,18 +19,35 @@ defmodule Pleroma.Application do
       [
         # Start the Ecto repository
         supervisor(Pleroma.Repo, []),
+        worker(Pleroma.Emoji, []),
         # Start the endpoint when the application starts
         supervisor(Pleroma.Web.Endpoint, []),
         # Start your own worker by calling: Pleroma.Worker.start_link(arg1, arg2, arg3)
         # worker(Pleroma.Worker, [arg1, arg2, arg3]),
-        worker(Cachex, [
-          :user_cache,
+        worker(
+          Cachex,
           [
-            default_ttl: 25000,
-            ttl_interval: 1000,
-            limit: 2500
-          ]
-        ]),
+            :user_cache,
+            [
+              default_ttl: 25000,
+              ttl_interval: 1000,
+              limit: 2500
+            ]
+          ],
+          id: :cachex_user
+        ),
+        worker(
+          Cachex,
+          [
+            :object_cache,
+            [
+              default_ttl: 25000,
+              ttl_interval: 1000,
+              limit: 2500
+            ]
+          ],
+          id: :cachex_object
+        ),
         worker(
           Cachex,
           [
@@ -40,11 +64,12 @@ defmodule Pleroma.Application do
           id: :cachex_idem
         ),
         worker(Pleroma.Web.Federator, []),
+        worker(Pleroma.Web.Federator.RetryQueue, []),
         worker(Pleroma.Gopher.Server, []),
         worker(Pleroma.Stats, []),
         worker(Pleroma.Web.Push, [])
       ] ++
-        if Mix.env() == :test,
+        if @env == :test,
           do: [],
           else:
             [worker(Pleroma.Web.Streamer, [])] ++

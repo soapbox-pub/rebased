@@ -11,6 +11,21 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.Web.OStatus.{FollowHandler, UnfollowHandler, NoteHandler, DeleteHandler}
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
+  def is_representable?(%Activity{data: data}) do
+    object = Object.normalize(data["object"])
+
+    cond do
+      is_nil(object) ->
+        false
+
+      object.data["type"] == "Note" ->
+        true
+
+      true ->
+        false
+    end
+  end
+
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
   end

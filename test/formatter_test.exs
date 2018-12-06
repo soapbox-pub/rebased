@@ -1,5 +1,6 @@
 defmodule Pleroma.FormatterTest do
   alias Pleroma.Formatter
+  alias Pleroma.User
   use Pleroma.DataCase
 
   import Pleroma.Factory
@@ -23,7 +24,7 @@ defmodule Pleroma.FormatterTest do
       text = "Hey, check out https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla ."
 
       expected =
-        "Hey, check out <a href=\"https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla\">https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&amp;y=2#blabla</a> ."
+        "Hey, check out <a href=\"https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla\">https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla</a> ."
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
@@ -54,7 +55,7 @@ defmodule Pleroma.FormatterTest do
       text = "https://forum.zdoom.org/viewtopic.php?f=44&t=57087"
 
       expected =
-        "<a href=\"https://forum.zdoom.org/viewtopic.php?f=44&amp;t=57087\">https://forum.zdoom.org/viewtopic.php?f=44&amp;t=57087</a>"
+        "<a href=\"https://forum.zdoom.org/viewtopic.php?f=44&t=57087\">https://forum.zdoom.org/viewtopic.php?f=44&t=57087</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
@@ -75,7 +76,7 @@ defmodule Pleroma.FormatterTest do
       text = "https://en.wikipedia.org/wiki/Duff's_device"
 
       expected =
-        "<a href=\"https://en.wikipedia.org/wiki/Duff&#39;s_device\">https://en.wikipedia.org/wiki/Duff&#39;s_device</a>"
+        "<a href=\"https://en.wikipedia.org/wiki/Duff's_device\">https://en.wikipedia.org/wiki/Duff's_device</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
 
@@ -89,6 +90,13 @@ defmodule Pleroma.FormatterTest do
       text = "xmpp:contact@hacktivis.me"
 
       expected = "<a href=\"xmpp:contact@hacktivis.me\">xmpp:contact@hacktivis.me</a>"
+
+      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+
+      text =
+        "magnet:?xt=urn:btih:7ec9d298e91d6e4394d1379caf073c77ff3e3136&tr=udp%3A%2F%2Fopentor.org%3A2710&tr=udp%3A%2F%2Ftracker.blackunicorn.xyz%3A6969&tr=udp%3A%2F%2Ftracker.ccc.de%3A80&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.fastcast.nz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com"
+
+      expected = "<a href=\"#{text}\">#{text}</a>"
 
       assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
     end
@@ -120,6 +128,24 @@ defmodule Pleroma.FormatterTest do
         }'>@<span>archaeme</span></a></span>, that is @daggsy. Also hello <span><a class='mention' href='#{
           archaeme_remote.ap_id
         }'>@<span>archaeme</span></a></span>"
+
+      assert expected_text == Formatter.finalize({subs, text})
+    end
+
+    test "gives a replacement for user links when the user is using Osada" do
+      mike = User.get_or_fetch("mike@osada.macgirvin.com")
+
+      text = "@mike@osada.macgirvin.com test"
+
+      mentions = Formatter.parse_mentions(text)
+
+      {subs, text} = Formatter.add_user_links({[], text}, mentions)
+
+      assert length(subs) == 1
+      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+
+      expected_text =
+        "<span><a class='mention' href='#{mike.ap_id}'>@<span>mike</span></a></span> test"
 
       assert expected_text == Formatter.finalize({subs, text})
     end

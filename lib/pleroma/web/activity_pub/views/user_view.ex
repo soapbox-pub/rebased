@@ -17,7 +17,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     public_key = :public_key.pem_encode([public_key])
 
     %{
-      "@context" => "https://www.w3.org/ns/activitystreams",
       "id" => user.ap_id,
       "type" => "Application",
       "following" => "#{user.ap_id}/following",
@@ -36,6 +35,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
       }
     }
+    |> Map.merge(Utils.make_json_ld_header())
   end
 
   def render("user.json", %{user: user}) do
