@@ -2,13 +2,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
   alias Pleroma.Web
-  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView, FilterView}
+
+  alias Pleroma.Web.MastodonAPI.{
+    StatusView,
+    AccountView,
+    MastodonView,
+    ListView,
+    FilterView,
+    PushSubscriptionView
+  }
+
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Pleroma.Web.MediaProxy
-  alias Comeonin.Pbkdf2
+
   import Ecto.Query
   require Logger
 
@@ -1159,8 +1168,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     {:ok, _} = Pleroma.Filter.delete(query)
     json(conn, %{})
   end
-
-  alias Pleroma.Web.MastodonAPI.PushSubscriptionView
 
   def create_push_subscription(%{assigns: %{user: user, token: token}} = conn, params) do
     Pleroma.Web.Push.Subscription.delete_if_exists(user, token)

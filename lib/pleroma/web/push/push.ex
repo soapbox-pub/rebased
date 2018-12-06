@@ -70,7 +70,6 @@ defmodule Pleroma.Web.Push do
 
         data ->
           Logger.error("Web Push Nonification failed with unknown error")
-          IO.inspect(data)
           :error
       end
     end)
