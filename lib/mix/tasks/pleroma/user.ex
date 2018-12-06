@@ -2,6 +2,7 @@ defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
   import Ecto.Changeset
   alias Pleroma.{Repo, User}
+  alias Mix.Tasks.Pleroma.Common
 
   @shortdoc "Manages Pleroma users"
   @moduledoc """
@@ -43,7 +44,6 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
   """
-
   def run(["new", nickname, email | rest]) do
     {options, [], []} =
       OptionParser.parse(
@@ -88,7 +88,7 @@ defmodule Mix.Tasks.Pleroma.User do
     proceed? = Mix.shell().yes?("Continue?")
 
     unless not proceed? do
-      Mix.Task.run("app.start")
+      Common.start_pleroma()
 
       params =
         %{
@@ -123,7 +123,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   def run(["rm", nickname]) do
-    Mix.Task.run("app.start")
+    Common.start_pleroma()
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
       User.delete(user)
@@ -135,7 +135,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   def run(["toggle_activated", nickname]) do
-    Mix.Task.run("app.start")
+    Common.start_pleroma()
 
     with %User{} = user <- User.get_by_nickname(nickname) do
       User.deactivate(user, !user.info["deactivated"])
@@ -147,7 +147,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   def run(["reset_password", nickname]) do
-    Mix.Task.run("app.start")
+    Common.start_pleroma()
 
     with %User{local: true} = user <- User.get_by_nickname(nickname),
          {:ok, token} <- Pleroma.PasswordResetToken.create_token(user) do
@@ -169,7 +169,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   def run(["unsubscribe", nickname]) do
-    Mix.Task.run("app.start")
+    Common.start_pleroma()
 
     with %User{} = user <- User.get_by_nickname(nickname) do
       Mix.shell().info("Deactivating #{user.nickname}")
@@ -198,7 +198,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   def run(["set", nickname | rest]) do
-    Mix.Task.run("app.start")
+    Common.start_pleroma()
 
     {options, [], []} =
       OptionParser.parse(
@@ -280,7 +280,7 @@ defmodule Mix.Tasks.Pleroma.User do
   end
 
   def run(["invite"]) do
-    Mix.Task.run("app.start")
+    Common.start_pleroma()
 
     with {:ok, token} <- Pleroma.UserInviteToken.create_token() do
       Mix.shell().info("Generated user invite token")

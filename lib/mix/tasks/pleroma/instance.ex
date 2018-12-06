@@ -1,6 +1,7 @@
 defmodule Mix.Tasks.Pleroma.Instance do
   use Mix.Task
   alias Pleroma.{Repo, User}
+  alias Mix.Tasks.Pleroma.Common
 
   @shortdoc "Manages Pleroma instance"
   @moduledoc """
@@ -59,23 +60,23 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
     unless not proceed? do
       domain =
-        get_option(
+        Common.get_option(
           options,
           :domain,
           "What domain will your instance use? (e.g pleroma.soykaf.com)"
         )
 
       name =
-        get_option(options, :name, "What is the name of your instance? (e.g. Pleroma/Soykaf)")
+        Common.get_option(options, :name, "What is the name of your instance? (e.g. Pleroma/Soykaf)")
 
-      email = get_option(options, :admin_email, "What is your admin email address?")
+      email = Common.get_option(options, :admin_email, "What is your admin email address?")
 
-      dbhost = get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
+      dbhost = Common.get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
 
-      dbname = get_option(options, :dbname, "What is the name of your database?", "pleroma_dev")
+      dbname = Common.get_option(options, :dbname, "What is the name of your database?", "pleroma_dev")
 
       dbuser =
-        get_option(
+        Common.get_option(
           options,
           :dbuser,
           "What is the user used to connect to your database?",
@@ -83,7 +84,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
 
       dbpass =
-        get_option(
+        Common.get_option(
           options,
           :dbpass,
           "What is the password used to connect to your database?",
@@ -128,12 +129,12 @@ defmodule Mix.Tasks.Pleroma.Instance do
           """
           To get started:
           1. Verify the contents of the generated files.
-          2. Run `sudo -u postgres psql -f #{escape_sh_path(psql_path)}`.
+          2. Run `sudo -u postgres psql -f #{Common.escape_sh_path(psql_path)}`.
           """ <>
           if config_path in ["config/dev.secret.exs", "config/prod.secret.exs"] do
             ""
           else
-            "3. Run `mv #{escape_sh_path(config_path)} 'config/prod.secret.exs'`."
+            "3. Run `mv #{Common.escape_sh_path(config_path)} 'config/prod.secret.exs'`."
           end
       )
     else
@@ -145,21 +146,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
     end
   end
 
-  defp escape_sh_path(path) do
-    ~S(') <> String.replace(path, ~S('), ~S(\')) <> ~S(')
-  end
 
-  defp get_option(options, opt, prompt, def \\ nil, defname \\ nil) do
-    Keyword.get(options, opt) ||
-      case Mix.shell().prompt("#{prompt} [#{defname || def}]") do
-        "\n" ->
-          case def do
-            nil -> get_option(options, opt, prompt, def)
-            def -> def
-          end
 
-        opt ->
-          opt |> String.trim()
-      end
-  end
 end
