@@ -41,7 +41,8 @@ defmodule Pleroma.Application do
         ),
         worker(Pleroma.Web.Federator, []),
         worker(Pleroma.Gopher.Server, []),
-        worker(Pleroma.Stats, [])
+        worker(Pleroma.Stats, []),
+        worker(Pleroma.Web.Push, [])
       ] ++
         if Mix.env() == :test,
           do: [],

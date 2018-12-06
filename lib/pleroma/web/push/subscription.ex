@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.Push.Subscription do
   use Ecto.Schema
-  import Ecto.{Changeset, Query}
+  import Ecto.Changeset
   alias Pleroma.{Repo, User}
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Push.Subscription

@@ -25,6 +25,12 @@ config :pleroma, Pleroma.Repo,
   hostname: "localhost",
   pool_size: 10
 
+# Configure web push notifications
+config :web_push_encryption, :vapid_details,
+  subject: "mailto:<%= email %>",
+  public_key: "<%= web_push_public_key %>",
+  private_key: "<%= web_push_private_key %>"
+
 # Configure S3 support if desired.
 # The public S3 endpoint is different depending on region and provider,
 # consult your S3 provider's documentation for details on what to use.

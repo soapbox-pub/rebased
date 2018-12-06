@@ -14,6 +14,8 @@ defmodule Mix.Tasks.GenerateConfig do
 
     resultSql = EEx.eval_file("lib/mix/tasks/sample_psql.eex", dbpass: dbpass)
 
+    {web_push_public_key, web_push_private_key} = :crypto.generate_key(:ecdh, :prime256v1)
+
     result =
       EEx.eval_file(
         "lib/mix/tasks/sample_config.eex",
@@ -21,7 +23,9 @@ defmodule Mix.Tasks.GenerateConfig do
         email: email,
         name: name,
         secret: secret,
-        dbpass: dbpass
+        dbpass: dbpass,
+        web_push_public_key: Base.url_encode64(web_push_public_key, padding: false),
+        web_push_private_key: Base.url_encode64(web_push_private_key, padding: false)
       )
 
     IO.puts(
