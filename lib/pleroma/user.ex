@@ -62,10 +62,6 @@ defmodule Pleroma.User do
     |> validate_required([:following])
   end
 
-  def info_changeset(struct, params \\ %{}) do
-    raise "NOT VALID ANYMORE"
-  end
-
   def user_info(%User{} = user) do
     oneself = if user.local, do: 1, else: 0
 

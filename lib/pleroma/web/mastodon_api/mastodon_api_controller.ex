@@ -970,9 +970,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
-    with new_info <- Map.put(user.info, "settings", settings),
-         change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, _user} <- User.update_and_set_cache(change) do
+    info_cng = User.Info.mastodon_settings_update(user.info, settings)
+
+    with changeset <- User.update_changeset(user),
+         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
       conn
       |> json(%{})
     else
