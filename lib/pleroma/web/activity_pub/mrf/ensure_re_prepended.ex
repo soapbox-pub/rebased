@@ -1,5 +1,5 @@
 defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
-  alias Pleroma.Activity
+  alias Pleroma.Object
 
   @behaviour Pleroma.Web.ActivityPub.MRF
 
@@ -20,11 +20,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
 
   def filter(%{"type" => activity_type} = object) when activity_type == "Create" do
     child = object["object"]
-    in_reply_to = Activity.get_create_activity_by_object_ap_id(child["inReplyTo"])
+    in_reply_to = Object.normalize(child["inReplyTo"])
 
     child =
       if(in_reply_to,
-        do: filter_by_summary(in_reply_to.data["object"], child),
+        do: filter_by_summary(in_reply_to.data, child),
         else: child
       )
 
