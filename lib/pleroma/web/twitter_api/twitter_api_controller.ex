@@ -239,7 +239,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
         !object ->
           {halt(conn), :not_found, ""}
 
-        object.data["actor"] != User.ap_id(user) ->
+        !Object.authorize_mutation(object, user) ->
           {halt(conn), :forbidden, "You can only update your own uploads."}
 
         !is_binary(description) ->

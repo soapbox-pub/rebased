@@ -93,12 +93,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def ap_upload(%Plug.Upload{} = file, %User{} = user) do
-    ActivityPub.upload(file, actor: User.ap_id(user))
-  end
-
   def upload(%Plug.Upload{} = file, %User{} = user, format \\ "xml") do
-    {:ok, object} = ap_upload(file, user)
+    {:ok, object} = ActivityPub.upload(file, actor: User.ap_id(user))
 
     url = List.first(object.data["url"])
     href = url["href"]

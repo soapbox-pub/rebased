@@ -433,33 +433,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> json([])
   end
 
-  def update_media(%{assigns: %{user: _}} = conn, data) do
+  def update_media(%{assigns: %{user: user}} = conn, data) do
     with %Object{} = object <- Repo.get(Object, data["id"]),
+         true <- Object.authorize_mutation(object, user),
          true <- is_binary(data["description"]),
          description <- data["description"] do
       new_data = %{object.data | "name" => description}
 
-      change = Object.change(object, %{data: new_data})
-      {:ok, _} = Repo.update(change)
+      {:ok, _} =
+        object
+        |> Object.change(%{data: new_data})
+        |> Repo.update()
 
-      data =
-        new_data
-        |> Map.put("id", object.id)
-
-      render(conn, StatusView, "attachment.json", %{attachment: data})
+      attachment_data = Map.put(new_data, "id", object.id)
+      render(conn, StatusView, "attachment.json", %{attachment: attachment_data})
     end
   end
 
-  def upload(%{assigns: %{user: _}} = conn, %{"file" => file} = data) do
-    with {:ok, object} <- ActivityPub.upload(file, description: Map.get(data, "description")) do
-      change = Object.change(object, %{data: object.data})
-      {:ok, object} = Repo.update(change)
-
-      objdata =
-        object.data
-        |> Map.put("id", object.id)
-
-      render(conn, StatusView, "attachment.json", %{attachment: objdata})
+  def upload(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
+    with {:ok, object} <-
+           ActivityPub.upload(file,
+             actor: User.ap_id(user),
+             description: Map.get(data, "description")
+           ) do
+      attachment_data = Map.put(object.data, "id", object.id)
+      render(conn, StatusView, "attachment.json", %{attachment: attachment_data})
     end
   end
 
