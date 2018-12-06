@@ -846,12 +846,7 @@ defmodule Pleroma.User do
 
     Repo.transaction(fn ->
       for user <- users do
-        new_tags =
-          if action == :tag do
-            Enum.uniq(user.tags ++ tags)
-          else
-            user.tags -- tags
-          end
+        new_tags = mutate_tags(user, tags, action)
 
         {:ok, updated_user} =
           user
@@ -862,4 +857,8 @@ defmodule Pleroma.User do
       end
     end)
   end
+
+  defp mutate_tags(user, tags, :tag), do: Enum.uniq(user.tags ++ tags)
+
+  defp mutate_tags(user, tags, :untag), do: user.tags -- tags
 end

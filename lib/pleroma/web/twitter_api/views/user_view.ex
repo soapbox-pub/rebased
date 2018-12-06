@@ -78,7 +78,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "default_scope" => user.info.default_scope,
       "no_rich_text" => user.info.no_rich_text,
       "fields" => fields,
-      # Note: twitter.com does not return this field:
+      # Pleroma extension
       "tags" => user.tags
     }
 
