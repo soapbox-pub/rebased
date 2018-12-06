@@ -349,7 +349,7 @@ defmodule Pleroma.Web.OStatus do
          {:ok, %{body: body, status: code}} when code in 200..299 <-
            @httpoison.get(
              url,
-             Accept: "application/atom+xml"
+             [{:Accept, "application/atom+xml"}]
            ) do
       Logger.debug("Got document from #{url}, handling...")
       handle_incoming(body)
