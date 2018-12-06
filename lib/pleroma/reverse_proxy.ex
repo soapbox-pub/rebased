@@ -56,7 +56,7 @@ defmodule Pleroma.ReverseProxy do
   @hackney Application.get_env(:pleroma, :hackney, :hackney)
   @httpoison Application.get_env(:pleroma, :httpoison, HTTPoison)
 
-  @default_hackney_options [{:follow_redirect, true}]
+  @default_hackney_options []
 
   @inline_content_types [
     "image/gif",

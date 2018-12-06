@@ -29,6 +29,12 @@ config :pleroma, Pleroma.Repo,
   hostname: "<%= dbhost %>",
   pool_size: 10
 
+# Configure web push notifications
+config :web_push_encryption, :vapid_details,
+  subject: "mailto:<%= email %>",
+  public_key: "<%= web_push_public_key %>",
+  private_key: "<%= web_push_private_key %>"
+
 # Enable Strict-Transport-Security once SSL is working:
 # config :pleroma, :http_security,
 #   sts: true
@@ -54,9 +60,9 @@ config :pleroma, Pleroma.Repo,
 
 
 # Configure Openstack Swift support if desired.
-# 
-# Many openstack deployments are different, so config is left very open with 
-# no assumptions made on which provider you're using. This should allow very 
+#
+# Many openstack deployments are different, so config is left very open with
+# no assumptions made on which provider you're using. This should allow very
 # wide support without needing separate handlers for OVH, Rackspace, etc.
 #
 # config :pleroma, Pleroma.Uploaders.Swift,

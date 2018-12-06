@@ -2,13 +2,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
   alias Pleroma.Web
-  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView, FilterView}
+
+  alias Pleroma.Web.MastodonAPI.{
+    StatusView,
+    AccountView,
+    MastodonView,
+    ListView,
+    FilterView,
+    PushSubscriptionView
+  }
+
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Pleroma.Web.MediaProxy
-  alias Comeonin.Pbkdf2
+
   import Ecto.Query
   require Logger
 
@@ -433,33 +442,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> json([])
   end
 
-  def update_media(%{assigns: %{user: _}} = conn, data) do
+  def update_media(%{assigns: %{user: user}} = conn, data) do
     with %Object{} = object <- Repo.get(Object, data["id"]),
+         true <- Object.authorize_mutation(object, user),
          true <- is_binary(data["description"]),
          description <- data["description"] do
       new_data = %{object.data | "name" => description}
 
-      change = Object.change(object, %{data: new_data})
-      {:ok, _} = Repo.update(change)
+      {:ok, _} =
+        object
+        |> Object.change(%{data: new_data})
+        |> Repo.update()
 
-      data =
-        new_data
-        |> Map.put("id", object.id)
-
-      render(conn, StatusView, "attachment.json", %{attachment: data})
+      attachment_data = Map.put(new_data, "id", object.id)
+      render(conn, StatusView, "attachment.json", %{attachment: attachment_data})
     end
   end
 
-  def upload(%{assigns: %{user: _}} = conn, %{"file" => file} = data) do
-    with {:ok, object} <- ActivityPub.upload(file, description: Map.get(data, "description")) do
-      change = Object.change(object, %{data: object.data})
-      {:ok, object} = Repo.update(change)
-
-      objdata =
-        object.data
-        |> Map.put("id", object.id)
-
-      render(conn, StatusView, "attachment.json", %{attachment: objdata})
+  def upload(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
+    with {:ok, object} <-
+           ActivityPub.upload(file,
+             actor: User.ap_id(user),
+             description: Map.get(data, "description")
+           ) do
+      attachment_data = Map.put(object.data, "id", object.id)
+      render(conn, StatusView, "attachment.json", %{attachment: attachment_data})
     end
   end
 
@@ -502,17 +509,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render(StatusView, "index.json", %{activities: activities, for: user, as: :activity})
   end
 
-  # TODO: Pagination
-  def followers(conn, %{"id" => id}) do
+  def followers(%{assigns: %{user: for_user}} = conn, %{"id" => id}) do
     with %User{} = user <- Repo.get(User, id),
          {:ok, followers} <- User.get_followers(user) do
+      followers =
+        cond do
+          for_user && user.id == for_user.id -> followers
+          user.info.hide_network -> []
+          true -> followers
+        end
+
       render(conn, AccountView, "accounts.json", %{users: followers, as: :user})
     end
   end
 
-  def following(conn, %{"id" => id}) do
+  def following(%{assigns: %{user: for_user}} = conn, %{"id" => id}) do
     with %User{} = user <- Repo.get(User, id),
          {:ok, followers} <- User.get_friends(user) do
+      followers =
+        cond do
+          for_user && user.id == for_user.id -> followers
+          user.info.hide_network -> []
+          true -> followers
+        end
+
       render(conn, AccountView, "accounts.json", %{users: followers, as: :user})
     end
   end
@@ -959,9 +979,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
-    with new_info <- Map.put(user.info, "settings", settings),
-         change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, _user} <- User.update_and_set_cache(change) do
+    info_cng = User.Info.mastodon_settings_update(user.info, settings)
+
+    with changeset <- User.update_changeset(user),
+         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
       conn
       |> json(%{})
     else
@@ -1149,6 +1171,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
+  def create_push_subscription(%{assigns: %{user: user, token: token}} = conn, params) do
+    Pleroma.Web.Push.Subscription.delete_if_exists(user, token)
+    {:ok, subscription} = Pleroma.Web.Push.Subscription.create(user, token, params)
+    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
+    json(conn, view)
+  end
+
+  def get_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
+    subscription = Pleroma.Web.Push.Subscription.get(user, token)
+    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
+    json(conn, view)
+  end
+
+  def update_push_subscription(
+        %{assigns: %{user: user, token: token}} = conn,
+        params
+      ) do
+    {:ok, subscription} = Pleroma.Web.Push.Subscription.update(user, token, params)
+    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
+    json(conn, view)
+  end
+
+  def delete_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
+    {:ok, _response} = Pleroma.Web.Push.Subscription.delete(user, token)
+    json(conn, %{})
+  end
+
   def errors(conn, _) do
     conn
     |> put_status(500)
@@ -1169,7 +1218,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       url = String.replace(api, "{{host}}", host) |> String.replace("{{user}}", user)
 
       with {:ok, %{status: 200, body: body}} <-
-             @httpoison.get(url, [], timeout: timeout, recv_timeout: timeout),
+             @httpoison.get(
+               url,
+               [],
+               adapter: [
+                 timeout: timeout,
+                 recv_timeout: timeout
+               ]
+             ),
            {:ok, data} <- Jason.decode(body) do
         data2 =
           Enum.slice(data, 0, limit)

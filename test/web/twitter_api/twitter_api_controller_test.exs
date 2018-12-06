@@ -861,6 +861,67 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       result = json_response(conn, 200)
       assert Enum.sort(expected) == Enum.sort(result)
     end
+
+    test "it returns a given user's followers with user_id", %{conn: conn} do
+      user = insert(:user)
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      conn =
+        conn
+        |> assign(:user, not_follower)
+        |> get("/api/statuses/followers", %{"user_id" => user.id})
+
+      assert MapSet.equal?(
+               MapSet.new(json_response(conn, 200)),
+               MapSet.new(
+                 UserView.render("index.json", %{
+                   users: [follower_one, follower_two],
+                   for: not_follower
+                 })
+               )
+             )
+    end
+
+    test "it returns empty for a hidden network", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_network: true}})
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      conn =
+        conn
+        |> assign(:user, not_follower)
+        |> get("/api/statuses/followers", %{"user_id" => user.id})
+
+      assert [] == json_response(conn, 200)
+    end
+
+    test "it returns the followers for a hidden network if requested by the user themselves", %{
+      conn: conn
+    } do
+      user = insert(:user, %{info: %{hide_network: true}})
+      follower_one = insert(:user)
+      follower_two = insert(:user)
+      not_follower = insert(:user)
+
+      {:ok, follower_one} = User.follow(follower_one, user)
+      {:ok, follower_two} = User.follow(follower_two, user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/followers", %{"user_id" => user.id})
+
+      refute [] == json_response(conn, 200)
+    end
   end
 
   describe "GET /api/statuses/friends" do
@@ -903,6 +964,42 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  UserView.render("index.json", %{users: [followed_one, followed_two], for: user})
                )
              )
+    end
+
+    test "it returns empty for a hidden network", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_network: true}})
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      conn =
+        conn
+        |> assign(:user, not_followed)
+        |> get("/api/statuses/friends", %{"user_id" => user.id})
+
+      assert [] == json_response(conn, 200)
+    end
+
+    test "it returns friends for a hidden network if the user themselves request it", %{
+      conn: conn
+    } do
+      user = insert(:user, %{info: %{hide_network: true}})
+      followed_one = insert(:user)
+      followed_two = insert(:user)
+      not_followed = insert(:user)
+
+      {:ok, user} = User.follow(user, followed_one)
+      {:ok, user} = User.follow(user, followed_two)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/friends", %{"user_id" => user.id})
+
+      refute [] == json_response(conn, 200)
     end
 
     test "it returns a given user's friends with screen_name", %{conn: conn} do
@@ -969,8 +1066,34 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert user.name == "new name"
 
       assert user.bio ==
-               "hi <span><a class='mention' href='#{user2.ap_id}'>@<span>#{user2.nickname}</span></a></span>"
+               "hi <span><a data-user='#{user2.id}' class='mention' href='#{user2.ap_id}'>@<span>#{
+                 user2.nickname
+               }</span></a></span>"
 
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
+    test "it sets and un-sets hide_network", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> post("/api/account/update_profile.json", %{
+        "hide_network" => "true"
+      })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.hide_network == true
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+          "hide_network" => "false"
+        })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.hide_network == false
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
 
@@ -1251,6 +1374,84 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert length(resp) == 3
       assert [user.id, user_two.id, user_three.id] == Enum.map(resp, fn %{"id" => id} -> id end)
+    end
+  end
+
+  describe "POST /api/media/upload" do
+    setup context do
+      Pleroma.DataCase.ensure_local_uploader(context)
+    end
+
+    test "it performs the upload and sets `data[actor]` with AP id of uploader user", %{
+      conn: conn
+    } do
+      user = insert(:user)
+
+      upload_filename = "test/fixtures/image_tmp.jpg"
+      File.cp!("test/fixtures/image.jpg", upload_filename)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname(upload_filename),
+        filename: "image.jpg"
+      }
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/octet-stream")
+        |> post("/api/media/upload", %{
+          "media" => file
+        })
+        |> json_response(:ok)
+
+      assert response["media_id"]
+      object = Repo.get(Object, response["media_id"])
+      assert object
+      assert object.data["actor"] == User.ap_id(user)
+    end
+  end
+
+  describe "POST /api/media/metadata/create" do
+    setup do
+      object = insert(:note)
+      user = User.get_by_ap_id(object.data["actor"])
+      %{object: object, user: user}
+    end
+
+    test "it returns :forbidden status on attempt to modify someone else's upload", %{
+      conn: conn,
+      object: object
+    } do
+      initial_description = object.data["name"]
+      another_user = insert(:user)
+
+      conn
+      |> assign(:user, another_user)
+      |> post("/api/media/metadata/create", %{"media_id" => object.id})
+      |> json_response(:forbidden)
+
+      object = Repo.get(Object, object.id)
+      assert object.data["name"] == initial_description
+    end
+
+    test "it updates `data[name]` of referenced Object with provided value", %{
+      conn: conn,
+      object: object,
+      user: user
+    } do
+      description = "Informative description of the image. Initial value: #{object.data["name"]}}"
+
+      conn
+      |> assign(:user, user)
+      |> post("/api/media/metadata/create", %{
+        "media_id" => object.id,
+        "alt_text" => %{"text" => description}
+      })
+      |> json_response(:no_content)
+
+      object = Repo.get(Object, object.id)
+      assert object.data["name"] == description
     end
   end
 end

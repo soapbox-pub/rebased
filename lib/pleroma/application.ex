@@ -66,7 +66,8 @@ defmodule Pleroma.Application do
         ),
         worker(Pleroma.Web.Federator.RetryQueue, []),
         worker(Pleroma.Web.Federator, []),
-        worker(Pleroma.Stats, [])
+        worker(Pleroma.Stats, []),
+        worker(Pleroma.Web.Push, [])
       ] ++
         streamer_child() ++
         chat_child() ++

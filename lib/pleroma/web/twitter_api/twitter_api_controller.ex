@@ -4,7 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
-  alias Pleroma.{Repo, Activity, User, Notification}
+  alias Pleroma.{Repo, Activity, Object, User, Notification}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Ecto.Changeset
@@ -226,16 +226,51 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def upload(conn, %{"media" => media}) do
-    response = TwitterAPI.upload(media)
+  @doc """
+  Updates metadata of uploaded media object.
+  Derived from [Twitter API endpoint](https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-metadata-create).
+  """
+  def update_media(%{assigns: %{user: user}} = conn, %{"media_id" => id} = data) do
+    object = Repo.get(Object, id)
+    description = get_in(data, ["alt_text", "text"]) || data["name"] || data["description"]
+
+    {conn, status, response_body} =
+      cond do
+        !object ->
+          {halt(conn), :not_found, ""}
+
+        !Object.authorize_mutation(object, user) ->
+          {halt(conn), :forbidden, "You can only update your own uploads."}
+
+        !is_binary(description) ->
+          {conn, :not_modified, ""}
+
+        true ->
+          new_data = Map.put(object.data, "name", description)
+
+          {:ok, _} =
+            object
+            |> Object.change(%{data: new_data})
+            |> Repo.update()
+
+          {conn, :no_content, ""}
+      end
+
+    conn
+    |> put_status(status)
+    |> json(response_body)
+  end
+
+  def upload(%{assigns: %{user: user}} = conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media, user)
 
     conn
     |> put_resp_content_type("application/atom+xml")
     |> send_resp(200, response)
   end
 
-  def upload_json(conn, %{"media" => media}) do
-    response = TwitterAPI.upload(media, "json")
+  def upload_json(%{assigns: %{user: user}} = conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media, user, "json")
 
     conn
     |> json_reply(200, response)
@@ -340,18 +375,32 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def followers(conn, params) do
-    with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
+  def followers(%{assigns: %{user: for_user}} = conn, params) do
+    with {:ok, user} <- TwitterAPI.get_user(for_user, params),
          {:ok, followers} <- User.get_followers(user) do
+      followers =
+        cond do
+          for_user && user.id == for_user.id -> followers
+          user.info.hide_network -> []
+          true -> followers
+        end
+
       render(conn, UserView, "index.json", %{users: followers, for: conn.assigns[:user]})
     else
       _e -> bad_request_reply(conn, "Can't get followers")
     end
   end
 
-  def friends(conn, params) do
+  def friends(%{assigns: %{user: for_user}} = conn, params) do
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
          {:ok, friends} <- User.get_friends(user) do
+      friends =
+        cond do
+          for_user && user.id == for_user.id -> friends
+          user.info.hide_network -> []
+          true -> friends
+        end
+
       render(conn, UserView, "index.json", %{users: friends, for: conn.assigns[:user]})
     else
       _e -> bad_request_reply(conn, "Can't get friends")
@@ -429,7 +478,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp build_info_cng(user, params) do
     info_params =
-      ["no_rich_text", "locked"]
+      ["no_rich_text", "locked", "hide_network"]
       |> Enum.reduce(%{}, fn key, res ->
         if value = params[key] do
           Map.put(res, key, value == "true")

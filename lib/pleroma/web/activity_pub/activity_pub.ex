@@ -574,7 +574,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def upload(file, opts \\ []) do
     with {:ok, data} <- Upload.store(file, opts) do
-      Repo.insert(%Object{data: data})
+      obj_data =
+        if opts[:actor] do
+          Map.put(data, "actor", opts[:actor])
+        else
+          data
+        end
+
+      Repo.insert(%Object{data: obj_data})
     end
   end
 
@@ -765,10 +772,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, %{body: body, status: code}} when code in 200..299 <-
            @httpoison.get(
              id,
-             [Accept: "application/activity+json"],
-             follow_redirect: true,
-             timeout: 10000,
-             recv_timeout: 20000
+             [{:Accept, "application/activity+json"}]
            ),
          {:ok, data} <- Jason.decode(body),
          :ok <- Transmogrifier.contain_origin_from_id(id, data) do

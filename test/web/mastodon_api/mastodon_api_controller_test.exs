@@ -2,7 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Activity, Notification}
+  alias Pleroma.{Repo, User, Object, Activity, Notification}
   alias Pleroma.Web.{OStatus, CommonAPI}
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -590,7 +590,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/notifications")
 
       expected_response =
-        "hi <span><a href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
+        "hi <span><a data-user=\"#{user.id}\" href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
 
       assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
       assert response == expected_response
@@ -611,7 +611,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/notifications/#{notification.id}")
 
       expected_response =
-        "hi <span><a href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
+        "hi <span><a data-user=\"#{user.id}\" href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
 
       assert %{"status" => %{"content" => response}} = json_response(conn, 200)
       assert response == expected_response
@@ -810,7 +810,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       }
 
       media =
-        TwitterAPI.upload(file, "json")
+        TwitterAPI.upload(file, user, "json")
         |> Poison.decode!()
 
       {:ok, image_post} =
@@ -965,6 +965,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert media["type"] == "image"
     assert media["description"] == desc
+    assert media["id"]
+
+    object = Repo.get(Object, media["id"])
+    assert object.data["actor"] == User.ap_id(user)
   end
 
   test "hashtag timeline", %{conn: conn} do
@@ -1008,6 +1012,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(user.id)
   end
 
+  test "getting followers, hide_network", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user, %{info: %{hide_network: true}})
+    {:ok, user} = User.follow(user, other_user)
+
+    conn =
+      conn
+      |> get("/api/v1/accounts/#{other_user.id}/followers")
+
+    assert [] == json_response(conn, 200)
+  end
+
+  test "getting followers, hide_network, same user requesting", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user, %{info: %{hide_network: true}})
+    {:ok, user} = User.follow(user, other_user)
+
+    conn =
+      conn
+      |> assign(:user, other_user)
+      |> get("/api/v1/accounts/#{other_user.id}/followers")
+
+    refute [] == json_response(conn, 200)
+  end
+
   test "getting following", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
@@ -1019,6 +1048,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert [%{"id" => id}] = json_response(conn, 200)
     assert id == to_string(other_user.id)
+  end
+
+  test "getting following, hide_network", %{conn: conn} do
+    user = insert(:user, %{info: %{hide_network: true}})
+    other_user = insert(:user)
+    {:ok, user} = User.follow(user, other_user)
+
+    conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/following")
+
+    assert [] == json_response(conn, 200)
+  end
+
+  test "getting following, hide_network, same user requesting", %{conn: conn} do
+    user = insert(:user, %{info: %{hide_network: true}})
+    other_user = insert(:user)
+    {:ok, user} = User.follow(user, other_user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/accounts/#{user.id}/following")
+
+    refute [] == json_response(conn, 200)
   end
 
   test "following / unfollowing a user", %{conn: conn} do
@@ -1271,9 +1325,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               "I drink <a href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span><a href=\"#{
-                 user2.ap_id
-               }\">@<span>#{user2.nickname}</span></a></span>"
+               "I drink <a data-tag=\"cofe\" href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span><a data-user=\"#{
+                 user2.id
+               }\" href=\"#{user2.ap_id}\">@<span>#{user2.nickname}</span></a></span>"
     end
 
     test "updates the user's locking status", %{conn: conn} do
