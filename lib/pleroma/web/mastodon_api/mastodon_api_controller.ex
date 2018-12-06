@@ -2,13 +2,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
   alias Pleroma.Web
-  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView, MastodonView, ListView, FilterView}
+
+  alias Pleroma.Web.MastodonAPI.{
+    StatusView,
+    AccountView,
+    MastodonView,
+    ListView,
+    FilterView,
+    PushSubscriptionView
+  }
+
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Pleroma.Web.MediaProxy
-  alias Comeonin.Pbkdf2
+
   import Ecto.Query
   require Logger
 
@@ -1157,6 +1166,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     }
 
     {:ok, _} = Pleroma.Filter.delete(query)
+    json(conn, %{})
+  end
+
+  def create_push_subscription(%{assigns: %{user: user, token: token}} = conn, params) do
+    Pleroma.Web.Push.Subscription.delete_if_exists(user, token)
+    {:ok, subscription} = Pleroma.Web.Push.Subscription.create(user, token, params)
+    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
+    json(conn, view)
+  end
+
+  def get_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
+    subscription = Pleroma.Web.Push.Subscription.get(user, token)
+    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
+    json(conn, view)
+  end
+
+  def update_push_subscription(
+        %{assigns: %{user: user, token: token}} = conn,
+        params
+      ) do
+    {:ok, subscription} = Pleroma.Web.Push.Subscription.update(user, token, params)
+    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
+    json(conn, view)
+  end
+
+  def delete_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
+    {:ok, _response} = Pleroma.Web.Push.Subscription.delete(user, token)
     json(conn, %{})
   end
 

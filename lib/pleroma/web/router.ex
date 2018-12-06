@@ -198,6 +198,11 @@ defmodule Pleroma.Web.Router do
     put("/filters/:id", MastodonAPIController, :update_filter)
     delete("/filters/:id", MastodonAPIController, :delete_filter)
 
+    post("/push/subscription", MastodonAPIController, :create_push_subscription)
+    get("/push/subscription", MastodonAPIController, :get_push_subscription)
+    put("/push/subscription", MastodonAPIController, :update_push_subscription)
+    delete("/push/subscription", MastodonAPIController, :delete_push_subscription)
+
     get("/suggestions", MastodonAPIController, :suggestions)
 
     get("/endorsements", MastodonAPIController, :empty_array)

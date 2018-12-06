@@ -110,6 +110,7 @@ defmodule Pleroma.Notification do
       notification = %Notification{user_id: user.id, activity: activity}
       {:ok, notification} = Repo.insert(notification)
       Pleroma.Web.Streamer.stream("user", notification)
+      Pleroma.Web.Push.send(notification)
       notification
     end
   end

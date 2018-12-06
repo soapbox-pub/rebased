@@ -17,7 +17,9 @@ defmodule Pleroma.Plugs.OAuthPlug do
   def call(conn, _) do
     with {:ok, token} <- fetch_token(conn),
          {:ok, user} <- fetch_user(token) do
-      assign(conn, :user, user)
+      conn
+      |> assign(:token, token)
+      |> assign(:user, user)
     else
       _ -> conn
     end
