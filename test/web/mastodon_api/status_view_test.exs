@@ -24,7 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       note
       |> Map.put(:data, data)
 
-    user = User.get_cached_by_ap_id(note.data["actor"])
+    User.get_cached_by_ap_id(note.data["actor"])
 
     status = StatusView.render("status.json", %{activity: note})
 
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       visibility: "public",
       media_attachments: [],
       mentions: [],
-      tags: [],
+      tags: note.data["object"]["tag"],
       application: %{
         name: "Web",
         website: nil

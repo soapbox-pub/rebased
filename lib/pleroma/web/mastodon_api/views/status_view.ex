@@ -1,18 +1,26 @@
 defmodule Pleroma.Web.MastodonAPI.StatusView do
   use Pleroma.Web, :view
-  alias Pleroma.Web.MastodonAPI.{AccountView, StatusView}
-  alias Pleroma.{User, Activity}
-  alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MediaProxy
-  alias Pleroma.Repo
-  alias Pleroma.HTML
+
+  alias Pleroma.{
+    Activity,
+    HTML,
+    Repo,
+    User
+  }
+
+  alias Pleroma.Web.{
+    CommonAPI.Utils,
+    MastodonAPI.AccountView,
+    MastodonAPI.StatusView,
+    MediaProxy
+  }
 
   # TODO: Add cached version.
   defp get_replied_to_activities(activities) do
     activities
     |> Enum.map(fn
-      %{data: %{"type" => "Create", "object" => %{"inReplyTo" => inReplyTo}}} ->
-        inReplyTo != "" && inReplyTo
+      %{data: %{"type" => "Create", "object" => %{"inReplyTo" => in_reply_to}}} ->
+        in_reply_to != "" && in_reply_to
 
       _ ->
         nil
@@ -28,8 +36,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   def render("index.json", opts) do
     replied_to_activities = get_replied_to_activities(opts.activities)
 
-    render_many(
-      opts.activities,
+    opts.activities
+    |> render_many(
       StatusView,
       "status.json",
       Map.put(opts, :replied_to_activities, replied_to_activities)
@@ -72,9 +80,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       sensitive: false,
       spoiler_text: "",
       visibility: "public",
-      media_attachments: [],
+      media_attachments: reblogged[:media_attachments] || [],
       mentions: mentions,
-      tags: [],
+      tags: reblogged[:tags] || [],
       application: %{
         name: "Web",
         website: nil
@@ -111,20 +119,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     reply_to = get_reply_to(activity, opts)
     reply_to_user = reply_to && User.get_cached_by_ap_id(reply_to.data["actor"])
 
-    emojis =
-      (activity.data["object"]["emoji"] || [])
-      |> Enum.map(fn {name, url} ->
-        name = HTML.strip_tags(name)
-
-        url =
-          HTML.strip_tags(url)
-          |> MediaProxy.url()
-
-        %{shortcode: name, url: url, static_url: url, visible_in_picker: false}
-      end)
-
     content =
-      render_content(object)
+      object
+      |> render_content()
       |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
 
     %{
@@ -140,22 +137,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogs_count: announcement_count,
       replies_count: 0,
       favourites_count: like_count,
-      reblogged: !!repeated,
-      favourited: !!favorited,
+      reblogged: present?(repeated),
+      favourited: present?(favorited),
       muted: false,
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",
       visibility: get_visibility(object),
       media_attachments: attachments |> Enum.take(4),
       mentions: mentions,
-      # fix,
-      tags: [],
+      tags: tags,
       application: %{
         name: "Web",
         website: nil
       },
       language: nil,
-      emojis: emojis
+      emojis: build_emojis(activity.data["object"]["emoji"])
     }
   end
 
@@ -224,30 +220,56 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render_content(%{"type" => "Video"} = object) do
-    name = object["name"]
-
-    content =
-      if !!name and name != "" do
-        "<p><a href=\"#{object["id"]}\">#{name}</a></p>#{object["content"]}"
-      else
-        object["content"] || ""
-      end
-
-    content
+    with name when not is_nil(name) and name != "" <- object["name"] do
+      "<p><a href=\"#{object["id"]}\">#{name}</a></p>#{object["content"]}"
+    else
+      _ -> object["content"] || ""
+    end
   end
 
-  def render_content(%{"type" => object_type} = object) when object_type in ["Article", "Page"] do
-    summary = object["name"]
-
-    content =
-      if !!summary and summary != "" and is_bitstring(object["url"]) do
-        "<p><a href=\"#{object["url"]}\">#{summary}</a></p>#{object["content"]}"
-      else
-        object["content"] || ""
-      end
-
-    content
+  def render_content(%{"type" => object_type} = object)
+      when object_type in ["Article", "Page"] do
+    with summary when not is_nil(summary) and summary != "" <- object["name"],
+         url when is_bitstring(url) <- object["url"] do
+      "<p><a href=\"#{url}\">#{summary}</a></p>#{object["content"]}"
+    else
+      _ -> object["content"] || ""
+    end
   end
 
   def render_content(object), do: object["content"] || ""
+
+  @doc """
+  Builds list emojis.
+
+  Arguments: `nil` or list tuple of name and url.
+
+  Returns list emojis.
+
+  ## Examples
+
+  iex> Pleroma.Web.MastodonAPI.StatusView.build_emojis([{"2hu", "corndog.png"}])
+  [%{shortcode: "2hu", static_url: "corndog.png", url: "corndog.png", visible_in_picker: false}]
+
+  """
+  @spec build_emojis(nil | list(tuple())) :: list(map())
+  def build_emojis(nil), do: []
+
+  def build_emojis(emojis) do
+    emojis
+    |> Enum.map(fn {name, url} ->
+      name = HTML.strip_tags(name)
+
+      url =
+        url
+        |> HTML.strip_tags()
+        |> MediaProxy.url()
+
+      %{shortcode: name, url: url, static_url: url, visible_in_picker: false}
+    end)
+  end
+
+  defp present?(nil), do: false
+  defp present?(false), do: false
+  defp present?(_), do: true
 end
