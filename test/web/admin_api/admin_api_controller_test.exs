@@ -48,12 +48,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         build_conn()
         |> assign(:user, admin)
         |> put_req_header("accept", "application/json")
-        |> put("/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=#{user2.nickname}&tags[]=foo&tags[]=bar")
+        |> put(
+          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=#{
+            user2.nickname
+          }&tags[]=foo&tags[]=bar"
+        )
 
       %{conn: conn, user1: user1, user2: user2, user3: user3}
     end
 
-    test "it appends specified tags to users with specified nicknames", %{conn: conn, user1: user1, user2: user2} do
+    test "it appends specified tags to users with specified nicknames", %{
+      conn: conn,
+      user1: user1,
+      user2: user2
+    } do
       assert json_response(conn, :no_content)
       assert Repo.get(User, user1.id).tags == ["x", "foo", "bar"]
       assert Repo.get(User, user2.id).tags == ["y", "foo", "bar"]
@@ -76,12 +84,20 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         build_conn()
         |> assign(:user, admin)
         |> put_req_header("accept", "application/json")
-        |> put("/api/pleroma/admin/users/untag?nicknames[]=#{user1.nickname}&nicknames[]=#{user2.nickname}&tags[]=x&tags[]=z")
+        |> put(
+          "/api/pleroma/admin/users/untag?nicknames[]=#{user1.nickname}&nicknames[]=#{
+            user2.nickname
+          }&tags[]=x&tags[]=z"
+        )
 
       %{conn: conn, user1: user1, user2: user2, user3: user3}
     end
 
-    test "it removes specified tags from users with specified nicknames", %{conn: conn, user1: user1, user2: user2} do
+    test "it removes specified tags from users with specified nicknames", %{
+      conn: conn,
+      user1: user1,
+      user2: user2
+    } do
       assert json_response(conn, :no_content)
       assert Repo.get(User, user1.id).tags == []
       assert Repo.get(User, user2.id).tags == ["y"]
