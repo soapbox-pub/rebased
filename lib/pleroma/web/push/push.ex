@@ -68,7 +68,7 @@ defmodule Pleroma.Web.Push do
           Logger.error("Web Push Nonification failed with code: #{code}")
           :error
 
-        data ->
+        _ ->
           Logger.error("Web Push Nonification failed with unknown error")
           :error
       end
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.Push do
     %{
       title: "New Mention",
       body: "@#{actor.nickname} has mentiond you",
-      icon: get_avatar_url(actor)
+      icon: User.avatar_url(actor)
     }
   end
 
@@ -94,7 +94,7 @@ defmodule Pleroma.Web.Push do
     %{
       title: "New Follower",
       body: "@#{actor.nickname} has followed you",
-      icon: get_avatar_url(actor)
+      icon: User.avatar_url(actor)
     }
   end
 
@@ -102,7 +102,7 @@ defmodule Pleroma.Web.Push do
     %{
       title: "New Announce",
       body: "@#{actor.nickname} has announced your post",
-      icon: get_avatar_url(actor)
+      icon: User.avatar_url(actor)
     }
   end
 
@@ -110,18 +110,7 @@ defmodule Pleroma.Web.Push do
     %{
       title: "New Like",
       body: "@#{actor.nickname} has liked your post",
-      icon: get_avatar_url(actor)
+      icon: User.avatar_url(actor)
     }
-  end
-
-  def get_avatar_url(%{avatar: %{"type" => "Image", "url" => urls}}) do
-    case List.first(urls) do
-      %{"href" => url} -> url
-      _ -> get_avatar_url(nil)
-    end
-  end
-
-  def get_avatar_url(_) do
-    Pleroma.Web.Endpoint.static_url() <> "/images/avi.png"
   end
 end
