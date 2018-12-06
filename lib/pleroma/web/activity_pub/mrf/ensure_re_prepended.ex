@@ -3,13 +3,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
 
   @behaviour Pleroma.Web.ActivityPub.MRF
 
+  @have_re Regex.compile!("^re:[[:space:]]*", [:caseless])
   def filter_by_summary(
         %{"summary" => parent_summary} = parent,
         %{"summary" => child_summary} = child
       )
-      when not is_nil(child_summary) and child_summary == parent_summary and
-             byte_size(child_summary) > 1 do
-    if not String.starts_with?(child_summary, "re:") do
+      when not is_nil(child_summary) and byte_size(child_summary) > 0 and
+             not is_nil(parent_summary) and byte_size(parent_summary) > 0 do
+    if (child_summary == parent_summary and not Regex.match?(@have_re, child_summary)) or
+         (Regex.match?(@have_re, parent_summary) &&
+            Regex.replace(@have_re, parent_summary, "") == child_summary) do
       Map.put(child, "summary", "re: " <> child_summary)
     else
       child
