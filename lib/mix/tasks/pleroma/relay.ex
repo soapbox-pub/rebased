@@ -20,7 +20,8 @@ defmodule Mix.Tasks.Pleroma.Relay do
   Example: ``mix pleroma.relay unfollow https://example.org/relay``
   """
   def run(["follow", target]) do
-    Common.start_pleroma
+    Common.start_pleroma()
+
     with {:ok, activity} <- Relay.follow(target) do
       # put this task to sleep to allow the genserver to push out the messages
       :timer.sleep(500)
@@ -30,7 +31,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
   end
 
   def run(["unfollow", target]) do
-    Common.start_pleroma
+    Common.start_pleroma()
 
     with {:ok, activity} <- Relay.follow(target) do
       # put this task to sleep to allow the genserver to push out the messages

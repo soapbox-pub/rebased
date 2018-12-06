@@ -67,13 +67,19 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
 
       name =
-        Common.get_option(options, :name, "What is the name of your instance? (e.g. Pleroma/Soykaf)")
+        Common.get_option(
+          options,
+          :name,
+          "What is the name of your instance? (e.g. Pleroma/Soykaf)"
+        )
 
       email = Common.get_option(options, :admin_email, "What is your admin email address?")
 
-      dbhost = Common.get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
+      dbhost =
+        Common.get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
 
-      dbname = Common.get_option(options, :dbname, "What is the name of your database?", "pleroma_dev")
+      dbname =
+        Common.get_option(options, :dbname, "What is the name of your database?", "pleroma_dev")
 
       dbuser =
         Common.get_option(
@@ -145,7 +151,4 @@ defmodule Mix.Tasks.Pleroma.Instance do
       )
     end
   end
-
-
-
 end
