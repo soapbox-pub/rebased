@@ -149,6 +149,11 @@ defmodule Pleroma.User.Info do
     ])
   end
 
+  def mastodon_settings_update(info, params) do
+    info
+    |> cast(params, [:settings])
+  end
+
   def set_source_data(info, source_data) do
     params = %{source_data: source_data}
 
