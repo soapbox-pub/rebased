@@ -1185,7 +1185,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
              @httpoison.get(
                url,
                [],
-               follow_redirect: true,
                adapter: [
                  timeout: timeout,
                  recv_timeout: timeout
