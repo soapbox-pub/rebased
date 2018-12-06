@@ -162,12 +162,7 @@ defmodule Pleroma.Web.Salmon do
            poster.(
              salmon,
              feed,
-             [{"Content-Type", "application/magic-envelope+xml"}],
-             adapter: [
-               timeout: 10000,
-               recv_timeout: 20000,
-               pool: :default
-             ]
+             [{"Content-Type", "application/magic-envelope+xml"}]
            ) do
       Logger.debug(fn -> "Pushed to #{salmon}, code #{code}" end)
     else

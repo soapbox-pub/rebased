@@ -264,11 +264,6 @@ defmodule Pleroma.Web.Websub do
              [
                {"Content-Type", "application/atom+xml"},
                {"X-Hub-Signature", "sha1=#{signature}"}
-             ],
-             adapter: [
-               timeout: 10000,
-               recv_timeout: 20000,
-               pool: :default
              ]
            ) do
       Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)

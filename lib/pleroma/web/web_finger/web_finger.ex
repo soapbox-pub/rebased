@@ -221,7 +221,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def find_lrdd_template(domain) do
     with {:ok, %{status: status, body: body}} when status in 200..299 <-
-           @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
+           @httpoison.get("http://#{domain}/.well-known/host-meta", []) do
       get_template_from_xml(body)
     else
       _ ->
