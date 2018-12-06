@@ -23,6 +23,7 @@ defmodule Pleroma.User do
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
     field(:search_distance, :float, virtual: true)
+    field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
     embeds_one(:info, Pleroma.User.Info)
@@ -818,5 +819,47 @@ defmodule Pleroma.User do
       end)
 
     CommonUtils.format_input(bio, mentions, tags, "text/plain") |> Formatter.emojify(emoji)
+  end
+
+  def tag(user_identifiers, tags), do: tag_or_untag(user_identifiers, tags, :tag)
+
+  def untag(user_identifiers, tags), do: tag_or_untag(user_identifiers, tags, :untag)
+
+  defp tag_or_untag(user_identifier, tags, action) when not is_list(user_identifier),
+    do: tag_or_untag([user_identifier], tags, action)
+
+  defp tag_or_untag([hd | _] = nicknames, tags, action) when is_binary(hd) do
+    users = Repo.all(from(u in User, where: u.nickname in ^nicknames))
+
+    if length(users) == length(nicknames) do
+      tag_or_untag(users, tags, action)
+    else
+      {:error, :not_found}
+    end
+  end
+
+  defp tag_or_untag([hd | _] = users, tags, action) when is_map(hd) do
+    tags =
+      [tags]
+      |> List.flatten()
+      |> Enum.map(&String.downcase(&1))
+
+    Repo.transaction(fn ->
+      for user <- users do
+        new_tags =
+          if action == :tag do
+            Enum.uniq(user.tags ++ tags)
+          else
+            user.tags -- tags
+          end
+
+        {:ok, updated_user} =
+          user
+          |> change(%{tags: new_tags})
+          |> Repo.update()
+
+        updated_user
+      end
+    end)
   end
 end

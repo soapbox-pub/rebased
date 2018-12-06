@@ -58,7 +58,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         note: "",
         privacy: user_info.default_scope,
         sensitive: false
-      }
+      },
+      # Note: Mastodon does not return this field:
+      tags: user.tags
     }
   end
 
