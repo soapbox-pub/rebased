@@ -1,3 +1,8 @@
+# Pleroma instance configuration
+
+# NOTE: This file should not be committed to a repo or otherwise made public
+# without removing sensitive information.
+
 use Mix.Config
 
 config :pleroma, Pleroma.Web.Endpoint,
@@ -16,13 +21,12 @@ config :pleroma, :media_proxy,
   redirect_on_failure: true
   #base_url: "https://cache.pleroma.social"
 
-# Configure your database
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
-  username: "pleroma",
+  username: "<%= dbuser %>",
   password: "<%= dbpass %>",
-  database: "pleroma_dev",
-  hostname: "localhost",
+  database: "<%= dbname %>",
+  hostname: "<%= dbhost %>",
   pool_size: 10
 
 # Configure web push notifications
