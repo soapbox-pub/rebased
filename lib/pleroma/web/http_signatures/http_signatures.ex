@@ -65,7 +65,7 @@ defmodule Pleroma.Web.HTTPSignatures do
   end
 
   def sign(user, headers) do
-    with {:ok, %{info: %{"keys" => keys}}} <- Pleroma.Web.WebFinger.ensure_keys_present(user),
+    with {:ok, %{info: %{keys: keys}}} <- Pleroma.Web.WebFinger.ensure_keys_present(user),
          {:ok, private_key, _} = Pleroma.Web.Salmon.keys_from_pem(keys) do
       sigstring = build_signing_string(headers, Map.keys(headers))
 

@@ -31,10 +31,10 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     expected =
       "<img height=\"32px\" width=\"32px\" alt=\"karjalanpiirakka\" title=\"karjalanpiirakka\" src=\"/file.png\" /> man"
 
-    user = %{
-      user
-      | info: %{
-          "source_data" => %{
+    user =
+      insert(:user, %{
+        info: %{
+          source_data: %{
             "tag" => [
               %{
                 "type" => "Emoji",
@@ -43,10 +43,10 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
               }
             ]
           }
-        }
-    }
+        },
+        name: ":karjalanpiirakka: man"
+      })
 
-    user = %{user | name: ":karjalanpiirakka: man"}
     represented = UserView.render("show.json", %{user: user})
     assert represented["name_html"] == expected
   end
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   end
 
   test "A user for a given other follower", %{user: user} do
-    {:ok, follower} = UserBuilder.insert(%{following: [User.ap_followers(user)]})
+    follower = insert(:user, %{following: [User.ap_followers(user)]})
     {:ok, user} = User.update_follower_count(user)
     image = "http://localhost:4001/images/avi.png"
     banner = "http://localhost:4001/images/banner.png"
@@ -186,7 +186,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   end
 
   test "a user that is a moderator" do
-    user = insert(:user, %{info: %{"is_moderator" => true}})
+    user = insert(:user, %{info: %{is_moderator: true}})
     represented = UserView.render("show.json", %{user: user, for: user})
 
     assert represented["rights"]["delete_others_notice"]
@@ -250,7 +250,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     user =
       insert(:user, %{
         info: %{
-          "source_data" => %{
+          source_data: %{
             "attachment" =>
               Enum.map(fields, fn field -> Map.put(field, "type", "PropertyValue") end)
           }

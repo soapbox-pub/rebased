@@ -114,10 +114,10 @@ defmodule Pleroma.Formatter do
 
     subs =
       subs ++
-        Enum.map(mentions, fn {match, %User{ap_id: ap_id, info: info}, uuid} ->
+        Enum.map(mentions, fn {match, %User{id: id, ap_id: ap_id, info: info}, uuid} ->
           ap_id =
-            if is_binary(info["source_data"]["url"]) do
-              info["source_data"]["url"]
+            if is_binary(info.source_data["url"]) do
+              info.source_data["url"]
             else
               ap_id
             end
@@ -125,7 +125,7 @@ defmodule Pleroma.Formatter do
           short_match = String.split(match, "@") |> tl() |> hd()
 
           {uuid,
-           "<span><a class='mention' href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
+           "<span><a data-user='#{id}' class='mention' href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
         end)
 
     {subs, uuid_text}
@@ -147,7 +147,11 @@ defmodule Pleroma.Formatter do
     subs =
       subs ++
         Enum.map(tags, fn {tag_text, tag, uuid} ->
-          url = "<a href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{tag_text}</a>"
+          url =
+            "<a data-tag='#{tag}' href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{
+              tag_text
+            }</a>"
+
           {uuid, url}
         end)
 

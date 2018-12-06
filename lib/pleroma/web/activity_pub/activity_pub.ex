@@ -42,7 +42,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp check_actor_is_active(actor) do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
-           false <- !!user.info["deactivated"] do
+           false <- user.info.deactivated do
         :ok
       else
         _e -> :reject
@@ -509,8 +509,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
-    blocks = info["blocks"] || []
-    domain_blocks = info["domain_blocks"] || []
+    blocks = info.blocks || []
+    domain_blocks = info.domain_blocks || []
 
     from(
       activity in query,
@@ -572,11 +572,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
-  def upload(file, size_limit \\ nil) do
-    with data <-
-           Upload.store(file, Application.get_env(:pleroma, :instance)[:dedupe_media], size_limit),
-         false <- is_nil(data) do
-      Repo.insert(%Object{data: data})
+  def upload(file, opts \\ []) do
+    with {:ok, data} <- Upload.store(file, opts) do
+      obj_data =
+        if opts[:actor] do
+          Map.put(data, "actor", opts[:actor])
+        else
+          data
+        end
+
+      Repo.insert(%Object{data: obj_data})
     end
   end
 
@@ -678,7 +683,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     remote_inboxes =
       (Pleroma.Web.Salmon.remote_users(activity) ++ followers)
       |> Enum.filter(fn user -> User.ap_enabled?(user) end)
-      |> Enum.map(fn %{info: %{"source_data" => data}} ->
+      |> Enum.map(fn %{info: %{source_data: data}} ->
         (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
       end)
       |> Enum.uniq()
@@ -764,7 +769,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Logger.info("Fetching #{id} via AP")
 
     with true <- String.starts_with?(id, "http"),
-         {:ok, %{body: body, status_code: code}} when code in 200..299 <-
+         {:ok, %{body: body, status: code}} when code in 200..299 <-
            @httpoison.get(
              id,
              [Accept: "application/activity+json"],

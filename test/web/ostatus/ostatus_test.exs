@@ -6,6 +6,11 @@ defmodule Pleroma.Web.OStatusTest do
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "don't insert create notes twice" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
@@ -17,7 +22,7 @@ defmodule Pleroma.Web.OStatusTest do
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 
     user = User.get_by_ap_id(activity.data["actor"])
-    assert user.info["note_count"] == 1
+    assert user.info.note_count == 1
     assert activity.data["type"] == "Create"
     assert activity.data["object"]["type"] == "Note"
 
@@ -319,7 +324,7 @@ defmodule Pleroma.Web.OStatusTest do
       assert user.name == "Constance Variable"
       assert user.nickname == "lambadalambda@social.heldscal.la"
       assert user.local == false
-      assert user.info["uri"] == uri
+      assert user.info.uri == uri
       assert user.ap_id == uri
       assert user.bio == "Call me Deacon Blues."
       assert user.avatar["type"] == "Image"
@@ -327,6 +332,38 @@ defmodule Pleroma.Web.OStatusTest do
       {:ok, user_again} = OStatus.find_or_make_user(uri)
 
       assert user == user_again
+    end
+
+    test "find_or_make_user sets all the nessary input fields" do
+      uri = "https://social.heldscal.la/user/23211"
+      {:ok, user} = OStatus.find_or_make_user(uri)
+
+      assert user.info ==
+               %Pleroma.User.Info{
+                 id: user.info.id,
+                 ap_enabled: false,
+                 background: %{},
+                 banner: %{},
+                 blocks: [],
+                 deactivated: false,
+                 default_scope: "public",
+                 domain_blocks: [],
+                 follower_count: 0,
+                 is_admin: false,
+                 is_moderator: false,
+                 keys: nil,
+                 locked: false,
+                 no_rich_text: false,
+                 note_count: 0,
+                 settings: nil,
+                 source_data: %{},
+                 hub: "https://social.heldscal.la/main/push/hub",
+                 magic_key:
+                   "RSA.uzg6r1peZU0vXGADWxGJ0PE34WvmhjUmydbX5YYdOiXfODVLwCMi1umGoqUDm-mRu4vNEdFBVJU1CpFA7dKzWgIsqsa501i2XqElmEveXRLvNRWFB6nG03Q5OUY2as8eE54BJm0p20GkMfIJGwP6TSFb-ICp3QjzbatuSPJ6xCE=.AQAB",
+                 salmon: "https://social.heldscal.la/main/salmon/user/23211",
+                 topic: "https://social.heldscal.la/api/statuses/user_timeline/23211.atom",
+                 uri: "https://social.heldscal.la/user/23211"
+               }
     end
 
     test "find_make_or_update_user takes an author element and returns an updated user" do
@@ -447,7 +484,7 @@ defmodule Pleroma.Web.OStatusTest do
     end
   end
 
-  test "it doesn't add nil in the do field" do
+  test "it doesn't add nil in the to field" do
     incoming = File.read!("test/fixtures/nil_mention_entry.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
 

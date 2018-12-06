@@ -13,10 +13,10 @@ defmodule Pleroma.Uploaders.Swift.Client do
     token = Pleroma.Uploaders.Swift.Keystone.get_token()
 
     case put("#{filename}", body, "X-Auth-Token": token, "Content-Type": content_type) do
-      {:ok, %HTTPoison.Response{status_code: 201}} ->
-        {:ok, "#{object_url}/#{filename}"}
+      {:ok, %Tesla.Env{status: 201}} ->
+        {:ok, {:file, filename}}
 
-      {:ok, %HTTPoison.Response{status_code: 401}} ->
+      {:ok, %Tesla.Env{status: 401}} ->
         {:error, "Unauthorized, Bad Token"}
 
       {:error, _} ->

@@ -7,6 +7,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Builders.ActivityBuilder
 
   import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   describe "building a user from his ap id" do
     test "it returns a user" do
@@ -14,8 +20,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, user} = ActivityPub.make_user_from_ap_id(user_id)
       assert user.ap_id == user_id
       assert user.nickname == "admin@mastodon.example.org"
-      assert user.info["source_data"]
-      assert user.info["ap_enabled"]
+      assert user.info.source_data
+      assert user.info.ap_enabled
       assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
     end
   end

@@ -6,6 +6,9 @@
 /uploads
 /test/uploads
 /.elixir_ls
+/test/fixtures/test_tmp.txt
+/test/fixtures/image_tmp.jpg
+/doc
 
 # Prevent committing custom emojis
 /priv/static/emoji/custom/*

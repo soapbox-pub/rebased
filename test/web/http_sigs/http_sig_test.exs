@@ -4,6 +4,12 @@ defmodule Pleroma.Web.HTTPSignaturesTest do
   use Pleroma.DataCase
   alias Pleroma.Web.HTTPSignatures
   import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   @private_key hd(:public_key.pem_decode(File.read!("test/web/http_sigs/priv.key")))
                |> :public_key.pem_entry_decode()

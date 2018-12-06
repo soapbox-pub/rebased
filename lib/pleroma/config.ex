@@ -39,4 +39,18 @@ defmodule Pleroma.Config do
   def put(key, value) do
     Application.put_env(:pleroma, key, value)
   end
+
+  def delete([key]), do: delete(key)
+
+  def delete([parent_key | keys]) do
+    {_, parent} =
+      Application.get_env(:pleroma, parent_key)
+      |> get_and_update_in(keys, fn _ -> :pop end)
+
+    Application.put_env(:pleroma, parent_key, parent)
+  end
+
+  def delete(key) do
+    Application.delete_env(:pleroma, key)
+  end
 end

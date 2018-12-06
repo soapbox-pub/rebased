@@ -157,15 +157,17 @@ defmodule Pleroma.Web.Salmon do
     |> Enum.filter(fn user -> user && !user.local end)
   end
 
-  defp send_to_user(%{info: %{"salmon" => salmon}}, feed, poster) do
-    with {:ok, %{status_code: code}} <-
+  defp send_to_user(%{info: %{salmon: salmon}}, feed, poster) do
+    with {:ok, %{status: code}} <-
            poster.(
              salmon,
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}],
-             timeout: 10000,
-             recv_timeout: 20000,
-             hackney: [pool: :default]
+             adapter: [
+               timeout: 10000,
+               recv_timeout: 20000,
+               pool: :default
+             ]
            ) do
       Logger.debug(fn -> "Pushed to #{salmon}, code #{code}" end)
     else
@@ -185,7 +187,7 @@ defmodule Pleroma.Web.Salmon do
   ]
   def publish(user, activity, poster \\ &@httpoison.post/4)
 
-  def publish(%{info: %{"keys" => keys}} = user, %{data: %{"type" => type}} = activity, poster)
+  def publish(%{info: %{keys: keys}} = user, %{data: %{"type" => type}} = activity, poster)
       when type in @supported_activities do
     feed = ActivityRepresenter.to_simple_form(activity, user, true)
 

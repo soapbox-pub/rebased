@@ -82,6 +82,23 @@ defmodule Pleroma.MediaProxyTest do
       [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
       assert decode_url(sig, base64) == {:error, :invalid_signature}
     end
+
+    test "uses the configured base_url" do
+      base_url = Pleroma.Config.get([:media_proxy, :base_url])
+
+      if base_url do
+        on_exit(fn ->
+          Pleroma.Config.put([:media_proxy, :base_url], base_url)
+        end)
+      end
+
+      Pleroma.Config.put([:media_proxy, :base_url], "https://cache.pleroma.social")
+
+      url = "https://pleroma.soykaf.com/static/logo.png"
+      encoded = url(url)
+
+      assert String.starts_with?(encoded, Pleroma.Config.get([:media_proxy, :base_url]))
+    end
   end
 
   describe "when disabled" do

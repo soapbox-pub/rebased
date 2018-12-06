@@ -2,6 +2,12 @@ defmodule Pleroma.Web.WebFingerTest do
   use Pleroma.DataCase
   alias Pleroma.Web.WebFinger
   import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   describe "host meta" do
     test "returns a link to the xml lrdd" do
@@ -99,15 +105,15 @@ defmodule Pleroma.Web.WebFingerTest do
   describe "ensure_keys_present" do
     test "it creates keys for a user and stores them in info" do
       user = insert(:user)
-      refute is_binary(user.info["keys"])
+      refute is_binary(user.info.keys)
       {:ok, user} = WebFinger.ensure_keys_present(user)
-      assert is_binary(user.info["keys"])
+      assert is_binary(user.info.keys)
     end
 
     test "it doesn't create keys if there already are some" do
-      user = insert(:user, %{info: %{"keys" => "xxx"}})
+      user = insert(:user, %{info: %{keys: "xxx"}})
       {:ok, user} = WebFinger.ensure_keys_present(user)
-      assert user.info["keys"] == "xxx"
+      assert user.info.keys == "xxx"
     end
   end
 end

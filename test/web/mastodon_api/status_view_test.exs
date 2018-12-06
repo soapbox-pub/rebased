@@ -6,6 +6,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "a note with null content" do
     note = insert(:note_activity)

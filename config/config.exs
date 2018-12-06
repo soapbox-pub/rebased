@@ -10,18 +10,18 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
+# Upload configuration
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
-  strip_exif: false
+  filters: [],
+  proxy_remote: false,
+  proxy_opts: []
 
-config :pleroma, Pleroma.Uploaders.Local,
-  uploads: "uploads",
-  uploads_url: "{{base_url}}/media/{{file}}"
+config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
 config :pleroma, Pleroma.Uploaders.S3,
   bucket: nil,
-  public_endpoint: "https://s3.amazonaws.com",
-  force_media_proxy: false
+  public_endpoint: "https://s3.amazonaws.com"
 
 config :pleroma, Pleroma.Uploaders.MDII,
   cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
@@ -72,6 +72,7 @@ config :mime, :types, %{
 config :pleroma, :websub, Pleroma.Web.Websub
 config :pleroma, :ostatus, Pleroma.Web.OStatus
 config :pleroma, :httpoison, Pleroma.HTTP
+config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http, proxy_url: nil
@@ -150,9 +151,11 @@ config :pleroma, :mrf_simple,
 
 config :pleroma, :media_proxy,
   enabled: false,
-  redirect_on_failure: true
-
-# base_url: "https://cache.pleroma.social"
+  # base_url: "https://cache.pleroma.social",
+  proxy_opts: [
+    # inline_content_types: [] | false | true,
+    # http: [:insecure]
+  ]
 
 config :pleroma, :chat, enabled: true
 

@@ -4,7 +4,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
-  alias Pleroma.{Repo, Activity, User, Notification}
+  alias Pleroma.{Repo, Activity, Object, User, Notification}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Ecto.Changeset
@@ -226,16 +226,51 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def upload(conn, %{"media" => media}) do
-    response = TwitterAPI.upload(media)
+  @doc """
+  Updates metadata of uploaded media object.
+  Derived from [Twitter API endpoint](https://developer.twitter.com/en/docs/media/upload-media/api-reference/post-media-metadata-create).
+  """
+  def update_media(%{assigns: %{user: user}} = conn, %{"media_id" => id} = data) do
+    object = Repo.get(Object, id)
+    description = get_in(data, ["alt_text", "text"]) || data["name"] || data["description"]
+
+    {conn, status, response_body} =
+      cond do
+        !object ->
+          {halt(conn), :not_found, ""}
+
+        !Object.authorize_mutation(object, user) ->
+          {halt(conn), :forbidden, "You can only update your own uploads."}
+
+        !is_binary(description) ->
+          {conn, :not_modified, ""}
+
+        true ->
+          new_data = Map.put(object.data, "name", description)
+
+          {:ok, _} =
+            object
+            |> Object.change(%{data: new_data})
+            |> Repo.update()
+
+          {conn, :no_content, ""}
+      end
+
+    conn
+    |> put_status(status)
+    |> json(response_body)
+  end
+
+  def upload(%{assigns: %{user: user}} = conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media, user)
 
     conn
     |> put_resp_content_type("application/atom+xml")
     |> send_resp(200, response)
   end
 
-  def upload_json(conn, %{"media" => media}) do
-    response = TwitterAPI.upload(media, "json")
+  def upload_json(%{assigns: %{user: user}} = conn, %{"media" => media}) do
+    response = TwitterAPI.upload(media, user, "json")
 
     conn
     |> json_reply(200, response)
@@ -290,11 +325,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
-    upload_limit =
-      Application.get_env(:pleroma, :instance)
-      |> Keyword.fetch(:avatar_upload_limit)
-
-    {:ok, object} = ActivityPub.upload(params, upload_limit)
+    {:ok, object} = ActivityPub.upload(params, type: :avatar)
     change = Changeset.change(user, %{avatar: object.data})
     {:ok, user} = User.update_and_set_cache(change)
     CommonAPI.update(user)
@@ -303,14 +334,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def update_banner(%{assigns: %{user: user}} = conn, params) do
-    upload_limit =
-      Application.get_env(:pleroma, :instance)
-      |> Keyword.fetch(:banner_upload_limit)
-
-    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, upload_limit),
-         new_info <- Map.put(user.info, "banner", object.data),
-         change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, user} <- User.update_and_set_cache(change) do
+    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
+         new_info <- %{"banner" => object.data},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)
       %{"url" => [%{"href" => href} | _]} = object.data
       response = %{url: href} |> Jason.encode!()
@@ -321,14 +349,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def update_background(%{assigns: %{user: user}} = conn, params) do
-    upload_limit =
-      Application.get_env(:pleroma, :instance)
-      |> Keyword.fetch(:background_upload_limit)
-
-    with {:ok, object} <- ActivityPub.upload(params, upload_limit),
-         new_info <- Map.put(user.info, "background", object.data),
-         change <- User.info_changeset(user, %{info: new_info}),
-         {:ok, _user} <- User.update_and_set_cache(change) do
+    with {:ok, object} <- ActivityPub.upload(params, type: :background),
+         new_info <- %{"background" => object.data},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
       %{"url" => [%{"href" => href} | _]} = object.data
       response = %{url: href} |> Jason.encode!()
 
@@ -350,32 +375,32 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def update_most_recent_notification(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with id when is_number(id) <- String.to_integer(id),
-         info <- user.info,
-         mrn <- max(id, user.info["most_recent_notification"] || 0),
-         updated_info <- Map.put(info, "most_recent_notification", mrn),
-         changeset <- User.info_changeset(user, %{info: updated_info}),
-         {:ok, _user} <- User.update_and_set_cache(changeset) do
-      conn
-      |> json_reply(200, Jason.encode!(mrn))
-    else
-      _e -> bad_request_reply(conn, "Can't update.")
-    end
-  end
-
-  def followers(conn, params) do
-    with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
+  def followers(%{assigns: %{user: for_user}} = conn, params) do
+    with {:ok, user} <- TwitterAPI.get_user(for_user, params),
          {:ok, followers} <- User.get_followers(user) do
+      followers =
+        cond do
+          for_user && user.id == for_user.id -> followers
+          user.info.hide_network -> []
+          true -> followers
+        end
+
       render(conn, UserView, "index.json", %{users: followers, for: conn.assigns[:user]})
     else
       _e -> bad_request_reply(conn, "Can't get followers")
     end
   end
 
-  def friends(conn, params) do
+  def friends(%{assigns: %{user: for_user}} = conn, params) do
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
          {:ok, friends} <- User.get_friends(user) do
+      friends =
+        cond do
+          for_user && user.id == for_user.id -> friends
+          user.info.hide_network -> []
+          true -> friends
+        end
+
       render(conn, UserView, "index.json", %{users: friends, for: conn.assigns[:user]})
     else
       _e -> bad_request_reply(conn, "Can't get friends")
@@ -451,67 +476,41 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     json(conn, [])
   end
 
+  defp build_info_cng(user, params) do
+    info_params =
+      ["no_rich_text", "locked", "hide_network"]
+      |> Enum.reduce(%{}, fn key, res ->
+        if value = params[key] do
+          Map.put(res, key, value == "true")
+        else
+          res
+        end
+      end)
+
+    info_params =
+      if value = params["default_scope"] do
+        Map.put(info_params, "default_scope", value)
+      else
+        info_params
+      end
+
+    User.Info.profile_update(user.info, info_params)
+  end
+
+  defp parse_profile_bio(user, params) do
+    if bio = params["description"] do
+      Map.put(params, "bio", User.parse_bio(bio, user))
+    else
+      params
+    end
+  end
+
   def update_profile(%{assigns: %{user: user}} = conn, params) do
-    params =
-      if bio = params["description"] do
-        mentions = Formatter.parse_mentions(bio)
-        tags = Formatter.parse_tags(bio)
-
-        emoji =
-          (user.info["source_data"]["tag"] || [])
-          |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
-          |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
-            {String.trim(name, ":"), url}
-          end)
-
-        bio_html = CommonUtils.format_input(bio, mentions, tags, "text/plain")
-        Map.put(params, "bio", bio_html |> Formatter.emojify(emoji))
-      else
-        params
-      end
-
-    user =
-      if locked = params["locked"] do
-        with locked <- locked == "true",
-             new_info <- Map.put(user.info, "locked", locked),
-             change <- User.info_changeset(user, %{info: new_info}),
-             {:ok, user} <- User.update_and_set_cache(change) do
-          user
-        else
-          _e -> user
-        end
-      else
-        user
-      end
-
-    user =
-      if no_rich_text = params["no_rich_text"] do
-        with no_rich_text <- no_rich_text == "true",
-             new_info <- Map.put(user.info, "no_rich_text", no_rich_text),
-             change <- User.info_changeset(user, %{info: new_info}),
-             {:ok, user} <- User.update_and_set_cache(change) do
-          user
-        else
-          _e -> user
-        end
-      else
-        user
-      end
-
-    user =
-      if default_scope = params["default_scope"] do
-        with new_info <- Map.put(user.info, "default_scope", default_scope),
-             change <- User.info_changeset(user, %{info: new_info}),
-             {:ok, user} <- User.update_and_set_cache(change) do
-          user
-        else
-          _e -> user
-        end
-      else
-        user
-      end
+    params = parse_profile_bio(user, params)
+    info_cng = build_info_cng(user, params)
 
     with changeset <- User.update_changeset(user, params),
+         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)
       render(conn, UserView, "user.json", %{user: user, for: user})

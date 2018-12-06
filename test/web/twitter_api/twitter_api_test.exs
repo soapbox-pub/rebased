@@ -10,7 +10,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "create a status" do
     user = insert(:user)
-    _mentioned_user = UserBuilder.insert(%{nickname: "shp", ap_id: "shp"})
+    mentioned_user = insert(:user, %{nickname: "shp", ap_id: "shp"})
 
     object_data = %{
       "type" => "Image",
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
 
     expected_text =
-      "Hello again, <span><a class='mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+      "Hello again, <span><a data-user='#{mentioned_user.id}' class='mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
 
     assert get_in(activity.data, ["object", "content"]) == expected_text
     assert get_in(activity.data, ["object", "type"]) == "Note"
@@ -67,7 +67,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     user = User.get_by_ap_id(user.ap_id)
 
-    assert user.info["note_count"] == 1
+    assert user.info.note_count == 1
   end
 
   test "create a status that is a reply" do
@@ -116,7 +116,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert User.ap_followers(followed) in user.following
 
     followed = User.get_by_ap_id(followed.ap_id)
-    assert followed.info["follower_count"] == 1
+    assert followed.info.follower_count == 1
 
     {:error, msg} = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
     assert msg == "Could not follow user: #{followed.nickname} is already on your list."
@@ -169,7 +169,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user, _unblocked} = TwitterAPI.block(user, %{"user_id" => unblocked.id})
 
     {:ok, user, _unblocked} = TwitterAPI.unblock(user, %{"user_id" => unblocked.id})
-    assert user.info["blocks"] == []
+    assert user.info.blocks == []
   end
 
   test "Unblock another user using screen_name" do
@@ -178,17 +178,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user, _unblocked} = TwitterAPI.block(user, %{"screen_name" => unblocked.nickname})
 
     {:ok, user, _unblocked} = TwitterAPI.unblock(user, %{"screen_name" => unblocked.nickname})
-    assert user.info["blocks"] == []
+    assert user.info.blocks == []
   end
 
   test "upload a file" do
+    user = insert(:user)
+
     file = %Plug.Upload{
       content_type: "image/jpg",
       path: Path.absname("test/fixtures/image.jpg"),
       filename: "an_image.jpg"
     }
 
-    response = TwitterAPI.upload(file)
+    response = TwitterAPI.upload(file, user)
 
     assert is_binary(response)
   end
@@ -255,6 +257,35 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert UserView.render("show.json", %{user: user}) ==
              UserView.render("show.json", %{user: fetched_user})
+  end
+
+  test "it registers a new user and parses mentions in the bio" do
+    data1 = %{
+      "nickname" => "john",
+      "email" => "john@gmail.com",
+      "fullname" => "John Doe",
+      "bio" => "test",
+      "password" => "bear",
+      "confirm" => "bear"
+    }
+
+    {:ok, user1} = TwitterAPI.register_user(data1)
+
+    data2 = %{
+      "nickname" => "lain",
+      "email" => "lain@wired.jp",
+      "fullname" => "lain iwakura",
+      "bio" => "@john test",
+      "password" => "bear",
+      "confirm" => "bear"
+    }
+
+    {:ok, user2} = TwitterAPI.register_user(data2)
+
+    expected_text =
+      "<span><a data-user='#{user1.id}' class='mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
+
+    assert user2.bio == expected_text
   end
 
   @moduletag skip: "needs 'registrations_open: false' in config"

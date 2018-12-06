@@ -11,6 +11,8 @@
   "scopeOptionsEnabled": false,
   "formattingOptionsEnabled": false,
   "collapseMessageWithSubject": false,
+  "scopeCopy": false,
+  "subjectLineBehavior": "email",
   "hidePostStats": false,
   "hideUserStats": false,
   "loginMethod": "password"
