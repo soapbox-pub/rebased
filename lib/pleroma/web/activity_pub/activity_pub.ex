@@ -574,7 +574,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def upload(file, opts \\ []) do
     with {:ok, data} <- Upload.store(file, opts) do
-      Repo.insert(%Object{data: data})
+      obj_data =
+        if opts[:actor] do
+          Map.put(data, "actor", opts[:actor])
+        else
+          data
+        end
+
+      Repo.insert(%Object{data: obj_data})
     end
   end
 

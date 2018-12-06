@@ -3,22 +3,7 @@ defmodule Pleroma.UploadTest do
   use Pleroma.DataCase
 
   describe "Storing a file with the Local uploader" do
-    setup do
-      uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
-      filters = Pleroma.Config.get([Pleroma.Upload, :filters])
-
-      unless uploader == Pleroma.Uploaders.Local || filters != [] do
-        Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
-        Pleroma.Config.put([Pleroma.Upload, :filters], [])
-
-        on_exit(fn ->
-          Pleroma.Config.put([Pleroma.Upload, :uploader], uploader)
-          Pleroma.Config.put([Pleroma.Upload, :filters], filters)
-        end)
-      end
-
-      :ok
-    end
+    setup [:ensure_local_uploader]
 
     test "returns a media url" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")

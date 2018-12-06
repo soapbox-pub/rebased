@@ -1,6 +1,6 @@
 defmodule Pleroma.Object do
   use Ecto.Schema
-  alias Pleroma.{Repo, Object, Activity}
+  alias Pleroma.{Repo, Object, User, Activity}
   import Ecto.{Query, Changeset}
 
   schema "objects" do
@@ -30,6 +30,13 @@ defmodule Pleroma.Object do
   def normalize(obj) when is_map(obj), do: Object.get_by_ap_id(obj["id"])
   def normalize(ap_id) when is_binary(ap_id), do: Object.get_by_ap_id(ap_id)
   def normalize(_), do: nil
+
+  # Owned objects can only be mutated by their owner
+  def authorize_mutation(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}),
+    do: actor == ap_id
+
+  # Legacy objects can be mutated by anybody
+  def authorize_mutation(%Object{}, %User{}), do: true
 
   if Mix.env() == :test do
     def get_cached_by_ap_id(ap_id) do

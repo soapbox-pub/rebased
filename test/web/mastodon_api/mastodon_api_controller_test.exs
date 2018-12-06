@@ -2,7 +2,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Activity, Notification}
+  alias Pleroma.{Repo, User, Object, Activity, Notification}
   alias Pleroma.Web.{OStatus, CommonAPI}
   alias Pleroma.Web.ActivityPub.ActivityPub
 
@@ -810,7 +810,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       }
 
       media =
-        TwitterAPI.upload(file, "json")
+        TwitterAPI.upload(file, user, "json")
         |> Poison.decode!()
 
       {:ok, image_post} =
@@ -965,6 +965,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert media["type"] == "image"
     assert media["description"] == desc
+    assert media["id"]
+
+    object = Repo.get(Object, media["id"])
+    assert object.data["actor"] == User.ap_id(user)
   end
 
   test "hashtag timeline", %{conn: conn} do
