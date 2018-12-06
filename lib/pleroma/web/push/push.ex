@@ -18,11 +18,11 @@ defmodule Pleroma.Web.Push do
   def init(:ok) do
     case Application.get_env(:web_push_encryption, :vapid_details) do
       nil ->
-        Logger.error(
+        Logger.warn(
           "VAPID key pair is not found. Please, add VAPID configuration to config. Run `mix web_push.gen.keypair` mix task to create a key pair"
         )
 
-        {:error, %{}}
+        :ignore
 
       _ ->
         {:ok, %{}}
@@ -30,7 +30,9 @@ defmodule Pleroma.Web.Push do
   end
 
   def send(notification) do
-    GenServer.cast(Pleroma.Web.Push, {:send, notification})
+    if Application.get_env(:web_push_encryption, :vapid_details) do
+      GenServer.cast(Pleroma.Web.Push, {:send, notification})
+    end
   end
 
   def handle_cast(
