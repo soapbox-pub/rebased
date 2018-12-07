@@ -71,23 +71,28 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         %{}
       end
 
-    features = [
-      "pleroma_api",
-      "mastodon_api",
-      "mastodon_api_streaming",
-      if Keyword.get(media_proxy, :enabled) do
-        "media_proxy"
-      end,
-      if Keyword.get(gopher, :enabled) do
-        "gopher"
-      end,
-      if Keyword.get(chat, :enabled) do
-        "chat"
-      end,
-      if Keyword.get(suggestions, :enabled) do
-        "suggestions"
-      end
-    ]
+    features =
+      [
+        "pleroma_api",
+        "mastodon_api",
+        "mastodon_api_streaming",
+        if Keyword.get(media_proxy, :enabled) do
+          "media_proxy"
+        end,
+        if Keyword.get(gopher, :enabled) do
+          "gopher"
+        end,
+        if Keyword.get(chat, :enabled) do
+          "chat"
+        end,
+        if Keyword.get(suggestions, :enabled) do
+          "suggestions"
+        end,
+        if Keyword.get(instance, :allow_relay) do
+          "relay"
+        end
+      ]
+      |> Enum.filter(& &1)
 
     response = %{
       version: "2.0",
