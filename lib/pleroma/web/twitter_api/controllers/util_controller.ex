@@ -165,6 +165,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           description: Keyword.get(instance, :description),
           server: Web.base_url(),
           textlimit: to_string(Keyword.get(instance, :limit)),
+          uploadlimit: to_string(Keyword.get(instance, :upload_limit)),
           closed: if(Keyword.get(instance, :registrations_open), do: "0", else: "1"),
           private: if(Keyword.get(instance, :public, true), do: "0", else: "1"),
           vapidPublicKey: vapid_public_key
