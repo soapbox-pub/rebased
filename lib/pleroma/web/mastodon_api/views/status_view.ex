@@ -1,19 +1,14 @@
 defmodule Pleroma.Web.MastodonAPI.StatusView do
   use Pleroma.Web, :view
 
-  alias Pleroma.{
-    Activity,
-    HTML,
-    Repo,
-    User
-  }
-
-  alias Pleroma.Web.{
-    CommonAPI.Utils,
-    MastodonAPI.AccountView,
-    MastodonAPI.StatusView,
-    MediaProxy
-  }
+  alias Pleroma.Activity
+  alias Pleroma.HTML
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.StatusView
 
   # TODO: Add cached version.
   defp get_replied_to_activities(activities) do
