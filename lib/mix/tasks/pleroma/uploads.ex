@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
 
   @log_every 50
   @shortdoc "Migrate uploads from local to remote storage"
-  @longdioc """
+  @longdoc """
    Manages uploads
    ## Migrate uploads from local to remote storage
 
