@@ -157,7 +157,7 @@ config :pleroma, :mrf_user_allowlist,
 
 ## :web_push_encryption
 
-Web Push Notifications configuration. You could use a mix task `mix web_push.gen.keypair` to generate it.
+Web Push Notifications configuration. You can use the mix task `mix web_push.gen.keypair` to generate it.
 
 * ``subject``: a mailto link for the administrative contact. It’s best if this email is not a personal email address, but rather a group email so that if a person leaves an organization, is unavailable for an extended period, or otherwise can’t respond, someone else on the list can.
 * ``public_key``: VAPID public key
