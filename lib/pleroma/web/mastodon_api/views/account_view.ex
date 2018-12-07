@@ -58,6 +58,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         note: "",
         privacy: user_info.default_scope,
         sensitive: false
+      },
+
+      # Pleroma extension
+      pleroma: %{
+        tags: user.tags
       }
     }
   end

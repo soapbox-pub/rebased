@@ -3,6 +3,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.{User, Repo}
   alias Pleroma.Web.ActivityPub.Relay
 
+  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+
   require Logger
 
   action_fallback(:errors)
@@ -38,6 +40,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(new_user.nickname)
+  end
+
+  def tag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do
+    with {:ok, _} <- User.tag(nicknames, tags),
+         do: json_response(conn, :no_content, "")
+  end
+
+  def untag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do
+    with {:ok, _} <- User.untag(nicknames, tags),
+         do: json_response(conn, :no_content, "")
   end
 
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})

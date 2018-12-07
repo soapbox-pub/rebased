@@ -2,6 +2,7 @@ defmodule Pleroma.User do
   use Ecto.Schema
 
   import Ecto.{Changeset, Query}
+  alias Ecto.Multi
   alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
   alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
@@ -23,6 +24,7 @@ defmodule Pleroma.User do
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
     field(:search_distance, :float, virtual: true)
+    field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
     embeds_one(:info, Pleroma.User.Info)
@@ -814,5 +816,42 @@ defmodule Pleroma.User do
       end)
 
     CommonUtils.format_input(bio, mentions, tags, "text/plain") |> Formatter.emojify(emoji)
+  end
+
+  def tag(user_identifiers, tags) when is_list(user_identifiers) do
+    Repo.transaction(fn ->
+      for user_identifier <- user_identifiers, do: tag(user_identifier, tags)
+    end)
+  end
+
+  def untag(user_identifiers, tags) when is_list(user_identifiers) do
+    Repo.transaction(fn ->
+      for user_identifier <- user_identifiers, do: untag(user_identifier, tags)
+    end)
+  end
+
+  def tag(nickname, tags) when is_binary(nickname), do: tag(User.get_by_nickname(nickname), tags)
+
+  def untag(nickname, tags) when is_binary(nickname),
+    do: untag(User.get_by_nickname(nickname), tags)
+
+  def tag(%User{} = user, tags),
+    do: update_tags(user, Enum.uniq(user.tags ++ normalize_tags(tags)))
+
+  def untag(%User{} = user, tags), do: update_tags(user, user.tags -- normalize_tags(tags))
+
+  defp update_tags(%User{} = user, new_tags) do
+    {:ok, updated_user} =
+      user
+      |> change(%{tags: new_tags})
+      |> Repo.update()
+
+    updated_user
+  end
+
+  defp normalize_tags(tags) do
+    [tags]
+    |> List.flatten()
+    |> Enum.map(&String.downcase(&1))
   end
 end

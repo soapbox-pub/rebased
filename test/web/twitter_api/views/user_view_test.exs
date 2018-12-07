@@ -96,7 +96,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "fields" => []
+      "fields" => [],
+      "pleroma" => %{"tags" => []}
     }
 
     assert represented == UserView.render("show.json", %{user: user})
@@ -137,7 +138,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "fields" => []
+      "fields" => [],
+      "pleroma" => %{"tags" => []}
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
@@ -179,7 +181,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "fields" => []
+      "fields" => [],
+      "pleroma" => %{"tags" => []}
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
@@ -228,7 +231,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "fields" => []
+      "fields" => [],
+      "pleroma" => %{"tags" => []}
     }
 
     blocker = Repo.get(User, blocker.id)

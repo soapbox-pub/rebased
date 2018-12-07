@@ -37,6 +37,78 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "PUT /api/pleroma/admin/users/tag" do
+    setup do
+      admin = insert(:user, info: %{is_admin: true})
+      user1 = insert(:user, %{tags: ["x"]})
+      user2 = insert(:user, %{tags: ["y"]})
+      user3 = insert(:user, %{tags: ["unchanged"]})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> put(
+          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=#{
+            user2.nickname
+          }&tags[]=foo&tags[]=bar"
+        )
+
+      %{conn: conn, user1: user1, user2: user2, user3: user3}
+    end
+
+    test "it appends specified tags to users with specified nicknames", %{
+      conn: conn,
+      user1: user1,
+      user2: user2
+    } do
+      assert json_response(conn, :no_content)
+      assert Repo.get(User, user1.id).tags == ["x", "foo", "bar"]
+      assert Repo.get(User, user2.id).tags == ["y", "foo", "bar"]
+    end
+
+    test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
+      assert json_response(conn, :no_content)
+      assert Repo.get(User, user3.id).tags == ["unchanged"]
+    end
+  end
+
+  describe "DELETE /api/pleroma/admin/users/tag" do
+    setup do
+      admin = insert(:user, info: %{is_admin: true})
+      user1 = insert(:user, %{tags: ["x"]})
+      user2 = insert(:user, %{tags: ["y", "z"]})
+      user3 = insert(:user, %{tags: ["unchanged"]})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> delete(
+          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=#{
+            user2.nickname
+          }&tags[]=x&tags[]=z"
+        )
+
+      %{conn: conn, user1: user1, user2: user2, user3: user3}
+    end
+
+    test "it removes specified tags from users with specified nicknames", %{
+      conn: conn,
+      user1: user1,
+      user2: user2
+    } do
+      assert json_response(conn, :no_content)
+      assert Repo.get(User, user1.id).tags == []
+      assert Repo.get(User, user2.id).tags == ["y"]
+    end
+
+    test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
+      assert json_response(conn, :no_content)
+      assert Repo.get(User, user3.id).tags == ["unchanged"]
+    end
+  end
+
   describe "/api/pleroma/admin/permission_group" do
     test "GET is giving user_info" do
       admin = insert(:user, info: %{is_admin: true})

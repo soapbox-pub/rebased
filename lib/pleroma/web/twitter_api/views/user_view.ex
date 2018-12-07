@@ -77,7 +77,12 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "locked" => user.info.locked,
       "default_scope" => user.info.default_scope,
       "no_rich_text" => user.info.no_rich_text,
-      "fields" => fields
+      "fields" => fields,
+
+      # Pleroma extension
+      "pleroma" => %{
+        "tags" => user.tags
+      }
     }
 
     if assigns[:token] do

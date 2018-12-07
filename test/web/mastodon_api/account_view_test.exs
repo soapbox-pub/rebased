@@ -54,7 +54,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         note: "",
         privacy: "public",
         sensitive: false
-      }
+      },
+      pleroma: %{tags: []}
     }
 
     assert expected == AccountView.render("account.json", %{user: user})
@@ -91,7 +92,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         note: "",
         privacy: "public",
         sensitive: false
-      }
+      },
+      pleroma: %{tags: []}
     }
 
     assert expected == AccountView.render("account.json", %{user: user})
