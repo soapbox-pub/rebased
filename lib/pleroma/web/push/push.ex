@@ -100,16 +100,16 @@ defmodule Pleroma.Web.Push do
 
   def format(%{activity: %{data: %{"type" => "Announce"}}}, actor) do
     %{
-      title: "New Announce",
-      body: "@#{actor.nickname} has announced your post",
+      title: "New Repeat",
+      body: "@#{actor.nickname} has repeated your post",
       icon: User.avatar_url(actor)
     }
   end
 
   def format(%{activity: %{data: %{"type" => "Like"}}}, actor) do
     %{
-      title: "New Like",
-      body: "@#{actor.nickname} has liked your post",
+      title: "New Favorite",
+      body: "@#{actor.nickname} has favorited your post",
       icon: User.avatar_url(actor)
     }
   end
