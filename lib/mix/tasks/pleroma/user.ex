@@ -21,7 +21,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
   ## Generate an invite link.
     
-     mix pleroma.user invite
+      mix pleroma.user invite
 
   ## Delete the user's account.
 
@@ -30,6 +30,10 @@ defmodule Mix.Tasks.Pleroma.User do
   ## Deactivate or activate the user's account.
 
       mix pleroma.user toggle_activated NICKNAME
+
+  ## Unsubscribe local users from user's account and deactivate it
+     
+      mix pleroma.user unsubscribe NICKNAME
 
   ## Create a password reset link.
 
