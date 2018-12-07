@@ -22,7 +22,7 @@ defmodule Pleroma.Gopher.Server do
       :gopher,
       100,
       :ranch_tcp,
-      [port: port],
+      [ip: ip, port: port],
       __MODULE__.ProtocolHandler,
       []
     )
