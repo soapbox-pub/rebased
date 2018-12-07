@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Pleroma.User do
   ## Deactivate or activate the user's account.
 
       mix pleroma.user toggle_activated NICKNAME
-  
+
   ## Unsubscribe local users from user's account and deactivate it
      
       mix pleroma.user unsubscribe NICKNAME
