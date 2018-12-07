@@ -10,7 +10,7 @@ defmodule Pleroma.Emoji do
   """
   use GenServer
   @ets __MODULE__.Ets
-  @ets_options [:set, :protected, :named_table, {:read_concurrency, true}]
+  @ets_options [:ordered_set, :protected, :named_table, {:read_concurrency, true}]
 
   @doc false
   def start_link() do
