@@ -41,10 +41,10 @@ defmodule Pleroma.Web.Push do
       )
       when type in @types do
     actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
-    body = notification |> format(actor) |> Jason.encode!()
 
     Subscription
     |> where(user_id: ^user_id)
+    |> preload(:token)
     |> Repo.all()
     |> Enum.each(fn record ->
       subscription = %{
@@ -54,6 +54,16 @@ defmodule Pleroma.Web.Push do
         },
         endpoint: record.endpoint
       }
+
+      body =
+        Jason.encode!(%{
+          title: format_title(notification),
+          body: format_body(notification, actor),
+          notification_id: notification.id,
+          icon: User.avatar_url(actor),
+          preferred_locale: "en",
+          access_token: record.token.token
+        })
 
       case WebPushEncryption.send_web_push(body, subscription, @gcm_api_key) do
         {:ok, %{status_code: code}} when 400 <= code and code < 500 ->
@@ -82,35 +92,21 @@ defmodule Pleroma.Web.Push do
     {:noreply, state}
   end
 
-  def format(%{activity: %{data: %{"type" => "Create"}}}, actor) do
-    %{
-      title: "New Mention",
-      body: "@#{actor.nickname} has mentiond you",
-      icon: User.avatar_url(actor)
-    }
+  defp format_title(%{activity: %{data: %{"type" => type}}}) do
+    case type do
+      "Create" -> "New Mention"
+      "Follow" -> "New Follower"
+      "Announce" -> "New Repeat"
+      "Like" -> "New Favorite"
+    end
   end
 
-  def format(%{activity: %{data: %{"type" => "Follow"}}}, actor) do
-    %{
-      title: "New Follower",
-      body: "@#{actor.nickname} has followed you",
-      icon: User.avatar_url(actor)
-    }
-  end
-
-  def format(%{activity: %{data: %{"type" => "Announce"}}}, actor) do
-    %{
-      title: "New Repeat",
-      body: "@#{actor.nickname} has repeated your post",
-      icon: User.avatar_url(actor)
-    }
-  end
-
-  def format(%{activity: %{data: %{"type" => "Like"}}}, actor) do
-    %{
-      title: "New Favorite",
-      body: "@#{actor.nickname} has favorited your post",
-      icon: User.avatar_url(actor)
-    }
+  defp format_body(%{activity: %{data: %{"type" => type}}}, actor) do
+    case type do
+      "Create" -> "@#{actor.nickname} has mentiond you"
+      "Follow" -> "@#{actor.nickname} has followed you"
+      "Announce" -> "@#{actor.nickname} has repeated your post"
+      "Like" -> "@#{actor.nickname} has favorited your post"
+    end
   end
 end
