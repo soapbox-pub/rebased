@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
 
   ## Follow a remote relay
 
-  ``mix pleroma.relay unfollow <relay_url>``
+  ``mix pleroma.relay follow <relay_url>``
 
   Example: ``mix pleroma.relay follow  https://example.org/relay``
 
