@@ -822,39 +822,40 @@ defmodule Pleroma.User do
     CommonUtils.format_input(bio, mentions, tags, "text/plain") |> Formatter.emojify(emoji)
   end
 
-  def tag(user_identifiers, tags), do: tag_or_untag(user_identifiers, tags, :tag)
-
-  def untag(user_identifiers, tags), do: tag_or_untag(user_identifiers, tags, :untag)
-
-  defp tag_or_untag(user_identifier, tags, action) when not is_list(user_identifier),
-    do: tag_or_untag([user_identifier], tags, action)
-
-  defp tag_or_untag([hd | _] = nicknames, tags, action) when is_binary(hd) do
-    users = Repo.all(from(u in User, where: u.nickname in ^nicknames))
-
-    if length(users) == length(nicknames) do
-      tag_or_untag(users, tags, action)
-    else
-      {:error, :not_found}
-    end
+  def tag(user_identifiers, tags) when is_list(user_identifiers) do
+    Repo.transaction(fn ->
+      for user_identifier <- user_identifiers, do: tag(user_identifier, tags)
+    end)
   end
 
-  defp tag_or_untag([hd | _] = users, tags, action) when is_map(hd) do
-    tags =
-      [tags]
-      |> List.flatten()
-      |> Enum.map(&String.downcase(&1))
-
-    multi =
-      Enum.reduce(users, Multi.new(), fn user, multi ->
-        new_tags = mutate_tags(user, tags, action)
-        Multi.update(multi, {:user, user.id}, change(user, %{tags: new_tags}))
-      end)
-
-    Repo.transaction(multi)
+  def untag(user_identifiers, tags) when is_list(user_identifiers) do
+    Repo.transaction(fn ->
+      for user_identifier <- user_identifiers, do: untag(user_identifier, tags)
+    end)
   end
 
-  defp mutate_tags(user, tags, :tag), do: Enum.uniq(user.tags ++ tags)
+  def tag(nickname, tags) when is_binary(nickname), do: tag(User.get_by_nickname(nickname), tags)
 
-  defp mutate_tags(user, tags, :untag), do: user.tags -- tags
+  def untag(nickname, tags) when is_binary(nickname),
+    do: untag(User.get_by_nickname(nickname), tags)
+
+  def tag(%User{} = user, tags),
+    do: update_tags(user, Enum.uniq(user.tags ++ normalize_tags(tags)))
+
+  def untag(%User{} = user, tags), do: update_tags(user, user.tags -- normalize_tags(tags))
+
+  defp update_tags(%User{} = user, new_tags) do
+    {:ok, updated_user} =
+      user
+      |> change(%{tags: new_tags})
+      |> Repo.update()
+
+    updated_user
+  end
+
+  defp normalize_tags(tags) do
+    [tags]
+    |> List.flatten()
+    |> Enum.map(&String.downcase(&1))
+  end
 end
