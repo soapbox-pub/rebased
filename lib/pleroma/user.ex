@@ -2,6 +2,7 @@ defmodule Pleroma.User do
   use Ecto.Schema
 
   import Ecto.{Changeset, Query}
+  alias Ecto.Multi
   alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
   alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
@@ -844,18 +845,13 @@ defmodule Pleroma.User do
       |> List.flatten()
       |> Enum.map(&String.downcase(&1))
 
-    Repo.transaction(fn ->
-      for user <- users do
+    multi =
+      Enum.reduce(users, Multi.new(), fn user, multi ->
         new_tags = mutate_tags(user, tags, action)
+        Multi.update(multi, {:user, user.id}, change(user, %{tags: new_tags}))
+      end)
 
-        {:ok, updated_user} =
-          user
-          |> change(%{tags: new_tags})
-          |> Repo.update()
-
-        updated_user
-      end
-    end)
+    Repo.transaction(multi)
   end
 
   defp mutate_tags(user, tags, :tag), do: Enum.uniq(user.tags ++ tags)

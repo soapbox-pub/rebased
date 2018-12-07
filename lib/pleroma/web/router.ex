@@ -99,7 +99,7 @@ defmodule Pleroma.Web.Router do
     delete("/user", AdminAPIController, :user_delete)
     post("/user", AdminAPIController, :user_create)
     put("/users/tag", AdminAPIController, :tag_users)
-    put("/users/untag", AdminAPIController, :untag_users)
+    delete("/users/tag", AdminAPIController, :untag_users)
 
     get("/permission_group/:nickname", AdminAPIController, :right_get)
     get("/permission_group/:nickname/:permission_group", AdminAPIController, :right_get)

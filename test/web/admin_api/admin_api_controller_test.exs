@@ -37,7 +37,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "/api/pleroma/admin//users/tag" do
+  describe "PUT /api/pleroma/admin/users/tag" do
     setup do
       admin = insert(:user, info: %{is_admin: true})
       user1 = insert(:user, %{tags: ["x"]})
@@ -73,7 +73,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "/api/pleroma/admin//users/untag" do
+  describe "DELETE /api/pleroma/admin/users/tag" do
     setup do
       admin = insert(:user, info: %{is_admin: true})
       user1 = insert(:user, %{tags: ["x"]})
@@ -84,8 +84,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         build_conn()
         |> assign(:user, admin)
         |> put_req_header("accept", "application/json")
-        |> put(
-          "/api/pleroma/admin/users/untag?nicknames[]=#{user1.nickname}&nicknames[]=#{
+        |> delete(
+          "/api/pleroma/admin/users/tag?nicknames[]=#{user1.nickname}&nicknames[]=#{
             user2.nickname
           }&tags[]=x&tags[]=z"
         )
