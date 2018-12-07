@@ -4,13 +4,13 @@ defmodule Mix.Tasks.Pleroma.Common do
     Mix.Task.run("app.start")
   end
 
-  def get_option(options, opt, prompt, def \\ nil, defname \\ nil) do
+  def get_option(options, opt, prompt, defval \\ nil, defname \\ nil) do
     Keyword.get(options, opt) ||
-      case Mix.shell().prompt("#{prompt} [#{defname || def}]") do
+      case Mix.shell().prompt("#{prompt} [#{defname || defval}]") do
         "\n" ->
-          case def do
-            nil -> get_option(options, opt, prompt, def)
-            def -> def
+          case defval do
+            nil -> get_option(options, opt, prompt, defval)
+            defval -> defval
           end
 
         opt ->
