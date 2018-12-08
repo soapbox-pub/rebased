@@ -58,14 +58,15 @@ defmodule Pleroma.Web.Push do
       body =
         Jason.encode!(%{
           title: format_title(notification),
+          access_token: record.token.token,
           body: format_body(notification, actor),
           notification_id: notification.id,
+          notification_type: format_type(notification),
           icon: User.avatar_url(actor),
-          preferred_locale: "en",
-          access_token: record.token.token
+          preferred_locale: "en"
         })
 
-      case WebPushEncryption.send_web_push(body, subscription, @gcm_api_key) do
+      case WebPushEncryption.send_web_push(body, subscription) do
         {:ok, %{status_code: code}} when 400 <= code and code < 500 ->
           Logger.debug("Removing subscription record")
           Repo.delete!(record)
@@ -90,6 +91,16 @@ defmodule Pleroma.Web.Push do
   def handle_cast({:send, _}, state) do
     Logger.warn("Unknown notification type")
     {:noreply, state}
+  end
+
+  # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
+  defp format_type(%{activity: %{data: %{"type" => type}}}) do
+    case type do
+      "Create" -> "mention"
+      "Follow" -> "follow"
+      "Announce" -> "reblog"
+      "Favorite" -> "favourite"
+    end
   end
 
   defp format_title(%{activity: %{data: %{"type" => type}}}) do
