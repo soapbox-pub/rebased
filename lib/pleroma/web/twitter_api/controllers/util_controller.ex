@@ -160,12 +160,19 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         vapid_public_key =
           Keyword.get(Application.get_env(:web_push_encryption, :vapid_details), :public_key)
 
+        uploadlimit = %{
+          uploadlimit: to_string(Keyword.get(instance, :upload_limit)),
+          avatarlimit: to_string(Keyword.get(instance, :avatar_upload_limit)),
+          backgroundlimit: to_string(Keyword.get(instance, :background_upload_limit)),
+          bannerlimit: to_string(Keyword.get(instance, :banner_upload_limit))
+        }
+
         data = %{
           name: Keyword.get(instance, :name),
           description: Keyword.get(instance, :description),
           server: Web.base_url(),
           textlimit: to_string(Keyword.get(instance, :limit)),
-          uploadlimit: to_string(Keyword.get(instance, :upload_limit)),
+          uploadlimit: uploadlimit,
           closed: if(Keyword.get(instance, :registrations_open), do: "0", else: "1"),
           private: if(Keyword.get(instance, :public, true), do: "0", else: "1"),
           vapidPublicKey: vapid_public_key
