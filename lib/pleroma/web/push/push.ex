@@ -104,7 +104,7 @@ defmodule Pleroma.Web.Push do
       "Create" -> "mention"
       "Follow" -> "follow"
       "Announce" -> "reblog"
-      "Favorite" -> "favourite"
+      "Like" -> "favourite"
     end
   end
 
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.Push do
 
   defp format_body(%{activity: %{data: %{"type" => type}}}, actor) do
     case type do
-      "Create" -> "@#{actor.nickname} has mentiond you"
+      "Create" -> "@#{actor.nickname} has mentioned you"
       "Follow" -> "@#{actor.nickname} has followed you"
       "Announce" -> "@#{actor.nickname} has repeated your post"
       "Like" -> "@#{actor.nickname} has favorited your post"
