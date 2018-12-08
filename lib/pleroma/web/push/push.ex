@@ -42,45 +42,50 @@ defmodule Pleroma.Web.Push do
       when type in @types do
     actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
 
+    type = format_type(notification)
+
     Subscription
     |> where(user_id: ^user_id)
     |> preload(:token)
     |> Repo.all()
-    |> Enum.each(fn record ->
-      subscription = %{
+    |> Enum.filter(fn subscription ->
+      get_in(subscription.data, ["alerts", type]) || false
+    end)
+    |> Enum.each(fn subscription ->
+      sub = %{
         keys: %{
-          p256dh: record.key_p256dh,
-          auth: record.key_auth
+          p256dh: subscription.key_p256dh,
+          auth: subscription.key_auth
         },
-        endpoint: record.endpoint
+        endpoint: subscription.endpoint
       }
 
       body =
         Jason.encode!(%{
           title: format_title(notification),
-          access_token: record.token.token,
+          access_token: subscription.token.token,
           body: format_body(notification, actor),
           notification_id: notification.id,
-          notification_type: format_type(notification),
+          notification_type: type,
           icon: User.avatar_url(actor),
           preferred_locale: "en"
         })
 
-      case WebPushEncryption.send_web_push(body, subscription) do
+      case WebPushEncryption.send_web_push(body, sub) do
         {:ok, %{status_code: code}} when 400 <= code and code < 500 ->
           Logger.debug("Removing subscription record")
-          Repo.delete!(record)
+          Repo.delete!(subscription)
           :ok
 
         {:ok, %{status_code: code}} when 200 <= code and code < 300 ->
           :ok
 
         {:ok, %{status_code: code}} ->
-          Logger.error("Web Push Nonification failed with code: #{code}")
+          Logger.error("Web Push Notification failed with code: #{code}")
           :error
 
         _ ->
-          Logger.error("Web Push Nonification failed with unknown error")
+          Logger.error("Web Push Notification failed with unknown error")
           :error
       end
     end)
