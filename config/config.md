@@ -25,10 +25,10 @@ No specific configuration.
 
 ## Pleroma.Upload.Filter.AnonymizeFilename
 
-This filter remplaces the filename (not the path) of an upload. For complete obfuscation, add
+This filter replaces the filename (not the path) of an upload. For complete obfuscation, add
 `Pleroma.Upload.Filter.Dedupe` before AnonymizeFilename.
 
-* `text`: Text to remplace filenames in links. If empty, `{random}.extension` will be used.
+* `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used.
 
 ## :uri_schemes
 * `valid_schemes`: List of the scheme part that is considered valid to be an URL
