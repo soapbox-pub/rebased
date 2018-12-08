@@ -1,6 +1,7 @@
 defmodule Pleroma.MediaProxyTest do
   use ExUnit.Case
   import Pleroma.Web.MediaProxy
+  alias Pleroma.Web.MediaProxy.MediaProxyController
 
   describe "when enabled" do
     setup do
@@ -65,6 +66,14 @@ defmodule Pleroma.MediaProxyTest do
       assert decode_result(encoded) == url
     end
 
+    test "ensures urls are url-encoded" do
+      assert decode_result(url("https://pleroma.social/Hello world.jpg")) ==
+               "https://pleroma.social/Hello%20world.jpg"
+
+      assert decode_result(url("https://pleroma.social/Hello%20world.jpg")) ==
+               "https://pleroma.social/Hello%20world.jpg"
+    end
+
     test "validates signature" do
       secret_key_base = Pleroma.Config.get([Pleroma.Web.Endpoint, :secret_key_base])
 
@@ -81,6 +90,34 @@ defmodule Pleroma.MediaProxyTest do
 
       [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
       assert decode_url(sig, base64) == {:error, :invalid_signature}
+    end
+
+    test "filename_matches matches url encoded paths" do
+      assert MediaProxyController.filename_matches(
+               true,
+               "/Hello%20world.jpg",
+               "http://pleroma.social/Hello world.jpg"
+             ) == :ok
+
+      assert MediaProxyController.filename_matches(
+               true,
+               "/Hello%20world.jpg",
+               "http://pleroma.social/Hello%20world.jpg"
+             ) == :ok
+    end
+
+    test "filename_matches matches non-url encoded paths" do
+      assert MediaProxyController.filename_matches(
+               true,
+               "/Hello world.jpg",
+               "http://pleroma.social/Hello%20world.jpg"
+             ) == :ok
+
+      assert MediaProxyController.filename_matches(
+               true,
+               "/Hello world.jpg",
+               "http://pleroma.social/Hello world.jpg"
+             ) == :ok
     end
 
     test "uses the configured base_url" do

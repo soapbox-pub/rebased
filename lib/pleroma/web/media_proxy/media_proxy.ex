@@ -14,7 +14,14 @@ defmodule Pleroma.Web.MediaProxy do
       url
     else
       secret = Application.get_env(:pleroma, Pleroma.Web.Endpoint)[:secret_key_base]
-      base64 = Base.url_encode64(url, @base64_opts)
+
+      # The URL is url-decoded and encoded again to ensure it is correctly encoded and not twice.
+      base64 =
+        url
+        |> URI.decode()
+        |> URI.encode()
+        |> Base.url_encode64(@base64_opts)
+
       sig = :crypto.hmac(:sha, secret, base64)
       sig64 = sig |> Base.url_encode64(@base64_opts)
 

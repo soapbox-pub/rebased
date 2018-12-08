@@ -24,7 +24,12 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   end
 
   def filename_matches(has_filename, path, url) do
-    filename = MediaProxy.filename(url)
+    filename =
+      url
+      |> MediaProxy.filename()
+      |> URI.decode()
+
+    path = URI.decode(path)
 
     cond do
       has_filename && filename && Path.basename(path) != filename -> {:wrong_filename, filename}
