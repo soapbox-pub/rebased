@@ -1167,6 +1167,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def create_push_subscription(%{assigns: %{user: user, token: token}} = conn, params) do
+    true = Pleroma.Web.Push.enabled()
     Pleroma.Web.Push.Subscription.delete_if_exists(user, token)
     {:ok, subscription} = Pleroma.Web.Push.Subscription.create(user, token, params)
     view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
@@ -1174,6 +1175,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
+    true = Pleroma.Web.Push.enabled()
     subscription = Pleroma.Web.Push.Subscription.get(user, token)
     view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
     json(conn, view)
@@ -1183,12 +1185,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         %{assigns: %{user: user, token: token}} = conn,
         params
       ) do
+    true = Pleroma.Web.Push.enabled()
     {:ok, subscription} = Pleroma.Web.Push.Subscription.update(user, token, params)
     view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
     json(conn, view)
   end
 
   def delete_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
+    true = Pleroma.Web.Push.enabled()
     {:ok, _response} = Pleroma.Web.Push.Subscription.delete(user, token)
     json(conn, %{})
   end

@@ -156,8 +156,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         |> send_resp(200, response)
 
       _ ->
-        vapid_public_key =
-          Keyword.get(Application.get_env(:web_push_encryption, :vapid_details), :public_key)
+        vapid_public_key = Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
 
         data = %{
           name: Keyword.get(instance, :name),

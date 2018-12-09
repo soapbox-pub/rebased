@@ -9,29 +9,41 @@ defmodule Pleroma.Web.Push do
 
   @types ["Create", "Follow", "Announce", "Like"]
 
-  @gcm_api_key nil
-
   def start_link() do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def init(:ok) do
-    case Application.get_env(:web_push_encryption, :vapid_details) do
-      nil ->
-        Logger.warn(
-          "VAPID key pair is not found. Please, add VAPID configuration to config. Run `mix web_push.gen.keypair` mix task to create a key pair"
-        )
+  def vapid_config() do
+    Application.get_env(:web_push_encryption, :vapid_details, [])
+  end
 
-        :ignore
-
-      _ ->
-        {:ok, %{}}
+  def enabled() do
+    case vapid_config() do
+      [] -> false
+      list when is_list(list) -> true
+      _ -> false
     end
   end
 
   def send(notification) do
-    if Application.get_env(:web_push_encryption, :vapid_details) do
+    if enabled() do
       GenServer.cast(Pleroma.Web.Push, {:send, notification})
+    end
+  end
+
+  def init(:ok) do
+    if enabled() do
+      Logger.warn("""
+      VAPID key pair is not found. If you wish to enabled web push, please run
+
+          mix web_push.gen.keypair
+
+      and add the resulting output to your configuration file.
+      """)
+
+      :ignore
+    else
+      {:ok, nil}
     end
   end
 
@@ -71,7 +83,11 @@ defmodule Pleroma.Web.Push do
           preferred_locale: "en"
         })
 
-      case WebPushEncryption.send_web_push(body, sub) do
+      case WebPushEncryption.send_web_push(
+             body,
+             sub,
+             Application.get_env(:web_push_encryption, :gcm_api_key)
+           ) do
         {:ok, %{status_code: code}} when 400 <= code and code < 500 ->
           Logger.debug("Removing subscription record")
           Repo.delete!(subscription)
