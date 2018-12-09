@@ -246,7 +246,24 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       "nickname" => "lain",
       "email" => "lain@wired.jp",
       "fullname" => "lain iwakura",
-      "bio" => "close the world.",
+      "password" => "bear",
+      "confirm" => "bear"
+    }
+
+    {:ok, user} = TwitterAPI.register_user(data)
+
+    fetched_user = Repo.get_by(User, nickname: "lain")
+
+    assert UserView.render("show.json", %{user: user}) ==
+             UserView.render("show.json", %{user: fetched_user})
+  end
+
+  test "it registers a new user with empty string in bio and returns the user." do
+    data = %{
+      "nickname" => "lain",
+      "email" => "lain@wired.jp",
+      "fullname" => "lain iwakura",
+      "bio" => "",
       "password" => "bear",
       "confirm" => "bear"
     }
