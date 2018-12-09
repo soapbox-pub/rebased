@@ -1,6 +1,5 @@
 defmodule Pleroma.Plugs.SessionAuthenticationPlug do
   import Plug.Conn
-  alias Pleroma.User
 
   def init(options) do
     options

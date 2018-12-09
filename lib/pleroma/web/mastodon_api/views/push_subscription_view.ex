@@ -1,6 +1,5 @@
 defmodule Pleroma.Web.MastodonAPI.PushSubscriptionView do
   use Pleroma.Web, :view
-  alias Pleroma.Web.MastodonAPI.PushSubscriptionView
 
   def render("push_subscription.json", %{subscription: subscription}) do
     %{

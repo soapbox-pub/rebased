@@ -26,14 +26,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     end
   end
 
-  def call(
-        %{
-          assigns: %{
-            auth_credentials: %{password: password}
-          }
-        } = conn,
-        _
-      ) do
+  def call(%{assigns: %{auth_credentials: %{password: _}}} = conn, _) do
     Pbkdf2.dummy_checkpw()
     conn
   end

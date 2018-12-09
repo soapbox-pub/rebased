@@ -141,7 +141,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, "error")
   end
 
-  def relay(conn, params) do
+  def relay(conn, _params) do
     with %User{} = user <- Relay.get_actor(),
          {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
       conn

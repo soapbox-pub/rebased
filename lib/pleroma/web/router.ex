@@ -1,8 +1,6 @@
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
 
-  alias Pleroma.{Repo, User, Web.Router}
-
   pipeline :api do
     plug(:accepts, ["json"])
     plug(:fetch_session)

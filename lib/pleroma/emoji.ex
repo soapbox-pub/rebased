@@ -165,7 +165,7 @@ defmodule Pleroma.Emoji do
 
   defp load_from_file_stream(stream) do
     stream
-    |> Stream.map(&String.strip/1)
+    |> Stream.map(&String.trim/1)
     |> Stream.map(fn line ->
       case String.split(line, ~r/,\s*/) do
         [name, file] -> {name, file}

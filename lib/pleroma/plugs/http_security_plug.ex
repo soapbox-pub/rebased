@@ -4,11 +4,11 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
 
   def init(opts), do: opts
 
-  def call(conn, options) do
+  def call(conn, _options) do
     if Config.get([:http_security, :enabled]) do
-      conn =
-        merge_resp_headers(conn, headers())
-        |> maybe_send_sts_header(Config.get([:http_security, :sts]))
+      conn
+      |> merge_resp_headers(headers())
+      |> maybe_send_sts_header(Config.get([:http_security, :sts]))
     else
       conn
     end
@@ -42,7 +42,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       "script-src 'self'",
       "connect-src 'self' " <> String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws"),
       "manifest-src 'self'",
-      if @protocol == "https" do
+      if protocol == "https" do
         "upgrade-insecure-requests"
       end
     ]

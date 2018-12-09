@@ -121,7 +121,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   def token_exchange(
         conn,
-        %{"grant_type" => "password", "name" => name, "password" => password} = params
+        %{"grant_type" => "password", "name" => name, "password" => _password} = params
       ) do
     params =
       params

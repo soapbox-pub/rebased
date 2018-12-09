@@ -8,10 +8,6 @@ defmodule Pleroma.Plugs.UploadedMedia do
   @behaviour Plug
   # no slashes
   @path "media"
-  @cache_control %{
-    default: "public, max-age=1209600",
-    error: "public, must-revalidate, max-age=160"
-  }
 
   def init(_opts) do
     static_plug_opts =

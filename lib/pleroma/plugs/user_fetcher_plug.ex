@@ -7,7 +7,7 @@ defmodule Pleroma.Plugs.UserFetcherPlug do
     options
   end
 
-  def call(conn, options) do
+  def call(conn, _options) do
     with %{auth_credentials: %{username: username}} <- conn.assigns,
          {:ok, %User{} = user} <- user_fetcher(username) do
       conn

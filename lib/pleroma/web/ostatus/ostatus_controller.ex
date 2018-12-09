@@ -157,7 +157,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          conn,
          "activity+json",
          %Activity{data: %{"type" => "Create"}} = activity,
-         user
+         _user
        ) do
     object = Object.normalize(activity.data["object"])
 
@@ -166,7 +166,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     |> json(ObjectView.render("object.json", %{object: object}))
   end
 
-  defp represent_activity(conn, "activity+json", _, _) do
+  defp represent_activity(_conn, "activity+json", _, _) do
     {:error, :not_found}
   end
 

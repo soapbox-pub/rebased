@@ -5,7 +5,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
 
   @reply_prefix Regex.compile!("^re:[[:space:]]*", [:caseless])
   def filter_by_summary(
-        %{"summary" => parent_summary} = parent,
+        %{"summary" => parent_summary} = _parent,
         %{"summary" => child_summary} = child
       )
       when not is_nil(child_summary) and byte_size(child_summary) > 0 and
@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
     end
   end
 
-  def filter_by_summary(parent, child), do: child
+  def filter_by_summary(_parent, child), do: child
 
   def filter(%{"type" => activity_type} = object) when activity_type == "Create" do
     child = object["object"]

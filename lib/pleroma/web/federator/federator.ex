@@ -13,7 +13,6 @@ defmodule Pleroma.Web.Federator do
 
   @websub Application.get_env(:pleroma, :websub)
   @ostatus Application.get_env(:pleroma, :ostatus)
-  @httpoison Application.get_env(:pleroma, :httpoison)
   @max_jobs 20
 
   def init(args) do
@@ -134,7 +133,7 @@ defmodule Pleroma.Web.Federator do
 
   def handle(
         :publish_single_websub,
-        %{xml: xml, topic: topic, callback: callback, secret: secret} = params
+        %{xml: _xml, topic: _topic, callback: _callback, secret: _secret} = params
       ) do
     case Websub.publish_one(params) do
       {:ok, _} ->

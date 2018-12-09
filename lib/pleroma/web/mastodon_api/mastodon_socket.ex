@@ -5,7 +5,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
   alias Pleroma.{User, Repo}
 
   transport(
-    :streaming,
+    :websocket,
     Phoenix.Transports.WebSocket.Raw,
     # We never receive data.
     timeout: :infinity
@@ -52,13 +52,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
         _ -> stream
       end
 
-    with socket =
-           socket
-           |> assign(:topic, topic) do
+    with socket <- assign(socket, :topic, topic) do
       Pleroma.Web.Streamer.add_socket(topic, socket)
       {:ok, socket}
-    else
-      _e -> :error
     end
   end
 

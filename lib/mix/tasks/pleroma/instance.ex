@@ -1,6 +1,5 @@
 defmodule Mix.Tasks.Pleroma.Instance do
   use Mix.Task
-  alias Pleroma.{Repo, User}
   alias Mix.Tasks.Pleroma.Common
 
   @shortdoc "Manages Pleroma instance"

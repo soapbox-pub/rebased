@@ -23,7 +23,7 @@ defmodule Pleroma.List do
     |> validate_required([:following])
   end
 
-  def for_user(user, opts) do
+  def for_user(user, _opts) do
     query =
       from(
         l in Pleroma.List,
@@ -46,7 +46,7 @@ defmodule Pleroma.List do
     Repo.one(query)
   end
 
-  def get_following(%Pleroma.List{following: following} = list) do
+  def get_following(%Pleroma.List{following: following} = _list) do
     q =
       from(
         u in User,

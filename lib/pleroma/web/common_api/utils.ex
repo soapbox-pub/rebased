@@ -122,7 +122,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.finalize()
   end
 
-  def format_input(text, mentions, tags, "text/html") do
+  def format_input(text, mentions, _tags, "text/html") do
     text
     |> Formatter.html_escape("text/html")
     |> String.replace(~r/\r?\n/, "<br>")
@@ -236,7 +236,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def emoji_from_profile(%{info: info} = user) do
+  def emoji_from_profile(%{info: _info} = user) do
     (Formatter.get_emoji(user.bio) ++ Formatter.get_emoji(user.name))
     |> Enum.map(fn {shortcode, url} ->
       %{

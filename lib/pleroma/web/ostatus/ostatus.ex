@@ -376,7 +376,7 @@ defmodule Pleroma.Web.OStatus do
 
   def fetch_activity_from_url(url) do
     try do
-      with {:ok, activities} when length(activities) > 0 <- fetch_activity_from_atom_url(url) do
+      with {:ok, activities} when activities != [] <- fetch_activity_from_atom_url(url) do
         {:ok, activities}
       else
         _e ->

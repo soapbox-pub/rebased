@@ -128,19 +128,18 @@ defmodule Pleroma.Upload do
         opts
       end
 
-    opts =
-      if Pleroma.Config.get([:instance, :dedupe_media]) == true &&
-           !Enum.member?(opts.filters, Pleroma.Upload.Filter.Dedupe) do
-        Logger.warn("""
-        Pleroma: configuration `:instance, :dedupe_media` is deprecated, please instead set:
+    if Pleroma.Config.get([:instance, :dedupe_media]) == true &&
+         !Enum.member?(opts.filters, Pleroma.Upload.Filter.Dedupe) do
+      Logger.warn("""
+      Pleroma: configuration `:instance, :dedupe_media` is deprecated, please instead set:
 
-          :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Dedupe]]
-        """)
+      :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Dedupe]]
+      """)
 
-        Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Dedupe])
-      else
-        opts
-      end
+      Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Dedupe])
+    else
+      opts
+    end
   end
 
   defp prepare_upload(%Plug.Upload{} = file, opts) do
@@ -214,9 +213,5 @@ defmodule Pleroma.Upload do
   defp url_from_spec(base_url, {:file, path}) do
     [base_url, "media", path]
     |> Path.join()
-  end
-
-  defp url_from_spec({:url, url}) do
-    url
   end
 end
