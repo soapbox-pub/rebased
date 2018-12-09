@@ -6,11 +6,17 @@ defmodule Mix.Tasks.Pleroma.Uploads do
   require Logger
 
   @log_every 50
-  @shortdoc "Migrate uploads from local to remote storage"
-  @longdoc """
-   Manages uploads
-   ## Migrate uploads from local to remote storage
+  @shortdoc "Manages uploads"
+  @moduledoc """
+   Manages uploads.
 
+   ## Migrate uploads from local to remote storage
+       mix pleroma.uploads migrate_local TARGET_UPLOADER [OPTIONS...]
+   Options:
+   - `--delete` - delete local uploads after migrating them to the target uploader
+
+
+   A list of avalible uploaders can be seen in config.exs
   """
 
   def run(["migrate_local", target_uploader | args]) do
