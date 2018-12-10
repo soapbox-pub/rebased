@@ -57,6 +57,12 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML)
 * `finmoji_enabled`: Whenether to enable the finmojis in the custom emojis.
 * `mrf_transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
+* `scope_copy`: Copy the scope (private/unlisted/public) in replies to posts by default.
+* `subject_line_behavior`: Allows changing the default behaviour of subject lines in replies. Valid values:
+  * "email": Copy and preprend re:, as in email.
+  * "masto": Copy verbatim, as in Mastodon.
+  * "noop": Don't copy the subject.
+* `always_show_subject_input`: When set to false, auto-hide the subject field when it's empty.
 
 ## :fe
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
