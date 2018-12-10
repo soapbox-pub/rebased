@@ -17,6 +17,47 @@ config :pleroma, Pleroma.Web.Endpoint,
   http: [port: 4000],
   protocol: "http"
 
+# Supported adapters: https://github.com/swoosh/swoosh#adapters
+mailer_settings =
+  case String.downcase(System.get_env("PLEROMA_SWOOSH_ADAPTER") || "") do
+    "mailgun" ->
+      [
+        adapter: Swoosh.Adapters.Mailgun,
+        api_key: System.get_env("PLEROMA_MAILGUN_API_KEY"),
+        domain: System.get_env("PLEROMA_MAILGUN_DOMAIN")
+      ]
+
+    "mandrill" ->
+      [
+        adapter: Swoosh.Adapters.Mandrill,
+        api_key: System.get_env("PLEROMA_MANDRILL_API_KEY")
+      ]
+
+    "sendgrid" ->
+      [
+        adapter: Swoosh.Adapters.Sendgrid,
+        api_key: System.get_env("PLEROMA_SENDGRID_API_KEY")
+      ]
+
+    "smtp" ->
+      [
+        adapter: Swoosh.Adapters.SMTP,
+        relay: System.get_env("PLEROMA_SMTP_RELAY"),
+        username: System.get_env("PLEROMA_SMTP_USERNAME"),
+        password: System.get_env("PLEROMA_SMTP_PASSWORD"),
+        port: System.get_env("PLEROMA_SMTP_PORT") || 1025,
+        ssl: true,
+        tls: :always,
+        auth: :always,
+        retries: 3
+      ]
+
+    _ ->
+      [adapter: Swoosh.Adapters.Local]
+  end
+
+config :pleroma, Pleroma.Mailer, mailer_settings
+
 # Do not print debug messages in production
 config :logger, level: :info
 
