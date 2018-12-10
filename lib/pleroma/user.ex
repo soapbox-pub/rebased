@@ -807,8 +807,8 @@ defmodule Pleroma.User do
   end
 
   def parse_bio(bio, user \\ %User{info: %{source_data: %{}}})
-  def parse_bio(nil, user), do: ""
-  def parse_bio(bio, user) when bio == "", do: bio
+  def parse_bio(nil, _user), do: ""
+  def parse_bio(bio, _user) when bio == "", do: bio
 
   def parse_bio(bio, user) do
     mentions = Formatter.parse_mentions(bio)
