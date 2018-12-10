@@ -126,7 +126,10 @@ config :pleroma, :fe,
   formatting_options_enabled: false,
   collapse_message_with_subject: false,
   hide_post_stats: false,
-  hide_user_stats: false
+  hide_user_stats: false,
+  scope_copy: true,
+  subject_line_behavior: "email",
+  always_show_subject_input: true
 
 config :pleroma, :activitypub,
   accept_blocks: true,

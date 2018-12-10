@@ -183,7 +183,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
           collapseMessageWithSubject: Keyword.get(instance_fe, :collapse_message_with_subject),
           hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
-          hideUserStats: Keyword.get(instance_fe, :hide_user_stats)
+          hideUserStats: Keyword.get(instance_fe, :hide_user_stats),
+          scopeCopy: Keyword.get(instance_fe, :scope_copy),
+          subjectLineBehavior: Keyword.get(instance_fe, :subject_line_behavior),
+          alwaysShowSubjectInput: Keyword.get(instance_fe, :always_show_subject_input)
         }
 
         managed_config = Keyword.get(instance, :managed_config)
