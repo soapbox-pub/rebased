@@ -37,11 +37,11 @@ defmodule Pleroma.Web.Federator.RetryQueue do
 
   def handle_cast({:maybe_enqueue, data, transport, retries}, %{dropped: drop_count} = state) do
     case get_retry_params(retries) do
-      {:retry, _timeout} ->
+      {:retry, timeout} ->
         Process.send_after(
           __MODULE__,
           {:send, data, transport, retries},
-          growth_function(retries)
+          timeout
         )
 
         {:noreply, state}

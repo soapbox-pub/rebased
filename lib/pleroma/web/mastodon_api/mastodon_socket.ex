@@ -11,6 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
     timeout: :infinity
   )
 
+  @spec connect(params :: map(), Phoenix.Socket.t()) :: {:ok, Phoenix.Socket.t()} | :error
   def connect(%{"access_token" => token} = params, socket) do
     with %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
          %User{} = user <- Repo.get(User, user_id),
@@ -52,11 +53,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
         _ -> stream
       end
 
-    with socket <- assign(socket, :topic, topic) do
-      Pleroma.Web.Streamer.add_socket(topic, socket)
-      {:ok, socket}
-    end
+    socket =
+      socket
+      |> assign(:topic, topic)
+
+    Pleroma.Web.Streamer.add_socket(topic, socket)
+    {:ok, socket}
   end
+
+  def connect(_params, _socket), do: :error
 
   def id(_), do: nil
 

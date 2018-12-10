@@ -57,7 +57,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
 
           File.exists?(root_path) ->
             file = Path.basename(id)
-            [hash, _ext] = String.split(id, ".")
+            hash = Path.rootname(id)
             {%Pleroma.Upload{id: hash, name: file, path: file, tempfile: root_path}, root_path}
 
           true ->

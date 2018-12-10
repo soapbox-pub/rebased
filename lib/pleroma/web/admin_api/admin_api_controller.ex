@@ -63,7 +63,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     info_cng = User.Info.admin_api_update(user.info, info)
 
     cng =
-      Ecto.Changeset.change(user)
+      user
+      |> Ecto.Changeset.change()
       |> Ecto.Changeset.put_embed(:info, info_cng)
 
     {:ok, _user} = User.update_and_set_cache(cng)
