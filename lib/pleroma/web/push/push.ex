@@ -54,7 +54,7 @@ defmodule Pleroma.Web.Push do
       when type in @types do
     actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
 
-    type = format_type(notification)
+    type = Pleroma.Activity.mastodon_notification_type(notification.activity)
 
     Subscription
     |> where(user_id: ^user_id)
@@ -112,16 +112,6 @@ defmodule Pleroma.Web.Push do
   def handle_cast({:send, _}, state) do
     Logger.warn("Unknown notification type")
     {:noreply, state}
-  end
-
-  # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
-  defp format_type(%{activity: %{data: %{"type" => type}}}) do
-    case type do
-      "Create" -> "mention"
-      "Follow" -> "follow"
-      "Announce" -> "reblog"
-      "Like" -> "favourite"
-    end
   end
 
   defp format_title(%{activity: %{data: %{"type" => type}}}) do
