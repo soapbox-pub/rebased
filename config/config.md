@@ -19,6 +19,17 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 * `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", {"impode", "1"}]`.
 
+## Pleroma.Upload.Filter.Dedupe
+
+No specific configuration.
+
+## Pleroma.Upload.Filter.AnonymizeFilename
+
+This filter replaces the filename (not the path) of an upload. For complete obfuscation, add
+`Pleroma.Upload.Filter.Dedupe` before AnonymizeFilename.
+
+* `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used.
+
 ## :uri_schemes
 * `valid_schemes`: List of the scheme part that is considered valid to be an URL
 
