@@ -9,7 +9,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Router.Helpers, as: Routes
 
   plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
   action_fallback(:errors)

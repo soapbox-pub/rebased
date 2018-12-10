@@ -31,7 +31,7 @@ defmodule Pleroma.Web.OStatus do
   def oembed_links(url) do
     Enum.map(["xml", "json"], fn format ->
       href = oembed_path(url, format)
-      "<link rel=\"alternate\" type=\"application/#{format}+oembed\" href=\"#{href}\""
+      "<link rel=\"alternate\" type=\"application/#{format}+oembed\" href=\"#{href}\">"
     end)
     |> Enum.join("\r\n")
   end
