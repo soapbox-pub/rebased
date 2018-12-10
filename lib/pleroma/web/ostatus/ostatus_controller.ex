@@ -9,6 +9,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Router.Helpers, as: Routes
 
   plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
   action_fallback(:errors)
@@ -134,9 +135,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
-          conn
-          |> put_resp_content_type("text/html")
-          |> send_file(200, Application.app_dir(:pleroma, "priv/static/index.html"))
+          serve_static_with_meta(conn, activity)
 
         _ ->
           represent_activity(conn, format, activity, user)
@@ -151,6 +150,15 @@ defmodule Pleroma.Web.OStatus.OStatusController do
       e ->
         e
     end
+  end
+
+  defp serve_static_with_meta(conn, activity) do
+    {:ok, index_content } = File.read(Application.app_dir(:pleroma, "priv/static/index.html"))
+    links = OStatus.metadata(request_url(conn))
+    response = String.replace(index_content, "<!--server-generated-meta-->", links)
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(200, response)
   end
 
   defp represent_activity(

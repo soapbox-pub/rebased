@@ -354,6 +354,10 @@ defmodule Pleroma.Web.Router do
     plug(:accepts, ["xml", "atom", "html", "activity+json"])
   end
 
+  pipeline :oembed do
+    plug(:accepts, ["json", "xml"])
+  end
+
   scope "/", Pleroma.Web do
     pipe_through(:ostatus)
 
@@ -367,6 +371,12 @@ defmodule Pleroma.Web.Router do
     post("/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request)
     get("/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation)
     post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
+  end
+
+  scope "/", Pleroma.Web do
+    pipe_through(:oembed)
+
+    get("/oembed", OEmbed.OEmbedController, :url)
   end
 
   pipeline :activitypub do

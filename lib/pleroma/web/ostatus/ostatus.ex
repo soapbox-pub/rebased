@@ -26,6 +26,16 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
+  def metadata(url), do: oembed_links(url)
+
+  def oembed_links(url) do
+    Enum.map(["xml", "json"], fn format ->
+      href = oembed_path(url, format)
+      "<link rel=\"alternate\" type=\"application/#{format}+oembed\" href=\"#{href}\""
+    end)
+    |> Enum.join("\r\n")
+  end
+
   def feed_path(user) do
     "#{user.ap_id}/feed.atom"
   end
@@ -40,6 +50,11 @@ defmodule Pleroma.Web.OStatus do
 
   def remote_follow_path do
     "#{Web.base_url()}/ostatus_subscribe?acct={uri}"
+  end
+
+  def oembed_path(url, format) do
+    query = URI.encode_query(%{url: url, format: format})
+    "#{Web.base_url()}/oembed?#{query}"
   end
 
   def handle_incoming(xml_string) do
