@@ -13,6 +13,7 @@
   "collapseMessageWithSubject": false,
   "scopeCopy": false,
   "subjectLineBehavior": "email",
+  "alwaysShowSubjectInput": true,
   "hidePostStats": false,
   "hideUserStats": false,
   "loginMethod": "password"
