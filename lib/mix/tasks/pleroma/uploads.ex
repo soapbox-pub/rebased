@@ -6,10 +6,8 @@ defmodule Mix.Tasks.Pleroma.Uploads do
   require Logger
 
   @log_every 50
-  @shortdoc "Manages uploads"
+  @shortdoc "Migrates uploads from local to remote storage"
   @moduledoc """
-   Manages uploads.
-
    ## Migrate uploads from local to remote storage
        mix pleroma.uploads migrate_local TARGET_UPLOADER [OPTIONS...]
    Options:
