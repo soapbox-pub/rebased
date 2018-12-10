@@ -3,7 +3,8 @@ defmodule Pleroma.UserInviteToken do
 
   import Ecto.Changeset
 
-  alias Pleroma.{User, UserInviteToken, Repo}
+  alias Pleroma.UserInviteToken
+  alias Pleroma.Repo
 
   schema "user_invite_tokens" do
     field(:token, :string)

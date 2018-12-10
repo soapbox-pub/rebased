@@ -8,6 +8,12 @@ defmodule Pleroma.Mixfile do
       elixir: "~> 1.4",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+      elixirc_options:
+        if Mix.env() == :test do
+          []
+        else
+          [warnings_as_errors: true]
+        end,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),

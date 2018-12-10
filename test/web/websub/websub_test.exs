@@ -1,9 +1,3 @@
-defmodule Pleroma.Web.WebsubMock do
-  def verify(sub) do
-    {:ok, sub}
-  end
-end
-
 defmodule Pleroma.Web.WebsubTest do
   use Pleroma.DataCase
   alias Pleroma.Web.Websub

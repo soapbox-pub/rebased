@@ -9,7 +9,6 @@ defmodule Pleroma.Uploaders.Swift.Client do
   end
 
   def upload_file(filename, body, content_type) do
-    object_url = Pleroma.Config.get!([Pleroma.Uploaders.Swift, :object_url])
     token = Pleroma.Uploaders.Swift.Keystone.get_token()
 
     case put("#{filename}", body, "X-Auth-Token": token, "Content-Type": content_type) do

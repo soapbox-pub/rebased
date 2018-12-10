@@ -141,7 +141,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   end
 
   def to_map(
-        %Activity{data: %{"object" => %{"content" => content} = object}} = activity,
+        %Activity{data: %{"object" => %{"content" => _content} = object}} = activity,
         %{user: user} = opts
       ) do
     created_at = object["published"] |> Utils.date_to_asctime()
@@ -165,7 +165,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
-    {summary, content} = ActivityView.render_content(object)
+    {_summary, content} = ActivityView.render_content(object)
 
     html =
       HTML.filter_tags(content, User.html_filter_policy(opts[:for]))
@@ -173,7 +173,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
 
     video =
       if object["type"] == "Video" do
-        vid = [object]
+        [object]
       else
         []
       end

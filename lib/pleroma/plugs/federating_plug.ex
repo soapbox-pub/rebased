@@ -5,7 +5,7 @@ defmodule Pleroma.Web.FederatingPlug do
     options
   end
 
-  def call(conn, opts) do
+  def call(conn, _opts) do
     if Keyword.get(Application.get_env(:pleroma, :instance), :federating) do
       conn
     else

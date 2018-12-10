@@ -799,7 +799,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   # guard
-  def entire_thread_visible_for_user?(nil, user), do: false
+  def entire_thread_visible_for_user?(nil, _user), do: false
 
   # child
   def entire_thread_visible_for_user?(

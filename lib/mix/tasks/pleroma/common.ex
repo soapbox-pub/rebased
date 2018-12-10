@@ -1,5 +1,5 @@
 defmodule Mix.Tasks.Pleroma.Common do
-  @shortdoc "Common functions to be reused in mix tasks"
+  @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
     Mix.Task.run("app.start")
   end

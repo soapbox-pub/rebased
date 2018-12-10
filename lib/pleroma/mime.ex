@@ -33,9 +33,9 @@ defmodule Pleroma.MIME do
     {:ok, check_mime_type(head)}
   end
 
-  def mime_type(<<_::binary>>), do: {:ok, @default}
-
   def bin_mime_type(_), do: :error
+
+  def mime_type(<<_::binary>>), do: {:ok, @default}
 
   defp fix_extension(filename, content_type) do
     parts = String.split(filename, ".")

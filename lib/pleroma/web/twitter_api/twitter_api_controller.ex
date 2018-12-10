@@ -1,9 +1,7 @@
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
-  alias Pleroma.Formatter
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
   alias Pleroma.{Repo, Activity, Object, User, Notification}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -155,7 +153,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> render(NotificationView, "notification.json", %{notifications: notifications, for: user})
   end
 
-  def notifications_read(%{assigns: %{user: user}} = conn, _) do
+  def notifications_read(%{assigns: %{user: _user}} = conn, _) do
     bad_request_reply(conn, "You need to specify latest_id")
   end
 
@@ -416,7 +414,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def approve_friend_request(conn, %{"user_id" => uid} = params) do
+  def approve_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
          uid when is_number(uid) <- String.to_integer(uid),
          %User{} = follower <- Repo.get(User, uid),
@@ -436,7 +434,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
-  def deny_friend_request(conn, %{"user_id" => uid} = params) do
+  def deny_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
          uid when is_number(uid) <- String.to_integer(uid),
          %User{} = follower <- Repo.get(User, uid),

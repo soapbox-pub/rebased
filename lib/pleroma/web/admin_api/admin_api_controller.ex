@@ -63,13 +63,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     info_cng = User.Info.admin_api_update(user.info, info)
 
     cng =
-      Ecto.Changeset.change(user)
+      user
+      |> Ecto.Changeset.change()
       |> Ecto.Changeset.put_embed(:info, info_cng)
 
-    {:ok, user} = User.update_and_set_cache(cng)
+    {:ok, _user} = User.update_and_set_cache(cng)
 
+    json(conn, info)
+  end
+
+  def right_add(conn, _) do
     conn
-    |> json(info)
+    |> put_status(404)
+    |> json(%{error: "No such permission_group"})
   end
 
   def right_get(conn, %{"nickname" => nickname}) do
@@ -80,12 +86,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       is_moderator: user.info.is_moderator,
       is_admin: user.info.is_admin
     })
-  end
-
-  def right_add(conn, _) do
-    conn
-    |> put_status(404)
-    |> json(%{error: "No such permission_group"})
   end
 
   def right_delete(
@@ -113,10 +113,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         Ecto.Changeset.change(user)
         |> Ecto.Changeset.put_embed(:info, info_cng)
 
-      {:ok, user} = User.update_and_set_cache(cng)
+      {:ok, _user} = User.update_and_set_cache(cng)
 
-      conn
-      |> json(info)
+      json(conn, info)
     end
   end
 
@@ -127,32 +126,28 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def relay_follow(conn, %{"relay_url" => target}) do
-    {status, message} = Relay.follow(target)
-
-    if status == :ok do
-      conn
-      |> json(target)
+    with {:ok, _message} <- Relay.follow(target) do
+      json(conn, target)
     else
-      conn
-      |> put_status(500)
-      |> json(target)
+      _ ->
+        conn
+        |> put_status(500)
+        |> json(target)
     end
   end
 
   def relay_unfollow(conn, %{"relay_url" => target}) do
-    {status, message} = Relay.unfollow(target)
-
-    if status == :ok do
-      conn
-      |> json(target)
+    with {:ok, _message} <- Relay.unfollow(target) do
+      json(conn, target)
     else
-      conn
-      |> put_status(500)
-      |> json(target)
+      _ ->
+        conn
+        |> put_status(500)
+        |> json(target)
     end
   end
 
-  @shortdoc "Get a account registeration invite token (base64 string)"
+  @doc "Get a account registeration invite token (base64 string)"
   def get_invite_token(conn, _params) do
     {:ok, token} = Pleroma.UserInviteToken.create_token()
 
@@ -160,7 +155,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(token.token)
   end
 
-  @shortdoc "Get a password reset token (base64 string) for given nickname"
+  @doc "Get a password reset token (base64 string) for given nickname"
   def get_password_reset(conn, %{"nickname" => nickname}) do
     (%User{local: true} = user) = User.get_by_nickname(nickname)
     {:ok, token} = Pleroma.PasswordResetToken.create_token(user)

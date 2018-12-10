@@ -2,13 +2,14 @@ defmodule Pleroma.User do
   use Ecto.Schema
 
   import Ecto.{Changeset, Query}
-  alias Ecto.Multi
   alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
   alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
   alias Pleroma.Web.{OStatus, Websub, OAuth}
   alias Pleroma.Web.ActivityPub.{Utils, ActivityPub}
+
+  @type t :: %__MODULE__{}
 
   schema "users" do
     field(:bio, :string)
@@ -218,7 +219,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def maybe_follow(%User{} = follower, %User{info: info} = followed) do
+  def maybe_follow(%User{} = follower, %User{info: _info} = followed) do
     if not following?(follower, followed) do
       follow(follower, followed)
     else
@@ -280,6 +281,7 @@ defmodule Pleroma.User do
     end
   end
 
+  @spec following?(User.t(), User.t()) :: boolean
   def following?(%User{} = follower, %User{} = followed) do
     Enum.member?(follower.following, followed.follower_address)
   end
@@ -824,19 +826,20 @@ defmodule Pleroma.User do
     end)
   end
 
+  def tag(nickname, tags) when is_binary(nickname),
+    do: tag(User.get_by_nickname(nickname), tags)
+
+  def tag(%User{} = user, tags),
+    do: update_tags(user, Enum.uniq(user.tags ++ normalize_tags(tags)))
+
   def untag(user_identifiers, tags) when is_list(user_identifiers) do
     Repo.transaction(fn ->
       for user_identifier <- user_identifiers, do: untag(user_identifier, tags)
     end)
   end
 
-  def tag(nickname, tags) when is_binary(nickname), do: tag(User.get_by_nickname(nickname), tags)
-
   def untag(nickname, tags) when is_binary(nickname),
     do: untag(User.get_by_nickname(nickname), tags)
-
-  def tag(%User{} = user, tags),
-    do: update_tags(user, Enum.uniq(user.tags ++ normalize_tags(tags)))
 
   def untag(%User{} = user, tags), do: update_tags(user, user.tags -- normalize_tags(tags))
 

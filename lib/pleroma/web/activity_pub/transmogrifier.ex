@@ -37,9 +37,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   @doc """
   Checks that an imported AP object's actor matches the domain it came from.
   """
-  def contain_origin(id, %{"actor" => nil}), do: :error
+  def contain_origin(_id, %{"actor" => nil}), do: :error
 
-  def contain_origin(id, %{"actor" => actor} = params) do
+  def contain_origin(id, %{"actor" => _actor} = params) do
     id_uri = URI.parse(id)
     actor_uri = URI.parse(get_actor(params))
 
@@ -50,9 +50,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def contain_origin_from_id(id, %{"id" => nil}), do: :error
+  def contain_origin_from_id(_id, %{"id" => nil}), do: :error
 
-  def contain_origin_from_id(id, %{"id" => other_id} = params) do
+  def contain_origin_from_id(id, %{"id" => other_id} = _params) do
     id_uri = URI.parse(id)
     other_uri = URI.parse(other_id)
 
@@ -266,6 +266,32 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_content_map(object), do: object
 
+  defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
+    with true <- id =~ "follows",
+         %User{local: true} = follower <- User.get_cached_by_ap_id(follower_id),
+         %Activity{} = activity <- Utils.fetch_latest_follow(follower, followed) do
+      {:ok, activity}
+    else
+      _ -> {:error, nil}
+    end
+  end
+
+  defp mastodon_follow_hack(_, _), do: {:error, nil}
+
+  defp get_follow_activity(follow_object, followed) do
+    with object_id when not is_nil(object_id) <- Utils.get_ap_id(follow_object),
+         {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(object_id)} do
+      {:ok, activity}
+    else
+      # Can't find the activity. This might a Mastodon 2.3 "Accept"
+      {:activity, nil} ->
+        mastodon_follow_hack(follow_object, followed)
+
+      _ ->
+        {:error, nil}
+    end
+  end
+
   # disallow objects with bogus IDs
   def handle_incoming(%{"id" => nil}), do: :error
   def handle_incoming(%{"id" => ""}), do: :error
@@ -331,34 +357,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
-    with true <- id =~ "follows",
-         %User{local: true} = follower <- User.get_cached_by_ap_id(follower_id),
-         %Activity{} = activity <- Utils.fetch_latest_follow(follower, followed) do
-      {:ok, activity}
-    else
-      _ -> {:error, nil}
-    end
-  end
-
-  defp mastodon_follow_hack(_), do: {:error, nil}
-
-  defp get_follow_activity(follow_object, followed) do
-    with object_id when not is_nil(object_id) <- Utils.get_ap_id(follow_object),
-         {_, %Activity{} = activity} <- {:activity, Activity.get_by_ap_id(object_id)} do
-      {:ok, activity}
-    else
-      # Can't find the activity. This might a Mastodon 2.3 "Accept"
-      {:activity, nil} ->
-        mastodon_follow_hack(follow_object, followed)
-
-      _ ->
-        {:error, nil}
-    end
-  end
-
   def handle_incoming(
-        %{"type" => "Accept", "object" => follow_object, "actor" => actor, "id" => id} = data
+        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => _id} = data
       ) do
     with actor <- get_actor(data),
          %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
@@ -374,7 +374,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              local: false
            }) do
       if not User.following?(follower, followed) do
-        {:ok, follower} = User.follow(follower, followed)
+        {:ok, _follower} = User.follow(follower, followed)
       end
 
       {:ok, activity}
@@ -384,7 +384,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Reject", "object" => follow_object, "actor" => actor, "id" => id} = data
+        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => _id} = data
       ) do
     with actor <- get_actor(data),
          %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
@@ -408,7 +408,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Like", "object" => object_id, "actor" => actor, "id" => id} = data
+        %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data
       ) do
     with actor <- get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
@@ -421,7 +421,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Announce", "object" => object_id, "actor" => actor, "id" => id} = data
+        %{"type" => "Announce", "object" => object_id, "actor" => _actor, "id" => id} = data
       ) do
     with actor <- get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
@@ -492,7 +492,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{
           "type" => "Undo",
           "object" => %{"type" => "Announce", "object" => object_id},
-          "actor" => actor,
+          "actor" => _actor,
           "id" => id
         } = data
       ) do
@@ -520,7 +520,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       User.unfollow(follower, followed)
       {:ok, activity}
     else
-      e -> :error
+      _e -> :error
     end
   end
 
@@ -539,12 +539,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       User.unblock(blocker, blocked)
       {:ok, activity}
     else
-      e -> :error
+      _e -> :error
     end
   end
 
   def handle_incoming(
-        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = data
+        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data
       ) do
     with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
          %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
@@ -554,7 +554,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       User.block(blocker, blocked)
       {:ok, activity}
     else
-      e -> :error
+      _e -> :error
     end
   end
 
@@ -562,7 +562,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{
           "type" => "Undo",
           "object" => %{"type" => "Like", "object" => object_id},
-          "actor" => actor,
+          "actor" => _actor,
           "id" => id
         } = data
       ) do
