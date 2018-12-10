@@ -13,7 +13,7 @@ defmodule HttpRequestMock do
     with {:ok, res} <- apply(__MODULE__, method, [url, query, body, headers]) do
       res
     else
-      {_, r} = error ->
+      {_, _r} = error ->
         # Logger.warn(r)
         error
     end

@@ -20,7 +20,7 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--admin`/`--no-admin` - whether the user is an admin
 
   ## Generate an invite link.
-    
+
       mix pleroma.user invite
 
   ## Delete the user's account.
@@ -32,7 +32,7 @@ defmodule Mix.Tasks.Pleroma.User do
       mix pleroma.user toggle_activated NICKNAME
 
   ## Unsubscribe local users from user's account and deactivate it
-     
+
       mix pleroma.user unsubscribe NICKNAME
 
   ## Create a password reset link.
@@ -235,6 +235,26 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
+  def run(["invite"]) do
+    Common.start_pleroma()
+
+    with {:ok, token} <- Pleroma.UserInviteToken.create_token() do
+      Mix.shell().info("Generated user invite token")
+
+      url =
+        Pleroma.Web.Router.Helpers.redirect_url(
+          Pleroma.Web.Endpoint,
+          :registration_page,
+          token.token
+        )
+
+      IO.puts(url)
+    else
+      _ ->
+        Mix.shell().error("Could not create invite token.")
+    end
+  end
+
   defp set_moderator(user, value) do
     info_cng = User.Info.admin_api_update(user.info, %{is_moderator: value})
 
@@ -269,25 +289,5 @@ defmodule Mix.Tasks.Pleroma.User do
     {:ok, user} = User.update_and_set_cache(user_cng)
 
     Mix.shell().info("Locked status of #{user.nickname}: #{user.info.locked}")
-  end
-
-  def run(["invite"]) do
-    Common.start_pleroma()
-
-    with {:ok, token} <- Pleroma.UserInviteToken.create_token() do
-      Mix.shell().info("Generated user invite token")
-
-      url =
-        Pleroma.Web.Router.Helpers.redirect_url(
-          Pleroma.Web.Endpoint,
-          :registration_page,
-          token.token
-        )
-
-      IO.puts(url)
-    else
-      _ ->
-        Mix.shell().error("Could not create invite token.")
-    end
   end
 end

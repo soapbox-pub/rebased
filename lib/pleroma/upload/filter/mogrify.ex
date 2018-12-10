@@ -1,5 +1,5 @@
 defmodule Pleroma.Upload.Filter.Mogrify do
-  @behaviour Pleroma.Uploader.Filter
+  @behaviour Pleroma.Upload.Filter
 
   @type conversion :: action :: String.t() | {action :: String.t(), opts :: String.t()}
   @type conversions :: conversion() | [conversion()]

@@ -2,18 +2,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.{UserInviteToken, User, Activity, Repo, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.{OStatus, CommonAPI}
-  alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.CommonAPI
   import Ecto.Query
-
-  @httpoison Application.get_env(:pleroma, :httpoison)
 
   def create_status(%User{} = user, %{"status" => _} = data) do
     CommonAPI.post(user, data)
   end
 
   def delete(%User{} = user, id) do
-    with %Activity{data: %{"type" => type}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"type" => _type}} <- Repo.get(Activity, id),
          {:ok, activity} <- CommonAPI.delete(id, user) do
       {:ok, activity}
     end
@@ -37,7 +34,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def unfollow(%User{} = follower, params) do
     with {:ok, %User{} = unfollowed} <- get_user(params),
-         {:ok, follower, follow_activity} <- User.unfollow(follower, unfollowed),
+         {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
          {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed) do
       {:ok, follower, unfollowed}
     else
@@ -242,10 +239,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       )
 
     _activities = Repo.all(q)
-  end
-
-  defp make_date do
-    DateTime.utc_now() |> DateTime.to_iso8601()
   end
 
   # DEPRECATED mostly, context objects are now created at insertion time.

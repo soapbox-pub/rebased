@@ -292,7 +292,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def make_follow_data(
         %User{ap_id: follower_id},
-        %User{ap_id: followed_id} = followed,
+        %User{ap_id: followed_id} = _followed,
         activity_id
       ) do
     data = %{

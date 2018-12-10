@@ -166,7 +166,7 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
     {"src", media_url}
   end
 
-  def scrub_attribute(tag, attribute), do: attribute
+  def scrub_attribute(_tag, attribute), do: attribute
 
   def scrub({"img", attributes, children}) do
     attributes =
@@ -177,9 +177,9 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
     {"img", attributes, children}
   end
 
-  def scrub({:comment, children}), do: ""
+  def scrub({:comment, _children}), do: ""
 
   def scrub({tag, attributes, children}), do: {tag, attributes, children}
-  def scrub({tag, children}), do: children
+  def scrub({_tag, children}), do: children
   def scrub(text), do: text
 end

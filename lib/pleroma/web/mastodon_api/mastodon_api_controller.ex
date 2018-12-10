@@ -437,10 +437,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   # Instead of returning a 400 when no "id" params is present, Mastodon returns an empty array.
-  def relationships(%{assigns: %{user: user}} = conn, _) do
-    conn
-    |> json([])
-  end
+  def relationships(%{assigns: %{user: _user}} = conn, _), do: json(conn, [])
 
   def update_media(%{assigns: %{user: user}} = conn, data) do
     with %Object{} = object <- Repo.get(Object, data["id"]),
@@ -850,7 +847,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
-    with %Pleroma.List{title: title, following: following} <- Pleroma.List.get(id, user) do
+    with %Pleroma.List{title: _title, following: following} <- Pleroma.List.get(id, user) do
       params =
         params
         |> Map.put("type", "Create")
@@ -983,13 +980,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     with changeset <- User.update_changeset(user),
          changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
-         {:ok, user} <- User.update_and_set_cache(changeset) do
-      conn
-      |> json(%{})
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
+      json(conn, %{})
     else
       e ->
-        conn
-        |> json(%{error: inspect(e)})
+        json(conn, %{error: inspect(e)})
     end
   end
 

@@ -1,13 +1,15 @@
 defmodule Mix.Tasks.Pleroma.Uploads do
   use Mix.Task
-  import Mix.Ecto
-  alias Pleroma.{Upload, Uploaders.Local, Uploaders.S3}
+  alias Pleroma.{Upload, Uploaders.Local}
   alias Mix.Tasks.Pleroma.Common
   require Logger
 
   @log_every 50
+
   @shortdoc "Migrates uploads from local to remote storage"
   @moduledoc """
+   Manages uploads
+
    ## Migrate uploads from local to remote storage
        mix pleroma.uploads migrate_local TARGET_UPLOADER [OPTIONS...]
    Options:
@@ -16,7 +18,6 @@ defmodule Mix.Tasks.Pleroma.Uploads do
 
    A list of avalible uploaders can be seen in config.exs
   """
-
   def run(["migrate_local", target_uploader | args]) do
     delete? = Enum.member?(args, "--delete")
     Common.start_pleroma()
@@ -63,7 +64,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
 
           File.exists?(root_path) ->
             file = Path.basename(id)
-            [hash, ext] = String.split(id, ".")
+            hash = Path.rootname(id)
             {%Pleroma.Upload{id: hash, name: file, path: file, tempfile: root_path}, root_path}
 
           true ->

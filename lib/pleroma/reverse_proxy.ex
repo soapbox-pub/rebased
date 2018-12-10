@@ -85,7 +85,9 @@ defmodule Pleroma.ReverseProxy do
           | {:redirect_on_failure, boolean()}
 
   @spec call(Plug.Conn.t(), url :: String.t(), [option()]) :: Plug.Conn.t()
-  def call(conn = %{method: method}, url, opts \\ []) when method in @methods do
+  def call(_conn, _url, _opts \\ [])
+
+  def call(conn = %{method: method}, url, opts) when method in @methods do
     hackney_opts =
       @default_hackney_options
       |> Keyword.merge(Keyword.get(opts, :http, []))
@@ -240,24 +242,23 @@ defmodule Pleroma.ReverseProxy do
   end
 
   defp build_req_headers(headers, opts) do
-    headers =
-      headers
-      |> downcase_headers()
-      |> Enum.filter(fn {k, _} -> k in @keep_req_headers end)
-      |> (fn headers ->
-            headers = headers ++ Keyword.get(opts, :req_headers, [])
+    headers
+    |> downcase_headers()
+    |> Enum.filter(fn {k, _} -> k in @keep_req_headers end)
+    |> (fn headers ->
+          headers = headers ++ Keyword.get(opts, :req_headers, [])
 
-            if Keyword.get(opts, :keep_user_agent, false) do
-              List.keystore(
-                headers,
-                "user-agent",
-                0,
-                {"user-agent", Pleroma.Application.user_agent()}
-              )
-            else
-              headers
-            end
-          end).()
+          if Keyword.get(opts, :keep_user_agent, false) do
+            List.keystore(
+              headers,
+              "user-agent",
+              0,
+              {"user-agent", Pleroma.Application.user_agent()}
+            )
+          else
+            headers
+          end
+        end).()
   end
 
   defp build_resp_headers(headers, opts) do
@@ -268,7 +269,7 @@ defmodule Pleroma.ReverseProxy do
     |> (fn headers -> headers ++ Keyword.get(opts, :resp_headers, []) end).()
   end
 
-  defp build_resp_cache_headers(headers, opts) do
+  defp build_resp_cache_headers(headers, _opts) do
     has_cache? = Enum.any?(headers, fn {k, _} -> k in @resp_cache_headers end)
 
     if has_cache? do

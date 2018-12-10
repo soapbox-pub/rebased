@@ -1,8 +1,6 @@
 defmodule Pleroma.Uploaders.Local do
   @behaviour Pleroma.Uploaders.Uploader
 
-  alias Pleroma.Web
-
   def get_file(_) do
     {:ok, {:static_dir, upload_path()}}
   end

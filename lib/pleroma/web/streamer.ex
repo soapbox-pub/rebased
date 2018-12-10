@@ -61,8 +61,6 @@ defmodule Pleroma.Web.Streamer do
   end
 
   def handle_cast(%{action: :stream, topic: "list", item: item}, topics) do
-    author = User.get_cached_by_ap_id(item.data["actor"])
-
     # filter the recipient list if the activity is not public, see #270.
     recipient_lists =
       case ActivityPub.is_public?(item) do

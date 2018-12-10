@@ -12,8 +12,8 @@ defmodule Pleroma.Uploaders.MDII do
   end
 
   def put_file(upload) do
-    cgi = Pleroma.Config.get([Pleroma.Uploaders.MDII, :cgi])
-    files = Pleroma.Config.get([Pleroma.Uploaders.MDII, :files])
+    cgi = Config.get([Pleroma.Uploaders.MDII, :cgi])
+    files = Config.get([Pleroma.Uploaders.MDII, :files])
 
     {:ok, file_data} = File.read(upload.tempfile)
 

@@ -28,12 +28,12 @@ defmodule Pleroma.Web.XML do
         |> :xmerl_scan.string()
 
       doc
-    catch
-      :exit, _error ->
+    rescue
+      _e ->
         Logger.debug("Couldn't parse XML: #{inspect(text)}")
         :error
-    rescue
-      e ->
+    catch
+      :exit, _error ->
         Logger.debug("Couldn't parse XML: #{inspect(text)}")
         :error
     end
