@@ -277,7 +277,7 @@ defmodule Pleroma.Web.Router do
     get("/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation)
 
     post("/account/register", TwitterAPI.Controller, :register)
-    post("/account/reset_password", TwitterAPI.Controller, :reset_password)
+    post("/account/password_reset", TwitterAPI.Controller, :password_reset)
 
     get("/search", TwitterAPI.Controller, :search)
     get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)
