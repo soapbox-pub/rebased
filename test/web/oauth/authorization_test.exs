@@ -71,7 +71,7 @@ defmodule Pleroma.Web.OAuth.AuthorizationTest do
     {:ok, auth} = Authorization.create_authorization(app, user)
     {:ok, auth} = Authorization.use_token(auth)
 
-    {auths, _} = Authorization.delete_user_authorizations(user)
+    Authorization.delete_user_authorizations(user)
 
     {_, invalid} = Authorization.use_token(auth)
 

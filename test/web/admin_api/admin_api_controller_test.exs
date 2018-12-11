@@ -2,9 +2,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.{Repo, User}
-
   import Pleroma.Factory
-  import ExUnit.CaptureLog
 
   describe "/api/pleroma/admin/user" do
     test "Delete" do

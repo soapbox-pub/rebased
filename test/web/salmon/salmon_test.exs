@@ -3,7 +3,6 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
   alias Pleroma.Web.Salmon
   alias Pleroma.{Repo, Activity, User}
   import Pleroma.Factory
-  import Tesla.Mock
 
   @magickey "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwQhh-1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
 
@@ -11,8 +10,8 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
 
   @magickey_friendica "RSA.AMwa8FUs2fWEjX0xN7yRQgegQffhBpuKNC6fa5VNSVorFjGZhRrlPMn7TQOeihlc9lBz2OsHlIedbYn2uJ7yCs0.AQAB"
 
-  setup do
-    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
 
@@ -75,7 +74,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
   test "it pushes an activity to remote accounts it's addressed to" do
     user_data = %{
       info: %{
-        "salmon" => "http://example.org/salmon"
+        salmon: "http://test-example.org/salmon"
       },
       local: false
     }
@@ -97,8 +96,8 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     user = Repo.get_by(User, ap_id: activity.data["actor"])
     {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
 
-    poster = fn url, _data, _headers, _options ->
-      assert url == "http://example.org/salmon"
+    poster = fn url, _data, _headers ->
+      assert url == "http://test-example.org/salmon"
     end
 
     Salmon.publish(user, activity, poster)

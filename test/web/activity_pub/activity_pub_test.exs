@@ -180,7 +180,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "doesn't retrieve unlisted activities" do
       user = insert(:user)
 
-      {:ok, unlisted_activity} =
+      {:ok, _unlisted_activity} =
         CommonAPI.post(user, %{"status" => "yeah", "visibility" => "unlisted"})
 
       {:ok, listed_activity} = CommonAPI.post(user, %{"status" => "yeah"})

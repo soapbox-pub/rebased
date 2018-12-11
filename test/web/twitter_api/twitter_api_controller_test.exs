@@ -12,20 +12,18 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   import Pleroma.Factory
 
+  @banner "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
+
   describe "POST /api/account/update_profile_banner" do
     test "it updates the banner", %{conn: conn} do
       user = insert(:user)
 
-      new_banner =
-        "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
+      conn
+      |> assign(:user, user)
+      |> post(authenticated_twitter_api__path(conn, :update_banner), %{"banner" => @banner})
+      |> json_response(200)
 
-      response =
-        conn
-        |> assign(:user, user)
-        |> post(authenticated_twitter_api__path(conn, :update_banner), %{"banner" => new_banner})
-        |> json_response(200)
-
-      user = Repo.get(User, user.id)
+      user = refresh_record(user)
       assert user.info.banner["type"] == "Image"
     end
   end
@@ -34,16 +32,12 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "it updates the background", %{conn: conn} do
       user = insert(:user)
 
-      new_bg =
-        "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
+      conn
+      |> assign(:user, user)
+      |> post(authenticated_twitter_api__path(conn, :update_background), %{"img" => @banner})
+      |> json_response(200)
 
-      response =
-        conn
-        |> assign(:user, user)
-        |> post(authenticated_twitter_api__path(conn, :update_background), %{"img" => new_bg})
-        |> json_response(200)
-
-      user = Repo.get(User, user.id)
+      user = refresh_record(user)
       assert user.info.background["type"] == "Image"
     end
   end
@@ -57,12 +51,12 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "with credentials", %{conn: conn, user: user} do
-      conn =
+      response =
         conn
         |> with_credentials(user.nickname, "test")
         |> post("/api/account/verify_credentials.json")
+        |> json_response(200)
 
-      assert response = json_response(conn, 200)
       assert response == UserView.render("show.json", %{user: user, token: response["token"]})
     end
   end
@@ -84,17 +78,28 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         "error" => "Client must provide a 'status' parameter with a value."
       }
 
-      conn = conn_with_creds |> post(request_path)
+      conn =
+        conn_with_creds
+        |> post(request_path)
+
       assert json_response(conn, 400) == error_response
 
-      conn = conn_with_creds |> post(request_path, %{status: ""})
+      conn =
+        conn_with_creds
+        |> post(request_path, %{status: ""})
+
       assert json_response(conn, 400) == error_response
 
-      conn = conn_with_creds |> post(request_path, %{status: " "})
+      conn =
+        conn_with_creds
+        |> post(request_path, %{status: " "})
+
       assert json_response(conn, 400) == error_response
 
       # we post with visibility private in order to avoid triggering relay
-      conn = conn_with_creds |> post(request_path, %{status: "Nice meme.", visibility: "private"})
+      conn =
+        conn_with_creds
+        |> post(request_path, %{status: "Nice meme.", visibility: "private"})
 
       assert json_response(conn, 200) ==
                ActivityRepresenter.to_map(Repo.one(Activity), %{user: user})
@@ -117,7 +122,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert length(response) == 10
     end
 
-    test "returns 403 to unauthenticated request when the instance is not public" do
+    test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
       instance =
         Application.get_env(:pleroma, :instance)
         |> Keyword.put(:public, false)
@@ -135,7 +140,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       Application.put_env(:pleroma, :instance, instance)
     end
 
-    test "returns 200 to unauthenticated request when the instance is public" do
+    test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
       conn
       |> get("/api/statuses/public_timeline.json")
       |> json_response(200)
@@ -143,7 +148,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   describe "GET /statuses/public_and_external_timeline.json" do
-    test "returns 403 to unauthenticated request when the instance is not public" do
+    test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
       instance =
         Application.get_env(:pleroma, :instance)
         |> Keyword.put(:public, false)
@@ -161,7 +166,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       Application.put_env(:pleroma, :instance, instance)
     end
 
-    test "returns 200 to unauthenticated request when the instance is public" do
+    test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
       conn
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(200)
@@ -654,14 +659,13 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "unimplemented mutes with credentials", %{conn: conn, user: current_user} do
-      conn =
+      response =
         conn
         |> with_credentials(current_user.nickname, "test")
         |> get("/api/qvitter/mutes.json")
+        |> json_response(200)
 
-      current_user = Repo.get(User, current_user.id)
-
-      assert [] = json_response(conn, 200)
+      assert [] = response
     end
   end
 
@@ -893,15 +897,16 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       follower_two = insert(:user)
       not_follower = insert(:user)
 
-      {:ok, follower_one} = User.follow(follower_one, user)
-      {:ok, follower_two} = User.follow(follower_two, user)
+      {:ok, _follower_one} = User.follow(follower_one, user)
+      {:ok, _follower_two} = User.follow(follower_two, user)
 
-      conn =
+      response =
         conn
         |> assign(:user, not_follower)
         |> get("/api/statuses/followers", %{"user_id" => user.id})
+        |> json_response(200)
 
-      assert [] == json_response(conn, 200)
+      assert [] == response
     end
 
     test "it returns the followers for a hidden network if requested by the user themselves", %{
@@ -910,10 +915,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user, %{info: %{hide_network: true}})
       follower_one = insert(:user)
       follower_two = insert(:user)
-      not_follower = insert(:user)
+      _not_follower = insert(:user)
 
-      {:ok, follower_one} = User.follow(follower_one, user)
-      {:ok, follower_two} = User.follow(follower_two, user)
+      {:ok, _follower_one} = User.follow(follower_one, user)
+      {:ok, _follower_two} = User.follow(follower_two, user)
 
       conn =
         conn
@@ -989,17 +994,18 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = insert(:user, %{info: %{hide_network: true}})
       followed_one = insert(:user)
       followed_two = insert(:user)
-      not_followed = insert(:user)
+      _not_followed = insert(:user)
 
-      {:ok, user} = User.follow(user, followed_one)
-      {:ok, user} = User.follow(user, followed_two)
+      {:ok, _user} = User.follow(user, followed_one)
+      {:ok, _user} = User.follow(user, followed_two)
 
-      conn =
+      response =
         conn
         |> assign(:user, user)
         |> get("/api/statuses/friends", %{"user_id" => user.id})
+        |> json_response(200)
 
-      refute [] == json_response(conn, 200)
+      refute [] == response
     end
 
     test "it returns a given user's friends with screen_name", %{conn: conn} do

@@ -1,6 +1,5 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
-  alias Pleroma.Builders.UserBuilder
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
   alias Pleroma.{Activity, User, Object, Repo, UserInviteToken}
   alias Pleroma.Web.ActivityPub.ActivityPub

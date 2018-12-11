@@ -982,13 +982,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     end
 
     test "users cannot be collided through fake direction spoofing attempts" do
-      user =
-        insert(:user, %{
-          nickname: "rye@niu.moe",
-          local: false,
-          ap_id: "https://niu.moe/users/rye",
-          follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})
-        })
+      insert(:user, %{
+        nickname: "rye@niu.moe",
+        local: false,
+        ap_id: "https://niu.moe/users/rye",
+        follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})
+      })
 
       {:error, _} = User.get_or_fetch_by_ap_id("https://n1u.moe/users/rye")
     end

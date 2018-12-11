@@ -22,6 +22,7 @@ defmodule Pleroma.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Pleroma.DataCase
+      use Pleroma.Tests.Helpers
     end
   end
 

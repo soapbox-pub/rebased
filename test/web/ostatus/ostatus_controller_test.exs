@@ -42,10 +42,10 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
           "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwrong1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
       })
 
-    cng =
-      Ecto.Changeset.change(salmon_user)
-      |> Ecto.Changeset.put_embed(:info, info_cng)
-      |> Repo.update()
+    salmon_user
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.put_embed(:info, info_cng)
+    |> Repo.update()
 
     conn =
       build_conn()
@@ -97,82 +97,58 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   test "404s on private objects", %{conn: conn} do
     note_activity = insert(:direct_note_activity)
-    user = User.get_by_ap_id(note_activity.data["actor"])
     [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"]))
-    url = "/objects/#{uuid}"
 
-    conn =
-      conn
-      |> get(url)
-
-    assert response(conn, 404)
+    conn
+    |> get("/objects/#{uuid}")
+    |> response(404)
   end
 
   test "404s on nonexisting objects", %{conn: conn} do
-    url = "/objects/123"
-
-    conn =
-      conn
-      |> get(url)
-
-    assert response(conn, 404)
+    conn
+    |> get("/objects/123")
+    |> response(404)
   end
 
   test "gets an activity", %{conn: conn} do
     note_activity = insert(:note_activity)
     [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
-    url = "/activities/#{uuid}"
 
-    conn =
-      conn
-      |> get(url)
-
-    assert response(conn, 200)
+    conn
+    |> get("/activities/#{uuid}")
+    |> response(200)
   end
 
   test "404s on private activities", %{conn: conn} do
     note_activity = insert(:direct_note_activity)
     [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
-    url = "/activities/#{uuid}"
 
-    conn =
-      conn
-      |> get(url)
-
-    assert response(conn, 404)
+    conn
+    |> get("/activities/#{uuid}")
+    |> response(404)
   end
 
   test "404s on nonexistent activities", %{conn: conn} do
-    url = "/activities/123"
-
-    conn =
-      conn
-      |> get(url)
-
-    assert response(conn, 404)
+    conn
+    |> get("/activities/123")
+    |> response(404)
   end
 
   test "gets a notice", %{conn: conn} do
     note_activity = insert(:note_activity)
-    url = "/notice/#{note_activity.id}"
 
-    conn =
-      conn
-      |> get(url)
-
-    assert response(conn, 200)
+    conn
+    |> get("/notice/#{note_activity.id}")
+    |> response(200)
   end
 
   test "gets a notice in AS2 format", %{conn: conn} do
     note_activity = insert(:note_activity)
-    url = "/notice/#{note_activity.id}"
 
-    conn =
-      conn
-      |> put_req_header("accept", "application/activity+json")
-      |> get(url)
-
-    assert json_response(conn, 200)
+    conn
+    |> put_req_header("accept", "application/activity+json")
+    |> get("/notice/#{note_activity.id}")
+    |> json_response(200)
   end
 
   test "only gets a notice in AS2 format for Create messages", %{conn: conn} do

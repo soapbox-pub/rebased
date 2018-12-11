@@ -8,7 +8,6 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
   alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Builders.UserBuilder
 
   import Pleroma.Factory
 
@@ -67,7 +66,7 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
     repeater = insert(:user)
 
-    {:ok, activity} = TwitterAPI.repeat(repeater, note_activity.id)
+    {:ok, _activity} = TwitterAPI.repeat(repeater, note_activity.id)
     [notification] = Notification.for_user(user)
 
     represented = %{
@@ -89,7 +88,7 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
     liker = insert(:user)
 
-    {:ok, activity} = TwitterAPI.fav(liker, note_activity.id)
+    {:ok, _activity} = TwitterAPI.fav(liker, note_activity.id)
     [notification] = Notification.for_user(user)
 
     represented = %{

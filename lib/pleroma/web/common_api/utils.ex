@@ -1,11 +1,12 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
-  alias Pleroma.{Repo, Object, Formatter, Activity}
+  alias Calendar.Strftime
+  alias Comeonin.Pbkdf2
+  alias Pleroma.{Activity, Formatter, Object, Repo}
+  alias Pleroma.User
+  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.User
-  alias Calendar.Strftime
-  alias Comeonin.Pbkdf2
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
@@ -148,7 +149,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       |> Enum.sort_by(fn {tag, _} -> -String.length(tag) end)
 
     Enum.reduce(tags, text, fn {full, tag}, text ->
-      url = "<a href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>##{tag}</a>"
+      url = "<a href='#{Web.base_url()}/tag/#{tag}' rel='tag'>##{tag}</a>"
       String.replace(text, full, url)
     end)
   end

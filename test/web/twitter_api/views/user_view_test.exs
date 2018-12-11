@@ -4,7 +4,6 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   alias Pleroma.User
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Builders.UserBuilder
 
   import Pleroma.Factory
 
@@ -27,7 +26,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     assert represented["profile_image_url"] == image
   end
 
-  test "A user with emoji in username", %{user: user} do
+  test "A user with emoji in username" do
     expected =
       "<img height=\"32px\" width=\"32px\" alt=\"karjalanpiirakka\" title=\"karjalanpiirakka\" src=\"/file.png\" /> man"
 

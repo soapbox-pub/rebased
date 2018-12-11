@@ -2,7 +2,6 @@ defmodule Pleroma.Web.MastodonAPI.ListViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.Web.MastodonAPI.ListView
-  alias Pleroma.List
 
   test "Represent a list" do
     user = insert(:user)

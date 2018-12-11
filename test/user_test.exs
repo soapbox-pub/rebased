@@ -1,13 +1,10 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Builders.UserBuilder
   alias Pleroma.{User, Repo, Activity}
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Websub.WebsubClientSubscription
   alias Pleroma.Web.CommonAPI
   use Pleroma.DataCase
 
   import Pleroma.Factory
-  import Ecto.Query
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -160,6 +157,32 @@ defmodule Pleroma.UserTest do
         |> Repo.insert()
 
       refute is_nil(user.info)
+    end
+  end
+
+  describe "get_or_fetch/1" do
+    test "gets an existing user by nickname" do
+      user = insert(:user)
+      fetched_user = User.get_or_fetch(user.nickname)
+
+      assert user == fetched_user
+    end
+
+    test "gets an existing user by ap_id" do
+      ap_id = "http://mastodon.example.org/users/admin"
+
+      user =
+        insert(
+          :user,
+          local: false,
+          nickname: "admin@mastodon.example.org",
+          ap_id: ap_id,
+          info: %{}
+        )
+
+      fetched_user = User.get_or_fetch(ap_id)
+      freshed_user = refresh_record(user)
+      assert freshed_user == fetched_user
     end
   end
 
@@ -574,7 +597,7 @@ defmodule Pleroma.UserTest do
   describe "caching" do
     test "invalidate_cache works" do
       user = insert(:user)
-      user_info = User.get_cached_user_info(user)
+      _user_info = User.get_cached_user_info(user)
 
       User.invalidate_cache(user)
 
@@ -600,9 +623,9 @@ defmodule Pleroma.UserTest do
 
   describe "User.search" do
     test "finds a user, ranking by similarity" do
-      user = insert(:user, %{name: "lain"})
-      user_two = insert(:user, %{name: "ean"})
-      user_three = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social"})
+      _user = insert(:user, %{name: "lain"})
+      _user_two = insert(:user, %{name: "ean"})
+      _user_three = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social"})
       user_four = insert(:user, %{nickname: "lain@pleroma.soykaf.com"})
 
       assert user_four ==
