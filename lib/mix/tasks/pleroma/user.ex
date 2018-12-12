@@ -142,8 +142,11 @@ defmodule Mix.Tasks.Pleroma.User do
     Common.start_pleroma()
 
     with %User{} = user <- User.get_by_nickname(nickname) do
-      User.deactivate(user, !user.info["deactivated"])
-      Mix.shell().info("Activation status of #{nickname}: #{user.info["deactivated"]}")
+      {:ok, user} = User.deactivate(user, !user.info.deactivated)
+
+      Mix.shell().info(
+        "Activation status of #{nickname}: #{if(user.info.deactivated, do: "de", else: "")}activated"
+      )
     else
       _ ->
         Mix.shell().error("No user #{nickname}")
