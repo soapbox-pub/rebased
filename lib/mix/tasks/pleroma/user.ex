@@ -218,20 +218,23 @@ defmodule Mix.Tasks.Pleroma.User do
       )
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
-      case Keyword.get(options, :moderator) do
-        nil -> nil
-        value -> set_moderator(user, value)
-      end
+      user =
+        case Keyword.get(options, :moderator) do
+          nil -> user
+          value -> set_moderator(user, value)
+        end
 
-      case Keyword.get(options, :locked) do
-        nil -> nil
-        value -> set_locked(user, value)
-      end
+      user =
+        case Keyword.get(options, :locked) do
+          nil -> user
+          value -> set_locked(user, value)
+        end
 
-      case Keyword.get(options, :admin) do
-        nil -> nil
-        value -> set_admin(user, value)
-      end
+      _user =
+        case Keyword.get(options, :admin) do
+          nil -> user
+          value -> set_admin(user, value)
+        end
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")
@@ -268,6 +271,7 @@ defmodule Mix.Tasks.Pleroma.User do
     {:ok, user} = User.update_and_set_cache(user_cng)
 
     Mix.shell().info("Moderator status of #{user.nickname}: #{user.info.is_moderator}")
+    user
   end
 
   defp set_admin(user, value) do
@@ -279,7 +283,8 @@ defmodule Mix.Tasks.Pleroma.User do
 
     {:ok, user} = User.update_and_set_cache(user_cng)
 
-    Mix.shell().info("Admin status of #{user.nickname}: #{user.info.is_moderator}")
+    Mix.shell().info("Admin status of #{user.nickname}: #{user.info.is_admin}")
+    user
   end
 
   defp set_locked(user, value) do
@@ -292,5 +297,6 @@ defmodule Mix.Tasks.Pleroma.User do
     {:ok, user} = User.update_and_set_cache(user_cng)
 
     Mix.shell().info("Locked status of #{user.nickname}: #{user.info.locked}")
+    user
   end
 end
