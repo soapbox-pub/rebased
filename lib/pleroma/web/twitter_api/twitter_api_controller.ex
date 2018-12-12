@@ -340,6 +340,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def confirm_email(_conn, _params), do: :noop
+
+  def email_invite(_conn, _params), do: :noop
+
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
     {:ok, object} = ActivityPub.upload(params, type: :avatar)
     change = Changeset.change(user, %{avatar: object.data})

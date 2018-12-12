@@ -278,6 +278,7 @@ defmodule Pleroma.Web.Router do
 
     post("/account/register", TwitterAPI.Controller, :register)
     post("/account/password_reset", TwitterAPI.Controller, :password_reset)
+    get("/account/confirm_email", TwitterAPI.Controller, :confirm_email)
 
     get("/search", TwitterAPI.Controller, :search)
     get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)
@@ -311,6 +312,8 @@ defmodule Pleroma.Web.Router do
     post("/account/update_profile", TwitterAPI.Controller, :update_profile)
     post("/account/update_profile_banner", TwitterAPI.Controller, :update_banner)
     post("/qvitter/update_background_image", TwitterAPI.Controller, :update_background)
+
+    post("/email_invite", TwitterAPI.Controller, :email_invite)
 
     get("/statuses/home_timeline", TwitterAPI.Controller, :friends_timeline)
     get("/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline)
