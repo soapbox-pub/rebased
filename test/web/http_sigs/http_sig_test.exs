@@ -11,9 +11,6 @@ defmodule Pleroma.Web.HTTPSignaturesTest do
     :ok
   end
 
-  @private_key hd(:public_key.pem_decode(File.read!("test/web/http_sigs/priv.key")))
-               |> :public_key.pem_entry_decode()
-
   @public_key hd(:public_key.pem_decode(File.read!("test/web/http_sigs/pub.key")))
               |> :public_key.pem_entry_decode()
 
@@ -25,8 +22,6 @@ defmodule Pleroma.Web.HTTPSignaturesTest do
     "digest" => "SHA-256=X48E9qOokqqrvdts8nOJRJN3OWDUoyWxBf7kbu9DBPE=",
     "content-length" => "18"
   }
-
-  @body "{\"hello\": \"world\"}"
 
   @default_signature """
   keyId="Test",algorithm="rsa-sha256",signature="jKyvPcxB4JbmYY4mByyBY7cZfNl4OW9HpFQlG7N4YcJPteKTu4MWCLyk+gIr0wDgqtLWf9NLpMAMimdfsH7FSWGfbMFSrsVTHNTk0rK3usrfFnti1dxsM4jl0kYJCKTGI/UWkqiaxwNiKqGcdlEDrTcUhhsFsOIo8VhddmZTZ8w="

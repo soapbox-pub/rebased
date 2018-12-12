@@ -1,9 +1,7 @@
 defmodule Pleroma.Web.MastodonApi.MastodonSocketTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.MastodonApi.MastodonSocket
   alias Pleroma.Web.{Streamer, CommonAPI}
-  alias Pleroma.User
 
   import Pleroma.Factory
 

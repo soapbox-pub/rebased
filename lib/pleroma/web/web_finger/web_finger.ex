@@ -256,8 +256,7 @@ defmodule Pleroma.Web.WebFinger do
     with response <-
            @httpoison.get(
              address,
-             [Accept: "application/xrd+xml,application/jrd+json"],
-             follow_redirect: true
+             Accept: "application/xrd+xml,application/jrd+json"
            ),
          {:ok, %{status: status, body: body}} when status in 200..299 <- response do
       doc = XML.parse_document(body)

@@ -3,7 +3,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, ObjectRepresenter}
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Builders.UserBuilder
   alias Pleroma.Web.TwitterAPI.UserView
   import Pleroma.Factory
 

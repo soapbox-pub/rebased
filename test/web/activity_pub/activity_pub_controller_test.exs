@@ -23,10 +23,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     test "with the relay disabled, it returns 404", %{conn: conn} do
       Pleroma.Config.put([:instance, :allow_relay], false)
 
-      res =
-        conn
-        |> get(activity_pub_path(conn, :relay))
-        |> json_response(404)
+      conn
+      |> get(activity_pub_path(conn, :relay))
+      |> json_response(404)
+      |> assert
 
       Pleroma.Config.put([:instance, :allow_relay], true)
     end

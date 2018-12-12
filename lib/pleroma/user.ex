@@ -212,7 +212,7 @@ defmodule Pleroma.User do
   end
 
   def maybe_direct_follow(%User{} = follower, %User{} = followed) do
-    if !User.ap_enabled?(followed) do
+    if not User.ap_enabled?(followed) do
       follow(follower, followed)
     else
       {:ok, follower}
@@ -736,7 +736,8 @@ defmodule Pleroma.User do
         source_data: %{"publicKey" => %{"publicKeyPem" => public_key_pem}}
       }) do
     key =
-      :public_key.pem_decode(public_key_pem)
+      public_key_pem
+      |> :public_key.pem_decode()
       |> hd()
       |> :public_key.pem_entry_decode()
 
@@ -774,13 +775,10 @@ defmodule Pleroma.User do
   def ap_enabled?(%User{info: info}), do: info.ap_enabled
   def ap_enabled?(_), do: false
 
-  def get_or_fetch(uri_or_nickname) do
-    if String.starts_with?(uri_or_nickname, "http") do
-      get_or_fetch_by_ap_id(uri_or_nickname)
-    else
-      get_or_fetch_by_nickname(uri_or_nickname)
-    end
-  end
+  @doc "Gets or fetch a user by uri or nickname."
+  @spec get_or_fetch(String.t()) :: User.t()
+  def get_or_fetch("http" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
+  def get_or_fetch(nickname), do: get_or_fetch_by_nickname(nickname)
 
   # wait a period of time and return newest version of the User structs
   # this is because we have synchronous follow APIs and need to simulate them
@@ -821,7 +819,9 @@ defmodule Pleroma.User do
         {String.trim(name, ":"), url}
       end)
 
-    CommonUtils.format_input(bio, mentions, tags, "text/plain") |> Formatter.emojify(emoji)
+    bio
+    |> CommonUtils.format_input(mentions, tags, "text/plain")
+    |> Formatter.emojify(emoji)
   end
 
   def tag(user_identifiers, tags) when is_list(user_identifiers) do

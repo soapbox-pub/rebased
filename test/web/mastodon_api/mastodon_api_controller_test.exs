@@ -5,7 +5,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.{Repo, User, Object, Activity, Notification}
   alias Pleroma.Web.{OStatus, CommonAPI}
   alias Pleroma.Web.ActivityPub.ActivityPub
-
+  alias Pleroma.Web.MastodonAPI.FilterView
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock
@@ -351,12 +351,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       {:ok, filter_one} = Pleroma.Filter.create(query_one)
       {:ok, filter_two} = Pleroma.Filter.create(query_two)
 
-      conn =
+      response =
         conn
         |> assign(:user, user)
         |> get("/api/v1/filters")
+        |> json_response(200)
 
-      assert response = json_response(conn, 200)
+      assert response ==
+               render_json(
+                 FilterView,
+                 "filters.json",
+                 filters: [filter_two, filter_one]
+               )
     end
 
     test "get a filter", %{conn: conn} do
@@ -389,7 +395,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         context: ["home"]
       }
 
-      {:ok, filter} = Pleroma.Filter.create(query)
+      {:ok, _filter} = Pleroma.Filter.create(query)
 
       new = %Pleroma.Filter{
         phrase: "nii",
@@ -554,7 +560,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = insert(:user)
       {:ok, activity_one} = TwitterAPI.create_status(other_user, %{"status" => "Marisa is cute."})
 
-      {:ok, activity_two} =
+      {:ok, _activity_two} =
         TwitterAPI.create_status(other_user, %{
           "status" => "Marisa is cute.",
           "visibility" => "private"
@@ -854,7 +860,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       user = insert(:user, %{info: %Pleroma.User.Info{locked: true}})
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
       other_user = Repo.get(User, other_user.id)
@@ -874,7 +880,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       user = insert(:user, %{info: %Pleroma.User.Info{locked: true}})
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
       other_user = Repo.get(User, other_user.id)
@@ -911,7 +917,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       user = insert(:user, %{info: %Pleroma.User.Info{locked: true}})
       other_user = insert(:user)
 
-      {:ok, activity} = ActivityPub.follow(other_user, user)
+      {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       conn =
         build_conn()
@@ -1015,7 +1021,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   test "getting followers, hide_network", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user, %{info: %{hide_network: true}})
-    {:ok, user} = User.follow(user, other_user)
+    {:ok, _user} = User.follow(user, other_user)
 
     conn =
       conn
@@ -1027,7 +1033,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   test "getting followers, hide_network, same user requesting", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user, %{info: %{hide_network: true}})
-    {:ok, user} = User.follow(user, other_user)
+    {:ok, _user} = User.follow(user, other_user)
 
     conn =
       conn

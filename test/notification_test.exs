@@ -127,12 +127,12 @@ defmodule Pleroma.NotificationTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} =
+      {:ok, _activity} =
         TwitterAPI.create_status(user, %{
           "status" => "hey @#{other_user.nickname}!"
         })
 
-      {:ok, activity} =
+      {:ok, _activity} =
         TwitterAPI.create_status(user, %{
           "status" => "hey again @#{other_user.nickname}!"
         })
@@ -142,14 +142,14 @@ defmodule Pleroma.NotificationTest do
 
       assert n2.id > n1.id
 
-      {:ok, activity} =
+      {:ok, _activity} =
         TwitterAPI.create_status(user, %{
           "status" => "hey yet again @#{other_user.nickname}!"
         })
 
       Notification.set_read_up_to(other_user, n2.id)
 
-      [n3, n2, n1] = notifs = Notification.for_user(other_user)
+      [n3, n2, n1] = Notification.for_user(other_user)
 
       assert n1.seen == true
       assert n2.seen == true

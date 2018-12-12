@@ -54,8 +54,8 @@ defmodule Pleroma.Web.OAuth.TokenTest do
     {:ok, auth1} = Authorization.create_authorization(app1, user)
     {:ok, auth2} = Authorization.create_authorization(app2, user)
 
-    {:ok, token1} = Token.exchange_token(app1, auth1)
-    {:ok, token2} = Token.exchange_token(app2, auth2)
+    {:ok, _token1} = Token.exchange_token(app1, auth1)
+    {:ok, _token2} = Token.exchange_token(app2, auth2)
 
     {tokens, _} = Token.delete_user_tokens(user)
 

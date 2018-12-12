@@ -19,6 +19,7 @@ defmodule Pleroma.Web.ConnCase do
     quote do
       # Import conveniences for testing with connections
       use Phoenix.ConnTest
+      use Pleroma.Tests.Helpers
       import Pleroma.Web.Router.Helpers
 
       # The default endpoint for testing

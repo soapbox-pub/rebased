@@ -180,7 +180,7 @@ defmodule Pleroma.Web.Salmon do
     "Undo",
     "Delete"
   ]
-  def publish(user, activity, poster \\ &@httpoison.post/4)
+  def publish(user, activity, poster \\ &@httpoison.post/3)
 
   def publish(%{info: %{keys: keys}} = user, %{data: %{"type" => type}} = activity, poster)
       when type in @supported_activities do

@@ -4,7 +4,7 @@ defmodule MockActivityPub do
   end
 end
 
-defmodule Pleroma.ActivityTest do
+defmodule Pleroma.Web.Federator.RetryQueueTest do
   use Pleroma.DataCase
   alias Pleroma.Web.Federator.RetryQueue
 
