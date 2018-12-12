@@ -134,7 +134,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
-          serve_static_with_meta(conn, activity)
+          serve_static_with_meta(conn, activity, user)
 
         _ ->
           represent_activity(conn, format, activity, user)
@@ -151,9 +151,9 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     end
   end
 
-  defp serve_static_with_meta(conn, activity) do
+  defp serve_static_with_meta(conn, activity, user) do
     {:ok, index_content } = File.read(Application.app_dir(:pleroma, "priv/static/index.html"))
-    links = OStatus.metadata(request_url(conn))
+    links = OStatus.metadata(activity, user, request_url(conn))
     response = String.replace(index_content, "<!--server-generated-meta-->", links)
     conn
     |> put_resp_content_type("text/html")
