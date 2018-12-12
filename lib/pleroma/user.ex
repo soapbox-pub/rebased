@@ -14,7 +14,7 @@ defmodule Pleroma.User do
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
-  @extended_local_nickname_regex ~r/^[a-zA-Z\d_]+$/
+  @extended_local_nickname_regex ~r/^[a-zA-Z\d_-]+$/
 
   schema "users" do
     field(:bio, :string)

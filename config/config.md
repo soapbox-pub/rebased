@@ -63,7 +63,7 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
   * "masto": Copy verbatim, as in Mastodon.
   * "noop": Don't copy the subject.
 * `always_show_subject_input`: When set to false, auto-hide the subject field when it's empty.
-* `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscore). This will break federation with
+* `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
 
 ## :fe
