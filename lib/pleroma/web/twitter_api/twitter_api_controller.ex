@@ -3,7 +3,6 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
-  alias Pleroma.Formatter
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.{Repo, Activity, Object, User, Notification}
@@ -329,7 +328,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def password_reset(conn, params) do
     nickname_or_email = params["email"] || params["nickname"]
 
-    with is_binary(nickname_or_email),
+    with true <- is_binary(nickname_or_email),
          %User{local: true} = user <- User.get_by_nickname_or_email(nickname_or_email) do
       {:ok, token_record} = Pleroma.PasswordResetToken.create_token(user)
 
