@@ -12,6 +12,7 @@ config :pleroma, Pleroma.Web.Endpoint,
 config :pleroma, :instance,
   name: "<%= name %>",
   email: "<%= email %>",
+  domain: "<%= domain %>,
   limit: 5000,
   registrations_open: true,
   dedupe_media: false
