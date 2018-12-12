@@ -9,6 +9,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Comeonin.Pbkdf2
+  alias Ecto.Changeset
 
   import Pleroma.Factory
 
@@ -270,7 +271,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       since_id = List.last(activities).id
 
       current_user =
-        Ecto.Changeset.change(current_user, following: [User.ap_followers(user)])
+        Changeset.change(current_user, following: [User.ap_followers(user)])
         |> Repo.update!()
 
       conn =
@@ -829,6 +830,46 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       errors = json_response(conn, 400)
 
       assert is_binary(errors["error"])
+    end
+  end
+
+  describe "POST /api/account/password_reset, with valid parameters" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      conn = post(conn, "/api/account/password_reset?email=#{user.email}")
+      %{conn: conn, user: user}
+    end
+
+    test "it returns 204", %{conn: conn} do
+      assert json_response(conn, :no_content)
+    end
+
+    test "it creates a PasswordResetToken record for user", %{user: user} do
+      token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
+      assert token_record
+    end
+
+    test "it sends an email to user", %{user: user} do
+      token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
+
+      Swoosh.TestAssertions.assert_email_sent(
+        Pleroma.UserEmail.password_reset_email(user, token_record.token)
+      )
+    end
+  end
+
+  describe "POST /api/account/password_reset, with invalid parameters" do
+    setup [:valid_user]
+
+    test "it returns 500 when user is not found", %{conn: conn, user: user} do
+      conn = post(conn, "/api/account/password_reset?email=nonexisting_#{user.email}")
+      assert json_response(conn, :internal_server_error)
+    end
+
+    test "it returns 500 when user is not local", %{conn: conn, user: user} do
+      {:ok, user} = Repo.update(Changeset.change(user, local: false))
+      conn = post(conn, "/api/account/password_reset?email=#{user.email}")
+      assert json_response(conn, :internal_server_error)
     end
   end
 
