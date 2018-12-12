@@ -109,13 +109,13 @@ defmodule Pleroma.FormatterTest do
 
   describe "add_user_links" do
     test "gives a replacement for user links" do
-      text = "@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me"
+      text = "@gsimg According to @archa_eme_, that is @daggsy. Also hello @archaeme@archae.me"
       gsimg = insert(:user, %{nickname: "gsimg"})
 
       archaeme =
         insert(:user, %{
-          nickname: "archaeme",
-          info: %Pleroma.User.Info{source_data: %{"url" => "https://archeme/@archaeme"}}
+          nickname: "archa_eme_",
+          info: %Pleroma.User.Info{source_data: %{"url" => "https://archeme/@archa_eme_"}}
         })
 
       archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
@@ -130,7 +130,7 @@ defmodule Pleroma.FormatterTest do
       expected_text =
         "<span><a data-user='#{gsimg.id}' class='mention' href='#{gsimg.ap_id}'>@<span>gsimg</span></a></span> According to <span><a data-user='#{
           archaeme.id
-        }' class='mention' href='#{"https://archeme/@archaeme"}'>@<span>archaeme</span></a></span>, that is @daggsy. Also hello <span><a data-user='#{
+        }' class='mention' href='#{"https://archeme/@archa_eme_"}'>@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span><a data-user='#{
           archaeme_remote.id
         }' class='mention' href='#{archaeme_remote.ap_id}'>@<span>archaeme</span></a></span>"
 
