@@ -4,7 +4,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
   alias Pleroma.Repo
-  alias Pleroma.Web.{OStatus, Federator}
+  alias Pleroma.Web.{OStatus, Federator, Metadata}
   alias Pleroma.Web.XML
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.ActivityPubController
@@ -153,8 +153,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   defp serve_static_with_meta(conn, activity, user) do
     {:ok, index_content } = File.read(Application.app_dir(:pleroma, "priv/static/index.html"))
-    links = OStatus.metadata(activity, user, request_url(conn))
-    response = String.replace(index_content, "<!--server-generated-meta-->", links)
+    tags = Metadata.build_tags(activity, user, request_url(conn))
+    response = String.replace(index_content, "<!--server-generated-meta-->", tags)
     conn
     |> put_resp_content_type("text/html")
     |> send_resp(200, response)
