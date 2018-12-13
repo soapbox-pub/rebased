@@ -4,7 +4,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
   alias Pleroma.Repo
-  alias Pleroma.Web.{OStatus, Federator, Metadata}
+  alias Pleroma.Web.{OStatus, Federator}
   alias Pleroma.Web.XML
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.ActivityPubController
@@ -14,9 +14,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   action_fallback(:errors)
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
-    case get_format(conn) do
+    format = get_format(conn)
+    IO.puts(format)
+    case format do
       "html" ->
-        Fallback.RedirectController.redirector(conn, nil)
+        with %User{} = user <- User.get_cached_by_nickname(nickname) do
+          Fallback.RedirectController.redirector_with_meta(conn, %{user: user})
+        end
 
       "activity+json" ->
         ActivityPubController.call(conn, :user)
@@ -134,7 +138,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
-          serve_static_with_meta(conn, activity, user)
+          Fallback.RedirectController.redirector_with_meta(conn, %{activity: activity, user: user})
 
         _ ->
           represent_activity(conn, format, activity, user)
@@ -149,15 +153,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
       e ->
         e
     end
-  end
-
-  defp serve_static_with_meta(conn, activity, user) do
-    {:ok, index_content } = File.read(Application.app_dir(:pleroma, "priv/static/index.html"))
-    tags = Metadata.build_tags(activity, user, request_url(conn))
-    response = String.replace(index_content, "<!--server-generated-meta-->", tags)
-    conn
-    |> put_resp_content_type("text/html")
-    |> send_resp(200, response)
   end
 
   defp represent_activity(

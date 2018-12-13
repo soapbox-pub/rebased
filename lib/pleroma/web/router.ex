@@ -351,7 +351,7 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :ostatus do
-    plug(:accepts, ["xml", "atom", "html", "activity+json"])
+    plug(:accepts, ["html", "xml", "atom", "activity+json"])
   end
 
   pipeline :oembed do
@@ -444,11 +444,22 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+  alias Pleroma.Web.Metadata
 
   def redirector(conn, _params) do
     conn
     |> put_resp_content_type("text/html")
     |> send_file(200, Application.app_dir(:pleroma, "priv/static/index.html"))
+  end
+
+  def redirector_with_meta(conn, params) do
+    {:ok, index_content } = File.read(Application.app_dir(:pleroma, "priv/static/index.html"))
+    tags = Metadata.build_tags(request_url(conn), params)
+    response = String.replace(index_content, "<!--server-generated-meta-->", tags)
+
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(200, response)
   end
 
   def registration_page(conn, params) do
