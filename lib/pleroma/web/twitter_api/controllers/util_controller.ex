@@ -168,7 +168,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           private: if(Keyword.get(instance, :public, true), do: "0", else: "1"),
           accountActivationRequired:
             if(Keyword.get(instance, :account_activation_required, false), do: "1", else: "0"),
-          invitesEnabled: if(Keyword.get(instance, :invites_enabled, true), do: "1", else: "0"),
+          invitesEnabled: if(Keyword.get(instance, :invites_enabled, false), do: "1", else: "0"),
           vapidPublicKey: vapid_public_key
         }
 

@@ -9,9 +9,12 @@ defmodule Pleroma.UserEmail do
 
   defp instance_name, do: instance_config()[:name]
 
-  defp from do
+  defp sender do
     {instance_name(), instance_config()[:email]}
   end
+
+  defp recipient(email, nil), do: email
+  defp recipient(email, name), do: {name, email}
 
   def password_reset_email(user, password_reset_token) when is_binary(password_reset_token) do
     password_reset_url =
@@ -29,9 +32,30 @@ defmodule Pleroma.UserEmail do
     """
 
     new()
-    |> to({user.name, user.email})
-    |> from(from())
+    |> to(recipient(user.email, user.name))
+    |> from(sender())
     |> subject("Password reset")
+    |> html_body(html_body)
+  end
+
+  def user_invitation_email(user, to_email, to_name \\ nil) do
+    registration_url =
+      Router.Helpers.redirect_url(
+        Endpoint,
+        :registration_page,
+        ""
+      )
+
+    html_body = """
+    <h3>You are invited to #{instance_name()}</h3>
+    <p>#{user.name} invites you to join #{instance_name()}, an instance of Pleroma federated social networking platform.</p>
+    <p>Click the following link to register: <a href="#{registration_url}">accept invitation</a>.</p>
+    """
+
+    new()
+    |> to(recipient(to_email, to_name))
+    |> from(sender())
+    |> subject("Invitation to #{instance_name()}")
     |> html_body(html_body)
   end
 end

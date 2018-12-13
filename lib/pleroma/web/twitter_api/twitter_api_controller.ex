@@ -335,7 +335,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def confirm_email(_conn, _params), do: :noop
 
-  def email_invite(_conn, _params), do: :noop
+  def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
+    with true <- Pleroma.Config.get([:instance, :invites_enabled]),
+         email <- Pleroma.UserEmail.user_invitation_email(user, email, params["name"]),
+         {:ok, _} <- Pleroma.Mailer.deliver(email) do
+      json_response(conn, :no_content, "")
+    end
+  end
 
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
     {:ok, object} = ActivityPub.upload(params, type: :avatar)
