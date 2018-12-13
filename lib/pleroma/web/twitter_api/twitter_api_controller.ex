@@ -328,14 +328,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def password_reset(conn, params) do
     nickname_or_email = params["email"] || params["nickname"]
 
-    with true <- is_binary(nickname_or_email),
-         %User{local: true} = user <- User.get_by_nickname_or_email(nickname_or_email) do
-      {:ok, token_record} = Pleroma.PasswordResetToken.create_token(user)
-
-      user
-      |> Pleroma.UserEmail.password_reset_email(token_record.token)
-      |> Pleroma.Mailer.deliver()
-
+    with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
       json_response(conn, :no_content, "")
     end
   end
