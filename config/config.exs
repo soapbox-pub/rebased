@@ -171,9 +171,7 @@ config :pleroma, :gopher,
   ip: {0, 0, 0, 0},
   port: 9999
 
-config :pleroma, :metadata,
-  oembed: false,
-  opengraph: true
+config :pleroma, :metadata, opengraph: true
 
 config :pleroma, :suggestions,
   enabled: false,

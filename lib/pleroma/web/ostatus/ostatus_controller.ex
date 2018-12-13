@@ -14,9 +14,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   action_fallback(:errors)
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
-    format = get_format(conn)
-    IO.puts(format)
-    case format do
+    case get_format(conn) do
       "html" ->
         with %User{} = user <- User.get_cached_by_nickname(nickname) do
           Fallback.RedirectController.redirector_with_meta(conn, %{user: user})

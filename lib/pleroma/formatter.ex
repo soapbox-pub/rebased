@@ -165,14 +165,16 @@ defmodule Pleroma.Formatter do
   end
 
   def truncate(text, opts \\ []) do
-    max_length  = opts[:max_length] || 200
-    omission    = opts[:omission] || "..."
+    max_length = opts[:max_length] || 200
+    omission = opts[:omission] || "..."
 
     cond do
       not String.valid?(text) ->
         text
+
       String.length(text) < max_length ->
         text
+
       true ->
         length_with_omission = max_length - String.length(omission)
 

@@ -453,8 +453,8 @@ defmodule Fallback.RedirectController do
   end
 
   def redirector_with_meta(conn, params) do
-    {:ok, index_content } = File.read(Application.app_dir(:pleroma, "priv/static/index.html"))
-    tags = Metadata.build_tags(request_url(conn), params)
+    {:ok, index_content} = File.read(Application.app_dir(:pleroma, "priv/static/index.html"))
+    tags = Metadata.build_tags(params)
     response = String.replace(index_content, "<!--server-generated-meta-->", tags)
 
     conn
