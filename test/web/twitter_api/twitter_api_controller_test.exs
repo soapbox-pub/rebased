@@ -873,38 +873,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
-  describe "POST /api/email_invite, with valid parameters" do
-    setup [:valid_user]
-
-    setup do
-      invites_enabled = Pleroma.Config.get([:instance, :invites_enabled])
-      Pleroma.Config.put([:instance, :invites_enabled], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :invites_enabled], invites_enabled)
-        :ok
-      end)
-
-      :ok
-    end
-
-    test "it returns 204", %{conn: conn, user: user} do
-      recipient_email = "foo@bar.com"
-      recipient_name = "J. D."
-
-      conn =
-        conn
-        |> assign(:user, user)
-        |> post("/api/email_invite?email=#{recipient_email}&name=#{recipient_name}")
-
-      assert json_response(conn, :no_content)
-
-      Swoosh.TestAssertions.assert_email_sent(
-        Pleroma.UserEmail.user_invitation_email(user, recipient_email, recipient_name)
-      )
-    end
-  end
-
   describe "GET /api/externalprofile/show" do
     test "it returns the user", %{conn: conn} do
       user = insert(:user)
