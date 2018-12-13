@@ -11,6 +11,11 @@ defmodule Pleroma.User do
 
   @type t :: %__MODULE__{}
 
+  @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+
+  @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
+  @extended_local_nickname_regex ~r/^[a-zA-Z\d_-]+$/
+
   schema "users" do
     field(:bio, :string)
     field(:email, :string)
@@ -77,7 +82,6 @@ defmodule Pleroma.User do
     }
   end
 
-  @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
   def remote_user_creation(params) do
     params =
       params
@@ -117,7 +121,7 @@ defmodule Pleroma.User do
     struct
     |> cast(params, [:bio, :name, :avatar])
     |> unique_constraint(:nickname)
-    |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
+    |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
     |> validate_length(:name, min: 1, max: 100)
   end
@@ -134,7 +138,7 @@ defmodule Pleroma.User do
     struct
     |> cast(params, [:bio, :name, :follower_address, :avatar, :last_refreshed_at])
     |> unique_constraint(:nickname)
-    |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
+    |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
     |> validate_length(:name, max: 100)
     |> put_embed(:info, info_cng)
@@ -172,7 +176,7 @@ defmodule Pleroma.User do
       |> validate_confirmation(:password)
       |> unique_constraint(:email)
       |> unique_constraint(:nickname)
-      |> validate_format(:nickname, ~r/^[a-zA-Z\d]+$/)
+      |> validate_format(:nickname, local_nickname_regex())
       |> validate_format(:email, @email_regex)
       |> validate_length(:bio, max: 1000)
       |> validate_length(:name, min: 1, max: 100)
@@ -860,5 +864,13 @@ defmodule Pleroma.User do
     [tags]
     |> List.flatten()
     |> Enum.map(&String.downcase(&1))
+  end
+
+  defp local_nickname_regex() do
+    if Pleroma.Config.get([:instance, :extended_nickname_format]) do
+      @extended_local_nickname_regex
+    else
+      @strict_local_nickname_regex
+    end
   end
 end
