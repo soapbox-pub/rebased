@@ -38,12 +38,12 @@ defmodule Pleroma.UserEmail do
     |> html_body(html_body)
   end
 
-  def user_invitation_email(user, to_email, to_name \\ nil) do
+  def user_invitation_email(user, user_invite_token, to_email, to_name \\ nil) do
     registration_url =
       Router.Helpers.redirect_url(
         Endpoint,
         :registration_page,
-        ""
+        user_invite_token.token
       )
 
     html_body = """

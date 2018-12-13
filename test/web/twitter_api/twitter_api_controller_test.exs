@@ -877,10 +877,13 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     setup [:valid_user]
 
     setup do
+      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
       invites_enabled = Pleroma.Config.get([:instance, :invites_enabled])
+      Pleroma.Config.put([:instance, :registrations_open], false)
       Pleroma.Config.put([:instance, :invites_enabled], true)
 
       on_exit(fn ->
+        Pleroma.Config.put([:instance, :registrations_open], registrations_open)
         Pleroma.Config.put([:instance, :invites_enabled], invites_enabled)
         :ok
       end)
@@ -888,7 +891,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       :ok
     end
 
-    test "it returns 204", %{conn: conn, user: user} do
+    test "sends invitation and returns 204", %{conn: conn, user: user} do
       recipient_email = "foo@bar.com"
       recipient_name = "J. D."
 
@@ -899,9 +902,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert json_response(conn, :no_content)
 
-      Swoosh.TestAssertions.assert_email_sent(
-        Pleroma.UserEmail.user_invitation_email(user, recipient_email, recipient_name)
-      )
+      Swoosh.TestAssertions.assert_email_sent()
     end
   end
 
