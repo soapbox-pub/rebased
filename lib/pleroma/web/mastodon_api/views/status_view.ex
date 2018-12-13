@@ -140,7 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       visibility: get_visibility(object),
       media_attachments: attachments |> Enum.take(4),
       mentions: mentions,
-      tags: tags,
+      tags: build_tags(tags),
       application: %{
         name: "Web",
         website: nil
@@ -233,6 +233,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render_content(object), do: object["content"] || ""
+
+  @doc """
+  Builds a dictionary tags.
+
+  ## Examples
+
+  iex> Pleroma.Web.MastodonAPI.StatusView.build_tags(["fediverse", "nextcloud"])
+  [{"name": "fediverse", "url": "/tag/fediverse"},
+   {"name": "nextcloud", "url": "/tag/nextcloud"}]
+
+  """
+  @spec build_tags(list(String.t())) :: list(map())
+  def build_tags(object_tags) when is_list(object_tags) do
+    Enum.reduce(object_tags, [], fn tag, tags ->
+      tags ++ [%{name: tag, url: "/tag/#{tag}"}]
+    end)
+  end
+
+  def build_tags(_), do: []
 
   @doc """
   Builds list emojis.
