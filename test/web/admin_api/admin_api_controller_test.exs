@@ -154,6 +154,105 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "POST /api/pleroma/admin/email_invite, with valid config" do
+    setup do
+      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
+      invites_enabled = Pleroma.Config.get([:instance, :invites_enabled])
+      Pleroma.Config.put([:instance, :registrations_open], false)
+      Pleroma.Config.put([:instance, :invites_enabled], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :registrations_open], registrations_open)
+        Pleroma.Config.put([:instance, :invites_enabled], invites_enabled)
+        :ok
+      end)
+
+      [user: insert(:user, info: %{is_admin: true})]
+    end
+
+    test "sends invitation and returns 204", %{conn: conn, user: user} do
+      recipient_email = "foo@bar.com"
+      recipient_name = "J. D."
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/pleroma/admin/email_invite?email=#{recipient_email}&name=#{recipient_name}")
+
+      assert json_response(conn, :no_content)
+
+      token_record = List.last(Pleroma.Repo.all(Pleroma.UserInviteToken))
+      assert token_record
+      refute token_record.used
+
+      Swoosh.TestAssertions.assert_email_sent(
+        Pleroma.UserEmail.user_invitation_email(
+          user,
+          token_record,
+          recipient_email,
+          recipient_name
+        )
+      )
+    end
+
+    test "it returns 403 if requested by a non-admin", %{conn: conn} do
+      non_admin_user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, non_admin_user)
+        |> post("/api/pleroma/admin/email_invite?email=foo@bar.com&name=JD")
+
+      assert json_response(conn, :forbidden)
+    end
+  end
+
+  describe "POST /api/pleroma/admin/email_invite, with invalid config" do
+    setup do
+      [user: insert(:user, info: %{is_admin: true})]
+    end
+
+    test "it returns 500 if `invites_enabled` is not enabled", %{conn: conn, user: user} do
+      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
+      invites_enabled = Pleroma.Config.get([:instance, :invites_enabled])
+      Pleroma.Config.put([:instance, :registrations_open], false)
+      Pleroma.Config.put([:instance, :invites_enabled], false)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :registrations_open], registrations_open)
+        Pleroma.Config.put([:instance, :invites_enabled], invites_enabled)
+        :ok
+      end)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/pleroma/admin/email_invite?email=foo@bar.com&name=JD")
+
+      assert json_response(conn, :internal_server_error)
+    end
+
+    test "it returns 500 if `registrations_open` is enabled", %{conn: conn, user: user} do
+      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
+      invites_enabled = Pleroma.Config.get([:instance, :invites_enabled])
+      Pleroma.Config.put([:instance, :registrations_open], true)
+      Pleroma.Config.put([:instance, :invites_enabled], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :registrations_open], registrations_open)
+        Pleroma.Config.put([:instance, :invites_enabled], invites_enabled)
+        :ok
+      end)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/pleroma/admin/email_invite?email=foo@bar.com&name=JD")
+
+      assert json_response(conn, :internal_server_error)
+    end
+  end
+
   test "/api/pleroma/admin/invite_token" do
     admin = insert(:user, info: %{is_admin: true})
 

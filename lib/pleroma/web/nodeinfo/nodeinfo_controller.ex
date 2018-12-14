@@ -132,6 +132,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           banner: Keyword.get(instance, :banner_upload_limit),
           background: Keyword.get(instance, :background_upload_limit)
         },
+        invitesEnabled: Keyword.get(instance, :invites_enabled, false),
         features: features
       }
     }
