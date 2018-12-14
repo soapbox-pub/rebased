@@ -32,7 +32,7 @@ defmodule Pleroma.Web.Push do
   end
 
   def init(:ok) do
-    if enabled() do
+    if !enabled() do
       Logger.warn("""
       VAPID key pair is not found. If you wish to enabled web push, please run
 
