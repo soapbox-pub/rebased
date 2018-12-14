@@ -11,6 +11,7 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Captcha,
+  enabled: false,
   method: Pleroma.Captcha.Kocaptcha
 
 # Kocaptcha is a very simple captcha service, the source code is here: https://github.com/koto-bank/kocaptcha

@@ -28,27 +28,37 @@ defmodule Pleroma.Captcha do
 
   @doc false
   def handle_call(:new, _from, state) do
-    method = Pleroma.Config.get!([__MODULE__, :method])
+    enabled = Pleroma.Config.get([__MODULE__, :enabled])
 
-    case method do
-      __MODULE__.Kocaptcha ->
-        endpoint = Pleroma.Config.get!([method, :endpoint])
-        case HTTPoison.get(endpoint <> "/new") do
-          {:error, _} ->
-            %{error: "Kocaptcha service unavailable"}
-          {:ok, res} ->
-            json_resp = Poison.decode!(res.body)
+    if !enabled do
+      {
+        :reply,
+        %{type: :none},
+        state
+      }
+    else
+      method = Pleroma.Config.get!([__MODULE__, :method])
 
-            token = json_resp["token"]
+      case method do
+        __MODULE__.Kocaptcha ->
+          endpoint = Pleroma.Config.get!([method, :endpoint])
+          case HTTPoison.get(endpoint <> "/new") do
+            {:error, _} ->
+              %{error: "Kocaptcha service unavailable"}
+            {:ok, res} ->
+              json_resp = Poison.decode!(res.body)
 
-            true = :ets.insert(@ets, {token, json_resp["md5"]})
+              token = json_resp["token"]
 
-            {
-              :reply,
-              %{type: :kocaptcha, token: token, url: endpoint <> json_resp["url"]},
-              state
-            }
-        end
+              true = :ets.insert(@ets, {token, json_resp["md5"]})
+
+              {
+                :reply,
+                %{type: :kocaptcha, token: token, url: endpoint <> json_resp["url"]},
+                state
+              }
+          end
+      end
     end
   end
 
