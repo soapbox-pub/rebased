@@ -159,7 +159,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   describe "build_tags/1" do
     test "it returns a a dictionary tags" do
-      assert StatusView.build_tags(["fediverse", "mastodon", "nextcloud"]) == [
+      object_tags = [
+        "fediverse",
+        "mastodon",
+        "nextcloud",
+        %{
+          "href" => "https://kawen.space/users/lain",
+          "name" => "@lain@kawen.space",
+          "type" => "Mention"
+        }
+      ]
+
+      assert StatusView.build_tags(object_tags) == [
                %{name: "fediverse", url: "/tag/fediverse"},
                %{name: "mastodon", url: "/tag/mastodon"},
                %{name: "nextcloud", url: "/tag/nextcloud"}

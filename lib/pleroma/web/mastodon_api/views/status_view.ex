@@ -244,8 +244,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
    {"name": "nextcloud", "url": "/tag/nextcloud"}]
 
   """
-  @spec build_tags(list(String.t())) :: list(map())
+  @spec build_tags(list(any())) :: list(map())
   def build_tags(object_tags) when is_list(object_tags) do
+    object_tags = for tag when is_binary(tag) <- object_tags, do: tag
+
     Enum.reduce(object_tags, [], fn tag, tags ->
       tags ++ [%{name: tag, url: "/tag/#{tag}"}]
     end)
