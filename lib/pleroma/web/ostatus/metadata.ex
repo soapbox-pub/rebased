@@ -11,8 +11,7 @@ defmodule Pleroma.Web.Metadata do
   end
 
   def meta_enabled?(type) do
-    config = Pleroma.Config.get(:metadata, [])
-    Keyword.get(config, type, false)
+    Pleroma.Config.get([:metadata, type], false)
   end
 
   # opengraph for single status
@@ -70,6 +69,6 @@ defmodule Pleroma.Web.Metadata do
   end
 
   def pleroma_domain do
-    Pleroma.Config.get([:instance, :domain], "UNKNOWN_DOMAIN")
+    Pleroma.Web.Endpoint.host()
   end
 end

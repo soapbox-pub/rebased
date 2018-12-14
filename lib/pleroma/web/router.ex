@@ -449,17 +449,21 @@ defmodule Fallback.RedirectController do
   def redirector(conn, _params) do
     conn
     |> put_resp_content_type("text/html")
-    |> send_file(200, Application.app_dir(:pleroma, "priv/static/index.html"))
+    |> send_file(200, index_file_path())
   end
 
   def redirector_with_meta(conn, params) do
-    {:ok, index_content} = File.read(Application.app_dir(:pleroma, "priv/static/index.html"))
+    {:ok, index_content} = File.read(index_file_path())
     tags = Metadata.build_tags(params)
     response = String.replace(index_content, "<!--server-generated-meta-->", tags)
 
     conn
     |> put_resp_content_type("text/html")
     |> send_resp(200, response)
+  end
+
+  def index_file_path do
+    Application.app_dir(:pleroma, "priv/static/index.html")
   end
 
   def registration_page(conn, params) do

@@ -16,8 +16,10 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   def feed_redirect(conn, %{"nickname" => nickname}) do
     case get_format(conn) do
       "html" ->
-        with %User{} = user <- User.get_cached_by_nickname(nickname) do
+        with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
           Fallback.RedirectController.redirector_with_meta(conn, %{user: user})
+        else
+          nil -> {:error, :not_found}
         end
 
       "activity+json" ->
