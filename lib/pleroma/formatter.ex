@@ -5,7 +5,7 @@ defmodule Pleroma.Formatter do
   alias Pleroma.Emoji
 
   @tag_regex ~r/\#\w+/u
-  @mardown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
+  @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
 
   def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
@@ -85,7 +85,7 @@ defmodule Pleroma.Formatter do
   def mentions_escape(text, mentions) do
     mentions
     |> Enum.reduce(text, fn {name, _}, acc ->
-      escape_name = String.replace(name, @mardown_characters_regex, "\\\\\\1")
+      escape_name = String.replace(name, @markdown_characters_regex, "\\\\\\1")
       String.replace(acc, name, escape_name)
     end)
   end
