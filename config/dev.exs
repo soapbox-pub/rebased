@@ -17,6 +17,8 @@ config :pleroma, Pleroma.Web.Endpoint,
   check_origin: false,
   watchers: []
 
+config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Local
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

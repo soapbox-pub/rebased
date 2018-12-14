@@ -85,6 +85,15 @@ defmodule Pleroma.Web.Router do
     plug(:accepts, ["html", "json"])
   end
 
+  pipeline :mailbox_preview do
+    plug(:accepts, ["html"])
+
+    plug(:put_secure_browser_headers, %{
+      "content-security-policy" =>
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    })
+  end
+
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
     get("/password_reset/:token", UtilController, :show_password_reset)
@@ -268,6 +277,7 @@ defmodule Pleroma.Web.Router do
     get("/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation)
 
     post("/account/register", TwitterAPI.Controller, :register)
+    post("/account/password_reset", TwitterAPI.Controller, :password_reset)
 
     get("/search", TwitterAPI.Controller, :search)
     get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)
@@ -422,6 +432,14 @@ defmodule Pleroma.Web.Router do
     pipe_through(:remote_media)
     get("/:sig/:url", MediaProxyController, :remote)
     get("/:sig/:url/:filename", MediaProxyController, :remote)
+  end
+
+  if Mix.env() == :dev do
+    scope "/dev" do
+      pipe_through([:mailbox_preview])
+
+      forward("/mailbox", Plug.Swoosh.MailboxPreview, base_path: "/dev/mailbox")
+    end
   end
 
   scope "/", Fallback do

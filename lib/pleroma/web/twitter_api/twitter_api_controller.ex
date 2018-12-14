@@ -1,5 +1,8 @@
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
+
+  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+
   alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.{Repo, Activity, Object, User, Notification}
@@ -319,6 +322,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       {:error, errors} ->
         conn
         |> json_reply(400, Jason.encode!(errors))
+    end
+  end
+
+  def password_reset(conn, params) do
+    nickname_or_email = params["email"] || params["nickname"]
+
+    with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
+      json_response(conn, :no_content, "")
     end
   end
 

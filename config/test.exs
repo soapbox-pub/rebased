@@ -11,6 +11,8 @@ config :logger, level: :warn
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
+config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Test
+
 # Configure your database
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
