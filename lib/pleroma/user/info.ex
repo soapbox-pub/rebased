@@ -9,6 +9,8 @@ defmodule Pleroma.User.Info do
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:locked, :boolean, default: false)
+    field(:confirmation_pending, :boolean, default: false)
+    field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
@@ -139,6 +141,10 @@ defmodule Pleroma.User.Info do
       :hide_network,
       :background
     ])
+  end
+
+  def confirmation_update(info, params) do
+    cast(info, params, [:confirmation_pending, :confirmation_token])
   end
 
   def mastodon_profile_update(info, params) do

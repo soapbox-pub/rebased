@@ -372,6 +372,19 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def confirm_email(conn, %{"token" => token}) do
+    with %User{} = user <- User.get_by_confirmation_token(token),
+         true <- user.local,
+         new_info_fields <- %{confirmation_pending: false, confirmation_token: nil},
+         info_change <- User.Info.confirmation_update(user.info, new_info_fields),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
+         {:ok, _} <- User.update_and_set_cache(changeset) do
+      conn
+      |> put_flash(:info, "Email confirmed. Please sign in.")
+      |> redirect(to: "/")
+    end
+  end
+
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
     {:ok, object} = ActivityPub.upload(params, type: :avatar)
     change = Changeset.change(user, %{avatar: object.data})
