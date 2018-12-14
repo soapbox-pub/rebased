@@ -16,7 +16,7 @@ defmodule Pleroma.Web.Metadata do
 
   # opengraph for single status
   defp opengraph_tags(%{activity: activity, user: user}) do
-    with truncated_content = Formatter.truncate(activity.data["object"]["content"]) do
+    with truncated_content = scrub_html_and_truncate(activity.data["object"]["content"]) do
       [
         {:meta,
          [
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.Metadata do
 
   # opengraph for user card
   defp opengraph_tags(%{user: user}) do
-    with truncated_bio = Formatter.truncate(user.bio) do
+    with truncated_bio = scrub_html_and_truncate(user.bio) do
       [
         {:meta,
          [
@@ -62,6 +62,14 @@ defmodule Pleroma.Web.Metadata do
       _ ->
         raise ArgumentError, message: "make_tag invalid args"
     end
+  end
+
+  defp scrub_html_and_truncate(content) do
+    content
+    # html content comes from DB already encoded, decode first and scrub after
+    |> HtmlEntities.decode()
+    |> Pleroma.HTML.strip_tags()
+    |> Formatter.truncate()
   end
 
   defp user_avatar_url(user) do
