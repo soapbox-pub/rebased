@@ -155,7 +155,7 @@ config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
 
-## :web_push_encryption
+## :web_push_encryption, :vapid_details
 
 Web Push Notifications configuration. You can use the mix task `mix web_push.gen.keypair` to generate it.
 
