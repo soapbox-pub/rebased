@@ -132,38 +132,47 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       bio: User.parse_bio(params["bio"]),
       email: params["email"],
       password: params["password"],
-      password_confirmation: params["confirm"]
+      password_confirmation: params["confirm"],
+      captcha_solution: params["captcha_solution"],
+      captcha_token: params["captcha_token"]
     }
 
-    registrations_open = Pleroma.Config.get([:instance, :registrations_open])
+    # Captcha invalid
+    if not Pleroma.Captcha.validate(params[:captcha_token], params[:captcha_solution]) do
+      # I have no idea how this error handling works
+      {:error, %{error: Jason.encode!(%{captcha: ["Invalid CAPTCHA"]})}}
+    else
+      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
 
-    # no need to query DB if registration is open
-    token =
-      unless registrations_open || is_nil(tokenString) do
+      # no need to query DB if registration is open
+      token =
+        unless registrations_open || is_nil(tokenString) do
         Repo.get_by(UserInviteToken, %{token: tokenString})
       end
 
-    cond do
-      registrations_open || (!is_nil(token) && !token.used) ->
-        changeset = User.register_changeset(%User{info: %{}}, params)
+      cond do
+        registrations_open || (!is_nil(token) && !token.used) ->
+          changeset = User.register_changeset(%User{info: %{}}, params)
 
-        with {:ok, user} <- Repo.insert(changeset) do
-          !registrations_open && UserInviteToken.mark_as_used(token.token)
-          {:ok, user}
-        else
-          {:error, changeset} ->
-            errors =
+          with {:ok, user} <- Repo.insert(changeset) do
+            !registrations_open && UserInviteToken.mark_as_used(token.token)
+            {:ok, user}
+          else
+            {:error, changeset} ->
+              errors =
               Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
               |> Jason.encode!()
 
             {:error, %{error: errors}}
-        end
+          end
 
-      !registrations_open && is_nil(token) ->
-        {:error, "Invalid token"}
 
-      !registrations_open && token.used ->
-        {:error, "Expired token"}
+        !registrations_open && is_nil(token) ->
+            {:error, "Invalid token"}
+
+        !registrations_open && token.used ->
+            {:error, "Expired token"}
+      end
     end
   end
 
