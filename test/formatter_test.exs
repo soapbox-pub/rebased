@@ -257,4 +257,23 @@ defmodule Pleroma.FormatterTest do
     text = nil
     assert Formatter.get_emoji(text) == []
   end
+
+  describe "/mentions_escape" do
+    test "it returns text with escaped mention names" do
+      text = """
+      @a_breakin_glass@cybre.space
+      (also, little voice inside my head thinking "maybe this will encourage people
+      pronouncing it properly instead of saying _raKEWdo_ ")
+      """
+
+      escape_text = """
+      @a\\_breakin\\_glass@cybre\\.space
+      (also, little voice inside my head thinking \"maybe this will encourage people
+      pronouncing it properly instead of saying _raKEWdo_ \")
+      """
+
+      mentions = [{"@a_breakin_glass@cybre.space", %{}}]
+      assert Formatter.mentions_escape(text, mentions) == escape_text
+    end
+  end
 end

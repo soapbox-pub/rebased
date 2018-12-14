@@ -17,15 +17,9 @@ defmodule Pleroma.HTML do
     end)
   end
 
-  def filter_tags(html, scrubber) do
-    html |> Scrubber.scrub(scrubber)
-  end
-
+  def filter_tags(html, scrubber), do: Scrubber.scrub(html, scrubber)
   def filter_tags(html), do: filter_tags(html, nil)
-
-  def strip_tags(html) do
-    html |> Scrubber.scrub(Scrubber.StripTags)
-  end
+  def strip_tags(html), do: Scrubber.scrub(html, Scrubber.StripTags)
 end
 
 defmodule Pleroma.HTML.Scrubber.TwitterText do
