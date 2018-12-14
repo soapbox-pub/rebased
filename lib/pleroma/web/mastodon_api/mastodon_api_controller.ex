@@ -1061,7 +1061,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     response = %{
       id: to_string(id),
       type: mastodon_type,
-      created_at: CommonAPI.Utils.to_masto_date(activity.inserted_at),
+      created_at: CommonAPI.Utils.to_masto_date(created_at),
       account: AccountView.render("account.json", %{user: actor, for: user})
     }
 
