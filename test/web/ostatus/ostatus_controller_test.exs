@@ -84,6 +84,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
     conn =
       conn
+      |> put_req_header("accept", "application/xml")
       |> get(url)
 
     expected =
@@ -110,11 +111,12 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     |> response(404)
   end
 
-  test "gets an activity", %{conn: conn} do
+  test "gets an activity in xml format", %{conn: conn} do
     note_activity = insert(:note_activity)
     [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
 
     conn
+    |> put_req_header("accept", "application/xml")
     |> get("/activities/#{uuid}")
     |> response(200)
   end
@@ -134,7 +136,22 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     |> response(404)
   end
 
-  test "gets a notice", %{conn: conn} do
+  test "renders notice metatags in html format" do
+    note_activity = insert(:note_activity)
+
+    conn = get(conn, "/notice/#{note_activity.id}")
+
+    twitter_card_summary = "<meta content=\"summary\" property=\"twitter:card\">"
+
+    description_content =
+      "<meta content=\"#{note_activity.data["object"]["content"]}\" property=\"og:description\">"
+
+    body = html_response(conn, 200)
+    assert body =~ twitter_card_summary
+    assert body =~ description_content
+  end
+
+  test "gets a notice in xml format", %{conn: conn} do
     note_activity = insert(:note_activity)
 
     conn
