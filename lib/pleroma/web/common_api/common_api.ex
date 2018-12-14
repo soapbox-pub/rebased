@@ -1,6 +1,7 @@
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.{User, Repo, Activity, Object}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Formatter
 
   import Pleroma.Web.CommonAPI.Utils
@@ -16,7 +17,8 @@ defmodule Pleroma.Web.CommonAPI do
 
   def repeat(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity.data["object"]["id"]),
+         nil <- Utils.get_existing_announce(user.ap_id, object) do
       ActivityPub.announce(user, object)
     else
       _ ->
@@ -36,7 +38,8 @@ defmodule Pleroma.Web.CommonAPI do
 
   def favorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity.data["object"]["id"]),
+         nil <- Utils.get_existing_like(user.ap_id, object) do
       ActivityPub.like(user, object)
     else
       _ ->
