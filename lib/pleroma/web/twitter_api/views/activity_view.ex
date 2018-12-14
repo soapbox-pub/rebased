@@ -190,6 +190,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     text = "#{user.nickname} favorited a status."
 
+    favorited_status =
+      if liked_activity,
+        do: render("activity.json", Map.merge(opts, %{activity: liked_activity})),
+        else: nil
+
     %{
       "id" => activity.id,
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
@@ -199,6 +204,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "is_post_verb" => false,
       "uri" => "tag:#{activity.data["id"]}:objectType=Favourite",
       "created_at" => created_at,
+      "favorited_status" => favorited_status,
       "in_reply_to_status_id" => liked_activity_id,
       "external_url" => activity.data["id"],
       "activity_type" => "like"

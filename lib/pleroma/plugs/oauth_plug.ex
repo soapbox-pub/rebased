@@ -15,10 +15,10 @@ defmodule Pleroma.Plugs.OAuthPlug do
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
 
   def call(conn, _) do
-    with {:ok, token} <- fetch_token(conn),
-         {:ok, user} <- fetch_user(token) do
+    with {:ok, token_str} <- fetch_token_str(conn),
+         {:ok, user, token_record} <- fetch_user_and_token(token_str) do
       conn
-      |> assign(:token, token)
+      |> assign(:token, token_record)
       |> assign(:user, user)
     else
       _ -> conn
@@ -27,12 +27,12 @@ defmodule Pleroma.Plugs.OAuthPlug do
 
   # Gets user by token
   #
-  @spec fetch_user(String.t()) :: {:ok, User.t()} | nil
-  defp fetch_user(token) do
+  @spec fetch_user_and_token(String.t()) :: {:ok, User.t(), Token.t()} | nil
+  defp fetch_user_and_token(token) do
     query = from(q in Token, where: q.token == ^token, preload: [:user])
 
-    with %Token{user: %{info: %{deactivated: false} = _} = user} <- Repo.one(query) do
-      {:ok, user}
+    with %Token{user: %{info: %{deactivated: false} = _} = user} = token_record <- Repo.one(query) do
+      {:ok, user, token_record}
     end
   end
 
@@ -48,23 +48,23 @@ defmodule Pleroma.Plugs.OAuthPlug do
 
   # Gets token from headers
   #
-  @spec fetch_token(Plug.Conn.t()) :: :no_token_found | {:ok, String.t()}
-  defp fetch_token(%Plug.Conn{} = conn) do
+  @spec fetch_token_str(Plug.Conn.t()) :: :no_token_found | {:ok, String.t()}
+  defp fetch_token_str(%Plug.Conn{} = conn) do
     headers = get_req_header(conn, "authorization")
 
-    with :no_token_found <- fetch_token(headers),
+    with :no_token_found <- fetch_token_str(headers),
          do: fetch_token_from_session(conn)
   end
 
-  @spec fetch_token(Keyword.t()) :: :no_token_found | {:ok, String.t()}
-  defp fetch_token([]), do: :no_token_found
+  @spec fetch_token_str(Keyword.t()) :: :no_token_found | {:ok, String.t()}
+  defp fetch_token_str([]), do: :no_token_found
 
-  defp fetch_token([token | tail]) do
+  defp fetch_token_str([token | tail]) do
     trimmed_token = String.trim(token)
 
     case Regex.run(@realm_reg, trimmed_token) do
       [_, match] -> {:ok, String.trim(match)}
-      _ -> fetch_token(tail)
+      _ -> fetch_token_str(tail)
     end
   end
 end

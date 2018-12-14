@@ -112,6 +112,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     {:ok, like, _object} = CommonAPI.favorite(activity.id, other_user)
 
     result = ActivityView.render("activity.json", activity: like)
+    activity = Pleroma.Activity.get_by_ap_id(activity.data["id"])
 
     expected = %{
       "activity_type" => "like",
@@ -121,6 +122,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "in_reply_to_status_id" => activity.id,
       "is_local" => true,
       "is_post_verb" => false,
+      "favorited_status" => ActivityView.render("activity.json", activity: activity),
       "statusnet_html" => "shp favorited a status.",
       "text" => "shp favorited a status.",
       "uri" => "tag:#{like.data["id"]}:objectType=Favourite",
@@ -148,6 +150,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "in_reply_to_status_id" => nil,
       "is_local" => true,
       "is_post_verb" => false,
+      "favorited_status" => nil,
       "statusnet_html" => "shp favorited a status.",
       "text" => "shp favorited a status.",
       "uri" => "tag:#{like.data["id"]}:objectType=Favourite",

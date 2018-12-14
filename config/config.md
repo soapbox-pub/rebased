@@ -30,6 +30,31 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 * `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used.
 
+## Pleroma.Mailer
+* `adapter`: one of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters), or `Swoosh.Adapters.Local` for in-memory mailbox.
+* `api_key` / `password` and / or other adapter-specific settings, per the above documentation. 
+
+An example for Sendgrid adapter:
+
+```
+config :pleroma, Pleroma.Mailer,
+  adapter: Swoosh.Adapters.Sendgrid,
+  api_key: "YOUR_API_KEY"
+```
+
+An example for SMTP adapter:
+```
+config :pleroma, Pleroma.Mailer,
+  adapter: Swoosh.Adapters.SMTP,
+  relay: "smtp.gmail.com",
+  username: "YOUR_USERNAME@gmail.com",
+  password: "YOUR_SMTP_PASSWORD",
+  port: 465,
+  ssl: true,
+  tls: :always,
+  auth: :always
+```
+
 ## :uri_schemes
 * `valid_schemes`: List of the scheme part that is considered valid to be an URL
 
@@ -129,3 +154,11 @@ An example:
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
+
+## :web_push_encryption, :vapid_details
+
+Web Push Notifications configuration. You can use the mix task `mix web_push.gen.keypair` to generate it.
+
+* ``subject``: a mailto link for the administrative contact. It’s best if this email is not a personal email address, but rather a group email so that if a person leaves an organization, is unavailable for an extended period, or otherwise can’t respond, someone else on the list can.
+* ``public_key``: VAPID public key
+* ``private_key``: VAPID private key

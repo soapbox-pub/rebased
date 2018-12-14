@@ -167,6 +167,25 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
+  def password_reset(nickname_or_email) do
+    with true <- is_binary(nickname_or_email),
+         %User{local: true} = user <- User.get_by_nickname_or_email(nickname_or_email),
+         {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
+      user
+      |> Pleroma.UserEmail.password_reset_email(token_record.token)
+      |> Pleroma.Mailer.deliver()
+    else
+      false ->
+        {:error, "bad user identifier"}
+
+      %User{local: false} ->
+        {:error, "remote user"}
+
+      nil ->
+        {:error, "unknown user"}
+    end
+  end
+
   def get_by_id_or_nickname(id_or_nickname) do
     if !is_integer(id_or_nickname) && :error == Integer.parse(id_or_nickname) do
       Repo.get_by(User, nickname: id_or_nickname)
