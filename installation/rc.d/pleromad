@@ -1,0 +1,26 @@
+#!/bin/ksh
+#
+
+daemon="/usr/local/bin/elixir"
+daemon_flags="--detached -S /usr/local/bin/mix phx.server"
+daemon_user="_pleroma"
+
+. /etc/rc.d/rc.subr
+
+rc_reload=NO
+#pexp="/usr/local/lib/erlang19/erts-8.3/bin/beam -- -root /usr/local/lib/erlang19 -progname erl19 -- -home /home/_pleroma -- -pa /usr/local/lib/elixir/bin/../lib/eex/ebin /usr/local/lib/elixir/bin/../lib/elixir/ebin /usr/local/lib/elixir/bin/../lib/ex_unit/ebin /usr/local/lib/elixir/bin/../lib/iex/ebin /usr/local/lib/elixir/bin/../lib/logger/ebin /usr/local/lib/elixir/bin/../lib/mix/ebin -elixir ansi_enabled true -noshell -s elixir start_cli -noshell -noinput -extra --detached -S /usr/local/bin/mix phx.server"
+pexp="phx.server"
+
+rc_check() {
+	pgrep -q -U _pleroma -f "phx.server"
+}
+
+rc_start() {
+	${rcexec} "cd pleroma; ${daemon} ${daemon_flags}"
+}
+
+rc_stop() {
+	pkill -q -U _pleroma -f "phx.server"
+}
+
+rc_cmd $1
