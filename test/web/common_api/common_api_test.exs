@@ -2,6 +2,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
   use Pleroma.DataCase
   alias Pleroma.Web.CommonAPI
   alias Pleroma.User
+  alias Pleroma.Activity
 
   import Pleroma.Factory
 
@@ -51,6 +52,44 @@ defmodule Pleroma.Web.CommonAPI.Test do
 
       content = activity.data["object"]["content"]
       assert content == "<p><b>2hu</b></p>alert('xss')"
+    end
+  end
+
+  describe "reactions" do
+    test "repeating a status" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, %Activity{}, _} = CommonAPI.repeat(activity.id, user)
+    end
+
+    test "favoriting a status" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+
+      {:ok, %Activity{}, _} = CommonAPI.favorite(activity.id, user)
+    end
+
+    test "retweeting a status twice returns an error" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+      {:ok, %Activity{}, _object} = CommonAPI.repeat(activity.id, user)
+      {:error, _} = CommonAPI.repeat(activity.id, user)
+    end
+
+    test "favoriting a status twice returns an error" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
+      {:ok, %Activity{}, _object} = CommonAPI.favorite(activity.id, user)
+      {:error, _} = CommonAPI.favorite(activity.id, user)
     end
   end
 end
