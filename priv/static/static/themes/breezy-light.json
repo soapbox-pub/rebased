@@ -1,0 +1,139 @@
+{
+  "_pleroma_theme_version": 2,
+  "name": "Breezy Light (beta)",
+  "theme": {
+    "shadows": {
+      "panel": [
+        {
+          "x": "1",
+          "y": "2",
+          "blur": "6",
+          "spread": 0,
+          "color": "#000000",
+          "alpha": 0.6
+        }
+      ],
+      "button": [
+        {
+          "x": 0,
+          "y": "0",
+          "blur": "0",
+          "spread": "1",
+          "color": "#000000",
+          "alpha": "0.3",
+          "inset": true
+        },
+        {
+          "x": "1",
+          "y": "1",
+          "blur": "1",
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.3",
+          "inset": false
+        }
+      ],
+      "panelHeader": [
+        {
+          "x": 0,
+          "y": "40",
+          "blur": "40",
+          "spread": "-40",
+          "inset": true,
+          "color": "#ffffff",
+          "alpha": "0.1"
+        }
+      ],
+      "buttonHover": [
+        {
+          "x": 0,
+          "y": "0",
+          "blur": 0,
+          "spread": "1",
+          "color": "--link",
+          "alpha": "0.3",
+          "inset": true
+        },
+        {
+          "x": "1",
+          "y": "1",
+          "blur": "1",
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.3",
+          "inset": false
+        }
+      ],
+      "buttonPressed": [
+        {
+          "x": 0,
+          "y": 0,
+          "blur": "0",
+          "spread": "50",
+          "color": "--faint",
+          "alpha": 1,
+          "inset": true
+        },
+        {
+          "x": 0,
+          "y": "0",
+          "blur": 0,
+          "spread": "1",
+          "color": "#ffffff",
+          "alpha": 0.2,
+          "inset": true
+        },
+        {
+          "x": "1",
+          "y": "1",
+          "blur": 0,
+          "spread": 0,
+          "color": "#000000",
+          "alpha": "0.3",
+          "inset": false
+        }
+      ],
+      "input": [
+        {
+          "x": 0,
+          "y": "0",
+          "blur": 0,
+          "spread": "1",
+          "color": "#000000",
+          "alpha": "0.2",
+          "inset": true
+        }
+      ]
+    },
+    "fonts": {},
+    "opacity": {
+      "input": "1"
+    },
+    "colors": {
+      "bg": "#eff0f1",
+      "text": "#232627",
+      "link": "#2980b9",
+      "fg": "#bcc2c7",
+      "panel": "#475057",
+      "panelText": "#fcfcfc",
+      "input": "#fcfcfc",
+      "topBar": "#475057",
+      "topBarLink": "#eff0f1",
+      "btn": "#eff0f1",
+      "cRed": "#da4453",
+      "cBlue": "#2980b9",
+      "cGreen": "#27ae60",
+      "cOrange": "#f67400"
+    },
+    "radii": {
+      "btn": "2",
+      "input": "2",
+      "checkbox": "1",
+      "panel": "2",
+      "avatar": "2",
+      "avatarAlt": "2",
+      "tooltip": "2",
+      "attachment": "2"
+    }
+  }
+}
