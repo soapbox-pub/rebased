@@ -166,7 +166,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           textlimit: to_string(Keyword.get(instance, :limit)),
           closed: if(Keyword.get(instance, :registrations_open), do: "0", else: "1"),
           private: if(Keyword.get(instance, :public, true), do: "0", else: "1"),
-          vapidPublicKey: vapid_public_key
+          vapidPublicKey: vapid_public_key,
+          invitesEnabled: if(Keyword.get(instance, :invites_enabled, false), do: "1", else: "0")
         }
 
         pleroma_fe = %{

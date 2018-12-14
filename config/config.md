@@ -67,7 +67,8 @@ config :pleroma, Pleroma.Mailer,
 * `avatar_upload_limit`: File size limit of user’s profile avatars
 * `background_upload_limit`: File size limit of user’s profile backgrounds
 * `banner_upload_limit`: File size limit of user’s profile banners
-* `registrations_open`: Enable registrations for anyone, invitations can be used when false.
+* `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
+* `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `federating`: Enable federation with other instances
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance
 * `rewrite_policy`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
