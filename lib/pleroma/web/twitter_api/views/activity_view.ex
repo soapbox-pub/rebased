@@ -239,7 +239,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     {summary, content} = render_content(object)
 
     html =
-      HTML.filter_tags(content, User.html_filter_policy(opts[:for]))
+      content
+      |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
       |> Formatter.emojify(object["emoji"])
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
