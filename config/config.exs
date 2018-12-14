@@ -101,8 +101,6 @@ config :pleroma, :instance,
   finmoji_enabled: true,
   mrf_transparency: true
 
-config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Local
-
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
   # of custom emoji.  Issue #275 discusses defanging that somehow.
