@@ -37,8 +37,8 @@ defmodule Pleroma.Web.Push.Subscription do
       user_id: user.id,
       token_id: token.id,
       endpoint: endpoint,
-      key_auth: key_auth,
-      key_p256dh: key_p256dh,
+      key_auth: ensure_base64_urlsafe(key_auth),
+      key_p256dh: ensure_base64_urlsafe(key_p256dh),
       data: alerts(params)
     })
   end
@@ -62,5 +62,15 @@ defmodule Pleroma.Web.Push.Subscription do
       nil -> {:ok, nil}
       sub -> Repo.delete(sub)
     end
+  end
+
+  # Some webpush clients (e.g. iOS Toot!) use an non urlsafe base64 as an encoding for the key.
+  # However, the web push rfs specify to use base64 urlsafe, and the `web_push_encryption` library we use
+  # requires the key to be properly encoded. So we just convert base64 to urlsafe base64.
+  defp ensure_base64_urlsafe(string) do
+    string
+    |> String.replace("+", "-")
+    |> String.replace("/", "_")
+    |> String.replace("=", "")
   end
 end

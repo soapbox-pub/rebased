@@ -1055,52 +1055,37 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def render_notification(user, %{id: id, activity: activity, inserted_at: created_at} = _params) do
     actor = User.get_cached_by_ap_id(activity.data["actor"])
+    parent_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    mastodon_type = Activity.mastodon_notification_type(activity)
 
-    created_at =
-      NaiveDateTime.to_iso8601(created_at)
-      |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
+    response = %{
+      id: to_string(id),
+      type: mastodon_type,
+      created_at: CommonAPI.Utils.to_masto_date(created_at),
+      account: AccountView.render("account.json", %{user: actor, for: user})
+    }
 
-    id = id |> to_string
-
-    case activity.data["type"] do
-      "Create" ->
-        %{
-          id: id,
-          type: "mention",
-          created_at: created_at,
-          account: AccountView.render("account.json", %{user: actor, for: user}),
+    case mastodon_type do
+      "mention" ->
+        response
+        |> Map.merge(%{
           status: StatusView.render("status.json", %{activity: activity, for: user})
-        }
+        })
 
-      "Like" ->
-        liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+      "favourite" ->
+        response
+        |> Map.merge(%{
+          status: StatusView.render("status.json", %{activity: parent_activity, for: user})
+        })
 
-        %{
-          id: id,
-          type: "favourite",
-          created_at: created_at,
-          account: AccountView.render("account.json", %{user: actor, for: user}),
-          status: StatusView.render("status.json", %{activity: liked_activity, for: user})
-        }
+      "reblog" ->
+        response
+        |> Map.merge(%{
+          status: StatusView.render("status.json", %{activity: parent_activity, for: user})
+        })
 
-      "Announce" ->
-        announced_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
-
-        %{
-          id: id,
-          type: "reblog",
-          created_at: created_at,
-          account: AccountView.render("account.json", %{user: actor, for: user}),
-          status: StatusView.render("status.json", %{activity: announced_activity, for: user})
-        }
-
-      "Follow" ->
-        %{
-          id: id,
-          type: "follow",
-          created_at: created_at,
-          account: AccountView.render("account.json", %{user: actor, for: user})
-        }
+      "follow" ->
+        response
 
       _ ->
         nil
@@ -1167,6 +1152,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def create_push_subscription(%{assigns: %{user: user, token: token}} = conn, params) do
+    true = Pleroma.Web.Push.enabled()
     Pleroma.Web.Push.Subscription.delete_if_exists(user, token)
     {:ok, subscription} = Pleroma.Web.Push.Subscription.create(user, token, params)
     view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
@@ -1174,6 +1160,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
+    true = Pleroma.Web.Push.enabled()
     subscription = Pleroma.Web.Push.Subscription.get(user, token)
     view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
     json(conn, view)
@@ -1183,12 +1170,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         %{assigns: %{user: user, token: token}} = conn,
         params
       ) do
+    true = Pleroma.Web.Push.enabled()
     {:ok, subscription} = Pleroma.Web.Push.Subscription.update(user, token, params)
     view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
     json(conn, view)
   end
 
   def delete_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
+    true = Pleroma.Web.Push.enabled()
     {:ok, _response} = Pleroma.Web.Push.Subscription.delete(user, token)
     json(conn, %{})
   end

@@ -154,3 +154,11 @@ An example:
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
+
+## :web_push_encryption, :vapid_details
+
+Web Push Notifications configuration. You can use the mix task `mix web_push.gen.keypair` to generate it.
+
+* ``subject``: a mailto link for the administrative contact. It’s best if this email is not a personal email address, but rather a group email so that if a person leaves an organization, is unavailable for an extended period, or otherwise can’t respond, someone else on the list can.
+* ``public_key``: VAPID public key
+* ``private_key``: VAPID private key

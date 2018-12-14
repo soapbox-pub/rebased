@@ -9,29 +9,41 @@ defmodule Pleroma.Web.Push do
 
   @types ["Create", "Follow", "Announce", "Like"]
 
-  @gcm_api_key nil
-
   def start_link() do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def init(:ok) do
-    case Application.get_env(:web_push_encryption, :vapid_details) do
-      nil ->
-        Logger.warn(
-          "VAPID key pair is not found. Please, add VAPID configuration to config. Run `mix web_push.gen.keypair` mix task to create a key pair"
-        )
+  def vapid_config() do
+    Application.get_env(:web_push_encryption, :vapid_details, [])
+  end
 
-        :ignore
-
-      _ ->
-        {:ok, %{}}
+  def enabled() do
+    case vapid_config() do
+      [] -> false
+      list when is_list(list) -> true
+      _ -> false
     end
   end
 
   def send(notification) do
-    if Application.get_env(:web_push_encryption, :vapid_details) do
+    if enabled() do
       GenServer.cast(Pleroma.Web.Push, {:send, notification})
+    end
+  end
+
+  def init(:ok) do
+    if !enabled() do
+      Logger.warn("""
+      VAPID key pair is not found. If you wish to enabled web push, please run
+
+          mix web_push.gen.keypair
+
+      and add the resulting output to your configuration file.
+      """)
+
+      :ignore
+    else
+      {:ok, nil}
     end
   end
 
@@ -41,35 +53,55 @@ defmodule Pleroma.Web.Push do
       )
       when type in @types do
     actor = User.get_cached_by_ap_id(notification.activity.data["actor"])
-    body = notification |> format(actor) |> Jason.encode!()
+
+    type = Pleroma.Activity.mastodon_notification_type(notification.activity)
 
     Subscription
     |> where(user_id: ^user_id)
+    |> preload(:token)
     |> Repo.all()
-    |> Enum.each(fn record ->
-      subscription = %{
+    |> Enum.filter(fn subscription ->
+      get_in(subscription.data, ["alerts", type]) || false
+    end)
+    |> Enum.each(fn subscription ->
+      sub = %{
         keys: %{
-          p256dh: record.key_p256dh,
-          auth: record.key_auth
+          p256dh: subscription.key_p256dh,
+          auth: subscription.key_auth
         },
-        endpoint: record.endpoint
+        endpoint: subscription.endpoint
       }
 
-      case WebPushEncryption.send_web_push(body, subscription, @gcm_api_key) do
+      body =
+        Jason.encode!(%{
+          title: format_title(notification),
+          access_token: subscription.token.token,
+          body: format_body(notification, actor),
+          notification_id: notification.id,
+          notification_type: type,
+          icon: User.avatar_url(actor),
+          preferred_locale: "en"
+        })
+
+      case WebPushEncryption.send_web_push(
+             body,
+             sub,
+             Application.get_env(:web_push_encryption, :gcm_api_key)
+           ) do
         {:ok, %{status_code: code}} when 400 <= code and code < 500 ->
           Logger.debug("Removing subscription record")
-          Repo.delete!(record)
+          Repo.delete!(subscription)
           :ok
 
         {:ok, %{status_code: code}} when 200 <= code and code < 300 ->
           :ok
 
         {:ok, %{status_code: code}} ->
-          Logger.error("Web Push Nonification failed with code: #{code}")
+          Logger.error("Web Push Notification failed with code: #{code}")
           :error
 
         _ ->
-          Logger.error("Web Push Nonification failed with unknown error")
+          Logger.error("Web Push Notification failed with unknown error")
           :error
       end
     end)
@@ -82,35 +114,21 @@ defmodule Pleroma.Web.Push do
     {:noreply, state}
   end
 
-  def format(%{activity: %{data: %{"type" => "Create"}}}, actor) do
-    %{
-      title: "New Mention",
-      body: "@#{actor.nickname} has mentiond you",
-      icon: User.avatar_url(actor)
-    }
+  defp format_title(%{activity: %{data: %{"type" => type}}}) do
+    case type do
+      "Create" -> "New Mention"
+      "Follow" -> "New Follower"
+      "Announce" -> "New Repeat"
+      "Like" -> "New Favorite"
+    end
   end
 
-  def format(%{activity: %{data: %{"type" => "Follow"}}}, actor) do
-    %{
-      title: "New Follower",
-      body: "@#{actor.nickname} has followed you",
-      icon: User.avatar_url(actor)
-    }
-  end
-
-  def format(%{activity: %{data: %{"type" => "Announce"}}}, actor) do
-    %{
-      title: "New Announce",
-      body: "@#{actor.nickname} has announced your post",
-      icon: User.avatar_url(actor)
-    }
-  end
-
-  def format(%{activity: %{data: %{"type" => "Like"}}}, actor) do
-    %{
-      title: "New Like",
-      body: "@#{actor.nickname} has liked your post",
-      icon: User.avatar_url(actor)
-    }
+  defp format_body(%{activity: %{data: %{"type" => type}}}, actor) do
+    case type do
+      "Create" -> "@#{actor.nickname} has mentioned you"
+      "Follow" -> "@#{actor.nickname} has followed you"
+      "Announce" -> "@#{actor.nickname} has repeated your post"
+      "Like" -> "@#{actor.nickname} has favorited your post"
+    end
   end
 end
