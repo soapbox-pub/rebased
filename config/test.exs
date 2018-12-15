@@ -6,6 +6,11 @@ config :pleroma, Pleroma.Web.Endpoint,
   http: [port: 4001],
   server: false
 
+# Disable captha for tests
+config :pleroma, Pleroma.Captcha,
+  enabled: true,
+  method: Pleroma.Captcha.Mock # A fake captcha service for tests
+
 # Print only warnings and errors during test
 config :logger, level: :warn
 
