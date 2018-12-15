@@ -6,7 +6,7 @@
 use Mix.Config
 
 config :pleroma, Pleroma.Web.Endpoint,
-   url: [host: "<%= domain %>", scheme: "https", port: 443],
+   url: [host: "<%= domain %>", scheme: "https", port: <%= port %>],
    secret_key_base: "<%= secret %>"
 
 config :pleroma, :instance,
