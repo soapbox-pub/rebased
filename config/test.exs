@@ -9,7 +9,8 @@ config :pleroma, Pleroma.Web.Endpoint,
 # Disable captha for tests
 config :pleroma, Pleroma.Captcha,
   enabled: true,
-  method: Pleroma.Captcha.Mock # A fake captcha service for tests
+  # A fake captcha service for tests
+  method: Pleroma.Captcha.Mock
 
 # Print only warnings and errors during test
 config :logger, level: :warn
