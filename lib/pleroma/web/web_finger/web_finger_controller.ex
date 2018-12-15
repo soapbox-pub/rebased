@@ -35,4 +35,8 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
         send_resp(conn, 404, "Unsupported format")
     end
   end
+
+  def webfinger(conn, _params) do
+    send_resp(conn, 400, "Bad Request")
+  end
 end
