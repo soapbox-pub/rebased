@@ -15,8 +15,7 @@ config :pleroma, Pleroma.Captcha,
   method: Pleroma.Captcha.Kocaptcha
 
 # Kocaptcha is a very simple captcha service, the source code is here: https://github.com/koto-bank/kocaptcha
-config :pleroma, Pleroma.Captcha.Kocaptcha,
-  endpoint: "http://localhost:9093"
+config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "http://localhost:9093"
 
 # Upload configuration
 config :pleroma, Pleroma.Upload,

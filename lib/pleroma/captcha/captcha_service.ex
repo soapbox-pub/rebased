@@ -1,5 +1,4 @@
 defmodule Pleroma.Captcha.Service do
-
   @doc """
   Request new captcha from a captcha service.
 
@@ -20,5 +19,5 @@ defmodule Pleroma.Captcha.Service do
 
   `true` if captcha is valid, `false` if not
   """
-  @callback validate(token :: String.t, captcha :: String.t) :: boolean
+  @callback validate(token :: String.t(), captcha :: String.t()) :: boolean
 end

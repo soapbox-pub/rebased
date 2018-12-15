@@ -139,11 +139,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     captcha_enabled = Pleroma.Config.get([Pleroma.Captcha, :enabled])
     # true if captcha is disabled or enabled and valid, false otherwise
-    captcha_ok = if !captcha_enabled do
-      true
-    else
-      Pleroma.Captcha.validate(params[:captcha_token], params[:captcha_solution])
-    end
+    captcha_ok =
+      if !captcha_enabled do
+        true
+      else
+        Pleroma.Captcha.validate(params[:captcha_token], params[:captcha_solution])
+      end
 
     # Captcha invalid
     if not captcha_ok do
@@ -155,8 +156,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       # no need to query DB if registration is open
       token =
         unless registrations_open || is_nil(tokenString) do
-        Repo.get_by(UserInviteToken, %{token: tokenString})
-      end
+          Repo.get_by(UserInviteToken, %{token: tokenString})
+        end
 
       cond do
         registrations_open || (!is_nil(token) && !token.used) ->
@@ -168,18 +169,17 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           else
             {:error, changeset} ->
               errors =
-              Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-              |> Jason.encode!()
+                Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+                |> Jason.encode!()
 
-            {:error, %{error: errors}}
+              {:error, %{error: errors}}
           end
 
-
         !registrations_open && is_nil(token) ->
-            {:error, "Invalid token"}
+          {:error, "Invalid token"}
 
         !registrations_open && token.used ->
-            {:error, "Expired token"}
+          {:error, "Expired token"}
       end
     end
   end

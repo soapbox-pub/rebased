@@ -7,9 +7,11 @@ defmodule Pleroma.Captcha.Kocaptcha do
   @impl Service
   def new() do
     endpoint = Pleroma.Config.get!([__MODULE__, :endpoint])
+
     case HTTPoison.get(endpoint <> "/new") do
       {:error, _} ->
         %{error: "Kocaptcha service unavailable"}
+
       {:ok, res} ->
         json_resp = Poison.decode!(res.body)
 
@@ -25,7 +27,7 @@ defmodule Pleroma.Captcha.Kocaptcha do
   def validate(token, captcha) do
     with false <- is_nil(captcha),
          [{^token, saved_md5}] <- :ets.lookup(@ets, token),
-         true <- (:crypto.hash(:md5, captcha) |> Base.encode16) == String.upcase(saved_md5) do
+         true <- :crypto.hash(:md5, captcha) |> Base.encode16() == String.upcase(saved_md5) do
       # Clear the saved value
       :ets.delete(@ets, token)
 
