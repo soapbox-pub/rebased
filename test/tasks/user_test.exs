@@ -39,8 +39,10 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "user will be created"
+
       assert_received {:mix_shell, :yes?, [message]}
       assert message =~ "Continue"
+
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "created"
 
@@ -57,11 +59,15 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       # prepare to answer no
       send(self(), {:mix_shell_input, :yes?, false})
+
       Mix.Tasks.Pleroma.User.run(["new", unsaved.nickname, unsaved.email])
+
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "user will be created"
+
       assert_received {:mix_shell, :yes?, [message]}
       assert message =~ "Continue"
+
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "will not be created"
 
@@ -74,6 +80,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       user = insert(:user)
 
       Mix.Tasks.Pleroma.User.run(["rm", user.nickname])
+
       assert_received {:mix_shell, :info, [message]}
       assert message =~ " deleted"
 
@@ -82,7 +89,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
 
     test "no user to delete" do
-      Mix.Tasks.Pleroma.User.run(["rm", "nonexistant"])
+      Mix.Tasks.Pleroma.User.run(["rm", "nonexistent"])
+
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No local user"
     end
@@ -93,6 +101,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       user = insert(:user)
 
       Mix.Tasks.Pleroma.User.run(["toggle_activated", user.nickname])
+
       assert_received {:mix_shell, :info, [message]}
       assert message =~ " deactivated"
 
@@ -104,6 +113,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       user = insert(:user, info: %{deactivated: true})
 
       Mix.Tasks.Pleroma.User.run(["toggle_activated", user.nickname])
+
       assert_received {:mix_shell, :info, [message]}
       assert message =~ " activated"
 
@@ -112,7 +122,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
 
     test "no user to toggle" do
-      Mix.Tasks.Pleroma.User.run(["toggle_activated", "nonexistant"])
+      Mix.Tasks.Pleroma.User.run(["toggle_activated", "nonexistent"])
+
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No user"
     end
@@ -124,10 +135,13 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       user = insert(:user, %{following: [User.ap_followers(followed)]})
 
       Mix.Tasks.Pleroma.User.run(["unsubscribe", user.nickname])
+
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Deactivating"
+
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Unsubscribing"
+
       # Note that the task has delay :timer.sleep(500)
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Successfully unsubscribed"
@@ -138,7 +152,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
 
     test "no user to unsubscribe" do
-      Mix.Tasks.Pleroma.User.run(["unsubscribe", "nonexistant"])
+      Mix.Tasks.Pleroma.User.run(["unsubscribe", "nonexistent"])
+
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No user"
     end
@@ -149,12 +164,15 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       user = insert(:user)
 
       Mix.Tasks.Pleroma.User.run(["set", user.nickname, "--moderator", "--admin", "--locked"])
+
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r"Moderator status .* true"
+      assert message =~ ~r/Moderator status .* true/
+
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r"Locked status .* true"
+      assert message =~ ~r/Locked status .* true/
+
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r"Admin status .* true"
+      assert message =~ ~r/Admin status .* true/
 
       user = User.get_by_nickname(user.nickname)
       assert user.info.is_moderator
@@ -174,11 +192,13 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       ])
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r"Moderator status .* false"
+      assert message =~ ~r/Moderator status .* false/
+
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r"Locked status .* false"
+      assert message =~ ~r/Locked status .* false/
+
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ ~r"Admin status .* false"
+      assert message =~ ~r/Admin status .* false/
 
       user = User.get_by_nickname(user.nickname)
       refute user.info.is_moderator
@@ -187,7 +207,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
 
     test "no user to set status" do
-      Mix.Tasks.Pleroma.User.run(["set", "nonexistant", "--moderator"])
+      Mix.Tasks.Pleroma.User.run(["set", "nonexistent", "--moderator"])
+
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No local user"
     end
@@ -206,7 +227,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
     end
 
     test "no user to reset password" do
-      Mix.Tasks.Pleroma.User.run(["reset_password", "nonexistant"])
+      Mix.Tasks.Pleroma.User.run(["reset_password", "nonexistent"])
+
       assert_received {:mix_shell, :error, [message]}
       assert message =~ "No local user"
     end
