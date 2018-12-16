@@ -11,7 +11,7 @@ defmodule Pleroma.CaptchaTest do
       ^ets_name = :ets.new(ets_name, @ets_options)
 
       mock(fn
-        %{method: :get, url: "http://localhost:9093/new"} ->
+        %{method: :get, url: "https://captcha.kotobank.ch/new"} ->
           json(%{
             md5: "63615261b77f5354fb8c4e4986477555",
             token: "afa1815e14e29355e6c8f6b143a39fa2",
@@ -26,7 +26,7 @@ defmodule Pleroma.CaptchaTest do
       assert Pleroma.Captcha.Kocaptcha.new() == %{
                type: :kocaptcha,
                token: "afa1815e14e29355e6c8f6b143a39fa2",
-               url: "http://localhost:9093/captchas/afa1815e14e29355e6c8f6b143a39fa2.png"
+               url: "https://captcha.kotobank.ch/captchas/afa1815e14e29355e6c8f6b143a39fa2.png"
              }
 
       assert Pleroma.Captcha.Kocaptcha.validate(
