@@ -14,6 +14,10 @@ defmodule Pleroma.Captcha do
     ets_name = Module.concat(method(), Ets)
     ^ets_name = :ets.new(Module.concat(method(), Ets), @ets_options)
 
+    # Clean up old captchas every few minutes
+    seconds_retained = Pleroma.Config.get!([__MODULE__, :seconds_retained])
+    Process.send_after(self(), :cleanup, 1000 * seconds_retained)
+
     {:ok, nil}
   end
 
@@ -38,13 +42,7 @@ defmodule Pleroma.Captcha do
     if !enabled do
       {:reply, %{type: :none}, state}
     else
-      new_captcha = method().new()
-
-      seconds_retained = Pleroma.Config.get!([__MODULE__, :seconds_retained])
-      # Wait several minutes and if the captcha is still there, delete it
-      Process.send_after(self(), {:cleanup, new_captcha.token}, 1000 * seconds_retained)
-
-      {:reply, new_captcha, state}
+      {:reply, method().new(), state}
     end
   end
 
@@ -54,8 +52,12 @@ defmodule Pleroma.Captcha do
   end
 
   @doc false
-  def handle_info({:cleanup, token}, state) do
-    method().cleanup(token)
+  def handle_info(:cleanup, state) do
+    :ok = method().cleanup()
+
+    seconds_retained = Pleroma.Config.get!([__MODULE__, :seconds_retained])
+    # Schedule the next clenup
+    Process.send_after(self(), :cleanup, 1000 * seconds_retained)
 
     {:noreply, state}
   end

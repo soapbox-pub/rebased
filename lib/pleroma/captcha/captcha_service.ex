@@ -24,5 +24,5 @@ defmodule Pleroma.Captcha.Service do
   @doc """
   This function is called periodically to clean up old captchas
   """
-  @callback cleanup(token :: String.t()) :: :ok
+  @callback cleanup() :: :ok
 end

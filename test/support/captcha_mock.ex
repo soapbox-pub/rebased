@@ -9,5 +9,5 @@ defmodule Pleroma.Captcha.Mock do
   def validate(_token, _captcha), do: true
 
   @impl Service
-  def cleanup(_token), do: true
+  def cleanup(), do: :ok
 end
