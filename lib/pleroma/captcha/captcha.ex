@@ -40,9 +40,9 @@ defmodule Pleroma.Captcha do
     else
       new_captcha = method().new()
 
-      minutes_retained = Pleroma.Config.get!([__MODULE__, :minutes_retained])
+      seconds_retained = Pleroma.Config.get!([__MODULE__, :seconds_retained])
       # Wait several minutes and if the captcha is still there, delete it
-      Process.send_after(self(), {:cleanup, new_captcha.token}, 1000 * 60 * minutes_retained)
+      Process.send_after(self(), {:cleanup, new_captcha.token}, 1000 * seconds_retained)
 
       {:reply, new_captcha, state}
     end
