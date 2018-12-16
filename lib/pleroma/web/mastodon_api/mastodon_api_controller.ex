@@ -929,7 +929,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             ]
           },
           settings:
-            Map.get(user.info, :settings) ||
+            user.info.settings ||
               %{
                 onboarded: true,
                 home: %{
@@ -978,13 +978,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
     info_cng = User.Info.mastodon_settings_update(user.info, settings)
 
-    with changeset <- User.update_changeset(user),
+    with changeset <- Ecto.Changeset.change(user),
          changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       json(conn, %{})
     else
       e ->
-        json(conn, %{error: inspect(e)})
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(500, Jason.encode!(%{"error" => inspect(e)}))
     end
   end
 
