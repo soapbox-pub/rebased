@@ -4,13 +4,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonSocket do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.{User, Repo}
 
-  transport(
-    :websocket,
-    Phoenix.Transports.WebSocket.Raw,
-    # We never receive data.
-    timeout: :infinity
-  )
-
   @spec connect(params :: map(), Phoenix.Socket.t()) :: {:ok, Phoenix.Socket.t()} | :error
   def connect(%{"access_token" => token} = params, socket) do
     with %Token{user_id: user_id} <- Repo.get_by(Token, token: token),
