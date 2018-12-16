@@ -11,7 +11,8 @@ defmodule Pleroma.Web.FederatingPlug do
     else
       conn
       |> put_status(404)
-      |> Phoenix.Controller.render(Pleroma.Web.ErrorView, "404.json")
+      |> Phoenix.Controller.put_view(Pleroma.Web.ErrorView)
+      |> Phoenix.Controller.render("404.json")
       |> halt()
     end
   end
