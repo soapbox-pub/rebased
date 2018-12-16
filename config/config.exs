@@ -15,7 +15,7 @@ config :pleroma, Pleroma.Captcha,
   minutes_retained: 5,
   method: Pleroma.Captcha.Kocaptcha
 
-config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "http://localhost:9093"
+config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
 
 # Upload configuration
 config :pleroma, Pleroma.Upload,

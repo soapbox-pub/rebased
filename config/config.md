@@ -171,6 +171,7 @@ Web Push Notifications configuration. You can use the mix task `mix web_push.gen
 
 ### Pleroma.Captcha.Kocaptcha
 Kocaptcha is a very simple captcha service with a single API endpoint,
-the source code is here: https://github.com/koto-bank/kocaptcha
+the source code is here: https://github.com/koto-bank/kocaptcha. The default endpoint
+`https://captcha.kotobank.ch` is hosted by the developer.
 
 * `endpoint`: the kocaptcha endpoint to use
