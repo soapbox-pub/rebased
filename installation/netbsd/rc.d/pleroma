@@ -9,34 +9,25 @@ fi
 name="pleroma"
 rcvar=${name}
 command="/usr/pkg/bin/elixir"
-command_args="/usr/pkg/bin/mix phx.server &"
-start_cmd=pleroma_start
+command_args="--detached -S /usr/pkg/bin/mix phx.server"
 start_precmd="ulimit -n unlimited"
-pidfile="${pleroma_home}/pleroma/pid"
+pidfile="/dev/null"
 
 pleroma_chdir="${pleroma_home}/pleroma"
 pleroma_env="HOME=${pleroma_home} MIX_ENV=prod"
-pleroma_user="pleroma"
-
-pleroma_start()
-{
-	echo "Starting ${name}."
-	${start_precmd}
-	su -m ${pleroma_user} -c "cd ${pleroma_chdir} && \
-	    ${pleroma_env} ${command} ${command_args}"
-	echo $! > ${pidfile}
-}
 
 check_pidfile()
 {
-	read _pid _junk < ${pidfile}
-	echo -n "$(ps -axo pid | grep ${_pid})"
+	pid=$(pgrep -U "${pleroma_user}" /bin/beam.smp$)
+	echo -n "${pid}"
 }
 
-if [ -f /etc/rc.subr -a -d /etc/rc.d -a -f /etc/rc.d/DAEMON ]; then	# newer NetBSD
+if [ -f /etc/rc.subr -a -d /etc/rc.d -a -f /etc/rc.d/DAEMON ]; then
+	# newer NetBSD
 	load_rc_config ${name}
 	run_rc_command "$1"
-else				# ancient NetBSD, Solaris and illumos, Linux, etc...
+else
+	# ancient NetBSD, Solaris and illumos, Linux, etc...
 	cmd=${1:-start}
 
 	case ${cmd} in
@@ -47,8 +38,8 @@ else				# ancient NetBSD, Solaris and illumos, Linux, etc...
 
 		stop)
 			echo "Stopping ${name}."
-			kill `cat ${pidfile}`
-			rm ${pidfile}
+			check_pidfile
+			! [ -n ${pid} ] && kill ${pid}
 			;;
 
 		restart)
