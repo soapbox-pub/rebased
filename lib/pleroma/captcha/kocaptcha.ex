@@ -29,11 +29,20 @@ defmodule Pleroma.Captcha.Kocaptcha do
          [{^token, saved_md5}] <- :ets.lookup(@ets, token),
          true <- :crypto.hash(:md5, captcha) |> Base.encode16() == String.upcase(saved_md5) do
       # Clear the saved value
-      :ets.delete(@ets, token)
+      cleanup(token)
 
       true
     else
       _ -> false
+    end
+  end
+
+  @impl Service
+  def cleanup(token) do
+    # Only delete the entry if it exists in the table, because ets:delete raises an exception if it does not
+    case :ets.lookup(@ets, token) do
+      [{^token, _}] -> :ets.delete(@ets, token)
+      _ -> true
     end
   end
 end

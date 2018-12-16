@@ -12,6 +12,7 @@ config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Captcha,
   enabled: false,
+  minutes_retained: 5,
   method: Pleroma.Captcha.Kocaptcha
 
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "http://localhost:9093"

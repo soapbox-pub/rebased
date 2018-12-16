@@ -167,6 +167,7 @@ Web Push Notifications configuration. You can use the mix task `mix web_push.gen
 ## Pleroma.Captcha
 * `enabled`: Whether the captcha should be shown on registration
 * `method`: The method/service to use for captcha
+* `minutes_retained`: The time in minutes for which the captcha is valid (stored in the cache)
 
 ### Pleroma.Captcha.Kocaptcha
 Kocaptcha is a very simple captcha service with a single API endpoint,

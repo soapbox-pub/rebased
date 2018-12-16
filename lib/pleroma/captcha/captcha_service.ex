@@ -20,4 +20,9 @@ defmodule Pleroma.Captcha.Service do
   `true` if captcha is valid, `false` if not
   """
   @callback validate(token :: String.t(), captcha :: String.t()) :: boolean
+
+  @doc """
+  This function is called periodically to clean up old captchas
+  """
+  @callback cleanup(token :: String.t()) :: :ok
 end

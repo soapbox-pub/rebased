@@ -38,13 +38,26 @@ defmodule Pleroma.Captcha do
     if !enabled do
       {:reply, %{type: :none}, state}
     else
-      {:reply, method().new(), state}
+      new_captcha = method().new()
+
+      minutes_retained = Pleroma.Config.get!([__MODULE__, :minutes_retained])
+      # Wait several minutes and if the captcha is still there, delete it
+      Process.send_after(self(), {:cleanup, new_captcha.token}, 1000 * 60 * minutes_retained)
+
+      {:reply, new_captcha, state}
     end
   end
 
   @doc false
   def handle_call({:validate, token, captcha}, _from, state) do
     {:reply, method().validate(token, captcha), state}
+  end
+
+  @doc false
+  def handle_info({:cleanup, token}, state) do
+    method().cleanup(token)
+
+    {:noreply, state}
   end
 
   defp method, do: Pleroma.Config.get!([__MODULE__, :method])
