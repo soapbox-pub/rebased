@@ -25,6 +25,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(nickname)
   end
 
+  def user_follow(conn, %{"follower" => follower_nick, "followed" => followed_nick}) do
+    with %User{} = follower <- Repo.get_by(User, %{nickname: follower_nick}),
+         %User{} = followed <- Repo.get_by(User, %{nickname: followed_nick}) do
+      User.follow(follower, followed)
+    end
+
+    conn
+    |> json("ok")
+  end
+
+  def user_unfollow(conn, %{"follower" => follower_nick, "followed" => followed_nick}) do
+    with %User{} = follower <- Repo.get_by(User, %{nickname: follower_nick}),
+         %User{} = followed <- Repo.get_by(User, %{nickname: followed_nick}) do
+      User.unfollow(follower, followed)
+    end
+
+    conn
+    |> json("ok")
+  end
+
   def user_create(
         conn,
         %{"nickname" => nickname, "email" => email, "password" => password}
