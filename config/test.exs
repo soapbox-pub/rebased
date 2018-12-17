@@ -4,7 +4,8 @@ use Mix.Config
 # you can enable the server option below.
 config :pleroma, Pleroma.Web.Endpoint,
   http: [port: 4001],
-  server: false
+  url: [port: 4001],
+  server: true
 
 # Print only warnings and errors during test
 config :logger, level: :warn

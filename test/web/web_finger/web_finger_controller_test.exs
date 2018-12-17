@@ -1,11 +1,7 @@
 defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.User
-  alias Pleroma.Web.WebFinger.WebFingerController
-
   import Pleroma.Factory
-  import ExUnit.CaptureLog
   import Tesla.Mock
 
   setup do
