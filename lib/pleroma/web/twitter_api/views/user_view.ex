@@ -86,7 +86,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     }
 
     if assigns[:token] do
-      Map.put(data, "token", assigns[:token])
+      Map.put(data, "token", token_string(assigns[:token]))
     else
       data
     end
@@ -111,4 +111,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
+
+  defp token_string(%Pleroma.Web.OAuth.Token{token: token_str}), do: token_str
+  defp token_string(token), do: token
 end
