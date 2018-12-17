@@ -19,7 +19,11 @@ defmodule Pleroma.Captcha.Kocaptcha do
 
         token = json_resp["token"]
 
-        true = :ets.insert(@ets, {token, json_resp["md5"], DateTime.now_utc()})
+        true =
+          :ets.insert(
+            @ets,
+            {token, json_resp["md5"], DateTime.now_utc() |> DateTime.Format.unix()}
+          )
 
         %{type: :kocaptcha, token: token, url: endpoint <> json_resp["url"]}
     end
@@ -42,14 +46,21 @@ defmodule Pleroma.Captcha.Kocaptcha do
   @impl Service
   def cleanup() do
     seconds_retained = Pleroma.Config.get!([Pleroma.Captcha, :seconds_retained])
+    # If the time in ETS is less than current_time - seconds_retained, then the time has
+    # already passed
+    delete_after =
+      DateTime.subtract!(DateTime.now_utc(), seconds_retained) |> DateTime.Format.unix()
 
-    # Go through captchas and remove expired ones
-    :ets.tab2list(@ets)
-    |> Enum.each(fn {token, _, time_inserted} ->
-      # time created + expiration time = time when the captcha should be removed
-      remove_time = DateTime.add!(time_inserted, seconds_retained)
-      if DateTime.after?(DateTime.now_utc(), remove_time), do: :ets.delete(@ets, token)
-    end)
+    :ets.select_delete(
+      @ets,
+      [
+        {
+          {:_, :_, :"$1"},
+          [{:<, :"$1", {:const, delete_after}}],
+          [true]
+        }
+      ]
+    )
 
     :ok
   end
