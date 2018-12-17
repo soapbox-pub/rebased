@@ -30,7 +30,12 @@ defmodule Mix.Tasks.Pleroma.UploadsTest do
 
         assert_received {:mix_shell, :info, [message]}
 
-        assert %{"count" => ^total_count, "total_count" => ^total_count} =
+        # @logevery in Mix.Tasks.Pleroma.Uploads
+        count =
+          min(50, String.to_integer(total_count))
+          |> to_string()
+
+        assert %{"count" => ^count, "total_count" => ^total_count} =
                  Regex.named_captures(
                    ~r"^Uploaded (?<count>\d+)/(?<total_count>\d+) files$",
                    message
