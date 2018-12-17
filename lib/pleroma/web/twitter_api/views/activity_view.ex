@@ -244,6 +244,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
       |> Formatter.emojify(object["emoji"])
 
+    text =
+      content
+      |> String.replace(~r/<br\s?\/?>/, "\n")
+      |> HTML.strip_tags()
+
     reply_parent = Activity.get_in_reply_to_activity(activity)
 
     reply_user = reply_parent && User.get_cached_by_ap_id(reply_parent.actor)
@@ -253,7 +258,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => html,
-      "text" => HTML.strip_tags(content),
+      "text" => text,
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,
