@@ -13,6 +13,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   require Logger
 
   plug(:only_if_public_instance when action in [:public_timeline, :public_and_external_timeline])
+  plug(:fetch_flash when action in [:confirm_email])
   action_fallback(:errors)
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _params) do
@@ -375,8 +376,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def confirm_email(conn, %{"token" => token}) do
     with %User{} = user <- User.get_by_confirmation_token(token),
          true <- user.local,
-         new_info_fields <- %{confirmation_pending: false, confirmation_token: nil},
-         info_change <- User.Info.confirmation_update(user.info, new_info_fields),
+         info_change <- User.Info.confirmation_update(user.info, :confirmed),
          changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
          {:ok, _} <- User.update_and_set_cache(changeset) do
       conn

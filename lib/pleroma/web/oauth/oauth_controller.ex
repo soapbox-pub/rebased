@@ -31,6 +31,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       }) do
     with %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
+         true <- User.auth_active?(user),
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          {:ok, auth} <- Authorization.create_authorization(app, user) do
       # Special case: Local MastodonFE.
@@ -101,6 +102,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     with %App{} = app <- get_app_from_request(conn, params),
          %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
+         true <- User.auth_active?(user),
          {:ok, auth} <- Authorization.create_authorization(app, user),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{

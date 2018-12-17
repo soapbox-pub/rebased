@@ -38,6 +38,8 @@ defmodule Pleroma.User do
     timestamps()
   end
 
+  def auth_active?(user), do: user.info && !user.info.confirmation_pending
+
   def avatar_url(user) do
     case user.avatar do
       %{"url" => [%{"href" => href} | _]} -> href

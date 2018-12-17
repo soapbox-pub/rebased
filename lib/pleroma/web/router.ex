@@ -281,7 +281,8 @@ defmodule Pleroma.Web.Router do
 
     post("/account/register", TwitterAPI.Controller, :register)
     post("/account/password_reset", TwitterAPI.Controller, :password_reset)
-    get("/account/confirm_email/:token", TwitterAPI.Controller, :confirm_email)
+
+    get("/account/confirm_email/:token", TwitterAPI.Controller, :confirm_email, as: :confirm_email)
 
     get("/search", TwitterAPI.Controller, :search)
     get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)

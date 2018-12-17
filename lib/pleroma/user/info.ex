@@ -143,6 +143,20 @@ defmodule Pleroma.User.Info do
     ])
   end
 
+  def confirmation_update(info, :confirmed) do
+    confirmation_update(info, %{
+      confirmation_pending: false,
+      confirmation_token: nil
+    })
+  end
+
+  def confirmation_update(info, :unconfirmed) do
+    confirmation_update(info, %{
+      confirmation_pending: true,
+      confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+    })
+  end
+
   def confirmation_update(info, params) do
     cast(info, params, [:confirmation_pending, :confirmation_token])
   end
