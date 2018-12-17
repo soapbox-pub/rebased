@@ -132,38 +132,55 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       bio: User.parse_bio(params["bio"]),
       email: params["email"],
       password: params["password"],
-      password_confirmation: params["confirm"]
+      password_confirmation: params["confirm"],
+      captcha_solution: params["captcha_solution"],
+      captcha_token: params["captcha_token"]
     }
 
-    registrations_open = Pleroma.Config.get([:instance, :registrations_open])
-
-    # no need to query DB if registration is open
-    token =
-      unless registrations_open || is_nil(tokenString) do
-        Repo.get_by(UserInviteToken, %{token: tokenString})
+    captcha_enabled = Pleroma.Config.get([Pleroma.Captcha, :enabled])
+    # true if captcha is disabled or enabled and valid, false otherwise
+    captcha_ok =
+      if !captcha_enabled do
+        true
+      else
+        Pleroma.Captcha.validate(params[:captcha_token], params[:captcha_solution])
       end
 
-    cond do
-      registrations_open || (!is_nil(token) && !token.used) ->
-        changeset = User.register_changeset(%User{info: %{}}, params)
+    # Captcha invalid
+    if not captcha_ok do
+      # I have no idea how this error handling works
+      {:error, %{error: Jason.encode!(%{captcha: ["Invalid CAPTCHA"]})}}
+    else
+      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
 
-        with {:ok, user} <- Repo.insert(changeset) do
-          !registrations_open && UserInviteToken.mark_as_used(token.token)
-          {:ok, user}
-        else
-          {:error, changeset} ->
-            errors =
-              Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-              |> Jason.encode!()
-
-            {:error, %{error: errors}}
+      # no need to query DB if registration is open
+      token =
+        unless registrations_open || is_nil(tokenString) do
+          Repo.get_by(UserInviteToken, %{token: tokenString})
         end
 
-      !registrations_open && is_nil(token) ->
-        {:error, "Invalid token"}
+      cond do
+        registrations_open || (!is_nil(token) && !token.used) ->
+          changeset = User.register_changeset(%User{info: %{}}, params)
 
-      !registrations_open && token.used ->
-        {:error, "Expired token"}
+          with {:ok, user} <- Repo.insert(changeset) do
+            !registrations_open && UserInviteToken.mark_as_used(token.token)
+            {:ok, user}
+          else
+            {:error, changeset} ->
+              errors =
+                Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+                |> Jason.encode!()
+
+              {:error, %{error: errors}}
+          end
+
+        !registrations_open && is_nil(token) ->
+          {:error, "Invalid token"}
+
+        !registrations_open && token.used ->
+          {:error, "Expired token"}
+      end
     end
   end
 

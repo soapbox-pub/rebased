@@ -284,4 +284,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         json(conn, %{error: msg})
     end
   end
+
+  def captcha(conn, _params) do
+    json(conn, Pleroma.Captcha.new())
+  end
 end

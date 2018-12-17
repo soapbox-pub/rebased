@@ -99,6 +99,7 @@ defmodule Pleroma.Web.Router do
     get("/password_reset/:token", UtilController, :show_password_reset)
     post("/password_reset", UtilController, :password_reset)
     get("/emoji", UtilController, :emoji)
+    get("/captcha", UtilController, :captcha)
   end
 
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do

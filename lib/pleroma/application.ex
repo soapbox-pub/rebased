@@ -24,6 +24,7 @@ defmodule Pleroma.Application do
         # Start the Ecto repository
         supervisor(Pleroma.Repo, []),
         worker(Pleroma.Emoji, []),
+        worker(Pleroma.Captcha, []),
         worker(
           Cachex,
           [

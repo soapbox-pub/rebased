@@ -10,6 +10,13 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
+config :pleroma, Pleroma.Captcha,
+  enabled: false,
+  seconds_retained: 180,
+  method: Pleroma.Captcha.Kocaptcha
+
+config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
+
 # Upload configuration
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
