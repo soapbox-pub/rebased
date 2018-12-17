@@ -3,8 +3,6 @@ defmodule Pleroma.Web.Endpoint do
 
   socket("/socket", Pleroma.Web.UserSocket)
 
-  socket("/api/v1", Pleroma.Web.MastodonAPI.MastodonSocket, websocket: [path: "/streaming"])
-
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phoenix.digest

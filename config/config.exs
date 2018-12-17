@@ -50,6 +50,15 @@ config :pleroma, :uri_schemes,
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
+  http: [
+    dispatch: [
+      {:_,
+       [
+         {"/api/v1/streaming", Elixir.Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+         {:_, Plug.Adapters.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
+       ]}
+    ]
+  ],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
   signing_salt: "CqaoopA2",
