@@ -12,6 +12,10 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Pleroma.Plugs.UploadedMedia)
 
+  # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
+  # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
+  plug(Pleroma.Plugs.InstanceStatic, at: "/")
+
   plug(
     Plug.Static,
     at: "/",

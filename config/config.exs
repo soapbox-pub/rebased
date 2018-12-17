@@ -110,6 +110,7 @@ config :pleroma, :instance,
   public: true,
   quarantined_instances: [],
   managed_config: true,
+  static_dir: "instance/static/",
   allowed_post_formats: [
     "text/plain",
     "text/html",
