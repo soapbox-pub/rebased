@@ -3,11 +3,13 @@ defmodule Pleroma.CaptchaTest do
 
   import Tesla.Mock
 
+  alias Pleroma.Captcha.Kocaptcha
+
   @ets_options [:ordered_set, :private, :named_table, {:read_concurrency, true}]
 
   describe "Kocaptcha" do
     setup do
-      ets_name = Pleroma.Captcha.Kocaptcha.Ets
+      ets_name = Kocaptcha.Ets
       ^ets_name = :ets.new(ets_name, @ets_options)
 
       mock(fn
@@ -23,13 +25,13 @@ defmodule Pleroma.CaptchaTest do
     end
 
     test "new and validate" do
-      assert Pleroma.Captcha.Kocaptcha.new() == %{
+      assert Kocaptcha.new() == %{
                type: :kocaptcha,
                token: "afa1815e14e29355e6c8f6b143a39fa2",
                url: "https://captcha.kotobank.ch/captchas/afa1815e14e29355e6c8f6b143a39fa2.png"
              }
 
-      assert Pleroma.Captcha.Kocaptcha.validate(
+      assert Kocaptcha.validate(
                "afa1815e14e29355e6c8f6b143a39fa2",
                "7oEy8c"
              )
