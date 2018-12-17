@@ -73,7 +73,8 @@ defmodule Pleroma.Mixfile do
       {:ex_doc, "> 0.18.3 and < 0.20.0", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
       {:swoosh, "~> 0.20"},
-      {:gen_smtp, "~> 0.13"}
+      {:gen_smtp, "~> 0.13"},
+      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ]
   end
 
