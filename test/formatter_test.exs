@@ -27,7 +27,7 @@ defmodule Pleroma.FormatterTest do
       text = "Fact #3: pleroma does what mastodon't"
 
       expected_text =
-        "Fact <a data-tag=\"3\" href=\"http://localhost:4001/tag/3\">#3</a>: pleroma does what mastodon't"
+        "Fact <a data-tag='3' href='http://localhost:4001/tag/3' rel='tag'>#3</a>: pleroma does what mastodon't"
 
       tags = Formatter.parse_tags(text)
 
