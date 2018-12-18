@@ -74,13 +74,15 @@ defmodule Pleroma.User do
 
   def user_info(%User{} = user) do
     oneself = if user.local, do: 1, else: 0
+    user_info = user.info
 
     %{
       following_count: length(user.following) - oneself,
-      note_count: user.info.note_count,
-      follower_count: user.info.follower_count,
-      locked: user.info.locked,
-      default_scope: user.info.default_scope
+      note_count: user_info.note_count,
+      follower_count: user_info.follower_count,
+      locked: user_info.locked,
+      confirmation_pending: user_info.confirmation_pending,
+      default_scope: user_info.default_scope
     }
   end
 
@@ -209,14 +211,18 @@ defmodule Pleroma.User do
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset) do
-      if user.info.confirmation_pending do
-        {:ok, _} =
-          user
-          |> Pleroma.UserEmail.account_confirmation_email()
-          |> Pleroma.Mailer.deliver()
-      end
-
+      {:ok, _} = try_send_confirmation_email(user)
       {:ok, user}
+    end
+  end
+
+  def try_send_confirmation_email(%User{} = user) do
+    if user.info.confirmation_pending do
+      user
+      |> Pleroma.UserEmail.account_confirmation_email()
+      |> Pleroma.Mailer.deliver()
+    else
+      {:ok, :noop}
     end
   end
 

@@ -275,6 +275,31 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
              UserView.render("show.json", %{user: fetched_user})
   end
 
+  @moduletag skip: "needs 'account_activation_required: true' in config"
+  test "it sends confirmation email if :account_activation_required is specified in instance config" do
+    setting = Pleroma.Config.get([:instance, :account_activation_required])
+
+    unless setting do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
+    end
+
+    data = %{
+      "nickname" => "lain",
+      "email" => "lain@wired.jp",
+      "fullname" => "lain iwakura",
+      "bio" => "",
+      "password" => "bear",
+      "confirm" => "bear"
+    }
+
+    {:ok, user} = TwitterAPI.register_user(data)
+
+    assert user.info.confirmation_pending
+
+    Swoosh.TestAssertions.assert_email_sent(Pleroma.UserEmail.account_confirmation_email(user))
+  end
+
   test "it registers a new user and parses mentions in the bio" do
     data1 = %{
       "nickname" => "john",
