@@ -161,19 +161,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           Repo.get_by(UserInviteToken, %{token: tokenString})
         end
 
-    cond do
-      registrations_open || (!is_nil(token) && !token.used) ->
-        changeset = User.register_changeset(%User{}, params)
+      cond do
+        registrations_open || (!is_nil(token) && !token.used) ->
+          changeset = User.register_changeset(%User{}, params)
 
-        with {:ok, user} <- User.register(changeset) do
-          !registrations_open && UserInviteToken.mark_as_used(token.token)
+          with {:ok, user} <- User.register(changeset) do
+            !registrations_open && UserInviteToken.mark_as_used(token.token)
 
-          {:ok, user}
-        else
-          {:error, changeset} ->
-            errors =
-              Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-              |> Jason.encode!()
+            {:ok, user}
+          else
+            {:error, changeset} ->
+              errors =
+                Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+                |> Jason.encode!()
 
               {:error, %{error: errors}}
           end
