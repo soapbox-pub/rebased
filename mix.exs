@@ -22,7 +22,8 @@ defmodule Pleroma.Mixfile do
       docs: [
         logo: "priv/static/static/logo.png",
         extras: ["README.md", "config/config.md", "Pleroma-API.md"],
-        main: "readme"
+        main: "readme",
+        output: "priv/static/doc"
       ]
     ]
   end
