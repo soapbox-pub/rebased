@@ -161,34 +161,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           Repo.get_by(UserInviteToken, %{token: tokenString})
         end
 
-      cond do
-        registrations_open || (!is_nil(token) && !token.used) ->
-          changeset = User.register_changeset(%User{info: %{}}, params)
+    cond do
+      registrations_open || (!is_nil(token) && !token.used) ->
+        changeset = User.register_changeset(%User{}, params)
 
-          with {:ok, user} <- Repo.insert(changeset) do
-            !registrations_open && UserInviteToken.mark_as_used(token.token)
+        with {:ok, user} <- User.register(changeset) do
+          !registrations_open && UserInviteToken.mark_as_used(token.token)
 
-            if Pleroma.Config.get([:instance, :account_activation_required]) do
-              info_change = User.Info.confirmation_update(user.info, :unconfirmed)
-
-              {:ok, unconfirmed_user} =
-                user
-                |> Ecto.Changeset.change()
-                |> Ecto.Changeset.put_embed(:info, info_change)
-                |> Repo.update()
-
-              {:ok, _} =
-                unconfirmed_user
-                |> UserEmail.account_confirmation_email()
-                |> Mailer.deliver()
-            end
-
-            {:ok, user}
-          else
-            {:error, changeset} ->
-              errors =
-                Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-                |> Jason.encode!()
+          {:ok, user}
+        else
+          {:error, changeset} ->
+            errors =
+              Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+              |> Jason.encode!()
 
               {:error, %{error: errors}}
           end

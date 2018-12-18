@@ -170,7 +170,14 @@ defmodule Pleroma.User do
     update_and_set_cache(password_update_changeset(user, data))
   end
 
-  def register_changeset(struct, params \\ %{}) do
+  def register_changeset(struct, params \\ %{}, opts \\ []) do
+    confirmation_status =
+      if opts[:confirmed] || !Pleroma.Config.get([:instance, :account_activation_required]) do
+        :confirmed
+      else
+        :unconfirmed
+      end
+
     changeset =
       struct
       |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
@@ -182,7 +189,7 @@ defmodule Pleroma.User do
       |> validate_format(:email, @email_regex)
       |> validate_length(:bio, max: 1000)
       |> validate_length(:name, min: 1, max: 100)
-      |> put_change(:info, %Pleroma.User.Info{})
+      |> put_change(:info, User.Info.confirmation_update(%User.Info{}, confirmation_status))
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
@@ -196,6 +203,20 @@ defmodule Pleroma.User do
       |> put_change(:follower_address, followers)
     else
       changeset
+    end
+  end
+
+  @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
+  def register(%Ecto.Changeset{} = changeset) do
+    with {:ok, user} <- Repo.insert(changeset) do
+      if user.info.confirmation_pending do
+        {:ok, _} =
+          user
+          |> Pleroma.UserEmail.account_confirmation_email()
+          |> Pleroma.Mailer.deliver()
+      end
+
+      {:ok, user}
     end
   end
 
