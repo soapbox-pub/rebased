@@ -96,7 +96,10 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "default_scope" => "public",
       "no_rich_text" => false,
       "fields" => [],
-      "pleroma" => %{"tags" => []}
+      "pleroma" => %{
+        "confirmation_pending" => false,
+        "tags" => []
+      }
     }
 
     assert represented == UserView.render("show.json", %{user: user})
@@ -138,7 +141,10 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "default_scope" => "public",
       "no_rich_text" => false,
       "fields" => [],
-      "pleroma" => %{"tags" => []}
+      "pleroma" => %{
+        "confirmation_pending" => false,
+        "tags" => []
+      }
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
@@ -181,7 +187,10 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "default_scope" => "public",
       "no_rich_text" => false,
       "fields" => [],
-      "pleroma" => %{"tags" => []}
+      "pleroma" => %{
+        "confirmation_pending" => false,
+        "tags" => []
+      }
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
@@ -231,7 +240,10 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "default_scope" => "public",
       "no_rich_text" => false,
       "fields" => [],
-      "pleroma" => %{"tags" => []}
+      "pleroma" => %{
+        "confirmation_pending" => false,
+        "tags" => []
+      }
     }
 
     blocker = Repo.get(User, blocker.id)
