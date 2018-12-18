@@ -4,12 +4,12 @@ defmodule Pleroma.Formatter do
   alias Pleroma.HTML
   alias Pleroma.Emoji
 
-  @tag_regex ~r/\#\w+/u
+  @tag_regex ~r/((?<=[^&])|\A)(\#)(\w+)/u
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
 
   def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
-    |> Enum.map(fn ["#" <> tag = full_tag] -> {full_tag, String.downcase(tag)} end)
+    |> Enum.map(fn ["#" <> tag = full_tag | _] -> {full_tag, String.downcase(tag)} end)
     |> (fn map ->
           if data["sensitive"] in [true, "True", "true", "1"],
             do: [{"#nsfw", "nsfw"}] ++ map,
@@ -155,7 +155,7 @@ defmodule Pleroma.Formatter do
     uuid_text =
       tags
       |> Enum.reduce(text, fn {match, _short, uuid}, text ->
-        String.replace(text, match, uuid)
+        String.replace(text, ~r/((?<=[^&])|(\A))#{match}/, uuid)
       end)
 
     subs =

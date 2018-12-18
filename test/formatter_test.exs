@@ -22,6 +22,18 @@ defmodule Pleroma.FormatterTest do
       assert expected_text ==
                Formatter.add_hashtag_links({[], text}, tags) |> Formatter.finalize()
     end
+
+    test "does not turn html characters to tags" do
+      text = "Fact #3: pleroma does what mastodon't"
+
+      expected_text =
+        "Fact <a data-tag='3' href='http://localhost:4001/tag/3' rel='tag'>#3</a>: pleroma does what mastodon't"
+
+      tags = Formatter.parse_tags(text)
+
+      assert expected_text ==
+               Formatter.add_hashtag_links({[], text}, tags) |> Formatter.finalize()
+    end
   end
 
   describe ".add_links" do
