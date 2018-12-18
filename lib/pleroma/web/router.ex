@@ -99,6 +99,7 @@ defmodule Pleroma.Web.Router do
     get("/password_reset/:token", UtilController, :show_password_reset)
     post("/password_reset", UtilController, :password_reset)
     get("/emoji", UtilController, :emoji)
+    get("/captcha", UtilController, :captcha)
   end
 
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
@@ -458,7 +459,7 @@ defmodule Fallback.RedirectController do
   def redirector(conn, _params) do
     conn
     |> put_resp_content_type("text/html")
-    |> send_file(200, Application.app_dir(:pleroma, "priv/static/index.html"))
+    |> send_file(200, Pleroma.Plugs.InstanceStatic.file_path("index.html"))
   end
 
   def registration_page(conn, params) do

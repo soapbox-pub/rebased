@@ -43,12 +43,13 @@ defmodule Pleroma.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.3.3"},
-      {:phoenix_pubsub, "~> 1.0.2"},
+      # Until Phoenix 1.4.1 is released
+      {:phoenix, github: "phoenixframework/phoenix", branch: "v1.4"},
+      {:plug_cowboy, "~> 1.0"},
+      {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 3.3"},
       {:postgrex, ">= 0.13.5"},
       {:gettext, "~> 0.15"},
-      {:cowboy, "~> 1.1.2", override: true},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
@@ -72,7 +73,8 @@ defmodule Pleroma.Mixfile do
       {:ex_doc, "> 0.18.3 and < 0.20.0", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
       {:swoosh, "~> 0.20"},
-      {:gen_smtp, "~> 0.13"}
+      {:gen_smtp, "~> 0.13"},
+      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
     ]
   end
 

@@ -94,16 +94,14 @@ defmodule Mix.Tasks.Pleroma.User do
     unless not proceed? do
       Common.start_pleroma()
 
-      params =
-        %{
-          nickname: nickname,
-          email: email,
-          password: password,
-          password_confirmation: password,
-          name: name,
-          bio: bio
-        }
-        |> IO.inspect()
+      params = %{
+        nickname: nickname,
+        email: email,
+        password: password,
+        password_confirmation: password,
+        name: name,
+        bio: bio
+      }
 
       user = User.register_changeset(%User{}, params)
       Repo.insert!(user)

@@ -1415,4 +1415,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert result["stats"]["user_count"] == 2
     assert result["stats"]["status_count"] == 1
   end
+
+  test "put settings", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> put("/api/web/settings", %{"data" => %{"programming" => "socks"}})
+
+    assert result = json_response(conn, 200)
+
+    user = User.get_cached_by_ap_id(user.ap_id)
+    assert user.info.settings == %{"programming" => "socks"}
+  end
 end

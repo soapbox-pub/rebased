@@ -11,6 +11,23 @@ defmodule Pleroma.UserTest do
     :ok
   end
 
+  describe "when tags are nil" do
+    test "tagging a user" do
+      user = insert(:user, %{tags: nil})
+      user = User.tag(user, ["cool", "dude"])
+
+      assert "cool" in user.tags
+      assert "dude" in user.tags
+    end
+
+    test "untagging a user" do
+      user = insert(:user, %{tags: nil})
+      user = User.untag(user, ["cool", "dude"])
+
+      assert user.tags == []
+    end
+  end
+
   test "ap_id returns the activity pub id for the user" do
     user = UserBuilder.build()
 

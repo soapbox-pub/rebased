@@ -14,6 +14,22 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   import Pleroma.Factory
   import Mock
 
+  test "a create activity with a html status" do
+    text = """
+    #Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg
+    """
+
+    {:ok, activity} = CommonAPI.post(insert(:user), %{"status" => text})
+
+    result = ActivityView.render("activity.json", activity: activity)
+
+    assert result["statusnet_html"] ==
+             "<a data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\">#cycling</a> <a data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\">#CHScycling</a> <a data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\">#commute</a><br />MVIMG_20181211_054020.jpg"
+
+    assert result["text"] ==
+             "#Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg"
+  end
+
   test "a create activity with a note" do
     user = insert(:user)
     other_user = insert(:user, %{nickname: "shp"})

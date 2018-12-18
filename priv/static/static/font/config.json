@@ -1,4 +1,5 @@
 {
+  "name": "",
   "css_prefix_text": "icon-",
   "css_use_suffix": false,
   "hinting": true,
@@ -50,7 +51,7 @@
     {
       "uid": "09feb4465d9bd1364f4e301c9ddbaa92",
       "css": "retweet",
-      "code": 59398,
+      "code": 59396,
       "src": "fontawesome"
     },
     {
@@ -186,9 +187,15 @@
       "src": "iconic"
     },
     {
+      "uid": "9dd9e835aebe1060ba7190ad2b2ed951",
+      "css": "search",
+      "code": 59398,
+      "src": "fontawesome"
+    },
+    {
       "uid": "ca90da02d2c6a3183f2458e4dc416285",
       "css": "adjust",
-      "code": 59396,
+      "code": 59414,
       "src": "fontawesome"
     },
     {
