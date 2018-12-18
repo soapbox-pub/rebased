@@ -13,6 +13,7 @@ cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
           - deps
+          - _build
 stages:
   - lint
   - test
@@ -21,6 +22,7 @@ before_script:
   - mix local.hex --force
   - mix local.rebar --force
   - mix deps.get
+  - mix compile --force
   - MIX_ENV=test mix ecto.create
   - MIX_ENV=test mix ecto.migrate
 
