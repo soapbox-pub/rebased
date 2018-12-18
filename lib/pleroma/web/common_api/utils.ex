@@ -112,6 +112,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.join([text | attachment_text], "<br>")
   end
 
+  @doc """
+  Formatting text to plain text.
+  """
   def format_input(text, mentions, tags, "text/plain") do
     text
     |> Formatter.html_escape("text/plain")
@@ -123,6 +126,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.finalize()
   end
 
+  @doc """
+  Formatting text to html.
+  """
   def format_input(text, mentions, _tags, "text/html") do
     text
     |> Formatter.html_escape("text/html")
@@ -132,8 +138,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.finalize()
   end
 
+  @doc """
+  Formatting text to markdown.
+  """
   def format_input(text, mentions, tags, "text/markdown") do
     text
+    |> Formatter.mentions_escape(mentions)
     |> Earmark.as_html!()
     |> Formatter.html_escape("text/html")
     |> String.replace(~r/\r?\n/, "")

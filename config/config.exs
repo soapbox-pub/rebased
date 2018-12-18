@@ -10,6 +10,13 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
+config :pleroma, Pleroma.Captcha,
+  enabled: false,
+  seconds_retained: 180,
+  method: Pleroma.Captcha.Kocaptcha
+
+config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
+
 # Upload configuration
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
@@ -50,6 +57,15 @@ config :pleroma, :uri_schemes,
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
+  http: [
+    dispatch: [
+      {:_,
+       [
+         {"/api/v1/streaming", Elixir.Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+         {:_, Plug.Adapters.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
+       ]}
+    ]
+  ],
   protocol: "https",
   secret_key_base: "aK4Abxf29xU9TTDKre9coZPUgevcVCFQJe/5xP/7Lt4BEif6idBIbjupVbOrbKxl",
   signing_salt: "CqaoopA2",
@@ -65,6 +81,7 @@ config :logger, :console,
 config :mime, :types, %{
   "application/xml" => ["xml"],
   "application/xrd+xml" => ["xrd+xml"],
+  "application/jrd+json" => ["jrd+json"],
   "application/activity+json" => ["activity+json"],
   "application/ld+json" => ["activity+json"]
 }
@@ -93,6 +110,7 @@ config :pleroma, :instance,
   public: true,
   quarantined_instances: [],
   managed_config: true,
+  static_dir: "instance/static/",
   allowed_post_formats: [
     "text/plain",
     "text/html",

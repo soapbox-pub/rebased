@@ -1,11 +1,11 @@
 @font-face {
   font-family: 'fontello';
-  src: url('../font/fontello.eot?3996201');
-  src: url('../font/fontello.eot?3996201#iefix') format('embedded-opentype'),
-       url('../font/fontello.woff2?3996201') format('woff2'),
-       url('../font/fontello.woff?3996201') format('woff'),
-       url('../font/fontello.ttf?3996201') format('truetype'),
-       url('../font/fontello.svg?3996201#fontello') format('svg');
+  src: url('../font/fontello.eot?97335193');
+  src: url('../font/fontello.eot?97335193#iefix') format('embedded-opentype'),
+       url('../font/fontello.woff2?97335193') format('woff2'),
+       url('../font/fontello.woff?97335193') format('woff'),
+       url('../font/fontello.ttf?97335193') format('truetype'),
+       url('../font/fontello.svg?97335193#fontello') format('svg');
   font-weight: normal;
   font-style: normal;
 }
@@ -15,7 +15,7 @@
 @media screen and (-webkit-min-device-pixel-ratio:0) {
   @font-face {
     font-family: 'fontello';
-    src: url('../font/fontello.svg?3996201#fontello') format('svg');
+    src: url('../font/fontello.svg?97335193#fontello') format('svg');
   }
 }
 */
@@ -59,9 +59,9 @@
 .icon-upload:before { content: '\e801'; } /* '' */
 .icon-star:before { content: '\e802'; } /* '' */
 .icon-star-empty:before { content: '\e803'; } /* '' */
-.icon-adjust:before { content: '\e804'; } /* '' */
+.icon-retweet:before { content: '\e804'; } /* '' */
 .icon-eye-off:before { content: '\e805'; } /* '' */
-.icon-retweet:before { content: '\e806'; } /* '' */
+.icon-search:before { content: '\e806'; } /* '' */
 .icon-cog:before { content: '\e807'; } /* '' */
 .icon-logout:before { content: '\e808'; } /* '' */
 .icon-down-open:before { content: '\e809'; } /* '' */
@@ -77,6 +77,7 @@
 .icon-brush:before { content: '\e813'; } /* '' */
 .icon-attention:before { content: '\e814'; } /* '' */
 .icon-plus:before { content: '\e815'; } /* '' */
+.icon-adjust:before { content: '\e816'; } /* '' */
 .icon-spin3:before { content: '\e832'; } /* '' */
 .icon-spin4:before { content: '\e834'; } /* '' */
 .icon-link-ext:before { content: '\f08e'; } /* '' */

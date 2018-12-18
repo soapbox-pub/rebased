@@ -58,12 +58,15 @@ defmodule Mix.Tasks.Pleroma.Instance do
     proceed? = Enum.empty?(will_overwrite) or Keyword.get(options, :force, false)
 
     unless not proceed? do
-      domain =
-        Common.get_option(
-          options,
-          :domain,
-          "What domain will your instance use? (e.g pleroma.soykaf.com)"
-        )
+      [domain, port | _] =
+        String.split(
+          Common.get_option(
+            options,
+            :domain,
+            "What domain will your instance use? (e.g pleroma.soykaf.com)"
+          ),
+          ":"
+        ) ++ [443]
 
       name =
         Common.get_option(
@@ -104,6 +107,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
         EEx.eval_file(
           "sample_config.eex" |> Path.expand(__DIR__),
           domain: domain,
+          port: port,
           email: email,
           name: name,
           dbhost: dbhost,

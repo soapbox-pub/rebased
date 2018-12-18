@@ -3,8 +3,6 @@ defmodule Pleroma.Web.Endpoint do
 
   socket("/socket", Pleroma.Web.UserSocket)
 
-  socket("/api/v1", Pleroma.Web.MastodonAPI.MastodonSocket)
-
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phoenix.digest
@@ -13,6 +11,10 @@ defmodule Pleroma.Web.Endpoint do
   plug(Pleroma.Plugs.HTTPSecurityPlug)
 
   plug(Pleroma.Plugs.UploadedMedia)
+
+  # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
+  # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
+  plug(Pleroma.Plugs.InstanceStatic, at: "/")
 
   plug(
     Plug.Static,

@@ -851,7 +851,7 @@ defmodule Pleroma.User do
     do: tag(User.get_by_nickname(nickname), tags)
 
   def tag(%User{} = user, tags),
-    do: update_tags(user, Enum.uniq(user.tags ++ normalize_tags(tags)))
+    do: update_tags(user, Enum.uniq((user.tags || []) ++ normalize_tags(tags)))
 
   def untag(user_identifiers, tags) when is_list(user_identifiers) do
     Repo.transaction(fn ->
@@ -862,7 +862,8 @@ defmodule Pleroma.User do
   def untag(nickname, tags) when is_binary(nickname),
     do: untag(User.get_by_nickname(nickname), tags)
 
-  def untag(%User{} = user, tags), do: update_tags(user, user.tags -- normalize_tags(tags))
+  def untag(%User{} = user, tags),
+    do: update_tags(user, (user.tags || []) -- normalize_tags(tags))
 
   defp update_tags(%User{} = user, new_tags) do
     {:ok, updated_user} =

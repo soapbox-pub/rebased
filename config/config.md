@@ -7,7 +7,7 @@ If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherw
 * `uploader`: Select which `Pleroma.Uploaders` to use
 * `filters`: List of `Pleroma.Upload.Filter` to use.
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
-* `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
+* `proxy_remote`: If you\'re using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 
 Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
@@ -67,7 +67,8 @@ config :pleroma, Pleroma.Mailer,
 * `avatar_upload_limit`: File size limit of user’s profile avatars
 * `background_upload_limit`: File size limit of user’s profile backgrounds
 * `banner_upload_limit`: File size limit of user’s profile banners
-* `registrations_open`: Enable registrations for anyone, invitations can be used when false.
+* `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
+* `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `federating`: Enable federation with other instances
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance
 * `rewrite_policy`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
@@ -162,3 +163,15 @@ Web Push Notifications configuration. You can use the mix task `mix web_push.gen
 * ``subject``: a mailto link for the administrative contact. It’s best if this email is not a personal email address, but rather a group email so that if a person leaves an organization, is unavailable for an extended period, or otherwise can’t respond, someone else on the list can.
 * ``public_key``: VAPID public key
 * ``private_key``: VAPID private key
+
+## Pleroma.Captcha
+* `enabled`: Whether the captcha should be shown on registration
+* `method`: The method/service to use for captcha
+* `seconds_retained`: The time in seconds for which the captcha is valid (stored in the cache)
+
+### Pleroma.Captcha.Kocaptcha
+Kocaptcha is a very simple captcha service with a single API endpoint,
+the source code is here: https://github.com/koto-bank/kocaptcha. The default endpoint
+`https://captcha.kotobank.ch` is hosted by the developer.
+
+* `endpoint`: the kocaptcha endpoint to use

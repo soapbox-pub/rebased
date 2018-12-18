@@ -4,17 +4,9 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.{User, Notification, Activity, Object, Repo}
   alias Pleroma.Web.ActivityPub.ActivityPub
 
-  def init(args) do
-    {:ok, args}
-  end
+  @keepalive_interval :timer.seconds(30)
 
   def start_link do
-    spawn(fn ->
-      # 30 seconds
-      Process.sleep(1000 * 30)
-      GenServer.cast(__MODULE__, %{action: :ping})
-    end)
-
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
@@ -30,6 +22,16 @@ defmodule Pleroma.Web.Streamer do
     GenServer.cast(__MODULE__, %{action: :stream, topic: topic, item: item})
   end
 
+  def init(args) do
+    spawn(fn ->
+      # 30 seconds
+      Process.sleep(@keepalive_interval)
+      GenServer.cast(__MODULE__, %{action: :ping})
+    end)
+
+    {:ok, args}
+  end
+
   def handle_cast(%{action: :ping}, topics) do
     Map.values(topics)
     |> List.flatten()
@@ -40,7 +42,7 @@ defmodule Pleroma.Web.Streamer do
 
     spawn(fn ->
       # 30 seconds
-      Process.sleep(1000 * 30)
+      Process.sleep(@keepalive_interval)
       GenServer.cast(__MODULE__, %{action: :ping})
     end)
 

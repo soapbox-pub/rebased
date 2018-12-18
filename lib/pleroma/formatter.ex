@@ -5,6 +5,8 @@ defmodule Pleroma.Formatter do
   alias Pleroma.Emoji
 
   @tag_regex ~r/\#\w+/u
+  @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
+
   def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
     |> Enum.map(fn ["#" <> tag = full_tag] -> {full_tag, String.downcase(tag)} end)
@@ -74,6 +76,18 @@ defmodule Pleroma.Formatter do
       part
     end)
     |> Enum.join("")
+  end
+
+  @doc """
+  Escapes a special characters in mention names.
+  """
+  @spec mentions_escape(String.t(), list({String.t(), any()})) :: String.t()
+  def mentions_escape(text, mentions) do
+    mentions
+    |> Enum.reduce(text, fn {name, _}, acc ->
+      escape_name = String.replace(name, @markdown_characters_regex, "\\\\\\1")
+      String.replace(acc, name, escape_name)
+    end)
   end
 
   @doc "changes scheme:... urls to html links"

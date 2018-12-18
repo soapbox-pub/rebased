@@ -99,6 +99,7 @@ defmodule Pleroma.Web.Router do
     get("/password_reset/:token", UtilController, :show_password_reset)
     post("/password_reset", UtilController, :password_reset)
     get("/emoji", UtilController, :emoji)
+    get("/captcha", UtilController, :captcha)
   end
 
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
@@ -117,6 +118,8 @@ defmodule Pleroma.Web.Router do
     delete("/relay", AdminAPIController, :relay_unfollow)
 
     get("/invite_token", AdminAPIController, :get_invite_token)
+    post("/email_invite", AdminAPIController, :email_invite)
+
     get("/password_reset", AdminAPIController, :get_password_reset)
   end
 
@@ -481,7 +484,7 @@ defmodule Fallback.RedirectController do
   end
 
   def index_file_path do
-    Application.app_dir(:pleroma, "priv/static/index.html")
+    Pleroma.Plugs.InstanceStatic.file_path("index.html"))
   end
 
   def registration_page(conn, params) do

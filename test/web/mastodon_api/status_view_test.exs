@@ -62,7 +62,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       visibility: "public",
       media_attachments: [],
       mentions: [],
-      tags: note.data["object"]["tag"],
+      tags: [
+        %{
+          name: "#{note.data["object"]["tag"]}",
+          url: "/tag/#{note.data["object"]["tag"]}"
+        }
+      ],
       application: %{
         name: "Web",
         website: nil
@@ -150,5 +155,26 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert represented[:id] == to_string(reblog.id)
     assert represented[:reblog][:id] == to_string(activity.id)
     assert represented[:emojis] == []
+  end
+
+  describe "build_tags/1" do
+    test "it returns a a dictionary tags" do
+      object_tags = [
+        "fediverse",
+        "mastodon",
+        "nextcloud",
+        %{
+          "href" => "https://kawen.space/users/lain",
+          "name" => "@lain@kawen.space",
+          "type" => "Mention"
+        }
+      ]
+
+      assert StatusView.build_tags(object_tags) == [
+               %{name: "fediverse", url: "/tag/fediverse"},
+               %{name: "mastodon", url: "/tag/mastodon"},
+               %{name: "nextcloud", url: "/tag/nextcloud"}
+             ]
+    end
   end
 end

@@ -147,6 +147,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
+  @doc "Sends registration invite via email"
+  def email_invite(%{assigns: %{user: user}} = conn, %{"email" => email} = params) do
+    with true <-
+           Pleroma.Config.get([:instance, :invites_enabled]) &&
+             !Pleroma.Config.get([:instance, :registrations_open]),
+         {:ok, invite_token} <- Pleroma.UserInviteToken.create_token(),
+         email <-
+           Pleroma.UserEmail.user_invitation_email(user, invite_token, email, params["name"]),
+         {:ok, _} <- Pleroma.Mailer.deliver(email) do
+      json_response(conn, :no_content, "")
+    end
+  end
+
   @doc "Get a account registeration invite token (base64 string)"
   def get_invite_token(conn, _params) do
     {:ok, token} = Pleroma.UserInviteToken.create_token()
