@@ -8,7 +8,9 @@
 /.elixir_ls
 /test/fixtures/test_tmp.txt
 /test/fixtures/image_tmp.jpg
+/test/tmp/
 /doc
+/instance
 
 # Prevent committing custom emojis
 /priv/static/emoji/custom/*
@@ -31,4 +33,4 @@ erl_crash.dump
 .env
 
 # Editor config
-/.vscode
+/.vscode/
