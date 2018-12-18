@@ -245,9 +245,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       |> Formatter.emojify(object["emoji"])
 
     text =
-      content
-      |> String.replace(~r/<br\s?\/?>/, "\n")
-      |> HTML.strip_tags()
+      if content do
+        content
+        |> String.replace(~r/<br\s?\/?>/, "\n")
+        |> HTML.strip_tags()
+      end
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
 
