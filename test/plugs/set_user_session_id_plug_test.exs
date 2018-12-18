@@ -1,6 +1,8 @@
 defmodule Pleroma.Plugs.SetUserSessionIdPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
+  Code.ensure_compiled(Pleroma.User)
+
   alias Pleroma.Plugs.SetUserSessionIdPlug
   alias Pleroma.User
 
