@@ -100,7 +100,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     for_user = conn.assigns.user
 
     with {:ok, shown} <- TwitterAPI.get_user(params),
-         true <- User.auth_active?(shown) || for_user && (for_user.id == shown.id || User.superuser?(for_user)) do
+         true <-
+           User.auth_active?(shown) ||
+             (for_user && (for_user.id == shown.id || User.superuser?(for_user))) do
       params =
         if for_user do
           %{user: shown, for: for_user}
