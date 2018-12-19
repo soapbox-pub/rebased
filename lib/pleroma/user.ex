@@ -210,8 +210,8 @@ defmodule Pleroma.User do
 
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
-    with {:ok, user} <- Repo.insert(changeset) do
-      {:ok, _} = try_send_confirmation_email(user)
+    with {:ok, user} <- Repo.insert(changeset),
+         {:ok, _} = try_send_confirmation_email(user) do
       {:ok, user}
     end
   end
