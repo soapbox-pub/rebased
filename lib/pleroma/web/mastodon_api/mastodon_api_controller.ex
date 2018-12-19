@@ -540,15 +540,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def hashtag_timeline(%{assigns: %{user: user}} = conn, params) do
     local_only = params["local"] in [true, "True", "true", "1"]
 
-    params =
+    tags =
+      ([params["tag"]] ++ (params["all"] || []) ++ (params["any"] || []))
+      |> Enum.uniq()
+      |> Enum.filter(& &1)
+      |> Enum.map(&String.downcase(&1))
+
+    tag_reject =
+      params["none"] ||
+        []
+        |> Enum.map(&String.downcase(&1))
+
+    query_params =
       params
       |> Map.put("type", "Create")
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
-      |> Map.put("tag", String.downcase(params["tag"]))
+      |> Map.put("tag", tags)
+      |> Map.put("tag_reject", tag_reject)
 
     activities =
-      ActivityPub.fetch_public_activities(params)
+      ActivityPub.fetch_public_activities(query_params)
       |> Enum.reverse()
 
     conn

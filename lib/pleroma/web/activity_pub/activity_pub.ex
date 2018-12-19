@@ -426,10 +426,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_since(query, _), do: query
 
+  defp restrict_tag(query, %{"tag" => tag, "tag_reject" => tag_reject}) when tag_reject != [] do
+    from(
+      activity in query,
+      where: fragment("? <@ (? #> '{\"object\",\"tag\"}')", ^tag, activity.data),
+      where: fragment("? @> (? #> '{\"object\",\"tag\"}')", ^tag_reject, activity.data)
+    )
+  end
+
   defp restrict_tag(query, %{"tag" => tag}) do
     from(
       activity in query,
-      where: fragment("? <@ (? #> '{\"object\",\"tag\"}')", ^tag, activity.data)
+      where: fragment("? && jsonb_array_elements_text((? #> '{\"object\",\"tag\"}'))", ^tag, activity.data)
     )
   end
 
