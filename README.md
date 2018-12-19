@@ -55,9 +55,9 @@ While we don't provide docker files, other people have written very good ones. T
 Pleroma comes with two frontends. The first one, Pleroma FE, can be reached by normally visiting the site. The other one, based on the Mastodon project, can be found by visiting the /web path of your site.
 
 ### As systemd service (with provided .service file)
-Example .service file can be found in `installation/pleroma.service` you can put it in `/etc/systemd/system/`.
-Running `service pleroma start`
-Logs can be watched by using `journalctl -fu pleroma.service`
+Example .service file can be found in `installation/pleroma.service`. Copy this to `/etc/systemd/system/`.
+Running `systemctl enable --now pleroma.service` will run Pleroma and enable startup on boot.
+Logs can be watched by using `journalctl -fu pleroma.service`.
 
 ### As OpenRC service (with provided RC file)
 Copy ``installation/init.d/pleroma`` to ``/etc/init.d/pleroma``.
@@ -65,7 +65,7 @@ You can add it to the services ran by default with:
 ``rc-update add pleroma``
 
 ### Standalone/run by other means
-Run `mix phx.server` in repository's root, it will output log into stdout/stderr
+Run `mix phx.server` in repository's root, it will output log into stdout/stderr.
 
 ### Using an upstream proxy for federation
 
