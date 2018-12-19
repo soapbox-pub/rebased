@@ -38,6 +38,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.SessionAuthenticationPlug)
     plug(Pleroma.Plugs.LegacyAuthenticationPlug)
     plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.AdminSecretAuthenticationPlug)
     plug(Pleroma.Plugs.UserEnabledPlug)
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
