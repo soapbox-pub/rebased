@@ -37,6 +37,8 @@ defmodule Pleroma.User.Info do
     # subject _> Where is this used?
   end
 
+  def superuser?(info), do: info.is_admin || info.is_moderator
+
   def set_activation_status(info, deactivated) do
     params = %{deactivated: deactivated}
 

@@ -38,7 +38,9 @@ defmodule Pleroma.User do
     timestamps()
   end
 
-  def auth_active?(user), do: user.info && !user.info.confirmation_pending
+  def auth_active?(%User{} = user), do: user.info && !user.info.confirmation_pending
+
+  def superuser?(%User{} = user), do: user.info && User.Info.superuser?(user.info)
 
   def avatar_url(user) do
     case user.avatar do

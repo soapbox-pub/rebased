@@ -97,10 +97,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def show_user(conn, params) do
-    with {:ok, shown} <- TwitterAPI.get_user(params) do
+    for_user = conn.assigns.user
+
+    with {:ok, shown} <- TwitterAPI.get_user(params),
+         true <- User.auth_active?(shown) || for_user && (for_user.id == shown.id || User.superuser?(for_user)) do
       params =
-        if user = conn.assigns.user do
-          %{user: shown, for: user}
+        if for_user do
+          %{user: shown, for: for_user}
         else
           %{user: shown}
         end
@@ -111,6 +114,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     else
       {:error, msg} ->
         bad_request_reply(conn, msg)
+
+      false ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Unconfirmed user"})
     end
   end
 
