@@ -116,7 +116,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   test "rejects token exchange for valid credentials belonging to unconfirmed user" do
     password = "testpassword"
     user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
-    info_change = Pleroma.User.Info.confirmation_change(user.info, :unconfirmed)
+    info_change = Pleroma.User.Info.confirmation_changeset(user.info, :unconfirmed)
 
     {:ok, user} =
       user

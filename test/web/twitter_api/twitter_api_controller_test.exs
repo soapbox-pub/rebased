@@ -876,7 +876,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "GET /api/account/confirm_email/:token" do
     setup do
       user = insert(:user)
-      info_change = User.Info.confirmation_change(user.info, :unconfirmed)
+      info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
 
       {:ok, user} =
         user
@@ -908,7 +908,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "POST /api/account/resend_confirmation_email" do
     setup do
       user = insert(:user)
-      info_change = User.Info.confirmation_change(user.info, :unconfirmed)
+      info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
 
       {:ok, user} =
         user

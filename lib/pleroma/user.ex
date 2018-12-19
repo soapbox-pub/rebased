@@ -191,7 +191,7 @@ defmodule Pleroma.User do
       |> validate_format(:email, @email_regex)
       |> validate_length(:bio, max: 1000)
       |> validate_length(:name, min: 1, max: 100)
-      |> put_change(:info, User.Info.confirmation_change(%User.Info{}, confirmation_status))
+      |> put_change(:info, User.Info.confirmation_changeset(%User.Info{}, confirmation_status))
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
