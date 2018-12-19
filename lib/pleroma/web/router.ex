@@ -485,7 +485,7 @@ defmodule Fallback.RedirectController do
   end
 
   def index_file_path do
-    Pleroma.Plugs.InstanceStatic.file_path("index.html"))
+    Pleroma.Plugs.InstanceStatic.file_path("index.html")
   end
 
   def registration_page(conn, params) do
