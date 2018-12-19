@@ -376,7 +376,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def confirm_email(conn, %{"token" => token}) do
     with %User{} = user <- User.get_by_confirmation_token(token),
          true <- user.local,
-         info_change <- User.Info.confirmation_update(user.info, :confirmed),
+         info_change <- User.Info.confirmation_change(user.info, :confirmed),
          changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
          {:ok, _} <- User.update_and_set_cache(changeset) do
       conn
