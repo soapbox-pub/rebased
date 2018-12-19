@@ -175,3 +175,16 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 `https://captcha.kotobank.ch` is hosted by the developer.
 
 * `endpoint`: the kocaptcha endpoint to use
+
+## :admin_token
+
+Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
+
+```
+config :pleroma, :admin_token, "somerandomtoken"
+```
+
+You can then do
+```
+curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
+```
