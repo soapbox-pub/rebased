@@ -136,22 +136,28 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       password: params["password"],
       password_confirmation: params["confirm"],
       captcha_solution: params["captcha_solution"],
-      captcha_token: params["captcha_token"]
+      captcha_token: params["captcha_token"],
+      captcha_answer_data: params["captcha_answer_data"]
     }
 
     captcha_enabled = Pleroma.Config.get([Pleroma.Captcha, :enabled])
     # true if captcha is disabled or enabled and valid, false otherwise
     captcha_ok =
       if !captcha_enabled do
-        true
+        :ok
       else
-        Pleroma.Captcha.validate(params[:captcha_token], params[:captcha_solution])
+        Pleroma.Captcha.validate(
+          params[:captcha_token],
+          params[:captcha_solution],
+          params[:captcha_answer_data]
+        )
       end
 
     # Captcha invalid
-    if not captcha_ok do
+    if captcha_ok != :ok do
+      {:error, error} = captcha_ok
       # I have no idea how this error handling works
-      {:error, %{error: Jason.encode!(%{captcha: ["Invalid CAPTCHA"]})}}
+      {:error, %{error: Jason.encode!(%{captcha: [error]})}}
     else
       registrations_open = Pleroma.Config.get([:instance, :registrations_open])
 

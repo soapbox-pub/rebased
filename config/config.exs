@@ -12,7 +12,7 @@ config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Captcha,
   enabled: false,
-  seconds_retained: 180,
+  seconds_valid: 20,
   method: Pleroma.Captcha.Kocaptcha
 
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"

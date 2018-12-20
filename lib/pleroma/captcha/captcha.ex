@@ -1,8 +1,6 @@
 defmodule Pleroma.Captcha do
   use GenServer
 
-  @ets_options [:ordered_set, :private, :named_table, {:read_concurrency, true}]
-
   @doc false
   def start_link() do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -10,14 +8,6 @@ defmodule Pleroma.Captcha do
 
   @doc false
   def init(_) do
-    # Create a ETS table to store captchas
-    ets_name = Module.concat(method(), Ets)
-    ^ets_name = :ets.new(Module.concat(method(), Ets), @ets_options)
-
-    # Clean up old captchas every few minutes
-    seconds_retained = Pleroma.Config.get!([__MODULE__, :seconds_retained])
-    Process.send_after(self(), :cleanup, 1000 * seconds_retained)
-
     {:ok, nil}
   end
 
@@ -31,8 +21,8 @@ defmodule Pleroma.Captcha do
   @doc """
   Ask the configured captcha service to validate the captcha
   """
-  def validate(token, captcha) do
-    GenServer.call(__MODULE__, {:validate, token, captcha})
+  def validate(token, captcha, answer_data) do
+    GenServer.call(__MODULE__, {:validate, token, captcha, answer_data})
   end
 
   @doc false
@@ -47,19 +37,8 @@ defmodule Pleroma.Captcha do
   end
 
   @doc false
-  def handle_call({:validate, token, captcha}, _from, state) do
-    {:reply, method().validate(token, captcha), state}
-  end
-
-  @doc false
-  def handle_info(:cleanup, state) do
-    :ok = method().cleanup()
-
-    seconds_retained = Pleroma.Config.get!([__MODULE__, :seconds_retained])
-    # Schedule the next clenup
-    Process.send_after(self(), :cleanup, 1000 * seconds_retained)
-
-    {:noreply, state}
+  def handle_call({:validate, token, captcha, answer_data}, _from, state) do
+    {:reply, method().validate(token, captcha, answer_data), state}
   end
 
   defp method, do: Pleroma.Config.get!([__MODULE__, :method])
