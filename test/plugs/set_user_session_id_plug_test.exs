@@ -1,8 +1,6 @@
 defmodule Pleroma.Plugs.SetUserSessionIdPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
-  Code.ensure_compiled(Pleroma.User)
-
   alias Pleroma.Plugs.SetUserSessionIdPlug
   alias Pleroma.User
 
@@ -30,6 +28,8 @@ defmodule Pleroma.Plugs.SetUserSessionIdPlugTest do
   end
 
   test "sets the user_id in the session to the user id of the user assign", %{conn: conn} do
+    Code.ensure_compiled(Pleroma.User)
+
     conn =
       conn
       |> assign(:user, %User{id: 1})
