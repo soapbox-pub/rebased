@@ -39,7 +39,7 @@ While we don't provide docker files, other people have written very good ones. T
 
   * Run `mix pleroma.instance gen`. This will ask you questions about your instance and generate a configuration file in `config/generated_config.exs`. Check that and copy it to either `config/dev.secret.exs` or `config/prod.secret.exs`. It will also create a `config/setup_db.psql`, which you should run as the PostgreSQL superuser (i.e., `sudo -u postgres psql -f config/setup_db.psql`). It will create the database, user, and password you gave `mix pleroma.gen.instance` earlier, as well as set up the necessary extensions in the database. PostgreSQL superuser privileges are only needed for this step.
 
-  * For these next steps, the default will be to run pleroma using the dev configuration file, `config/dev.secret.exs`. To run them using the prod config file, prefix each command at the shell with `MIX_ENV=prod`. For example: `MIX_ENV=prod mix phx.server`. Documentation for the config can be found at [``config/config.md``](docs/config.md)
+  * For these next steps, the default will be to run pleroma using the dev configuration file, `config/dev.secret.exs`. To run them using the prod config file, prefix each command at the shell with `MIX_ENV=prod`. For example: `MIX_ENV=prod mix phx.server`. Documentation for the config can be found at [``docs/config.md``](docs/config.md)
 
   * Run `mix ecto.migrate` to run the database migrations. You will have to do this again after certain updates.
 
