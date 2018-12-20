@@ -38,7 +38,10 @@ defmodule Pleroma.User do
     timestamps()
   end
 
-  def auth_active?(%User{} = user), do: user.info && !user.info.confirmation_pending
+  def auth_active?(%User{} = user) do
+    (user.info && !user.info.confirmation_pending) ||
+      !Pleroma.Config.get([:instance, :account_activation_required])
+  end
 
   def superuser?(%User{} = user), do: user.info && User.Info.superuser?(user.info)
 
@@ -220,7 +223,8 @@ defmodule Pleroma.User do
   end
 
   def try_send_confirmation_email(%User{} = user) do
-    if user.info.confirmation_pending do
+    if user.info.confirmation_pending &&
+         Pleroma.Config.get([:instance, :account_activation_required]) do
       user
       |> Pleroma.UserEmail.account_confirmation_email()
       |> Pleroma.Mailer.deliver()

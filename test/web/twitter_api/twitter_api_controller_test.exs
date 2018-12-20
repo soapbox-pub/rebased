@@ -919,6 +919,13 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "POST /api/account/resend_confirmation_email" do
     setup do
+      setting = Pleroma.Config.get([:instance, :account_activation_required])
+
+      unless setting do
+        Pleroma.Config.put([:instance, :account_activation_required], true)
+        on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
+      end
+
       user = insert(:user)
       info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
 
