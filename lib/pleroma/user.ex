@@ -38,6 +38,13 @@ defmodule Pleroma.User do
     timestamps()
   end
 
+  def auth_active?(%User{} = user) do
+    (user.info && !user.info.confirmation_pending) ||
+      !Pleroma.Config.get([:instance, :account_activation_required])
+  end
+
+  def superuser?(%User{} = user), do: user.info && User.Info.superuser?(user.info)
+
   def avatar_url(user) do
     case user.avatar do
       %{"url" => [%{"href" => href} | _]} -> href
@@ -78,6 +85,7 @@ defmodule Pleroma.User do
       note_count: user.info.note_count,
       follower_count: user.info.follower_count,
       locked: user.info.locked,
+      confirmation_pending: user.info.confirmation_pending,
       default_scope: user.info.default_scope
     }
   end
@@ -168,7 +176,16 @@ defmodule Pleroma.User do
     update_and_set_cache(password_update_changeset(user, data))
   end
 
-  def register_changeset(struct, params \\ %{}) do
+  def register_changeset(struct, params \\ %{}, opts \\ []) do
+    confirmation_status =
+      if opts[:confirmed] || !Pleroma.Config.get([:instance, :account_activation_required]) do
+        :confirmed
+      else
+        :unconfirmed
+      end
+
+    info_change = User.Info.confirmation_changeset(%User.Info{}, confirmation_status)
+
     changeset =
       struct
       |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
@@ -180,7 +197,7 @@ defmodule Pleroma.User do
       |> validate_format(:email, @email_regex)
       |> validate_length(:bio, max: 1000)
       |> validate_length(:name, min: 1, max: 100)
-      |> put_change(:info, %Pleroma.User.Info{})
+      |> put_change(:info, info_change)
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
@@ -194,6 +211,25 @@ defmodule Pleroma.User do
       |> put_change(:follower_address, followers)
     else
       changeset
+    end
+  end
+
+  @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
+  def register(%Ecto.Changeset{} = changeset) do
+    with {:ok, user} <- Repo.insert(changeset),
+         {:ok, _} = try_send_confirmation_email(user) do
+      {:ok, user}
+    end
+  end
+
+  def try_send_confirmation_email(%User{} = user) do
+    if user.info.confirmation_pending &&
+         Pleroma.Config.get([:instance, :account_activation_required]) do
+      user
+      |> Pleroma.UserEmail.account_confirmation_email()
+      |> Pleroma.Mailer.deliver()
+    else
+      {:ok, :noop}
     end
   end
 

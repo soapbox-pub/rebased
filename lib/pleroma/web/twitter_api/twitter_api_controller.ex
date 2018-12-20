@@ -96,10 +96,15 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def show_user(conn, params) do
-    with {:ok, shown} <- TwitterAPI.get_user(params) do
+    for_user = conn.assigns.user
+
+    with {:ok, shown} <- TwitterAPI.get_user(params),
+         true <-
+           User.auth_active?(shown) ||
+             (for_user && (for_user.id == shown.id || User.superuser?(for_user))) do
       params =
-        if user = conn.assigns.user do
-          %{user: shown, for: user}
+        if for_user do
+          %{user: shown, for: for_user}
         else
           %{user: shown}
         end
@@ -110,6 +115,11 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     else
       {:error, msg} ->
         bad_request_reply(conn, msg)
+
+      false ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Unconfirmed user"})
     end
   end
 
@@ -369,6 +379,29 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
       json_response(conn, :no_content, "")
+    end
+  end
+
+  def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
+    with %User{} = user <- Repo.get(User, uid),
+         true <- user.local,
+         true <- user.info.confirmation_pending,
+         true <- user.info.confirmation_token == token,
+         info_change <- User.Info.confirmation_changeset(user.info, :confirmed),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
+         {:ok, _} <- User.update_and_set_cache(changeset) do
+      conn
+      |> redirect(to: "/")
+    end
+  end
+
+  def resend_confirmation_email(conn, params) do
+    nickname_or_email = params["email"] || params["nickname"]
+
+    with %User{} = user <- User.get_by_nickname_or_email(nickname_or_email),
+         {:ok, _} <- User.try_send_confirmation_email(user) do
+      conn
+      |> json_response(:no_content, "")
     end
   end
 

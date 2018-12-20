@@ -177,6 +177,48 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "user registration, with :account_activation_required" do
+    @full_user_data %{
+      bio: "A guy",
+      name: "my name",
+      nickname: "nick",
+      password: "test",
+      password_confirmation: "test",
+      email: "email@example.com"
+    }
+
+    setup do
+      setting = Pleroma.Config.get([:instance, :account_activation_required])
+
+      unless setting do
+        Pleroma.Config.put([:instance, :account_activation_required], true)
+        on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
+      end
+
+      :ok
+    end
+
+    test "it creates unconfirmed user" do
+      changeset = User.register_changeset(%User{}, @full_user_data)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      assert user.info.confirmation_pending
+      assert user.info.confirmation_token
+    end
+
+    test "it creates confirmed user if :confirmed option is given" do
+      changeset = User.register_changeset(%User{}, @full_user_data, confirmed: true)
+      assert changeset.valid?
+
+      {:ok, user} = Repo.insert(changeset)
+
+      refute user.info.confirmation_pending
+      refute user.info.confirmation_token
+    end
+  end
+
   describe "get_or_fetch/1" do
     test "gets an existing user by nickname" do
       user = insert(:user)

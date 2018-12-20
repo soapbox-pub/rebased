@@ -9,6 +9,8 @@ defmodule Pleroma.User.Info do
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:locked, :boolean, default: false)
+    field(:confirmation_pending, :boolean, default: false)
+    field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
@@ -34,6 +36,8 @@ defmodule Pleroma.User.Info do
     # host -> Where is this used?
     # subject _> Where is this used?
   end
+
+  def superuser?(info), do: info.is_admin || info.is_moderator
 
   def set_activation_status(info, deactivated) do
     params = %{deactivated: deactivated}
@@ -139,6 +143,24 @@ defmodule Pleroma.User.Info do
       :hide_network,
       :background
     ])
+  end
+
+  def confirmation_changeset(info, :confirmed) do
+    confirmation_changeset(info, %{
+      confirmation_pending: false,
+      confirmation_token: nil
+    })
+  end
+
+  def confirmation_changeset(info, :unconfirmed) do
+    confirmation_changeset(info, %{
+      confirmation_pending: true,
+      confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+    })
+  end
+
+  def confirmation_changeset(info, params) do
+    cast(info, params, [:confirmation_pending, :confirmation_token])
   end
 
   def mastodon_profile_update(info, params) do

@@ -873,6 +873,89 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /api/account/confirm_email/:id/:token" do
+    setup do
+      user = insert(:user)
+      info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
+
+      {:ok, user} =
+        user
+        |> Changeset.change()
+        |> Changeset.put_embed(:info, info_change)
+        |> Repo.update()
+
+      assert user.info.confirmation_pending
+
+      [user: user]
+    end
+
+    test "it redirects to root url", %{conn: conn, user: user} do
+      conn = get(conn, "/api/account/confirm_email/#{user.id}/#{user.info.confirmation_token}")
+
+      assert 302 == conn.status
+    end
+
+    test "it confirms the user account", %{conn: conn, user: user} do
+      get(conn, "/api/account/confirm_email/#{user.id}/#{user.info.confirmation_token}")
+
+      user = Repo.get(User, user.id)
+
+      refute user.info.confirmation_pending
+      refute user.info.confirmation_token
+    end
+
+    test "it returns 500 if user cannot be found by id", %{conn: conn, user: user} do
+      conn = get(conn, "/api/account/confirm_email/0/#{user.info.confirmation_token}")
+
+      assert 500 == conn.status
+    end
+
+    test "it returns 500 if token is invalid", %{conn: conn, user: user} do
+      conn = get(conn, "/api/account/confirm_email/#{user.id}/wrong_token")
+
+      assert 500 == conn.status
+    end
+  end
+
+  describe "POST /api/account/resend_confirmation_email" do
+    setup do
+      setting = Pleroma.Config.get([:instance, :account_activation_required])
+
+      unless setting do
+        Pleroma.Config.put([:instance, :account_activation_required], true)
+        on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
+      end
+
+      user = insert(:user)
+      info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
+
+      {:ok, user} =
+        user
+        |> Changeset.change()
+        |> Changeset.put_embed(:info, info_change)
+        |> Repo.update()
+
+      assert user.info.confirmation_pending
+
+      [user: user]
+    end
+
+    test "it returns 204 No Content", %{conn: conn, user: user} do
+      conn
+      |> assign(:user, user)
+      |> post("/api/account/resend_confirmation_email?email=#{user.email}")
+      |> json_response(:no_content)
+    end
+
+    test "it sends confirmation email", %{conn: conn, user: user} do
+      conn
+      |> assign(:user, user)
+      |> post("/api/account/resend_confirmation_email?email=#{user.email}")
+
+      Swoosh.TestAssertions.assert_email_sent(Pleroma.UserEmail.account_confirmation_email(user))
+    end
+  end
+
   describe "GET /api/externalprofile/show" do
     test "it returns the user", %{conn: conn} do
       user = insert(:user)

@@ -1,6 +1,6 @@
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
-  alias Pleroma.{User, Repo}
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
@@ -26,7 +26,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         conn,
         %{"nickname" => nickname, "email" => email, "password" => password}
       ) do
-    new_user = %{
+    user_data = %{
       nickname: nickname,
       name: nickname,
       email: email,
@@ -35,11 +35,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       bio: "."
     }
 
-    User.register_changeset(%User{}, new_user)
-    |> Repo.insert!()
+    changeset = User.register_changeset(%User{}, user_data, confirmed: true)
+    {:ok, user} = User.register(changeset)
 
     conn
-    |> json(new_user.nickname)
+    |> json(user.nickname)
   end
 
   def tag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do

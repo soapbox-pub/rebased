@@ -1,8 +1,10 @@
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.{UserInviteToken, User, Activity, Repo, Object}
+  alias Pleroma.{UserEmail, Mailer}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI
+
   import Ecto.Query
 
   def create_status(%User{} = user, %{"status" => _} = data) do
@@ -161,10 +163,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
       cond do
         registrations_open || (!is_nil(token) && !token.used) ->
-          changeset = User.register_changeset(%User{info: %{}}, params)
+          changeset = User.register_changeset(%User{}, params)
 
-          with {:ok, user} <- Repo.insert(changeset) do
+          with {:ok, user} <- User.register(changeset) do
             !registrations_open && UserInviteToken.mark_as_used(token.token)
+
             {:ok, user}
           else
             {:error, changeset} ->
@@ -189,8 +192,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
          %User{local: true} = user <- User.get_by_nickname_or_email(nickname_or_email),
          {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
       user
-      |> Pleroma.UserEmail.password_reset_email(token_record.token)
-      |> Pleroma.Mailer.deliver()
+      |> UserEmail.password_reset_email(token_record.token)
+      |> Mailer.deliver()
     else
       false ->
         {:error, "bad user identifier"}

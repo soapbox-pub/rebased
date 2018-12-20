@@ -103,8 +103,8 @@ defmodule Mix.Tasks.Pleroma.User do
         bio: bio
       }
 
-      user = User.register_changeset(%User{}, params)
-      Repo.insert!(user)
+      changeset = User.register_changeset(%User{}, params, confirmed: true)
+      {:ok, _user} = User.register(changeset)
 
       Mix.shell().info("User #{nickname} created")
 

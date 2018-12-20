@@ -62,6 +62,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
       # Pleroma extension
       pleroma: %{
+        confirmation_pending: user_info.confirmation_pending,
         tags: user.tags
       }
     }

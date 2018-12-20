@@ -81,6 +81,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
 
       # Pleroma extension
       "pleroma" => %{
+        "confirmation_pending" => user_info.confirmation_pending,
         "tags" => user.tags
       }
     }
