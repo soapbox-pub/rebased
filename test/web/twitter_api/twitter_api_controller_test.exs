@@ -873,7 +873,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
-  describe "GET /api/account/confirm_email/:token" do
+  describe "GET /api/account/confirm_email/:id/:token" do
     setup do
       user = insert(:user)
       info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
@@ -890,18 +890,30 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "it redirects to root url", %{conn: conn, user: user} do
-      conn = get(conn, "/api/account/confirm_email/#{user.info.confirmation_token}")
+      conn = get(conn, "/api/account/confirm_email/#{user.id}/#{user.info.confirmation_token}")
 
       assert 302 == conn.status
     end
 
     test "it confirms the user account", %{conn: conn, user: user} do
-      get(conn, "/api/account/confirm_email/#{user.info.confirmation_token}")
+      get(conn, "/api/account/confirm_email/#{user.id}/#{user.info.confirmation_token}")
 
       user = Repo.get(User, user.id)
 
       refute user.info.confirmation_pending
       refute user.info.confirmation_token
+    end
+
+    test "it returns 500 if user cannot be found by id", %{conn: conn, user: user} do
+      conn = get(conn, "/api/account/confirm_email/0/#{user.info.confirmation_token}")
+
+      assert 500 == conn.status
+    end
+
+    test "it returns 500 if token is invalid", %{conn: conn, user: user} do
+      conn = get(conn, "/api/account/confirm_email/#{user.id}/wrong_token")
+
+      assert 500 == conn.status
     end
   end
 

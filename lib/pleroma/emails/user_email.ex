@@ -70,6 +70,7 @@ defmodule Pleroma.UserEmail do
       Router.Helpers.confirm_email_url(
         Endpoint,
         :confirm_email,
+        user.id,
         to_string(user.info.confirmation_token)
       )
 

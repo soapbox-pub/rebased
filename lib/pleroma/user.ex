@@ -396,10 +396,6 @@ defmodule Pleroma.User do
     end
   end
 
-  def get_by_confirmation_token(token) do
-    Repo.one(from(u in User, where: fragment("? ->> 'confirmation_token' = ?", u.info, ^token)))
-  end
-
   def get_followers_query(%User{id: id, follower_address: follower_address}) do
     from(
       u in User,
