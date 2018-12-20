@@ -76,15 +76,14 @@ defmodule Pleroma.User do
 
   def user_info(%User{} = user) do
     oneself = if user.local, do: 1, else: 0
-    user_info = user.info
 
     %{
       following_count: length(user.following) - oneself,
-      note_count: user_info.note_count,
-      follower_count: user_info.follower_count,
-      locked: user_info.locked,
-      confirmation_pending: user_info.confirmation_pending,
-      default_scope: user_info.default_scope
+      note_count: user.info.note_count,
+      follower_count: user.info.follower_count,
+      locked: user.info.locked,
+      confirmation_pending: user.info.confirmation_pending,
+      default_scope: user.info.default_scope
     }
   end
 
@@ -182,6 +181,8 @@ defmodule Pleroma.User do
         :unconfirmed
       end
 
+    info_change = User.Info.confirmation_changeset(%User.Info{}, confirmation_status)
+
     changeset =
       struct
       |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
@@ -193,7 +194,7 @@ defmodule Pleroma.User do
       |> validate_format(:email, @email_regex)
       |> validate_length(:bio, max: 1000)
       |> validate_length(:name, min: 1, max: 100)
-      |> put_change(:info, User.Info.confirmation_changeset(%User.Info{}, confirmation_status))
+      |> put_change(:info, info_change)
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
