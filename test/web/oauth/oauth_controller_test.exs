@@ -113,7 +113,14 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     refute Map.has_key?(resp, "access_token")
   end
 
-  test "rejects token exchange for valid credentials belonging to unconfirmed user" do
+  test "rejects token exchange for valid credentials belonging to unconfirmed user and confirmation is required" do
+    setting = Pleroma.Config.get([:instance, :account_activation_required])
+
+    unless setting do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
+    end
+
     password = "testpassword"
     user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
     info_change = Pleroma.User.Info.confirmation_changeset(user.info, :unconfirmed)
