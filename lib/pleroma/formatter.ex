@@ -7,6 +7,9 @@ defmodule Pleroma.Formatter do
   @tag_regex ~r/((?<=[^&])|\A)(\#)(\w+)/u
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
 
+  # Modified from https://www.w3.org/TR/html5/forms.html#valid-e-mail-address
+  @mentions_regex ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]*@?[a-zA-Z0-9_-](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/u
+
   def parse_tags(text, data \\ %{}) do
     Regex.scan(@tag_regex, text)
     |> Enum.map(fn ["#" <> tag = full_tag | _] -> {full_tag, String.downcase(tag)} end)
@@ -17,16 +20,15 @@ defmodule Pleroma.Formatter do
         end).()
   end
 
+  @doc "Parses mentions text and returns list {nickname, user}."
+  @spec parse_mentions(binary()) :: list({binary(), User.t()})
   def parse_mentions(text) do
-    # Modified from https://www.w3.org/TR/html5/forms.html#valid-e-mail-address
-    regex =
-      ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]*@?[a-zA-Z0-9_-](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/u
-
-    Regex.scan(regex, text)
+    Regex.scan(@mentions_regex, text)
     |> List.flatten()
     |> Enum.uniq()
-    |> Enum.map(fn "@" <> match = full_match ->
-      {full_match, User.get_cached_by_nickname(match)}
+    |> Enum.map(fn nickname ->
+      with nickname <- String.trim_leading(nickname, "@"),
+           do: {"@" <> nickname, User.get_cached_by_nickname(nickname)}
     end)
     |> Enum.filter(fn {_match, user} -> user end)
   end
