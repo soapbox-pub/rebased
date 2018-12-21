@@ -1044,6 +1044,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end)
   end
 
+  test "multi-hashtag timeline", %{conn: conn} do
+    user = insert(:user)
+
+    {:ok, activity_test} = CommonAPI.post(user, %{"status" => "#test"})
+    {:ok, activity_test1} = CommonAPI.post(user, %{"status" => "#test1"})
+    {:ok, activity_none} = CommonAPI.post(user, %{"status" => "#test #none"})
+
+    all_test =
+      conn
+      |> get("/api/v1/timelines/tag/test", %{"all" => ["test1"]})
+
+    assert [status_none, status_test1, status_test] = json_response(all_test, 200)
+
+    assert to_string(activity_test.id) == status_test["id"]
+    assert to_string(activity_test1.id) == status_test1["id"]
+    assert to_string(activity_none.id) == status_none["id"]
+
+    restricted_test =
+      conn
+      |> get("/api/v1/timelines/tag/test", %{"all" => ["test1"], "none" => ["none"]})
+
+    assert [status_test1, status_test] == json_response(restricted_test, 200)
+  end
+
   test "getting followers", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
