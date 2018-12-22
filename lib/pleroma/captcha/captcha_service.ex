@@ -4,9 +4,14 @@ defmodule Pleroma.Captcha.Service do
 
   Returns:
 
-  Service-specific data for using the newly created captcha
+  Type/Name of the service, the token to identify the captcha,
+  the data of the answer and service-specific data to use the newly created captcha
   """
-  @callback new() :: map
+  @callback new() :: %{
+              type: atom(),
+              token: String.t(),
+              answer_data: any()
+            }
 
   @doc """
   Validated the provided captcha solution.
@@ -23,6 +28,6 @@ defmodule Pleroma.Captcha.Service do
   @callback validate(
               token :: String.t(),
               captcha :: String.t(),
-              answer_data :: String.t()
+              answer_data :: any()
             ) :: :ok | {:error, String.t()}
 end

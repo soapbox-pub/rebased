@@ -1,4 +1,8 @@
 defmodule Pleroma.Captcha do
+  alias Plug.Crypto.KeyGenerator
+  alias Plug.Crypto.MessageEncryptor
+  alias Calendar.DateTime
+
   use GenServer
 
   @doc false
@@ -32,13 +36,58 @@ defmodule Pleroma.Captcha do
     if !enabled do
       {:reply, %{type: :none}, state}
     else
-      {:reply, method().new(), state}
+      new_captcha = method().new()
+
+      secret_key_base = Pleroma.Config.get!([Pleroma.Web.Endpoint, :secret_key_base])
+
+      # This make salt a little different for two keys
+      token = new_captcha[:token]
+      secret = KeyGenerator.generate(secret_key_base, token <> "_encrypt")
+      sign_secret = KeyGenerator.generate(secret_key_base, token <> "_sign")
+      # Basicallty copy what Phoenix.Token does here, add the time to
+      # the actual data and make it a binary to then encrypt it
+      encrypted_captcha_answer =
+        %{
+          at: DateTime.now_utc(),
+          answer_data: new_captcha[:answer_data]
+        }
+        |> :erlang.term_to_binary()
+        |> MessageEncryptor.encrypt(secret, sign_secret)
+
+      IO.inspect(%{new_captcha | answer_data: encrypted_captcha_answer})
+
+      {
+        :reply,
+        # Repalce the answer with the encrypted answer
+        %{new_captcha | answer_data: encrypted_captcha_answer},
+        state
+      }
     end
   end
 
   @doc false
   def handle_call({:validate, token, captcha, answer_data}, _from, state) do
-    {:reply, method().validate(token, captcha, answer_data), state}
+    secret_key_base = Pleroma.Config.get!([Pleroma.Web.Endpoint, :secret_key_base])
+    secret = KeyGenerator.generate(secret_key_base, token <> "_encrypt")
+    sign_secret = KeyGenerator.generate(secret_key_base, token <> "_sign")
+
+    # If the time found is less than (current_time - seconds_valid), then the time has already passed.
+    # Later we check that the time found is more than the presumed invalidatation time, that means
+    # that the data is still valid and the captcha can be checked
+    seconds_valid = Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid])
+    valid_if_after = DateTime.subtract!(DateTime.now_utc(), seconds_valid)
+
+    result =
+      with {:ok, data} <- MessageEncryptor.decrypt(answer_data, secret, sign_secret),
+           %{at: at, answer_data: answer_md5} <- :erlang.binary_to_term(data) do
+        if DateTime.after?(at, valid_if_after),
+          do: method().validate(token, captcha, answer_md5),
+          else: {:error, "CAPTCHA expired"}
+      else
+        _ -> {:error, "Invalid answer data"}
+      end
+
+    {:reply, result, state}
   end
 
   defp method, do: Pleroma.Config.get!([__MODULE__, :method])
