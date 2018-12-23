@@ -478,7 +478,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert Repo.get(Activity, delete.id) != nil
 
-      assert Repo.get(Object, object.id) == nil
+      assert Repo.get(Object, object.id).data["type"] == "tombstone"
     end
   end
 

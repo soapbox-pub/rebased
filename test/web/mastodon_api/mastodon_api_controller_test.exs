@@ -292,7 +292,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(conn, 200)
 
-      assert Repo.get(Activity, activity.id) == nil
+      assert Repo.get(Activity, activity.id).data["type"] == "tombstone"
     end
 
     test "when you didn't create it", %{conn: conn} do

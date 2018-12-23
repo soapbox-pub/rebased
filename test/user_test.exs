@@ -625,7 +625,7 @@ defmodule Pleroma.UserTest do
 
     # TODO: Remove favorites, repeats, delete activities.
 
-    refute Repo.get(Activity, activity.id)
+    assert Repo.get(Activity, activity.id).data["type"] == "tombstone"
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do

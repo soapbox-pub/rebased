@@ -1,7 +1,7 @@
 defmodule Pleroma.Activity do
   use Ecto.Schema
   alias Pleroma.{Repo, Activity, Notification}
-  import Ecto.Query
+  import Ecto.{Query, Changeset}
 
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
   @mastodon_notification_types %{
@@ -103,4 +103,22 @@ defmodule Pleroma.Activity do
   end
 
   def mastodon_notification_type(%Activity{}), do: nil
+
+  def get_tombstone(%Activity{data: data}, deleted \\ DateTime.utc_now()) do
+    %{
+      id: data["id"],
+      context: data["context"],
+      type: "tombstone",
+      published: data["published"],
+      deleted: deleted
+    }
+  end
+
+  def swap_data_with_tombstone(activity) do
+    tombstone = get_tombstone(activity)
+
+    activity
+    |> change(%{data: tombstone})
+    |> Repo.update()
+  end
 end

@@ -69,7 +69,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
 
     if inReplyTo do
-      {Enum.uniq([inReplyTo.data["actor"] | mentioned_users]), []}
+      to =
+        [inReplyTo.data["actor"] | mentioned_users]
+        |> Enum.uniq()
+        |> Enum.reject(&is_nil/1)
+
+      {to, []}
     else
       {mentioned_users, []}
     end

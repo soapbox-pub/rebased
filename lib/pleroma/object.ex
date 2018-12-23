@@ -62,9 +62,27 @@ defmodule Pleroma.Object do
     Object.change(%Object{}, %{data: %{"id" => context}})
   end
 
+  def get_tombstone(%Object{data: data}, deleted \\ DateTime.utc_now()) do
+    %{
+      id: data["id"],
+      type: "tombstone",
+      deleted: deleted
+    }
+  end
+
+  def swap_data_with_tombstone(object) do
+    tombstone = get_tombstone(object)
+
+    object
+    |> Object.change(%{data: tombstone})
+    |> Repo.update()
+  end
+
   def delete(%Object{data: %{"id" => id}} = object) do
-    with Repo.delete(object),
-         Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
+    with swap_data_with_tombstone(object),
+         Activity.all_non_create_by_object_ap_id_q(id)
+         |> Repo.all()
+         |> Enum.each(&Activity.swap_data_with_tombstone/1),
          {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
       {:ok, object}
     end
