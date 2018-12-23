@@ -163,7 +163,7 @@ config :pleroma, :mrf_rejectnonpublic,
   allow_followersonly: false,
   allow_direct: false
 
-config :pleroma, :mrf_hellthreadmitigation, threshold: 10
+config :pleroma, :mrf_hellthread, threshold: 10
 
 config :pleroma, :mrf_simple,
   media_removal: [],
