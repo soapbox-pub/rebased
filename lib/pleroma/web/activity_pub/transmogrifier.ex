@@ -133,6 +133,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
+    |> fix_explicit_addressing
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
@@ -367,7 +368,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       Map.put(data, "actor", actor)
       |> fix_addressing
-      |> fix_explicit_addressing
 
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
