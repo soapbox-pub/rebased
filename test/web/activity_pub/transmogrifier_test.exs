@@ -902,6 +902,34 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert modified["object"]["likes"]["type"] == "OrderedCollection"
       assert modified["object"]["likes"]["totalItems"] == 0
     end
+
+    test "the directMessage flag is present" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == false
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "@{other_user.nickname} :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == false
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "@{other_user.nickname} :moominmamma:",
+          "visibility" => "direct"
+        })
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == true
+    end
   end
 
   describe "user upgrade" do
