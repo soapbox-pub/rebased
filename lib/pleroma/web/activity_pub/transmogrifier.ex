@@ -113,14 +113,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_explicit_addressing(object, _explicit_mentions), do: object
 
-  def fix_addressing(object) do
-    object =
-      object
-      |> fix_addressing_list("to")
-      |> fix_addressing_list("cc")
-      |> fix_addressing_list("bto")
-      |> fix_addressing_list("bcc")
+  # if directMessage flag is set to true, leave the addressing alone
+  def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
 
+  def fix_explicit_addressing(object) do
     explicit_mentions =
       object
       |> Utils.determine_explicit_mentions()
@@ -129,6 +125,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> fix_explicit_addressing(explicit_mentions)
+  end
+
+  def fix_addressing(object) do
+    object
+    |> fix_addressing_list("to")
+    |> fix_addressing_list("cc")
+    |> fix_addressing_list("bto")
+    |> fix_addressing_list("bcc")
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
@@ -363,6 +367,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     data =
       Map.put(data, "actor", actor)
       |> fix_addressing
+      |> fix_explicit_addressing
 
     with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
@@ -378,6 +383,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         additional:
           Map.take(data, [
             "cc",
+            "directMessage",
             "id"
           ])
       }
