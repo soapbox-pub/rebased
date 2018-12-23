@@ -121,6 +121,9 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `allow_followersonly`: whether to allow followers-only posts
 * `allow_direct`: whether to allow direct messages
 
+## :mrf_hellthread
+* `threshold`: Number of mentioned users after which the message gets discarded as spam
+
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
