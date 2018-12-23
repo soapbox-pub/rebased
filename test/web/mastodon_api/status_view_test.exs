@@ -5,6 +5,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.User
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Activity
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -155,6 +157,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert represented[:id] == to_string(reblog.id)
     assert represented[:reblog][:id] == to_string(activity.id)
     assert represented[:emojis] == []
+  end
+
+  test "a peertube video" do
+    user = insert(:user)
+
+    {:ok, object} =
+      ActivityPub.fetch_object_from_id(
+        "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
+      )
+
+    %Activity{} = activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+
+    represented = StatusView.render("status.json", %{for: user, activity: activity})
+
+    assert represented[:id] == to_string(activity.id)
+    assert length(represented[:media_attachments]) == 1
   end
 
   describe "build_tags/1" do
