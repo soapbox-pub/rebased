@@ -265,4 +265,18 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
     assert result == expected
   end
+
+  test "a peertube video" do
+    {:ok, object} =
+      ActivityPub.fetch_object_from_id(
+        "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
+      )
+
+    %Activity{} = activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+
+    result = ActivityView.render("activity.json", activity: activity)
+
+    assert length(result["attachments"]) == 1
+    assert result["summary"] == "Friday Night"
+  end
 end
