@@ -170,8 +170,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     attachments =
       attachment
       |> Enum.map(fn data ->
-        url = [%{"type" => "Link", "mediaType" => data["mediaType"], "href" => data["url"]}]
-        Map.put(data, "url", url)
+        media_type = data["mediaType"] || data["mimeType"]
+        href = data["url"] || data["href"]
+
+        url = [%{"type" => "Link", "mediaType" => media_type, "href" => href}]
+
+        data
+        |> Map.put("mediaType", media_type)
+        |> Map.put("url", url)
       end)
 
     object
@@ -190,7 +196,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("url", url["href"])
   end
 
-  def fix_url(%{"url" => url} = object) when is_list(url) do
+  def fix_url(%{"type" => "Video", "url" => url} = object) when is_list(url) do
+    first_element = Enum.at(url, 0)
+
+    link_element =
+      url
+      |> Enum.filter(fn x -> is_map(x) end)
+      |> Enum.filter(fn x -> x["mimeType"] == "text/html" end)
+      |> Enum.at(0)
+
+    object
+    |> Map.put("attachment", [first_element])
+    |> Map.put("url", link_element["href"])
+  end
+
+  def fix_url(%{"type" => object_type, "url" => url} = object)
+      when object_type != "Video" and is_list(url) do
     first_element = Enum.at(url, 0)
 
     url_string =
@@ -200,14 +221,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         true -> ""
       end
 
-    if Map.get(object, "type") == "Video" do
-      object
-      |> Map.delete("url")
-      |> Map.put("attachment", url_string)
-    else
-      object
-      |> Map.put("url", url_string)
-    end
+    object
+    |> Map.put("url", url_string)
   end
 
   def fix_url(object), do: object
