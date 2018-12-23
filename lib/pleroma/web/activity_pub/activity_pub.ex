@@ -805,6 +805,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     "https://www.w3.org/ns/activitystreams#Public" in (data["to"] ++ (data["cc"] || []))
   end
 
+  def is_private?(activity) do
+    !is_public?(activity) && Enum.any?(activity.data["to"], &String.contains?(&1, "/followers"))
+  end
+
+  def is_direct?(activity) do
+    !is_public?(activity) && !is_private?(activity)
+  end
+
   def visible_for_user?(activity, nil) do
     is_public?(activity)
   end
