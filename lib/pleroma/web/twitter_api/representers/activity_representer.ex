@@ -171,14 +171,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       HTML.filter_tags(content, User.html_filter_policy(opts[:for]))
       |> Formatter.emojify(object["emoji"])
 
-    video =
-      if object["type"] == "Video" do
-        [object]
-      else
-        []
-      end
-
-    attachments = (object["attachment"] || []) ++ video
+    attachments = object["attachment"] || []
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
 
