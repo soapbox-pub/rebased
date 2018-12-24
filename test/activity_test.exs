@@ -31,7 +31,7 @@ defmodule Pleroma.ActivityTest do
     deleted = DateTime.utc_now()
 
     assert Pleroma.Activity.get_tombstone(activity, deleted) == %{
-             id: activity.data["object"]["id"],
+             id: activity.data["id"],
              context: activity.data["context"],
              type: "Tombstone",
              published: activity.data["published"],

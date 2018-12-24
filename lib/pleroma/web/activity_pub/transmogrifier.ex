@@ -586,7 +586,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) do
-    with false <- String.starts_with?(inReplyTo, "http"),
+    with false <- is_nil(inReplyTo),
+         false <- String.starts_with?(inReplyTo, "http"),
          {:ok, %{data: replied_to_object}} <- get_obj_helper(inReplyTo) do
       Map.put(object, "inReplyTo", replied_to_object["external_url"] || inReplyTo)
     else

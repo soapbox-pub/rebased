@@ -108,17 +108,20 @@ defmodule Pleroma.Activity do
     %{
       id: data["id"],
       context: data["context"],
-      type: "tombstone",
+      type: "Tombstone",
       published: data["published"],
       deleted: deleted
     }
   end
 
   def swap_data_with_tombstone(activity) do
-    tombstone = get_tombstone(activity)
-
-    activity
-    |> change(%{data: tombstone})
-    |> Repo.update()
+    with tombstone = get_tombstone(activity),
+         Notification.clear(activity),
+         {:ok, changed_activity} =
+           activity
+           |> change(%{data: tombstone})
+           |> Repo.update() do
+      {:ok, changed_activity}
+    end
   end
 end
