@@ -363,7 +363,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
 
-      assert Repo.get(Activity, activity.id).data["type"] == "tombstone"
+      assert Repo.get(Activity, activity.id).data["type"] == "Tombstone"
     end
 
     test "it fails for incoming deletes with spoofed origin" do

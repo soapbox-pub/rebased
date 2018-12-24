@@ -65,7 +65,7 @@ defmodule Pleroma.Object do
   def get_tombstone(%Object{data: data}, deleted \\ DateTime.utc_now()) do
     %{
       id: data["id"],
-      type: "tombstone",
+      type: "Tombstone",
       deleted: deleted
     }
   end
