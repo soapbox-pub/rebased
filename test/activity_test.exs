@@ -25,28 +25,4 @@ defmodule Pleroma.ActivityTest do
 
     assert activity == found_activity
   end
-
-  test "returns tombstone" do
-    activity = insert(:note_activity)
-    deleted = DateTime.utc_now()
-
-    assert Pleroma.Activity.get_tombstone(activity, deleted) == %{
-             id: activity.data["id"],
-             context: activity.data["context"],
-             type: "Tombstone",
-             published: activity.data["published"],
-             deleted: deleted
-           }
-  end
-
-  test "swaps data with tombstone" do
-    activity = insert(:note_activity)
-
-    {:ok, deleted} = Pleroma.Activity.swap_data_with_tombstone(activity)
-    assert deleted.data.type == "Tombstone"
-
-    found_activity = Repo.get(Activity, activity.id)
-
-    assert deleted.data.type == found_activity.data["type"]
-  end
 end

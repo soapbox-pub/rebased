@@ -23,8 +23,8 @@ defmodule Pleroma.Web.OStatus.DeleteHandlingTest do
 
       {:ok, [delete]} = OStatus.handle_incoming(incoming)
 
-      assert Repo.get(Activity, note.id).data["type"] == "Tombstone"
-      assert Repo.get(Activity, like.id).data["type"] == "Tombstone"
+      refute Repo.get(Activity, note.id)
+      refute Repo.get(Activity, like.id)
       assert Object.get_by_ap_id(note.data["object"]["id"]).data["type"] == "Tombstone"
       assert Repo.get(Activity, second_note.id)
       assert Object.get_by_ap_id(second_note.data["object"]["id"])
