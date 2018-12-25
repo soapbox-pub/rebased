@@ -308,25 +308,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert Repo.get(Activity, activity.id) == activity
     end
-
-    # test "404 when making an attempt to get it" do
-    #   activity = insert(:note_activity)
-    #   author = User.get_by_ap_id(activity.data["actor"])
-
-    #   conn =
-    #     conn
-    #     |> assign(:user, author)
-    #     |> delete("/api/v1/statuses/#{activity.id}")
-
-    #   assert %{} = json_response(conn, 200)
-
-    #   conn =
-    #     build_conn()
-    #     |> assign(:user, author)
-    #     |> get("/api/v1/statuses/#{activity.id}")
-
-    #   assert %{} = json_response(conn, 200)
-    # end
   end
 
   describe "filters" do
