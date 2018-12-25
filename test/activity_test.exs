@@ -20,8 +20,7 @@ defmodule Pleroma.ActivityTest do
   test "returns the activity that created an object" do
     activity = insert(:note_activity)
 
-    found_activity =
-      Activity.get_create_activity_by_object_ap_id(activity.data["object"]["id"])
+    found_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"]["id"])
 
     assert activity == found_activity
   end
