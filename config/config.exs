@@ -220,6 +220,35 @@ config :cors_plug,
   credentials: true,
   headers: ["Authorization", "Content-Type", "Idempotency-Key"]
 
+config :pleroma, Pleroma.User,
+  restricted_nicknames: [
+    "main",
+    "users",
+    "settings",
+    "objects",
+    "activities",
+    "web",
+    "registration",
+    "friend-requests",
+    "pleroma",
+    "api",
+    "tag",
+    "notice",
+    "status",
+    "user-search",
+    "ostatus_subscribe",
+    "oauth",
+    "push",
+    "relay",
+    "inbox",
+    ".well-known",
+    "nodeinfo",
+    "auth",
+    "proxy",
+    "dev",
+    "internal"
+  ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
