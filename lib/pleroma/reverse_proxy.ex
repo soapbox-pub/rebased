@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.ReverseProxy do
   @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since if-unmodified-since if-none-match if-range range)
   @resp_cache_headers ~w(etag date last-modified cache-control)

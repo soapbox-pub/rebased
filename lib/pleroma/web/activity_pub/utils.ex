@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.{Repo, Web, Object, Activity, User, Notification}
   alias Pleroma.Web.Router.Helpers

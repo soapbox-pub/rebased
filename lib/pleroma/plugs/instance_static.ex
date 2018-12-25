@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Plugs.InstanceStatic do
   @moduledoc """
   This is a shim to call `Plug.Static` but with runtime `from` configuration.

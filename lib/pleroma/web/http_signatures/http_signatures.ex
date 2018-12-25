@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # https://tools.ietf.org/html/draft-cavage-http-signatures-08
 defmodule Pleroma.Web.HTTPSignatures do
   alias Pleroma.User
