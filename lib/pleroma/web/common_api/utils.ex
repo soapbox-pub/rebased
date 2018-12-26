@@ -89,7 +89,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       ) do
     status
     |> format_input(mentions, tags, content_type)
-    |> maybe_add_attachments(attachments, no_attachment_links)
+    |> maybe_add_attachments(attachments, !!no_attachment_links)
   end
 
   def make_context(%Activity{data: %{"context" => context}}), do: context
