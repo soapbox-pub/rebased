@@ -222,6 +222,7 @@ config :cors_plug,
 
 config :pleroma, Pleroma.User,
   restricted_nicknames: [
+    "~",
     "main",
     "users",
     "settings",
