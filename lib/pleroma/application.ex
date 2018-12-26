@@ -28,6 +28,16 @@ defmodule Pleroma.Application do
         worker(
           Cachex,
           [
+            :used_captcha_cache,
+            [
+              ttl_interval: :timer.seconds(60 * 2)
+            ]
+          ],
+          id: :cachex_used_captcha_cache
+        ),
+        worker(
+          Cachex,
+          [
             :user_cache,
             [
               default_ttl: 25000,

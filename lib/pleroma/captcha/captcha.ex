@@ -80,9 +80,24 @@ defmodule Pleroma.Captcha do
     result =
       with {:ok, data} <- MessageEncryptor.decrypt(answer_data, secret, sign_secret),
            %{at: at, answer_data: answer_md5} <- :erlang.binary_to_term(data) do
-        if DateTime.after?(at, valid_if_after),
-          do: method().validate(token, captcha, answer_md5),
-          else: {:error, "CAPTCHA expired"}
+        try do
+          if DateTime.before?(at, valid_if_after), do: throw({:error, "CAPTCHA expired"})
+
+          if not is_nil(Cachex.get!(:used_captcha_cache, token)),
+            do: throw({:error, "CAPTCHA already used"})
+
+          res = method().validate(token, captcha, answer_md5)
+          # Throw if an error occurs
+          if res != :ok, do: throw(res)
+
+          # Mark this captcha as used
+          {:ok, _} =
+            Cachex.put(:used_captcha_cache, token, true, ttl: :timer.seconds(seconds_valid))
+
+          :ok
+        catch
+          :throw, e -> e
+        end
       else
         _ -> {:error, "Invalid answer data"}
       end
