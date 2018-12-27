@@ -30,7 +30,7 @@ defmodule Pleroma.Application do
           [
             :used_captcha_cache,
             [
-              ttl_interval: :timer.seconds(60 * 2)
+              ttl_interval: :timer.seconds(Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid]))
             ]
           ],
           id: :cachex_used_captcha_cache
