@@ -153,6 +153,20 @@ defmodule Pleroma.UserTest do
       end)
     end
 
+    test "it restricts certain nicknames" do
+      [restricted_name | _] = Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
+
+      assert is_bitstring(restricted_name)
+
+      params =
+        @full_user_data
+        |> Map.put(:nickname, restricted_name)
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
+    end
+
     test "it sets the password_hash, ap_id and following fields" do
       changeset = User.register_changeset(%User{}, @full_user_data)
 

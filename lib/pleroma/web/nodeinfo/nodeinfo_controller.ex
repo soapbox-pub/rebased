@@ -138,7 +138,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         },
         accountActivationRequired: Keyword.get(instance, :account_activation_required, false),
         invitesEnabled: Keyword.get(instance, :invites_enabled, false),
-        features: features
+        features: features,
+        restrictedNicknames: Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
       }
     }
 
