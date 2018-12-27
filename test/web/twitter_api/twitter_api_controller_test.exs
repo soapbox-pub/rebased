@@ -519,6 +519,34 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert length(response) == 1
       assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
     end
+
+    test "with credentials with user_id, excluding RTs", %{conn: conn, user: current_user} do
+      user = insert(:user)
+      {:ok, activity} = ActivityBuilder.insert(%{"id" => 1, "type" => "Create"}, %{user: user})
+      {:ok, _} = ActivityBuilder.insert(%{"id" => 2, "type" => "Announce"}, %{user: user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/statuses/user_timeline.json", %{
+          "user_id" => user.id,
+          "include_rts" => "false"
+        })
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 1
+      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+
+      conn =
+        conn
+        |> get("/api/statuses/user_timeline.json", %{"user_id" => user.id, "include_rts" => "0"})
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 1
+      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+    end
   end
 
   describe "POST /friendships/create.json" do

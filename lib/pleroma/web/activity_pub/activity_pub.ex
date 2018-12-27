@@ -503,6 +503,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_replies(query, _), do: query
 
+  defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val == "true" or val == "1" do
+    from(activity in query, where: fragment("?->>'type' != 'Announce'", activity.data))
+  end
+
+  defp restrict_reblogs(query, _), do: query
+
   # Only search through last 100_000 activities by default
   defp restrict_recent(query, %{"whole_db" => true}), do: query
 
@@ -561,6 +567,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_replies(opts)
+    |> restrict_reblogs(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do

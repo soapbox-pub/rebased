@@ -180,6 +180,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_one)
   end
 
+  test "excludes reblogs on request" do
+    user = insert(:user)
+    {:ok, expected_activity} = ActivityBuilder.insert(%{"type" => "Create"}, %{:user => user})
+    {:ok, _} = ActivityBuilder.insert(%{"type" => "Announce"}, %{:user => user})
+
+    [activity] = ActivityPub.fetch_user_activities(user, nil, %{"exclude_reblogs" => "true"})
+
+    assert activity == expected_activity
+  end
+
   describe "public fetch activities" do
     test "doesn't retrieve unlisted activities" do
       user = insert(:user)
