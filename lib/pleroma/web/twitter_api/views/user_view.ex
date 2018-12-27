@@ -15,18 +15,39 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
   end
 
   def render("index.json", %{users: users, for: user}) do
-    render_many(users, Pleroma.Web.TwitterAPI.UserView, "user.json", for: user)
+    users
+    |> render_many(Pleroma.Web.TwitterAPI.UserView, "user.json", for: user)
+    |> Enum.filter(&Enum.any?/1)
   end
 
   def render("user.json", %{user: user = %User{}} = assigns) do
+    for_user = assigns[:for]
+
+    allow_render =
+      User.remote_or_auth_active?(user) ||
+        (for_user && (for_user.id == user.id || User.superuser?(for_user)))
+
+    if allow_render do
+      render("valid_user.json", assigns)
+    else
+      render("invalid_user.json", assigns)
+    end
+  end
+
+  def render("invalid_user.json", _assigns) do
+    %{}
+  end
+
+  def render("valid_user.json", %{user: user = %User{}} = assigns) do
+    for_user = assigns[:for]
     image = User.avatar_url(user) |> MediaProxy.url()
 
     {following, follows_you, statusnet_blocking} =
-      if assigns[:for] do
+      if for_user do
         {
-          User.following?(assigns[:for], user),
-          User.following?(user, assigns[:for]),
-          User.blocks?(assigns[:for], user)
+          User.following?(for_user, user),
+          User.following?(user, for_user),
+          User.blocks?(for_user, user)
         }
       else
         {false, false, false}
@@ -51,7 +72,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     data = %{
       "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
       "description" => HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
-      "description_html" => HTML.filter_tags(user.bio, User.html_filter_policy(assigns[:for])),
+      "description_html" => HTML.filter_tags(user.bio, User.html_filter_policy(for_user)),
       "favourites_count" => 0,
       "followers_count" => user_info[:follower_count],
       "following" => following,

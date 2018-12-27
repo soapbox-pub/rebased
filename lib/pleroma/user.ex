@@ -47,6 +47,8 @@ defmodule Pleroma.User do
       !Pleroma.Config.get([:instance, :account_activation_required])
   end
 
+  def remote_or_auth_active?(%User{} = user), do: !user.local || auth_active?(user)
+
   def superuser?(%User{} = user), do: user.info && User.Info.superuser?(user.info)
 
   def avatar_url(user) do

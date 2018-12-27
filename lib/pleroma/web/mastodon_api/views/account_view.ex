@@ -11,10 +11,30 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   alias Pleroma.HTML
 
   def render("accounts.json", %{users: users} = opts) do
-    render_many(users, AccountView, "account.json", opts)
+    users
+    |> render_many(AccountView, "account.json", opts)
+    |> Enum.filter(&Enum.any?/1)
   end
 
   def render("account.json", %{user: user} = opts) do
+    for_user = opts[:for]
+
+    allow_render =
+      User.remote_or_auth_active?(user) ||
+        (for_user && (for_user.id == user.id || User.superuser?(for_user)))
+
+    if allow_render do
+      render("valid_account.json", opts)
+    else
+      render("invalid_account.json", opts)
+    end
+  end
+
+  def render("invalid_account.json", _opts) do
+    %{}
+  end
+
+  def render("valid_account.json", %{user: user} = opts) do
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
     user_info = User.user_info(user)
