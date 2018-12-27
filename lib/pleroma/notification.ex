@@ -80,9 +80,8 @@ defmodule Pleroma.Notification do
   end
 
   def clear(user) do
-    query = from(n in Notification, where: n.user_id == ^user.id)
-
-    Repo.delete_all(query)
+    from(n in Notification, where: n.user_id == ^user.id)
+    |> Repo.delete_all()
   end
 
   def dismiss(%{id: user_id} = _user, id) do

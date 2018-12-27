@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
-  alias Pleroma.{User, Repo}
+  alias Pleroma.{User, Repo, Object}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus.ActivityRepresenter
 
@@ -111,6 +111,22 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   test "404s on nonexisting objects", %{conn: conn} do
     conn
     |> get("/objects/123")
+    |> response(404)
+  end
+
+  test "404s on deleted objects", %{conn: conn} do
+    note_activity = insert(:note_activity)
+    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"]))
+    object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+
+    conn
+    |> get("/objects/#{uuid}")
+    |> response(200)
+
+    Object.delete(object)
+
+    conn
+    |> get("/objects/#{uuid}")
     |> response(404)
   end
 

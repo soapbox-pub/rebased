@@ -25,7 +25,7 @@ defmodule Pleroma.Web.OStatus.DeleteHandlingTest do
 
       refute Repo.get(Activity, note.id)
       refute Repo.get(Activity, like.id)
-      refute Object.get_by_ap_id(note.data["object"]["id"])
+      assert Object.get_by_ap_id(note.data["object"]["id"]).data["type"] == "Tombstone"
       assert Repo.get(Activity, second_note.id)
       assert Object.get_by_ap_id(second_note.data["object"]["id"])
 
