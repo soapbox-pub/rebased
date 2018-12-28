@@ -21,6 +21,8 @@ ProtectSystem=full
 PrivateDevices=false
 ; Ensures that the service process and all its children can never gain new privileges through execve().
 NoNewPrivileges=true
+; Drops the sysadmin capability from the daemon.
+CapabilityBoundingSet=~CAP_SYS_ADMIN
 
 [Install]
 WantedBy=multi-user.target
