@@ -112,6 +112,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   describe "GET /statuses/public_timeline.json" do
+    setup [:valid_user]
+
     test "returns statuses", %{conn: conn} do
       user = insert(:user)
       activities = ActivityBuilder.insert_list(30, %{}, %{user: user})
@@ -145,14 +147,44 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       Application.put_env(:pleroma, :instance, instance)
     end
 
+    test "returns 200 to authenticated request when the instance is not public",
+         %{conn: conn, user: user} do
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, false)
+
+      Application.put_env(:pleroma, :instance, instance)
+
+      conn
+      |> with_credentials(user.nickname, "test")
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(200)
+
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, true)
+
+      Application.put_env(:pleroma, :instance, instance)
+    end
+
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
       conn
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(200)
+    end
+
+    test "returns 200 to authenticated request when the instance is public",
+         %{conn: conn, user: user} do
+      conn
+      |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_timeline.json")
       |> json_response(200)
     end
   end
 
   describe "GET /statuses/public_and_external_timeline.json" do
+    setup [:valid_user]
+
     test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
       instance =
         Application.get_env(:pleroma, :instance)
@@ -171,8 +203,36 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       Application.put_env(:pleroma, :instance, instance)
     end
 
+    test "returns 200 to authenticated request when the instance is not public",
+         %{conn: conn, user: user} do
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, false)
+
+      Application.put_env(:pleroma, :instance, instance)
+
+      conn
+      |> with_credentials(user.nickname, "test")
+      |> get("/api/statuses/public_and_external_timeline.json")
+      |> json_response(200)
+
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, true)
+
+      Application.put_env(:pleroma, :instance, instance)
+    end
+
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
       conn
+      |> get("/api/statuses/public_and_external_timeline.json")
+      |> json_response(200)
+    end
+
+    test "returns 200 to authenticated request when the instance is public",
+         %{conn: conn, user: user} do
+      conn
+      |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(200)
     end

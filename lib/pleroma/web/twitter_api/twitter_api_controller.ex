@@ -662,7 +662,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     json_reply(conn, 403, json)
   end
 
-  def only_if_public_instance(conn = %{conn: %{assigns: %{user: _user}}}, _), do: conn
+  def only_if_public_instance(%{assigns: %{user: %User{}}} = conn, _), do: conn
 
   def only_if_public_instance(conn, _) do
     if Keyword.get(Application.get_env(:pleroma, :instance), :public) do
