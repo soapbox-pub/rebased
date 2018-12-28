@@ -49,6 +49,12 @@ defmodule Pleroma.User do
 
   def remote_or_auth_active?(%User{} = user), do: !user.local || auth_active?(user)
 
+  def visible_for?(%User{} = user, for_user \\ nil) do
+    User.remote_or_auth_active?(user) || (for_user && for_user.id == user.id) ||
+      User.superuser?(for_user)
+  end
+
+  def superuser?(nil), do: false
   def superuser?(%User{} = user), do: user.info && User.Info.superuser?(user.info)
 
   def avatar_url(user) do

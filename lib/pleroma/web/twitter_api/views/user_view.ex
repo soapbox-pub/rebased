@@ -21,17 +21,9 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
   end
 
   def render("user.json", %{user: user = %User{}} = assigns) do
-    for_user = assigns[:for]
-
-    allow_render =
-      User.remote_or_auth_active?(user) ||
-        (for_user && (for_user.id == user.id || User.superuser?(for_user)))
-
-    if allow_render do
-      render("valid_user.json", assigns)
-    else
-      render("invalid_user.json", assigns)
-    end
+    if User.visible_for?(user, assigns[:for]),
+      do: render("valid_user.json", assigns),
+      else: render("invalid_user.json", assigns)
   end
 
   def render("invalid_user.json", _assigns) do

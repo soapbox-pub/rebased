@@ -17,17 +17,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   def render("account.json", %{user: user} = opts) do
-    for_user = opts[:for]
-
-    allow_render =
-      User.remote_or_auth_active?(user) ||
-        (for_user && (for_user.id == user.id || User.superuser?(for_user)))
-
-    if allow_render do
-      render("valid_account.json", opts)
-    else
-      render("invalid_account.json", opts)
-    end
+    if User.visible_for?(user, opts[:for]),
+      do: render("valid_account.json", opts),
+      else: render("invalid_account.json", opts)
   end
 
   def render("invalid_account.json", _opts) do
