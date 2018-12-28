@@ -22,15 +22,28 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
 
   def render("user.json", %{user: user = %User{}} = assigns) do
     if User.visible_for?(user, assigns[:for]),
-      do: render("valid_user.json", assigns),
-      else: render("invalid_user.json", assigns)
+      do: do_render("user.json", assigns),
+      else: %{}
   end
 
-  def render("invalid_user.json", _assigns) do
-    %{}
+  def render("short.json", %{
+        user: %User{
+          nickname: nickname,
+          id: id,
+          ap_id: ap_id,
+          name: name
+        }
+      }) do
+    %{
+      "fullname" => name,
+      "id" => id,
+      "ostatus_uri" => ap_id,
+      "profile_url" => ap_id,
+      "screen_name" => nickname
+    }
   end
 
-  def render("valid_user.json", %{user: user = %User{}} = assigns) do
+  defp do_render("user.json", %{user: user = %User{}} = assigns) do
     for_user = assigns[:for]
     image = User.avatar_url(user) |> MediaProxy.url()
 
@@ -108,23 +121,6 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     else
       data
     end
-  end
-
-  def render("short.json", %{
-        user: %User{
-          nickname: nickname,
-          id: id,
-          ap_id: ap_id,
-          name: name
-        }
-      }) do
-    %{
-      "fullname" => name,
-      "id" => id,
-      "ostatus_uri" => ap_id,
-      "profile_url" => ap_id,
-      "screen_name" => nickname
-    }
   end
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
