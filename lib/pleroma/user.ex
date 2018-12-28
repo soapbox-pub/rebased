@@ -649,6 +649,9 @@ defmodule Pleroma.User do
       end)
   end
 
+  def blocked_users(user),
+    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.blocks))
+
   def block_domain(user, domain) do
     info_cng =
       user.info

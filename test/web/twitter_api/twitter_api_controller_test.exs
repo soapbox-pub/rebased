@@ -1085,6 +1085,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
   end
 
+  describe "GET /api/statuses/blocks" do
+    test "it returns the list of users blocked by requester", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, user} = User.block(user, other_user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/blocks")
+
+      expected = UserView.render("index.json", %{users: [other_user], for: user})
+      result = json_response(conn, 200)
+      assert Enum.sort(expected) == Enum.sort(result)
+    end
+  end
+
   describe "GET /api/statuses/friends" do
     test "it returns the logged in user's friends", %{conn: conn} do
       user = insert(:user)

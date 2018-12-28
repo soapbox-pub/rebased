@@ -281,6 +281,7 @@ defmodule Pleroma.Web.Router do
 
     get("/statuses/followers", TwitterAPI.Controller, :followers)
     get("/statuses/friends", TwitterAPI.Controller, :friends)
+    get("/statuses/blocks", TwitterAPI.Controller, :blocks)
     get("/statuses/show/:id", TwitterAPI.Controller, :fetch_status)
     get("/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation)
 
