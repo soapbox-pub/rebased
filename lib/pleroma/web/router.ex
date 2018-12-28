@@ -137,6 +137,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:authenticated_api)
+    post("/blocks_import", UtilController, :blocks_import)
     post("/follow_import", UtilController, :follow_import)
     post("/change_password", UtilController, :change_password)
     post("/delete_account", UtilController, :delete_account)

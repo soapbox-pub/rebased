@@ -242,14 +242,41 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def follow_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
     Task.start(fn ->
-      String.split(list)
+      follower = User.get_cached_by_ap_id(user.ap_id)
+
+      list
+      |> String.split()
       |> Enum.map(fn account ->
-        with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
+        with %User{} <- follower,
              %User{} = followed <- User.get_or_fetch(account),
              {:ok, follower} <- User.maybe_direct_follow(follower, followed) do
           ActivityPub.follow(follower, followed)
         else
           err -> Logger.debug("follow_import: following #{account} failed with #{inspect(err)}")
+        end
+      end)
+    end)
+
+    json(conn, "job started")
+  end
+
+  def blocks_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
+    blocks_import(conn, %{"list" => File.read!(listfile.path)})
+  end
+
+  def blocks_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
+    Task.start(fn ->
+      blocker = User.get_cached_by_ap_id(user.ap_id)
+
+      list
+      |> String.split()
+      |> Enum.map(fn account ->
+        with %User{} <- blocker,
+             %User{} = blocked <- User.get_or_fetch(account),
+             {:ok, blocker} <- User.block(blocker, blocked) do
+          ActivityPub.block(blocker, blocked)
+        else
+          err -> Logger.debug("blocks_import: blocking #{account} failed with #{inspect(err)}")
         end
       end)
     end)
