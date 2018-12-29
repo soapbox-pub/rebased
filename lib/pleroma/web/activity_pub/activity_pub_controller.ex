@@ -154,11 +154,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def read_inbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
     if nickname == user.nickname do
-      Logger.info("read inbox #{inspect(params)}")
-
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json("ok!")
+      |> json(UserView.render("inbox.json", %{user: user, max_id: params["max_id"]}))
     else
       conn
       |> put_status(:forbidden)

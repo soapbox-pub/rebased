@@ -125,6 +125,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 403)
     end
+
+    test "it returns a note activity in a collection", %{conn: conn} do
+      note_activity = insert(:direct_note_activity)
+      user = User.get_cached_by_ap_id(hd(note_activity.data["to"]))
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/inbox")
+
+      assert response(conn, 200) =~ note_activity.data["object"]["content"]
+    end
   end
 
   describe "/users/:nickname/outbox" do
