@@ -278,6 +278,25 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
+
+    test "gets an existing user by fully qualified nickname" do
+      user = insert(:user)
+
+      fetched_user =
+        User.get_or_fetch_by_nickname(user.nickname <> "@" <> Pleroma.Web.Endpoint.host())
+
+      assert user == fetched_user
+    end
+
+    test "gets an existing user by fully qualified nickname, case insensitive" do
+      user = insert(:user, nickname: "nick")
+      casing_altered_fqn = String.upcase(user.nickname <> "@" <> Pleroma.Web.Endpoint.host())
+
+      fetched_user = User.get_or_fetch_by_nickname(casing_altered_fqn)
+
+      assert user == fetched_user
+    end
+
     test "fetches an external user via ostatus if no user exists" do
       fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
       assert fetched_user.nickname == "shp@social.heldscal.la"
