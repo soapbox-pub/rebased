@@ -485,6 +485,21 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "follow_import" do
+    test "it imports user followings from list" do
+      [user1, user2, user3] = insert_list(3, :user)
+
+      identifiers = [
+        user2.ap_id,
+        user3.nickname
+      ]
+
+      result = User.follow_import(user1, identifiers)
+      assert is_list(result)
+      assert result == [user2, user3]
+    end
+  end
+
   describe "blocks" do
     test "it blocks people" do
       user = insert(:user)
@@ -581,6 +596,21 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.unblock_domain(user, "awful-and-rude-instance.com")
 
       refute User.blocks?(user, collateral_user)
+    end
+  end
+
+  describe "blocks_import" do
+    test "it imports user blocks from list" do
+      [user1, user2, user3] = insert_list(3, :user)
+
+      identifiers = [
+        user2.ap_id,
+        user3.nickname
+      ]
+
+      result = User.blocks_import(user1, identifiers)
+      assert is_list(result)
+      assert result == [user2, user3]
     end
   end
 
