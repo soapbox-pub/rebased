@@ -507,6 +507,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def blocks(%{assigns: %{user: user}} = conn, _params) do
+    with blocked_users <- User.blocked_users(user) do
+      conn
+      |> put_view(UserView)
+      |> render("index.json", %{users: blocked_users, for: user})
+    end
+  end
+
   def friend_requests(conn, params) do
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
          {:ok, friend_requests} <- User.get_follow_requests(user) do
