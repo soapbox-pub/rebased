@@ -93,17 +93,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def outbox(conn, %{"nickname" => nickname, "max_id" => max_id}) do
+  def outbox(conn, %{"nickname" => nickname} = params) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json(UserView.render("outbox.json", %{user: user, max_id: max_id}))
+      |> json(UserView.render("outbox.json", %{user: user, max_id: params["max_id"]}))
     end
-  end
-
-  def outbox(conn, %{"nickname" => nickname}) do
-    outbox(conn, %{"nickname" => nickname, "max_id" => nil})
   end
 
   def inbox(%{assigns: %{valid_signature: true}} = conn, %{"nickname" => nickname} = params) do
@@ -153,6 +149,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> json(UserView.render("user.json", %{user: user}))
     else
       nil -> {:error, :not_found}
+    end
+  end
+
+  def read_inbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
+    if nickname == user.nickname do
+      Logger.info("read inbox #{inspect(params)}")
+
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json("ok!")
+    else
+      conn
+      |> put_status(:forbidden)
+      |> json("can't read inbox of #{nickname} as #{user.nickname}")
+    end
+  end
+
+  def update_outbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
+    if nickname == user.nickname do
+      Logger.info("update outbox #{inspect(params)}")
+
+      conn
+      |> put_status(:created)
+      |> json("ok!")
+    else
+      conn
+      |> put_status(:forbidden)
+      |> json("can't update outbox of #{nickname} as #{user.nickname}")
     end
   end
 

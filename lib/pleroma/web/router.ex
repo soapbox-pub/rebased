@@ -412,6 +412,27 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
   end
 
+  pipeline :activitypub_client do
+    plug(:accepts, ["activity+json"])
+    plug(:fetch_session)
+    plug(Pleroma.Plugs.OAuthPlug)
+    plug(Pleroma.Plugs.BasicAuthDecoderPlug)
+    plug(Pleroma.Plugs.UserFetcherPlug)
+    plug(Pleroma.Plugs.SessionAuthenticationPlug)
+    plug(Pleroma.Plugs.LegacyAuthenticationPlug)
+    plug(Pleroma.Plugs.AuthenticationPlug)
+    plug(Pleroma.Plugs.UserEnabledPlug)
+    plug(Pleroma.Plugs.SetUserSessionIdPlug)
+    plug(Pleroma.Plugs.EnsureUserKeyPlug)
+  end
+
+  scope "/", Pleroma.Web.ActivityPub do
+    pipe_through([:activitypub_client])
+
+    get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
+    post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
+  end
+
   scope "/relay", Pleroma.Web.ActivityPub do
     pipe_through(:ap_relay)
     get("/", ActivityPubController, :relay)
