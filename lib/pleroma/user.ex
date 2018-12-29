@@ -387,7 +387,11 @@ defmodule Pleroma.User do
   end
 
   def get_by_nickname(nickname) do
-    Repo.get_by(User, nickname: nickname)
+    Repo.get_by(User, nickname: nickname) ||
+      if String.ends_with?(nickname, "@" <> Pleroma.Web.Endpoint.host()) do
+        [local_nickname, _] = String.split(nickname, "@")
+        Repo.get_by(User, nickname: local_nickname)
+      end
   end
 
   def get_by_nickname_or_email(nickname_or_email) do
