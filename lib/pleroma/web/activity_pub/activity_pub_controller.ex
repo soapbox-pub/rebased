@@ -165,7 +165,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def update_outbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
+  def update_outbox(
+        %{assigns: %{user: user}} = conn,
+        %{"nickname" => nickname, "type" => "Create"} = params
+      ) do
     if nickname == user.nickname do
       actor = user.ap_id()
 
