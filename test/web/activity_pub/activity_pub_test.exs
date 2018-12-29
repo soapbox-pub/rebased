@@ -31,6 +31,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "insertion" do
+    test "drops activities beyond a certain limit" do
+      limit = Pleroma.Config.get([:instance, :remote_limit])
+
+      random_text =
+        :crypto.strong_rand_bytes(limit + 1)
+        |> Base.encode64()
+        |> binary_part(0, limit + 1)
+
+      data = %{
+        "ok" => true,
+        "object" => %{
+          "content" => random_text
+        }
+      }
+
+      assert {:error, {:remote_limit_error, _}} = ActivityPub.insert(data)
+    end
+
     test "returns the activity if one with the same id is already in" do
       activity = insert(:note_activity)
       {:ok, new_activity} = ActivityPub.insert(activity.data)
