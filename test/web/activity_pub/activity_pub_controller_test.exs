@@ -178,6 +178,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 403)
     end
+
+    test "it inserts an incoming activity into the database", %{conn: conn} do
+      data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      result = json_response(conn, 201)
+      assert Activity.get_by_ap_id(result["id"])
+    end
   end
 
   describe "/users/:nickname/followers" do

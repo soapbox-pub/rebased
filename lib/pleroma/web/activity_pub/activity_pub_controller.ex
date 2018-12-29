@@ -4,11 +4,12 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
-  alias Pleroma.{User, Object}
+  alias Pleroma.{Activity, User, Object}
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Federator
 
   require Logger
@@ -166,11 +167,33 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def update_outbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
     if nickname == user.nickname do
-      Logger.info("update outbox #{inspect(params)}")
+      actor = user.ap_id()
 
-      conn
-      |> put_status(:created)
-      |> json("ok!")
+      params =
+        params
+        |> Map.drop(["id"])
+        |> Map.put("actor", actor)
+        |> Transmogrifier.fix_addressing()
+
+      object =
+        params["object"]
+        |> Map.merge(Map.take(params, ["to", "cc"]))
+        |> Map.put("attributedTo", actor)
+        |> Transmogrifier.fix_object()
+
+      with {:ok, %Activity{} = activity} <-
+             ActivityPub.create(%{
+               to: params["to"],
+               actor: user,
+               context: object["context"],
+               object: object,
+               additional: Map.take(params, ["cc"])
+             }) do
+        conn
+        |> put_status(:created)
+        |> put_resp_header("location", activity.data["id"])
+        |> json(%{"id" => activity.data["id"]})
+      end
     else
       conn
       |> put_status(:forbidden)
