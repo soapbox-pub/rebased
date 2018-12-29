@@ -7,6 +7,8 @@ defmodule Pleroma.Activity do
   alias Pleroma.{Repo, Activity, Notification}
   import Ecto.Query
 
+  @type t :: %__MODULE__{}
+
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
   @mastodon_notification_types %{
     "Create" => "mention",
