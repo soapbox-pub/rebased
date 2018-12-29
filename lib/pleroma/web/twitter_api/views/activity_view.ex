@@ -245,7 +245,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     html =
       content
-      |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
+      |> Utils.get_scrubbed_html(User.html_filter_policy(opts[:for]), activity)
       |> Formatter.emojify(object["emoji"])
 
     text =

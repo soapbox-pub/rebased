@@ -128,7 +128,8 @@ defmodule Pleroma.Web.CommonAPI do
              |> Enum.reduce(%{}, fn {name, file}, acc ->
                Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
              end)
-           ) do
+           ),
+         object <- Map.put(object, "scrubber_cache", %{}) do
       res =
         ActivityPub.create(%{
           to: to,

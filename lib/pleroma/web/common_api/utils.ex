@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
-  alias Pleroma.{Activity, Formatter, Object, Repo}
+  alias Pleroma.{Activity, Formatter, Object, Repo, HTML}
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.Utils
@@ -259,6 +259,65 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},
         "name" => ":#{shortcode}:"
       }
+    end)
+  end
+
+  @doc """
+  Get sanitized HTML from cache, or scrub it and save to cache.
+  """
+  def get_scrubbed_html(
+        content,
+        scrubbers,
+        %{data: %{"object" => object}} = activity
+      ) do
+    scrubber_cache =
+      if object["scrubber_cache"] != nil and is_list(object["scrubber_cache"]) do
+        object["scrubber_cache"]
+      else
+        []
+      end
+
+    key = generate_scrubber_key(scrubbers)
+
+    {new_scrubber_cache, scrubbed_html} =
+      Enum.map_reduce(scrubber_cache, nil, fn %{
+                                                :scrubbers => current_key,
+                                                :content => current_content
+                                              },
+                                              _ ->
+        if Map.keys(current_key) == Map.keys(key) do
+          if scrubbers == key do
+            {current_key, current_content}
+          else
+            # Remove the entry if scrubber version is outdated
+            {nil, nil}
+          end
+        end
+      end)
+
+    new_scrubber_cache = Enum.reject(new_scrubber_cache, &is_nil/1)
+
+    if !(new_scrubber_cache == scrubber_cache) or scrubbed_html == nil do
+      scrubbed_html = HTML.filter_tags(content, scrubbers)
+      new_scrubber_cache = [%{:scrubbers => key, :content => scrubbed_html} | new_scrubber_cache]
+
+      activity =
+        Map.merge(activity, %{
+          data: %{"object" => %{"scrubber_cache" => new_scrubber_cache}}
+        })
+
+      cng = Ecto.Changeset.change(activity)
+      Repo.update(cng)
+      scrubbed_html
+    else
+      IO.puts("got the post from cache")
+      scrubbed_html
+    end
+  end
+
+  defp generate_scrubber_key(scrubbers) do
+    Enum.reduce(scrubbers, %{}, fn scrubber, acc ->
+      Map.put(acc, to_string(scrubber), scrubber.version)
     end)
   end
 end
