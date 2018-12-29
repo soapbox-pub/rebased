@@ -278,7 +278,6 @@ defmodule Pleroma.UserTest do
       assert user == fetched_user
     end
 
-
     test "gets an existing user by fully qualified nickname" do
       user = insert(:user)
 
