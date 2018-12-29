@@ -54,8 +54,6 @@ defmodule Pleroma.Captcha do
         |> :erlang.term_to_binary()
         |> MessageEncryptor.encrypt(secret, sign_secret)
 
-      IO.inspect(%{new_captcha | answer_data: encrypted_captcha_answer})
-
       {
         :reply,
         # Repalce the answer with the encrypted answer
