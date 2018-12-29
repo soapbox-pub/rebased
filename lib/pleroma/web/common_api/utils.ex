@@ -300,17 +300,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     if !(new_scrubber_cache == scrubber_cache) or scrubbed_html == nil do
       scrubbed_html = HTML.filter_tags(content, scrubbers)
       new_scrubber_cache = [%{:scrubbers => key, :content => scrubbed_html} | new_scrubber_cache]
+      IO.puts(activity)
 
       activity =
-        Map.merge(activity, %{
-          data: %{"object" => %{"scrubber_cache" => new_scrubber_cache}}
-        })
+        Map.put(
+          activity,
+          :data,
+          Kernel.put_in(activity.data, ["object", "scrubber_cache"], new_scrubber_cache)
+        )
 
       cng = Ecto.Changeset.change(activity)
       Repo.update(cng)
       scrubbed_html
     else
-      IO.puts("got the post from cache")
       scrubbed_html
     end
   end
