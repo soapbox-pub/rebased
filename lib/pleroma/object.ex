@@ -96,7 +96,7 @@ defmodule Pleroma.Object do
 
   defp generate_scrubber_signature(scrubbers) do
     Enum.reduce(scrubbers, "", fn scrubber, signature ->
-      # If a scrubber does not have a version(e.g HtmlSanitizeEx.Scrubber) it is assumed it is always 0)
+      # If a scrubber does not have a version(e.g HtmlSanitizeEx.Scrubber.StripTags) it is assumed it is always 0)
       version =
         if Kernel.function_exported?(scrubber, :version, 0) do
           scrubber.version
