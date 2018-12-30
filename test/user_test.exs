@@ -709,7 +709,7 @@ defmodule Pleroma.UserTest do
     test "html_filter_policy returns nil when rich-text is enabled" do
       user = insert(:user)
 
-      assert [Pleroma.HTML.Transform.MediaProxy, Pleroma.HTML.Scrubber.Default] == User.html_filter_policy(user)
+      assert Pleroma.Config.get([:markup, :scrub_policy]) == User.html_filter_policy(user)
     end
 
     test "html_filter_policy returns TwitterText scrubber when rich-text is disabled" do
