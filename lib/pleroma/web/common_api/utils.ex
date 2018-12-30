@@ -281,35 +281,25 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     {new_scrubber_cache, scrubbed_html} =
       Enum.map_reduce(scrubber_cache, nil, fn %{
-                                                :scrubbers => current_key,
-                                                :content => current_content
-                                              },
-                                              _ ->
+                                                "scrubbers" => current_key,
+                                                "content" => current_content
+                                              } = current_element,
+                                              _content ->
         if Map.keys(current_key) == Map.keys(key) do
-          if scrubbers == key do
-            {current_key, current_content}
+          if current_key == key do
+            {current_element, current_content}
           else
             # Remove the entry if scrubber version is outdated
             {nil, nil}
           end
         end
       end)
-
+    
     new_scrubber_cache = Enum.reject(new_scrubber_cache, &is_nil/1)
-
-    if !(new_scrubber_cache == scrubber_cache) or scrubbed_html == nil do
+    if scrubbed_html == nil or new_scrubber_cache != scrubber_cache do
       scrubbed_html = HTML.filter_tags(content, scrubbers)
       new_scrubber_cache = [%{:scrubbers => key, :content => scrubbed_html} | new_scrubber_cache]
-
-      activity =
-        Map.put(
-          activity,
-          :data,
-          Kernel.put_in(activity.data, ["object", "scrubber_cache"], new_scrubber_cache)
-        )
-
-      cng = Object.change(activity)
-      Repo.update(cng)
+      update_scrubber_cache(activity, new_scrubber_cache)
       scrubbed_html
     else
       scrubbed_html
@@ -321,4 +311,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       Map.put(acc, to_string(scrubber), scrubber.version)
     end)
   end
+
+ defp update_scrubber_cache(activity, scrubber_cache) do
+      cng = Object.change(activity, %{data: Kernel.put_in(activity.data, ["object", "scrubber_cache"], scrubber_cache)})
+      {:ok, _struct} = Repo.update(cng)
+ end
 end
