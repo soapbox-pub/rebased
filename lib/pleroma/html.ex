@@ -5,8 +5,18 @@
 defmodule Pleroma.HTML do
   alias HtmlSanitizeEx.Scrubber
 
-  def filter_tags(html, scrubbers) when is_list(scrubbers) do
-    Enum.reduce(scrubbers, html, fn scrubber, html ->
+  defp get_scrubbers(scrubber) when is_atom(scrubber), do: [scrubber]
+  defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
+  defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
+
+  def get_scrubbers() do
+    Pleroma.Config.get([:markup, :scrub_policy])
+    |> get_scrubbers
+  end
+
+  def filter_tags(html, nil) do
+    get_scrubbers()
+    |> Enum.reduce(html, fn scrubber, html ->
       filter_tags(html, scrubber)
     end)
   end
@@ -28,11 +38,8 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
-
-  def version do
-    0
-  end
-
+  
+  def version do 0 end
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
@@ -70,11 +77,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
-
-  def version do
-    0
-  end
-
+  def version do 0 end
   @markup Application.get_env(:pleroma, :markup)
   @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
   @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
@@ -150,12 +153,9 @@ end
 defmodule Pleroma.HTML.Transform.MediaProxy do
   @moduledoc "Transforms inline image URIs to use MediaProxy."
 
-  def version do
-    0
-  end
-
   alias Pleroma.Web.MediaProxy
-
+  
+  def version do 0 end
   def before_scrub(html), do: html
 
   def scrub_attribute("img", {"src", "http" <> target}) do
