@@ -4,11 +4,12 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
-  alias Pleroma.{User, Object}
+  alias Pleroma.{Activity, User, Object}
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Federator
 
   require Logger
@@ -93,17 +94,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def outbox(conn, %{"nickname" => nickname, "max_id" => max_id}) do
+  def outbox(conn, %{"nickname" => nickname} = params) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json(UserView.render("outbox.json", %{user: user, max_id: max_id}))
+      |> json(UserView.render("outbox.json", %{user: user, max_id: params["max_id"]}))
     end
-  end
-
-  def outbox(conn, %{"nickname" => nickname}) do
-    outbox(conn, %{"nickname" => nickname, "max_id" => nil})
   end
 
   def inbox(%{assigns: %{valid_signature: true}} = conn, %{"nickname" => nickname} = params) do
@@ -153,6 +150,57 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> json(UserView.render("user.json", %{user: user}))
     else
       nil -> {:error, :not_found}
+    end
+  end
+
+  def read_inbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
+    if nickname == user.nickname do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(UserView.render("inbox.json", %{user: user, max_id: params["max_id"]}))
+    else
+      conn
+      |> put_status(:forbidden)
+      |> json("can't read inbox of #{nickname} as #{user.nickname}")
+    end
+  end
+
+  def update_outbox(
+        %{assigns: %{user: user}} = conn,
+        %{"nickname" => nickname, "type" => "Create"} = params
+      ) do
+    if nickname == user.nickname do
+      actor = user.ap_id()
+
+      params =
+        params
+        |> Map.drop(["id"])
+        |> Map.put("actor", actor)
+        |> Transmogrifier.fix_addressing()
+
+      object =
+        params["object"]
+        |> Map.merge(Map.take(params, ["to", "cc"]))
+        |> Map.put("attributedTo", actor)
+        |> Transmogrifier.fix_object()
+
+      with {:ok, %Activity{} = activity} <-
+             ActivityPub.create(%{
+               to: params["to"],
+               actor: user,
+               context: object["context"],
+               object: object,
+               additional: Map.take(params, ["cc"])
+             }) do
+        conn
+        |> put_status(:created)
+        |> put_resp_header("location", activity.data["id"])
+        |> json(activity.data)
+      end
+    else
+      conn
+      |> put_status(:forbidden)
+      |> json("can't update outbox of #{nickname} as #{user.nickname}")
     end
   end
 
