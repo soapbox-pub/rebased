@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Object do
   use Ecto.Schema
-  alias Pleroma.{Repo, Object, User, Activity}
+  alias Pleroma.{Repo, Object, User, Activity, HTML}
   import Ecto.{Query, Changeset}
 
   schema "objects" do
@@ -72,5 +72,37 @@ defmodule Pleroma.Object do
          {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
       {:ok, object}
     end
+  end
+  
+  def get_cached_scrubbed_html(content, scrubbers, object) do
+    key = "#{generate_scrubber_signature(scrubbers)}|#{object.id}"
+    Cachex.fetch!(:scrubber_cache, key, fn(_key) -> ensure_scrubbed_html(content, scrubbers) end )
+  end
+
+  def get_cached_stripped_html(content, object) do
+    get_cached_scrubbed_html(content, HtmlSanitizeEx.Scrubber.StripTags, object)
+  end
+
+  def ensure_scrubbed_html(
+        content,
+        scrubbers
+      ) do
+      {:commit, HTML.filter_tags(content, scrubbers)}
+  end
+  
+  defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
+    generate_scrubber_signature([scrubber])
+  end
+
+  defp generate_scrubber_signature(scrubbers) do
+    Enum.reduce(scrubbers, "", fn scrubber, signature ->
+        # If a scrubber does not have a version(e.g HtmlSanitizeEx.Scrubber) it is assumed it is always 0)
+        version = if Kernel.function_exported?(scrubber, :version, 0) do
+          scrubber.version
+        else
+          0
+        end
+        "#{signature}#{to_string(scrubber)}#{version}"
+    end)
   end
 end

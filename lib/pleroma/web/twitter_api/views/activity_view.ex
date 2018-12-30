@@ -244,14 +244,14 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     html =
       content
-      |> Utils.get_scrubbed_html_for_object(User.html_filter_policy(opts[:for]), activity)
+      |> Object.get_cached_scrubbed_html(User.html_filter_policy(opts[:for]), activity)
       |> Formatter.emojify(object["emoji"])
 
     text =
       if content do
         content
         |> String.replace(~r/<br\s?\/?>/, "\n")
-        |> Utils.get_stripped_html_for_object(activity)
+        |> Object.get_cached_stripped_html(activity)
       end
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
