@@ -63,6 +63,7 @@ config :pleroma, Pleroma.Mailer,
 * `email`: Email used to reach an Administrator/Moderator of the instance
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``
 * `limit`: Posts character limit (CW/Subject included in the counter)
+* `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner)
 * `avatar_upload_limit`: File size limit of user’s profile avatars
 * `background_upload_limit`: File size limit of user’s profile backgrounds

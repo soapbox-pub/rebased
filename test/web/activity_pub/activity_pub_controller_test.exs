@@ -112,6 +112,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       :timer.sleep(500)
       assert Activity.get_by_ap_id(data["id"])
     end
+
+    test "it rejects reads from other users", %{conn: conn} do
+      user = insert(:user)
+      otheruser = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, otheruser)
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/inbox")
+
+      assert json_response(conn, 403)
+    end
+
+    test "it returns a note activity in a collection", %{conn: conn} do
+      note_activity = insert(:direct_note_activity)
+      user = User.get_cached_by_ap_id(hd(note_activity.data["to"]))
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/inbox")
+
+      assert response(conn, 200) =~ note_activity.data["object"]["content"]
+    end
   end
 
   describe "/users/:nickname/outbox" do
@@ -137,6 +163,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user.nickname}/outbox")
 
       assert response(conn, 200) =~ announce_activity.data["object"]
+    end
+
+    test "it rejects posts from other users", %{conn: conn} do
+      data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
+      user = insert(:user)
+      otheruser = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, otheruser)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      assert json_response(conn, 403)
+    end
+
+    test "it inserts an incoming activity into the database", %{conn: conn} do
+      data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      result = json_response(conn, 201)
+      assert Activity.get_by_ap_id(result["id"])
     end
   end
 

@@ -153,6 +153,20 @@ defmodule Pleroma.UserTest do
       end)
     end
 
+    test "it restricts certain nicknames" do
+      [restricted_name | _] = Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
+
+      assert is_bitstring(restricted_name)
+
+      params =
+        @full_user_data
+        |> Map.put(:nickname, restricted_name)
+
+      changeset = User.register_changeset(%User{}, params)
+
+      refute changeset.valid?
+    end
+
     test "it sets the password_hash, ap_id and following fields" do
       changeset = User.register_changeset(%User{}, @full_user_data)
 
@@ -260,6 +274,24 @@ defmodule Pleroma.UserTest do
     test "gets an existing user, case insensitive" do
       user = insert(:user, nickname: "nick")
       fetched_user = User.get_or_fetch_by_nickname("NICK")
+
+      assert user == fetched_user
+    end
+
+    test "gets an existing user by fully qualified nickname" do
+      user = insert(:user)
+
+      fetched_user =
+        User.get_or_fetch_by_nickname(user.nickname <> "@" <> Pleroma.Web.Endpoint.host())
+
+      assert user == fetched_user
+    end
+
+    test "gets an existing user by fully qualified nickname, case insensitive" do
+      user = insert(:user, nickname: "nick")
+      casing_altered_fqn = String.upcase(user.nickname <> "@" <> Pleroma.Web.Endpoint.host())
+
+      fetched_user = User.get_or_fetch_by_nickname(casing_altered_fqn)
 
       assert user == fetched_user
     end
@@ -471,6 +503,21 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "follow_import" do
+    test "it imports user followings from list" do
+      [user1, user2, user3] = insert_list(3, :user)
+
+      identifiers = [
+        user2.ap_id,
+        user3.nickname
+      ]
+
+      result = User.follow_import(user1, identifiers)
+      assert is_list(result)
+      assert result == [user2, user3]
+    end
+  end
+
   describe "blocks" do
     test "it blocks people" do
       user = insert(:user)
@@ -567,6 +614,21 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.unblock_domain(user, "awful-and-rude-instance.com")
 
       refute User.blocks?(user, collateral_user)
+    end
+  end
+
+  describe "blocks_import" do
+    test "it imports user blocks from list" do
+      [user1, user2, user3] = insert_list(3, :user)
+
+      identifiers = [
+        user2.ap_id,
+        user3.nickname
+      ]
+
+      result = User.blocks_import(user1, identifiers)
+      assert is_list(result)
+      assert result == [user2, user3]
     end
   end
 

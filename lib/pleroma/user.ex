@@ -13,6 +13,8 @@ defmodule Pleroma.User do
   alias Pleroma.Web.{OStatus, Websub, OAuth}
   alias Pleroma.Web.ActivityPub.{Utils, ActivityPub}
 
+  require Logger
+
   @type t :: %__MODULE__{}
 
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
@@ -47,6 +49,14 @@ defmodule Pleroma.User do
       !Pleroma.Config.get([:instance, :account_activation_required])
   end
 
+  def remote_or_auth_active?(%User{} = user), do: !user.local || auth_active?(user)
+
+  def visible_for?(%User{} = user, for_user \\ nil) do
+    User.remote_or_auth_active?(user) || (for_user && for_user.id == user.id) ||
+      User.superuser?(for_user)
+  end
+
+  def superuser?(nil), do: false
   def superuser?(%User{} = user), do: user.info && User.Info.superuser?(user.info)
 
   def avatar_url(user) do
@@ -197,6 +207,7 @@ defmodule Pleroma.User do
       |> validate_confirmation(:password)
       |> unique_constraint(:email)
       |> unique_constraint(:nickname)
+      |> validate_exclusion(:nickname, Pleroma.Config.get([Pleroma.User, :restricted_nicknames]))
       |> validate_format(:nickname, local_nickname_regex())
       |> validate_format(:email, @email_regex)
       |> validate_length(:bio, max: 1000)
@@ -330,6 +341,24 @@ defmodule Pleroma.User do
     Enum.member?(follower.following, followed.follower_address)
   end
 
+  def follow_import(%User{} = follower, followed_identifiers)
+      when is_list(followed_identifiers) do
+    Enum.map(
+      followed_identifiers,
+      fn followed_identifier ->
+        with %User{} = followed <- get_or_fetch(followed_identifier),
+             {:ok, follower} <- maybe_direct_follow(follower, followed),
+             {:ok, _} <- ActivityPub.follow(follower, followed) do
+          followed
+        else
+          err ->
+            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
+            err
+        end
+      end
+    )
+  end
+
   def locked?(%User{} = user) do
     user.info.locked || false
   end
@@ -366,7 +395,11 @@ defmodule Pleroma.User do
   end
 
   def get_by_nickname(nickname) do
-    Repo.get_by(User, nickname: nickname)
+    Repo.get_by(User, nickname: nickname) ||
+      if Regex.match?(~r(@#{Pleroma.Web.Endpoint.host()})i, nickname) do
+        [local_nickname, _] = String.split(nickname, "@")
+        Repo.get_by(User, nickname: local_nickname)
+      end
   end
 
   def get_by_nickname_or_email(nickname_or_email) do
@@ -595,6 +628,23 @@ defmodule Pleroma.User do
     Repo.all(q)
   end
 
+  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
+    Enum.map(
+      blocked_identifiers,
+      fn blocked_identifier ->
+        with %User{} = blocked <- get_or_fetch(blocked_identifier),
+             {:ok, blocker} <- block(blocker, blocked),
+             {:ok, _} <- ActivityPub.block(blocker, blocked) do
+          blocked
+        else
+          err ->
+            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
+            err
+        end
+      end
+    )
+  end
+
   def block(blocker, %User{ap_id: ap_id} = blocked) do
     # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
     blocker =
@@ -647,6 +697,9 @@ defmodule Pleroma.User do
         host == domain
       end)
   end
+
+  def blocked_users(user),
+    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.blocks))
 
   def block_domain(user, domain) do
     info_cng =

@@ -112,6 +112,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   describe "GET /statuses/public_timeline.json" do
+    setup [:valid_user]
+
     test "returns statuses", %{conn: conn} do
       user = insert(:user)
       activities = ActivityBuilder.insert_list(30, %{}, %{user: user})
@@ -145,14 +147,44 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       Application.put_env(:pleroma, :instance, instance)
     end
 
+    test "returns 200 to authenticated request when the instance is not public",
+         %{conn: conn, user: user} do
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, false)
+
+      Application.put_env(:pleroma, :instance, instance)
+
+      conn
+      |> with_credentials(user.nickname, "test")
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(200)
+
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, true)
+
+      Application.put_env(:pleroma, :instance, instance)
+    end
+
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
       conn
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(200)
+    end
+
+    test "returns 200 to authenticated request when the instance is public",
+         %{conn: conn, user: user} do
+      conn
+      |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_timeline.json")
       |> json_response(200)
     end
   end
 
   describe "GET /statuses/public_and_external_timeline.json" do
+    setup [:valid_user]
+
     test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
       instance =
         Application.get_env(:pleroma, :instance)
@@ -171,8 +203,36 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       Application.put_env(:pleroma, :instance, instance)
     end
 
+    test "returns 200 to authenticated request when the instance is not public",
+         %{conn: conn, user: user} do
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, false)
+
+      Application.put_env(:pleroma, :instance, instance)
+
+      conn
+      |> with_credentials(user.nickname, "test")
+      |> get("/api/statuses/public_and_external_timeline.json")
+      |> json_response(200)
+
+      instance =
+        Application.get_env(:pleroma, :instance)
+        |> Keyword.put(:public, true)
+
+      Application.put_env(:pleroma, :instance, instance)
+    end
+
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
       conn
+      |> get("/api/statuses/public_and_external_timeline.json")
+      |> json_response(200)
+    end
+
+    test "returns 200 to authenticated request when the instance is public",
+         %{conn: conn, user: user} do
+      conn
+      |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(200)
     end
@@ -513,6 +573,34 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         conn
         |> with_credentials(current_user.nickname, "test")
         |> get("/api/statuses/user_timeline.json", %{"screen_name" => user.nickname})
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 1
+      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+    end
+
+    test "with credentials with user_id, excluding RTs", %{conn: conn, user: current_user} do
+      user = insert(:user)
+      {:ok, activity} = ActivityBuilder.insert(%{"id" => 1, "type" => "Create"}, %{user: user})
+      {:ok, _} = ActivityBuilder.insert(%{"id" => 2, "type" => "Announce"}, %{user: user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/statuses/user_timeline.json", %{
+          "user_id" => user.id,
+          "include_rts" => "false"
+        })
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 1
+      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+
+      conn =
+        conn
+        |> get("/api/statuses/user_timeline.json", %{"user_id" => user.id, "include_rts" => "0"})
 
       response = json_response(conn, 200)
 
@@ -1054,6 +1142,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> get("/api/statuses/followers", %{"user_id" => user.id})
 
       refute [] == json_response(conn, 200)
+    end
+  end
+
+  describe "GET /api/statuses/blocks" do
+    test "it returns the list of users blocked by requester", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, user} = User.block(user, other_user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/blocks")
+
+      expected = UserView.render("index.json", %{users: [other_user], for: user})
+      result = json_response(conn, 200)
+      assert Enum.sort(expected) == Enum.sort(result)
     end
   end
 

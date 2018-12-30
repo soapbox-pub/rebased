@@ -36,6 +36,8 @@ defmodule Pleroma.ObjectTest do
       found_object = Object.get_by_ap_id(object.data["id"])
 
       refute object == found_object
+
+      assert found_object.data["type"] == "Tombstone"
     end
 
     test "ensures cache is cleared for the object" do
@@ -51,6 +53,8 @@ defmodule Pleroma.ObjectTest do
       cached_object = Object.get_cached_by_ap_id(object.data["id"])
 
       refute object == cached_object
+
+      assert cached_object.data["type"] == "Tombstone"
     end
   end
 end

@@ -296,7 +296,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(conn, 200)
 
-      assert Repo.get(Activity, activity.id) == nil
+      refute Repo.get(Activity, activity.id)
     end
 
     test "when you didn't create it", %{conn: conn} do
@@ -839,6 +839,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(image_post.id)
+    end
+
+    test "gets a user's statuses without reblogs", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, _, _} = CommonAPI.repeat(post.id, user)
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "true"})
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+      assert id == to_string(post.id)
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "1"})
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+      assert id == to_string(post.id)
     end
   end
 

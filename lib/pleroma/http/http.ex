@@ -10,6 +10,8 @@ defmodule Pleroma.HTTP do
   alias Pleroma.HTTP.Connection
   alias Pleroma.HTTP.RequestBuilder, as: Builder
 
+  @type t :: __MODULE__
+
   @doc """
   Builds and perform http request.
 

@@ -240,21 +240,22 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     follow_import(conn, %{"list" => File.read!(listfile.path)})
   end
 
-  def follow_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
-    Task.start(fn ->
-      String.split(list)
-      |> Enum.map(fn account ->
-        with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
-             %User{} = followed <- User.get_or_fetch(account),
-             {:ok, follower} <- User.maybe_direct_follow(follower, followed) do
-          ActivityPub.follow(follower, followed)
-        else
-          err -> Logger.debug("follow_import: following #{account} failed with #{inspect(err)}")
-        end
-      end)
-    end)
+  def follow_import(%{assigns: %{user: follower}} = conn, %{"list" => list}) do
+    with followed_identifiers <- String.split(list),
+         {:ok, _} = Task.start(fn -> User.follow_import(follower, followed_identifiers) end) do
+      json(conn, "job started")
+    end
+  end
 
-    json(conn, "job started")
+  def blocks_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
+    blocks_import(conn, %{"list" => File.read!(listfile.path)})
+  end
+
+  def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
+    with blocked_identifiers <- String.split(list),
+         {:ok, _} = Task.start(fn -> User.blocks_import(blocker, blocked_identifiers) end) do
+      json(conn, "job started")
+    end
   end
 
   def change_password(%{assigns: %{user: user}} = conn, params) do
