@@ -262,10 +262,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end)
   end
 
+  def get_scrubbed_html_for_object(content, scrubber, activity) when is_atom(scrubber) do
+    get_scrubbed_html_for_object(content, [scrubber], activity)
+  end
   @doc """
   Get sanitized HTML from cache, or scrub it and save to cache.
   """
-  def get_scrubbed_html(
+  def get_scrubbed_html_for_object(
         content,
         scrubbers,
         %{data: %{"object" => object}} = activity
@@ -281,7 +284,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     {new_scrubber_cache, scrubbed_html} =
       Enum.map_reduce(scrubber_cache, nil, fn
-        entry, _content ->
+        entry, content ->
           if Map.keys(entry["scrubbers"]) == Map.keys(signature) do
             if entry["scrubbers"] == signature do
               {entry, entry["content"]}
@@ -289,6 +292,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
               # Remove the entry if scrubber version is outdated
               {nil, nil}
             end
+          else
+            {entry, content}
           end
       end)
 
@@ -297,15 +302,30 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     if scrubbed_html == nil or new_scrubber_cache != scrubber_cache do
       scrubbed_html = HTML.filter_tags(content, scrubbers)
-      new_scrubber_cache = [%{:scrubbers => signature, :content => scrubbed_html} | new_scrubber_cache]
+
+      new_scrubber_cache = [
+        %{:scrubbers => signature, :content => scrubbed_html} | new_scrubber_cache
+      ]
+
       update_scrubber_cache(activity, new_scrubber_cache)
+      scrubbed_html
+    else
+      scrubbed_html
     end
-    scrubbed_html
   end
 
   defp generate_scrubber_signature(scrubbers) do
     Enum.reduce(scrubbers, %{}, fn scrubber, signature ->
-      Map.put(signature, to_string(scrubber), scrubber.version)
+      Map.put(
+        signature,
+        to_string(scrubber),
+        # If a scrubber does not have a version(e.g HtmlSanitizeEx.Scrubber) it is assumed it is always 0)
+        if Kernel.function_exported?(scrubber, :version, 0) do
+          scrubber.version
+        else
+          0
+        end
+      )
     end)
   end
 
@@ -316,5 +336,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       })
 
     {:ok, _struct} = Repo.update(cng)
+  end
+
+  def get_stripped_html_for_object(content, activity) do
+    get_scrubbed_html_for_object(content, [HtmlSanitizeEx.Scrubber.StripTags], activity)
   end
 end

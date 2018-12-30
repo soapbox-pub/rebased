@@ -15,7 +15,6 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Formatter
-  alias Pleroma.HTML
 
   import Ecto.Query
   require Logger
@@ -245,14 +244,14 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     html =
       content
-      |> Utils.get_scrubbed_html(User.html_filter_policy(opts[:for]), activity)
+      |> Utils.get_scrubbed_html_for_object(User.html_filter_policy(opts[:for]), activity)
       |> Formatter.emojify(object["emoji"])
 
     text =
       if content do
         content
         |> String.replace(~r/<br\s?\/?>/, "\n")
-        |> HTML.strip_tags()
+        |> Utils.get_stripped_html_for_object(activity)
       end
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
