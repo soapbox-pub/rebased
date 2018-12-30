@@ -271,49 +271,50 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         %{data: %{"object" => object}} = activity
       ) do
     scrubber_cache =
-      if object["scrubber_cache"] != nil and is_list(object["scrubber_cache"]) do
+      if is_list(object["scrubber_cache"]) do
         object["scrubber_cache"]
       else
         []
       end
 
-    key = generate_scrubber_key(scrubbers)
+    signature = generate_scrubber_signature(scrubbers)
 
     {new_scrubber_cache, scrubbed_html} =
-      Enum.map_reduce(scrubber_cache, nil, fn %{
-                                                "scrubbers" => current_key,
-                                                "content" => current_content
-                                              } = current_element,
-                                              _content ->
-        if Map.keys(current_key) == Map.keys(key) do
-          if current_key == key do
-            {current_element, current_content}
-          else
-            # Remove the entry if scrubber version is outdated
-            {nil, nil}
+      Enum.map_reduce(scrubber_cache, nil, fn
+        entry, _content ->
+          if Map.keys(entry["scrubbers"]) == Map.keys(signature) do
+            if entry["scrubbers"] == signature do
+              {entry, entry["content"]}
+            else
+              # Remove the entry if scrubber version is outdated
+              {nil, nil}
+            end
           end
-        end
       end)
-    
+
+    # Remove nil objects
     new_scrubber_cache = Enum.reject(new_scrubber_cache, &is_nil/1)
+
     if scrubbed_html == nil or new_scrubber_cache != scrubber_cache do
       scrubbed_html = HTML.filter_tags(content, scrubbers)
-      new_scrubber_cache = [%{:scrubbers => key, :content => scrubbed_html} | new_scrubber_cache]
+      new_scrubber_cache = [%{:scrubbers => signature, :content => scrubbed_html} | new_scrubber_cache]
       update_scrubber_cache(activity, new_scrubber_cache)
-      scrubbed_html
-    else
-      scrubbed_html
     end
+    scrubbed_html
   end
 
-  defp generate_scrubber_key(scrubbers) do
-    Enum.reduce(scrubbers, %{}, fn scrubber, acc ->
-      Map.put(acc, to_string(scrubber), scrubber.version)
+  defp generate_scrubber_signature(scrubbers) do
+    Enum.reduce(scrubbers, %{}, fn scrubber, signature ->
+      Map.put(signature, to_string(scrubber), scrubber.version)
     end)
   end
 
- defp update_scrubber_cache(activity, scrubber_cache) do
-      cng = Object.change(activity, %{data: Kernel.put_in(activity.data, ["object", "scrubber_cache"], scrubber_cache)})
-      {:ok, _struct} = Repo.update(cng)
- end
+  defp update_scrubber_cache(activity, scrubber_cache) do
+    cng =
+      Object.change(activity, %{
+        data: Kernel.put_in(activity.data, ["object", "scrubber_cache"], scrubber_cache)
+      })
+
+    {:ok, _struct} = Repo.update(cng)
+  end
 end
