@@ -15,8 +15,11 @@ defmodule Pleroma.HTML do
   end
 
   def filter_tags(html, nil) do
-    get_scrubbers()
-    |> Enum.reduce(html, fn scrubber, html ->
+    filter_tags(html, get_scrubbers())
+  end
+
+  def filter_tags(html, scrubbers) when is_list(scrubbers) do
+    Enum.reduce(scrubbers, html, fn scrubber, html ->
       filter_tags(html, scrubber)
     end)
   end
