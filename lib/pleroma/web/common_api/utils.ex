@@ -261,5 +261,4 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       }
     end)
   end
-
 end

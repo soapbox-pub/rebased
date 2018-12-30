@@ -73,10 +73,10 @@ defmodule Pleroma.Object do
       {:ok, object}
     end
   end
-  
+
   def get_cached_scrubbed_html(content, scrubbers, object) do
     key = "#{generate_scrubber_signature(scrubbers)}|#{object.id}"
-    Cachex.fetch!(:scrubber_cache, key, fn(_key) -> ensure_scrubbed_html(content, scrubbers) end )
+    Cachex.fetch!(:scrubber_cache, key, fn _key -> ensure_scrubbed_html(content, scrubbers) end)
   end
 
   def get_cached_stripped_html(content, object) do
@@ -87,22 +87,24 @@ defmodule Pleroma.Object do
         content,
         scrubbers
       ) do
-      {:commit, HTML.filter_tags(content, scrubbers)}
+    {:commit, HTML.filter_tags(content, scrubbers)}
   end
-  
+
   defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
     generate_scrubber_signature([scrubber])
   end
 
   defp generate_scrubber_signature(scrubbers) do
     Enum.reduce(scrubbers, "", fn scrubber, signature ->
-        # If a scrubber does not have a version(e.g HtmlSanitizeEx.Scrubber) it is assumed it is always 0)
-        version = if Kernel.function_exported?(scrubber, :version, 0) do
+      # If a scrubber does not have a version(e.g HtmlSanitizeEx.Scrubber) it is assumed it is always 0)
+      version =
+        if Kernel.function_exported?(scrubber, :version, 0) do
           scrubber.version
         else
           0
         end
-        "#{signature}#{to_string(scrubber)}#{version}"
+
+      "#{signature}#{to_string(scrubber)}#{version}"
     end)
   end
 end
