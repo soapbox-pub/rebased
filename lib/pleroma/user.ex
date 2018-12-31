@@ -786,7 +786,9 @@ defmodule Pleroma.User do
     Pleroma.HTML.Scrubber.TwitterText
   end
 
-  def html_filter_policy(_), do: nil
+  @default_scrubbers Pleroma.Config.get([:markup, :scrub_policy])
+
+  def html_filter_policy(_), do: @default_scrubbers
 
   def get_or_fetch_by_ap_id(ap_id) do
     user = get_by_ap_id(ap_id)

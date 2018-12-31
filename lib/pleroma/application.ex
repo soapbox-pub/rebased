@@ -56,6 +56,16 @@ defmodule Pleroma.Application do
         worker(
           Cachex,
           [
+            :scrubber_cache,
+            [
+              limit: 2500
+            ]
+          ],
+          id: :cachex_scrubber
+        ),
+        worker(
+          Cachex,
+          [
             :idempotency_cache,
             [
               expiration:

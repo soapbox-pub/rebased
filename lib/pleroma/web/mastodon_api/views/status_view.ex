@@ -120,7 +120,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     content =
       object
       |> render_content()
-      |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
+      |> HTML.get_cached_scrubbed_html_for_object(User.html_filter_policy(opts[:for]), activity)
 
     %{
       id: to_string(activity.id),
