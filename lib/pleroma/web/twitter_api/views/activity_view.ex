@@ -11,6 +11,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.Activity
+  alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Repo
@@ -244,14 +245,14 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     html =
       content
-      |> Object.get_cached_scrubbed_html(User.html_filter_policy(opts[:for]), activity)
+      |> HTML.get_cached_scrubbed_html_for_object(User.html_filter_policy(opts[:for]), activity)
       |> Formatter.emojify(object["emoji"])
 
     text =
       if content do
         content
         |> String.replace(~r/<br\s?\/?>/, "\n")
-        |> Object.get_cached_stripped_html(activity)
+        |> HTML.get_cached_stripped_html_for_object(activity)
       end
 
     reply_parent = Activity.get_in_reply_to_activity(activity)

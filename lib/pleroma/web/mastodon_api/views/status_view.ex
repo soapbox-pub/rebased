@@ -9,7 +9,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.HTML
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -121,7 +120,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     content =
       object
       |> render_content()
-      |> Object.get_cached_scrubbed_html(User.html_filter_policy(opts[:for]), activity)
+      |> HTML.get_cached_scrubbed_html_for_object(User.html_filter_policy(opts[:for]), activity)
 
     %{
       id: to_string(activity.id),
