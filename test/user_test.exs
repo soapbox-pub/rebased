@@ -706,7 +706,7 @@ defmodule Pleroma.UserTest do
   end
 
   describe "per-user rich-text filtering" do
-    test "html_filter_policy returns nil when rich-text is enabled" do
+    test "html_filter_policy returns default policies, when rich-text is enabled" do
       user = insert(:user)
 
       assert Pleroma.Config.get([:markup, :scrub_policy]) == User.html_filter_policy(user)
