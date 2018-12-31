@@ -90,5 +90,4 @@ defmodule Pleroma.Object do
       {:ok, object}
     end
   end
-
 end
