@@ -964,7 +964,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             max_toot_chars: limit
           },
           rights: %{
-            delete_others_notice: !!user.info.is_moderator
+            delete_others_notice: !!user.info.is_moderator,
+            admin: !!user.info.is_admin
           },
           compose: %{
             me: "#{user.id}",
