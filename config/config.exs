@@ -252,6 +252,14 @@ config :pleroma, Pleroma.User,
     "internal"
   ]
 
+config :pleroma, Pleroma.Web.Federator, max_jobs: 50
+
+config :pleroma, Pleroma.Web.Federator.RetryQueue,
+  enabled: false,
+  max_jobs: 20,
+  initial_timeout: 30,
+  max_retries: 5
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

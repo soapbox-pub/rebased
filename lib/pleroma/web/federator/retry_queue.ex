@@ -7,12 +7,6 @@ defmodule Pleroma.Web.Federator.RetryQueue do
 
   require Logger
 
-  # seconds
-  @initial_timeout 30
-  @max_retries 5
-
-  @max_jobs 20
-
   def init(args) do
     queue_table = :ets.new(:pleroma_retry_queue, [:bag, :protected])
 
@@ -21,7 +15,7 @@ defmodule Pleroma.Web.Federator.RetryQueue do
 
   def start_link() do
     enabled =
-      if Mix.env() == :test, do: true, else: Pleroma.Config.get([:retry_queue, :enabled], false)
+      if Mix.env() == :test, do: true, else: Pleroma.Config.get([__MODULE__, :enabled], false)
 
     if enabled do
       Logger.info("Starting retry queue")
@@ -54,7 +48,7 @@ defmodule Pleroma.Web.Federator.RetryQueue do
   end
 
   def get_retry_params(retries) do
-    if retries > @max_retries do
+    if retries > Pleroma.Config.get([__MODULE__, :max_retries]) do
       {:drop, "Max retries reached"}
     else
       {:retry, growth_function(retries)}
@@ -108,12 +102,12 @@ defmodule Pleroma.Web.Federator.RetryQueue do
     current_time = DateTime.to_unix(DateTime.utc_now())
     n_running_jobs = :sets.size(running_jobs)
 
-    if n_running_jobs < @max_jobs do
+    if n_running_jobs < Pleroma.Config.get([__MODULE__, :max_jobs]) do
       n_ready_jobs = ets_count_expires(queue_table, current_time)
 
       if n_ready_jobs > 0 do
         # figure out how many we could start
-        available_job_slots = @max_jobs - n_running_jobs
+        available_job_slots = Pleroma.Config.get([__MODULE__, :max_jobs]) - n_running_jobs
         start_n_jobs(running_jobs, queue_table, current_time, available_job_slots)
       else
         running_jobs
@@ -228,12 +222,13 @@ defmodule Pleroma.Web.Federator.RetryQueue do
 
   if Mix.env() == :test do
     defp growth_function(_retries) do
-      _shutit = @initial_timeout
+      _shutit = Pleroma.Config.get([__MODULE__, :initial_timeout])
       DateTime.to_unix(DateTime.utc_now()) - 1
     end
   else
     defp growth_function(retries) do
-      round(@initial_timeout * :math.pow(retries, 3)) + DateTime.to_unix(DateTime.utc_now())
+      round(Pleroma.Config.get([__MODULE__, :initial_timeout]) * :math.pow(retries, 3)) +
+        DateTime.to_unix(DateTime.utc_now())
     end
   end
 
