@@ -181,6 +181,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     })
   end
 
+  def handle_user_activity(user, %{"type" => "Delete"} = params) do
+    with %Object{} = object <- Object.normalize(params["object"]),
+         true <- user.info.is_moderator || user.ap_id == object.data["actor"],
+         {:ok, delete} <- ActivityPub.delete(object) do
+      {:ok, delete}
+    else
+      _ -> {:error, "Can't delete object"}
+    end
+  end
+
   def handle_user_activity(_, _) do
     {:error, "Unhandled activity type"}
   end
