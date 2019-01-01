@@ -17,8 +17,8 @@ defmodule Pleroma.Web.RichMedia.Parsers.OGP do
     html |> Floki.find("meta[property^='og:']")
   end
 
-  defp normalize_attributes(tuple) do
-    {_tag, attributes, _children} = tuple
+  defp normalize_attributes(html_node) do
+    {_tag, attributes, _children} = html_node
 
     data =
       Enum.into(attributes, %{}, fn {name, value} ->
