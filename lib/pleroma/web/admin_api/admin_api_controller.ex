@@ -14,13 +14,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   action_fallback(:errors)
 
   def user_delete(conn, %{"nickname" => nickname}) do
-    user = User.get_by_nickname(nickname)
-
-    if user.local == true do
-      User.delete(user)
-    else
-      User.delete(user)
-    end
+    User.get_by_nickname(nickname)
+    |> User.delete()
 
     conn
     |> json(nickname)
