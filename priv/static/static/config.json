@@ -11,7 +11,7 @@
   "scopeOptionsEnabled": false,
   "formattingOptionsEnabled": false,
   "collapseMessageWithSubject": false,
-  "scopeCopy": false,
+  "scopeCopy": true,
   "subjectLineBehavior": "email",
   "alwaysShowSubjectInput": true,
   "hidePostStats": false,
