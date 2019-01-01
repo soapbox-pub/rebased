@@ -93,3 +93,6 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 	"statusnet_profile_url": "https://pleroma.soykaf.com/users/lain"
 }
 ```
+
+## `/api/pleroma/admin/`…
+See [Admin-API](Admin-API.md)

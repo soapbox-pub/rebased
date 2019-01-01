@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.UserView do
@@ -96,7 +96,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "profile_image_url_profile_size" => image,
       "profile_image_url_original" => image,
       "rights" => %{
-        "delete_others_notice" => !!user.info.is_moderator
+        "delete_others_notice" => !!user.info.is_moderator,
+        "admin" => !!user.info.is_admin
       },
       "screen_name" => user.nickname,
       "statuses_count" => user_info[:note_count],

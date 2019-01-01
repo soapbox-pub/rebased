@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.ActivityView do
@@ -11,11 +11,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.Activity
+  alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Formatter
-  alias Pleroma.HTML
 
   import Ecto.Query
   require Logger
@@ -245,14 +245,14 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     html =
       content
-      |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
+      |> HTML.get_cached_scrubbed_html_for_object(User.html_filter_policy(opts[:for]), activity)
       |> Formatter.emojify(object["emoji"])
 
     text =
       if content do
         content
         |> String.replace(~r/<br\s?\/?>/, "\n")
-        |> HTML.strip_tags()
+        |> HTML.get_cached_stripped_html_for_object(activity)
       end
 
     reply_parent = Activity.get_in_reply_to_activity(activity)

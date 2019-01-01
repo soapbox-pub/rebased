@@ -90,7 +90,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "follows_you" => false,
       "statusnet_blocking" => false,
       "rights" => %{
-        "delete_others_notice" => false
+        "delete_others_notice" => false,
+        "admin" => false
       },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
@@ -135,7 +136,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "follows_you" => false,
       "statusnet_blocking" => false,
       "rights" => %{
-        "delete_others_notice" => false
+        "delete_others_notice" => false,
+        "admin" => false
       },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
@@ -181,7 +183,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "follows_you" => true,
       "statusnet_blocking" => false,
       "rights" => %{
-        "delete_others_notice" => false
+        "delete_others_notice" => false,
+        "admin" => false
       },
       "statusnet_profile_url" => follower.ap_id,
       "cover_photo" => banner,
@@ -205,6 +208,13 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     represented = UserView.render("show.json", %{user: user, for: user})
 
     assert represented["rights"]["delete_others_notice"]
+  end
+
+  test "a user that is a admin" do
+    user = insert(:user, %{info: %{is_admin: true}})
+    represented = UserView.render("show.json", %{user: user, for: user})
+
+    assert represented["rights"]["admin"]
   end
 
   test "A blocked user for the blocker" do
@@ -234,7 +244,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "follows_you" => false,
       "statusnet_blocking" => true,
       "rights" => %{
-        "delete_others_notice" => false
+        "delete_others_notice" => false,
+        "admin" => false
       },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,

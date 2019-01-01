@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Application do
@@ -52,6 +52,16 @@ defmodule Pleroma.Application do
             ]
           ],
           id: :cachex_object
+        ),
+        worker(
+          Cachex,
+          [
+            :scrubber_cache,
+            [
+              limit: 2500
+            ]
+          ],
+          id: :cachex_scrubber
         ),
         worker(
           Cachex,

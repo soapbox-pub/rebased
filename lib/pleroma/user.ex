@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User do
@@ -786,7 +786,9 @@ defmodule Pleroma.User do
     Pleroma.HTML.Scrubber.TwitterText
   end
 
-  def html_filter_policy(_), do: nil
+  @default_scrubbers Pleroma.Config.get([:markup, :scrub_policy])
+
+  def html_filter_policy(_), do: @default_scrubbers
 
   def get_or_fetch_by_ap_id(ap_id) do
     user = get_by_ap_id(ap_id)
