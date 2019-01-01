@@ -8,7 +8,6 @@ defmodule Pleroma.HTTP.Connection do
   """
 
   @hackney_options [
-    pool: :default,
     timeout: 10000,
     recv_timeout: 20000,
     follow_redirect: true

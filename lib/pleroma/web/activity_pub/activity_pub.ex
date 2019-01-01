@@ -741,8 +741,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {"Content-Type", "application/activity+json"},
         {"signature", signature},
         {"digest", digest}
-      ],
-      hackney: [pool: :default]
+      ]
     )
   end
 
