@@ -192,6 +192,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       result = json_response(conn, 201)
       assert Activity.get_by_ap_id(result["id"])
     end
+
+    test "it rejects an incoming activity with bogus type", %{conn: conn} do
+      data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
+      user = insert(:user)
+
+      data =
+        data
+        |> Map.put("type", "BadType")
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      assert json_response(conn, 400)
+    end
   end
 
   describe "/users/:nickname/followers" do
