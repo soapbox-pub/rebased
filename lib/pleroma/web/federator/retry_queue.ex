@@ -87,9 +87,8 @@ defmodule Pleroma.Web.Federator.RetryQueue do
       )
 
     popped
-    |> List.foldl(true, fn e, acc ->
+    |> Enum.each(fn e ->
       :ets.delete_object(table, e)
-      acc
     end)
 
     popped
