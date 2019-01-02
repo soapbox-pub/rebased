@@ -91,6 +91,12 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
+config :logger, :ex_syslogger,
+  level: :debug,
+  ident: "Pleroma",
+  format: "$date $time $metadata[$level] $message",
+  metadata: [:request_id]
+
 config :mime, :types, %{
   "application/xml" => ["xml"],
   "application/xrd+xml" => ["xrd+xml"],
