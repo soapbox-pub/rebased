@@ -249,7 +249,8 @@ config :pleroma, Pleroma.User,
     "auth",
     "proxy",
     "dev",
-    "internal"
+    "internal",
+    "media"
   ]
 
 config :pleroma, Pleroma.Web.Federator, max_jobs: 50
