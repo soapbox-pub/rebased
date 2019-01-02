@@ -249,7 +249,8 @@ config :pleroma, Pleroma.User,
     "auth",
     "proxy",
     "dev",
-    "internal"
+    "internal",
+    "media"
   ]
 
 # Import environment specific config. This must remain at the bottom
