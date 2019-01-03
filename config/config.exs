@@ -186,13 +186,7 @@ config :pleroma, :mrf_simple,
   reject: [],
   accept: []
 
-config :pleroma, :media_proxy,
-  enabled: false,
-  # base_url: "https://cache.pleroma.social",
-  proxy_opts: [
-    # inline_content_types: [] | false | true,
-    # http: [:insecure]
-  ]
+config :pleroma, :media_proxy, enabled: false
 
 config :pleroma, :chat, enabled: true
 
