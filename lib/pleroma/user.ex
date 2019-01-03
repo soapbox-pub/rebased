@@ -495,6 +495,7 @@ defmodule Pleroma.User do
       Enum.map(reqs, fn req -> req.actor end)
       |> Enum.uniq()
       |> Enum.map(fn ap_id -> get_by_ap_id(ap_id) end)
+      |> Enum.filter(fn u -> !is_nil(u) end)
       |> Enum.filter(fn u -> !following?(u, user) end)
 
     {:ok, users}
