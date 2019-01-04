@@ -1,9 +1,8 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Utils do
-  require Logger
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
   alias Pleroma.{Activity, Formatter, Object, Repo}
@@ -33,11 +32,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_replied_to_activity(_), do: nil
 
-  def attachments_from_ids(ids, descs) do
-    Enum.map(ids || [], fn media_id -> do
-      Logger.warn(descs[media_id])
-      Repo.get(Object, media_id).data
-    end
+  def attachments_from_ids(ids, descs_str) do
+    {_, descs} = Jason.decode(descs_str)
+
+    Enum.map(ids || [], fn media_id ->
+      Map.put(Repo.get(Object, media_id).data, "name", descs[media_id])
     end)
   end
 

@@ -90,7 +90,7 @@ defmodule Pleroma.Web.CommonAPI do
     limit = Pleroma.Config.get([:instance, :limit])
 
     with status <- String.trim(status),
-         attachments <- attachments_from_ids(data["media_ids"]),
+         attachments <- attachments_from_ids(data["media_ids"], data["descriptions"]),
          mentions <- Formatter.parse_mentions(status),
          inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
          {to, cc} <- to_for_user_and_mentions(user, mentions, inReplyTo, visibility),
