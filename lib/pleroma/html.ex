@@ -34,7 +34,12 @@ defmodule Pleroma.HTML do
   end
 
   def get_cached_stripped_html_for_object(content, object, module) do
-    get_cached_scrubbed_html_for_object(content, HtmlSanitizeEx.Scrubber.StripTags, object, module)
+    get_cached_scrubbed_html_for_object(
+      content,
+      HtmlSanitizeEx.Scrubber.StripTags,
+      object,
+      module
+    )
   end
 
   def ensure_scrubbed_html(
