@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
-  alias Pleroma.{Repo, User}
+  alias Pleroma.{Object, Repo, User}
   alias Pleroma.Activity
 
   setup_all do
@@ -179,7 +179,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 403)
     end
 
-    test "it inserts an incoming activity into the database", %{conn: conn} do
+    test "it inserts an incoming create activity into the database", %{conn: conn} do
       data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
       user = insert(:user)
 
@@ -191,6 +191,68 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       result = json_response(conn, 201)
       assert Activity.get_by_ap_id(result["id"])
+    end
+
+    test "it rejects an incoming activity with bogus type", %{conn: conn} do
+      data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
+      user = insert(:user)
+
+      data =
+        data
+        |> Map.put("type", "BadType")
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      assert json_response(conn, 400)
+    end
+
+    test "it erects a tombstone when receiving a delete activity", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      user = User.get_cached_by_ap_id(note_activity.data["actor"])
+
+      data = %{
+        type: "Delete",
+        object: %{
+          id: note_activity.data["object"]["id"]
+        }
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      result = json_response(conn, 201)
+      assert Activity.get_by_ap_id(result["id"])
+
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      assert object
+      assert object.data["type"] == "Tombstone"
+    end
+
+    test "it rejects delete activity of object from other actor", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      user = insert(:user)
+
+      data = %{
+        type: "Delete",
+        object: %{
+          id: note_activity.data["object"]["id"]
+        }
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      assert json_response(conn, 400)
     end
   end
 
