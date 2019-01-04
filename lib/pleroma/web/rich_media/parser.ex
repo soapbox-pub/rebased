@@ -1,7 +1,14 @@
 defmodule Pleroma.Web.RichMedia.Parser do
   @parsers [Pleroma.Web.RichMedia.Parsers.OGP]
 
-  def parse(url) do
+  if Mix.env() == :test do
+    def parse(url), do: parse_url(url)
+  else
+    def parse(url),
+      do: {:commit, Cachex.fetch!(:rich_media_cache, url, fn _ -> parse_url(url) end)}
+  end
+
+  defp parse_url(url) do
     {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url)
 
     html |> maybe_parse() |> get_parsed_data()

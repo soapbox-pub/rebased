@@ -66,6 +66,17 @@ defmodule Pleroma.Application do
         worker(
           Cachex,
           [
+            :rich_media_cache,
+            [
+              default_ttl: :timer.minutes(120),
+              limit: 5000
+            ]
+          ],
+          id: :cachex_rich_media
+        ),
+        worker(
+          Cachex,
+          [
             :scrubber_cache,
             [
               limit: 2500
