@@ -232,6 +232,12 @@ defmodule Pleroma.Web.Router do
     put("/settings", MastodonAPIController, :put_settings)
   end
 
+  scope "/api", Pleroma.Web.RichMedia do
+    pipe_through(:authenticated_api)
+
+    get("/rich_media/parse", RichMediaController, :parse)
+  end
+
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
     get("/instance", MastodonAPIController, :masto_instance)
