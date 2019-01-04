@@ -610,7 +610,7 @@ defmodule Pleroma.User do
         select_merge: %{
           search_distance:
             fragment(
-              "? <-> (? || ?)",
+              "? <-> (? || coalesce(?, ''))",
               ^query,
               u.nickname,
               u.name
