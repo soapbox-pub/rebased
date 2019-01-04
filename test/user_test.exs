@@ -762,7 +762,9 @@ defmodule Pleroma.UserTest do
       user_two = insert(:user, %{name: nil, nickname: "lain@pleroma.soykaf.com"})
 
       assert user_two ==
-               User.search("lain@pleroma.soykaf.com") |> List.first() |> Map.put(:search_distance, nil)
+               User.search("lain@pleroma.soykaf.com")
+               |> List.first()
+               |> Map.put(:search_distance, nil)
     end
   end
 end
