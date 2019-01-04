@@ -22,6 +22,7 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--password PASSWORD` - the user's password
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
+  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions 
 
   ## Generate an invite link.
 
@@ -61,7 +62,11 @@ defmodule Mix.Tasks.Pleroma.User do
           bio: :string,
           password: :string,
           moderator: :boolean,
-          admin: :boolean
+          admin: :boolean,
+          assume_yes: :boolean
+        ],
+        aliases: [
+          y: :assume_yes
         ]
       )
 
@@ -79,6 +84,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     moderator? = Keyword.get(options, :moderator, false)
     admin? = Keyword.get(options, :admin, false)
+    assume_yes? = Keyword.get(options, :assume_yes, false)
 
     Mix.shell().info("""
     A user will be created with the following information:
@@ -93,7 +99,7 @@ defmodule Mix.Tasks.Pleroma.User do
       - admin: #{if(admin?, do: "true", else: "false")}
     """)
 
-    proceed? = Mix.shell().yes?("Continue?")
+    proceed? = assume_yes? or Mix.shell().yes?("Continue?")
 
     unless not proceed? do
       Common.start_pleroma()
