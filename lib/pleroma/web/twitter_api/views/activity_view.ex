@@ -285,7 +285,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive,
       "visibility" => Pleroma.Web.MastodonAPI.StatusView.get_visibility(object),
-      "summary" => summary
+      "summary" => HTML.strip_tags(summary) |> Formatter.emojify(object["emoji"])
     }
   end
 
