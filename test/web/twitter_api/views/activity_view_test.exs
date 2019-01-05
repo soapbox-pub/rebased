@@ -73,6 +73,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "repeat_num" => 0,
       "repeated" => false,
       "statusnet_conversation_id" => convo_id,
+      "summary" => "",
       "statusnet_html" =>
         "Hey <span><a data-user=\"#{other_user.id}\" href=\"#{other_user.ap_id}\">@<span>shp</span></a></span>!",
       "tags" => [],
@@ -80,7 +81,6 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user}),
       "visibility" => "direct",
-      "summary" => nil
     }
 
     assert result == expected
