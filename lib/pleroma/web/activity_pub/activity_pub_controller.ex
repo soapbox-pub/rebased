@@ -165,9 +165,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def handle_user_activity(user, %{"type" => "Create"} = params) do
+    object =
+      params["object"]
+      |> Map.merge(Map.take(params, ["to", "cc"]))
+      |> Map.put("attributedTo", user.ap_id())
+      |> Transmogrifier.fix_object()
+
+    ActivityPub.create(%{
+      to: params["to"],
+      actor: user,
+      context: object["context"],
+      object: object,
+      additional: Map.take(params, ["cc"])
+    })
+  end
+
+  def handle_user_activity(user, %{"type" => "Delete"} = params) do
+    with %Object{} = object <- Object.normalize(params["object"]),
+         true <- user.info.is_moderator || user.ap_id == object.data["actor"],
+         {:ok, delete} <- ActivityPub.delete(object) do
+      {:ok, delete}
+    else
+      _ -> {:error, "Can't delete object"}
+    end
+  end
+
+  def handle_user_activity(_, _) do
+    {:error, "Unhandled activity type"}
+  end
+
   def update_outbox(
         %{assigns: %{user: user}} = conn,
-        %{"nickname" => nickname, "type" => "Create"} = params
+        %{"nickname" => nickname} = params
       ) do
     if nickname == user.nickname do
       actor = user.ap_id()
@@ -178,24 +208,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         |> Map.put("actor", actor)
         |> Transmogrifier.fix_addressing()
 
-      object =
-        params["object"]
-        |> Map.merge(Map.take(params, ["to", "cc"]))
-        |> Map.put("attributedTo", actor)
-        |> Transmogrifier.fix_object()
-
-      with {:ok, %Activity{} = activity} <-
-             ActivityPub.create(%{
-               to: params["to"],
-               actor: user,
-               context: object["context"],
-               object: object,
-               additional: Map.take(params, ["cc"])
-             }) do
+      with {:ok, %Activity{} = activity} <- handle_user_activity(user, params) do
         conn
         |> put_status(:created)
         |> put_resp_header("location", activity.data["id"])
         |> json(activity.data)
+      else
+        {:error, message} ->
+          conn
+          |> put_status(:bad_request)
+          |> json(message)
       end
     else
       conn
