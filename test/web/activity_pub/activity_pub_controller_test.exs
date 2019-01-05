@@ -75,6 +75,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 404)
     end
+
+    test "it returns 404 for tombstone objects", %{conn: conn} do
+      tombstone = insert(:tombstone)
+      uuid = String.split(tombstone.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}")
+
+      assert json_response(conn, 404)
+    end
   end
 
   describe "/inbox" do

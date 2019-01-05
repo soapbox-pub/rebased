@@ -801,6 +801,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def is_public?(%Object{data: %{"type" => "Tombstone"}}) do
+    false
+  end
+
   def is_public?(activity) do
     "https://www.w3.org/ns/activitystreams#Public" in (activity.data["to"] ++
                                                          (activity.data["cc"] || []))
