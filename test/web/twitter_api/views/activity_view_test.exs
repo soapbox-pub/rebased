@@ -41,6 +41,35 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
              "#Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg"
   end
 
+  test "a create activity with a summary containing emoji" do
+    {:ok, activity} =
+      CommonAPI.post(insert(:user), %{
+        "spoiler_text" => ":woollysocks: meow",
+        "status" => "."
+      })
+
+    result = ActivityView.render("activity.json", activity: activity)
+
+    expected =
+      "<img height=\"32px\" width=\"32px\" alt=\"woollysocks\" title=\"woollysocks\" src=\"http://localhost:4001/finmoji/128px/woollysocks-128.png\" /> meow"
+
+    assert result["summary"] == expected
+  end
+
+  test "a create activity with a summary containing invalid HTML" do
+    {:ok, activity} =
+      CommonAPI.post(insert(:user), %{
+        "spoiler_text" => "<span style=\"color: magenta; font-size: 32px;\">meow</span>",
+        "status" => "."
+      })
+
+    result = ActivityView.render("activity.json", activity: activity)
+
+    expected = "meow"
+
+    assert result["summary"] == expected
+  end
+
   test "a create activity with a note" do
     user = insert(:user)
     other_user = insert(:user, %{nickname: "shp"})
