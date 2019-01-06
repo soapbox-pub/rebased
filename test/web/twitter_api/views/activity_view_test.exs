@@ -50,10 +50,13 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
     result = ActivityView.render("activity.json", activity: activity)
 
-    expected =
+    expected = ":woollysocks: meow"
+
+    expected_html =
       "<img height=\"32px\" width=\"32px\" alt=\"woollysocks\" title=\"woollysocks\" src=\"http://localhost:4001/finmoji/128px/woollysocks-128.png\" /> meow"
 
     assert result["summary"] == expected
+    assert result["summary_html"] == expected_html
   end
 
   test "a create activity with a summary containing invalid HTML" do
@@ -68,6 +71,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     expected = "meow"
 
     assert result["summary"] == expected
+    assert result["summary_html"] == expected
   end
 
   test "a create activity with a note" do
@@ -103,6 +107,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "repeated" => false,
       "statusnet_conversation_id" => convo_id,
       "summary" => "",
+      "summary_html" => "",
       "statusnet_html" =>
         "Hey <span><a data-user=\"#{other_user.id}\" href=\"#{other_user.ap_id}\">@<span>shp</span></a></span>!",
       "tags" => [],

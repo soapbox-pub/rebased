@@ -263,6 +263,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     reply_user = reply_parent && User.get_cached_by_ap_id(reply_parent.actor)
 
+    summary = HTML.strip_tags(summary)
+
     %{
       "id" => activity.id,
       "uri" => activity.data["object"]["id"],
@@ -289,7 +291,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive,
       "visibility" => Pleroma.Web.MastodonAPI.StatusView.get_visibility(object),
-      "summary" => HTML.strip_tags(summary) |> Formatter.emojify(object["emoji"])
+      "summary" => summary,
+      "summary_html" => summary |> Formatter.emojify(object["emoji"])
     }
   end
 
