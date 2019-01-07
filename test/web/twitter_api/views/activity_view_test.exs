@@ -25,7 +25,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
   import Mock
 
-  test "returns an error user for activities missing users" do
+  test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
@@ -33,8 +33,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     Repo.delete(user)
     Cachex.clear(:user_cache)
 
-    result = ActivityView.render("activity.json", activity: activity)
-    assert result
+    %{"user" => tw_user} = ActivityView.render("activity.json", activity: activity)
+
+    assert tw_user["screen_name"] == "erroruser@example.com"
+    assert tw_user["name"] == user.ap_id
+    assert tw_user["statusnet_profile_url"] == user.ap_id
   end
 
   test "tries to get a user by nickname if fetching by ap_id doesn't work" do
