@@ -1312,6 +1312,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end)
   end
 
+  test "search doesn't show statuses that it shouldn't", %{conn: conn} do
+    {:ok, activity} =
+      CommonAPI.post(insert(:user), %{
+        "status" => "This is about 2hu, but private",
+        "visibility" => "private"
+      })
+
+    capture_log(fn ->
+      conn =
+        conn
+        |> get("/api/v1/search", %{"q" => activity.data["object"]["id"]})
+
+      assert results = json_response(conn, 200)
+
+      [] = results["statuses"]
+    end)
+  end
+
   test "search fetches remote accounts", %{conn: conn} do
     conn =
       conn
