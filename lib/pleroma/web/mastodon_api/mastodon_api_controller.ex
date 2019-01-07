@@ -740,11 +740,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
-  def status_search(query) do
+  def status_search(user, query) do
     fetched =
       if Regex.match?(~r/https?:/, query) do
-        with {:ok, object} <- ActivityPub.fetch_object_from_id(query) do
-          [Activity.get_create_activity_by_object_ap_id(object.data["id"])]
+        with {:ok, object} <- ActivityPub.fetch_object_from_id(query),
+             %Activity{} = activity <-
+               Activity.get_create_activity_by_object_ap_id(object.data["id"]),
+             true <- ActivityPub.visible_for_user?(activity, user) do
+          [activity]
         else
           _e -> []
         end
@@ -771,7 +774,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, params["resolve"] == "true")
 
-    statuses = status_search(query)
+    statuses = status_search(user, query)
 
     tags_path = Web.base_url() <> "/tag/"
 
@@ -795,7 +798,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, params["resolve"] == "true")
 
-    statuses = status_search(query)
+    statuses = status_search(user, query)
 
     tags =
       String.split(query)
