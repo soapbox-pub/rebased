@@ -367,6 +367,15 @@ defmodule Pleroma.User do
     Repo.get_by(User, ap_id: ap_id)
   end
 
+  # This is mostly an SPC migration fix. This guesses the user nickname (by taking the last part of the ap_id and the domain) and tries to get that user
+  def get_by_guessed_nickname(ap_id) do
+    domain = URI.parse(ap_id).host
+    name = List.last(String.split(ap_id, "/"))
+    nickname = "#{name}@#{domain}"
+
+    get_by_nickname(nickname)
+  end
+
   def update_and_set_cache(changeset) do
     with {:ok, user} <- Repo.update(changeset) do
       Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
