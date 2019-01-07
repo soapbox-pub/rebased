@@ -94,9 +94,23 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       ap_id == "https://www.w3.org/ns/activitystreams#Public" ->
         nil
 
+      user = User.get_cached_by_ap_id(ap_id) ->
+        user
+
+      user = User.get_by_guessed_nickname(ap_id) ->
+        user
+
       true ->
-        User.get_cached_by_ap_id(ap_id)
+        error_user()
     end
+  end
+
+  defp error_user do
+    %User{
+      info: %User.Info{},
+      nickname: "erroruser@example.com",
+      inserted_at: NaiveDateTime.utc_now()
+    }
   end
 
   def render("index.json", opts) do
