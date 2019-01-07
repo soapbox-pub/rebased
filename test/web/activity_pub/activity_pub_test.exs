@@ -601,6 +601,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert object
   end
 
+  test "returned pinned posts" do
+    Pleroma.Config.put([:instance, :max_pinned_posts], 3)
+    user = insert(:user)
+
+    {:ok, activity_one} = CommonAPI.post(user, %{"status" => "HI!!!"})
+    {:ok, activity_two} = CommonAPI.post(user, %{"status" => "HI!!!"})
+    {:ok, activity_three} = CommonAPI.post(user, %{"status" => "HI!!!"})
+
+    CommonAPI.pin(activity_one.id, user)
+
+    user = User.get_by_ap_id(user.ap_id)
+    CommonAPI.pin(activity_two.id, user)
+
+    user = User.get_by_ap_id(user.ap_id)
+    CommonAPI.pin(activity_three.id, user)
+
+    user = User.get_by_ap_id(user.ap_id)
+    activities = ActivityPub.fetch_user_activities(user, nil, %{"pinned" => "true"})
+
+    assert 3 = length(activities)
+  end
+
   def data_uri do
     File.read!("test/fixtures/avatar_data_uri")
   end

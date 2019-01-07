@@ -96,4 +96,40 @@ defmodule Pleroma.Web.CommonAPI.Test do
       {:error, _} = CommonAPI.favorite(activity.id, user)
     end
   end
+
+  describe "pinned posts" do
+    test "pin post" do
+      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+
+      assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
+    end
+
+    test "max pinned posts" do
+      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+      user = insert(:user)
+
+      {:ok, activity_one} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, activity_two} = CommonAPI.post(user, %{"status" => "HI!!!"})
+
+      assert {:ok, ^activity_one} = CommonAPI.pin(activity_one.id, user)
+
+      user = User.get_by_ap_id(user.ap_id)
+
+      assert {:error, "You have already pinned the maximum number of toots"} =
+               CommonAPI.pin(activity_two.id, user)
+    end
+
+    test "unpin post" do
+      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, activity} = CommonAPI.pin(activity.id, user)
+
+      assert {:ok, ^activity} = CommonAPI.unpin(activity.id, user)
+    end
+  end
 end

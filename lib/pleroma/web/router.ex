@@ -188,6 +188,8 @@ defmodule Pleroma.Web.Router do
     post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
     post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
     post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
+    post("/statuses/:id/pin", MastodonAPIController, :pin_status)
+    post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
 
     post("/notifications/clear", MastodonAPIController, :clear_notifications)
     post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)

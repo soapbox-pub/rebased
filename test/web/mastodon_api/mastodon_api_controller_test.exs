@@ -1453,4 +1453,99 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     user = User.get_cached_by_ap_id(user.ap_id)
     assert user.info.settings == %{"programming" => "socks"}
   end
+
+  describe "pinned posts" do
+    test "returns pinned posts", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, _} = CommonAPI.pin(activity.id, user)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+        |> Map.get(:resp_body)
+        |> Jason.decode!()
+
+      id_str = Integer.to_string(activity.id)
+
+      assert [%{"id" => ^id_str}] = result
+    end
+
+    test "pin post", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      id_str = Integer.to_string(activity.id)
+
+      assert %{"id" => ^id_str} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity.id}/pin")
+               |> Map.get(:resp_body)
+               |> Jason.decode!()
+
+      assert [%{"id" => ^id_str}] =
+               conn
+               |> assign(:user, user)
+               |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+               |> Map.get(:resp_body)
+               |> Jason.decode!()
+    end
+
+    test "unpin post", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, _} = CommonAPI.pin(activity.id, user)
+
+      id_str = Integer.to_string(activity.id)
+      user = User.get_by_ap_id(user.ap_id)
+
+      assert %{"id" => ^id_str} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity.id}/unpin")
+               |> Map.get(:resp_body)
+               |> Jason.decode!()
+
+      assert [] =
+               conn
+               |> assign(:user, user)
+               |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+               |> Map.get(:resp_body)
+               |> Jason.decode!()
+    end
+
+    test "max pinned posts", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+
+      user = insert(:user)
+
+      {:ok, activity_one} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, activity_two} = CommonAPI.post(user, %{"status" => "HI!!!"})
+
+      id_str_one = Integer.to_string(activity_one.id)
+
+      assert %{"id" => ^id_str_one} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{id_str_one}/pin")
+               |> Map.get(:resp_body)
+               |> Jason.decode!()
+
+      user = User.get_by_ap_id(user.ap_id)
+
+      assert %{"error" => "You have already pinned the maximum number of toots"} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity_two.id}/pin")
+               |> Map.get(:resp_body)
+               |> Jason.decode!()
+    end
+  end
 end
