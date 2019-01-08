@@ -142,6 +142,23 @@ defmodule Pleroma.UserTest do
       email: "email@example.com"
     }
 
+    test "it autofollows accounts that are set for it" do
+      user = insert(:user)
+      remote_user = insert(:user, %{local: false})
+
+      Pleroma.Config.put([:instance, :autofollowed_nicknames], [
+        user.nickname,
+        remote_user.nickname
+      ])
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      {:ok, registered_user} = User.register(cng)
+
+      assert User.following?(registered_user, user)
+      refute User.following?(registered_user, remote_user)
+    end
+
     test "it requires an email, name, nickname and password, bio is optional" do
       @full_user_data
       |> Map.keys()

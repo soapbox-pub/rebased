@@ -229,10 +229,27 @@ defmodule Pleroma.User do
     end
   end
 
+  defp autofollow_users(user) do
+    candidates = Pleroma.Config.get([:instance, :autofollowed_nicknames])
+
+    autofollowed_users =
+      from(u in User,
+        where: u.local == true,
+        where: u.nickname in ^candidates
+      )
+      |> Repo.all()
+
+    autofollowed_users
+    |> Enum.reduce({:ok, user}, fn other_user, {:ok, user} ->
+      follow(user, other_user)
+    end)
+  end
+
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset),
-         {:ok, _} = try_send_confirmation_email(user) do
+         {:ok, _} <- try_send_confirmation_email(user),
+         {:ok, user} <- autofollow_users(user) do
       {:ok, user}
     end
   end

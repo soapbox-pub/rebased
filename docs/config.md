@@ -93,6 +93,7 @@ config :pleroma, Pleroma.Mailer,
 * `always_show_subject_input`: When set to false, auto-hide the subject field when it's empty.
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
+* `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
