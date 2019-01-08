@@ -25,6 +25,37 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
   import Mock
 
+  test "returns a temporary ap_id based user for activities missing db users" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    Repo.delete(user)
+    Cachex.clear(:user_cache)
+
+    %{"user" => tw_user} = ActivityView.render("activity.json", activity: activity)
+
+    assert tw_user["screen_name"] == "erroruser@example.com"
+    assert tw_user["name"] == user.ap_id
+    assert tw_user["statusnet_profile_url"] == user.ap_id
+  end
+
+  test "tries to get a user by nickname if fetching by ap_id doesn't work" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    {:ok, user} =
+      user
+      |> Ecto.Changeset.change(%{ap_id: "#{user.ap_id}/extension/#{user.nickname}"})
+      |> Repo.update()
+
+    Cachex.clear(:user_cache)
+
+    result = ActivityView.render("activity.json", activity: activity)
+    assert result["user"]["id"] == user.id
+  end
+
   test "a create activity with a html status" do
     text = """
     #Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg
