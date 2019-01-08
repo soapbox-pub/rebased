@@ -97,9 +97,9 @@ defmodule Pleroma.Web.CommonAPI.Test do
     end
   end
 
-  describe "pinned posts" do
-    test "pin post" do
-      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+  describe "pinned statuses" do
+    test "pin status" do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
@@ -107,8 +107,8 @@ defmodule Pleroma.Web.CommonAPI.Test do
       assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
     end
 
-    test "max pinned posts" do
-      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+    test "max pinned statuses" do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
       user = insert(:user)
 
       {:ok, activity_one} = CommonAPI.post(user, %{"status" => "HI!!!"})
@@ -122,8 +122,8 @@ defmodule Pleroma.Web.CommonAPI.Test do
                CommonAPI.pin(activity_two.id, user)
     end
 
-    test "unpin post" do
-      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+    test "unpin status" do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})

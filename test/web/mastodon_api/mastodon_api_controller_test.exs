@@ -1472,9 +1472,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert user.info.settings == %{"programming" => "socks"}
   end
 
-  describe "pinned posts" do
-    test "returns pinned posts", %{conn: conn} do
-      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+  describe "pinned statuses" do
+    test "returns pinned statuses", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
@@ -1492,8 +1492,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert [%{"id" => ^id_str}] = result
     end
 
-    test "pin post", %{conn: conn} do
-      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+    test "pin status", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
@@ -1514,8 +1514,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> Jason.decode!()
     end
 
-    test "unpin post", %{conn: conn} do
-      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+    test "unpin status", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
       user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
@@ -1539,8 +1539,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> Jason.decode!()
     end
 
-    test "max pinned posts", %{conn: conn} do
-      Pleroma.Config.put([:instance, :max_pinned_posts], 1)
+    test "max pinned statuses", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
 
       user = insert(:user)
 
@@ -1558,7 +1558,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       user = User.get_by_ap_id(user.ap_id)
 
-      assert %{"error" => "You have already pinned the maximum number of toots"} =
+      assert %{"error" => "You have already pinned the maximum number of statuses"} =
                conn
                |> assign(:user, user)
                |> post("/api/v1/statuses/#{activity_two.id}/pin")

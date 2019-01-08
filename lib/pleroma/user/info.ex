@@ -202,14 +202,14 @@ defmodule Pleroma.User.Info do
 
   def add_pinnned_activity(info, %Pleroma.Activity{id: id}) do
     if id not in info.pinned_activities do
-      max_pinned_posts = Pleroma.Config.get([:instance, :max_pinned_posts], 0)
+      max_pinned_statuses = Pleroma.Config.get([:instance, :max_pinned_statuses], 0)
       params = %{pinned_activities: info.pinned_activities ++ [id]}
 
       info
       |> cast(params, [:pinned_activities])
       |> validate_length(:pinned_activities,
-        max: max_pinned_posts,
-        message: "You have already pinned the maximum number of toots"
+        max: max_pinned_statuses,
+        message: "You have already pinned the maximum number of statuses"
       )
     else
       change(info)

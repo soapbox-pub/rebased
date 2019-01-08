@@ -601,8 +601,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert object
   end
 
-  test "returned pinned posts" do
-    Pleroma.Config.put([:instance, :max_pinned_posts], 3)
+  test "returned pinned statuses" do
+    Pleroma.Config.put([:instance, :max_pinned_statuses], 3)
     user = insert(:user)
 
     {:ok, activity_one} = CommonAPI.post(user, %{"status" => "HI!!!"})
