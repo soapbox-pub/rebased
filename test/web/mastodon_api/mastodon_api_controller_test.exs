@@ -1522,7 +1522,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       {:ok, _} = CommonAPI.pin(activity.id, user)
 
       id_str = Integer.to_string(activity.id)
-      user = User.get_by_ap_id(user.ap_id)
+      user = refresh_record(user)
 
       assert %{"id" => ^id_str, "pinned" => false} =
                conn
@@ -1556,7 +1556,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> Map.get(:resp_body)
                |> Jason.decode!()
 
-      user = User.get_by_ap_id(user.ap_id)
+      user = refresh_record(user)
 
       assert %{"error" => "You have already pinned the maximum number of statuses"} =
                conn

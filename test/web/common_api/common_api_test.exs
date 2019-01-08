@@ -116,7 +116,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
 
       assert {:ok, ^activity_one} = CommonAPI.pin(activity_one.id, user)
 
-      user = User.get_by_ap_id(user.ap_id)
+      user = refresh_record(user)
 
       assert {:error, "You have already pinned the maximum number of statuses"} =
                CommonAPI.pin(activity_two.id, user)

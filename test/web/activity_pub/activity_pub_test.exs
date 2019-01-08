@@ -610,14 +610,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, activity_three} = CommonAPI.post(user, %{"status" => "HI!!!"})
 
     CommonAPI.pin(activity_one.id, user)
+    user = refresh_record(user)
 
-    user = User.get_by_ap_id(user.ap_id)
     CommonAPI.pin(activity_two.id, user)
+    user = refresh_record(user)
 
-    user = User.get_by_ap_id(user.ap_id)
     CommonAPI.pin(activity_three.id, user)
+    user = refresh_record(user)
 
-    user = User.get_by_ap_id(user.ap_id)
     activities = ActivityPub.fetch_user_activities(user, nil, %{"pinned" => "true"})
 
     assert 3 = length(activities)
