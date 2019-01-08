@@ -292,6 +292,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 400)
     end
+
+    test "it increases like count when receiving a like action", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      user = User.get_cached_by_ap_id(note_activity.data["actor"])
+
+      data = %{
+        type: "Like",
+        object: %{
+          id: note_activity.data["object"]["id"]
+        }
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      result = json_response(conn, 201)
+      assert Activity.get_by_ap_id(result["id"])
+
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      assert object
+      assert object.data["like_count"] == 1
+    end
   end
 
   describe "/users/:nickname/followers" do

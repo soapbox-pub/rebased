@@ -204,6 +204,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def handle_user_activity(user, %{"type" => "Like"} = params) do
+    with %Object{} = object <- Object.normalize(params["object"]),
+         {:ok, activity, _object} <- ActivityPub.like(user, object) do
+      {:ok, activity}
+    else
+      _ -> {:error, "Can't like object"}
+    end
+  end
+
   def handle_user_activity(_, _) do
     {:error, "Unhandled activity type"}
   end
