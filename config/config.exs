@@ -137,7 +137,8 @@ config :pleroma, :instance,
     "text/markdown"
   ],
   finmoji_enabled: true,
-  mrf_transparency: true
+  mrf_transparency: true,
+  autofollowed_nicknames: []
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
