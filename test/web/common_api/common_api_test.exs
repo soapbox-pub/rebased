@@ -118,7 +118,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
 
       user = User.get_by_ap_id(user.ap_id)
 
-      assert {:error, "You have already pinned the maximum number of toots"} =
+      assert {:error, "You have already pinned the maximum number of statuses"} =
                CommonAPI.pin(activity_two.id, user)
     end
 
