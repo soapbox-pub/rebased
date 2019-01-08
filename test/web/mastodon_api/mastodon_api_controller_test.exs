@@ -1489,7 +1489,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       id_str = Integer.to_string(activity.id)
 
-      assert [%{"id" => ^id_str}] = result
+      assert [%{"id" => ^id_str, "pinned" => true}] = result
     end
 
     test "pin status", %{conn: conn} do
@@ -1499,14 +1499,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
       id_str = Integer.to_string(activity.id)
 
-      assert %{"id" => ^id_str} =
+      assert %{"id" => ^id_str, "pinned" => true} =
                conn
                |> assign(:user, user)
                |> post("/api/v1/statuses/#{activity.id}/pin")
                |> Map.get(:resp_body)
                |> Jason.decode!()
 
-      assert [%{"id" => ^id_str}] =
+      assert [%{"id" => ^id_str, "pinned" => true}] =
                conn
                |> assign(:user, user)
                |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
@@ -1524,7 +1524,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       id_str = Integer.to_string(activity.id)
       user = User.get_by_ap_id(user.ap_id)
 
-      assert %{"id" => ^id_str} =
+      assert %{"id" => ^id_str, "pinned" => false} =
                conn
                |> assign(:user, user)
                |> post("/api/v1/statuses/#{activity.id}/unpin")
@@ -1549,7 +1549,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       id_str_one = Integer.to_string(activity_one.id)
 
-      assert %{"id" => ^id_str_one} =
+      assert %{"id" => ^id_str_one, "pinned" => true} =
                conn
                |> assign(:user, user)
                |> post("/api/v1/statuses/#{id_str_one}/pin")
