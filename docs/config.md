@@ -93,6 +93,7 @@ config :pleroma, Pleroma.Mailer,
 * `always_show_subject_input`: When set to false, auto-hide the subject field when it's empty.
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
+* `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 
 ## :fe
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
