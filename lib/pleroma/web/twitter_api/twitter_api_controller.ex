@@ -472,7 +472,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def followers(%{assigns: %{user: for_user}} = conn, params) do
-    page = params["page"] || 1
+    {:ok, page} = Ecto.Type.cast(:integer, params["page"] || 1)
 
     with {:ok, user} <- TwitterAPI.get_user(for_user, params),
          {:ok, followers} <- User.get_followers(user, page) do
@@ -492,7 +492,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def friends(%{assigns: %{user: for_user}} = conn, params) do
-    page = params["page"] || 1
+    {:ok, page} = Ecto.Type.cast(:integer, params["page"] || 1)
 
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
          {:ok, friends} <- User.get_friends(user, page) do

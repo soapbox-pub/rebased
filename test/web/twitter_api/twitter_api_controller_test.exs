@@ -1101,7 +1101,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       res_conn =
         conn
         |> assign(:user, user)
-        |> get("/api/statuses/followers", %{page: 2})
+        |> get("/api/statuses/followers?page=2")
 
       result = json_response(res_conn, 200)
       assert length(result) == 1
