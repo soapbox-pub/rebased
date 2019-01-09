@@ -48,6 +48,17 @@ defmodule Pleroma.UserTest do
     assert expected_followers_collection == User.ap_followers(user)
   end
 
+  test "follow_all follows mutliple users" do
+    user = insert(:user)
+    followed_one = insert(:user)
+    followed_two = insert(:user)
+
+    {:ok, user} = User.follow_all(user, [followed_one, followed_two])
+
+    assert User.following?(user, followed_one)
+    assert User.following?(user, followed_two)
+  end
+
   test "follow takes a user and another user" do
     user = insert(:user)
     followed = insert(:user)

@@ -307,6 +307,25 @@ defmodule Pleroma.User do
     end
   end
 
+  @doc "A mass follow for local users. Ignores blocks and has no side effects"
+  @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
+  def follow_all(follower, followeds) do
+    following =
+      (follower.following ++ Enum.map(followeds, fn %{follower_address: fa} -> fa end))
+      |> Enum.uniq()
+
+    {:ok, follower} =
+      follower
+      |> follow_changeset(%{following: following})
+      |> update_and_set_cache
+
+    Enum.each(followeds, fn followed ->
+      update_follower_count(followed)
+    end)
+
+    {:ok, follower}
+  end
+
   def follow(%User{} = follower, %User{info: info} = followed) do
     user_config = Application.get_env(:pleroma, :user)
     deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
