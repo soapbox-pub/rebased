@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Test do
@@ -98,30 +98,26 @@ defmodule Pleroma.Web.CommonAPI.Test do
   end
 
   describe "pinned statuses" do
-    test "pin status" do
+    setup do
       Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
-      user = insert(:user)
 
+      user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
 
+      [user: user, activity: activity]
+    end
+
+    test "pin status", %{user: user, activity: activity} do
       assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
     end
 
-    test "only self-authored can be pinned" do
-      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
-      user_one = insert(:user)
-      user_two = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user_one, %{"status" => "HI!!!"})
-
-      assert {:error, "Could not pin"} = CommonAPI.pin(activity.id, user_two)
-    end
-
-    test "max pinned statuses" do
-      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
+    test "only self-authored can be pinned", %{activity: activity} do
       user = insert(:user)
 
-      {:ok, activity_one} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      assert {:error, "Could not pin"} = CommonAPI.pin(activity.id, user)
+    end
+
+    test "max pinned statuses", %{user: user, activity: activity_one} do
       {:ok, activity_two} = CommonAPI.post(user, %{"status" => "HI!!!"})
 
       assert {:ok, ^activity_one} = CommonAPI.pin(activity_one.id, user)
@@ -132,11 +128,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
                CommonAPI.pin(activity_two.id, user)
     end
 
-    test "unpin status" do
-      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
-      user = insert(:user)
-
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+    test "unpin status", %{user: user, activity: activity} do
       {:ok, activity} = CommonAPI.pin(activity.id, user)
 
       assert {:ok, ^activity} = CommonAPI.unpin(activity.id, user)
