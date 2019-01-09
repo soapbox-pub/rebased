@@ -138,7 +138,8 @@ config :pleroma, :instance,
   ],
   finmoji_enabled: true,
   mrf_transparency: true,
-  autofollowed_nicknames: []
+  autofollowed_nicknames: [],
+  max_pinned_statuses: 1
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
