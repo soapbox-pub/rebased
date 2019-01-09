@@ -17,6 +17,8 @@ defmodule Pleroma.User do
 
   @type t :: %__MODULE__{}
 
+  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/

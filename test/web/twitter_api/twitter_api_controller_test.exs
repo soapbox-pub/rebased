@@ -797,7 +797,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post("/api/favorites/create/1.json")
 
-      assert json_response(conn, 500)
+      assert json_response(conn, 400)
     end
   end
 
@@ -1621,7 +1621,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn =
         build_conn()
         |> assign(:user, user)
-        |> post("/api/pleroma/friendships/approve", %{"user_id" => to_string(other_user.id)})
+        |> post("/api/pleroma/friendships/approve", %{"user_id" => other_user.id})
 
       assert relationship = json_response(conn, 200)
       assert other_user.id == relationship["id"]
@@ -1644,7 +1644,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn =
         build_conn()
         |> assign(:user, user)
-        |> post("/api/pleroma/friendships/deny", %{"user_id" => to_string(other_user.id)})
+        |> post("/api/pleroma/friendships/deny", %{"user_id" => other_user.id})
 
       assert relationship = json_response(conn, 200)
       assert other_user.id == relationship["id"]

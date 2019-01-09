@@ -9,8 +9,8 @@ defmodule Pleroma.Notification do
 
   schema "notifications" do
     field(:seen, :boolean, default: false)
-    belongs_to(:user, Pleroma.User)
-    belongs_to(:activity, Pleroma.Activity)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:activity, Activity, type: Pleroma.FlakeId)
 
     timestamps()
   end
@@ -96,7 +96,7 @@ defmodule Pleroma.Notification do
     end
   end
 
-  def create_notifications(%Activity{id: _, data: %{"to" => _, "type" => type}} = activity)
+  def create_notifications(%Activity{data: %{"to" => _, "type" => type}} = activity)
       when type in ["Create", "Like", "Announce", "Follow"] do
     users = get_notified_from_activity(activity)
 
