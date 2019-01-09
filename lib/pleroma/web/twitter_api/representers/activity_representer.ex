@@ -153,6 +153,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     announcement_count = object["announcement_count"] || 0
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
+    pinned = activity.id in user.info.pinned_activities
 
     mentions = opts[:mentioned] || []
 
@@ -202,6 +203,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
       "repeat_num" => announcement_count,
       "favorited" => to_boolean(favorited),
       "repeated" => to_boolean(repeated),
+      "pinned" => pinned,
       "external_url" => object["external_url"] || object["id"],
       "tags" => tags,
       "activity_type" => "post",

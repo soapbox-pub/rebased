@@ -355,6 +355,9 @@ defmodule Pleroma.Web.Router do
     post("/statuses/unretweet/:id", TwitterAPI.Controller, :unretweet)
     post("/statuses/destroy/:id", TwitterAPI.Controller, :delete_post)
 
+    post("/statuses/pin/:id", TwitterAPI.Controller, :pin)
+    post("/statuses/unpin/:id", TwitterAPI.Controller, :unpin)
+
     get("/pleroma/friend_requests", TwitterAPI.Controller, :friend_requests)
     post("/pleroma/friendships/approve", TwitterAPI.Controller, :approve_friend_request)
     post("/pleroma/friendships/deny", TwitterAPI.Controller, :deny_friend_request)

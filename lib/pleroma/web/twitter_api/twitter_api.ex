@@ -82,6 +82,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
+  def pin(%User{} = user, ap_id_or_id) do
+    CommonAPI.pin(ap_id_or_id, user)
+  end
+
+  def unpin(%User{} = user, ap_id_or_id) do
+    CommonAPI.unpin(ap_id_or_id, user)
+  end
+
   def fav(%User{} = user, ap_id_or_id) do
     with {:ok, _fav, %{data: %{"id" => id}}} <- CommonAPI.favorite(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
