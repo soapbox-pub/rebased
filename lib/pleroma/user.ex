@@ -63,7 +63,8 @@ defmodule Pleroma.User do
 
   def visible_for?(_, _), do: false
 
-  def superuser?(%User{info: %User.Info{} = info}), do: User.Info.superuser?(info)
+  def superuser?(%User{local: true, info: %User.Info{is_admin: true}}), do: true
+  def superuser?(%User{local: true, info: %User.Info{is_moderator: true}}), do: true
   def superuser?(_), do: false
 
   def avatar_url(user) do
