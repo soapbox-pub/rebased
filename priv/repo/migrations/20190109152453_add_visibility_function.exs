@@ -1,5 +1,6 @@
 defmodule Pleroma.Repo.Migrations.AddVisibilityFunction do
   use Ecto.Migration
+  @disable_ddl_transaction true
 
   def up do
     definition = """
@@ -29,7 +30,8 @@ defmodule Pleroma.Repo.Migrations.AddVisibilityFunction do
 
     create(
       index(:activities, ["activity_visibility(actor, recipients, data)"],
-        name: :activities_visibility_index
+        name: :activities_visibility_index,
+        concurrently: true
       )
     )
   end
