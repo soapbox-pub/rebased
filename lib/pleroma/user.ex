@@ -44,7 +44,7 @@ defmodule Pleroma.User do
     timestamps()
   end
 
-  def auth_active?(%User{local: false}), do: false
+  def auth_active?(%User{local: false}), do: true
 
   def auth_active?(%User{info: %User.Info{confirmation_pending: false}}), do: true
 
