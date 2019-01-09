@@ -517,15 +517,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_reblogs(query, _), do: query
 
-  # Only search through last 100_000 activities by default
-  defp restrict_recent(query, %{"whole_db" => true}), do: query
-
-  defp restrict_recent(query, _) do
-    since = (Repo.aggregate(Activity, :max, :id) || 0) - 100_000
-
-    from(activity in query, where: activity.id > ^since)
-  end
-
   defp restrict_blocked(query, %{"blocking_user" => %User{info: info}}) do
     blocks = info.blocks || []
     domain_blocks = info.domain_blocks || []
@@ -570,7 +561,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_actor(opts)
     |> restrict_type(opts)
     |> restrict_favorited_by(opts)
-    |> restrict_recent(opts)
     |> restrict_blocked(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
