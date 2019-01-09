@@ -44,20 +44,28 @@ defmodule Pleroma.User do
     timestamps()
   end
 
-  def auth_active?(%User{} = user) do
-    (user.info && !user.info.confirmation_pending) ||
-      !Pleroma.Config.get([:instance, :account_activation_required])
+  def auth_active?(%User{local: false}), do: true
+
+  def auth_active?(%User{info: %User.Info{confirmation_pending: false}}), do: true
+
+  def auth_active?(%User{info: %User.Info{confirmation_pending: true}}),
+    do: !Pleroma.Config.get([:instance, :account_activation_required])
+
+  def auth_active?(_), do: false
+
+  def visible_for?(user, for_user \\ nil)
+
+  def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
+
+  def visible_for?(%User{} = user, for_user) do
+    auth_active?(user) || superuser?(for_user)
   end
 
-  def remote_or_auth_active?(%User{} = user), do: !user.local || auth_active?(user)
+  def visible_for?(_, _), do: false
 
-  def visible_for?(%User{} = user, for_user \\ nil) do
-    User.remote_or_auth_active?(user) || (for_user && for_user.id == user.id) ||
-      User.superuser?(for_user)
-  end
-
-  def superuser?(nil), do: false
-  def superuser?(%User{} = user), do: user.info && User.Info.superuser?(user.info)
+  def superuser?(%User{local: true, info: %User.Info{is_admin: true}}), do: true
+  def superuser?(%User{local: true, info: %User.Info{is_moderator: true}}), do: true
+  def superuser?(_), do: false
 
   def avatar_url(user) do
     case user.avatar do
