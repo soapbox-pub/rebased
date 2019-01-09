@@ -5,7 +5,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
     def parse(url), do: parse_url(url)
   else
     def parse(url),
-      do: {:commit, Cachex.fetch!(:rich_media_cache, url, fn _ -> parse_url(url) end)}
+      do: Cachex.fetch!(:rich_media_cache, url, fn _ -> parse_url(url) end)
   end
 
   defp parse_url(url) do
