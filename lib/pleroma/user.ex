@@ -44,6 +44,8 @@ defmodule Pleroma.User do
     timestamps()
   end
 
+  def auth_active?(%User{local: false}), do: false
+
   def auth_active?(%User{info: %User.Info{confirmation_pending: false}}), do: true
 
   def auth_active?(%User{info: %User.Info{confirmation_pending: true}}),
@@ -51,15 +53,12 @@ defmodule Pleroma.User do
 
   def auth_active?(_), do: false
 
-  def remote_or_auth_active?(%User{local: false}), do: true
-  def remote_or_auth_active?(%User{local: true} = user), do: auth_active?(user)
-
   def visible_for?(user, for_user \\ nil)
 
   def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
 
   def visible_for?(%User{} = user, for_user) do
-    remote_or_auth_active?(user) || superuser?(for_user)
+    auth_active?(user) || superuser?(for_user)
   end
 
   def visible_for?(_, _), do: false

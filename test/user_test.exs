@@ -768,16 +768,16 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "remote_or_auth_active?/1 works correctly" do
+  test "auth_active?/1 works correctly" do
     Pleroma.Config.put([:instance, :account_activation_required], true)
 
     local_user = insert(:user, local: true, info: %{confirmation_pending: true})
     confirmed_user = insert(:user, local: true, info: %{confirmation_pending: false})
     remote_user = insert(:user, local: false)
 
-    refute User.remote_or_auth_active?(local_user)
-    assert User.remote_or_auth_active?(confirmed_user)
-    assert User.remote_or_auth_active?(remote_user)
+    refute User.auth_active?(local_user)
+    assert User.auth_active?(confirmed_user)
+    assert User.auth_active?(remote_user)
 
     Pleroma.Config.put([:instance, :account_activation_required], false)
   end
