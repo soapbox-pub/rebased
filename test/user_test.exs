@@ -781,4 +781,32 @@ defmodule Pleroma.UserTest do
 
     Pleroma.Config.put([:instance, :account_activation_required], false)
   end
+
+  describe "superuser?/1" do
+    test "returns false for unprivileged users" do
+      user = insert(:user, local: true)
+
+      refute User.superuser?(user)
+    end
+
+    test "returns false for remote users" do
+      user = insert(:user, local: false)
+      remote_admin_user = insert(:user, local: false, info: %{is_admin: true})
+
+      refute User.superuser?(user)
+      refute User.superuser?(remote_admin_user)
+    end
+
+    test "returns true for local moderators" do
+      user = insert(:user, local: true, info: %{is_moderator: true})
+
+      assert User.superuser?(user)
+    end
+
+    test "returns true for local admins" do
+      user = insert(:user, local: true, info: %{is_admin: true})
+
+      assert User.superuser?(user)
+    end
+  end
 end
