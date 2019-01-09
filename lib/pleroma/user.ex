@@ -49,7 +49,8 @@ defmodule Pleroma.User do
       !Pleroma.Config.get([:instance, :account_activation_required])
   end
 
-  def remote_or_auth_active?(%User{} = user), do: !user.local || auth_active?(user)
+  def remote_or_auth_active?(%User{local: false}), do: true
+  def remote_or_auth_active?(%User{local: true} = user), do: auth_active?(user)
 
   def visible_for?(%User{} = user, for_user \\ nil) do
     User.remote_or_auth_active?(user) || (for_user && for_user.id == user.id) ||
