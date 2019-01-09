@@ -471,7 +471,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def get_followers_query(%User{id: id, follower_address: follower_address}) do
+  def get_followers_query(%User{id: id, follower_address: follower_address}, nil) do
     from(
       u in User,
       where: fragment("? <@ ?", ^[follower_address], u.following),
@@ -479,13 +479,23 @@ defmodule Pleroma.User do
     )
   end
 
-  def get_followers(user) do
-    q = get_followers_query(user)
+  def get_followers_query(user, page) do
+    from(
+      u in get_followers_query(user, nil),
+      limit: 20,
+      offset: ^((page - 1) * 20)
+    )
+  end
+
+  def get_followers_query(user), do: get_followers_query(user, nil)
+
+  def get_followers(user, page \\ nil) do
+    q = get_followers_query(user, page)
 
     {:ok, Repo.all(q)}
   end
 
-  def get_friends_query(%User{id: id, following: following}) do
+  def get_friends_query(%User{id: id, following: following}, nil) do
     from(
       u in User,
       where: u.follower_address in ^following,
@@ -493,8 +503,18 @@ defmodule Pleroma.User do
     )
   end
 
-  def get_friends(user) do
-    q = get_friends_query(user)
+  def get_friends_query(user, page) do
+    from(
+      u in get_friends_query(user, nil),
+      limit: 20,
+      offset: ^((page - 1) * 20)
+    )
+  end
+
+  def get_friends_query(user), do: get_friends_query(user, nil)
+
+  def get_friends(user, page \\ nil) do
+    q = get_friends_query(user, page)
 
     {:ok, Repo.all(q)}
   end

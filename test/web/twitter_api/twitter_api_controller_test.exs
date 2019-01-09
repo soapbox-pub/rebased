@@ -1082,6 +1082,31 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert Enum.sort(expected) == Enum.sort(result)
     end
 
+    test "it returns 20 followers per page", %{conn: conn} do
+      user = insert(:user)
+      followers = insert_list(21, :user)
+
+      Enum.each(followers, fn follower ->
+        User.follow(follower, user)
+      end)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/followers")
+
+      result = json_response(res_conn, 200)
+      assert length(result) == 20
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/followers", %{page: 2})
+
+      result = json_response(res_conn, 200)
+      assert length(result) == 1
+    end
+
     test "it returns a given user's followers with user_id", %{conn: conn} do
       user = insert(:user)
       follower_one = insert(:user)
@@ -1181,6 +1206,32 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       expected = UserView.render("index.json", %{users: [followed_one, followed_two], for: user})
       result = json_response(conn, 200)
       assert Enum.sort(expected) == Enum.sort(result)
+    end
+
+    test "it returns 20 friends per page", %{conn: conn} do
+      user = insert(:user)
+      followeds = insert_list(21, :user)
+
+      {:ok, user} =
+        Enum.reduce(followeds, {:ok, user}, fn followed, {:ok, user} ->
+          User.follow(user, followed)
+        end)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/friends")
+
+      result = json_response(res_conn, 200)
+      assert length(result) == 20
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/friends", %{page: 2})
+
+      result = json_response(res_conn, 200)
+      assert length(result) == 1
     end
 
     test "it returns a given user's friends with user_id", %{conn: conn} do
