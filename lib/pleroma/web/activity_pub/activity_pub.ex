@@ -364,21 +364,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @valid_visibilities ~w[direct unlisted public private]
 
-  defp restrict_visibility(query, %{visibility: "direct"}) do
-    public = "https://www.w3.org/ns/activitystreams#Public"
+  defp restrict_visibility(query, %{visibility: visibility})
+       when visibility in @valid_visibilities do
+    query =
+      from(
+        a in query,
+        where:
+          fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
+      )
 
-    from(
-      activity in query,
-      join: sender in User,
-      on: sender.ap_id == activity.actor,
-      # Are non-direct statuses with no to/cc possible?
-      where:
-        fragment(
-          "not (? && ?)",
-          [^public, sender.follower_address],
-          activity.recipients
-        )
-    )
+    Ecto.Adapters.SQL.to_sql(:all, Repo, query)
+
+    query
   end
 
   defp restrict_visibility(_query, %{visibility: visibility})
