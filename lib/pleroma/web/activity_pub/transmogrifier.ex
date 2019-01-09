@@ -629,6 +629,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> add_mention_tags
     |> add_emoji_tags
     |> add_attributed_to
+    |> add_likes
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
@@ -788,6 +789,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("attributedTo", attributedTo)
   end
 
+  def add_likes(%{"id" => id, "like_count" => likes} = object) do
+    likes = %{
+      "id" => "#{id}/likes",
+      "first" => "#{id}/likes?page=1",
+      "type" => "OrderedCollection",
+      "totalItems" => likes
+    }
+
+    object
+    |> Map.put("likes", likes)
+  end
+
+  def add_likes(object) do
+    object
+  end
+
   def prepare_attachments(object) do
     attachments =
       (object["attachment"] || [])
@@ -803,7 +820,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   defp strip_internal_fields(object) do
     object
     |> Map.drop([
-      "likes",
       "like_count",
       "announcements",
       "announcement_count",

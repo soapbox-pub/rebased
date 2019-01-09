@@ -829,7 +829,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert length(modified["object"]["tag"]) == 2
 
       assert is_nil(modified["object"]["emoji"])
-      assert is_nil(modified["object"]["likes"])
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
@@ -844,11 +843,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert length(modified["object"]["tag"]) == 2
 
       assert is_nil(modified["object"]["emoji"])
-      assert is_nil(modified["object"]["likes"])
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["context_id"])
+    end
+
+    test "it adds like collection to object" do
+      activity = insert(:note_activity)
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["object"]["likes"]["type"] == "OrderedCollection"
+      assert modified["object"]["likes"]["totalItems"] == 0
     end
   end
 
