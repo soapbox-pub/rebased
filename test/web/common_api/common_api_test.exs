@@ -107,6 +107,16 @@ defmodule Pleroma.Web.CommonAPI.Test do
       assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
     end
 
+    test "only self-authored can be pinned" do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
+      user_one = insert(:user)
+      user_two = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user_one, %{"status" => "HI!!!"})
+
+      assert {:error, "Could not pin"} = CommonAPI.pin(activity.id, user_two)
+    end
+
     test "max pinned statuses" do
       Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
       user = insert(:user)

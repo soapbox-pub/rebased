@@ -165,8 +165,18 @@ defmodule Pleroma.Web.CommonAPI do
     })
   end
 
-  def pin(id_or_ap_id, user) do
-    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+  def pin(id_or_ap_id, %{ap_id: user_ap_id} = user) do
+    with %Activity{
+           actor: ^user_ap_id,
+           data: %{
+             "type" => "Create",
+             "object" => %{
+               "to" => object_to,
+               "type" => "Note"
+             }
+           }
+         } = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         true <- Enum.member?(object_to, "https://www.w3.org/ns/activitystreams#Public"),
          %{valid?: true} = info_changeset <-
            Pleroma.User.Info.add_pinnned_activity(user.info, activity),
          changeset <-
