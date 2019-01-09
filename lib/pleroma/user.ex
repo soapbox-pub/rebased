@@ -247,10 +247,7 @@ defmodule Pleroma.User do
       )
       |> Repo.all()
 
-    autofollowed_users
-    |> Enum.reduce({:ok, user}, fn other_user, {:ok, user} ->
-      follow(user, other_user)
-    end)
+    follow_all(user, autofollowed_users)
   end
 
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
