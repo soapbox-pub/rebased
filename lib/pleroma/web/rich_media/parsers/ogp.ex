@@ -1,30 +1,11 @@
 defmodule Pleroma.Web.RichMedia.Parsers.OGP do
   def parse(html, data) do
-    with elements = [_ | _] <- get_elements(html),
-         ogp_data =
-           Enum.reduce(elements, data, fn el, acc ->
-             attributes = normalize_attributes(el)
-
-             Map.merge(acc, attributes)
-           end) do
-      {:ok, ogp_data}
-    else
-      _e -> {:error, "No OGP metadata found"}
-    end
-  end
-
-  defp get_elements(html) do
-    html |> Floki.find("meta[property^='og:']")
-  end
-
-  defp normalize_attributes(html_node) do
-    {_tag, attributes, _children} = html_node
-
-    data =
-      Enum.into(attributes, %{}, fn {name, value} ->
-        {name, String.trim_leading(value, "og:")}
-      end)
-
-    %{String.to_atom(data["property"]) => data["content"]}
+    Pleroma.Web.RichMedia.Parsers.MetaTagsParser.parse(
+      html,
+      data,
+      "og",
+      "No OGP metadata found",
+      "property"
+    )
   end
 end
