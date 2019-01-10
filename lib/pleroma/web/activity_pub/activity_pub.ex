@@ -430,30 +430,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
        when is_list(tag) and tag_reject != [] do
     from(
       activity in query,
-      where:
-        fragment(
-          "? && ARRAY(SELECT jsonb_array_elements_text((? #> '{\"object\",\"tag\"}')))",
-          ^tag,
-          activity.data
-        ),
-      where:
-        fragment(
-          "(not ? && ARRAY(SELECT jsonb_array_elements_text((? #> '{\"object\",\"tag\"}'))))",
-          ^tag_reject,
-          activity.data
-        )
+      where: fragment("(? #> '{\"object\",\"tag\"}') \\?| ?", activity.data, ^tag),
+      where: fragment("(not (? #> '{\"object\",\"tag\"}') \\?| ?)", activity.data, ^tag_reject)
     )
   end
 
   defp restrict_tag(query, %{"tag" => tag}) when is_list(tag) do
     from(
       activity in query,
-      where:
-        fragment(
-          "? && ARRAY(SELECT jsonb_array_elements_text((? #> '{\"object\",\"tag\"}')))",
-          ^tag,
-          activity.data
-        )
+      where: fragment("(? #> '{\"object\",\"tag\"}') \\?| ?", activity.data, ^tag)
     )
   end
 
