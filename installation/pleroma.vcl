@@ -42,15 +42,12 @@ sub vcl_recv {
     # Strip headers that will affect caching from all other static content
     # This also permits caching of individual toots and AP Activities
     if ((req.url ~ "^/(media|static)/") ||
-    (req.url ~ "(?i)\.(html|js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$"))
+    (req.url ~ "(?i)\.(html|js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|mp4|ogg|webm|svg|swf|ttf|pdf|woff|woff2)$"))
     {
       unset req.http.Cookie;
       unset req.http.Authorization;
       return (hash);
     }
-
-    # Everything else should just be piped to Pleroma
-    return (pipe);
 }
 
 sub vcl_backend_response {
@@ -58,9 +55,6 @@ sub vcl_backend_response {
     if (beresp.http.content-type ~ "(text|text/css|application/x-javascript|application/javascript)") {
       set beresp.do_gzip = true;
     }
-
-    # etags are bad
-    unset beresp.http.etag;
 
     # Don't cache objects that require authentication
     if (beresp.http.Authorization && !beresp.http.Cache-Control ~ "public") {
@@ -92,14 +86,12 @@ sub vcl_backend_response {
     }
 
     # Strip cache-restricting headers from Pleroma on static content that we want to cache
-    # Also enable streaming of cached content to clients (no waiting for Varnish to complete backend fetch)
-    if (bereq.url ~ "(?i)\.(js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$")
+    if (bereq.url ~ "(?i)\.(js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|mp4|ogg|webm|svg|swf|ttf|pdf|woff|woff2)$")
     {
       unset beresp.http.set-cookie;
       unset beresp.http.Cache-Control;
       unset beresp.http.x-request-id;
       set beresp.http.Cache-Control = "public, max-age=86400";
-      set beresp.do_stream = true;
     }
 }
 
