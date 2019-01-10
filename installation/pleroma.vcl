@@ -14,8 +14,8 @@ acl purge {
 sub vcl_recv {
     # Redirect HTTP to HTTPS
     if (std.port(server.ip) != 443) {
-        set req.http.x-redir = "https://" + req.http.host + req.url;
-        return (synth(750, ""));
+      set req.http.x-redir = "https://" + req.http.host + req.url;
+      return (synth(750, ""));
     }
 
     # CHUNKED SUPPORT
@@ -25,23 +25,23 @@ sub vcl_recv {
 
     # Pipe if WebSockets request is coming through
     if (req.http.upgrade ~ "(?i)websocket") {
-        return (pipe);
+      return (pipe);
     }
 
     # Allow purging of the cache
     if (req.method == "PURGE") {
-        if (!client.ip ~ purge) {
-          return(synth(405,"Not allowed."));
-        }
-        return(purge);
+      if (!client.ip ~ purge) {
+        return(synth(405,"Not allowed."));
+      }
+      return(purge);
     }
 
     # Pleroma MediaProxy - strip headers that will affect caching
     if (req.url ~ "^/proxy/") {
-        unset req.http.Cookie;
-        unset req.http.Authorization;
-        unset req.http.Accept;
-        return (hash);
+      unset req.http.Cookie;
+      unset req.http.Authorization;
+      unset req.http.Accept;
+      return (hash);
     }
 
     # Strip headers that will affect caching from all other static content
@@ -86,9 +86,9 @@ sub vcl_backend_response {
 
     # Do not cache redirects and errors
     if ((beresp.status >= 300) && (beresp.status < 500)) {
-        set beresp.uncacheable = true;
-        set beresp.ttl = 30s;
-        return (deliver);
+      set beresp.uncacheable = true;
+      set beresp.ttl = 30s;
+      return (deliver);
     }
 
     # Pleroma MediaProxy internally sets headers properly
@@ -118,8 +118,8 @@ sub vcl_synth {
 # Ensure WebSockets through the pipe do not close prematurely
 sub vcl_pipe {
     if (req.http.upgrade) {
-        set bereq.http.upgrade = req.http.upgrade;
-        set bereq.http.connection = req.http.connection;
+      set bereq.http.upgrade = req.http.upgrade;
+      set bereq.http.connection = req.http.connection;
     }
 }
 
