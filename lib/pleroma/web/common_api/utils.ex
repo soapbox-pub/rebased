@@ -136,7 +136,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def format_input(text, mentions, _tags, "text/html") do
     text
     |> Formatter.html_escape("text/html")
-    |> String.replace(~r/\r?\n/, "<br>")
     |> (&{[], &1}).()
     |> Formatter.add_user_links(mentions)
     |> Formatter.finalize()
