@@ -150,7 +150,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Formatter.mentions_escape(mentions)
     |> Earmark.as_html!()
     |> Formatter.html_escape("text/html")
-    |> String.replace(~r/\r?\n/, "")
     |> (&{[], &1}).()
     |> Formatter.add_user_links(mentions)
     |> Formatter.add_hashtag_links(tags)
