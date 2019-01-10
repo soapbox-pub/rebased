@@ -32,7 +32,7 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 ## Pleroma.Mailer
 * `adapter`: one of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters), or `Swoosh.Adapters.Local` for in-memory mailbox.
-* `api_key` / `password` and / or other adapter-specific settings, per the above documentation. 
+* `api_key` / `password` and / or other adapter-specific settings, per the above documentation.
 
 An example for Sendgrid adapter:
 
@@ -93,6 +93,7 @@ config :pleroma, Pleroma.Mailer,
 * `always_show_subject_input`: When set to false, auto-hide the subject field when it's empty.
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
+* `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
 
 ## :logger

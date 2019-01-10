@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.ControllerTest do
@@ -1692,6 +1692,81 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       object = Repo.get(Object, object.id)
       assert object.data["name"] == description
+    end
+  end
+
+  describe "POST /api/statuses/user_timeline.json?user_id=:user_id&pinned=true" do
+    test "it returns a list of pinned statuses", %{conn: conn} do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
+
+      user = insert(:user, %{name: "egor"})
+      {:ok, %{id: activity_id}} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, _} = CommonAPI.pin(activity_id, user)
+
+      resp =
+        conn
+        |> get("/api/statuses/user_timeline.json", %{user_id: user.id, pinned: true})
+        |> json_response(200)
+
+      assert length(resp) == 1
+      assert [%{"id" => ^activity_id, "pinned" => true}] = resp
+    end
+  end
+
+  describe "POST /api/statuses/pin/:id" do
+    setup do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
+      [user: insert(:user)]
+    end
+
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post(conn, "/api/statuses/pin/#{note_activity.id}.json")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test!"})
+
+      request_path = "/api/statuses/pin/#{activity.id}.json"
+
+      response =
+        conn
+        |> with_credentials(user.nickname, "test")
+        |> post(request_path)
+
+      user = refresh_record(user)
+
+      assert json_response(response, 200) == ActivityRepresenter.to_map(activity, %{user: user})
+    end
+  end
+
+  describe "POST /api/statuses/unpin/:id" do
+    setup do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
+      [user: insert(:user)]
+    end
+
+    test "without valid credentials", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      conn = post(conn, "/api/statuses/unpin/#{note_activity.id}.json")
+      assert json_response(conn, 403) == %{"error" => "Invalid credentials."}
+    end
+
+    test "with credentials", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test!"})
+      {:ok, activity} = CommonAPI.pin(activity.id, user)
+
+      request_path = "/api/statuses/unpin/#{activity.id}.json"
+
+      response =
+        conn
+        |> with_credentials(user.nickname, "test")
+        |> post(request_path)
+
+      user = refresh_record(user)
+
+      assert json_response(response, 200) == ActivityRepresenter.to_map(activity, %{user: user})
     end
   end
 end

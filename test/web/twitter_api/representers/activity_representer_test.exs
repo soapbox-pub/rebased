@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
@@ -157,6 +157,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "repeat_num" => 3,
       "favorited" => false,
       "repeated" => false,
+      "pinned" => false,
       "external_url" => "some url",
       "tags" => ["nsfw", "content", "mentioning"],
       "activity_type" => "post",

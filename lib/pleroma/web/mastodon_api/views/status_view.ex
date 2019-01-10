@@ -76,6 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: false,
       favourited: false,
       muted: false,
+      pinned: pinned?(activity, user),
       sensitive: false,
       spoiler_text: "",
       visibility: "public",
@@ -142,6 +143,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: present?(repeated),
       favourited: present?(favorited),
       muted: false,
+      pinned: pinned?(activity, user),
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",
       visibility: get_visibility(object),
@@ -295,4 +297,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp present?(nil), do: false
   defp present?(false), do: false
   defp present?(_), do: true
+
+  defp pinned?(%Activity{id: id}, %User{info: %{pinned_activities: pinned_activities}}),
+    do: id in pinned_activities
 end

@@ -63,6 +63,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       reblogged: false,
       favourited: false,
       muted: false,
+      pinned: false,
       sensitive: false,
       spoiler_text: note.data["object"]["summary"],
       visibility: "public",

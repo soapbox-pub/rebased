@@ -391,6 +391,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("actor_id", user.ap_id)
       |> Map.put("whole_db", true)
+      |> Map.put("pinned_activity_ids", user.info.pinned_activities)
 
     recipients =
       if reading_user do
@@ -549,6 +550,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
+  defp restrict_pinned(query, %{"pinned" => "true", "pinned_activity_ids" => ids}) do
+    from(activity in query, where: activity.id in ^ids)
+  end
+
+  defp restrict_pinned(query, _), do: query
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query =
       from(
@@ -573,6 +580,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_visibility(opts)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
+    |> restrict_pinned(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do

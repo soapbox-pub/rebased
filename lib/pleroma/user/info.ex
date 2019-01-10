@@ -31,6 +31,7 @@ defmodule Pleroma.User.Info do
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
     field(:hide_network, :boolean, default: false)
+    field(:pinned_activities, {:array, :integer}, default: [])
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -195,5 +196,27 @@ defmodule Pleroma.User.Info do
       :is_moderator,
       :is_admin
     ])
+  end
+
+  def add_pinnned_activity(info, %Pleroma.Activity{id: id}) do
+    if id not in info.pinned_activities do
+      max_pinned_statuses = Pleroma.Config.get([:instance, :max_pinned_statuses], 0)
+      params = %{pinned_activities: info.pinned_activities ++ [id]}
+
+      info
+      |> cast(params, [:pinned_activities])
+      |> validate_length(:pinned_activities,
+        max: max_pinned_statuses,
+        message: "You have already pinned the maximum number of statuses"
+      )
+    else
+      change(info)
+    end
+  end
+
+  def remove_pinnned_activity(info, %Pleroma.Activity{id: id}) do
+    params = %{pinned_activities: List.delete(info.pinned_activities, id)}
+
+    cast(info, params, [:pinned_activities])
   end
 end

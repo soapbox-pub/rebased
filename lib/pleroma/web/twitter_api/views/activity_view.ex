@@ -243,6 +243,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     announcement_count = object["announcement_count"] || 0
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
+    pinned = activity.id in user.info.pinned_activities
 
     attentions =
       activity.recipients
@@ -302,6 +303,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "repeat_num" => announcement_count,
       "favorited" => !!favorited,
       "repeated" => !!repeated,
+      "pinned" => pinned,
       "external_url" => object["external_url"] || object["id"],
       "tags" => tags,
       "activity_type" => "post",
