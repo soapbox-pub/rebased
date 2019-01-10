@@ -89,6 +89,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
+  describe "/activities/:uuid" do
+    test "it returns a json representation of the activity", %{conn: conn} do
+      activity = insert(:note_activity)
+      uuid = String.split(activity.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: activity})
+    end
+
+    test "it returns 404 for non-public activities", %{conn: conn} do
+      activity = insert(:direct_note_activity)
+      uuid = String.split(activity.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn, 404)
+    end
+  end
+
   describe "/inbox" do
     test "it inserts an incoming activity into the database", %{conn: conn} do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
