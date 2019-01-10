@@ -247,10 +247,7 @@ defmodule Pleroma.User do
       )
       |> Repo.all()
 
-    autofollowed_users
-    |> Enum.reduce({:ok, user}, fn other_user, {:ok, user} ->
-      follow(user, other_user)
-    end)
+    follow_all(user, autofollowed_users)
   end
 
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
@@ -305,6 +302,25 @@ defmodule Pleroma.User do
     else
       {:ok, follower}
     end
+  end
+
+  @doc "A mass follow for local users. Ignores blocks and has no side effects"
+  @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
+  def follow_all(follower, followeds) do
+    following =
+      (follower.following ++ Enum.map(followeds, fn %{follower_address: fa} -> fa end))
+      |> Enum.uniq()
+
+    {:ok, follower} =
+      follower
+      |> follow_changeset(%{following: following})
+      |> update_and_set_cache
+
+    Enum.each(followeds, fn followed ->
+      update_follower_count(followed)
+    end)
+
+    {:ok, follower}
   end
 
   def follow(%User{} = follower, %User{info: info} = followed) do
