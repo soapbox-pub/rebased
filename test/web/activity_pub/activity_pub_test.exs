@@ -18,6 +18,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     :ok
   end
 
+  describe "fetching restricted by visibility" do
+    test "it restricts by the appropriate visibility" do
+      user = insert(:user)
+
+      {:ok, public_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "public"})
+
+      {:ok, direct_activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+
+      {:ok, unlisted_activity} =
+        CommonAPI.post(user, %{"status" => ".", "visibility" => "unlisted"})
+
+      {:ok, private_activity} =
+        CommonAPI.post(user, %{"status" => ".", "visibility" => "private"})
+
+      activities =
+        ActivityPub.fetch_activities([], %{:visibility => "direct", "actor_id" => user.ap_id})
+
+      assert activities == [direct_activity]
+
+      activities =
+        ActivityPub.fetch_activities([], %{:visibility => "unlisted", "actor_id" => user.ap_id})
+
+      assert activities == [unlisted_activity]
+
+      activities =
+        ActivityPub.fetch_activities([], %{:visibility => "private", "actor_id" => user.ap_id})
+
+      assert activities == [private_activity]
+
+      activities =
+        ActivityPub.fetch_activities([], %{:visibility => "public", "actor_id" => user.ap_id})
+
+      assert activities == [public_activity]
+    end
+  end
+
   describe "building a user from his ap id" do
     test "it returns a user" do
       user_id = "http://mastodon.example.org/users/admin"
