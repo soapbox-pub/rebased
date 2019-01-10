@@ -541,10 +541,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     local_only = params["local"] in [true, "True", "true", "1"]
 
     tags =
-      ([params["tag"]] ++ (params["all"] || []) ++ (params["any"] || []))
+      ([params["tag"]] ++ (params["any"] || []))
       |> Enum.uniq()
       |> Enum.filter(& &1)
       |> Enum.map(&String.downcase(&1))
+
+    tag_all =
+      params["all"] ||
+        []
+        |> Enum.map(&String.downcase(&1))
 
     tag_reject =
       params["none"] ||
@@ -557,6 +562,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
       |> Map.put("tag", tags)
+      |> Map.put("tag_all", tag_all)
       |> Map.put("tag_reject", tag_reject)
 
     activities =

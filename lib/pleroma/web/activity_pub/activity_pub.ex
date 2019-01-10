@@ -426,14 +426,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_since(query, _), do: query
 
-  defp restrict_tag(query, %{"tag" => tag, "tag_reject" => tag_reject})
-       when is_list(tag) and tag_reject != [] do
+  defp restrict_tag_reject(query, %{"tag_reject" => tag_reject})
+       when is_list(tag_reject) and tag_reject != [] do
     from(
       activity in query,
-      where: fragment("(? #> '{\"object\",\"tag\"}') \\?| ?", activity.data, ^tag),
       where: fragment("(not (? #> '{\"object\",\"tag\"}') \\?| ?)", activity.data, ^tag_reject)
     )
   end
+
+  defp restrict_tag_reject(query, _), do: query
+
+  defp restrict_tag_all(query, %{"tag_all" => tag_all})
+       when is_list(tag_all) and tag_all != [] do
+    from(
+      activity in query,
+      where: fragment("(? #> '{\"object\",\"tag\"}') \\?& ?", activity.data, ^tag_all)
+    )
+  end
+
+  defp restrict_tag_all(query, _), do: query
 
   defp restrict_tag(query, %{"tag" => tag}) when is_list(tag) do
     from(
@@ -591,6 +602,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     base_query
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
+    |> restrict_tag_reject(opts)
+    |> restrict_tag_all(opts)
     |> restrict_since(opts)
     |> restrict_local(opts)
     |> restrict_limit(opts)

@@ -81,9 +81,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           "tag_reject" => ["reject"]
         })
 
+      fetch_four =
+        ActivityPub.fetch_activities([], %{
+          "tag" => ["test"],
+          "tag_all" => ["test", "reject"]
+        })
+
       assert fetch_one == [status_one, status_three]
       assert fetch_two == [status_one, status_two, status_three]
       assert fetch_three == [status_one, status_two]
+      assert fetch_four == [status_three]
     end
   end
 

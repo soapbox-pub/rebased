@@ -1051,11 +1051,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, activity_test1} = CommonAPI.post(user, %{"status" => "#test1"})
     {:ok, activity_none} = CommonAPI.post(user, %{"status" => "#test #none"})
 
-    all_test =
+    any_test =
       conn
-      |> get("/api/v1/timelines/tag/test", %{"all" => ["test1"]})
+      |> get("/api/v1/timelines/tag/test", %{"any" => ["none"]})
 
-    assert [status_none, status_test1, status_test] = json_response(all_test, 200)
+    [status_none, status_test1, status_test] = json_response(any_test, 200)
 
     assert to_string(activity_test.id) == status_test["id"]
     assert to_string(activity_test1.id) == status_test1["id"]
@@ -1066,6 +1066,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> get("/api/v1/timelines/tag/test", %{"all" => ["test1"], "none" => ["none"]})
 
     assert [status_test1, status_test] == json_response(restricted_test, 200)
+
+    all_test = conn |> get("/api/v1/timelines/tag/test", %{"all" => ["none"]})
+
+    assert [status_none] == json_response(all_test, 200)
   end
 
   test "getting followers", %{conn: conn} do
