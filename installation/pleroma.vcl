@@ -18,6 +18,11 @@ sub vcl_recv {
         return (synth(750, ""));
     }
 
+    # CHUNKED SUPPORT
+    if (req.http.Range ~ "bytes=") {
+      set req.http.x-range = req.http.Range;
+    }
+
     # Pipe if WebSockets request is coming through
     if (req.http.upgrade ~ "(?i)websocket") {
         return (pipe);
@@ -54,6 +59,12 @@ sub vcl_backend_response {
     # gzip text content
     if (beresp.http.content-type ~ "(text|text/css|application/x-javascript|application/javascript)") {
       set beresp.do_gzip = true;
+    }
+
+    # CHUNKED SUPPORT
+    if (bereq.http.x-range ~ "bytes=" && beresp.status == 206) {
+      set beresp.ttl = 10m;
+      set beresp.http.CR = beresp.http.content-range;
     }
 
     # Don't cache objects that require authentication
@@ -109,5 +120,28 @@ sub vcl_pipe {
     if (req.http.upgrade) {
         set bereq.http.upgrade = req.http.upgrade;
         set bereq.http.connection = req.http.connection;
+    }
+}
+
+sub vcl_hash {
+    # CHUNKED SUPPORT
+    if (req.http.x-range ~ "bytes=") {
+      hash_data(req.http.x-range);
+      unset req.http.Range;
+    }
+}
+
+sub vcl_backend_fetch {
+    # CHUNKED SUPPORT
+    if (bereq.http.x-range) {
+      set bereq.http.Range = bereq.http.x-range;
+    }
+}
+
+sub vcl_deliver {
+    # CHUNKED SUPPORT
+    if (resp.http.CR) {
+      set resp.http.Content-Range = resp.http.CR;
+      unset resp.http.CR;
     }
 }
