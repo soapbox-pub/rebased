@@ -207,6 +207,6 @@ curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerando
 ## Pleroma.Web.Federator.RetryQueue
 
 * `enabled`: If set to `true`, failed federation jobs will be retried
-* `max_jobs`: The maximum amount of parallel federation jbos running at the same time.
+* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
 * `initial_timeout`: The initial timeout in seconds
 * `max_retries`: The maximum number of times a federation job is retried
