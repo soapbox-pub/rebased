@@ -89,6 +89,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
+  describe "/object/:uuid/likes" do
+    test "it returns the like activities in a collection", %{conn: conn} do
+      like = insert(:like_activity)
+      uuid = String.split(like.data["object"], "/") |> List.last()
+
+      result =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}/likes")
+        |> json_response(200)
+
+      assert List.first(result["first"]["orderedItems"])["id"] == like.data["id"]
+    end
+  end
+
   describe "/activities/:uuid" do
     test "it returns a json representation of the activity", %{conn: conn} do
       activity = insert(:note_activity)
