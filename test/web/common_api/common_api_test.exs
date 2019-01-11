@@ -145,7 +145,7 @@ defmodule Pleroma.Web.CommonAPI.Test do
       assert %User{info: %{pinned_activities: []}} = user
     end
 
-    test "should unpin status when deleting a status", %{user: user, activity: activity} do
+    test "should unpin when deleting a status", %{user: user, activity: activity} do
       {:ok, activity} = CommonAPI.pin(activity.id, user)
 
       user = refresh_record(user)
