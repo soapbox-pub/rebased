@@ -836,6 +836,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.reverse()
 
     conn
+    |> add_link_headers(:favourites, activities)
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
