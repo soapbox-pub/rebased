@@ -824,9 +824,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, res)
   end
 
-  def favourites(%{assigns: %{user: user}} = conn, _) do
+  def favourites(%{assigns: %{user: user}} = conn, params) do
     params =
-      %{}
+      params
       |> Map.put("type", "Create")
       |> Map.put("favorited_by", user.ap_id)
       |> Map.put("blocking_user", user)
