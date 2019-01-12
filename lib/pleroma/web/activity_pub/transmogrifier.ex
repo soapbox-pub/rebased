@@ -641,7 +641,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   #  internal -> Mastodon
   #  """
 
-  def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
+  def prepare_outgoing(%{"type" => "Create", "object" => object} = data) do
     object =
       object
       |> prepare_object

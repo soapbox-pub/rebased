@@ -835,6 +835,21 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["context_id"])
     end
+
+    test "it strips internal fields of article" do
+      activity = insert(:article_activity)
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert length(modified["object"]["tag"]) == 2
+
+      assert is_nil(modified["object"]["emoji"])
+      assert is_nil(modified["object"]["likes"])
+      assert is_nil(modified["object"]["like_count"])
+      assert is_nil(modified["object"]["announcements"])
+      assert is_nil(modified["object"]["announcement_count"])
+      assert is_nil(modified["object"]["context_id"])
+    end
   end
 
   describe "user upgrade" do
