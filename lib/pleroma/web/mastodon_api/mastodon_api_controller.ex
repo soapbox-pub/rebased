@@ -1322,6 +1322,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  defp status_first_external_url(content) do
+    content
+    |> Floki.filter_out("a.mention")
+    |> Floki.attribute("a", "href")
+    |> Enum.at(0)
+  end
+
+  def status_card(conn, %{"id" => status_id}) do
+    with %Activity{} = activity <- Repo.get(Activity, status_id),
+         true <- ActivityPub.is_public?(activity),
+         page_url <- status_first_external_url(activity.data["object"]["content"]),
+         {:ok, rich_media} <- Pleroma.Web.RichMedia.Parser.parse(page_url) do
+      card =
+        rich_media
+        |> Map.take([:image, :title, :url, :description])
+        |> Map.put(:type, "link")
+
+      json(conn, card)
+    else
+      _ -> json(conn, %{})
+    end
+  end
+
   def try_render(conn, target, params)
       when is_binary(target) do
     res = render(conn, target, params)
