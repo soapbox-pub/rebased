@@ -824,9 +824,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, res)
   end
 
-  def favourites(%{assigns: %{user: user}} = conn, _) do
+  def favourites(%{assigns: %{user: user}} = conn, params) do
     params =
-      %{}
+      params
       |> Map.put("type", "Create")
       |> Map.put("favorited_by", user.ap_id)
       |> Map.put("blocking_user", user)
@@ -836,6 +836,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.reverse()
 
     conn
+    |> add_link_headers(:favourites, activities)
     |> put_view(StatusView)
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
