@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.MastodonAPI.StatusView do
   use Pleroma.Web, :view
 
@@ -72,6 +76,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: false,
       favourited: false,
       muted: false,
+      pinned: pinned?(activity, user),
       sensitive: false,
       spoiler_text: "",
       visibility: "public",
@@ -106,7 +111,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
 
     attachment_data = object["attachment"] || []
-    attachment_data = attachment_data ++ if object["type"] == "Video", do: [object], else: []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
 
     created_at = Utils.to_masto_date(object["published"])
@@ -117,7 +121,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     content =
       object
       |> render_content()
-      |> HTML.filter_tags(User.html_filter_policy(opts[:for]))
+      |> HTML.get_cached_scrubbed_html_for_object(
+        User.html_filter_policy(opts[:for]),
+        activity,
+        __MODULE__
+      )
 
     %{
       id: to_string(activity.id),
@@ -135,6 +143,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: present?(repeated),
       favourited: present?(favorited),
       muted: false,
+      pinned: pinned?(activity, user),
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",
       visibility: get_visibility(object),
@@ -288,4 +297,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp present?(nil), do: false
   defp present?(false), do: false
   defp present?(_), do: true
+
+  defp pinned?(%Activity{id: id}, %User{info: %{pinned_activities: pinned_activities}}),
+    do: id in pinned_activities
 end

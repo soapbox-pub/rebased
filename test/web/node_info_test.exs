@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.NodeInfoTest do
   use Pleroma.Web.ConnCase
 
@@ -13,6 +17,17 @@ defmodule Pleroma.Web.NodeInfoTest do
     assert result = json_response(conn, 200)
 
     assert user.ap_id in result["metadata"]["staffAccounts"]
+  end
+
+  test "nodeinfo shows restricted nicknames", %{conn: conn} do
+    conn =
+      conn
+      |> get("/nodeinfo/2.0.json")
+
+    assert result = json_response(conn, 200)
+
+    assert Pleroma.Config.get([Pleroma.User, :restricted_nicknames]) ==
+             result["metadata"]["restrictedNicknames"]
   end
 
   test "returns 404 when federation is disabled", %{conn: conn} do

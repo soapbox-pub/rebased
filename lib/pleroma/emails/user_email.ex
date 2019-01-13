@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.UserEmail do
   @moduledoc "User emails"
 
@@ -15,6 +19,7 @@ defmodule Pleroma.UserEmail do
 
   defp recipient(email, nil), do: email
   defp recipient(email, name), do: {name, email}
+  defp recipient(%Pleroma.User{} = user), do: recipient(user.email, user.name)
 
   def password_reset_email(user, password_reset_token) when is_binary(password_reset_token) do
     password_reset_url =
@@ -32,7 +37,7 @@ defmodule Pleroma.UserEmail do
     """
 
     new()
-    |> to(recipient(user.email, user.name))
+    |> to(recipient(user))
     |> from(sender())
     |> subject("Password reset")
     |> html_body(html_body)
@@ -61,6 +66,28 @@ defmodule Pleroma.UserEmail do
     |> to(recipient(to_email, to_name))
     |> from(sender())
     |> subject("Invitation to #{instance_name()}")
+    |> html_body(html_body)
+  end
+
+  def account_confirmation_email(user) do
+    confirmation_url =
+      Router.Helpers.confirm_email_url(
+        Endpoint,
+        :confirm_email,
+        user.id,
+        to_string(user.info.confirmation_token)
+      )
+
+    html_body = """
+    <h3>Welcome to #{instance_name()}!</h3>
+    <p>Email confirmation is required to activate the account.</p>
+    <p>Click the following link to proceed: <a href="#{confirmation_url}">activate your account</a>.</p>
+    """
+
+    new()
+    |> to(recipient(user))
+    |> from(sender())
+    |> subject("#{instance_name()} account confirmation")
     |> html_body(html_body)
   end
 end

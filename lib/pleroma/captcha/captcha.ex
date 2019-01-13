@@ -1,7 +1,13 @@
-defmodule Pleroma.Captcha do
-  use GenServer
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
 
-  @ets_options [:ordered_set, :private, :named_table, {:read_concurrency, true}]
+defmodule Pleroma.Captcha do
+  alias Plug.Crypto.KeyGenerator
+  alias Plug.Crypto.MessageEncryptor
+  alias Calendar.DateTime
+
+  use GenServer
 
   @doc false
   def start_link() do
@@ -10,14 +16,6 @@ defmodule Pleroma.Captcha do
 
   @doc false
   def init(_) do
-    # Create a ETS table to store captchas
-    ets_name = Module.concat(method(), Ets)
-    ^ets_name = :ets.new(Module.concat(method(), Ets), @ets_options)
-
-    # Clean up old captchas every few minutes
-    seconds_retained = Pleroma.Config.get!([__MODULE__, :seconds_retained])
-    Process.send_after(self(), :cleanup, 1000 * seconds_retained)
-
     {:ok, nil}
   end
 
@@ -31,8 +29,8 @@ defmodule Pleroma.Captcha do
   @doc """
   Ask the configured captcha service to validate the captcha
   """
-  def validate(token, captcha) do
-    GenServer.call(__MODULE__, {:validate, token, captcha})
+  def validate(token, captcha, answer_data) do
+    GenServer.call(__MODULE__, {:validate, token, captcha, answer_data})
   end
 
   @doc false
@@ -42,24 +40,71 @@ defmodule Pleroma.Captcha do
     if !enabled do
       {:reply, %{type: :none}, state}
     else
-      {:reply, method().new(), state}
+      new_captcha = method().new()
+
+      secret_key_base = Pleroma.Config.get!([Pleroma.Web.Endpoint, :secret_key_base])
+
+      # This make salt a little different for two keys
+      token = new_captcha[:token]
+      secret = KeyGenerator.generate(secret_key_base, token <> "_encrypt")
+      sign_secret = KeyGenerator.generate(secret_key_base, token <> "_sign")
+      # Basicallty copy what Phoenix.Token does here, add the time to
+      # the actual data and make it a binary to then encrypt it
+      encrypted_captcha_answer =
+        %{
+          at: DateTime.now_utc(),
+          answer_data: new_captcha[:answer_data]
+        }
+        |> :erlang.term_to_binary()
+        |> MessageEncryptor.encrypt(secret, sign_secret)
+
+      {
+        :reply,
+        # Repalce the answer with the encrypted answer
+        %{new_captcha | answer_data: encrypted_captcha_answer},
+        state
+      }
     end
   end
 
   @doc false
-  def handle_call({:validate, token, captcha}, _from, state) do
-    {:reply, method().validate(token, captcha), state}
-  end
+  def handle_call({:validate, token, captcha, answer_data}, _from, state) do
+    secret_key_base = Pleroma.Config.get!([Pleroma.Web.Endpoint, :secret_key_base])
+    secret = KeyGenerator.generate(secret_key_base, token <> "_encrypt")
+    sign_secret = KeyGenerator.generate(secret_key_base, token <> "_sign")
 
-  @doc false
-  def handle_info(:cleanup, state) do
-    :ok = method().cleanup()
+    # If the time found is less than (current_time - seconds_valid), then the time has already passed.
+    # Later we check that the time found is more than the presumed invalidatation time, that means
+    # that the data is still valid and the captcha can be checked
+    seconds_valid = Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid])
+    valid_if_after = DateTime.subtract!(DateTime.now_utc(), seconds_valid)
 
-    seconds_retained = Pleroma.Config.get!([__MODULE__, :seconds_retained])
-    # Schedule the next clenup
-    Process.send_after(self(), :cleanup, 1000 * seconds_retained)
+    result =
+      with {:ok, data} <- MessageEncryptor.decrypt(answer_data, secret, sign_secret),
+           %{at: at, answer_data: answer_md5} <- :erlang.binary_to_term(data) do
+        try do
+          if DateTime.before?(at, valid_if_after), do: throw({:error, "CAPTCHA expired"})
 
-    {:noreply, state}
+          if not is_nil(Cachex.get!(:used_captcha_cache, token)),
+            do: throw({:error, "CAPTCHA already used"})
+
+          res = method().validate(token, captcha, answer_md5)
+          # Throw if an error occurs
+          if res != :ok, do: throw(res)
+
+          # Mark this captcha as used
+          {:ok, _} =
+            Cachex.put(:used_captcha_cache, token, true, ttl: :timer.seconds(seconds_valid))
+
+          :ok
+        catch
+          :throw, e -> e
+        end
+      else
+        _ -> {:error, "Invalid answer data"}
+      end
+
+    {:reply, result, state}
   end
 
   defp method, do: Pleroma.Config.get!([__MODULE__, :method])

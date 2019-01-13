@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.CommonAPI.Test do
   use Pleroma.DataCase
   alias Pleroma.Web.CommonAPI
@@ -90,6 +94,67 @@ defmodule Pleroma.Web.CommonAPI.Test do
       {:ok, activity} = CommonAPI.post(other_user, %{"status" => "cofe"})
       {:ok, %Activity{}, _object} = CommonAPI.favorite(activity.id, user)
       {:error, _} = CommonAPI.favorite(activity.id, user)
+    end
+  end
+
+  describe "pinned statuses" do
+    setup do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
+
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+
+      [user: user, activity: activity]
+    end
+
+    test "pin status", %{user: user, activity: activity} do
+      assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
+
+      id = activity.id
+      user = refresh_record(user)
+
+      assert %User{info: %{pinned_activities: [^id]}} = user
+    end
+
+    test "only self-authored can be pinned", %{activity: activity} do
+      user = insert(:user)
+
+      assert {:error, "Could not pin"} = CommonAPI.pin(activity.id, user)
+    end
+
+    test "max pinned statuses", %{user: user, activity: activity_one} do
+      {:ok, activity_two} = CommonAPI.post(user, %{"status" => "HI!!!"})
+
+      assert {:ok, ^activity_one} = CommonAPI.pin(activity_one.id, user)
+
+      user = refresh_record(user)
+
+      assert {:error, "You have already pinned the maximum number of statuses"} =
+               CommonAPI.pin(activity_two.id, user)
+    end
+
+    test "unpin status", %{user: user, activity: activity} do
+      {:ok, activity} = CommonAPI.pin(activity.id, user)
+
+      user = refresh_record(user)
+
+      assert {:ok, ^activity} = CommonAPI.unpin(activity.id, user)
+
+      user = refresh_record(user)
+
+      assert %User{info: %{pinned_activities: []}} = user
+    end
+
+    test "should unpin when deleting a status", %{user: user, activity: activity} do
+      {:ok, activity} = CommonAPI.pin(activity.id, user)
+
+      user = refresh_record(user)
+
+      assert {:ok, _} = CommonAPI.delete(activity.id, user)
+
+      user = refresh_record(user)
+
+      assert %User{info: %{pinned_activities: []}} = user
     end
   end
 end

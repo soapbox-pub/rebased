@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.UserView do
   use Pleroma.Web, :view
   alias Pleroma.Web.Salmon
@@ -164,6 +168,53 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "id" => iri,
         "type" => "OrderedCollection",
         "totalItems" => info.note_count,
+        "first" => page
+      }
+      |> Map.merge(Utils.make_json_ld_header())
+    else
+      page |> Map.merge(Utils.make_json_ld_header())
+    end
+  end
+
+  def render("inbox.json", %{user: user, max_id: max_qid}) do
+    params = %{
+      "limit" => "10"
+    }
+
+    params =
+      if max_qid != nil do
+        Map.put(params, "max_id", max_qid)
+      else
+        params
+      end
+
+    activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
+
+    min_id = Enum.at(Enum.reverse(activities), 0).id
+    max_id = Enum.at(activities, 0).id
+
+    collection =
+      Enum.map(activities, fn act ->
+        {:ok, data} = Transmogrifier.prepare_outgoing(act.data)
+        data
+      end)
+
+    iri = "#{user.ap_id}/inbox"
+
+    page = %{
+      "id" => "#{iri}?max_id=#{max_id}",
+      "type" => "OrderedCollectionPage",
+      "partOf" => iri,
+      "totalItems" => -1,
+      "orderedItems" => collection,
+      "next" => "#{iri}?max_id=#{min_id - 1}"
+    }
+
+    if max_qid == nil do
+      %{
+        "id" => iri,
+        "type" => "OrderedCollection",
+        "totalItems" => -1,
         "first" => page
       }
       |> Map.merge(Utils.make_json_ld_header())

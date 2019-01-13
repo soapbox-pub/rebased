@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
@@ -55,7 +59,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         privacy: "public",
         sensitive: false
       },
-      pleroma: %{tags: []}
+      pleroma: %{
+        confirmation_pending: false,
+        tags: []
+      }
     }
 
     assert expected == AccountView.render("account.json", %{user: user})
@@ -93,7 +100,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         privacy: "public",
         sensitive: false
       },
-      pleroma: %{tags: []}
+      pleroma: %{
+        confirmation_pending: false,
+        tags: []
+      }
     }
 
     assert expected == AccountView.render("account.json", %{user: user})

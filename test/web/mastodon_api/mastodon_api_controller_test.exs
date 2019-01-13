@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
@@ -292,7 +296,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(conn, 200)
 
-      assert Repo.get(Activity, activity.id) == nil
+      refute Repo.get(Activity, activity.id)
     end
 
     test "when you didn't create it", %{conn: conn} do
@@ -836,6 +840,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(image_post.id)
     end
+
+    test "gets a user's statuses without reblogs", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{"status" => "HI!!!"})
+      {:ok, _, _} = CommonAPI.repeat(post.id, user)
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "true"})
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+      assert id == to_string(post.id)
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses", %{"exclude_reblogs" => "1"})
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+      assert id == to_string(post.id)
+    end
   end
 
   describe "user relationships" do
@@ -1288,6 +1312,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end)
   end
 
+  test "search doesn't show statuses that it shouldn't", %{conn: conn} do
+    {:ok, activity} =
+      CommonAPI.post(insert(:user), %{
+        "status" => "This is about 2hu, but private",
+        "visibility" => "private"
+      })
+
+    capture_log(fn ->
+      conn =
+        conn
+        |> get("/api/v1/search", %{"q" => activity.data["object"]["id"]})
+
+      assert results = json_response(conn, 200)
+
+      [] = results["statuses"]
+    end)
+  end
+
   test "search fetches remote accounts", %{conn: conn} do
     conn =
       conn
@@ -1428,5 +1470,85 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     user = User.get_cached_by_ap_id(user.ap_id)
     assert user.info.settings == %{"programming" => "socks"}
+  end
+
+  describe "pinned statuses" do
+    setup do
+      Pleroma.Config.put([:instance, :max_pinned_statuses], 1)
+
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
+
+      [user: user, activity: activity]
+    end
+
+    test "returns pinned statuses", %{conn: conn, user: user, activity: activity} do
+      {:ok, _} = CommonAPI.pin(activity.id, user)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+        |> json_response(200)
+
+      id_str = to_string(activity.id)
+
+      assert [%{"id" => ^id_str, "pinned" => true}] = result
+    end
+
+    test "pin status", %{conn: conn, user: user, activity: activity} do
+      id_str = to_string(activity.id)
+
+      assert %{"id" => ^id_str, "pinned" => true} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity.id}/pin")
+               |> json_response(200)
+
+      assert [%{"id" => ^id_str, "pinned" => true}] =
+               conn
+               |> assign(:user, user)
+               |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+               |> json_response(200)
+    end
+
+    test "unpin status", %{conn: conn, user: user, activity: activity} do
+      {:ok, _} = CommonAPI.pin(activity.id, user)
+
+      id_str = to_string(activity.id)
+      user = refresh_record(user)
+
+      assert %{"id" => ^id_str, "pinned" => false} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity.id}/unpin")
+               |> json_response(200)
+
+      assert [] =
+               conn
+               |> assign(:user, user)
+               |> get("/api/v1/accounts/#{user.id}/statuses?pinned=true")
+               |> json_response(200)
+    end
+
+    test "max pinned statuses", %{conn: conn, user: user, activity: activity_one} do
+      {:ok, activity_two} = CommonAPI.post(user, %{"status" => "HI!!!"})
+
+      id_str_one = to_string(activity_one.id)
+
+      assert %{"id" => ^id_str_one, "pinned" => true} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{id_str_one}/pin")
+               |> json_response(200)
+
+      user = refresh_record(user)
+
+      assert %{"error" => "You have already pinned the maximum number of statuses"} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity_two.id}/pin")
+               |> json_response(400)
+    end
   end
 end

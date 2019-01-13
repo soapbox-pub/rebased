@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
 
@@ -96,10 +100,15 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def show_user(conn, params) do
-    with {:ok, shown} <- TwitterAPI.get_user(params) do
+    for_user = conn.assigns.user
+
+    with {:ok, shown} <- TwitterAPI.get_user(params),
+         true <-
+           User.auth_active?(shown) ||
+             (for_user && (for_user.id == shown.id || User.superuser?(for_user))) do
       params =
-        if user = conn.assigns.user do
-          %{user: shown, for: user}
+        if for_user do
+          %{user: shown, for: for_user}
         else
           %{user: shown}
         end
@@ -110,12 +119,26 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     else
       {:error, msg} ->
         bad_request_reply(conn, msg)
+
+      false ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Unconfirmed user"})
     end
   end
 
   def user_timeline(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.get_user(user, params) do
       {:ok, target_user} ->
+        # Twitter and ActivityPub use a different name and sense for this parameter.
+        {include_rts, params} = Map.pop(params, "include_rts")
+
+        params =
+          case include_rts do
+            x when x == "false" or x == "0" -> Map.put(params, "exclude_reblogs", "true")
+            _ -> params
+          end
+
         activities = ActivityPub.fetch_user_activities(target_user, user, params)
 
         conn
@@ -352,6 +375,30 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def pin(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
+         {:ok, activity} <- TwitterAPI.pin(user, id) do
+      conn
+      |> put_view(ActivityView)
+      |> render("activity.json", %{activity: activity, for: user})
+    else
+      {:error, message} -> bad_request_reply(conn, message)
+      err -> err
+    end
+  end
+
+  def unpin(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
+         {:ok, activity} <- TwitterAPI.unpin(user, id) do
+      conn
+      |> put_view(ActivityView)
+      |> render("activity.json", %{activity: activity, for: user})
+    else
+      {:error, message} -> bad_request_reply(conn, message)
+      err -> err
+    end
+  end
+
   def register(conn, params) do
     with {:ok, user} <- TwitterAPI.register_user(params) do
       conn
@@ -369,6 +416,29 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
       json_response(conn, :no_content, "")
+    end
+  end
+
+  def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
+    with %User{} = user <- Repo.get(User, uid),
+         true <- user.local,
+         true <- user.info.confirmation_pending,
+         true <- user.info.confirmation_token == token,
+         info_change <- User.Info.confirmation_changeset(user.info, :confirmed),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
+         {:ok, _} <- User.update_and_set_cache(changeset) do
+      conn
+      |> redirect(to: "/")
+    end
+  end
+
+  def resend_confirmation_email(conn, params) do
+    nickname_or_email = params["email"] || params["nickname"]
+
+    with %User{} = user <- User.get_by_nickname_or_email(nickname_or_email),
+         {:ok, _} <- User.try_send_confirmation_email(user) do
+      conn
+      |> json_response(:no_content, "")
     end
   end
 
@@ -426,8 +496,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def followers(%{assigns: %{user: for_user}} = conn, params) do
+    {:ok, page} = Ecto.Type.cast(:integer, params["page"] || 1)
+
     with {:ok, user} <- TwitterAPI.get_user(for_user, params),
-         {:ok, followers} <- User.get_followers(user) do
+         {:ok, followers} <- User.get_followers(user, page) do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
@@ -444,8 +516,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def friends(%{assigns: %{user: for_user}} = conn, params) do
+    {:ok, page} = Ecto.Type.cast(:integer, params["page"] || 1)
+
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
-         {:ok, friends} <- User.get_friends(user) do
+         {:ok, friends} <- User.get_friends(user, page) do
       friends =
         cond do
           for_user && user.id == for_user.id -> friends
@@ -458,6 +532,14 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       |> render("index.json", %{users: friends, for: conn.assigns[:user]})
     else
       _e -> bad_request_reply(conn, "Can't get friends")
+    end
+  end
+
+  def blocks(%{assigns: %{user: user}} = conn, _params) do
+    with blocked_users <- User.blocked_users(user) do
+      conn
+      |> put_view(UserView)
+      |> render("index.json", %{users: blocked_users, for: user})
     end
   end
 
@@ -616,7 +698,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     json_reply(conn, 403, json)
   end
 
-  def only_if_public_instance(conn = %{conn: %{assigns: %{user: _user}}}, _), do: conn
+  def only_if_public_instance(%{assigns: %{user: %User{}}} = conn, _), do: conn
 
   def only_if_public_instance(conn, _) do
     if Keyword.get(Application.get_env(:pleroma, :instance), :public) do

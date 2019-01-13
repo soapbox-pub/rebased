@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Mix.Tasks.Pleroma.Instance do
   use Mix.Task
   alias Mix.Tasks.Pleroma.Common
@@ -71,7 +75,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
       name =
         Common.get_option(
           options,
-          :name,
+          :instance_name,
           "What is the name of your instance? (e.g. Pleroma/Soykaf)"
         )
 

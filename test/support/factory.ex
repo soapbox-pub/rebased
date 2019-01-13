@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Factory do
   use ExMachina.Ecto, repo: Pleroma.Repo
 
@@ -51,6 +55,19 @@ defmodule Pleroma.Factory do
 
     %Pleroma.Object{data: data} = note_factory()
     %Pleroma.Object{data: Map.merge(data, %{"to" => [user2.ap_id]})}
+  end
+
+  def tombstone_factory do
+    data = %{
+      "type" => "Tombstone",
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "formerType" => "Note",
+      "deleted" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    %Pleroma.Object{
+      data: data
+    }
   end
 
   def direct_note_activity_factory do

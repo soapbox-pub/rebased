@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
@@ -31,6 +35,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       }) do
     with %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
+         {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          {:ok, auth} <- Authorization.create_authorization(app, user) do
       # Special case: Local MastodonFE.
@@ -63,6 +68,15 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
           redirect(conn, external: url)
       end
+    else
+      {:auth_active, false} ->
+        conn
+        |> put_flash(:error, "Account confirmation pending")
+        |> put_status(:forbidden)
+        |> authorize(params)
+
+      error ->
+        error
     end
   end
 
@@ -101,6 +115,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     with %App{} = app <- get_app_from_request(conn, params),
          %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
+         {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          {:ok, auth} <- Authorization.create_authorization(app, user),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
@@ -113,6 +128,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
       json(conn, response)
     else
+      {:auth_active, false} ->
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Account confirmation pending"})
+
       _error ->
         put_status(conn, 400)
         |> json(%{error: "Invalid credentials"})

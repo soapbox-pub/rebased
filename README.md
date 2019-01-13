@@ -30,7 +30,7 @@ While we don't provide docker files, other people have written very good ones. T
 ### Dependencies
 
 * Postgresql version 9.6 or newer
-* Elixir version 1.5 or newer. If your distribution only has an old version available, check [Elixir's install page](https://elixir-lang.org/install.html) or use a tool like [asdf](https://github.com/asdf-vm/asdf).
+* Elixir version 1.7 or newer. If your distribution only has an old version available, check [Elixir's install page](https://elixir-lang.org/install.html) or use a tool like [asdf](https://github.com/asdf-vm/asdf).
 * Build-essential tools
 
 ### Configuration
@@ -39,7 +39,7 @@ While we don't provide docker files, other people have written very good ones. T
 
   * Run `mix pleroma.instance gen`. This will ask you questions about your instance and generate a configuration file in `config/generated_config.exs`. Check that and copy it to either `config/dev.secret.exs` or `config/prod.secret.exs`. It will also create a `config/setup_db.psql`, which you should run as the PostgreSQL superuser (i.e., `sudo -u postgres psql -f config/setup_db.psql`). It will create the database, user, and password you gave `mix pleroma.gen.instance` earlier, as well as set up the necessary extensions in the database. PostgreSQL superuser privileges are only needed for this step.
 
-  * For these next steps, the default will be to run pleroma using the dev configuration file, `config/dev.secret.exs`. To run them using the prod config file, prefix each command at the shell with `MIX_ENV=prod`. For example: `MIX_ENV=prod mix phx.server`. Documentation for the config can be found at [``config/config.md``](config/config.md)
+  * For these next steps, the default will be to run pleroma using the dev configuration file, `config/dev.secret.exs`. To run them using the prod config file, prefix each command at the shell with `MIX_ENV=prod`. For example: `MIX_ENV=prod mix phx.server`. Documentation for the config can be found at [``docs/config.md``](docs/config.md)
 
   * Run `mix ecto.migrate` to run the database migrations. You will have to do this again after certain updates.
 
@@ -55,9 +55,9 @@ While we don't provide docker files, other people have written very good ones. T
 Pleroma comes with two frontends. The first one, Pleroma FE, can be reached by normally visiting the site. The other one, based on the Mastodon project, can be found by visiting the /web path of your site.
 
 ### As systemd service (with provided .service file)
-Example .service file can be found in `installation/pleroma.service` you can put it in `/etc/systemd/system/`.
-Running `service pleroma start`
-Logs can be watched by using `journalctl -fu pleroma.service`
+Example .service file can be found in `installation/pleroma.service`. Copy this to `/etc/systemd/system/`.
+Running `systemctl enable --now pleroma.service` will run Pleroma and enable startup on boot.
+Logs can be watched by using `journalctl -fu pleroma.service`.
 
 ### As OpenRC service (with provided RC file)
 Copy ``installation/init.d/pleroma`` to ``/etc/init.d/pleroma``.
@@ -65,7 +65,7 @@ You can add it to the services ran by default with:
 ``rc-update add pleroma``
 
 ### Standalone/run by other means
-Run `mix phx.server` in repository's root, it will output log into stdout/stderr
+Run `mix phx.server` in repository's root, it will output log into stdout/stderr.
 
 ### Using an upstream proxy for federation
 

@@ -4,17 +4,19 @@
   "logo": "/static/logo.png",
   "logoMask": true,
   "logoMargin": ".1em",
-  "redirectRootNoLogin": "/~/main/all",
-  "redirectRootLogin": "/~/main/friends",
+  "redirectRootNoLogin": "/main/all",
+  "redirectRootLogin": "/main/friends",
   "chatDisabled": false,
   "showInstanceSpecificPanel": false,
   "scopeOptionsEnabled": false,
   "formattingOptionsEnabled": false,
   "collapseMessageWithSubject": false,
-  "scopeCopy": false,
+  "scopeCopy": true,
   "subjectLineBehavior": "email",
   "alwaysShowSubjectInput": true,
   "hidePostStats": false,
   "hideUserStats": false,
-  "loginMethod": "password"
+  "loginMethod": "password",
+  "webPushNotifications": false,
+  "noAttachmentLinks": false
 }

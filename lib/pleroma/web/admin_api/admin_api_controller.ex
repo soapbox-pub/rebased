@@ -1,6 +1,10 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
-  alias Pleroma.{User, Repo}
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
@@ -10,13 +14,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   action_fallback(:errors)
 
   def user_delete(conn, %{"nickname" => nickname}) do
-    user = User.get_by_nickname(nickname)
-
-    if user.local == true do
-      User.delete(user)
-    else
-      User.delete(user)
-    end
+    User.get_by_nickname(nickname)
+    |> User.delete()
 
     conn
     |> json(nickname)
@@ -26,7 +25,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
         conn,
         %{"nickname" => nickname, "email" => email, "password" => password}
       ) do
-    new_user = %{
+    user_data = %{
       nickname: nickname,
       name: nickname,
       email: email,
@@ -35,11 +34,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       bio: "."
     }
 
-    User.register_changeset(%User{}, new_user)
-    |> Repo.insert!()
+    changeset = User.register_changeset(%User{}, user_data, confirmed: true)
+    {:ok, user} = User.register(changeset)
 
     conn
-    |> json(new_user.nickname)
+    |> json(user.nickname)
   end
 
   def tag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do

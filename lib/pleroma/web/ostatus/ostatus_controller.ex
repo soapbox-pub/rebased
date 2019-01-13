@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.OStatus.OStatusController do
   use Pleroma.Web, :controller
 
@@ -112,23 +116,27 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def activity(conn, %{"uuid" => uuid}) do
-    with id <- o_status_url(conn, :activity, uuid),
-         {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
-         {_, true} <- {:public?, ActivityPub.is_public?(activity)},
-         %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      case format = get_format(conn) do
-        "html" -> redirect(conn, to: "/notice/#{activity.id}")
-        _ -> represent_activity(conn, format, activity, user)
-      end
+    if get_format(conn) == "activity+json" do
+      ActivityPubController.call(conn, :activity)
     else
-      {:public?, false} ->
-        {:error, :not_found}
+      with id <- o_status_url(conn, :activity, uuid),
+           {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
+           {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+           %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
+        case format = get_format(conn) do
+          "html" -> redirect(conn, to: "/notice/#{activity.id}")
+          _ -> represent_activity(conn, format, activity, user)
+        end
+      else
+        {:public?, false} ->
+          {:error, :not_found}
 
-      {:activity, nil} ->
-        {:error, :not_found}
+        {:activity, nil} ->
+          {:error, :not_found}
 
-      e ->
-        e
+        e ->
+          e
+      end
     end
   end
 

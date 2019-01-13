@@ -1,10 +1,10 @@
-defmodule Pleroma.Captcha.Kocaptcha do
-  alias Calendar.DateTime
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
 
+defmodule Pleroma.Captcha.Kocaptcha do
   alias Pleroma.Captcha.Service
   @behaviour Service
-
-  @ets __MODULE__.Ets
 
   @impl Service
   def new() do
@@ -17,51 +17,21 @@ defmodule Pleroma.Captcha.Kocaptcha do
       {:ok, res} ->
         json_resp = Poison.decode!(res.body)
 
-        token = json_resp["token"]
-
-        true =
-          :ets.insert(
-            @ets,
-            {token, json_resp["md5"], DateTime.now_utc() |> DateTime.Format.unix()}
-          )
-
-        %{type: :kocaptcha, token: token, url: endpoint <> json_resp["url"]}
-    end
-  end
-
-  @impl Service
-  def validate(token, captcha) do
-    with false <- is_nil(captcha),
-         [{^token, saved_md5, _}] <- :ets.lookup(@ets, token),
-         true <- :crypto.hash(:md5, captcha) |> Base.encode16() == String.upcase(saved_md5) do
-      # Clear the saved value
-      :ets.delete(@ets, token)
-
-      true
-    else
-      _ -> false
-    end
-  end
-
-  @impl Service
-  def cleanup() do
-    seconds_retained = Pleroma.Config.get!([Pleroma.Captcha, :seconds_retained])
-    # If the time in ETS is less than current_time - seconds_retained, then the time has
-    # already passed
-    delete_after =
-      DateTime.subtract!(DateTime.now_utc(), seconds_retained) |> DateTime.Format.unix()
-
-    :ets.select_delete(
-      @ets,
-      [
-        {
-          {:_, :_, :"$1"},
-          [{:<, :"$1", {:const, delete_after}}],
-          [true]
+        %{
+          type: :kocaptcha,
+          token: json_resp["token"],
+          url: endpoint <> json_resp["url"],
+          answer_data: json_resp["md5"]
         }
-      ]
-    )
+    end
+  end
 
-    :ok
+  @impl Service
+  def validate(_token, captcha, answer_data) do
+    # Here the token is unsed, because the unencrypted captcha answer is just passed to method
+    if not is_nil(captcha) and
+         :crypto.hash(:md5, captcha) |> Base.encode16() == String.upcase(answer_data),
+       do: :ok,
+       else: {:error, "Invalid CAPTCHA"}
   end
 end

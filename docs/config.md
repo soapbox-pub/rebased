@@ -32,7 +32,7 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 ## Pleroma.Mailer
 * `adapter`: one of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters), or `Swoosh.Adapters.Local` for in-memory mailbox.
-* `api_key` / `password` and / or other adapter-specific settings, per the above documentation. 
+* `api_key` / `password` and / or other adapter-specific settings, per the above documentation.
 
 An example for Sendgrid adapter:
 
@@ -63,12 +63,14 @@ config :pleroma, Pleroma.Mailer,
 * `email`: Email used to reach an Administrator/Moderator of the instance
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``
 * `limit`: Posts character limit (CW/Subject included in the counter)
+* `remote_limit`: Hard character limit beyond which remote posts will be dropped.
 * `upload_limit`: File size limit of uploads (except for avatar, background, banner)
 * `avatar_upload_limit`: File size limit of user’s profile avatars
 * `background_upload_limit`: File size limit of user’s profile backgrounds
 * `banner_upload_limit`: File size limit of user’s profile banners
 * `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
+* `account_activation_required`: Require users to confirm their emails before signing in.
 * `federating`: Enable federation with other instances
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance
 * `rewrite_policy`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
@@ -91,6 +93,12 @@ config :pleroma, Pleroma.Mailer,
 * `always_show_subject_input`: When set to false, auto-hide the subject field when it's empty.
 * `extended_nickname_format`: Set to `true` to use extended local nicknames format (allows underscores/dashes). This will break federation with
     older software for theses nicknames.
+* `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
+* `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
+
+## :logger
+* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
+See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
 ## :fe
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
@@ -119,6 +127,9 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 ## :mrf_rejectnonpublic
 * `allow_followersonly`: whether to allow followers-only posts
 * `allow_direct`: whether to allow direct messages
+
+## :mrf_hellthread
+* `threshold`: Number of mentioned users after which the message gets discarded as spam
 
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
@@ -167,7 +178,7 @@ Web Push Notifications configuration. You can use the mix task `mix web_push.gen
 ## Pleroma.Captcha
 * `enabled`: Whether the captcha should be shown on registration
 * `method`: The method/service to use for captcha
-* `seconds_retained`: The time in seconds for which the captcha is valid (stored in the cache)
+* `seconds_valid`: The time in seconds for which the captcha is valid
 
 ### Pleroma.Captcha.Kocaptcha
 Kocaptcha is a very simple captcha service with a single API endpoint,
@@ -188,3 +199,14 @@ You can then do
 ```
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
+
+## Pleroma.Web.Federator
+
+* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
+
+## Pleroma.Web.Federator.RetryQueue
+
+* `enabled`: If set to `true`, failed federation jobs will be retried
+* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
+* `initial_timeout`: The initial timeout in seconds
+* `max_retries`: The maximum number of times a federation job is retried

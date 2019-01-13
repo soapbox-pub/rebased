@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Captcha.Mock do
   alias Pleroma.Captcha.Service
   @behaviour Service
@@ -6,8 +10,5 @@ defmodule Pleroma.Captcha.Mock do
   def new(), do: %{type: :mock}
 
   @impl Service
-  def validate(_token, _captcha), do: true
-
-  @impl Service
-  def cleanup(), do: :ok
+  def validate(_token, _captcha, _data), do: :ok
 end

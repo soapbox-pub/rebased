@@ -12,7 +12,7 @@ config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
 
 config :pleroma, Pleroma.Captcha,
   enabled: false,
-  seconds_retained: 180,
+  seconds_valid: 60,
   method: Pleroma.Captcha.Kocaptcha
 
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
@@ -54,6 +54,17 @@ config :pleroma, :uri_schemes,
     "xmpp"
   ]
 
+websocket_config = [
+  path: "/websocket",
+  serializer: [
+    {Phoenix.Socket.V1.JSONSerializer, "~> 1.0.0"},
+    {Phoenix.Socket.V2.JSONSerializer, "~> 2.0.0"}
+  ],
+  timeout: 60_000,
+  transport_log: false,
+  compress: false
+]
+
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "localhost"],
@@ -62,6 +73,8 @@ config :pleroma, Pleroma.Web.Endpoint,
       {:_,
        [
          {"/api/v1/streaming", Elixir.Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+         {"/socket/websocket", Phoenix.Endpoint.CowboyWebSocket,
+          {nil, {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
          {:_, Plug.Adapters.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
        ]}
     ]
@@ -76,6 +89,12 @@ config :pleroma, Pleroma.Web.Endpoint,
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
+  metadata: [:request_id]
+
+config :logger, :ex_syslogger,
+  level: :debug,
+  ident: "Pleroma",
+  format: "$date $time $metadata[$level] $message",
   metadata: [:request_id]
 
 config :mime, :types, %{
@@ -98,7 +117,8 @@ config :pleroma, :instance,
   name: "Pleroma",
   email: "example@example.com",
   description: "A Pleroma instance, an alternative fediverse server",
-  limit: 5000,
+  limit: 5_000,
+  remote_limit: 100_000,
   upload_limit: 16_000_000,
   avatar_upload_limit: 2_000_000,
   background_upload_limit: 4_000_000,
@@ -117,7 +137,9 @@ config :pleroma, :instance,
     "text/markdown"
   ],
   finmoji_enabled: true,
-  mrf_transparency: true
+  mrf_transparency: true,
+  autofollowed_nicknames: [],
+  max_pinned_statuses: 1
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -137,8 +159,8 @@ config :pleroma, :fe,
   logo_mask: true,
   logo_margin: "0.1em",
   background: "/static/aurora_borealis.jpg",
-  redirect_root_no_login: "/~/main/all",
-  redirect_root_login: "/~/main/friends",
+  redirect_root_no_login: "/main/all",
+  redirect_root_login: "/main/friends",
   show_instance_panel: true,
   scope_options_enabled: false,
   formatting_options_enabled: false,
@@ -163,6 +185,8 @@ config :pleroma, :mrf_rejectnonpublic,
   allow_followersonly: false,
   allow_direct: false
 
+config :pleroma, :mrf_hellthread, threshold: 10
+
 config :pleroma, :mrf_simple,
   media_removal: [],
   media_nsfw: [],
@@ -170,13 +194,7 @@ config :pleroma, :mrf_simple,
   reject: [],
   accept: []
 
-config :pleroma, :media_proxy,
-  enabled: false,
-  # base_url: "https://cache.pleroma.social",
-  proxy_opts: [
-    # inline_content_types: [] | false | true,
-    # http: [:insecure]
-  ]
+config :pleroma, :media_proxy, enabled: false
 
 config :pleroma, :chat, enabled: true
 
@@ -219,6 +237,46 @@ config :cors_plug,
   ],
   credentials: true,
   headers: ["Authorization", "Content-Type", "Idempotency-Key"]
+
+config :pleroma, Pleroma.User,
+  restricted_nicknames: [
+    ".well-known",
+    "~",
+    "about",
+    "activities",
+    "api",
+    "auth",
+    "dev",
+    "friend-requests",
+    "inbox",
+    "internal",
+    "main",
+    "media",
+    "nodeinfo",
+    "notice",
+    "oauth",
+    "objects",
+    "ostatus_subscribe",
+    "pleroma",
+    "proxy",
+    "push",
+    "registration",
+    "relay",
+    "settings",
+    "status",
+    "tag",
+    "user-search",
+    "users",
+    "web"
+  ]
+
+config :pleroma, Pleroma.Web.Federator, max_jobs: 50
+
+config :pleroma, Pleroma.Web.Federator.RetryQueue,
+  enabled: false,
+  max_jobs: 20,
+  initial_timeout: 30,
+  max_retries: 5
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

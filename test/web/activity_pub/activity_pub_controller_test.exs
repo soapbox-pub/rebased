@@ -1,8 +1,12 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
-  alias Pleroma.{Repo, User}
+  alias Pleroma.{Object, Repo, User}
   alias Pleroma.Activity
 
   setup_all do
@@ -71,6 +75,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert json_response(conn, 404)
     end
+
+    test "it returns 404 for tombstone objects", %{conn: conn} do
+      tombstone = insert(:tombstone)
+      uuid = String.split(tombstone.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}")
+
+      assert json_response(conn, 404)
+    end
+  end
+
+  describe "/activities/:uuid" do
+    test "it returns a json representation of the activity", %{conn: conn} do
+      activity = insert(:note_activity)
+      uuid = String.split(activity.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn, 200) == ObjectView.render("object.json", %{object: activity})
+    end
+
+    test "it returns 404 for non-public activities", %{conn: conn} do
+      activity = insert(:direct_note_activity)
+      uuid = String.split(activity.data["id"], "/") |> List.last()
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/activities/#{uuid}")
+
+      assert json_response(conn, 404)
+    end
   end
 
   describe "/inbox" do
@@ -108,6 +150,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       :timer.sleep(500)
       assert Activity.get_by_ap_id(data["id"])
     end
+
+    test "it rejects reads from other users", %{conn: conn} do
+      user = insert(:user)
+      otheruser = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, otheruser)
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/inbox")
+
+      assert json_response(conn, 403)
+    end
+
+    test "it returns a note activity in a collection", %{conn: conn} do
+      note_activity = insert(:direct_note_activity)
+      user = User.get_cached_by_ap_id(hd(note_activity.data["to"]))
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/inbox")
+
+      assert response(conn, 200) =~ note_activity.data["object"]["content"]
+    end
   end
 
   describe "/users/:nickname/outbox" do
@@ -133,6 +201,96 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user.nickname}/outbox")
 
       assert response(conn, 200) =~ announce_activity.data["object"]
+    end
+
+    test "it rejects posts from other users", %{conn: conn} do
+      data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
+      user = insert(:user)
+      otheruser = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, otheruser)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      assert json_response(conn, 403)
+    end
+
+    test "it inserts an incoming create activity into the database", %{conn: conn} do
+      data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      result = json_response(conn, 201)
+      assert Activity.get_by_ap_id(result["id"])
+    end
+
+    test "it rejects an incoming activity with bogus type", %{conn: conn} do
+      data = File.read!("test/fixtures/activitypub-client-post-activity.json") |> Poison.decode!()
+      user = insert(:user)
+
+      data =
+        data
+        |> Map.put("type", "BadType")
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      assert json_response(conn, 400)
+    end
+
+    test "it erects a tombstone when receiving a delete activity", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      user = User.get_cached_by_ap_id(note_activity.data["actor"])
+
+      data = %{
+        type: "Delete",
+        object: %{
+          id: note_activity.data["object"]["id"]
+        }
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      result = json_response(conn, 201)
+      assert Activity.get_by_ap_id(result["id"])
+
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      assert object
+      assert object.data["type"] == "Tombstone"
+    end
+
+    test "it rejects delete activity of object from other actor", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      user = insert(:user)
+
+      data = %{
+        type: "Delete",
+        object: %{
+          id: note_activity.data["object"]["id"]
+        }
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      assert json_response(conn, 400)
     end
   end
 

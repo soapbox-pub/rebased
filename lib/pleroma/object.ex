@@ -1,6 +1,10 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Object do
   use Ecto.Schema
-  alias Pleroma.{Repo, Object, User, Activity}
+  alias Pleroma.{Repo, Object, User, Activity, ObjectTombstone}
   import Ecto.{Query, Changeset}
 
   schema "objects" do
@@ -62,8 +66,25 @@ defmodule Pleroma.Object do
     Object.change(%Object{}, %{data: %{"id" => context}})
   end
 
+  def make_tombstone(%Object{data: %{"id" => id, "type" => type}}, deleted \\ DateTime.utc_now()) do
+    %ObjectTombstone{
+      id: id,
+      formerType: type,
+      deleted: deleted
+    }
+    |> Map.from_struct()
+  end
+
+  def swap_object_with_tombstone(object) do
+    tombstone = make_tombstone(object)
+
+    object
+    |> Object.change(%{data: tombstone})
+    |> Repo.update()
+  end
+
   def delete(%Object{data: %{"id" => id}} = object) do
-    with Repo.delete(object),
+    with {:ok, _obj} = swap_object_with_tombstone(object),
          Repo.delete_all(Activity.all_non_create_by_object_ap_id_q(id)),
          {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
       {:ok, object}

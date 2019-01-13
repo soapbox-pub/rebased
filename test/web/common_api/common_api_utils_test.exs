@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Endpoint
@@ -51,5 +55,55 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     ]
 
     assert expected == Utils.emoji_from_profile(user)
+  end
+
+  describe "format_input/4" do
+    test "works for bare text/plain" do
+      text = "hello world!"
+      expected = "hello world!"
+
+      output = Utils.format_input(text, [], [], "text/plain")
+
+      assert output == expected
+
+      text = "hello world!\n\nsecond paragraph!"
+      expected = "hello world!<br><br>second paragraph!"
+
+      output = Utils.format_input(text, [], [], "text/plain")
+
+      assert output == expected
+    end
+
+    test "works for bare text/html" do
+      text = "<p>hello world!</p>"
+      expected = "<p>hello world!</p>"
+
+      output = Utils.format_input(text, [], [], "text/html")
+
+      assert output == expected
+
+      text = "<p>hello world!</p>\n\n<p>second paragraph</p>"
+      expected = "<p>hello world!</p>\n\n<p>second paragraph</p>"
+
+      output = Utils.format_input(text, [], [], "text/html")
+
+      assert output == expected
+    end
+
+    test "works for bare text/markdown" do
+      text = "**hello world**"
+      expected = "<p><strong>hello world</strong></p>\n"
+
+      output = Utils.format_input(text, [], [], "text/markdown")
+
+      assert output == expected
+
+      text = "**hello world**\n\n*another paragraph*"
+      expected = "<p><strong>hello world</strong></p>\n<p><em>another paragraph</em></p>\n"
+
+      output = Utils.format_input(text, [], [], "text/markdown")
+
+      assert output == expected
+    end
   end
 end

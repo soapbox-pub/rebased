@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.User.Info do
   use Ecto.Schema
   import Ecto.Changeset
@@ -9,6 +13,8 @@ defmodule Pleroma.User.Info do
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:locked, :boolean, default: false)
+    field(:confirmation_pending, :boolean, default: false)
+    field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
@@ -25,6 +31,7 @@ defmodule Pleroma.User.Info do
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
     field(:hide_network, :boolean, default: false)
+    field(:pinned_activities, {:array, :integer}, default: [])
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -141,6 +148,24 @@ defmodule Pleroma.User.Info do
     ])
   end
 
+  def confirmation_changeset(info, :confirmed) do
+    confirmation_changeset(info, %{
+      confirmation_pending: false,
+      confirmation_token: nil
+    })
+  end
+
+  def confirmation_changeset(info, :unconfirmed) do
+    confirmation_changeset(info, %{
+      confirmation_pending: true,
+      confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+    })
+  end
+
+  def confirmation_changeset(info, params) do
+    cast(info, params, [:confirmation_pending, :confirmation_token])
+  end
+
   def mastodon_profile_update(info, params) do
     info
     |> cast(params, [
@@ -171,5 +196,27 @@ defmodule Pleroma.User.Info do
       :is_moderator,
       :is_admin
     ])
+  end
+
+  def add_pinnned_activity(info, %Pleroma.Activity{id: id}) do
+    if id not in info.pinned_activities do
+      max_pinned_statuses = Pleroma.Config.get([:instance, :max_pinned_statuses], 0)
+      params = %{pinned_activities: info.pinned_activities ++ [id]}
+
+      info
+      |> cast(params, [:pinned_activities])
+      |> validate_length(:pinned_activities,
+        max: max_pinned_statuses,
+        message: "You have already pinned the maximum number of statuses"
+      )
+    else
+      change(info)
+    end
+  end
+
+  def remove_pinnned_activity(info, %Pleroma.Activity{id: id}) do
+    params = %{pinned_activities: List.delete(info.pinned_activities, id)}
+
+    cast(info, params, [:pinned_activities])
   end
 end

@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
   alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
@@ -52,10 +56,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp check_remote_limit(%{"object" => %{"content" => content}}) do
+    limit = Pleroma.Config.get([:instance, :remote_limit])
+    String.length(content) <= limit
+  end
+
+  defp check_remote_limit(_), do: true
+
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map),
          :ok <- check_actor_is_active(map["actor"]),
+         {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
          :ok <- insert_full_object(map) do
       {recipients, _, _} = get_recipients(map)
@@ -352,21 +364,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   @valid_visibilities ~w[direct unlisted public private]
 
-  defp restrict_visibility(query, %{visibility: "direct"}) do
-    public = "https://www.w3.org/ns/activitystreams#Public"
+  defp restrict_visibility(query, %{visibility: visibility})
+       when visibility in @valid_visibilities do
+    query =
+      from(
+        a in query,
+        where:
+          fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
+      )
 
-    from(
-      activity in query,
-      join: sender in User,
-      on: sender.ap_id == activity.actor,
-      # Are non-direct statuses with no to/cc possible?
-      where:
-        fragment(
-          "not (? && ?)",
-          [^public, sender.follower_address],
-          activity.recipients
-        )
-    )
+    Ecto.Adapters.SQL.to_sql(:all, Repo, query)
+
+    query
   end
 
   defp restrict_visibility(_query, %{visibility: visibility})
@@ -382,6 +391,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("actor_id", user.ap_id)
       |> Map.put("whole_db", true)
+      |> Map.put("pinned_activity_ids", user.info.pinned_activities)
 
     recipients =
       if reading_user do
@@ -499,6 +509,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_replies(query, _), do: query
 
+  defp restrict_reblogs(query, %{"exclude_reblogs" => val}) when val == "true" or val == "1" do
+    from(activity in query, where: fragment("?->>'type' != 'Announce'", activity.data))
+  end
+
+  defp restrict_reblogs(query, _), do: query
+
   # Only search through last 100_000 activities by default
   defp restrict_recent(query, %{"whole_db" => true}), do: query
 
@@ -534,6 +550,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     )
   end
 
+  defp restrict_pinned(query, %{"pinned" => "true", "pinned_activity_ids" => ids}) do
+    from(activity in query, where: activity.id in ^ids)
+  end
+
+  defp restrict_pinned(query, _), do: query
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query =
       from(
@@ -557,6 +579,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_media(opts)
     |> restrict_visibility(opts)
     |> restrict_replies(opts)
+    |> restrict_reblogs(opts)
+    |> restrict_pinned(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
@@ -722,8 +746,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {"Content-Type", "application/activity+json"},
         {"signature", signature},
         {"digest", digest}
-      ],
-      hackney: [pool: :default]
+      ]
     )
   end
 
@@ -781,6 +804,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       e ->
         {:error, e}
     end
+  end
+
+  def is_public?(%Object{data: %{"type" => "Tombstone"}}) do
+    false
   end
 
   def is_public?(activity) do

@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Salmon do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
@@ -157,16 +161,21 @@ defmodule Pleroma.Web.Salmon do
     |> Enum.filter(fn user -> user && !user.local end)
   end
 
-  defp send_to_user(%{info: %{salmon: salmon}}, feed, poster) do
+  # push an activity to remote accounts
+  #
+  defp send_to_user(%{info: %{salmon: salmon}}, feed, poster),
+    do: send_to_user(salmon, feed, poster)
+
+  defp send_to_user(url, feed, poster) when is_binary(url) do
     with {:ok, %{status: code}} <-
            poster.(
-             salmon,
+             url,
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}]
            ) do
-      Logger.debug(fn -> "Pushed to #{salmon}, code #{code}" end)
+      Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)
     else
-      e -> Logger.debug(fn -> "Pushing Salmon to #{salmon} failed, #{inspect(e)}" end)
+      e -> Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
     end
   end
 
@@ -180,6 +189,11 @@ defmodule Pleroma.Web.Salmon do
     "Undo",
     "Delete"
   ]
+
+  @doc """
+  Publishes an activity to remote accounts
+  """
+  @spec publish(User.t(), Pleroma.Activity.t(), Pleroma.HTTP.t()) :: none
   def publish(user, activity, poster \\ &@httpoison.post/3)
 
   def publish(%{info: %{keys: keys}} = user, %{data: %{"type" => type}} = activity, poster)

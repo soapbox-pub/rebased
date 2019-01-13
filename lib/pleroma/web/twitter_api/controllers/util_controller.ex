@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.TwitterAPI.UtilController do
   use Pleroma.Web, :controller
   require Logger
@@ -174,6 +178,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           closed: if(Keyword.get(instance, :registrations_open), do: "0", else: "1"),
           private: if(Keyword.get(instance, :public, true), do: "0", else: "1"),
           vapidPublicKey: vapid_public_key,
+          accountActivationRequired:
+            if(Keyword.get(instance, :account_activation_required, false), do: "1", else: "0"),
           invitesEnabled: if(Keyword.get(instance, :invites_enabled, false), do: "1", else: "0")
         }
 
@@ -234,21 +240,22 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     follow_import(conn, %{"list" => File.read!(listfile.path)})
   end
 
-  def follow_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
-    Task.start(fn ->
-      String.split(list)
-      |> Enum.map(fn account ->
-        with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
-             %User{} = followed <- User.get_or_fetch(account),
-             {:ok, follower} <- User.maybe_direct_follow(follower, followed) do
-          ActivityPub.follow(follower, followed)
-        else
-          err -> Logger.debug("follow_import: following #{account} failed with #{inspect(err)}")
-        end
-      end)
-    end)
+  def follow_import(%{assigns: %{user: follower}} = conn, %{"list" => list}) do
+    with followed_identifiers <- String.split(list),
+         {:ok, _} = Task.start(fn -> User.follow_import(follower, followed_identifiers) end) do
+      json(conn, "job started")
+    end
+  end
 
-    json(conn, "job started")
+  def blocks_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
+    blocks_import(conn, %{"list" => File.read!(listfile.path)})
+  end
+
+  def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
+    with blocked_identifiers <- String.split(list),
+         {:ok, _} = Task.start(fn -> User.blocks_import(blocker, blocked_identifiers) end) do
+      json(conn, "job started")
+    end
   end
 
   def change_password(%{assigns: %{user: user}} = conn, params) do

@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.FormatterTest do
   alias Pleroma.Formatter
   alias Pleroma.User
@@ -215,8 +219,11 @@ defmodule Pleroma.FormatterTest do
   end
 
   test "it can parse mentions and return the relevant users" do
-    text = "@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me"
+    text =
+      "@@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me and @o and @@@jimm"
 
+    o = insert(:user, %{nickname: "o"})
+    jimm = insert(:user, %{nickname: "jimm"})
     gsimg = insert(:user, %{nickname: "gsimg"})
     archaeme = insert(:user, %{nickname: "archaeme"})
     archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
@@ -224,7 +231,9 @@ defmodule Pleroma.FormatterTest do
     expected_result = [
       {"@gsimg", gsimg},
       {"@archaeme", archaeme},
-      {"@archaeme@archae.me", archaeme_remote}
+      {"@archaeme@archae.me", archaeme_remote},
+      {"@o", o},
+      {"@jimm", jimm}
     ]
 
     assert Formatter.parse_mentions(text) == expected_result

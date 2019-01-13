@@ -14,43 +14,45 @@ acl purge {
 sub vcl_recv {
     # Redirect HTTP to HTTPS
     if (std.port(server.ip) != 443) {
-        set req.http.x-redir = "https://" + req.http.host + req.url;
-        return (synth(750, ""));
+      set req.http.x-redir = "https://" + req.http.host + req.url;
+      return (synth(750, ""));
+    }
+
+    # CHUNKED SUPPORT
+    if (req.http.Range ~ "bytes=") {
+      set req.http.x-range = req.http.Range;
     }
 
     # Pipe if WebSockets request is coming through
     if (req.http.upgrade ~ "(?i)websocket") {
-        return (pipe);
+      return (pipe);
     }
 
     # Allow purging of the cache
     if (req.method == "PURGE") {
-        if (!client.ip ~ purge) {
-          return(synth(405,"Not allowed."));
-        }
-        return(purge);
+      if (!client.ip ~ purge) {
+        return(synth(405,"Not allowed."));
+      }
+      return(purge);
     }
 
     # Pleroma MediaProxy - strip headers that will affect caching
     if (req.url ~ "^/proxy/") {
-        unset req.http.Cookie;
-        unset req.http.Authorization;
-        unset req.http.Accept;
-        return (hash);
+      unset req.http.Cookie;
+      unset req.http.Authorization;
+      unset req.http.Accept;
+      return (hash);
     }
 
     # Strip headers that will affect caching from all other static content
     # This also permits caching of individual toots and AP Activities
     if ((req.url ~ "^/(media|static)/") ||
-    (req.url ~ "(?i)\.(html|js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$"))
+    (req.url ~ "(?i)\.(html|js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|mp4|ogg|webm|svg|swf|ttf|pdf|woff|woff2)$"))
     {
       unset req.http.Cookie;
       unset req.http.Authorization;
       return (hash);
     }
-
-    # Everything else should just be piped to Pleroma
-    return (pipe);
 }
 
 sub vcl_backend_response {
@@ -59,8 +61,11 @@ sub vcl_backend_response {
       set beresp.do_gzip = true;
     }
 
-    # etags are bad
-    unset beresp.http.etag;
+    # CHUNKED SUPPORT
+    if (bereq.http.x-range ~ "bytes=" && beresp.status == 206) {
+      set beresp.ttl = 10m;
+      set beresp.http.CR = beresp.http.content-range;
+    }
 
     # Don't cache objects that require authentication
     if (beresp.http.Authorization && !beresp.http.Cache-Control ~ "public") {
@@ -81,9 +86,9 @@ sub vcl_backend_response {
 
     # Do not cache redirects and errors
     if ((beresp.status >= 300) && (beresp.status < 500)) {
-        set beresp.uncacheable = true;
-        set beresp.ttl = 30s;
-        return (deliver);
+      set beresp.uncacheable = true;
+      set beresp.ttl = 30s;
+      return (deliver);
     }
 
     # Pleroma MediaProxy internally sets headers properly
@@ -92,14 +97,12 @@ sub vcl_backend_response {
     }
 
     # Strip cache-restricting headers from Pleroma on static content that we want to cache
-    # Also enable streaming of cached content to clients (no waiting for Varnish to complete backend fetch)
-    if (bereq.url ~ "(?i)\.(js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|ogg|svg|swf|ttf|pdf|woff|woff2)$")
+    if (bereq.url ~ "(?i)\.(js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|mp4|ogg|webm|svg|swf|ttf|pdf|woff|woff2)$")
     {
       unset beresp.http.set-cookie;
       unset beresp.http.Cache-Control;
       unset beresp.http.x-request-id;
       set beresp.http.Cache-Control = "public, max-age=86400";
-      set beresp.do_stream = true;
     }
 }
 
@@ -115,7 +118,30 @@ sub vcl_synth {
 # Ensure WebSockets through the pipe do not close prematurely
 sub vcl_pipe {
     if (req.http.upgrade) {
-        set bereq.http.upgrade = req.http.upgrade;
-        set bereq.http.connection = req.http.connection;
+      set bereq.http.upgrade = req.http.upgrade;
+      set bereq.http.connection = req.http.connection;
+    }
+}
+
+sub vcl_hash {
+    # CHUNKED SUPPORT
+    if (req.http.x-range ~ "bytes=") {
+      hash_data(req.http.x-range);
+      unset req.http.Range;
+    }
+}
+
+sub vcl_backend_fetch {
+    # CHUNKED SUPPORT
+    if (bereq.http.x-range) {
+      set bereq.http.Range = bereq.http.x-range;
+    }
+}
+
+sub vcl_deliver {
+    # CHUNKED SUPPORT
+    if (resp.http.CR) {
+      set resp.http.Content-Range = resp.http.CR;
+      unset resp.http.CR;
     }
 }

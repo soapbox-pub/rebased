@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.HTML do
   alias HtmlSanitizeEx.Scrubber
 
@@ -11,8 +15,11 @@ defmodule Pleroma.HTML do
   end
 
   def filter_tags(html, nil) do
-    get_scrubbers()
-    |> Enum.reduce(html, fn scrubber, html ->
+    filter_tags(html, get_scrubbers())
+  end
+
+  def filter_tags(html, scrubbers) when is_list(scrubbers) do
+    Enum.reduce(scrubbers, html, fn scrubber, html ->
       filter_tags(html, scrubber)
     end)
   end
@@ -20,6 +27,37 @@ defmodule Pleroma.HTML do
   def filter_tags(html, scrubber), do: Scrubber.scrub(html, scrubber)
   def filter_tags(html), do: filter_tags(html, nil)
   def strip_tags(html), do: Scrubber.scrub(html, Scrubber.StripTags)
+
+  def get_cached_scrubbed_html_for_object(content, scrubbers, object, module) do
+    key = "#{module}#{generate_scrubber_signature(scrubbers)}|#{object.id}"
+    Cachex.fetch!(:scrubber_cache, key, fn _key -> ensure_scrubbed_html(content, scrubbers) end)
+  end
+
+  def get_cached_stripped_html_for_object(content, object, module) do
+    get_cached_scrubbed_html_for_object(
+      content,
+      HtmlSanitizeEx.Scrubber.StripTags,
+      object,
+      module
+    )
+  end
+
+  def ensure_scrubbed_html(
+        content,
+        scrubbers
+      ) do
+    {:commit, filter_tags(content, scrubbers)}
+  end
+
+  defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
+    generate_scrubber_signature([scrubber])
+  end
+
+  defp generate_scrubber_signature(scrubbers) do
+    Enum.reduce(scrubbers, "", fn scrubber, signature ->
+      "#{signature}#{to_string(scrubber)}"
+    end)
+  end
 end
 
 defmodule Pleroma.HTML.Scrubber.TwitterText do

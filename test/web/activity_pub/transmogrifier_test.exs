@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -683,6 +687,36 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("id", "")
 
       :error = Transmogrifier.handle_incoming(data)
+    end
+
+    test "it remaps video URLs as attachments if necessary" do
+      {:ok, object} =
+        ActivityPub.fetch_object_from_id(
+          "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
+        )
+
+      attachment = %{
+        "type" => "Link",
+        "mediaType" => "video/mp4",
+        "href" =>
+          "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+        "mimeType" => "video/mp4",
+        "size" => 5_015_880,
+        "url" => [
+          %{
+            "href" =>
+              "https://peertube.moe/static/webseed/df5f464b-be8d-46fb-ad81-2d4c2d1630e3-480.mp4",
+            "mediaType" => "video/mp4",
+            "type" => "Link"
+          }
+        ],
+        "width" => 480
+      }
+
+      assert object.data["url"] ==
+               "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
+
+      assert object.data["attachment"] == [attachment]
     end
   end
 

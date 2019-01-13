@@ -1,12 +1,21 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Captcha.Service do
   @doc """
   Request new captcha from a captcha service.
 
   Returns:
 
-  Service-specific data for using the newly created captcha
+  Type/Name of the service, the token to identify the captcha,
+  the data of the answer and service-specific data to use the newly created captcha
   """
-  @callback new() :: map
+  @callback new() :: %{
+              type: atom(),
+              token: String.t(),
+              answer_data: any()
+            }
 
   @doc """
   Validated the provided captcha solution.
@@ -14,15 +23,15 @@ defmodule Pleroma.Captcha.Service do
   Arguments:
   * `token` the captcha is associated with
   * `captcha` solution of the captcha to validate
+  * `answer_data` is the data needed to validate the answer (presumably encrypted)
 
   Returns:
 
   `true` if captcha is valid, `false` if not
   """
-  @callback validate(token :: String.t(), captcha :: String.t()) :: boolean
-
-  @doc """
-  This function is called periodically to clean up old captchas
-  """
-  @callback cleanup() :: :ok
+  @callback validate(
+              token :: String.t(),
+              captcha :: String.t(),
+              answer_data :: any()
+            ) :: :ok | {:error, String.t()}
 end

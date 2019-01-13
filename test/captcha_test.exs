@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.CaptchaTest do
   use ExUnit.Case
 
@@ -25,16 +29,18 @@ defmodule Pleroma.CaptchaTest do
     end
 
     test "new and validate" do
-      assert Kocaptcha.new() == %{
-               type: :kocaptcha,
-               token: "afa1815e14e29355e6c8f6b143a39fa2",
-               url: "https://captcha.kotobank.ch/captchas/afa1815e14e29355e6c8f6b143a39fa2.png"
-             }
+      new = Kocaptcha.new()
+      assert new[:type] == :kocaptcha
+      assert new[:token] == "afa1815e14e29355e6c8f6b143a39fa2"
+
+      assert new[:url] ==
+               "https://captcha.kotobank.ch/captchas/afa1815e14e29355e6c8f6b143a39fa2.png"
 
       assert Kocaptcha.validate(
-               "afa1815e14e29355e6c8f6b143a39fa2",
-               "7oEy8c"
-             )
+               new[:token],
+               "7oEy8c",
+               new[:answer_data]
+             ) == :ok
     end
   end
 end

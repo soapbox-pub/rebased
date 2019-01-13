@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
@@ -50,6 +54,26 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     assert Repo.get_by(Token, token: token)
   end
 
+  test "issues a token for `password` grant_type with valid credentials" do
+    password = "testpassword"
+    user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
+
+    app = insert(:oauth_app)
+
+    conn =
+      build_conn()
+      |> post("/oauth/token", %{
+        "grant_type" => "password",
+        "username" => user.nickname,
+        "password" => password,
+        "client_id" => app.client_id,
+        "client_secret" => app.client_secret
+      })
+
+    assert %{"access_token" => token} = json_response(conn, 200)
+    assert Repo.get_by(Token, token: token)
+  end
+
   test "issues a token for request with HTTP basic auth client credentials" do
     user = insert(:user)
     app = insert(:oauth_app)
@@ -89,6 +113,43 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       })
 
     assert resp = json_response(conn, 400)
+    assert %{"error" => _} = resp
+    refute Map.has_key?(resp, "access_token")
+  end
+
+  test "rejects token exchange for valid credentials belonging to unconfirmed user and confirmation is required" do
+    setting = Pleroma.Config.get([:instance, :account_activation_required])
+
+    unless setting do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+      on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
+    end
+
+    password = "testpassword"
+    user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
+    info_change = Pleroma.User.Info.confirmation_changeset(user.info, :unconfirmed)
+
+    {:ok, user} =
+      user
+      |> Ecto.Changeset.change()
+      |> Ecto.Changeset.put_embed(:info, info_change)
+      |> Repo.update()
+
+    refute Pleroma.User.auth_active?(user)
+
+    app = insert(:oauth_app)
+
+    conn =
+      build_conn()
+      |> post("/oauth/token", %{
+        "grant_type" => "password",
+        "username" => user.nickname,
+        "password" => password,
+        "client_id" => app.client_id,
+        "client_secret" => app.client_secret
+      })
+
+    assert resp = json_response(conn, 403)
     assert %{"error" => _} = resp
     refute Map.has_key?(resp, "access_token")
   end
