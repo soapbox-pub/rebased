@@ -1,19 +1,14 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.RichMedia.RichMediaControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
+  import Tesla.Mock
 
   setup do
-    Tesla.Mock.mock(fn
-      %{
-        method: :get,
-        url: "http://example.com/ogp"
-      } ->
-        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
-
-      %{method: :get, url: "http://example.com/empty"} ->
-        %Tesla.Env{status: 200, body: "hello"}
-    end)
-
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
   end
 
