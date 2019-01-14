@@ -1,5 +1,9 @@
 defmodule Pleroma.Web.RichMedia.Parser do
-  @parsers [Pleroma.Web.RichMedia.Parsers.OGP, Pleroma.Web.RichMedia.Parsers.TwitterCard]
+  @parsers [
+    Pleroma.Web.RichMedia.Parsers.OGP,
+    Pleroma.Web.RichMedia.Parsers.TwitterCard,
+    Pleroma.Web.RichMedia.Parsers.OEmbed
+  ]
 
   if Mix.env() == :test do
     def parse(url), do: parse_url(url)
