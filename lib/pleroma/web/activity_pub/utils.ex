@@ -231,6 +231,27 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Repo.one(query)
   end
 
+  @doc """
+  Returns like activities targeting an object
+  """
+  def get_object_likes(%{data: %{"id" => id}}) do
+    query =
+      from(
+        activity in Activity,
+        # this is to use the index
+        where:
+          fragment(
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
+            activity.data,
+            activity.data,
+            ^id
+          ),
+        where: fragment("(?)->>'type' = 'Like'", activity.data)
+      )
+
+    Repo.all(query)
+  end
+
   def make_like_data(%User{ap_id: ap_id} = actor, %{data: %{"id" => id}} = object, activity_id) do
     data = %{
       "type" => "Like",

@@ -89,6 +89,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
+  describe "/object/:uuid/likes" do
+    test "it returns the like activities in a collection", %{conn: conn} do
+      like = insert(:like_activity)
+      uuid = String.split(like.data["object"], "/") |> List.last()
+
+      result =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}/likes")
+        |> json_response(200)
+
+      assert List.first(result["first"]["orderedItems"])["id"] == like.data["id"]
+    end
+  end
+
   describe "/activities/:uuid" do
     test "it returns a json representation of the activity", %{conn: conn} do
       activity = insert(:note_activity)
@@ -291,6 +306,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> post("/users/#{user.nickname}/outbox", data)
 
       assert json_response(conn, 400)
+    end
+
+    test "it increases like count when receiving a like action", %{conn: conn} do
+      note_activity = insert(:note_activity)
+      user = User.get_cached_by_ap_id(note_activity.data["actor"])
+
+      data = %{
+        type: "Like",
+        object: %{
+          id: note_activity.data["object"]["id"]
+        }
+      }
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/outbox", data)
+
+      result = json_response(conn, 201)
+      assert Activity.get_by_ap_id(result["id"])
+
+      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      assert object
+      assert object.data["like_count"] == 1
     end
   end
 
