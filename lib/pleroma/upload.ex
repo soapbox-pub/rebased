@@ -215,7 +215,7 @@ defmodule Pleroma.Upload do
   end
 
   defp url_from_spec(base_url, {:file, path}) do
-    [base_url, "media", path]
+    [base_url, "media", URI.encode(path)]
     |> Path.join()
   end
 
