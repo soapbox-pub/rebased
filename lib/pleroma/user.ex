@@ -35,7 +35,7 @@ defmodule Pleroma.User do
     field(:avatar, :map)
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
-    field(:search_distance, :float, virtual: true)
+    field(:search_rank, :float, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
@@ -511,6 +511,12 @@ defmodule Pleroma.User do
     {:ok, Repo.all(q)}
   end
 
+  def get_followers_ids(user, page \\ nil) do
+    q = get_followers_query(user, page)
+
+    Repo.all(from(u in q, select: u.id))
+  end
+
   def get_friends_query(%User{id: id, following: following}, nil) do
     from(
       u in User,
@@ -533,6 +539,12 @@ defmodule Pleroma.User do
     q = get_friends_query(user, page)
 
     {:ok, Repo.all(q)}
+  end
+
+  def get_friends_ids(user, page \\ nil) do
+    q = get_friends_query(user, page)
+
+    Repo.all(from(u in q, select: u.id))
   end
 
   def get_follow_requests_query(%User{} = user) do
@@ -666,7 +678,7 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def search(query, resolve \\ false) do
+  def search(query, resolve \\ false, for_user \\ nil) do
     # strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
@@ -674,16 +686,28 @@ defmodule Pleroma.User do
       User.get_or_fetch_by_nickname(query)
     end
 
+    processed_query =
+      query
+      |> String.replace(~r/\W+/, " ")
+      |> String.trim()
+      |> String.split()
+      |> Enum.map(&(&1 <> ":*"))
+      |> Enum.join(" | ")
+
     inner =
       from(
         u in User,
         select_merge: %{
-          search_distance:
+          search_rank:
             fragment(
-              "? <-> (? || coalesce(?, ''))",
-              ^query,
-              u.nickname,
-              u.name
+              """
+              ts_rank_cd(
+                setweight(to_tsvector('simple', regexp_replace(nickname, '\\W', ' ', 'g')), 'A') ||
+                setweight(to_tsvector('simple', regexp_replace(coalesce(name, ''), '\\W', ' ', 'g')), 'B'),
+                to_tsquery('simple', ?)
+              )
+              """,
+              ^processed_query
             )
         },
         where: not is_nil(u.nickname)
@@ -692,11 +716,44 @@ defmodule Pleroma.User do
     q =
       from(
         s in subquery(inner),
-        order_by: s.search_distance,
+        order_by: [desc: s.search_rank],
         limit: 20
       )
 
-    Repo.all(q)
+    results =
+      q
+      |> Repo.all()
+      |> Enum.filter(&(&1.search_rank > 0))
+
+    weighted_results =
+      if for_user do
+        friends_ids = get_friends_ids(for_user)
+        followers_ids = get_followers_ids(for_user)
+
+        Enum.map(
+          results,
+          fn u ->
+            search_rank_coef =
+              cond do
+                u.id in friends_ids ->
+                  1.2
+
+                u.id in followers_ids ->
+                  1.1
+
+                true ->
+                  1
+              end
+
+            Map.put(u, :search_rank, u.search_rank * search_rank_coef)
+          end
+        )
+        |> Enum.sort_by(&(-&1.search_rank))
+      else
+        results
+      end
+
+    weighted_results
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do

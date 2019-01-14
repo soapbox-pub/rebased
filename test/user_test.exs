@@ -781,8 +781,7 @@ defmodule Pleroma.UserTest do
       _user_three = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social"})
       user_four = insert(:user, %{nickname: "lain@pleroma.soykaf.com"})
 
-      assert user_four ==
-               User.search("lain@ple") |> List.first() |> Map.put(:search_distance, nil)
+      assert user_four == User.search("lain@ple") |> List.first() |> Map.put(:search_rank, nil)
     end
 
     test "finds a user whose name is nil" do
@@ -792,7 +791,7 @@ defmodule Pleroma.UserTest do
       assert user_two ==
                User.search("lain@pleroma.soykaf.com")
                |> List.first()
-               |> Map.put(:search_distance, nil)
+               |> Map.put(:search_rank, nil)
     end
   end
 
