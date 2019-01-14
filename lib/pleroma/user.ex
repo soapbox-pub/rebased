@@ -454,7 +454,7 @@ defmodule Pleroma.User do
   end
 
   def get_cached_by_nickname_or_id(nickname_or_id) do
-    get_cached_by_nickname(nickname_or_id) || get_cached_by_id(nickname_or_id)
+    get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id) 
   end
 
   def get_by_nickname(nickname) do
