@@ -7,7 +7,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
-  alias Pleroma.Repo
   alias Pleroma.Web.{OStatus, Federator}
   alias Pleroma.Web.XML
   alias Pleroma.Web.ActivityPub.ObjectView
@@ -141,7 +140,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def notice(conn, %{"id" => id}) do
-    with {_, %Activity{} = activity} <- {:activity, Repo.get(Activity, id)},
+    with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id(id)},
          {_, true} <- {:public?, ActivityPub.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do

@@ -207,7 +207,7 @@ config :pleroma, :gopher,
   ip: {0, 0, 0, 0},
   port: 9999
 
-config :pleroma, :metadata, opengraph: true
+config :pleroma, :metadata, providers: []
 
 config :pleroma, :suggestions,
   enabled: false,

@@ -47,6 +47,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     content
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
+    |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.strip_tags()
     |> Formatter.truncate()
   end
