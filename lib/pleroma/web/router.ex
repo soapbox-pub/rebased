@@ -505,7 +505,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Fallback do
     get("/registration/:token", RedirectController, :registration_page)
-    get("/*path", RedirectController, :redirector)
+    get("/*path", RedirectController, :redirector_with_meta)
 
     options("/*path", RedirectController, :empty)
   end

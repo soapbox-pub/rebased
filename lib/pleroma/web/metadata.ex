@@ -21,7 +21,13 @@ defmodule Pleroma.Web.Metadata do
         {:meta,
          [
            property: "og:title",
-           content: "#{user.name} (@#{user.nickname}@#{pleroma_domain()}) post ##{activity.id}"
+           content:
+             "#{user.name}" <>
+               if user.local do
+                 "(@#{user.nickname}@{pleroma_domain})"
+               else
+                 "(@#{user.nickname})"
+               end
          ], []},
         {:meta, [property: "og:url", content: activity.data["id"]], []},
         {:meta, [property: "og:description", content: truncated_content], []},
@@ -35,7 +41,7 @@ defmodule Pleroma.Web.Metadata do
 
   # opengraph for user card
   defp opengraph_tags(%{user: user}) do
-    with truncated_bio = scrub_html_and_truncate(user.bio) do
+    with truncated_bio = scrub_html_and_truncate(user.bio || "") do
       [
         {:meta,
          [

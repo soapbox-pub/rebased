@@ -454,7 +454,20 @@ defmodule Pleroma.User do
   end
 
   def get_cached_by_nickname_or_id(nickname_or_id) do
-    get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id) 
+    try do
+      # TODO: convert to UUIDs when !654 is merged
+      maybe_id = String.to_integer(nickname_or_id)
+      user = get_cached_by_id(maybe_id)
+
+      if user == nil do
+        raise ArgumentError, message: "invalid argument foo"
+      else
+        user
+      end
+    rescue
+      _ in ArgumentError ->
+        get_cached_by_nickname(nickname_or_id)
+    end
   end
 
   def get_by_nickname(nickname) do
