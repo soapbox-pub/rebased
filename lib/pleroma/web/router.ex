@@ -505,7 +505,8 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Fallback do
     get("/registration/:token", RedirectController, :registration_page)
-    get("/*path", RedirectController, :redirector_with_meta)
+    get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
+    get("/*path", RedirectController, :redirector)
 
     options("/*path", RedirectController, :empty)
   end
@@ -514,11 +515,21 @@ end
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
   alias Pleroma.Web.Metadata
+  alias Pleroma.User
 
   def redirector(conn, _params) do
     conn
     |> put_resp_content_type("text/html")
     |> send_file(200, index_file_path())
+  end
+
+  def redirector_with_meta(conn, %{"maybe_nickname_or_id" => maybe_nickname_or_id} = params) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(maybe_nickname_or_id) do
+      redirector_with_meta(conn, %{user: user})
+    else
+      nil ->
+        redirector(conn, params)
+    end
   end
 
   def redirector_with_meta(conn, params) do

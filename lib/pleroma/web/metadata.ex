@@ -7,7 +7,7 @@ defmodule Pleroma.Web.Metadata do
     if(meta_enabled?(:opengraph), do: opengraph_tags(params), else: [])
     |> Enum.map(&to_tag/1)
     |> Enum.map(&HTML.safe_to_string/1)
-    |> Enum.join("\n")
+    |> Enum.join()
   end
 
   def meta_enabled?(type) do
@@ -57,9 +57,11 @@ defmodule Pleroma.Web.Metadata do
       ]
     end
   end
+
   defp opengraph_tags(_) do
     []
   end
+
   def to_tag(data) do
     with {name, attrs, _content = []} <- data do
       HTML.Tag.tag(name, attrs)
