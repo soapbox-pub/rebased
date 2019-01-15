@@ -152,5 +152,20 @@ defmodule Pleroma.UploadTest do
 
       assert Path.basename(attachment_url["href"]) == "an%E2%80%A6%20image.jpg"
     end
+
+    test "replaces ? (question-mark) to %3f" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "an?image.jpg"
+      }
+
+      {:ok, data} = Upload.store(file)
+      [attachment_url | _] = data["url"]
+
+      assert Path.basename(attachment_url["href"]) == "an%3Fimage.jpg"
+    end
   end
 end
