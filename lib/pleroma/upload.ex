@@ -34,8 +34,9 @@ defmodule Pleroma.Upload do
   require Logger
 
   @type source ::
-          Plug.Upload.t() | data_uri_string ::
-          String.t() | {:from_local, name :: String.t(), id :: String.t(), path :: String.t()}
+          Plug.Upload.t()
+          | (data_uri_string :: String.t())
+          | {:from_local, name :: String.t(), id :: String.t(), path :: String.t()}
 
   @type option ::
           {:type, :avatar | :banner | :background}
