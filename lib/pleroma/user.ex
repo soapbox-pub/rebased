@@ -704,7 +704,8 @@ defmodule Pleroma.User do
               ts_rank_cd(
                 setweight(to_tsvector('simple', regexp_replace(nickname, '\\W', ' ', 'g')), 'A') ||
                 setweight(to_tsvector('simple', regexp_replace(coalesce(name, ''), '\\W', ' ', 'g')), 'B'),
-                to_tsquery('simple', ?)
+                to_tsquery('simple', ?),
+                32
               )
               """,
               ^processed_query
