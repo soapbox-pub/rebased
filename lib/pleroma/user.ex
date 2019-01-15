@@ -460,7 +460,7 @@ defmodule Pleroma.User do
       user = get_cached_by_id(maybe_id)
 
       if user == nil do
-        raise ArgumentError, message: "invalid argument foo"
+        raise ArgumentError, message: "No such user id"
       else
         user
       end
