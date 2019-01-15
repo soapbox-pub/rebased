@@ -8,6 +8,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   @impl Provider
   def build_tags(%{activity: activity, user: user}) do
     with truncated_content = scrub_html_and_truncate(activity.data["object"]["content"]) do
+      attachments = build_attachments(activity)
       [
         {:meta,
          [
@@ -16,11 +17,11 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
          ], []},
         {:meta, [property: "og:url", content: activity.data["id"]], []},
         {:meta, [property: "og:description", content: truncated_content], []},
-        {:meta, [property: "og:image", content: user_avatar_url(user)], []},
-        {:meta, [property: "og:image:width", content: 120], []},
-        {:meta, [property: "og:image:height", content: 120], []},
         {:meta, [property: "twitter:card", content: "summary"], []}
-      ]
+      ] ++ if attachments == [] do [
+        {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
+        {:meta, [property: "og:image:width", content: 120], []},
+        {:meta, [property: "og:image:height", content: 120], []} ] else attachments end
     end
   end
 
@@ -35,12 +36,33 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
          ], []},
         {:meta, [property: "og:url", content: User.profile_url(user)], []},
         {:meta, [property: "og:description", content: truncated_bio], []},
-        {:meta, [property: "og:image", content: user_avatar_url(user)], []},
+        {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
         {:meta, [property: "og:image:width", content: 120], []},
         {:meta, [property: "og:image:height", content: 120], []},
         {:meta, [property: "twitter:card", content: "summary"], []}
       ]
     end
+  end
+
+  defp build_attachments(activity) do
+    Enum.reduce(activity.data["object"]["attachment"], [], fn attachment, acc ->
+      rendered_tags =
+        Enum.map(attachment["url"], fn url ->
+          media_type =
+            Enum.find(["image", "audio", "video"], fn media_type ->
+              String.starts_with?(url["mediaType"], media_type)
+            end)
+
+          if media_type do
+            {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])], []}
+          else
+            nil
+          end
+        end)
+
+      Enum.reject(rendered_tags, &is_nil/1)
+      acc ++ rendered_tags
+    end)
   end
 
   defp scrub_html_and_truncate(content) do
@@ -52,8 +74,8 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     |> Formatter.truncate()
   end
 
-  defp user_avatar_url(user) do
-    User.avatar_url(user) |> MediaProxy.url()
+  defp attachment_url(url) do
+    MediaProxy.url(url)
   end
 
   defp user_name_string(user) do
