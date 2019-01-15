@@ -31,12 +31,15 @@ defmodule Pleroma.HTTP do
       process_request_options(options)
       |> process_sni_options(url)
 
+    params = Keyword.get(options, :params, [])
+
     %{}
     |> Builder.method(method)
     |> Builder.headers(headers)
     |> Builder.opts(options)
     |> Builder.url(url)
     |> Builder.add_param(:body, :body, body)
+    |> Builder.add_param(:query, :query, params)
     |> Enum.into([])
     |> (&Tesla.request(Connection.new(), &1)).()
   end

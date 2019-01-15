@@ -100,6 +100,8 @@ defmodule Pleroma.HTTP.RequestBuilder do
   Map
   """
   @spec add_param(map(), atom, atom, any()) :: map()
+  def add_param(request, :query, :query, values), do: Map.put(request, :query, values)
+
   def add_param(request, :body, :body, value), do: Map.put(request, :body, value)
 
   def add_param(request, :body, key, value) do
@@ -107,7 +109,10 @@ defmodule Pleroma.HTTP.RequestBuilder do
     |> Map.put_new_lazy(:body, &Tesla.Multipart.new/0)
     |> Map.update!(
       :body,
-      &Tesla.Multipart.add_field(&1, key, Poison.encode!(value),
+      &Tesla.Multipart.add_field(
+        &1,
+        key,
+        Jason.encode!(value),
         headers: [{:"Content-Type", "application/json"}]
       )
     )
