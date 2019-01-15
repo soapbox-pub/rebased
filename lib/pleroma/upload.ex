@@ -219,6 +219,7 @@ defmodule Pleroma.Upload do
       path
       |> URI.encode()
       |> String.replace("?", "%3F")
+      |> String.replace(":", "%3A")
 
     [base_url, "media", path]
     |> Path.join()
