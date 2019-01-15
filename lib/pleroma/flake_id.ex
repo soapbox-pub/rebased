@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.FlakeId do
   @moduledoc """
   Flake is a decentralized, k-ordered id generation service.
@@ -37,6 +41,8 @@ defmodule Pleroma.FlakeId do
     def from_string(unquote(i)), do: <<0::integer-size(128)>>
     def from_string(unquote(Kernel.to_string(i))), do: <<0::integer-size(128)>>
   end
+
+  def from_string(flake = <<_::integer-size(128)>>), do: flake
 
   def from_string(string) when is_binary(string) and byte_size(string) < 18 do
     case Integer.parse(string) do
