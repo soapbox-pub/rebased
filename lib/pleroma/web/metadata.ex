@@ -57,7 +57,9 @@ defmodule Pleroma.Web.Metadata do
       ]
     end
   end
-
+  defp opengraph_tags(_) do
+    []
+  end
   def to_tag(data) do
     with {name, attrs, _content = []} <- data do
       HTML.Tag.tag(name, attrs)
