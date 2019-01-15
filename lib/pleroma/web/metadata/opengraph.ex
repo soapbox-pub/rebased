@@ -86,7 +86,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   end
 
   defp user_name_string(user) do
-    "#{user.name}" <>
+    "#{user.name} " <>
       if user.local do
         "(@#{user.nickname}@#{Pleroma.Web.Endpoint.host()})"
       else
