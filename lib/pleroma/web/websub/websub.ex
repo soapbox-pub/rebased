@@ -121,6 +121,12 @@ defmodule Pleroma.Web.Websub do
     end
   end
 
+  def incoming_subscription_request(user, params) do
+    Logger.info("Unhandled WebSub request for #{user.nickname}: #{inspect(params)}")
+
+    {:error, "Invalid WebSub request"}
+  end
+
   defp get_subscription(topic, callback) do
     Repo.get_by(WebsubServerSubscription, topic: topic, callback: callback) ||
       %WebsubServerSubscription{}

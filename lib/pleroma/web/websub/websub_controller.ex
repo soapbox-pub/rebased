@@ -67,6 +67,13 @@ defmodule Pleroma.Web.Websub.WebsubController do
     end
   end
 
+  def websub_subscription_confirmation(conn, params) do
+    Logger.info("Invalid WebSub confirmation request: #{inspect(params)}")
+
+    conn
+    |> send_resp(500, "Invalid parameters")
+  end
+
   def websub_incoming(conn, %{"id" => id}) do
     with "sha1=" <> signature <- hd(get_req_header(conn, "x-hub-signature")),
          signature <- String.downcase(signature),
