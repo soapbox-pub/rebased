@@ -7,7 +7,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
   @impl Provider
   def build_tags(%{activity: activity, user: user}) do
-    with truncated_content = scrub_html_and_truncate(activity.data["object"]["content"]) do
+    with truncated_content = scrub_html_and_truncate(activity) do
       attachments = build_attachments(activity)
 
       [
@@ -71,6 +71,15 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     end)
   end
 
+  defp scrub_html_and_truncate(%{data: %{ "object" => %{ "content" => content}}} = activity) do
+    content
+    # html content comes from DB already encoded, decode first and scrub after
+    |> HtmlEntities.decode()
+    |> String.replace(~r/<br\s?\/?>/, " ")
+    |> HTML.get_cached_stripped_html_for_object(activity, __MODULE__)
+    |> Formatter.truncate()
+  end
+
   defp scrub_html_and_truncate(content) do
     content
     # html content comes from DB already encoded, decode first and scrub after
@@ -79,7 +88,6 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     |> HTML.strip_tags()
     |> Formatter.truncate()
   end
-
   defp attachment_url(url) do
     MediaProxy.url(url)
   end
