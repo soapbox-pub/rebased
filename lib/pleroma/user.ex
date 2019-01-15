@@ -465,7 +465,7 @@ defmodule Pleroma.User do
         user
       end
     rescue
-      _ in ArgumentError ->
+      ArgumentError ->
         get_cached_by_nickname(nickname_or_id)
     end
   end
