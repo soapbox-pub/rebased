@@ -410,6 +410,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  defp restrict_since(query, %{"since_id" => ""}), do: query
+
   defp restrict_since(query, %{"since_id" => since_id}) do
     from(activity in query, where: activity.id > ^since_id)
   end
@@ -464,6 +466,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_local(query, _), do: query
+
+  defp restrict_max(query, %{"max_id" => ""}), do: query
 
   defp restrict_max(query, %{"max_id" => max_id}) do
     from(activity in query, where: activity.id < ^max_id)
