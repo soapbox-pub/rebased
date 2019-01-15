@@ -19,7 +19,8 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
         {:meta, [property: "og:url", content: activity.data["id"]], []},
         {:meta, [property: "og:description", content: truncated_content], []}
       ] ++
-        if attachments == [] or Enum.any?(activity.data["object"]["tag"], fn tag -> tag == "nsfw" end) do
+        if attachments == [] or
+             Enum.any?(activity.data["object"]["tag"], fn tag -> tag == "nsfw" end) do
           [
             {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
             {:meta, [property: "og:image:width", content: 120], []},

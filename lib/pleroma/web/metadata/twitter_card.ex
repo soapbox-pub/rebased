@@ -1,4 +1,9 @@
 defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
+  alias Pleroma.Web.Metadata.Providers.Provider
+
+  @behaviour Provider
+
+  @impl Provider
   def build_tags(%{activity: activity}) do
     if Enum.any?(activity.data["object"]["tag"], fn tag -> tag == "nsfw" end) or
          activity.data["object"]["attachment"] == [] do
@@ -20,6 +25,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     end
   end
 
+  @impl Provider
   def build_tags(_) do
     [{:meta, [property: "twitter:card", content: "summary"], []}]
   end
