@@ -20,6 +20,14 @@ defmodule Pleroma.Web.Metadata do
     end)
   end
 
+  def get_cached_tags(params) do
+    key = :erlang.term_to_binary(params)
+
+    Cachex.fetch!(:metadata_cache, key, fn _key ->
+      {:commit, build_tags(params)}
+    end)
+  end
+
   def build_tags(params) do
     Enum.reduce(@parsers, "", fn parser, acc ->
       rendered_html =
