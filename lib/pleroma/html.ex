@@ -78,14 +78,14 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
 
   # links
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
 
   # paragraphs and linebreaks
   Meta.allow_tag_with_these_attributes("br", [])
   Meta.allow_tag_with_these_attributes("p", [])
 
   # microformats
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_these_attributes("span", ["class"])
 
   # allow inline images for custom emoji
   @allow_inline_images Keyword.get(@markup, :allow_inline_images)
@@ -119,7 +119,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.strip_comments()
 
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
 
   Meta.allow_tag_with_these_attributes("abbr", ["title"])
 
@@ -134,7 +134,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes("ol", [])
   Meta.allow_tag_with_these_attributes("p", [])
   Meta.allow_tag_with_these_attributes("pre", [])
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_these_attributes("span", ["class"])
   Meta.allow_tag_with_these_attributes("strong", [])
   Meta.allow_tag_with_these_attributes("u", [])
   Meta.allow_tag_with_these_attributes("ul", [])
