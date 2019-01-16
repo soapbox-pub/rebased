@@ -702,12 +702,14 @@ defmodule Pleroma.User do
             fragment(
               """
               ts_rank_cd(
-                setweight(to_tsvector('simple', regexp_replace(nickname, '\\W', ' ', 'g')), 'A') ||
-                setweight(to_tsvector('simple', regexp_replace(coalesce(name, ''), '\\W', ' ', 'g')), 'B'),
+                setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
+                setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B'),
                 to_tsquery('simple', ?),
                 32
               )
               """,
+              u.nickname,
+              u.name,
               ^processed_query
             )
         },
