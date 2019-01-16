@@ -145,7 +145,9 @@ defmodule Pleroma.Formatter do
           short_match = String.split(match, "@") |> tl() |> hd()
 
           {uuid,
-           "<span><a data-user='#{id}' class='mention' href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
+           "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>@<span>#{
+             short_match
+           }</span></a></span>"}
         end)
 
     {subs, uuid_text}
@@ -168,7 +170,7 @@ defmodule Pleroma.Formatter do
       subs ++
         Enum.map(tags, fn {tag_text, tag, uuid} ->
           url =
-            "<a data-tag='#{tag}' href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{
+            "<a class='hashtag' data-tag='#{tag}' href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{
               tag_text
             }</a>"
 
