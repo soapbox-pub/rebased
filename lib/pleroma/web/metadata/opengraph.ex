@@ -10,29 +10,27 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
   @impl Provider
   def build_tags(%{activity: activity, user: user}) do
-    with truncated_content = scrub_html_and_truncate(activity) do
-      attachments = build_attachments(activity)
+    attachments = build_attachments(activity)
 
-      [
-        {:meta,
-         [
-           property: "og:title",
-           content: user_name_string(user)
-         ], []},
-        {:meta, [property: "og:url", content: activity.data["id"]], []},
-        {:meta, [property: "og:description", content: truncated_content], []}
-      ] ++
-        if attachments == [] or
-             Enum.any?(activity.data["object"]["tag"], fn tag -> tag == "nsfw" end) do
-          [
-            {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
-            {:meta, [property: "og:image:width", content: 120], []},
-            {:meta, [property: "og:image:height", content: 120], []}
-          ]
-        else
-          attachments
-        end
-    end
+    [
+      {:meta,
+       [
+         property: "og:title",
+         content: user_name_string(user)
+       ], []},
+      {:meta, [property: "og:url", content: activity.data["id"]], []},
+      {:meta, [property: "og:description", content: scrub_html_and_truncate(activity)], []}
+    ] ++
+      if attachments == [] or
+           Enum.any?(activity.data["object"]["tag"], fn tag -> tag == "nsfw" end) do
+        [
+          {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
+          {:meta, [property: "og:image:width", content: 120], []},
+          {:meta, [property: "og:image:height", content: 120], []}
+        ]
+      else
+        attachments
+      end
   end
 
   @impl Provider
