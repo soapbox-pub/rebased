@@ -534,7 +534,7 @@ defmodule Fallback.RedirectController do
 
   def redirector_with_meta(conn, params) do
     {:ok, index_content} = File.read(index_file_path())
-    tags = Metadata.get_cached_tags(params)
+    tags = Metadata.build_tags(params)
     response = String.replace(index_content, "<!--server-generated-meta-->", tags)
 
     conn
