@@ -462,19 +462,7 @@ defmodule Pleroma.User do
   end
 
   def get_cached_by_nickname_or_id(nickname_or_id) do
-    try do
-      # TODO: convert to UUIDs when !654 is merged
-      maybe_id = String.to_integer(nickname_or_id)
-      user = get_cached_by_id(maybe_id)
-
-      if user == nil do
-        raise ArgumentError, message: "No such user id"
-      else
-        user
-      end
-    rescue
-      ArgumentError ->
-        get_cached_by_nickname(nickname_or_id)
+      get_cached_by_id(maybe_id) || get_cached_by_nickname(nickname_or_id)
     end
   end
 
