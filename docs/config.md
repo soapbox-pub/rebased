@@ -210,3 +210,8 @@ curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerando
 * `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
 * `initial_timeout`: The initial timeout in seconds
 * `max_retries`: The maximum number of times a federation job is retried
+
+## Pleroma.Web.Metadata
+* `providers`: a list of metadata providers to enable. Providers avalible:
+  * Pleroma.Web.Metadata.Providers.OpenGraph
+  * Pleroma.Web.Metadata.Providers.TwitterCard

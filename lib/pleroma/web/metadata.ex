@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.Metadata do
   alias Phoenix.HTML
 
-  @parsers Pleroma.Config.get([:metadata, :providers], [])
+  @providers Pleroma.Config.get([__MODULE__, :providers], [])
   def get_cached_tags(%{activity: activity, user: user} = params) do
     # We don't need to use the both activity and a user since the object can't change it's content
     key = "#{:erlang.term_to_binary(user)}#{activity.data["id"]}"
@@ -29,7 +29,7 @@ defmodule Pleroma.Web.Metadata do
   end
 
   def build_tags(params) do
-    Enum.reduce(@parsers, "", fn parser, acc ->
+    Enum.reduce(@providers, "", fn parser, acc ->
       rendered_html =
         params
         |> parser.build_tags()
