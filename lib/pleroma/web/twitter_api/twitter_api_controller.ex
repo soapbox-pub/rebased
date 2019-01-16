@@ -378,8 +378,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def pin(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
-         {:ok, activity} <- TwitterAPI.pin(user, id) do
+    with {:ok, activity} <- TwitterAPI.pin(user, id) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
@@ -390,8 +389,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def unpin(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with {_, {:ok, id}} <- {:param_cast, Ecto.Type.cast(:integer, id)},
-         {:ok, activity} <- TwitterAPI.unpin(user, id) do
+    with {:ok, activity} <- TwitterAPI.unpin(user, id) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
