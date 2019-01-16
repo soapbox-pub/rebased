@@ -66,7 +66,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     result = ActivityView.render("activity.json", activity: activity)
 
     assert result["statusnet_html"] ==
-             "<a data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\">#cycling</a> <a data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\">#CHScycling</a> <a data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\">#commute</a><br />MVIMG_20181211_054020.jpg"
+             "<a class=\"hashtag\" data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a class=\"hashtag\" data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\">#cycling</a> <a class=\"hashtag\" data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\">#CHScycling</a> <a class=\"hashtag\" data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\">#commute</a><br />MVIMG_20181211_054020.jpg"
 
     assert result["text"] ==
              "#Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg"
@@ -141,7 +141,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "summary" => "",
       "summary_html" => "",
       "statusnet_html" =>
-        "Hey <span><a data-user=\"#{other_user.id}\" href=\"#{other_user.ap_id}\">@<span>shp</span></a></span>!",
+        "Hey <span class=\"h-card\"><a data-user=\"#{other_user.id}\" class=\"u-url mention\" href=\"#{
+          other_user.ap_id
+        }\">@<span>shp</span></a></span>!",
       "tags" => [],
       "text" => "Hey @shp!",
       "uri" => activity.data["object"]["id"],

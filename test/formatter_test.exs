@@ -19,7 +19,7 @@ defmodule Pleroma.FormatterTest do
       text = "I love #cofe and #2hu"
 
       expected_text =
-        "I love <a data-tag='cofe' href='http://localhost:4001/tag/cofe' rel='tag'>#cofe</a> and <a data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a>"
+        "I love <a class='hashtag' data-tag='cofe' href='http://localhost:4001/tag/cofe' rel='tag'>#cofe</a> and <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a>"
 
       tags = Formatter.parse_tags(text)
 
@@ -31,7 +31,7 @@ defmodule Pleroma.FormatterTest do
       text = "Fact #3: pleroma does what mastodon't"
 
       expected_text =
-        "Fact <a data-tag='3' href='http://localhost:4001/tag/3' rel='tag'>#3</a>: pleroma does what mastodon't"
+        "Fact <a class='hashtag' data-tag='3' href='http://localhost:4001/tag/3' rel='tag'>#3</a>: pleroma does what mastodon't"
 
       tags = Formatter.parse_tags(text)
 
@@ -144,11 +144,13 @@ defmodule Pleroma.FormatterTest do
       Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
 
       expected_text =
-        "<span><a data-user='#{gsimg.id}' class='mention' href='#{gsimg.ap_id}'>@<span>gsimg</span></a></span> According to <span><a data-user='#{
+        "<span class='h-card'><a data-user='#{gsimg.id}' class='u-url mention' href='#{
+          gsimg.ap_id
+        }'>@<span>gsimg</span></a></span> According to <span class='h-card'><a data-user='#{
           archaeme.id
-        }' class='mention' href='#{"https://archeme/@archa_eme_"}'>@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span><a data-user='#{
+        }' class='u-url mention' href='#{"https://archeme/@archa_eme_"}'>@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class='h-card'><a data-user='#{
           archaeme_remote.id
-        }' class='mention' href='#{archaeme_remote.ap_id}'>@<span>archaeme</span></a></span>"
+        }' class='u-url mention' href='#{archaeme_remote.ap_id}'>@<span>archaeme</span></a></span>"
 
       assert expected_text == Formatter.finalize({subs, text})
     end
@@ -166,7 +168,7 @@ defmodule Pleroma.FormatterTest do
       Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
 
       expected_text =
-        "<span><a data-user='#{mike.id}' class='mention' href='#{mike.ap_id}'>@<span>mike</span></a></span> test"
+        "<span class='h-card'><a data-user='#{mike.id}' class='u-url mention' href='#{mike.ap_id}'>@<span>mike</span></a></span> test"
 
       assert expected_text == Formatter.finalize({subs, text})
     end
@@ -183,7 +185,7 @@ defmodule Pleroma.FormatterTest do
       Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
 
       expected_text =
-        "<span><a data-user='#{o.id}' class='mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"
+        "<span class='h-card'><a data-user='#{o.id}' class='u-url mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"
 
       assert expected_text == Formatter.finalize({subs, text})
     end

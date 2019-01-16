@@ -38,7 +38,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
 
     expected_text =
-      "Hello again, <span><a data-user='#{mentioned_user.id}' class='mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+      "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
 
     assert get_in(activity.data, ["object", "content"]) == expected_text
     assert get_in(activity.data, ["object", "type"]) == "Note"
@@ -328,7 +328,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user2} = TwitterAPI.register_user(data2)
 
     expected_text =
-      "<span><a data-user='#{user1.id}' class='mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
+      "<span class='h-card'><a data-user='#{user1.id}' class='u-url mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
 
     assert user2.bio == expected_text
   end
