@@ -156,19 +156,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     |> response(404)
   end
 
-  test "renders notice metatags in html format", %{conn: conn} do
-    note_activity = insert(:note_activity)
-    conn = get(conn, "/notice/#{note_activity.id}")
-    body = html_response(conn, 200)
-    twitter_card_summary = "<meta content=\"summary\" property=\"twitter:card\">"
-
-    description_content =
-      "<meta content=\"#{note_activity.data["object"]["content"]}\" property=\"og:description\">"
-
-    assert body =~ twitter_card_summary
-    assert body =~ description_content
-  end
-
   test "gets a notice in xml format", %{conn: conn} do
     note_activity = insert(:note_activity)
 
