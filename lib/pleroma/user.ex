@@ -463,7 +463,6 @@ defmodule Pleroma.User do
 
   def get_cached_by_nickname_or_id(nickname_or_id) do
       get_cached_by_id(maybe_id) || get_cached_by_nickname(nickname_or_id)
-    end
   end
 
   def get_by_nickname(nickname) do
