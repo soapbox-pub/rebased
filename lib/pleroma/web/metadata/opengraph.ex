@@ -50,23 +50,25 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     end
   end
 
-  defp build_attachments(activity) do
-    Enum.reduce(activity.data["object"]["attachment"], [], fn attachment, acc ->
+  defp build_attachments(%{data: %{"object" => %{"attachment" => attachments}}} = _activity) do
+    Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
-        Enum.map(attachment["url"], fn url ->
+        Enum.reduce(attachment["url"], [], fn url, acc ->
           media_type =
             Enum.find(["image", "audio", "video"], fn media_type ->
               String.starts_with?(url["mediaType"], media_type)
             end)
 
           if media_type do
-            {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])], []}
+            [
+              {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])], []}
+              | acc
+            ]
           else
-            nil
+            acc
           end
         end)
 
-      Enum.reject(rendered_tags, &is_nil/1)
       acc ++ rendered_tags
     end)
   end
