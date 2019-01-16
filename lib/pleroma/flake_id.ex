@@ -33,10 +33,6 @@ defmodule Pleroma.FlakeId do
 
   def to_string(s), do: s
 
-  def from_string(<<id::integer-size(64)>>) do
-    <<0::integer-size(64), id::integer-size(64)>>
-  end
-
   for i <- [-1, 0] do
     def from_string(unquote(i)), do: <<0::integer-size(128)>>
     def from_string(unquote(Kernel.to_string(i))), do: <<0::integer-size(128)>>
