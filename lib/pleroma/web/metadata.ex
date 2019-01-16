@@ -3,9 +3,10 @@ defmodule Pleroma.Web.Metadata do
 
   @parsers Pleroma.Config.get([:metadata, :providers], [])
 
-  def get_cached_tags(params) do
+  def get_cached_tags(%{user: user} = params) do
     # I am unsure how well ETS works with big keys
-    key = :erlang.term_to_binary(params)
+    # We don't need to use the both activity and a user since the object can't change it's content
+    key = :erlang.term_to_binary(user)
 
     Cachex.fetch!(:metadata_cache, key, fn _key ->
       {:commit, build_tags(params)}
