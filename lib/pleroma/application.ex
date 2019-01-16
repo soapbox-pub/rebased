@@ -87,17 +87,6 @@ defmodule Pleroma.Application do
         worker(
           Cachex,
           [
-            :metadata_cache,
-            [
-              limit: 2500,
-              default_ttl: :timer.minutes(15)
-            ]
-          ],
-          id: :cachex_metadata
-        ),
-        worker(
-          Cachex,
-          [
             :idempotency_cache,
             [
               expiration:
