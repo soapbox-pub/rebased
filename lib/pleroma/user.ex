@@ -1040,4 +1040,14 @@ defmodule Pleroma.User do
       @strict_local_nickname_regex
     end
   end
+
+  def error_user(ap_id) do
+    %User{
+      name: ap_id,
+      ap_id: ap_id,
+      info: %User.Info{},
+      nickname: "erroruser@example.com",
+      inserted_at: NaiveDateTime.utc_now()
+    }
+  end
 end

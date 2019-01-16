@@ -19,6 +19,36 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     :ok
   end
 
+  test "returns a temporary ap_id based user for activities missing db users" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    Repo.delete(user)
+    Cachex.clear(:user_cache)
+
+    %{account: ms_user} = StatusView.render("status.json", activity: activity)
+
+    assert ms_user.acct == "erroruser@example.com"
+  end
+
+  test "tries to get a user by nickname if fetching by ap_id doesn't work" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    {:ok, user} =
+      user
+      |> Ecto.Changeset.change(%{ap_id: "#{user.ap_id}/extension/#{user.nickname}"})
+      |> Repo.update()
+
+    Cachex.clear(:user_cache)
+
+    result = StatusView.render("status.json", activity: activity)
+
+    assert result[:account][:id] == to_string(user.id)
+  end
+
   test "a note with null content" do
     note = insert(:note_activity)
 
