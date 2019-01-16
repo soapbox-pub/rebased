@@ -4,10 +4,8 @@
 defmodule Pleroma.Web.Metadata do
   alias Phoenix.HTML
 
-  @providers Pleroma.Config.get([__MODULE__, :providers], [])
-
   def build_tags(params) do
-    Enum.reduce(@providers, "", fn parser, acc ->
+    Enum.reduce(Pleroma.Config.get([__MODULE__, :providers], []), "", fn parser, acc ->
       rendered_html =
         params
         |> parser.build_tags()
