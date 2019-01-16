@@ -71,7 +71,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     end)
   end
 
-  defp scrub_html_and_truncate(%{data: %{ "object" => %{ "content" => content}}} = activity) do
+  defp scrub_html_and_truncate(%{data: %{"object" => %{"content" => content}}} = activity) do
     content
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
@@ -80,7 +80,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     |> Formatter.truncate()
   end
 
-  defp scrub_html_and_truncate(content) do
+  defp scrub_html_and_truncate(content) when is_binary(content) do
     content
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
@@ -88,6 +88,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     |> HTML.strip_tags()
     |> Formatter.truncate()
   end
+
   defp attachment_url(url) do
     MediaProxy.url(url)
   end
