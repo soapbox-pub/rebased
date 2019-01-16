@@ -386,7 +386,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> get("/api/v1/filters/#{filter.filter_id}")
 
-      assert response = json_response(conn, 200)
+      assert _response = json_response(conn, 200)
     end
 
     test "update a filter", %{conn: conn} do
@@ -600,7 +600,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/notifications")
 
       expected_response =
-        "hi <span><a data-user=\"#{user.id}\" href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
+        "hi <span class=\"h-card\"><a data-user=\"#{user.id}\" class=\"u-url mention\" href=\"#{
+          user.ap_id
+        }\">@<span>#{user.nickname}</span></a></span>"
 
       assert [%{"status" => %{"content" => response}} | _rest] = json_response(conn, 200)
       assert response == expected_response
@@ -621,7 +623,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/notifications/#{notification.id}")
 
       expected_response =
-        "hi <span><a data-user=\"#{user.id}\" href=\"#{user.ap_id}\">@<span>#{user.nickname}</span></a></span>"
+        "hi <span class=\"h-card\"><a data-user=\"#{user.id}\" class=\"u-url mention\" href=\"#{
+          user.ap_id
+        }\">@<span>#{user.nickname}</span></a></span>"
 
       assert %{"status" => %{"content" => response}} = json_response(conn, 200)
       assert response == expected_response
@@ -1357,7 +1361,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert [status] = json_response(first_conn, 200)
     assert status["id"] == to_string(activity.id)
 
-    assert [{"link", link_header}] =
+    assert [{"link", _link_header}] =
              Enum.filter(first_conn.resp_headers, fn element -> match?({"link", _}, element) end)
 
     # Honours query params
@@ -1402,9 +1406,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               "I drink <a data-tag=\"cofe\" href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span><a data-user=\"#{
+               "I drink <a class=\"hashtag\" data-tag=\"cofe\" href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span class=\"h-card\"><a data-user=\"#{
                  user2.id
-               }\" href=\"#{user2.ap_id}\">@<span>#{user2.nickname}</span></a></span>"
+               }\" class=\"u-url mention\" href=\"#{user2.ap_id}\">@<span>#{user2.nickname}</span></a></span>"
     end
 
     test "updates the user's locking status", %{conn: conn} do
@@ -1495,7 +1499,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> put("/api/web/settings", %{"data" => %{"programming" => "socks"}})
 
-    assert result = json_response(conn, 200)
+    assert _result = json_response(conn, 200)
 
     user = User.get_cached_by_ap_id(user.ap_id)
     assert user.info.settings == %{"programming" => "socks"}
