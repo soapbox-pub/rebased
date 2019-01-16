@@ -2,6 +2,16 @@ defmodule Pleroma.Web.Metadata do
   alias Phoenix.HTML
 
   @parsers Pleroma.Config.get([:metadata, :providers], [])
+
+  def get_cached_tags(params) do
+    # I am unsure how well ETS works with big keys
+    key = :erlang.term_to_binary(params)
+
+    Cachex.fetch!(:metadata_cache, key, fn _key ->
+      {:commit, build_tags(params)}
+    end)
+  end
+
   def build_tags(params) do
     Enum.reduce(@parsers, "", fn parser, acc ->
       rendered_html =
