@@ -1471,20 +1471,36 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   test "get instance information", %{conn: conn} do
     insert(:user, %{local: true})
     user = insert(:user, %{local: true})
-    insert(:user, %{local: false})
+    insert(:user, %{local: false, nickname: "u@peer1.com"})
+    insert(:user, %{local: false, nickname: "u@peer2.com"})
 
     {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
 
     Pleroma.Stats.update_stats()
 
-    conn =
-      conn
-      |> get("/api/v1/instance")
+    conn = get(conn, "/api/v1/instance")
 
     assert result = json_response(conn, 200)
 
-    assert result["stats"]["user_count"] == 2
-    assert result["stats"]["status_count"] == 1
+    stats = result["stats"]
+
+    assert stats
+    assert stats["user_count"] == 2
+    assert stats["status_count"] == 1
+    assert stats["domain_count"] == 2
+  end
+
+  test "get peers", %{conn: conn} do
+    insert(:user, %{local: false, nickname: "u@peer1.com"})
+    insert(:user, %{local: false, nickname: "u@peer2.com"})
+
+    Pleroma.Stats.update_stats()
+
+    conn = get(conn, "/api/v1/instance/peers")
+
+    assert result = json_response(conn, 200)
+
+    assert ["peer1.com", "peer2.com"] == Enum.sort(result)
   end
 
   test "put settings", %{conn: conn} do
