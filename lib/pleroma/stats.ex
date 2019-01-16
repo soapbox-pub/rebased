@@ -34,10 +34,11 @@ defmodule Pleroma.Stats do
     peers =
       from(
         u in Pleroma.User,
-        select: fragment("distinct ?->'host'", u.info),
+        select: fragment("distinct split_part(?, '@', 2)", u.nickname),
         where: u.local != ^true
       )
       |> Repo.all()
+      |> Enum.filter(& &1)
 
     domain_count = Enum.count(peers)
 
