@@ -10,8 +10,19 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   @behaviour Provider
 
   @impl Provider
-  def build_tags(%{activity: %{data: %{"object" => %{"id" => object_id}}} = activity, user: user}) do
+  def build_tags(%{
+        activity: %{data: %{"object" => %{"id" => object_id}}} = activity,
+        user: user
+      }) do
     attachments = build_attachments(activity)
+    scrubbed_content = scrub_html_and_truncate(activity)
+    # Zero width space
+    content =
+      if scrubbed_content != "" and scrubbed_content != "\u200B" do
+        ": “" <> scrubbed_content <> "”"
+      else
+        ""
+      end
 
     # Most previews only show og:title which is inconvenient. Instagram
     # hacks this by putting the description in the title and making the
@@ -23,13 +34,13 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
       {:meta,
        [
          property: "og:title",
-         content: "#{user.name}: " <> "“" <> scrub_html_and_truncate(activity) <> "”"
+         content: "#{user.name}" <> content
        ], []},
       {:meta, [property: "og:url", content: object_id], []},
       {:meta,
        [
          property: "og:description",
-         content: "#{user_name_string(user)}: " <> "“" <> scrub_html_and_truncate(activity) <> "”"
+         content: "#{user_name_string(user)}" <> content
        ], []},
       {:meta, [property: "og:type", content: "website"], []}
     ] ++
