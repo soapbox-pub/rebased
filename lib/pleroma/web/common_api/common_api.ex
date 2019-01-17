@@ -103,7 +103,7 @@ defmodule Pleroma.Web.CommonAPI do
              attachments,
              tags,
              get_content_type(data["content_type"]),
-             Enum.member?([true, "true"], Map.get(data, "no_attachment_links", Pleroma.Config.get([:instance, :no_attachment_links], true)))
+             Enum.member?([true, "true"], Map.get(data, "no_attachment_links", Pleroma.Config.get([:instance, :no_attachment_links], false)))
            ),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
