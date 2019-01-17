@@ -95,6 +95,7 @@ config :pleroma, Pleroma.Mailer,
     older software for theses nicknames.
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
+* `no_attachment_links`: Set to true to disable automatically adding attachment link text to statuses
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
