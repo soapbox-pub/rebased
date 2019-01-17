@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   alias Pleroma.Web.Metadata.Providers.Provider
+  alias Pleroma.Web.Metadata
 
   @behaviour Provider
 
   @impl Provider
   def build_tags(%{activity: activity}) do
-    if Enum.any?(activity.data["object"]["tag"], fn tag -> tag == "nsfw" end) or
-         activity.data["object"]["attachment"] == [] do
+    if Metadata.activity_nsfw?(activity) or activity.data["object"]["attachment"] == [] do
       build_tags(nil)
     else
       case find_first_acceptable_media_type(activity) do

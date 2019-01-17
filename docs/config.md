@@ -212,6 +212,7 @@ curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerando
 * `max_retries`: The maximum number of times a federation job is retried
 
 ## Pleroma.Web.Metadata
-* `providers`: a list of metadata providers to enable. Providers avalible:
+* `providers`: a list of metadata providers to enable. Providers availible:
   * Pleroma.Web.Metadata.Providers.OpenGraph
   * Pleroma.Web.Metadata.Providers.TwitterCard
+* `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews

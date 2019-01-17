@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   alias Pleroma.Web.Metadata.Providers.Provider
+  alias Pleroma.Web.Metadata
   alias Pleroma.{HTML, Formatter, User}
   alias Pleroma.Web.MediaProxy
 
@@ -32,7 +33,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
        ], []},
       {:meta, [property: "og:type", content: "website"], []}
     ] ++
-      if attachments == [] do
+      if attachments == [] or Metadata.activity_nsfw?(activity) do
         [
           {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
           {:meta, [property: "og:image:width", content: 150], []},

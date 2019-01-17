@@ -28,4 +28,12 @@ defmodule Pleroma.Web.Metadata do
         raise ArgumentError, message: "make_tag invalid args"
     end
   end
+
+  def activity_nsfw?(%{data: %{"object" => %{"tag" => tags}}}) do
+    if(Pleroma.Config.get([__MODULE__, :unfurl_nsfw], false) == false) do
+      Enum.any?(tags, fn tag -> tag == "nsfw" end)
+    else
+      false
+    end
+  end
 end
