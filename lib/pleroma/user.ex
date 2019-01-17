@@ -796,7 +796,7 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
-  def local_user_query() do
+  def local_user_query do
     from(
       u in User,
       where: u.local == true,
@@ -804,7 +804,14 @@ defmodule Pleroma.User do
     )
   end
 
-  def moderator_user_query() do
+  def active_local_user_query do
+    from(
+      u in local_user_query(),
+      where: fragment("?->'deactivated' @> 'false'", u.info)
+    )
+  end
+
+  def moderator_user_query do
     from(
       u in User,
       where: u.local == true,
