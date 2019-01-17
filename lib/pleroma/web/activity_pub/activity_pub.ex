@@ -798,6 +798,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def is_public?(%Object{data: %{"type" => "Tombstone"}}), do: false
+  def is_public?(%Object{data: data}), do: is_public?(data)
   def is_public?(%Activity{data: data}), do: is_public?(data)
 
   def is_public?(data) do
