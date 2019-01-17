@@ -341,7 +341,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     params =
       params
       |> Map.put("in_reply_to_status_id", params["in_reply_to_id"])
-      |> Map.put("no_attachment_links", true)
 
     idempotency_key =
       case get_req_header(conn, "idempotency-key") do
