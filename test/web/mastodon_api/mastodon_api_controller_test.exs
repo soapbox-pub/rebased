@@ -1473,8 +1473,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "get instance information", %{conn: conn} do
-    insert(:user, %{local: true})
     user = insert(:user, %{local: true})
+
+    user2 = insert(:user, %{local: true})
+    {:ok, _user2} = User.deactivate(user2, !user2.info.deactivated)
+
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})
 
@@ -1489,7 +1492,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     stats = result["stats"]
 
     assert stats
-    assert stats["user_count"] == 2
+    assert stats["user_count"] == 1
     assert stats["status_count"] == 1
     assert stats["domain_count"] == 2
   end
