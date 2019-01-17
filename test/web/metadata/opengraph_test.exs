@@ -14,6 +14,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
         data: %{
           "actor" => user.ap_id,
           "tag" => [],
+          "id" => "https://pleroma.gov/objects/whatever",
           "content" => "pleroma in a nutshell",
           "attachment" => [
             %{
@@ -81,6 +82,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
       insert(:note, %{
         data: %{
           "actor" => user.ap_id,
+          "id" => "https://pleroma.gov/objects/whatever",
           "content" => "#cuteposting #nsfw #hambaga",
           "tag" => ["cuteposting", "nsfw", "hambaga"],
           "attachment" => [
