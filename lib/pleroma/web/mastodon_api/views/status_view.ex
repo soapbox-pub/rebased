@@ -32,6 +32,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end)
   end
 
+  defp get_user(ap_id) do
+    cond do
+      user = User.get_cached_by_ap_id(ap_id) ->
+        user
+
+      user = User.get_by_guessed_nickname(ap_id) ->
+        user
+
+      true ->
+        User.error_user(ap_id)
+    end
+  end
+
   def render("index.json", opts) do
     replied_to_activities = get_replied_to_activities(opts.activities)
 
@@ -48,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         "status.json",
         %{activity: %{data: %{"type" => "Announce", "object" => object}} = activity} = opts
       ) do
-    user = User.get_cached_by_ap_id(activity.data["actor"])
+    user = get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
 
     reblogged = Activity.get_create_activity_by_object_ap_id(object)
@@ -93,7 +106,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
-    user = User.get_cached_by_ap_id(activity.data["actor"])
+    user = get_user(activity.data["actor"])
 
     like_count = object["like_count"] || 0
     announcement_count = object["announcement_count"] || 0
@@ -116,7 +129,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     created_at = Utils.to_masto_date(object["published"])
 
     reply_to = get_reply_to(activity, opts)
-    reply_to_user = reply_to && User.get_cached_by_ap_id(reply_to.data["actor"])
+    reply_to_user = reply_to && get_user(reply_to.data["actor"])
 
     content =
       object

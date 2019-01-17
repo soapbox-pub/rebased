@@ -101,18 +101,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
         user
 
       true ->
-        error_user(ap_id)
+        User.error_user(ap_id)
     end
-  end
-
-  defp error_user(ap_id) do
-    %User{
-      name: ap_id,
-      ap_id: ap_id,
-      info: %User.Info{},
-      nickname: "erroruser@example.com",
-      inserted_at: NaiveDateTime.utc_now()
-    }
   end
 
   def render("index.json", opts) do
