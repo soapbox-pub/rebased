@@ -449,8 +449,13 @@ defmodule Pleroma.User do
     ap_id =
       Cachex.fetch!(:user_cache, key, fn _ ->
         user = get_by_id(id)
-        Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
-        {:commit, user.ap_id}
+
+        if user do
+          Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
+          {:commit, user.ap_id}
+        else
+          {:ignore, ""}
+        end
       end)
 
     get_cached_by_ap_id(ap_id)
