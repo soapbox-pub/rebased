@@ -3,14 +3,22 @@ Description=Pleroma social network
 After=network.target postgresql.service
 
 [Service]
-User=pleroma
-WorkingDirectory=/home/pleroma/pleroma
-Environment="HOME=/home/pleroma"
-Environment="MIX_ENV=prod"
-ExecStart=/usr/local/bin/mix phx.server
 ExecReload=/bin/kill $MAINPID
 KillMode=process
 Restart=on-failure
+
+; Name of the user that runs the Pleroma service.
+User=pleroma
+; Declares that Pleroma runs in production mode.
+Environment="MIX_ENV=prod"
+
+; Make sure that all paths fit your installation.
+; Path to the home directory of the user running the Pleroma service.
+Environment="HOME=/home/pleroma"
+; Path to the folder containing the Pleroma installation.
+WorkingDirectory=/home/pleroma/pleroma
+; Path to the Mix binary.
+ExecStart=/usr/bin/mix phx.server
 
 ; Some security directives.
 ; Use private /tmp and /var/tmp folders inside a new file system namespace, which are discarded after the process stops.
