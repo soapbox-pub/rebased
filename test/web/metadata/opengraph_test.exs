@@ -74,6 +74,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
   end
 
   test "it does not render attachments if post is nsfw" do
+    Pleroma.Config.put([Pleroma.Web.Metadata, :unfurl_nsfw], false)
     user = insert(:user, avatar: %{"url" => [%{"href" => "https://pleroma.gov/tenshi.png"}]})
 
     note =
