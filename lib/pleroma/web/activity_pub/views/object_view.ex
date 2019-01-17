@@ -46,7 +46,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
       "id" => "#{ap_id}/likes",
       "type" => "OrderedCollection",
       "totalItems" => length(likes),
-      "first" => collection(likes, "#{ap_id}/followers", 1)
+      "first" => collection(likes, "#{ap_id}/likes", 1)
     }
     |> Map.merge(Pleroma.Web.ActivityPub.Utils.make_json_ld_header())
   end
