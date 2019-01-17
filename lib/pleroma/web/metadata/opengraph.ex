@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   alias Pleroma.Web.Metadata.Providers.Provider
-  alias Pleroma.{HTML, Formatter, User, Web}
+  alias Pleroma.{HTML, Formatter, User}
   alias Pleroma.Web.MediaProxy
 
   @behaviour Provider
 
   @impl Provider
-  def build_tags(%{activity: activity, user: user}) do
+  def build_tags(%{activity: %{data: %{"object" => %{"id" => object_id}}} = activity, user: user}) do
     attachments = build_attachments(activity)
 
     # Most previews only show og:title which is inconvenient. Instagram
@@ -22,21 +22,13 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
       {:meta,
        [
          property: "og:title",
-         content:
-           "#{user.name}: " <>
-             "“" <>
-             scrub_html_and_truncate(activity) <>
-             "”"
+         content: "#{user.name}: " <> "“" <> scrub_html_and_truncate(activity) <> "”"
        ], []},
-      {:meta, [property: "og:url", content: "#{Web.base_url()}/notice/#{activity.id}"], []},
+      {:meta, [property: "og:url", content: object_id], []},
       {:meta,
        [
          property: "og:description",
-         content:
-           "#{user_name_string(user)}: " <>
-             "“" <>
-             scrub_html_and_truncate(activity) <>
-             "”"
+         content: "#{user_name_string(user)}: " <> "“" <> scrub_html_and_truncate(activity) <> "”"
        ], []},
       {:meta, [property: "og:type", content: "website"], []}
     ] ++
