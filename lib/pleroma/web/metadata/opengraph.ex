@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   alias Pleroma.Web.Metadata.Providers.Provider
-  alias Pleroma.{HTML, Formatter, User}
+  alias Pleroma.{HTML, Formatter, User, Web}
   alias Pleroma.Web.MediaProxy
 
   @behaviour Provider
@@ -12,21 +12,39 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   def build_tags(%{activity: activity, user: user}) do
     attachments = build_attachments(activity)
 
+    # Most previews only show og:title which is inconvenient. Instagram
+    # hacks this by putting the description in the title and making the
+    # description longer prefixed by how many likes and shares the post
+    # has. Here we use the descriptive nickname in the title, and expand
+    # the full account & nickname in the description. We also use the cute^Wevil
+    # smart quotes around the status text like Instagram, too.
     [
       {:meta,
        [
          property: "og:title",
-         content: user_name_string(user)
+         content:
+           "#{user.name}: " <>
+             "“" <>
+             scrub_html_and_truncate(activity) <>
+             "”"
        ], []},
-      {:meta, [property: "og:url", content: activity.data["id"]], []},
-      {:meta, [property: "og:description", content: scrub_html_and_truncate(activity)], []}
+      {:meta, [property: "og:url", content: "#{Web.base_url()}/notice/#{activity.id}"], []},
+      {:meta,
+       [
+         property: "og:description",
+         content:
+           "#{user_name_string(user)}: " <>
+             "“" <>
+             scrub_html_and_truncate(activity) <>
+             "”"
+       ], []},
+      {:meta, [property: "og:type", content: "website"], []}
     ] ++
-      if attachments == [] or
-           Enum.any?(activity.data["object"]["tag"], fn tag -> tag == "nsfw" end) do
+      if attachments == [] do
         [
           {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
-          {:meta, [property: "og:image:width", content: 120], []},
-          {:meta, [property: "og:image:height", content: 120], []}
+          {:meta, [property: "og:image:width", content: 150], []},
+          {:meta, [property: "og:image:height", content: 150], []}
         ]
       else
         attachments
@@ -44,9 +62,10 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
          ], []},
         {:meta, [property: "og:url", content: User.profile_url(user)], []},
         {:meta, [property: "og:description", content: truncated_bio], []},
+        {:meta, [property: "og:type", content: "website"], []},
         {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
-        {:meta, [property: "og:image:width", content: 120], []},
-        {:meta, [property: "og:image:height", content: 120], []}
+        {:meta, [property: "og:image:width", content: 150], []},
+        {:meta, [property: "og:image:height", content: 150], []}
       ]
     end
   end
@@ -60,13 +79,33 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
               String.starts_with?(url["mediaType"], media_type)
             end)
 
-          if media_type do
-            [
-              {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])], []}
-              | acc
-            ]
-          else
-            acc
+          # TODO: Add additional properties to objects when we have the data available.
+          # Also, Whatsapp only wants JPEG or PNGs. It seems that if we add a second og:image
+          # object when a Video or GIF is attached it will display that in the Whatsapp Rich Preview.
+          case media_type do
+            "audio" ->
+              [
+                {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])], []}
+                | acc
+              ]
+
+            "image" ->
+              [
+                {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])],
+                 []},
+                {:meta, [property: "og:image:width", content: 150], []},
+                {:meta, [property: "og:image:height", content: 150], []}
+                | acc
+              ]
+
+            "video" ->
+              [
+                {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])], []}
+                | acc
+              ]
+
+            _ ->
+              acc
           end
         end)
 
