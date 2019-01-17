@@ -142,12 +142,11 @@ defmodule Pleroma.Formatter do
               ap_id
             end
 
-          short_match = String.split(match, "@") |> tl() |> hd()
+          full_match = String.trim_leading(match, "@")
 
           {uuid,
-           "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>@<span>#{
-             short_match
-           }</span></a></span>"}
+           "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>" <>
+             "@<span>#{full_match}</span></a></span>"}
         end)
 
     {subs, uuid_text}
