@@ -4,7 +4,6 @@
 
 alias Pleroma.Repo
 alias Pleroma.User
-# alias Pleroma.Web.ActivityPub.Transmogrifier
 import Ecto.Query
 
 defmodule Pleroma.SpcFixes do
