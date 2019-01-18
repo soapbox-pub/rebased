@@ -447,8 +447,7 @@ defmodule Pleroma.User do
   def get_by_nickname(nickname) do
     Repo.get_by(User, nickname: nickname) ||
       if Regex.match?(~r(@#{Pleroma.Web.Endpoint.host()})i, nickname) do
-        [local_nickname, _] = String.split(nickname, "@")
-        Repo.get_by(User, nickname: local_nickname)
+        Repo.get_by(User, nickname: local_nickname(nickname))
       end
   end
 
@@ -990,7 +989,7 @@ defmodule Pleroma.User do
       end)
 
     bio
-    |> CommonUtils.format_input(mentions, tags, "text/plain")
+    |> CommonUtils.format_input(mentions, tags, "text/plain", user_links: [format: :full])
     |> Formatter.emojify(emoji)
   end
 
@@ -1040,6 +1039,16 @@ defmodule Pleroma.User do
       @strict_local_nickname_regex
     end
   end
+
+  def local_nickname(nickname_or_mention) do
+    nickname_or_mention
+    |> full_nickname()
+    |> String.split("@")
+    |> hd()
+  end
+
+  def full_nickname(nickname_or_mention),
+    do: String.trim_leading(nickname_or_mention, "@")
 
   def error_user(ap_id) do
     %User{

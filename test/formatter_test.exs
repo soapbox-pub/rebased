@@ -124,7 +124,7 @@ defmodule Pleroma.FormatterTest do
   end
 
   describe "add_user_links" do
-    test "gives a replacement for user links" do
+    test "gives a replacement for user links, using local nicknames in user links text" do
       text = "@gsimg According to @archa_eme_, that is @daggsy. Also hello @archaeme@archae.me"
       gsimg = insert(:user, %{nickname: "gsimg"})
 
@@ -150,7 +150,7 @@ defmodule Pleroma.FormatterTest do
           archaeme.id
         }' class='u-url mention' href='#{"https://archeme/@archa_eme_"}'>@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class='h-card'><a data-user='#{
           archaeme_remote.id
-        }' class='u-url mention' href='#{archaeme_remote.ap_id}'>@<span>archaeme@archae.me</span></a></span>"
+        }' class='u-url mention' href='#{archaeme_remote.ap_id}'>@<span>archaeme</span></a></span>"
 
       assert expected_text == Formatter.finalize({subs, text})
     end
@@ -168,7 +168,7 @@ defmodule Pleroma.FormatterTest do
       Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
 
       expected_text =
-        "<span class='h-card'><a data-user='#{mike.id}' class='u-url mention' href='#{mike.ap_id}'>@<span>mike@osada.macgirvin.com</span></a></span> test"
+        "<span class='h-card'><a data-user='#{mike.id}' class='u-url mention' href='#{mike.ap_id}'>@<span>mike</span></a></span> test"
 
       assert expected_text == Formatter.finalize({subs, text})
     end

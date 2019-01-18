@@ -12,7 +12,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   import Pleroma.Factory
 
   setup do
-    user = insert(:user, bio: "<span>Here's some html,</span> @mention@domain.com")
+    user = insert(:user, bio: "<span>Here's some html</span>")
     [user: user]
   end
 

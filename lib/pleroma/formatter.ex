@@ -120,7 +120,7 @@ defmodule Pleroma.Formatter do
   end
 
   @doc "Adds the links to mentioned users"
-  def add_user_links({subs, text}, mentions) do
+  def add_user_links({subs, text}, mentions, options \\ []) do
     mentions =
       mentions
       |> Enum.sort_by(fn {name, _} -> -String.length(name) end)
@@ -142,11 +142,16 @@ defmodule Pleroma.Formatter do
               ap_id
             end
 
-          full_match = String.trim_leading(match, "@")
+          nickname =
+            if options[:format] == :full do
+              User.full_nickname(match)
+            else
+              User.local_nickname(match)
+            end
 
           {uuid,
            "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>" <>
-             "@<span>#{full_match}</span></a></span>"}
+             "@<span>#{nickname}</span></a></span>"}
         end)
 
     {subs, uuid_text}
