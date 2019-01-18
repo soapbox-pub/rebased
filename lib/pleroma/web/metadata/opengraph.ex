@@ -124,6 +124,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.get_cached_stripped_html_for_object(object, __MODULE__)
+    |> Formatter.demojify()
     |> Formatter.truncate()
   end
 
@@ -133,6 +134,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.strip_tags()
+    |> Formatter.demojify()
     |> Formatter.truncate()
   end
 
