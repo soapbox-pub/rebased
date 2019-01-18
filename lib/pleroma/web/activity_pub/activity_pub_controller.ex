@@ -54,6 +54,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def object_likes(conn, %{"uuid" => uuid, "page" => page}) do
+    with ap_id <- o_status_url(conn, :object, uuid),
+         %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
+         {_, true} <- {:public?, ActivityPub.is_public?(object)},
+         likes <- Utils.get_object_likes(object) do
+      {page, _} = Integer.parse(page)
+
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(ObjectView.render("likes.json", ap_id, likes, page))
+    else
+      {:public?, false} ->
+        {:error, :not_found}
+    end
+  end
+
+  def object_likes(conn, %{"uuid" => uuid}) do
+    with ap_id <- o_status_url(conn, :object, uuid),
+         %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
+         {_, true} <- {:public?, ActivityPub.is_public?(object)},
+         likes <- Utils.get_object_likes(object) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(ObjectView.render("likes.json", ap_id, likes))
+    else
+      {:public?, false} ->
+        {:error, :not_found}
+    end
+  end
+
   def activity(conn, %{"uuid" => uuid}) do
     with ap_id <- o_status_url(conn, :activity, uuid),
          %Activity{} = activity <- Activity.normalize(ap_id),
@@ -201,6 +231,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       {:ok, delete}
     else
       _ -> {:error, "Can't delete object"}
+    end
+  end
+
+  def handle_user_activity(user, %{"type" => "Like"} = params) do
+    with %Object{} = object <- Object.normalize(params["object"]),
+         {:ok, activity, _object} <- ActivityPub.like(user, object) do
+      {:ok, activity}
+    else
+      _ -> {:error, "Can't like object"}
     end
   end
 

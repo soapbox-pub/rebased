@@ -822,7 +822,7 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
-  def local_user_query() do
+  def local_user_query do
     from(
       u in User,
       where: u.local == true,
@@ -830,7 +830,14 @@ defmodule Pleroma.User do
     )
   end
 
-  def moderator_user_query() do
+  def active_local_user_query do
+    from(
+      u in local_user_query(),
+      where: fragment("?->'deactivated' @> 'false'", u.info)
+    )
+  end
+
+  def moderator_user_query do
     from(
       u in User,
       where: u.local == true,
@@ -1065,5 +1072,15 @@ defmodule Pleroma.User do
     else
       @strict_local_nickname_regex
     end
+  end
+
+  def error_user(ap_id) do
+    %User{
+      name: ap_id,
+      ap_id: ap_id,
+      info: %User.Info{},
+      nickname: "erroruser@example.com",
+      inserted_at: NaiveDateTime.utc_now()
+    }
   end
 end
