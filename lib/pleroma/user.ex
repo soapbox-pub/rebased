@@ -744,7 +744,7 @@ defmodule Pleroma.User do
       select_merge: %{
         search_rank:
           fragment(
-            "similarity(?, ? || ' ' || coalesce(?, ''))",
+            "similarity(?, trim(? || ' ' || coalesce(?, '')))",
             ^query,
             u.nickname,
             u.name
