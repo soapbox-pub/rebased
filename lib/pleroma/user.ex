@@ -679,13 +679,35 @@ defmodule Pleroma.User do
   end
 
   def search(query, resolve \\ false, for_user \\ nil) do
-    # strip the beginning @ off if there is a query
+    # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
-    if resolve do
-      User.get_or_fetch_by_nickname(query)
-    end
+    if resolve, do: User.get_or_fetch_by_nickname(query)
 
+    fts_results = do_search(fts_search_subquery(query), for_user)
+
+    trigram_results = do_search(trigram_search_subquery(query), for_user)
+
+    Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
+  end
+
+  defp do_search(subquery, for_user, options \\ []) do
+    q =
+      from(
+        s in subquery(subquery),
+        order_by: [desc: s.search_rank],
+        limit: ^(options[:limit] || 20)
+      )
+
+    results =
+      q
+      |> Repo.all()
+      |> Enum.filter(&(&1.search_rank > 0))
+
+    boost_search_results(results, for_user)
+  end
+
+  defp fts_search_subquery(query) do
     processed_query =
       query
       |> String.replace(~r/\W+/, " ")
@@ -694,69 +716,69 @@ defmodule Pleroma.User do
       |> Enum.map(&(&1 <> ":*"))
       |> Enum.join(" | ")
 
-    inner =
-      from(
-        u in User,
-        select_merge: %{
-          search_rank:
-            fragment(
-              """
-              ts_rank_cd(
-                setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
-                setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B'),
-                to_tsquery('simple', ?),
-                32
-              )
-              """,
-              u.nickname,
-              u.name,
-              ^processed_query
+    from(
+      u in User,
+      select_merge: %{
+        search_rank:
+          fragment(
+            """
+            ts_rank_cd(
+              setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
+              setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B'),
+              to_tsquery('simple', ?),
+              32
             )
-        },
-        where: not is_nil(u.nickname)
-      )
+            """,
+            u.nickname,
+            u.name,
+            ^processed_query
+          )
+      },
+      where: not is_nil(u.nickname)
+    )
+  end
 
-    q =
-      from(
-        s in subquery(inner),
-        order_by: [desc: s.search_rank],
-        limit: 20
-      )
+  defp trigram_search_subquery(query) do
+    from(
+      u in User,
+      select_merge: %{
+        search_rank:
+          fragment(
+            "similarity(?, ? || ' ' || coalesce(?, ''))",
+            ^query,
+            u.nickname,
+            u.name
+          )
+      },
+      where: not is_nil(u.nickname)
+    )
+  end
 
-    results =
-      q
-      |> Repo.all()
-      |> Enum.filter(&(&1.search_rank > 0))
+  defp boost_search_results(results, nil), do: results
 
-    weighted_results =
-      if for_user do
-        friends_ids = get_friends_ids(for_user)
-        followers_ids = get_followers_ids(for_user)
+  defp boost_search_results(results, for_user) do
+    friends_ids = get_friends_ids(for_user)
+    followers_ids = get_followers_ids(for_user)
 
-        Enum.map(
-          results,
-          fn u ->
-            search_rank_coef =
-              cond do
-                u.id in friends_ids ->
-                  1.2
+    Enum.map(
+      results,
+      fn u ->
+        search_rank_coef =
+          cond do
+            u.id in friends_ids ->
+              1.2
 
-                u.id in followers_ids ->
-                  1.1
+            u.id in followers_ids ->
+              1.1
 
-                true ->
-                  1
-              end
-
-            Map.put(u, :search_rank, u.search_rank * search_rank_coef)
+            true ->
+              1
           end
-        )
-        |> Enum.sort_by(&(-&1.search_rank))
-      else
-        results
-      end
 
-    weighted_results
+        Map.put(u, :search_rank, u.search_rank * search_rank_coef)
+      end
+    )
+    |> Enum.sort_by(&(-&1.search_rank))
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do

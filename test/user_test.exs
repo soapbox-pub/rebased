@@ -814,6 +814,12 @@ defmodule Pleroma.UserTest do
       assert [u4.id, u3.id, u1.id] == Enum.map(User.search("lain@ple"), & &1.id)
     end
 
+    test "finds users, handling misspelled requests" do
+      u1 = insert(:user, %{name: "lain"})
+
+      assert [u1.id] == Enum.map(User.search("laiin"), & &1.id)
+    end
+
     test "finds users, boosting ranks of friends and followers" do
       u1 = insert(:user)
       u2 = insert(:user, %{name: "Doe"})

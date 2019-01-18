@@ -1656,7 +1656,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "it returns users, ordered by similarity", %{conn: conn} do
       user = insert(:user, %{name: "eal"})
       user_two = insert(:user, %{name: "eal me"})
-      _user_three = insert(:user, %{name: "ebn"})
+      _user_three = insert(:user, %{name: "zzz"})
 
       resp =
         conn
