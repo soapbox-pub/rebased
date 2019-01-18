@@ -131,12 +131,14 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     object = Object.get_by_ap_id(note_activity.data["object"]["id"])
 
     conn
+    |> put_req_header("accept", "application/xml")
     |> get("/objects/#{uuid}")
     |> response(200)
 
     Object.delete(object)
 
     conn
+    |> put_req_header("accept", "application/xml")
     |> get("/objects/#{uuid}")
     |> response(404)
   end
