@@ -1,6 +1,7 @@
 # Pleroma: A lightweight social networking server
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   alias Pleroma.Web.Metadata.Providers.Provider
   alias Pleroma.Web.Metadata
@@ -11,11 +12,11 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
   @impl Provider
   def build_tags(%{
-        activity: %{data: %{"object" => %{"id" => object_id}}} = activity,
+        object: object,
         user: user
       }) do
-    attachments = build_attachments(activity)
-    scrubbed_content = scrub_html_and_truncate(activity)
+    attachments = build_attachments(object)
+    scrubbed_content = scrub_html_and_truncate(object)
     # Zero width space
     content =
       if scrubbed_content != "" and scrubbed_content != "\u200B" do
@@ -36,7 +37,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
          property: "og:title",
          content: "#{user.name}" <> content
        ], []},
-      {:meta, [property: "og:url", content: object_id], []},
+      {:meta, [property: "og:url", content: object.data["id"]], []},
       {:meta,
        [
          property: "og:description",
@@ -44,7 +45,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
        ], []},
       {:meta, [property: "og:type", content: "website"], []}
     ] ++
-      if attachments == [] or Metadata.activity_nsfw?(activity) do
+      if attachments == [] or Metadata.activity_nsfw?(object) do
         [
           {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
           {:meta, [property: "og:image:width", content: 150], []},
@@ -74,7 +75,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     end
   end
 
-  defp build_attachments(%{data: %{"object" => %{"attachment" => attachments}}} = _activity) do
+  defp build_attachments(%{data: %{"attachment" => attachments}}) do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
@@ -117,12 +118,12 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     end)
   end
 
-  defp scrub_html_and_truncate(%{data: %{"object" => %{"content" => content}}} = activity) do
+  defp scrub_html_and_truncate(%{data: %{"content" => content}} = object) do
     content
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
-    |> HTML.get_cached_stripped_html_for_object(activity, __MODULE__)
+    |> HTML.get_cached_stripped_html_for_object(object, __MODULE__)
     |> Formatter.truncate()
   end
 

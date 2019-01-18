@@ -1,6 +1,7 @@
 # Pleroma: A lightweight social networking server
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
   use Pleroma.DataCase
   import Pleroma.Factory
@@ -47,19 +48,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
         }
       })
 
-    note_activity =
-      insert(:note_activity, %{
-        data: %{
-          "actor" => note.data["actor"],
-          "to" => note.data["to"],
-          "object" => note.data,
-          "context" => note.data["context"]
-        },
-        actor: note.data["actor"],
-        recipients: note.data["to"]
-      })
-
-    result = OpenGraph.build_tags(%{activity: note_activity, user: user})
+    result = OpenGraph.build_tags(%{object: note, user: user})
 
     assert Enum.all?(
              [
@@ -85,6 +74,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
           "id" => "https://pleroma.gov/objects/whatever",
           "content" => "#cuteposting #nsfw #hambaga",
           "tag" => ["cuteposting", "nsfw", "hambaga"],
+          "sensitive" => true,
           "attachment" => [
             %{
               "url" => [
@@ -95,19 +85,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
         }
       })
 
-    note_activity =
-      insert(:note_activity, %{
-        data: %{
-          "actor" => note.data["actor"],
-          "to" => note.data["to"],
-          "object" => note.data,
-          "context" => note.data["context"]
-        },
-        actor: note.data["actor"],
-        recipients: note.data["to"]
-      })
-
-    result = OpenGraph.build_tags(%{activity: note_activity, user: user})
+    result = OpenGraph.build_tags(%{object: note, user: user})
 
     assert {:meta, [property: "og:image", content: "https://pleroma.gov/tenshi.png"], []} in result
 

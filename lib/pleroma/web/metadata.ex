@@ -1,6 +1,7 @@
 # Pleroma: A lightweight social networking server
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Metadata do
   alias Phoenix.HTML
 
@@ -29,11 +30,11 @@ defmodule Pleroma.Web.Metadata do
     end
   end
 
-  def activity_nsfw?(%{data: %{"object" => %{"tag" => tags}}}) do
-    if(Pleroma.Config.get([__MODULE__, :unfurl_nsfw], false) == false) do
-      Enum.any?(tags, fn tag -> tag == "nsfw" end)
-    else
-      false
-    end
+  def activity_nsfw?(%{data: %{"sensitive" => sensitive}}) do
+    Pleroma.Config.get([__MODULE__, :unfurl_nsfw], false) == false and sensitive
+  end
+
+  def activity_nsfw?(_) do
+    false
   end
 end

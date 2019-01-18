@@ -145,10 +145,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
-          # Only Create actvities have a map at object
-          if is_map(activity.data["object"]) do
+          if activity.data["type"] == "Create" do
+            %Object{} = object = Object.normalize(activity.data["object"])
+
             Fallback.RedirectController.redirector_with_meta(conn, %{
-              activity: activity,
+              object: object,
               user: user
             })
           else

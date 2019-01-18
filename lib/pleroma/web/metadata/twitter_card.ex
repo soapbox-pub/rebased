@@ -1,6 +1,7 @@
 # Pleroma: A lightweight social networking server
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   alias Pleroma.Web.Metadata.Providers.Provider
   alias Pleroma.Web.Metadata
@@ -8,11 +9,11 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
   @behaviour Provider
 
   @impl Provider
-  def build_tags(%{activity: activity}) do
-    if Metadata.activity_nsfw?(activity) or activity.data["object"]["attachment"] == [] do
+  def build_tags(%{object: object}) do
+    if Metadata.activity_nsfw?(object) or object.data["attachment"] == [] do
       build_tags(nil)
     else
-      case find_first_acceptable_media_type(activity) do
+      case find_first_acceptable_media_type(object) do
         "image" ->
           [{:meta, [property: "twitter:card", content: "summary_large_image"], []}]
 
@@ -33,7 +34,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     [{:meta, [property: "twitter:card", content: "summary"], []}]
   end
 
-  def find_first_acceptable_media_type(%{data: %{"object" => %{"attachment" => attachment}}}) do
+  def find_first_acceptable_media_type(%{data: %{"attachment" => attachment}}) do
     Enum.find_value(attachment, fn attachment ->
       Enum.find_value(attachment["url"], fn url ->
         Enum.find(["image", "audio", "video"], fn media_type ->
