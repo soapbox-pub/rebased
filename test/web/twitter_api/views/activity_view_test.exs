@@ -118,9 +118,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     expected = %{
       "activity_type" => "post",
       "attachments" => [],
-      "attentions" => [
-        UserView.render("show.json", %{user: other_user})
-      ],
+      "attentions" => Enum.map([other_user, user], fn u -> UserView.render("show.json", %{user: u}) end),
       "created_at" => activity.data["object"]["published"] |> Utils.date_to_asctime(),
       "external_url" => activity.data["object"]["id"],
       "fave_num" => 0,

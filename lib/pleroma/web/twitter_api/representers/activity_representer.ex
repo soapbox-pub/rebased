@@ -155,7 +155,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
     pinned = activity.id in user.info.pinned_activities
 
-    mentions = opts[:mentioned] || []
+    mentions = get_mentioned_users(opts[:mentioned] || [], user)
 
     attentions =
       activity.recipients
@@ -222,6 +222,10 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     else
       _e -> nil
     end
+  end
+
+  defp get_mentioned_users(mentioned, user) do
+    mentioned ++ [user]
   end
 
   defp to_boolean(false) do

@@ -147,7 +147,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
     assert activity = Repo.get(Activity, id)
-    assert activity.recipients == [user2.ap_id]
+    assert activity.recipients == [user2.ap_id, user1.ap_id]
     assert activity.data["to"] == [user2.ap_id]
     assert activity.data["cc"] == []
   end
