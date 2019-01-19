@@ -120,8 +120,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("status.json", %{activity: activity})
 
     actor = Repo.get_by(User, ap_id: activity.actor)
-    
-    assert status.mentions == Enum.map([user, actor], fn u -> AccountView.render("mention.json", %{user: u}) end)
+
+    assert status.mentions ==
+             Enum.map([user, actor], fn u -> AccountView.render("mention.json", %{user: u}) end)
   end
 
   test "attachments" do
