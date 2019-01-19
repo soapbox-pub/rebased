@@ -386,9 +386,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   # for relayed messages, we only want to send to subscribers
   def make_announce_data(
-        %User{ap_id: ap_id, nickname: nil} = user,
+        %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
-        activity_id
+        activity_id,
+        false
       ) do
     data = %{
       "type" => "Announce",
@@ -405,7 +406,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def make_announce_data(
         %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
-        activity_id
+        activity_id,
+        true
       ) do
     data = %{
       "type" => "Announce",

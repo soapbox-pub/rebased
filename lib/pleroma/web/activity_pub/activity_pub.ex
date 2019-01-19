@@ -224,10 +224,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         %User{ap_id: _} = user,
         %Object{data: %{"id" => _}} = object,
         activity_id \\ nil,
-        local \\ true
+        local \\ true,
+        public \\ true
       ) do
     with true <- is_public?(object),
-         announce_data <- make_announce_data(user, object, activity_id),
+         announce_data <- make_announce_data(user, object, activity_id, public),
          {:ok, activity} <- insert(announce_data, local),
          {:ok, object} <- add_announce_to_object(activity, object),
          :ok <- maybe_federate(activity) do
@@ -796,13 +797,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def is_public?(%Object{data: %{"type" => "Tombstone"}}) do
-    false
-  end
+  def is_public?(%Object{data: %{"type" => "Tombstone"}}), do: false
+  def is_public?(%Object{data: data}), do: is_public?(data)
+  def is_public?(%Activity{data: data}), do: is_public?(data)
 
-  def is_public?(activity) do
-    "https://www.w3.org/ns/activitystreams#Public" in (activity.data["to"] ++
-                                                         (activity.data["cc"] || []))
+  def is_public?(data) do
+    "https://www.w3.org/ns/activitystreams#Public" in (data["to"] ++ (data["cc"] || []))
   end
 
   def visible_for_user?(activity, nil) do
