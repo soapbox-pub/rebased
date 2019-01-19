@@ -874,4 +874,19 @@ defmodule Pleroma.UserTest do
       Pleroma.Config.put([:instance, :account_activation_required], false)
     end
   end
+
+  describe "parse_bio/2" do
+    test "preserves hosts in user links text" do
+      remote_user = insert(:user, local: false, nickname: "nick@domain.com")
+      user = insert(:user)
+      bio = "A.k.a. @nick@domain.com"
+
+      expected_text =
+        "A.k.a. <span class='h-card'><a data-user='#{remote_user.id}' class='u-url mention' href='#{
+          remote_user.ap_id
+        }'>" <> "@<span>nick@domain.com</span></a></span>"
+
+      assert expected_text == User.parse_bio(bio, user)
+    end
+  end
 end
