@@ -150,6 +150,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
             Fallback.RedirectController.redirector_with_meta(conn, %{
               object: object,
+              url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity.id),
               user: user
             })
           else

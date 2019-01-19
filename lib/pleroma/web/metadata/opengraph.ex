@@ -13,6 +13,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   @impl Provider
   def build_tags(%{
         object: object,
+        url: url,
         user: user
       }) do
     attachments = build_attachments(object)
@@ -37,7 +38,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
          property: "og:title",
          content: "#{user.name}" <> content
        ], []},
-      {:meta, [property: "og:url", content: object.data["id"]], []},
+      {:meta, [property: "og:url", content: url], []},
       {:meta,
        [
          property: "og:description",
