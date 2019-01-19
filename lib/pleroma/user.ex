@@ -734,7 +734,16 @@ defmodule Pleroma.User do
             ^processed_query
           )
       },
-      where: not is_nil(u.nickname)
+      where:
+        fragment(
+          """
+            (setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
+            setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B')) @@ to_tsquery('simple', ?)
+          """,
+          u.nickname,
+          u.name,
+          ^processed_query
+        )
     )
   end
 
@@ -750,7 +759,7 @@ defmodule Pleroma.User do
             u.name
           )
       },
-      where: not is_nil(u.nickname)
+      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^query)
     )
   end
 
