@@ -775,14 +775,61 @@ defmodule Pleroma.UserTest do
   end
 
   describe "User.search" do
-    test "finds a user, ranking by similarity" do
-      _user = insert(:user, %{name: "lain"})
-      _user_two = insert(:user, %{name: "ean"})
-      _user_three = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social"})
-      user_four = insert(:user, %{nickname: "lain@pleroma.soykaf.com"})
+    test "finds a user by full or partial nickname" do
+      user = insert(:user, %{nickname: "john"})
 
-      assert user_four ==
-               User.search("lain@ple") |> List.first() |> Map.put(:search_distance, nil)
+      Enum.each(["john", "jo", "j"], fn query ->
+        assert user == User.search(query) |> List.first() |> Map.put(:search_rank, nil)
+      end)
+    end
+
+    test "finds a user by full or partial name" do
+      user = insert(:user, %{name: "John Doe"})
+
+      Enum.each(["John Doe", "JOHN", "doe", "j d", "j", "d"], fn query ->
+        assert user == User.search(query) |> List.first() |> Map.put(:search_rank, nil)
+      end)
+    end
+
+    test "finds users, preferring nickname matches over name matches" do
+      u1 = insert(:user, %{name: "lain", nickname: "nick1"})
+      u2 = insert(:user, %{nickname: "lain", name: "nick1"})
+
+      assert [u2.id, u1.id] == Enum.map(User.search("lain"), & &1.id)
+    end
+
+    test "finds users, considering density of matched tokens" do
+      u1 = insert(:user, %{name: "Bar Bar plus Word Word"})
+      u2 = insert(:user, %{name: "Word Word Bar Bar Bar"})
+
+      assert [u2.id, u1.id] == Enum.map(User.search("bar word"), & &1.id)
+    end
+
+    test "finds users, ranking by similarity" do
+      u1 = insert(:user, %{name: "lain"})
+      _u2 = insert(:user, %{name: "ean"})
+      u3 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social"})
+      u4 = insert(:user, %{nickname: "lain@pleroma.soykaf.com"})
+
+      assert [u4.id, u3.id, u1.id] == Enum.map(User.search("lain@ple"), & &1.id)
+    end
+
+    test "finds users, handling misspelled requests" do
+      u1 = insert(:user, %{name: "lain"})
+
+      assert [u1.id] == Enum.map(User.search("laiin"), & &1.id)
+    end
+
+    test "finds users, boosting ranks of friends and followers" do
+      u1 = insert(:user)
+      u2 = insert(:user, %{name: "Doe"})
+      follower = insert(:user, %{name: "Doe"})
+      friend = insert(:user, %{name: "Doe"})
+
+      {:ok, follower} = User.follow(follower, u1)
+      {:ok, u1} = User.follow(u1, friend)
+
+      assert [friend.id, follower.id, u2.id] == Enum.map(User.search("doe", false, u1), & &1.id)
     end
 
     test "finds a user whose name is nil" do
@@ -792,7 +839,15 @@ defmodule Pleroma.UserTest do
       assert user_two ==
                User.search("lain@pleroma.soykaf.com")
                |> List.first()
-               |> Map.put(:search_distance, nil)
+               |> Map.put(:search_rank, nil)
+    end
+
+    test "does not yield false-positive matches" do
+      insert(:user, %{name: "John Doe"})
+
+      Enum.each(["mary", "a", ""], fn query ->
+        assert [] == User.search(query)
+      end)
     end
   end
 

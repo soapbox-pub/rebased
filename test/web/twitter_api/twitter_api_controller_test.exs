@@ -1655,16 +1655,16 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "GET /api/pleroma/search_user" do
     test "it returns users, ordered by similarity", %{conn: conn} do
       user = insert(:user, %{name: "eal"})
-      user_two = insert(:user, %{name: "ean"})
-      user_three = insert(:user, %{name: "ebn"})
+      user_two = insert(:user, %{name: "eal me"})
+      _user_three = insert(:user, %{name: "zzz"})
 
       resp =
         conn
-        |> get(twitter_api_search__path(conn, :search_user), query: "eal")
+        |> get(twitter_api_search__path(conn, :search_user), query: "eal me")
         |> json_response(200)
 
-      assert length(resp) == 3
-      assert [user.id, user_two.id, user_three.id] == Enum.map(resp, fn %{"id" => id} -> id end)
+      assert length(resp) == 2
+      assert [user_two.id, user.id] == Enum.map(resp, fn %{"id" => id} -> id end)
     end
   end
 
