@@ -800,6 +800,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def is_public?(%Object{data: %{"type" => "Tombstone"}}), do: false
   def is_public?(%Object{data: data}), do: is_public?(data)
   def is_public?(%Activity{data: data}), do: is_public?(data)
+  def is_public?(%{"directMessage" => true}), do: false
 
   def is_public?(data) do
     "https://www.w3.org/ns/activitystreams#Public" in (data["to"] ++ (data["cc"] || []))
@@ -808,6 +809,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def is_private?(activity) do
     !is_public?(activity) && Enum.any?(activity.data["to"], &String.contains?(&1, "/followers"))
   end
+
+  def is_direct?(%Activity{data: %{"directMessage" => true}}), do: true
+  def is_direct?(%Object{data: %{"directMessage" => true}}), do: true
 
   def is_direct?(activity) do
     !is_public?(activity) && !is_private?(activity)
