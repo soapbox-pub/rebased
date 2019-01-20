@@ -1329,20 +1329,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> Enum.at(0)
   end
 
-  def status_card(conn, %{"id" => status_id}) do
+  def get_status_card(status_id) do
     with %Activity{} = activity <- Repo.get(Activity, status_id),
          true <- ActivityPub.is_public?(activity),
          page_url <- status_first_external_url(activity.data["object"]["content"]),
          {:ok, rich_media} <- Pleroma.Web.RichMedia.Parser.parse(page_url) do
-      card =
-        rich_media
-        |> Map.take([:image, :title, :url, :description])
-        |> Map.put(:type, "link")
-
-      json(conn, card)
+      rich_media
+      |> Map.take([:image, :title, :url, :description])
+      |> Map.put(:type, "link")
     else
-      _ -> json(conn, %{})
+      _ -> %{}
     end
+  end
+
+  def status_card(conn, %{"id" => status_id}) do
+    json(conn, get_status_card(status_id))
   end
 
   def try_render(conn, target, params)
