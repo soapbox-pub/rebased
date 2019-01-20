@@ -686,7 +686,11 @@ defmodule Pleroma.User do
 
     fts_results = do_search(fts_search_subquery(query), for_user)
 
-    trigram_results = do_search(trigram_search_subquery(query), for_user)
+    {:ok, trigram_results} =
+      Repo.transaction(fn ->
+        Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
+        do_search(trigram_search_subquery(query), for_user)
+      end)
 
     Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
   end
