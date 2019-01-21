@@ -140,8 +140,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              additional
            ),
          {:ok, activity} <- insert(create_data, local),
-         :ok <- maybe_federate(activity),
-         {:ok, _actor} <- User.increase_note_count(actor) do
+         # Changing note count prior to federation in order not to reload `actor` (potentially updated by federator)
+         {:ok, _actor} <- User.increase_note_count(actor),
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -288,8 +289,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with {:ok, _} <- Object.delete(object),
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         {:ok, _actor} <- User.decrease_note_count(user) do
+         # Changing note count prior to federation in order not to reload `actor` (potentially updated by federator)
+         {:ok, _actor} <- User.decrease_note_count(user),
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
