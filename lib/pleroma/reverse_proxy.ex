@@ -275,11 +275,24 @@ defmodule Pleroma.ReverseProxy do
 
   defp build_resp_cache_headers(headers, _opts) do
     has_cache? = Enum.any?(headers, fn {k, _} -> k in @resp_cache_headers end)
+    has_cache_control? = List.keymember?(headers, "cache-control", 0)
 
-    if has_cache? do
-      headers
-    else
-      List.keystore(headers, "cache-control", 0, {"cache-control", @default_cache_control_header})
+    cond do
+      has_cache? && has_cache_control? ->
+        headers
+
+      has_cache? ->
+        # There's caching header present but no cache-control -- we need to explicitely override it to public
+        # as Plug defaults to "max-age=0, private, must-revalidate"
+        List.keystore(headers, "cache-control", 0, {"cache-control", "public"})
+
+      true ->
+        List.keystore(
+          headers,
+          "cache-control",
+          0,
+          {"cache-control", @default_cache_control_header}
+        )
     end
   end
 
