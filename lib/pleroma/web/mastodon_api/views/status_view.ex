@@ -25,7 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         nil
     end)
     |> Enum.filter(& &1)
-    |> Activity.create_activity_by_object_id_query()
+    |> Activity.create_by_object_ap_id()
     |> Repo.all()
     |> Enum.reduce(%{}, fn activity, acc ->
       Map.put(acc, activity.data["object"]["id"], activity)

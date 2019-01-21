@@ -63,7 +63,7 @@ defmodule Pleroma.Activity do
     )
   end
 
-  def create_activity_by_object_id_query(ap_ids) do
+  def create_by_object_ap_id(ap_ids) when is_list(ap_ids) do
     from(
       activity in Activity,
       where:
@@ -82,7 +82,7 @@ defmodule Pleroma.Activity do
   end
 
   def get_create_activity_by_object_ap_id(ap_id) when is_binary(ap_id) do
-    create_activity_by_object_id_query([ap_id])
+    create_by_object_ap_id(ap_id)
     |> Repo.one()
   end
 
