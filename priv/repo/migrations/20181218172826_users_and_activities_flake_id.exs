@@ -15,6 +15,10 @@ defmodule Pleroma.Repo.Migrations.UsersAndActivitiesFlakeId do
     #execute "update activities set external_id = CAST( LPAD( TO_HEX(id), 32, '0' ) AS uuid);"
     #execute "update users set external_id = CAST( LPAD( TO_HEX(id), 32, '0' ) AS uuid);"
 
+    # Lock both tables to avoid a running server to meddling with our transaction
+    execute "LOCK TABLE activities;"
+    execute "LOCK TABLE users;"
+
     execute "ALTER TABLE activities DROP CONSTRAINT activities_pkey CASCADE;"
     execute "ALTER TABLE users DROP CONSTRAINT users_pkey CASCADE;"
 
