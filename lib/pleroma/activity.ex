@@ -36,10 +36,7 @@ defmodule Pleroma.Activity do
     )
   end
 
-  # TODO:
-  # Go through these and fix them everywhere.
-  # Wrong name, only returns create activities
-  def all_by_object_ap_id_q(ap_id) do
+  def create_by_object_ap_id(ap_id) do
     from(
       activity in Activity,
       where:
@@ -67,7 +64,7 @@ defmodule Pleroma.Activity do
   end
 
   def get_all_by_object_ap_id(ap_id) do
-    Repo.all(all_by_object_ap_id_q(ap_id))
+    Repo.all(create_by_object_ap_id(ap_id))
   end
 
   def create_activity_by_object_id_query(ap_ids) do
