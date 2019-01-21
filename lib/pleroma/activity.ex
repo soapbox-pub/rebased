@@ -53,8 +53,7 @@ defmodule Pleroma.Activity do
     )
   end
 
-  # Wrong name, returns all.
-  def all_non_create_by_object_ap_id_q(ap_id) do
+  def by_object_ap_id(ap_id) do
     from(
       activity in Activity,
       where:
