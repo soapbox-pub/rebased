@@ -63,10 +63,6 @@ defmodule Pleroma.Activity do
     )
   end
 
-  def get_all_by_object_ap_id(ap_id) do
-    Repo.all(create_by_object_ap_id(ap_id))
-  end
-
   def create_activity_by_object_id_query(ap_ids) do
     from(
       activity in Activity,
@@ -79,6 +75,10 @@ defmodule Pleroma.Activity do
         ),
       where: fragment("(?)->>'type' = 'Create'", activity.data)
     )
+  end
+
+  def get_all_create_by_object_ap_id(ap_id) do
+    Repo.all(create_by_object_ap_id(ap_id))
   end
 
   def get_create_activity_by_object_ap_id(ap_id) when is_binary(ap_id) do
