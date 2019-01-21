@@ -914,7 +914,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert modified["directMessage"] == false
 
       {:ok, activity} =
-        CommonAPI.post(user, %{"status" => "@{other_user.nickname} :moominmamma:"})
+        CommonAPI.post(user, %{"status" => "@#{other_user.nickname} :moominmamma:"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -922,7 +922,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, activity} =
         CommonAPI.post(user, %{
-          "status" => "@{other_user.nickname} :moominmamma:",
+          "status" => "@#{other_user.nickname} :moominmamma:",
           "visibility" => "direct"
         })
 
