@@ -148,7 +148,7 @@ defmodule Pleroma.Web.OStatus do
     Logger.debug("Trying to get entry from db")
 
     with id when not is_nil(id) <- string_from_xpath("//activity:object[1]/id", entry),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     else
       _ ->

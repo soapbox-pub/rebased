@@ -183,7 +183,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     _in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
-    retweeted_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    retweeted_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
     retweeted_user = User.get_cached_by_ap_id(retweeted_activity.data["actor"])
 
     retweeted_xml = to_simple_form(retweeted_activity, retweeted_user, true)

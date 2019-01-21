@@ -168,7 +168,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   def render("activity.json", %{activity: %{data: %{"type" => "Announce"}} = activity} = opts) do
     user = get_user(activity.data["actor"], opts)
     created_at = activity.data["published"] |> Utils.date_to_asctime()
-    announced_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    announced_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
 
     text = "#{user.nickname} retweeted a status."
 
@@ -192,7 +192,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
   def render("activity.json", %{activity: %{data: %{"type" => "Like"}} = activity} = opts) do
     user = get_user(activity.data["actor"], opts)
-    liked_activity = Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+    liked_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
     liked_activity_id = if liked_activity, do: liked_activity.id, else: nil
 
     created_at =

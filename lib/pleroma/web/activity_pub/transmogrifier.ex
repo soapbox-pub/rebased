@@ -141,7 +141,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     case fetch_obj_helper(in_reply_to_id) do
       {:ok, replied_object} ->
         with %Activity{} = activity <-
-               Activity.get_create_activity_by_object_ap_id(replied_object.data["id"]) do
+               Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
           object
           |> Map.put("inReplyTo", replied_object.data["id"])
           |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
@@ -334,7 +334,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       Map.put(data, "actor", actor)
       |> fix_addressing
 
-    with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
+    with nil <- Activity.get_create_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
       object = fix_object(data["object"])
 
