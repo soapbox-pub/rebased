@@ -49,7 +49,6 @@ defmodule Pleroma.Activity do
     )
   end
 
-
   def create_by_object_ap_id(ap_ids) when is_list(ap_ids) do
     from(
       activity in Activity,
