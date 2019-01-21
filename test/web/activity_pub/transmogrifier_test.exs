@@ -162,6 +162,36 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"]["url"] == "https://prismo.news/posts/83"
     end
 
+    test "it cleans up incoming notices which are not really DMs" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      to = [user.ap_id, other_user.ap_id]
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("to", to)
+        |> Map.put("cc", [])
+
+      object =
+        data["object"]
+        |> Map.put("to", to)
+        |> Map.put("cc", [])
+
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["to"] == []
+      assert data["cc"] == to
+
+      object = data["object"]
+
+      assert object["to"] == []
+      assert object["cc"] == to
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
@@ -871,6 +901,34 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified["object"]["likes"]["type"] == "OrderedCollection"
       assert modified["object"]["likes"]["totalItems"] == 0
+    end
+
+    test "the directMessage flag is present" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == false
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "@{other_user.nickname} :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == false
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "@{other_user.nickname} :moominmamma:",
+          "visibility" => "direct"
+        })
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == true
     end
   end
 

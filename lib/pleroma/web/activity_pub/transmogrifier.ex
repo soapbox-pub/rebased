@@ -93,12 +93,47 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_addressing(map) do
-    map
+  def fix_explicit_addressing(%{"to" => to, "cc" => cc} = object, explicit_mentions) do
+    explicit_to =
+      to
+      |> Enum.filter(fn x -> x in explicit_mentions end)
+
+    explicit_cc =
+      to
+      |> Enum.filter(fn x -> x not in explicit_mentions end)
+
+    final_cc =
+      (cc ++ explicit_cc)
+      |> Enum.uniq()
+
+    object
+    |> Map.put("to", explicit_to)
+    |> Map.put("cc", final_cc)
+  end
+
+  def fix_explicit_addressing(object, _explicit_mentions), do: object
+
+  # if directMessage flag is set to true, leave the addressing alone
+  def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
+
+  def fix_explicit_addressing(object) do
+    explicit_mentions =
+      object
+      |> Utils.determine_explicit_mentions()
+
+    explicit_mentions = explicit_mentions ++ ["https://www.w3.org/ns/activitystreams#Public"]
+
+    object
+    |> fix_explicit_addressing(explicit_mentions)
+  end
+
+  def fix_addressing(object) do
+    object
     |> fix_addressing_list("to")
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
+    |> fix_explicit_addressing
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
@@ -348,6 +383,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         additional:
           Map.take(data, [
             "cc",
+            "directMessage",
             "id"
           ])
       }

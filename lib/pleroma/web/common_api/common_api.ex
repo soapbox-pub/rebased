@@ -143,7 +143,7 @@ defmodule Pleroma.Web.CommonAPI do
           actor: user,
           context: context,
           object: object,
-          additional: %{"cc" => cc}
+          additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
         })
 
       res

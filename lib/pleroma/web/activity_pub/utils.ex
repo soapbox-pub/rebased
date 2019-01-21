@@ -25,6 +25,20 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Map.put(params, "actor", get_ap_id(params["actor"]))
   end
 
+  def determine_explicit_mentions(%{"tag" => tag} = _object) when is_list(tag) do
+    tag
+    |> Enum.filter(fn x -> is_map(x) end)
+    |> Enum.filter(fn x -> x["type"] == "Mention" end)
+    |> Enum.map(fn x -> x["href"] end)
+  end
+
+  def determine_explicit_mentions(%{"tag" => tag} = object) when is_map(tag) do
+    Map.put(object, "tag", [tag])
+    |> determine_explicit_mentions()
+  end
+
+  def determine_explicit_mentions(_), do: []
+
   defp recipient_in_collection(ap_id, coll) when is_binary(coll), do: ap_id == coll
   defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
   defp recipient_in_collection(_, _), do: false
