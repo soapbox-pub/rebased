@@ -330,7 +330,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert like_activity == same_like_activity
       assert object.data["likes"] == [user.ap_id]
 
-      [note_activity] = Activity.all_by_object_ap_id(object.data["id"])
+      [note_activity] = Activity.get_all_by_object_ap_id(object.data["id"])
       assert note_activity.data["object"]["like_count"] == 1
 
       {:ok, _like_activity, object} = ActivityPub.like(user_two, object)

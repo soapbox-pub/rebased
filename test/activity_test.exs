@@ -16,7 +16,7 @@ defmodule Pleroma.ActivityTest do
 
   test "returns activities by it's objects AP ids" do
     activity = insert(:note_activity)
-    [found_activity] = Activity.all_by_object_ap_id(activity.data["object"]["id"])
+    [found_activity] = Activity.get_all_by_object_ap_id(activity.data["object"]["id"])
 
     assert activity == found_activity
   end

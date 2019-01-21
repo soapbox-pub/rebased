@@ -67,8 +67,7 @@ defmodule Pleroma.Activity do
     )
   end
 
-  # Wrong name plz fix thx
-  def all_by_object_ap_id(ap_id) do
+  def get_all_by_object_ap_id(ap_id) do
     Repo.all(all_by_object_ap_id_q(ap_id))
   end
 
