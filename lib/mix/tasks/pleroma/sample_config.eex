@@ -7,7 +7,8 @@ use Mix.Config
 
 config :pleroma, Pleroma.Web.Endpoint,
    url: [host: "<%= domain %>", scheme: "https", port: <%= port %>],
-   secret_key_base: "<%= secret %>"
+   secret_key_base: "<%= secret %>",
+   signing_salt: "<%= signing_salt %>"
 
 config :pleroma, :instance,
   name: "<%= name %>",
