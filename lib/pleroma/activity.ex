@@ -36,6 +36,10 @@ defmodule Pleroma.Activity do
     )
   end
 
+  def get_by_id(id) do
+    Repo.get(Activity, id)
+  end
+
   # TODO:
   # Go through these and fix them everywhere.
   # Wrong name, only returns create activities
