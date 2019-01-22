@@ -901,7 +901,7 @@ defmodule Pleroma.User do
   def active_local_user_query do
     from(
       u in local_user_query(),
-      where: fragment("?->'deactivated' @> 'false'", u.info)
+      where: fragment("not (?->'deactivated' @> 'true')", u.info)
     )
   end
 
