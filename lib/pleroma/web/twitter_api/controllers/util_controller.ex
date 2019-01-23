@@ -216,6 +216,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def frontend_configurations(conn, _params) do
+    config =
+      Pleroma.Config.get(:frontend_configurations, %{})
+      |> Enum.into(%{})
+
+    json(conn, config)
+  end
+
   def version(conn, _params) do
     version = Pleroma.Application.named_version()
 

@@ -284,6 +284,7 @@ defmodule Pleroma.Web.Router do
     post("/help/test", TwitterAPI.UtilController, :help_test)
     get("/statusnet/config", TwitterAPI.UtilController, :config)
     get("/statusnet/version", TwitterAPI.UtilController, :version)
+    get("/pleroma/frontend_configurations", TwitterAPI.UtilController, :frontend_configurations)
   end
 
   scope "/api", Pleroma.Web do

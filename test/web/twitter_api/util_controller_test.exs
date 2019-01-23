@@ -32,4 +32,27 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert response == "job started"
     end
   end
+
+  describe "GET /api/pleroma/frontent_configurations" do
+    test "returns everything in :pleroma, :frontend_configurations", %{conn: conn} do
+      config = [
+        frontend_a: %{
+          x: 1,
+          y: 2
+        },
+        frontend_b: %{
+          z: 3
+        }
+      ]
+
+      Pleroma.Config.put(:frontend_configurations, config)
+
+      response =
+        conn
+        |> get("/api/pleroma/frontend_configurations")
+        |> json_response(:ok)
+
+      assert response == Jason.encode!(config |> Enum.into(%{})) |> Jason.decode!()
+    end
+  end
 end
