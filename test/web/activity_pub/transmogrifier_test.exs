@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
 
       assert activity =
-               Activity.get_create_activity_by_object_ap_id(
+               Activity.get_create_by_object_ap_id(
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
                )
 
@@ -293,7 +293,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"] ==
                "http://mastodon.example.org/users/admin/statuses/99541947525187367"
 
-      assert Activity.get_create_activity_by_object_ap_id(data["object"])
+      assert Activity.get_create_by_object_ap_id(data["object"])
     end
 
     test "it works for incoming announces with an existing activity" do
@@ -315,7 +315,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert data["object"] == activity.data["object"]["id"]
 
-      assert Activity.get_create_activity_by_object_ap_id(data["object"]).id == activity.id
+      assert Activity.get_create_by_object_ap_id(data["object"]).id == activity.id
     end
 
     test "it does not clobber the addressing on announce activities" do

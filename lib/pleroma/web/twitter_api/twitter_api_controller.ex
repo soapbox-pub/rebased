@@ -330,12 +330,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
+    activity = Repo.get(Activity, id) || Activity.get_create_by_object_ap_id(id)
 
     if activity.data["type"] == "Create" do
       activity
     else
-      Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+      Activity.get_create_by_object_ap_id(activity.data["object"])
     end
   end
 

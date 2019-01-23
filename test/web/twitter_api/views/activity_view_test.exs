@@ -344,7 +344,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
         "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
       )
 
-    %Activity{} = activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+    %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
 
     result = ActivityView.render("activity.json", activity: activity)
 
