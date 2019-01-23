@@ -37,6 +37,8 @@ defmodule Pleroma.Repo.Migrations.UsersAndActivitiesFlakeId do
     execute "ALTER TABLE activities ADD PRIMARY KEY (id);"
     execute "ALTER TABLE users ADD PRIMARY KEY (id);"
 
+    execute "UPDATE users SET info = jsonb_set(info, '{pinned_activities}', array_to_json(ARRAY(select jsonb_array_elements_text(info->'pinned_activities')))::jsonb);"
+
     # Fkeys:
     # Activities - Referenced by:
     #   TABLE "notifications" CONSTRAINT "notifications_activity_id_fkey" FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE
