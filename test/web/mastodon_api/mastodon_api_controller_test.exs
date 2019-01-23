@@ -10,6 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.{OStatus, CommonAPI}
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.FilterView
+  alias Ecto.Changeset
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock
@@ -1482,6 +1483,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     insert(:user, %{local: false, nickname: "u@peer2.com"})
 
     {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
+
+    # Stats should count users with missing or nil `info.deactivated` value
+    user = Repo.get(User, user.id)
+    info_change = Changeset.change(user.info, %{deactivated: nil})
+
+    {:ok, _user} =
+      user
+      |> Changeset.change()
+      |> Changeset.put_embed(:info, info_change)
+      |> User.update_and_set_cache()
 
     Pleroma.Stats.update_stats()
 

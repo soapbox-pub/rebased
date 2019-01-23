@@ -140,8 +140,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              additional
            ),
          {:ok, activity} <- insert(create_data, local),
-         :ok <- maybe_federate(activity),
-         {:ok, _actor} <- User.increase_note_count(actor) do
+         # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
+         {:ok, _actor} <- User.increase_note_count(actor),
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -288,8 +289,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with {:ok, _} <- Object.delete(object),
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         {:ok, _actor} <- User.decrease_note_count(user) do
+         # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
+         {:ok, _actor} <- User.decrease_note_count(user),
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -802,9 +804,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def is_public?(%Object{data: %{"type" => "Tombstone"}}), do: false
   def is_public?(%Object{data: data}), do: is_public?(data)
   def is_public?(%Activity{data: data}), do: is_public?(data)
+  def is_public?(%{"directMessage" => true}), do: false
 
   def is_public?(data) do
     "https://www.w3.org/ns/activitystreams#Public" in (data["to"] ++ (data["cc"] || []))
+  end
+
+  def is_private?(activity) do
+    !is_public?(activity) && Enum.any?(activity.data["to"], &String.contains?(&1, "/followers"))
+  end
+
+  def is_direct?(%Activity{data: %{"directMessage" => true}}), do: true
+  def is_direct?(%Object{data: %{"directMessage" => true}}), do: true
+
+  def is_direct?(activity) do
+    !is_public?(activity) && !is_private?(activity)
   end
 
   def visible_for_user?(activity, nil) do

@@ -231,6 +231,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       Enum.any?(to, &String.contains?(&1, "/followers")) ->
         "private"
 
+      length(cc) > 0 ->
+        "private"
+
       true ->
         "direct"
     end

@@ -36,6 +36,10 @@ defmodule Pleroma.Activity do
     )
   end
 
+  def get_by_id(id) do
+    Repo.get(Activity, id)
+  end
+
   def by_object_ap_id(ap_id) do
     from(
       activity in Activity,
