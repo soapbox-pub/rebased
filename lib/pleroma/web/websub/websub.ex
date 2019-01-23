@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Websub do
   alias Ecto.Changeset
   alias Pleroma.Repo
+  alias Pleroma.Instances
   alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.{XML, Endpoint, OStatus}
@@ -267,7 +268,8 @@ defmodule Pleroma.Web.Websub do
     signature = sign(secret || "", xml)
     Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
 
-    with {:ok, %{status: code}} <-
+    with {:reachable, true} <- {:reachable, Instances.reachable?(callback)},
+         {:ok, %{status: code}} <-
            @httpoison.post(
              callback,
              xml,
@@ -276,10 +278,16 @@ defmodule Pleroma.Web.Websub do
                {"X-Hub-Signature", "sha1=#{signature}"}
              ]
            ) do
+      Instances.set_reachable(callback)
       Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)
       {:ok, code}
     else
+      {:reachable, false} ->
+        Logger.debug(fn -> "Pushing to #{callback} skipped as marked unreachable)" end)
+        {:error, :noop}
+
       e ->
+        Instances.set_unreachable(callback)
         Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)
         {:error, e}
     end

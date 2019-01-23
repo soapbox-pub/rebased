@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Salmon do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
   use Bitwise
+  alias Pleroma.Instances
   alias Pleroma.Web.XML
   alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.User
@@ -167,15 +168,23 @@ defmodule Pleroma.Web.Salmon do
     do: send_to_user(salmon, feed, poster)
 
   defp send_to_user(url, feed, poster) when is_binary(url) do
-    with {:ok, %{status: code}} <-
+    with {:reachable, true} <- {:reachable, Instances.reachable?(url)},
+         {:ok, %{status: code}} <-
            poster.(
              url,
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}]
            ) do
+      Instances.set_reachable(url)
       Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)
     else
-      e -> Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
+      {:reachable, false} ->
+        Logger.debug(fn -> "Pushing Salmon to #{url} skipped as marked unreachable)" end)
+        :noop
+
+      e ->
+        Instances.set_unreachable(url)
+        Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
     end
   end
 
