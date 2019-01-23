@@ -25,17 +25,21 @@ defmodule Pleroma.Repo.Migrations.UsersAndActivitiesFlakeId do
     execute "LOCK TABLE activities;"
     execute "LOCK TABLE users;"
 
-    execute "ALTER TABLE activities DROP CONSTRAINT activities_pkey CASCADE;"
-    execute "ALTER TABLE users DROP CONSTRAINT users_pkey CASCADE;"
+    execute """
+      ALTER TABLE activities
+      DROP CONSTRAINT activities_pkey CASCADE,
+      ALTER COLUMN id DROP default,
+      ALTER COLUMN id SET DATA TYPE uuid USING CAST( LPAD( TO_HEX(id), 32, '0' ) AS uuid),
+      ADD PRIMARY KEY (id);
+    """
 
-    execute "ALTER TABLE activities ALTER COLUMN id DROP default;"
-    execute "ALTER TABLE users ALTER COLUMN id DROP default;"
-
-    execute "ALTER TABLE activities ALTER COLUMN id SET DATA TYPE uuid USING CAST( LPAD( TO_HEX(id), 32, '0' ) AS uuid);"
-    execute "ALTER TABLE users ALTER COLUMN id SET DATA TYPE uuid USING CAST( LPAD( TO_HEX(id), 32, '0' ) AS uuid);"
-
-    execute "ALTER TABLE activities ADD PRIMARY KEY (id);"
-    execute "ALTER TABLE users ADD PRIMARY KEY (id);"
+    execute """
+    ALTER TABLE users
+    DROP CONSTRAINT users_pkey CASCADE,
+    ALTER COLUMN id DROP default,
+    ALTER COLUMN id SET DATA TYPE uuid USING CAST( LPAD( TO_HEX(id), 32, '0' ) AS uuid),
+    ADD PRIMARY KEY (id);
+    """
 
     execute "UPDATE users SET info = jsonb_set(info, '{pinned_activities}', array_to_json(ARRAY(select jsonb_array_elements_text(info->'pinned_activities')))::jsonb);"
 
@@ -52,12 +56,18 @@ defmodule Pleroma.Repo.Migrations.UsersAndActivitiesFlakeId do
     #  TABLE "push_subscriptions" CONSTRAINT "push_subscriptions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     #  TABLE "websub_client_subscriptions" CONSTRAINT "websub_client_subscriptions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id)
 
-    execute "ALTER TABLE notifications ALTER COLUMN activity_id SET DATA TYPE uuid USING CAST( LPAD( TO_HEX(activity_id), 32, '0' ) AS uuid);"
-    execute "ALTER TABLE notifications ADD CONSTRAINT notifications_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE;"
+    execute """
+    ALTER TABLE notifications
+    ALTER COLUMN activity_id SET DATA TYPE uuid USING CAST( LPAD( TO_HEX(activity_id), 32, '0' ) AS uuid),
+    ADD CONSTRAINT notifications_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE;
+    """
 
     for table <- ~w(notifications filters lists oauth_authorizations oauth_tokens password_reset_tokens push_subscriptions websub_client_subscriptions) do
-      execute "ALTER TABLE #{table} ALTER COLUMN user_id SET DATA TYPE uuid USING CAST( LPAD( TO_HEX(user_id), 32, '0' ) AS uuid);"
-      execute "ALTER TABLE #{table} ADD CONSTRAINT #{table}_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;"
+      execute """
+      ALTER TABLE #{table}
+      ALTER COLUMN user_id SET DATA TYPE uuid USING CAST( LPAD( TO_HEX(user_id), 32, '0' ) AS uuid),
+      ADD CONSTRAINT #{table}_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+      """
     end
 
     stop_clippy_heartbeats(clippy)
