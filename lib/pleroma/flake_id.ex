@@ -161,23 +161,23 @@ defmodule Pleroma.FlakeId do
     1_000_000_000 * mega_seconds + seconds * 1000 + :erlang.trunc(micro_seconds / 1000)
   end
 
-  defp mac do
+  def mac do
     {:ok, addresses} = :inet.getifaddrs()
 
-    ifaces_with_mac =
-      Enum.reduce(addresses, [], fn {iface, attrs}, acc ->
-        if attrs[:hwaddr], do: [iface | acc], else: acc
+    macids =
+      Enum.reduce(addresses, [], fn {_iface, attrs}, acc ->
+        case attrs[:hwaddr] do
+          [0, 0, 0 | _] -> acc
+          mac when is_list(mac) -> [mac_to_worker_id(mac) | acc]
+          _ -> acc
+        end
       end)
 
-    iface = Enum.at(ifaces_with_mac, :rand.uniform(length(ifaces_with_mac)) - 1)
-    mac(iface)
+    List.first(macids)
   end
 
-  defp mac(name) do
-    {:ok, addresses} = :inet.getifaddrs()
-    proplist = :proplists.get_value(name, addresses)
-    hwaddr = Enum.take(:proplists.get_value(:hwaddr, proplist), 6)
-    <<worker::integer-size(48)>> = :binary.list_to_bin(hwaddr)
+  def mac_to_worker_id(mac) do
+    <<worker::integer-size(48)>> = :binary.list_to_bin(mac)
     worker
   end
 end
