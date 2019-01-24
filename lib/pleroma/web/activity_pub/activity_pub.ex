@@ -742,7 +742,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         digest: digest
       })
 
-    with {:ok, _} <-
+    with {:ok, %{status: code}} when code in 200..299 <-
            result =
              @httpoison.post(
                inbox,
