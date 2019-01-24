@@ -54,7 +54,12 @@ defmodule Pleroma.Web.Websub do
   ]
   def publish(topic, user, %{data: %{"type" => type}} = activity)
       when type in @supported_activities do
-    # TODO: Only send to still valid subscriptions.
+    response =
+      user
+      |> FeedRepresenter.to_simple_form([activity], [user])
+      |> :xmerl.export_simple(:xmerl_xml)
+      |> to_string
+
     query =
       from(
         sub in WebsubServerSubscription,
@@ -64,13 +69,12 @@ defmodule Pleroma.Web.Websub do
 
     subscriptions = Repo.all(query)
 
-    Enum.each(subscriptions, fn sub ->
-      response =
-        user
-        |> FeedRepresenter.to_simple_form([activity], [user])
-        |> :xmerl.export_simple(:xmerl_xml)
-        |> to_string
+    callbacks = Enum.map(subscriptions, & &1.callback)
+    reachable_callbacks = Instances.filter_reachable(callbacks)
 
+    subscriptions
+    |> Enum.filter(&(&1.callback in reachable_callbacks))
+    |> Enum.each(fn sub ->
       data = %{
         xml: response,
         topic: topic,

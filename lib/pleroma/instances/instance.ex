@@ -18,10 +18,33 @@ defmodule Pleroma.Instances.Instance do
     timestamps()
   end
 
-  def update_changeset(struct, params \\ %{}) do
+  defdelegate host(url), to: Instances
+
+  def changeset(struct, params \\ %{}) do
     struct
     |> cast(params, [:host, :unreachable_since, :reachability_checked_at])
+    |> validate_required([:host])
     |> unique_constraint(:host)
+  end
+
+  def filter_reachable([]), do: []
+
+  def filter_reachable(urls) when is_list(urls) do
+    hosts =
+      urls
+      |> Enum.map(&(&1 && host(&1)))
+      |> Enum.filter(&(to_string(&1) != ""))
+
+    unreachable_hosts =
+      Repo.all(
+        from(i in Instance,
+          where:
+            i.host in ^hosts and i.unreachable_since <= ^Instances.reachability_time_threshold(),
+          select: i.host
+        )
+      )
+
+    Enum.filter(urls, &(&1 && host(&1) not in unreachable_hosts))
   end
 
   def reachable?(url) when is_binary(url) do
@@ -37,13 +60,13 @@ defmodule Pleroma.Instances.Instance do
   def reachable?(_), do: true
 
   def set_reachable(url) when is_binary(url) do
-    Repo.update_all(
-      from(i in Instance, where: i.host == ^host(url)),
-      set: [
-        unreachable_since: nil,
-        reachability_checked_at: DateTime.utc_now()
-      ]
-    )
+    with host <- host(url),
+         %Instance{} = existing_record <- Repo.get_by(Instance, %{host: host}) do
+      {:ok, _instance} =
+        existing_record
+        |> changeset(%{unreachable_since: nil, reachability_checked_at: DateTime.utc_now()})
+        |> Repo.update()
+    end
   end
 
   def set_reachable(_), do: {0, :noop}
@@ -67,19 +90,17 @@ defmodule Pleroma.Instances.Instance do
            do: Map.delete(changes, :unreachable_since),
            else: changes
 
-      {:ok, _instance} = Repo.update(update_changeset(existing_record, update_changes))
+      {:ok, _instance} =
+        existing_record
+        |> changeset(update_changes)
+        |> Repo.update()
     else
-      {:ok, _instance} = Repo.insert(update_changeset(%Instance{}, Map.put(changes, :host, host)))
+      {:ok, _instance} =
+        %Instance{}
+        |> changeset(Map.put(changes, :host, host))
+        |> Repo.insert()
     end
   end
 
   def set_unreachable(_, _), do: {0, :noop}
-
-  defp host(url_or_host) do
-    if url_or_host =~ ~r/^http/i do
-      URI.parse(url_or_host).host
-    else
-      url_or_host
-    end
-  end
 end

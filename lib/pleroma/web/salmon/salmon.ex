@@ -221,7 +221,13 @@ defmodule Pleroma.Web.Salmon do
       {:ok, private, _} = keys_from_pem(keys)
       {:ok, feed} = encode(private, feed)
 
-      remote_users(activity)
+      remote_users = remote_users(activity)
+
+      salmon_urls = Enum.map(remote_users, & &1.info.salmon)
+      reachable_salmon_urls = Instances.filter_reachable(salmon_urls)
+
+      remote_users
+      |> Enum.filter(&(&1.info.salmon in reachable_salmon_urls))
       |> Enum.each(fn remote_user ->
         Task.start(fn ->
           Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)

@@ -689,7 +689,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def publish(actor, activity) do
-    followers =
+    remote_followers =
       if actor.follower_address in activity.recipients do
         {:ok, followers} = User.get_followers(actor)
         followers |> Enum.filter(&(!&1.local))
@@ -700,13 +700,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = is_public?(activity)
 
     remote_inboxes =
-      (Pleroma.Web.Salmon.remote_users(activity) ++ followers)
+      (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
       |> Enum.filter(fn user -> User.ap_enabled?(user) end)
       |> Enum.map(fn %{info: %{source_data: data}} ->
         (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
       end)
       |> Enum.uniq()
       |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
+      |> Instances.filter_reachable()
 
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Jason.encode!(data)
