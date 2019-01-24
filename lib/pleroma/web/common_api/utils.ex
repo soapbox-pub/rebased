@@ -259,4 +259,46 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       }
     end)
   end
+
+  def maybe_notify_to_recipients(
+        recipients,
+        %Activity{data: %{"to" => to, "type" => _type}} = _activity
+      ) do
+    recipients ++ to
+  end
+
+  def maybe_notify_mentioned_recipients(
+        recipients,
+        %Activity{data: %{"to" => _to, "type" => type} = data} = _activity
+      )
+      when type == "Create" do
+    object = Object.normalize(data["object"])
+
+    object_data =
+      cond do
+        !is_nil(object) ->
+          object.data
+
+        is_map(data["object"]) ->
+          data["object"]
+
+        true ->
+          %{}
+      end
+
+    tagged_mentions = maybe_extract_mentions(object_data)
+
+    recipients ++ tagged_mentions
+  end
+
+  def maybe_notify_mentioned_recipients(recipients, _), do: recipients
+
+  def maybe_extract_mentions(%{"tag" => tag}) do
+    tag
+    |> Enum.filter(fn x -> is_map(x) end)
+    |> Enum.filter(fn x -> x["type"] == "Mention" end)
+    |> Enum.map(fn x -> x["href"] end)
+  end
+
+  def maybe_extract_mentions(_), do: []
 end

@@ -155,10 +155,12 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
     pinned = activity.id in user.info.pinned_activities
 
-    mentions = get_mentioned_users(opts[:mentioned] || [], user)
+    mentions = opts[:mentioned] || []
 
     attentions =
-      activity.recipients
+      []
+      |> Utils.maybe_notify_to_recipients(activity)
+      |> Utils.maybe_notify_mentioned_recipients(activity)
       |> Enum.map(fn ap_id -> Enum.find(mentions, fn user -> ap_id == user.ap_id end) end)
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> UserView.render("show.json", %{user: user, for: opts[:for]}) end)
@@ -222,10 +224,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     else
       _e -> nil
     end
-  end
-
-  defp get_mentioned_users(mentioned, user) do
-    mentioned ++ [user]
   end
 
   defp to_boolean(false) do
