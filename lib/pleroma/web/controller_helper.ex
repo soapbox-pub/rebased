@@ -10,4 +10,9 @@ defmodule Pleroma.Web.ControllerHelper do
     |> put_status(status)
     |> json(json)
   end
+
+  def set_requester_reachable(conn) do
+    with [referer] <- get_req_header(conn, "referer"),
+         do: Pleroma.Instances.set_reachable(referer)
+  end
 end

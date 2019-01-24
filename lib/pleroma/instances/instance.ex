@@ -24,7 +24,7 @@ defmodule Pleroma.Instances.Instance do
     |> unique_constraint(:host)
   end
 
-  def reachable?(url) do
+  def reachable?(url) when is_binary(url) do
     !Repo.one(
       from(i in Instance,
         where:
@@ -34,7 +34,9 @@ defmodule Pleroma.Instances.Instance do
     )
   end
 
-  def set_reachable(url) do
+  def reachable?(_), do: true
+
+  def set_reachable(url) when is_binary(url) do
     Repo.update_all(
       from(i in Instance, where: i.host == ^host(url)),
       set: [
@@ -44,7 +46,11 @@ defmodule Pleroma.Instances.Instance do
     )
   end
 
-  def set_unreachable(url, unreachable_since \\ nil) do
+  def set_reachable(_), do: {0, :noop}
+
+  def set_unreachable(url, unreachable_since \\ nil)
+
+  def set_unreachable(url, unreachable_since) when is_binary(url) do
     unreachable_since = unreachable_since || DateTime.utc_now()
     host = host(url)
     existing_record = Repo.get_by(Instance, %{host: host})
@@ -66,6 +72,8 @@ defmodule Pleroma.Instances.Instance do
       {:ok, _instance} = Repo.insert(update_changeset(%Instance{}, Map.put(changes, :host, host)))
     end
   end
+
+  def set_unreachable(_, _), do: {0, :noop}
 
   defp host(url_or_host) do
     if url_or_host =~ ~r/^http/i do

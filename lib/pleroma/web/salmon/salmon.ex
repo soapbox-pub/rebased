@@ -173,7 +173,10 @@ defmodule Pleroma.Web.Salmon do
            poster.(
              url,
              feed,
-             [{"Content-Type", "application/magic-envelope+xml"}]
+             [
+               {"Content-Type", "application/magic-envelope+xml"},
+               {"referer", Pleroma.Web.Endpoint.url()}
+             ]
            ) do
       Instances.set_reachable(url)
       Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)

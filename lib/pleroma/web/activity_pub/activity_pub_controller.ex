@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
+
   alias Pleroma.{Activity, User, Object}
   alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -18,6 +19,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   plug(Pleroma.Web.FederatingPlug when action in [:inbox, :relay])
   plug(:relay_active? when action in [:relay])
+  plug(:set_requester_reachable when action in [:inbox])
 
   def relay_active?(conn, _) do
     if Keyword.get(Application.get_env(:pleroma, :instance), :allow_relay) do
@@ -288,5 +290,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
     |> put_status(500)
     |> json("error")
+  end
+
+  defp set_requester_reachable(conn, _) do
+    Pleroma.Web.ControllerHelper.set_requester_reachable(conn)
+    conn
   end
 end

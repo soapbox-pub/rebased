@@ -4,9 +4,11 @@
 
 defmodule Pleroma.Web.Websub.WebsubController do
   use Pleroma.Web, :controller
+
   alias Pleroma.{Repo, User}
   alias Pleroma.Web.{Websub, Federator}
   alias Pleroma.Web.Websub.WebsubClientSubscription
+
   require Logger
 
   plug(
@@ -17,6 +19,8 @@ defmodule Pleroma.Web.Websub.WebsubController do
            :websub_incoming
          ]
   )
+
+  plug(:set_requester_reachable when action in [:websub_incoming])
 
   def websub_subscription_request(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
@@ -91,5 +95,10 @@ defmodule Pleroma.Web.Websub.WebsubController do
         conn
         |> send_resp(500, "Error")
     end
+  end
+
+  defp set_requester_reachable(conn, _) do
+    Pleroma.Web.ControllerHelper.set_requester_reachable(conn)
+    conn
   end
 end

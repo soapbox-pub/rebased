@@ -750,7 +750,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
                [
                  {"Content-Type", "application/activity+json"},
                  {"signature", signature},
-                 {"digest", digest}
+                 {"digest", digest},
+                 {"referer", Pleroma.Web.Endpoint.url()}
                ]
              ) do
       Instances.set_reachable(inbox)
