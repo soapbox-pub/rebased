@@ -25,7 +25,7 @@ defmodule Pleroma.Clippy do
       "Pleroma can federate to the Dark Web!\n
 - Tor: https://git.pleroma.social/pleroma/pleroma/wikis/Easy%20Onion%20Federation%20(Tor)
 - i2p: https://git.pleroma.social/pleroma/pleroma/wikis/I2p%20federation",
-      "Lists of Pleroma instances are available at:\n\n- http://distsn.org/pleroma-instances.html\n- https://fediverse.network/pleroma\n- https://the-federation.info/pleroma",
+      "Lists of Pleroma instances:\n\n- http://distsn.org/pleroma-instances.html\n- https://fediverse.network/pleroma\n- https://the-federation.info/pleroma",
       "Pleroma uses the LitePub protocol - https://litepub.social",
       "To receive more federated posts, subscribe to relays!\n
 - How-to: https://git.pleroma.social/pleroma/pleroma/wikis/Admin%20tasks#relay-managment
@@ -89,6 +89,17 @@ defmodule Pleroma.Clippy do
       pre_lines: pre_lines,
       noclippy_line: noclippy_line
     }
+
+    # surrond one/five line clippy with blank lines around to not fuck up the layout
+    #
+    # yes this fix sucks but it's good enough, have you ever seen a release of windows wihtout some butched
+    # features anyway?
+    lines =
+      if length(lines) == 1 or length(lines) == 5 do
+        [""] ++ lines ++ [""]
+      else
+        lines
+      end
 
     clippy_line(lines, clippy_lines, env)
   rescue

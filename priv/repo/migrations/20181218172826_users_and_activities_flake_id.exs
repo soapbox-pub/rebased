@@ -70,16 +70,18 @@ defmodule Pleroma.Repo.Migrations.UsersAndActivitiesFlakeId do
       """
     end
 
+    flush()
+
     stop_clippy_heartbeats(clippy)
   end
 
   defp start_clippy_heartbeats() do
     count = from(a in "activities", select: count(a.id)) |> Repo.one!
 
-    pid = if count > 5000 do
+    if count > 5000 do
       heartbeat_interval = :timer.minutes(2) + :timer.seconds(30)
       all_tips = Clippy.tips() ++ [
-        "The migration is still running, maybe it's time for another tea?",
+        "The migration is still running, maybe it's time for another “tea”?",
         "Happy rabbits practice a cute behavior known as a\n“binky:” they jump up in the air\nand twist\nand spin around!",
         "Nothing and everything.\n\nI still work.",
         "Pleroma runs on a Raspberry Pi!\n\n  … but this migration will take forever if you\nactually run on a raspberry pi",
@@ -104,7 +106,7 @@ defmodule Pleroma.Repo.Migrations.UsersAndActivitiesFlakeId do
         [:red, :bright, "It looks like you are running an older instance!"],
         [""],
         [:bright, "This migration may take a long time", :reset, " -- so you probably should"],
-        ["go drink a coffee, or a tea, or a beer, a whiskey, a vodka,"],
+        ["go drink a cofe, or a tea, or a beer, a whiskey, a vodka,"],
         ["while it runs to deal with your temporary fediverse pause!"]
       ]
       :timer.sleep(heartbeat_interval)
