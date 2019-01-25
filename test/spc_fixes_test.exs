@@ -9,6 +9,8 @@ defmodule Pleroma.SpcFixesTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.Repo
 
   import Pleroma.Factory
 
@@ -33,6 +35,7 @@ defmodule Pleroma.SpcFixesTest do
     other_user = insert(:user)
     {:ok, other_user} = User.follow(other_user, user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "blabla"})
+    {:ok, _other_activity} = CommonAPI.post(other_user, %{"status" => "blabla"})
 
     assert User.following?(other_user, user)
     assert [activity] == ActivityPub.fetch_activities(other_user.following)
@@ -45,8 +48,19 @@ defmodule Pleroma.SpcFixesTest do
     assert user.ap_id == "https://shitposter.club/users/zep"
     assert user.follower_address == "https://shitposter.club/users/zep/followers"
 
+    aid = activity.id
     # Activites and following are correctly stitched.
     assert User.following?(other_user, user)
-    assert [activity] == ActivityPub.fetch_activities(other_user.following) |> IO.inspect()
+    assert [%{id: ^aid}] = ActivityPub.fetch_activities(other_user.following)
+
+    third_user = insert(:user)
+    {:ok, third_user} = User.follow(third_user, user)
+    assert [%{id: ^aid}] = ActivityPub.fetch_activities(third_user.following)
+
+    activity = Repo.get(Activity, aid)
+
+    assert activity.data["actor"] == user.ap_id
+    assert user.follower_address in activity.recipients
+    assert user.follower_address in activity.data["to"]
   end
 end

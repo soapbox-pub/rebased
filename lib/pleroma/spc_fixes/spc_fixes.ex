@@ -4,6 +4,7 @@
 
 alias Pleroma.Repo
 alias Pleroma.User
+alias Pleroma.Activity
 import Ecto.Query
 
 defmodule Pleroma.SpcFixes do
@@ -15,6 +16,7 @@ defmodule Pleroma.SpcFixes do
 
     {:ok, file} = File.read("lib/pleroma/spc_fixes/users_conversion.txt")
 
+    # Mapping of old ap_id to new ap_id and vice reversa
     mapping =
       file
       |> String.trim()
@@ -24,7 +26,9 @@ defmodule Pleroma.SpcFixes do
         |> String.split("\t")
       end)
       |> Enum.reduce(%{}, fn [_id, old_ap_id, new_ap_id], acc ->
-        Map.put(acc, old_ap_id, String.trim(new_ap_id))
+        acc
+        |> Map.put(String.trim(old_ap_id), String.trim(new_ap_id))
+        |> Map.put(String.trim(new_ap_id), String.trim(old_ap_id))
       end)
 
     # First, refetch all the old users.
@@ -49,11 +53,36 @@ defmodule Pleroma.SpcFixes do
     |> Enum.each(fn user ->
       old_follower_address = User.ap_followers(user)
 
+      # Fix users
       query =
         from(u in User,
           where: ^old_follower_address in u.following,
           update: [
             push: [following: ^user.follower_address]
+          ]
+        )
+
+      Repo.update_all(query, [])
+
+      # Fix activities
+      query =
+        from(a in Activity,
+          where: fragment("?->>'actor' = ?", a.data, ^mapping[user.ap_id]),
+          update: [
+            set: [
+              data:
+                fragment(
+                  "jsonb_set(jsonb_set(?, '{actor}', ?), '{to}', (?->'to')::jsonb || ?)",
+                  a.data,
+                  ^user.ap_id,
+                  a.data,
+                  ^[user.follower_address]
+                ),
+              actor: ^user.ap_id
+            ],
+            push: [
+              recipients: ^user.follower_address
+            ]
           ]
         )
 
