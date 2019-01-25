@@ -48,7 +48,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
         }
       })
 
-    result = OpenGraph.build_tags(%{object: note, user: user})
+    result = OpenGraph.build_tags(%{object: note, url: note.data["id"], user: user})
 
     assert Enum.all?(
              [
@@ -85,7 +85,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraphTest do
         }
       })
 
-    result = OpenGraph.build_tags(%{object: note, user: user})
+    result = OpenGraph.build_tags(%{object: note, url: note.data["id"], user: user})
 
     assert {:meta, [property: "og:image", content: "https://pleroma.gov/tenshi.png"], []} in result
 
