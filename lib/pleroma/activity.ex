@@ -8,6 +8,7 @@ defmodule Pleroma.Activity do
   import Ecto.Query
 
   @type t :: %__MODULE__{}
+  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
 
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
   @mastodon_notification_types %{

@@ -99,6 +99,7 @@ defmodule Pleroma.Application do
           ],
           id: :cachex_idem
         ),
+        worker(Pleroma.FlakeId, []),
         worker(Pleroma.Web.Federator.RetryQueue, []),
         worker(Pleroma.Web.Federator, []),
         worker(Pleroma.Stats, []),

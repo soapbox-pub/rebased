@@ -31,7 +31,7 @@ defmodule Pleroma.User.Info do
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
     field(:hide_network, :boolean, default: false)
-    field(:pinned_activities, {:array, :integer}, default: [])
+    field(:pinned_activities, {:array, :string}, default: [])
 
     # Found in the wild
     # ap_id -> Where is this used?
