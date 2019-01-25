@@ -39,7 +39,8 @@ defmodule Pleroma.Instances.Instance do
       Repo.all(
         from(i in Instance,
           where:
-            i.host in ^hosts and i.unreachable_since <= ^Instances.reachability_time_threshold(),
+            i.host in ^hosts and
+              i.unreachable_since <= ^Instances.reachability_datetime_threshold(),
           select: i.host
         )
       )
@@ -51,7 +52,8 @@ defmodule Pleroma.Instances.Instance do
     !Repo.one(
       from(i in Instance,
         where:
-          i.host == ^host(url) and i.unreachable_since <= ^Instances.reachability_time_threshold(),
+          i.host == ^host(url) and
+            i.unreachable_since <= ^Instances.reachability_datetime_threshold(),
         select: true
       )
     )
