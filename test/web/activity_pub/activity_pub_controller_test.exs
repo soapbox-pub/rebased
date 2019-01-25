@@ -6,8 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
-  alias Pleroma.{Object, Repo, User}
-  alias Pleroma.Activity
+  alias Pleroma.{Object, Repo, Activity, User, Instances}
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -144,6 +143,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       :timer.sleep(500)
       assert Activity.get_by_ap_id(data["id"])
     end
+
+    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
+      sender_url = "https://pleroma.soykaf.com"
+      Instances.set_unreachable(sender_url, Instances.reachability_datetime_threshold())
+      refute Instances.reachable?(sender_url)
+
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> put_req_header("referer", sender_url)
+        |> post("/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      assert Instances.reachable?(sender_url)
+    end
   end
 
   describe "/users/:nickname/inbox" do
@@ -190,6 +207,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user.nickname}/inbox")
 
       assert response(conn, 200) =~ note_activity.data["object"]["content"]
+    end
+
+    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
+      sender_host = "pleroma.soykaf.com"
+      Instances.set_unreachable(sender_host, Instances.reachability_datetime_threshold())
+      refute Instances.reachable?(sender_host)
+
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("bcc", [user.ap_id])
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> put_req_header("referer", "https://#{sender_host}")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      assert Instances.reachable?(sender_host)
     end
   end
 

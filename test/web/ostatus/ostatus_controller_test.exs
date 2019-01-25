@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
-  alias Pleroma.{User, Repo, Object}
+  alias Pleroma.{User, Repo, Object, Instances}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus.ActivityRepresenter
 
@@ -14,49 +14,69 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     :ok
   end
 
-  test "decodes a salmon", %{conn: conn} do
-    user = insert(:user)
-    salmon = File.read!("test/fixtures/salmon.xml")
+  describe "salmon_incoming" do
+    test "decodes a salmon", %{conn: conn} do
+      user = insert(:user)
+      salmon = File.read!("test/fixtures/salmon.xml")
 
-    conn =
-      conn
-      |> put_req_header("content-type", "application/atom+xml")
-      |> post("/users/#{user.nickname}/salmon", salmon)
+      conn =
+        conn
+        |> put_req_header("content-type", "application/atom+xml")
+        |> post("/users/#{user.nickname}/salmon", salmon)
 
-    assert response(conn, 200)
-  end
+      assert response(conn, 200)
+    end
 
-  test "decodes a salmon with a changed magic key", %{conn: conn} do
-    user = insert(:user)
-    salmon = File.read!("test/fixtures/salmon.xml")
+    test "decodes a salmon with a changed magic key", %{conn: conn} do
+      user = insert(:user)
+      salmon = File.read!("test/fixtures/salmon.xml")
 
-    conn =
-      conn
-      |> put_req_header("content-type", "application/atom+xml")
-      |> post("/users/#{user.nickname}/salmon", salmon)
+      conn =
+        conn
+        |> put_req_header("content-type", "application/atom+xml")
+        |> post("/users/#{user.nickname}/salmon", salmon)
 
-    assert response(conn, 200)
+      assert response(conn, 200)
 
-    # Set a wrong magic-key for a user so it has to refetch
-    salmon_user = User.get_by_ap_id("http://gs.example.org:4040/index.php/user/1")
-    # Wrong key
-    info_cng =
-      User.Info.remote_user_creation(salmon_user.info, %{
-        magic_key:
-          "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwrong1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
-      })
+      # Set a wrong magic-key for a user so it has to refetch
+      salmon_user = User.get_by_ap_id("http://gs.example.org:4040/index.php/user/1")
+      # Wrong key
+      info_cng =
+        User.Info.remote_user_creation(salmon_user.info, %{
+          magic_key:
+            "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwrong1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
+        })
 
-    salmon_user
-    |> Ecto.Changeset.change()
-    |> Ecto.Changeset.put_embed(:info, info_cng)
-    |> Repo.update()
+      salmon_user
+      |> Ecto.Changeset.change()
+      |> Ecto.Changeset.put_embed(:info, info_cng)
+      |> Repo.update()
 
-    conn =
-      build_conn()
-      |> put_req_header("content-type", "application/atom+xml")
-      |> post("/users/#{user.nickname}/salmon", salmon)
+      conn =
+        build_conn()
+        |> put_req_header("content-type", "application/atom+xml")
+        |> post("/users/#{user.nickname}/salmon", salmon)
 
-    assert response(conn, 200)
+      assert response(conn, 200)
+    end
+
+    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
+      sender_url = "https://pleroma.soykaf.com"
+      Instances.set_unreachable(sender_url, Instances.reachability_datetime_threshold())
+      refute Instances.reachable?(sender_url)
+
+      user = insert(:user)
+      salmon = File.read!("test/fixtures/salmon.xml")
+
+      conn =
+        conn
+        |> put_req_header("content-type", "application/atom+xml")
+        |> put_req_header("referer", sender_url)
+        |> post("/users/#{user.nickname}/salmon", salmon)
+
+      assert response(conn, 200)
+      assert Instances.reachable?(sender_url)
+    end
   end
 
   test "gets a feed", %{conn: conn} do
