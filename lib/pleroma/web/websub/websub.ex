@@ -64,7 +64,7 @@ defmodule Pleroma.Web.Websub do
       from(
         sub in WebsubServerSubscription,
         where: sub.topic == ^topic and sub.state == "active",
-        where: fragment("? > NOW()", sub.valid_until)
+        where: fragment("? > (NOW() at time zone 'UTC')", sub.valid_until)
       )
 
     subscriptions = Repo.all(query)
