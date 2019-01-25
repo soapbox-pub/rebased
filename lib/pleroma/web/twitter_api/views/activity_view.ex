@@ -236,7 +236,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     pinned = activity.id in user.info.pinned_activities
 
     attentions =
-      activity.recipients
+      []
+      |> Utils.maybe_notify_to_recipients(activity)
+      |> Utils.maybe_notify_mentioned_recipients(activity)
       |> Enum.map(fn ap_id -> get_user(ap_id, opts) end)
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> UserView.render("show.json", %{user: user, for: opts[:for]}) end)

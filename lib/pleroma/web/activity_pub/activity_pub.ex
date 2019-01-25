@@ -36,6 +36,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {recipients, to, cc}
   end
 
+  defp get_recipients(%{"type" => "Create"} = data) do
+    to = data["to"] || []
+    cc = data["cc"] || []
+    actor = data["actor"] || []
+    recipients = (to ++ cc ++ [actor]) |> Enum.uniq()
+    {recipients, to, cc}
+  end
+
   defp get_recipients(data) do
     to = data["to"] || []
     cc = data["cc"] || []
