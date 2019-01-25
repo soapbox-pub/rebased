@@ -164,10 +164,10 @@ defmodule Pleroma.Web.Salmon do
 
   # push an activity to remote accounts
   #
-  defp send_to_user(%{info: %{salmon: salmon}}, feed, poster),
+  def send_to_user(%{info: %{salmon: salmon}}, feed, poster),
     do: send_to_user(salmon, feed, poster)
 
-  defp send_to_user(url, feed, poster) when is_binary(url) do
+  def send_to_user(url, feed, poster) when is_binary(url) do
     with {:reachable, true} <- {:reachable, Instances.reachable?(url)},
          {:ok, %{status: code}} when code in 200..299 <-
            poster.(
@@ -180,6 +180,7 @@ defmodule Pleroma.Web.Salmon do
            ) do
       Instances.set_reachable(url)
       Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)
+      :ok
     else
       {:reachable, false} ->
         Logger.debug(fn -> "Pushing Salmon to #{url} skipped as marked unreachable)" end)
@@ -188,10 +189,11 @@ defmodule Pleroma.Web.Salmon do
       e ->
         Instances.set_unreachable(url)
         Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
+        :error
     end
   end
 
-  defp send_to_user(_, _, _), do: nil
+  def send_to_user(_, _, _), do: :noop
 
   @supported_activities [
     "Create",
@@ -229,10 +231,8 @@ defmodule Pleroma.Web.Salmon do
       remote_users
       |> Enum.filter(&(&1.info.salmon in reachable_salmon_urls))
       |> Enum.each(fn remote_user ->
-        Task.start(fn ->
-          Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
-          send_to_user(remote_user, feed, poster)
-        end)
+        Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
+        Pleroma.Web.Federator.enqueue(:publish_single_salmon, {remote_user, feed, poster})
       end)
     end
   end

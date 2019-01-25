@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Federator do
   use GenServer
   alias Pleroma.User
   alias Pleroma.Activity
-  alias Pleroma.Web.{WebFinger, Websub}
+  alias Pleroma.Web.{WebFinger, Websub, Salmon}
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
@@ -122,6 +122,10 @@ defmodule Pleroma.Web.Federator do
         Logger.info(Poison.encode!(params, pretty: 2))
         :error
     end
+  end
+
+  def handle(:publish_single_salmon, {user_or_url, feed, poster}) do
+    Salmon.send_to_user(user_or_url, feed, poster)
   end
 
   def handle(:publish_single_ap, params) do
