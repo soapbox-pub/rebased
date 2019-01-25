@@ -148,7 +148,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
     assert activity = Repo.get(Activity, id)
-    assert activity.recipients == [user2.ap_id]
+    assert activity.recipients == [user2.ap_id, user1.ap_id]
     assert activity.data["to"] == [user2.ap_id]
     assert activity.data["cc"] == []
   end
@@ -181,6 +181,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"visibility" => "direct"} = status
     assert status["url"] != direct.data["id"]
+
+    # User should be able to see his own direct message
+    res_conn =
+      build_conn()
+      |> assign(:user, user_one)
+      |> get("api/v1/timelines/direct")
+
+    [status] = json_response(res_conn, 200)
+
+    assert %{"visibility" => "direct"} = status
 
     # Both should be visible here
     res_conn =

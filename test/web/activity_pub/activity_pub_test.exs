@@ -160,7 +160,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert activity.data["to"] == ["user1", "user2"]
       assert activity.actor == user.ap_id
-      assert activity.recipients == ["user1", "user2"]
+      assert activity.recipients == ["user1", "user2", user.ap_id]
     end
   end
 
