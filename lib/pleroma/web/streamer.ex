@@ -205,6 +205,15 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
+  def push_to_socket(topics, topic, %Activity{id: id, data: %{"type" => "Delete"}}) do
+    Enum.each(topics[topic] || [], fn socket ->
+      send(
+        socket.transport_pid,
+        {:text, %{event: "delete", payload: to_string(id)} |> Jason.encode!()}
+      )
+    end)
+  end
+
   def push_to_socket(topics, topic, item) do
     Enum.each(topics[topic] || [], fn socket ->
       # Get the current user so we have up-to-date blocks etc.

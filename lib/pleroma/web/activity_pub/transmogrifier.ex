@@ -93,12 +93,47 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_addressing(map) do
-    map
+  def fix_explicit_addressing(%{"to" => to, "cc" => cc} = object, explicit_mentions) do
+    explicit_to =
+      to
+      |> Enum.filter(fn x -> x in explicit_mentions end)
+
+    explicit_cc =
+      to
+      |> Enum.filter(fn x -> x not in explicit_mentions end)
+
+    final_cc =
+      (cc ++ explicit_cc)
+      |> Enum.uniq()
+
+    object
+    |> Map.put("to", explicit_to)
+    |> Map.put("cc", final_cc)
+  end
+
+  def fix_explicit_addressing(object, _explicit_mentions), do: object
+
+  # if directMessage flag is set to true, leave the addressing alone
+  def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
+
+  def fix_explicit_addressing(object) do
+    explicit_mentions =
+      object
+      |> Utils.determine_explicit_mentions()
+
+    explicit_mentions = explicit_mentions ++ ["https://www.w3.org/ns/activitystreams#Public"]
+
+    object
+    |> fix_explicit_addressing(explicit_mentions)
+  end
+
+  def fix_addressing(object) do
+    object
     |> fix_addressing_list("to")
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
+    |> fix_explicit_addressing
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
@@ -141,7 +176,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     case fetch_obj_helper(in_reply_to_id) do
       {:ok, replied_object} ->
         with %Activity{} = activity <-
-               Activity.get_create_activity_by_object_ap_id(replied_object.data["id"]) do
+               Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
           object
           |> Map.put("inReplyTo", replied_object.data["id"])
           |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
@@ -334,7 +369,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       Map.put(data, "actor", actor)
       |> fix_addressing
 
-    with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
+    with nil <- Activity.get_create_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
       object = fix_object(data["object"])
 
@@ -348,6 +383,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         additional:
           Map.take(data, [
             "cc",
+            "directMessage",
             "id"
           ])
       }
@@ -451,7 +487,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
-         {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false) do
+         public <- ActivityPub.is_public?(data),
+         {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false, public) do
       {:ok, activity}
     else
       _e -> :error
@@ -863,15 +900,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     maybe_retire_websub(user.ap_id)
 
-    # Only do this for recent activties, don't go through the whole db.
-    # Only look at the last 1000 activities.
-    since = (Repo.aggregate(Activity, :max, :id) || 0) - 1_000
-
     q =
       from(
         a in Activity,
         where: ^old_follower_address in a.recipients,
-        where: a.id > ^since,
         update: [
           set: [
             recipients:

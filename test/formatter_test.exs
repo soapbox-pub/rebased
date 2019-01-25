@@ -124,7 +124,7 @@ defmodule Pleroma.FormatterTest do
   end
 
   describe "add_user_links" do
-    test "gives a replacement for user links" do
+    test "gives a replacement for user links, using local nicknames in user links text" do
       text = "@gsimg According to @archa_eme_, that is @daggsy. Also hello @archaeme@archae.me"
       gsimg = insert(:user, %{nickname: "gsimg"})
 

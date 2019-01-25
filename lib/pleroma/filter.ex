@@ -8,7 +8,7 @@ defmodule Pleroma.Filter do
   alias Pleroma.{User, Repo}
 
   schema "filters" do
-    belongs_to(:user, User)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:filter_id, :integer)
     field(:hide, :boolean, default: false)
     field(:whole_word, :boolean, default: true)

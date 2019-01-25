@@ -14,13 +14,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
+    activity = Repo.get(Activity, id) || Activity.get_create_by_object_ap_id(id)
 
     activity &&
       if activity.data["type"] == "Create" do
         activity
       else
-        Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+        Activity.get_create_by_object_ap_id(activity.data["object"])
       end
   end
 
@@ -116,16 +116,18 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.join([text | attachment_text], "<br>")
   end
 
+  def format_input(text, mentions, tags, format, options \\ [])
+
   @doc """
   Formatting text to plain text.
   """
-  def format_input(text, mentions, tags, "text/plain") do
+  def format_input(text, mentions, tags, "text/plain", options) do
     text
     |> Formatter.html_escape("text/plain")
     |> String.replace(~r/\r?\n/, "<br>")
     |> (&{[], &1}).()
     |> Formatter.add_links()
-    |> Formatter.add_user_links(mentions)
+    |> Formatter.add_user_links(mentions, options[:user_links] || [])
     |> Formatter.add_hashtag_links(tags)
     |> Formatter.finalize()
   end
@@ -133,24 +135,24 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   @doc """
   Formatting text to html.
   """
-  def format_input(text, mentions, _tags, "text/html") do
+  def format_input(text, mentions, _tags, "text/html", options) do
     text
     |> Formatter.html_escape("text/html")
     |> (&{[], &1}).()
-    |> Formatter.add_user_links(mentions)
+    |> Formatter.add_user_links(mentions, options[:user_links] || [])
     |> Formatter.finalize()
   end
 
   @doc """
   Formatting text to markdown.
   """
-  def format_input(text, mentions, tags, "text/markdown") do
+  def format_input(text, mentions, tags, "text/markdown", options) do
     text
     |> Formatter.mentions_escape(mentions)
     |> Earmark.as_html!()
     |> Formatter.html_escape("text/html")
     |> (&{[], &1}).()
-    |> Formatter.add_user_links(mentions)
+    |> Formatter.add_user_links(mentions, options[:user_links] || [])
     |> Formatter.add_hashtag_links(tags)
     |> Formatter.finalize()
   end

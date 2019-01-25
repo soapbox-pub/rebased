@@ -25,6 +25,20 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Map.put(params, "actor", get_ap_id(params["actor"]))
   end
 
+  def determine_explicit_mentions(%{"tag" => tag} = _object) when is_list(tag) do
+    tag
+    |> Enum.filter(fn x -> is_map(x) end)
+    |> Enum.filter(fn x -> x["type"] == "Mention" end)
+    |> Enum.map(fn x -> x["href"] end)
+  end
+
+  def determine_explicit_mentions(%{"tag" => tag} = object) when is_map(tag) do
+    Map.put(object, "tag", [tag])
+    |> determine_explicit_mentions()
+  end
+
+  def determine_explicit_mentions(_), do: []
+
   defp recipient_in_collection(ap_id, coll) when is_binary(coll), do: ap_id == coll
   defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
   defp recipient_in_collection(_, _), do: false
@@ -198,7 +212,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     # Update activities that already had this. Could be done in a seperate process.
     # Alternatively, just don't do this and fetch the current object each time. Most
     # could probably be taken from cache.
-    relevant_activities = Activity.all_by_object_ap_id(id)
+    relevant_activities = Activity.get_all_create_by_object_ap_id(id)
 
     Enum.map(relevant_activities, fn activity ->
       new_activity_data = activity.data |> Map.put("object", object.data)
@@ -386,9 +400,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   # for relayed messages, we only want to send to subscribers
   def make_announce_data(
-        %User{ap_id: ap_id, nickname: nil} = user,
+        %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
-        activity_id
+        activity_id,
+        false
       ) do
     data = %{
       "type" => "Announce",
@@ -405,7 +420,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def make_announce_data(
         %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
-        activity_id
+        activity_id,
+        true
       ) do
     data = %{
       "type" => "Announce",

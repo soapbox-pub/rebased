@@ -14,7 +14,7 @@ defmodule Pleroma.Web.OAuth.Token do
     field(:token, :string)
     field(:refresh_token, :string)
     field(:valid_until, :naive_datetime)
-    belongs_to(:user, Pleroma.User)
+    belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
     belongs_to(:app, App)
 
     timestamps()

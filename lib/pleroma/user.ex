@@ -17,6 +17,8 @@ defmodule Pleroma.User do
 
   @type t :: %__MODULE__{}
 
+  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
@@ -35,7 +37,7 @@ defmodule Pleroma.User do
     field(:avatar, :map)
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
-    field(:search_distance, :float, virtual: true)
+    field(:search_rank, :float, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
@@ -473,8 +475,7 @@ defmodule Pleroma.User do
   def get_by_nickname(nickname) do
     Repo.get_by(User, nickname: nickname) ||
       if Regex.match?(~r(@#{Pleroma.Web.Endpoint.host()})i, nickname) do
-        [local_nickname, _] = String.split(nickname, "@")
-        Repo.get_by(User, nickname: local_nickname)
+        Repo.get_by(User, nickname: local_nickname(nickname))
       end
   end
 
@@ -537,6 +538,12 @@ defmodule Pleroma.User do
     {:ok, Repo.all(q)}
   end
 
+  def get_followers_ids(user, page \\ nil) do
+    q = get_followers_query(user, page)
+
+    Repo.all(from(u in q, select: u.id))
+  end
+
   def get_friends_query(%User{id: id, following: following}, nil) do
     from(
       u in User,
@@ -559,6 +566,12 @@ defmodule Pleroma.User do
     q = get_friends_query(user, page)
 
     {:ok, Repo.all(q)}
+  end
+
+  def get_friends_ids(user, page \\ nil) do
+    q = get_friends_query(user, page)
+
+    Repo.all(from(u in q, select: u.id))
   end
 
   def get_follow_requests_query(%User{} = user) do
@@ -692,37 +705,120 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def search(query, resolve \\ false) do
-    # strip the beginning @ off if there is a query
+  def search(query, resolve \\ false, for_user \\ nil) do
+    # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
-    if resolve do
-      User.get_or_fetch_by_nickname(query)
-    end
+    if resolve, do: User.get_or_fetch_by_nickname(query)
 
-    inner =
-      from(
-        u in User,
-        select_merge: %{
-          search_distance:
-            fragment(
-              "? <-> (? || coalesce(?, ''))",
-              ^query,
-              u.nickname,
-              u.name
-            )
-        },
-        where: not is_nil(u.nickname)
-      )
+    fts_results = do_search(fts_search_subquery(query), for_user)
 
+    {:ok, trigram_results} =
+      Repo.transaction(fn ->
+        Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
+        do_search(trigram_search_subquery(query), for_user)
+      end)
+
+    Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
+  end
+
+  defp do_search(subquery, for_user, options \\ []) do
     q =
       from(
-        s in subquery(inner),
-        order_by: s.search_distance,
-        limit: 20
+        s in subquery(subquery),
+        order_by: [desc: s.search_rank],
+        limit: ^(options[:limit] || 20)
       )
 
-    Repo.all(q)
+    results =
+      q
+      |> Repo.all()
+      |> Enum.filter(&(&1.search_rank > 0))
+
+    boost_search_results(results, for_user)
+  end
+
+  defp fts_search_subquery(query) do
+    processed_query =
+      query
+      |> String.replace(~r/\W+/, " ")
+      |> String.trim()
+      |> String.split()
+      |> Enum.map(&(&1 <> ":*"))
+      |> Enum.join(" | ")
+
+    from(
+      u in User,
+      select_merge: %{
+        search_rank:
+          fragment(
+            """
+            ts_rank_cd(
+              setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
+              setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B'),
+              to_tsquery('simple', ?),
+              32
+            )
+            """,
+            u.nickname,
+            u.name,
+            ^processed_query
+          )
+      },
+      where:
+        fragment(
+          """
+            (setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
+            setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B')) @@ to_tsquery('simple', ?)
+          """,
+          u.nickname,
+          u.name,
+          ^processed_query
+        )
+    )
+  end
+
+  defp trigram_search_subquery(query) do
+    from(
+      u in User,
+      select_merge: %{
+        search_rank:
+          fragment(
+            "similarity(?, trim(? || ' ' || coalesce(?, '')))",
+            ^query,
+            u.nickname,
+            u.name
+          )
+      },
+      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^query)
+    )
+  end
+
+  defp boost_search_results(results, nil), do: results
+
+  defp boost_search_results(results, for_user) do
+    friends_ids = get_friends_ids(for_user)
+    followers_ids = get_followers_ids(for_user)
+
+    Enum.map(
+      results,
+      fn u ->
+        search_rank_coef =
+          cond do
+            u.id in friends_ids ->
+              1.2
+
+            u.id in followers_ids ->
+              1.1
+
+            true ->
+              1
+          end
+
+        Map.put(u, :search_rank, u.search_rank * search_rank_coef)
+      end
+    )
+    |> Enum.sort_by(&(-&1.search_rank))
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
@@ -833,7 +929,7 @@ defmodule Pleroma.User do
   def active_local_user_query do
     from(
       u in local_user_query(),
-      where: fragment("?->'deactivated' @> 'false'", u.info)
+      where: fragment("not (?->'deactivated' @> 'true')", u.info)
     )
   end
 
@@ -1023,7 +1119,7 @@ defmodule Pleroma.User do
       end)
 
     bio
-    |> CommonUtils.format_input(mentions, tags, "text/plain")
+    |> CommonUtils.format_input(mentions, tags, "text/plain", user_links: [format: :full])
     |> Formatter.emojify(emoji)
   end
 
@@ -1073,6 +1169,16 @@ defmodule Pleroma.User do
       @strict_local_nickname_regex
     end
   end
+
+  def local_nickname(nickname_or_mention) do
+    nickname_or_mention
+    |> full_nickname()
+    |> String.split("@")
+    |> hd()
+  end
+
+  def full_nickname(nickname_or_mention),
+    do: String.trim_leading(nickname_or_mention, "@")
 
   def error_user(ap_id) do
     %User{

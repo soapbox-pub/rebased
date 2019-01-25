@@ -107,6 +107,11 @@ defmodule Pleroma.Web.Router do
     get("/captcha", UtilController, :captcha)
   end
 
+  scope "/api/pleroma", Pleroma.Web do
+    pipe_through(:pleroma_api)
+    post("/uploader_callback/:upload_path", UploaderController, :callback)
+  end
+
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
     delete("/user", AdminAPIController, :user_delete)

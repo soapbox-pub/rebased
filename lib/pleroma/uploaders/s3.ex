@@ -9,12 +9,20 @@ defmodule Pleroma.Uploaders.S3 do
   # The file name is re-encoded with S3's constraints here to comply with previous links with less strict filenames
   def get_file(file) do
     config = Pleroma.Config.get([__MODULE__])
+    bucket = Keyword.fetch!(config, :bucket)
+
+    bucket_with_namespace =
+      if namespace = Keyword.get(config, :bucket_namespace) do
+        namespace <> ":" <> bucket
+      else
+        bucket
+      end
 
     {:ok,
      {:url,
       Path.join([
         Keyword.fetch!(config, :public_endpoint),
-        Keyword.fetch!(config, :bucket),
+        bucket_with_namespace,
         strict_encode(URI.decode(file))
       ])}}
   end

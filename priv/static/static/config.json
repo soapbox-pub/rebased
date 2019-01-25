@@ -18,5 +18,6 @@
   "hideUserStats": false,
   "loginMethod": "password",
   "webPushNotifications": false,
-  "noAttachmentLinks": false
+  "noAttachmentLinks": false,
+  "nsfwCensorImage": ""
 }

@@ -17,6 +17,13 @@ defmodule Pleroma.Web.CommonAPI.Test do
     assert activity.data["object"]["tag"] == ["2hu"]
   end
 
+  test "it adds emoji in the object" do
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => ":moominmamma:"})
+
+    assert activity.data["object"]["emoji"]["moominmamma"]
+  end
+
   test "it adds emoji when updating profiles" do
     user = insert(:user, %{name: ":karjalanpiirakka:"})
 
