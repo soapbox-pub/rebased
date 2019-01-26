@@ -11,6 +11,7 @@ defmodule Pleroma.FlakeIdTest do
     test "from_string/1" do
       fake_flake = <<0::integer-size(64), 42::integer-size(64)>>
       assert from_string("42") == fake_flake
+      assert from_string(42) == fake_flake
     end
 
     test "zero or -1 is a null flake" do
