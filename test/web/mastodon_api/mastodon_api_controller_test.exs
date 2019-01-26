@@ -1623,5 +1623,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> post("/api/v1/statuses/#{activity_two.id}/pin")
                |> json_response(400)
     end
+
+    test "Status rich-media Card", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "http://example.com/ogp"})
+
+      response =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}/card")
+        |> json_response(200)
+
+      assert response == %{
+               "image" => "http://ia.media-imdb.com/images/rock.jpg",
+               "provider_name" => "www.imdb.com",
+               "title" => "The Rock",
+               "type" => "link",
+               "url" => "http://www.imdb.com/title/tt0117500/"
+             }
+    end
   end
 end

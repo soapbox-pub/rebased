@@ -58,6 +58,20 @@ defmodule Pleroma.HTML do
       "#{signature}#{to_string(scrubber)}"
     end)
   end
+
+  def extract_first_external_url(object, content) do
+    key = "URL|#{object.id}"
+
+    Cachex.fetch!(:scrubber_cache, key, fn _key ->
+      result =
+        content
+        |> Floki.filter_out("a.mention")
+        |> Floki.attribute("a", "href")
+        |> Enum.at(0)
+
+      {:commit, result}
+    end)
+  end
 end
 
 defmodule Pleroma.HTML.Scrubber.TwitterText do
