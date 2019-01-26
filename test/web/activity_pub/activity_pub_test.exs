@@ -85,6 +85,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert {:error, {:remote_limit_error, _}} = ActivityPub.insert(data)
     end
 
+    test "doesn't drop activities with content being null" do
+      data = %{
+        "ok" => true,
+        "object" => %{
+          "content" => nil
+        }
+      }
+
+      assert {:ok, _} = ActivityPub.insert(data)
+    end
+
     test "returns the activity if one with the same id is already in" do
       activity = insert(:note_activity)
       {:ok, new_activity} = ActivityPub.insert(activity.data)
