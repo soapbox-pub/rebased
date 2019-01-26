@@ -64,7 +64,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp check_remote_limit(%{"object" => %{"content" => content}}) do
+  defp check_remote_limit(%{"object" => %{"content" => content}}) when not is_nil(content) do
     limit = Pleroma.Config.get([:instance, :remote_limit])
     String.length(content) <= limit
   end
