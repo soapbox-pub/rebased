@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
   alias Pleroma.Web
+  alias Pleroma.HTML
 
   alias Pleroma.Web.MastodonAPI.{
     StatusView,
@@ -1322,22 +1323,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  defp status_first_external_url(content) do
-    content
-    |> Floki.filter_out("a.mention")
-    |> Floki.attribute("a", "href")
-    |> Enum.at(0)
-  end
-
   def get_status_card(status_id) do
     with %Activity{} = activity <- Repo.get(Activity, status_id),
          true <- ActivityPub.is_public?(activity),
-         page_url <- status_first_external_url(activity.data["object"]["content"]),
+         %Object{} = object <- Object.normalize(activity.data["object"]),
+         page_url <- HTML.extract_first_external_url(object, object.data["content"]),
          {:ok, rich_media} <- Pleroma.Web.RichMedia.Parser.parse(page_url) do
+      site_name = rich_media[:site_name] || URI.parse(page_url).host
+
       rich_media
       |> Map.take([:image, :title, :url, :description])
       |> Map.put(:type, "link")
-      |> Map.put(:provider_name, rich_media.site_name)
+      |> Map.put(:provider_name, site_name)
     else
       _ -> %{}
     end
