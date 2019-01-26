@@ -35,7 +35,8 @@ defmodule Pleroma.Notification do
         n in Notification,
         where: n.user_id == ^user.id,
         order_by: [desc: n.id],
-        preload: [:activity],
+        join: activity in assoc(n, :activity),
+        preload: [activity: activity],
         limit: 20
       )
 
@@ -66,7 +67,8 @@ defmodule Pleroma.Notification do
       from(
         n in Notification,
         where: n.id == ^id,
-        preload: [:activity]
+        join: activity in assoc(n, :activity),
+        preload: [activity: activity]
       )
 
     notification = Repo.one(query)
