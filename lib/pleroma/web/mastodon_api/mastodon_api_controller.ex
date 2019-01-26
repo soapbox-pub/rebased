@@ -1337,6 +1337,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       rich_media
       |> Map.take([:image, :title, :url, :description])
       |> Map.put(:type, "link")
+      |> Map.put(:provider_name, rich_media.site_name)
     else
       _ -> %{}
     end
