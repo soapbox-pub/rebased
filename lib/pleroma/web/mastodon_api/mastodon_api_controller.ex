@@ -541,7 +541,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     local_only = params["local"] in [true, "True", "true", "1"]
 
     tags =
-      ([params["tag"]] ++ (params["any"] || []))
+      [params["tag"], params["any"]]
+      |> List.flatten()
       |> Enum.uniq()
       |> Enum.filter(& &1)
       |> Enum.map(&String.downcase(&1))
