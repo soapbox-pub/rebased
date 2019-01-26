@@ -1634,6 +1634,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert response == %{
                "image" => "http://ia.media-imdb.com/images/rock.jpg",
+               "provider_name" => "www.imdb.com",
                "title" => "The Rock",
                "type" => "link",
                "url" => "http://www.imdb.com/title/tt0117500/"

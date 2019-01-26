@@ -1329,12 +1329,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          %Object{} = object <- Object.normalize(activity.data["object"]),
          page_url <- HTML.extract_first_external_url(object, object.data["content"]),
          {:ok, rich_media} <- Pleroma.Web.RichMedia.Parser.parse(page_url) do
+      page_url = rich_media[:url] || page_url
       site_name = rich_media[:site_name] || URI.parse(page_url).host
 
       rich_media
-      |> Map.take([:image, :title, :url, :description])
+      |> Map.take([:image, :title, :description])
       |> Map.put(:type, "link")
       |> Map.put(:provider_name, site_name)
+      |> Map.put(:url, page_url)
     else
       _ -> %{}
     end
