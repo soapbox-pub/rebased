@@ -11,6 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.MastodonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
@@ -140,6 +141,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         __MODULE__
       )
 
+    card = render("card.json", MastodonAPI.get_status_card(activity.id))
+
     %{
       id: to_string(activity.id),
       uri: object["id"],
@@ -148,6 +151,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
+      card: card,
       content: content,
       created_at: created_at,
       reblogs_count: announcement_count,
