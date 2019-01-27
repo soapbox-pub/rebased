@@ -141,11 +141,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("actor", get_actor(%{"actor" => actor}))
   end
 
-  def fix_likes(%{"likes" => likes} = object)
-      when is_bitstring(likes) do
-    # Check for standardisation
-    # This is what Peertube does
-    # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+  # Check for standardisation
+  # This is what Peertube does
+  # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+  # Prismo returns only an integer (count) as "likes"
+  def fix_likes(%{"likes" => likes} = object) when not is_map(likes) do
     object
     |> Map.put("likes", [])
     |> Map.put("like_count", 0)
