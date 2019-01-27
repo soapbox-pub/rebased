@@ -176,6 +176,29 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     nil
   end
 
+  def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
+    page_url = rich_media[:url] || page_url
+    page_url_data = URI.parse(page_url)
+    site_name = rich_media[:site_name] || page_url_data.host
+
+    %{
+      type: "link",
+      provider_name: site_name,
+      provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
+      url: page_url,
+      image: rich_media[:image],
+      title: rich_media[:title],
+      description: rich_media[:description],
+      pleroma: %{
+        opengraph: rich_media
+      }
+    }
+  end
+
+  def render("card.json", _) do
+    nil
+  end
+
   def render("attachment.json", %{attachment: attachment}) do
     [attachment_url | _] = attachment["url"]
     media_type = attachment_url["mediaType"] || attachment_url["mimeType"] || "image"

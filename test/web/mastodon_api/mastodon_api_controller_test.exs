@@ -1663,9 +1663,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert response == %{
                "image" => "http://ia.media-imdb.com/images/rock.jpg",
                "provider_name" => "www.imdb.com",
+               "provider_url" => "http://www.imdb.com",
                "title" => "The Rock",
                "type" => "link",
-               "url" => "http://www.imdb.com/title/tt0117500/"
+               "url" => "http://www.imdb.com/title/tt0117500/",
+               "description" => nil,
+               "pleroma" => %{
+                 "opengraph" => %{
+                   "image" => "http://ia.media-imdb.com/images/rock.jpg",
+                   "title" => "The Rock",
+                   "type" => "video.movie",
+                   "url" => "http://www.imdb.com/title/tt0117500/"
+                 }
+               }
              }
     end
   end
