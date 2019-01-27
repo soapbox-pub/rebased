@@ -21,9 +21,14 @@ defmodule Pleroma.Web.RichMedia.Parser do
   end
 
   defp parse_url(url) do
-    {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url)
+    try do
+      {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url)
 
-    html |> maybe_parse() |> get_parsed_data()
+      html |> maybe_parse() |> get_parsed_data()
+    rescue
+      _e ->
+        {:error, "Parsing error"}
+    end
   end
 
   defp maybe_parse(html) do
