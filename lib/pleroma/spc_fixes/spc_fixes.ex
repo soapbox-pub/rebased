@@ -5,6 +5,7 @@
 alias Pleroma.Repo
 alias Pleroma.User
 alias Pleroma.Activity
+alias Pleroma.Object
 import Ecto.Query
 
 defmodule Pleroma.SpcFixes do
@@ -82,6 +83,26 @@ defmodule Pleroma.SpcFixes do
             ],
             push: [
               recipients: ^user.follower_address
+            ]
+          ]
+        )
+
+      Repo.update_all(query, [])
+
+      # Fix objects
+      query =
+        from(a in Object,
+          where: fragment("?->>'actor' = ?", a.data, ^mapping[user.ap_id]),
+          update: [
+            set: [
+              data:
+                fragment(
+                  "jsonb_set(jsonb_set(?, '{actor}', ?), '{to}', (?->'to')::jsonb || ?)",
+                  a.data,
+                  ^user.ap_id,
+                  a.data,
+                  ^[user.follower_address]
+                )
             ]
           ]
         )

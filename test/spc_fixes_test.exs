@@ -11,6 +11,7 @@ defmodule Pleroma.SpcFixesTest do
   alias Pleroma.User
   alias Pleroma.Activity
   alias Pleroma.Repo
+  alias Pleroma.Object
 
   import Pleroma.Factory
 
@@ -62,5 +63,10 @@ defmodule Pleroma.SpcFixesTest do
     assert activity.data["actor"] == user.ap_id
     assert user.follower_address in activity.recipients
     assert user.follower_address in activity.data["to"]
+
+    object = Object.get_by_ap_id(activity.data["object"]["id"])
+
+    assert object.data["actor"] == user.ap_id
+    assert user.follower_address in object.data["to"]
   end
 end
