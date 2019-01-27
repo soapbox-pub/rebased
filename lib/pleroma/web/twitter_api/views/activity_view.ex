@@ -114,7 +114,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       |> Map.put(:context_ids, context_ids)
       |> Map.put(:users, users)
 
-    render_many(
+    safe_render_many(
       opts.activities,
       ActivityView,
       "activity.json",

@@ -49,7 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     replied_to_activities = get_replied_to_activities(opts.activities)
 
     opts.activities
-    |> render_many(
+    |> safe_render_many(
       StatusView,
       "status.json",
       Map.put(opts, :replied_to_activities, replied_to_activities)
