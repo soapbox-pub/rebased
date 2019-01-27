@@ -164,6 +164,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "possibly_sensitive" => true,
       "uri" => activity.data["object"]["id"],
       "visibility" => "direct",
+      "card" => nil,
       "summary" => "2hu :2hu:",
       "summary_html" =>
         "2hu <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" />"
