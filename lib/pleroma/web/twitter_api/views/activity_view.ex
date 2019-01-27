@@ -10,6 +10,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
+  alias Pleroma.Web.MastodonAPI
+  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Activity
   alias Pleroma.HTML
   alias Pleroma.Object
@@ -274,6 +276,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     summary = HTML.strip_tags(summary)
 
+    card = StatusView.render("card.json", MastodonAPI.get_status_card(activity.id))
+
     %{
       "id" => activity.id,
       "uri" => activity.data["object"]["id"],
@@ -300,9 +304,10 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "tags" => tags,
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive,
-      "visibility" => Pleroma.Web.MastodonAPI.StatusView.get_visibility(object),
+      "visibility" => StatusView.get_visibility(object),
       "summary" => summary,
-      "summary_html" => summary |> Formatter.emojify(object["emoji"])
+      "summary_html" => summary |> Formatter.emojify(object["emoji"]),
+      "card" => card
     }
   end
 
