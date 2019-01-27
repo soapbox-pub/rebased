@@ -166,10 +166,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
       end
     else
       {:public?, false} ->
-        {:error, :not_found}
+        conn
+        |> put_status(404)
+        |> Fallback.RedirectController.redirector(nil, 404)
 
       {:activity, nil} ->
-        {:error, :not_found}
+        conn
+        |> Fallback.RedirectController.redirector(nil, 404)
 
       e ->
         e
