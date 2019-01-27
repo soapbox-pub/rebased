@@ -94,7 +94,7 @@ defmodule Pleroma.FlakeId do
 
   @impl GenServer
   def init([]) do
-    {:ok, %FlakeId{node: mac(), time: time()}}
+    {:ok, %FlakeId{node: worker_id(), time: time()}}
   end
 
   @impl GenServer
@@ -165,23 +165,8 @@ defmodule Pleroma.FlakeId do
     1_000_000_000 * mega_seconds + seconds * 1000 + :erlang.trunc(micro_seconds / 1000)
   end
 
-  def mac do
-    {:ok, addresses} = :inet.getifaddrs()
-
-    macids =
-      Enum.reduce(addresses, [], fn {_iface, attrs}, acc ->
-        case attrs[:hwaddr] do
-          [0, 0, 0 | _] -> acc
-          mac when is_list(mac) -> [mac_to_worker_id(mac) | acc]
-          _ -> acc
-        end
-      end)
-
-    List.first(macids)
-  end
-
-  def mac_to_worker_id(mac) do
-    <<worker::integer-size(48)>> = :binary.list_to_bin(mac)
+  defp worker_id() do
+    <<worker::integer-size(48)>> = :crypto.strong_rand_bytes(6)
     worker
   end
 end
