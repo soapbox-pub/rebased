@@ -85,7 +85,7 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
 
     test "it clears `unreachable` federation status of the sender", %{conn: conn} do
       sender_url = "https://pleroma.soykaf.com"
-      Instances.set_unreachable(sender_url, Instances.reachability_datetime_threshold())
+      Instances.set_consistently_unreachable(sender_url)
       refute Instances.reachable?(sender_url)
 
       websub = insert(:websub_client_subscription)

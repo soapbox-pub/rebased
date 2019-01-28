@@ -17,7 +17,7 @@ defmodule Pleroma.Instances.Instance do
     timestamps()
   end
 
-  defdelegate host(url), to: Instances
+  defdelegate host(url_or_host), to: Instances
 
   def changeset(struct, params \\ %{}) do
     struct
@@ -28,9 +28,9 @@ defmodule Pleroma.Instances.Instance do
 
   def filter_reachable([]), do: []
 
-  def filter_reachable(urls) when is_list(urls) do
+  def filter_reachable(urls_or_hosts) when is_list(urls_or_hosts) do
     hosts =
-      urls
+      urls_or_hosts
       |> Enum.map(&(&1 && host(&1)))
       |> Enum.filter(&(to_string(&1) != ""))
 
@@ -44,14 +44,14 @@ defmodule Pleroma.Instances.Instance do
         )
       )
 
-    Enum.filter(urls, &(&1 && host(&1) not in unreachable_hosts))
+    Enum.filter(urls_or_hosts, &(&1 && host(&1) not in unreachable_hosts))
   end
 
-  def reachable?(url) when is_binary(url) do
+  def reachable?(url_or_host) when is_binary(url_or_host) do
     !Repo.one(
       from(i in Instance,
         where:
-          i.host == ^host(url) and
+          i.host == ^host(url_or_host) and
             i.unreachable_since <= ^Instances.reachability_datetime_threshold(),
         select: true
       )
@@ -60,8 +60,8 @@ defmodule Pleroma.Instances.Instance do
 
   def reachable?(_), do: true
 
-  def set_reachable(url) when is_binary(url) do
-    with host <- host(url),
+  def set_reachable(url_or_host) when is_binary(url_or_host) do
+    with host <- host(url_or_host),
          %Instance{} = existing_record <- Repo.get_by(Instance, %{host: host}) do
       {:ok, _instance} =
         existing_record
@@ -70,13 +70,13 @@ defmodule Pleroma.Instances.Instance do
     end
   end
 
-  def set_reachable(_), do: {0, :noop}
+  def set_reachable(_), do: {:error, nil}
 
-  def set_unreachable(url, unreachable_since \\ nil)
+  def set_unreachable(url_or_host, unreachable_since \\ nil)
 
-  def set_unreachable(url, unreachable_since) when is_binary(url) do
+  def set_unreachable(url_or_host, unreachable_since) when is_binary(url_or_host) do
     unreachable_since = unreachable_since || DateTime.utc_now()
-    host = host(url)
+    host = host(url_or_host)
     existing_record = Repo.get_by(Instance, %{host: host})
 
     changes = %{unreachable_since: unreachable_since}
@@ -89,7 +89,7 @@ defmodule Pleroma.Instances.Instance do
 
       existing_record.unreachable_since &&
           NaiveDateTime.compare(existing_record.unreachable_since, unreachable_since) != :gt ->
-        {:noop, existing_record}
+        {:ok, existing_record}
 
       true ->
         existing_record
@@ -98,5 +98,5 @@ defmodule Pleroma.Instances.Instance do
     end
   end
 
-  def set_unreachable(_, _), do: {0, :noop}
+  def set_unreachable(_, _), do: {:error, nil}
 end

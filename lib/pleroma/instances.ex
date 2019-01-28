@@ -3,14 +3,17 @@ defmodule Pleroma.Instances do
 
   @adapter Pleroma.Instances.Instance
 
-  defdelegate filter_reachable(urls), to: @adapter
-  defdelegate reachable?(url), to: @adapter
-  defdelegate set_reachable(url), to: @adapter
-  defdelegate set_unreachable(url, unreachable_since \\ nil), to: @adapter
+  defdelegate filter_reachable(urls_or_hosts), to: @adapter
+  defdelegate reachable?(url_or_host), to: @adapter
+  defdelegate set_reachable(url_or_host), to: @adapter
+  defdelegate set_unreachable(url_or_host, unreachable_since \\ nil), to: @adapter
+
+  def set_consistently_unreachable(url_or_host),
+    do: set_unreachable(url_or_host, reachability_datetime_threshold())
 
   def reachability_datetime_threshold do
     federation_reachability_timeout_days =
-      Pleroma.Config.get(:instance)[:federation_reachability_timeout_days] || 90
+      Pleroma.Config.get(:instance)[:federation_reachability_timeout_days] || 0
 
     if federation_reachability_timeout_days > 0 do
       NaiveDateTime.add(

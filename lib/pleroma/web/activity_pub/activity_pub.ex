@@ -750,9 +750,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       Instances.set_reachable(inbox)
       result
     else
-      e ->
+      {_post_result, response} ->
         Instances.set_unreachable(inbox)
-        e
+        {:error, response}
     end
   end
 

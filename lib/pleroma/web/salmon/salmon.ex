@@ -181,10 +181,6 @@ defmodule Pleroma.Web.Salmon do
       Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)
       :ok
     else
-      {:reachable, false} ->
-        Logger.debug(fn -> "Pushing Salmon to #{url} skipped as marked unreachable)" end)
-        :noop
-
       e ->
         Instances.set_unreachable(url)
         Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)

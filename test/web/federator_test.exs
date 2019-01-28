@@ -128,7 +128,7 @@ defmodule Pleroma.Web.FederatorTest do
           callback: "https://pleroma2.soykaf.com/cb"
         })
 
-      Instances.set_unreachable(sub1.callback, Instances.reachability_datetime_threshold())
+      Instances.set_consistently_unreachable(sub1.callback)
 
       {:ok, _activity} = CommonAPI.post(user, %{"status" => "HI"})
 
@@ -158,7 +158,7 @@ defmodule Pleroma.Web.FederatorTest do
           info: %{salmon: "https://domain2.com/salmon"}
         })
 
-      Instances.set_unreachable("domain.com", Instances.reachability_datetime_threshold())
+      Instances.set_consistently_unreachable("domain.com")
 
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})

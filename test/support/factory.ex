@@ -220,4 +220,11 @@ defmodule Pleroma.Factory do
       client_secret: "aaa;/&bbb"
     }
   end
+
+  def instance_factory do
+    %Pleroma.Instances.Instance{
+      host: "domain.com",
+      unreachable_since: nil
+    }
+  end
 end

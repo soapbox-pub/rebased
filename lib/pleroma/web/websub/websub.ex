@@ -286,14 +286,10 @@ defmodule Pleroma.Web.Websub do
       Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)
       {:ok, code}
     else
-      {:reachable, false} ->
-        Logger.debug(fn -> "Pushing to #{callback} skipped as marked unreachable)" end)
-        {:error, :noop}
-
-      e ->
+      {_post_result, response} ->
         Instances.set_unreachable(callback)
-        Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)
-        {:error, e}
+        Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(response)}" end)
+        {:error, response}
     end
   end
 end
