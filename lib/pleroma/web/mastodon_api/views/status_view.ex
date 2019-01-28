@@ -189,7 +189,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       provider_name: site_name,
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
-      image: rich_media[:image],
+      image: rich_media[:image] |> MediaProxy.url(),
       title: rich_media[:title],
       description: rich_media[:description],
       pleroma: %{
