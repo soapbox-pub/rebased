@@ -8,14 +8,17 @@ Pleroma is written in Elixir, high-performance and can run on small devices like
 
 For clients it supports both the [GNU Social API with Qvitter extensions](https://twitter-api.readthedocs.io/en/latest/index.html) and the [Mastodon client API](https://github.com/tootsuite/documentation/blob/master/Using-the-API/API.md).
 
+Client applications that are committed to supporting Pleroma:
+
+* Mastalab (Android)
+* Tusky (Android)
+* Twidere (Android)
+* Mast (iOS)
+* Amaroq (iOS)
+
 Client applications that are known to work well:
 
-* Twidere
-* Tusky
-* Mastalab
 * Pawoo (Android + iOS)
-* Subway Tooter
-* Amaroq (iOS)
 * Tootdon (Android + iOS)
 * Tootle (iOS)
 * Whalebird (Windows + Mac + Linux)
