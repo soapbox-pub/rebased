@@ -653,6 +653,14 @@ defmodule HttpRequestMock do
     {:ok, Tesla.Mock.json(%{"id" => "https://social.heldscal.la/user/23211"}, status: 200)}
   end
 
+  def get("http://example.com/ogp", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
+  end
+
+  def get("http://example.com/empty", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: "hello"}}
+  end
+
   def get("http://404.site" <> _, _, _, _) do
     {:ok,
      %Tesla.Env{

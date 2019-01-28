@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
   alias Pleroma.Web
+  alias Pleroma.HTML
 
   alias Pleroma.Web.MastodonAPI.{
     StatusView,
@@ -540,15 +541,34 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def hashtag_timeline(%{assigns: %{user: user}} = conn, params) do
     local_only = params["local"] in [true, "True", "true", "1"]
 
-    params =
+    tags =
+      [params["tag"], params["any"]]
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.filter(& &1)
+      |> Enum.map(&String.downcase(&1))
+
+    tag_all =
+      params["all"] ||
+        []
+        |> Enum.map(&String.downcase(&1))
+
+    tag_reject =
+      params["none"] ||
+        []
+        |> Enum.map(&String.downcase(&1))
+
+    query_params =
       params
       |> Map.put("type", "Create")
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
-      |> Map.put("tag", String.downcase(params["tag"]))
+      |> Map.put("tag", tags)
+      |> Map.put("tag_all", tag_all)
+      |> Map.put("tag_reject", tag_reject)
 
     activities =
-      ActivityPub.fetch_public_activities(params)
+      ActivityPub.fetch_public_activities(query_params)
       |> Enum.reverse()
 
     conn
@@ -1320,6 +1340,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       json(conn, [])
     end
+  end
+
+  def get_status_card(status_id) do
+    with %Activity{} = activity <- Repo.get(Activity, status_id),
+         true <- ActivityPub.is_public?(activity),
+         %Object{} = object <- Object.normalize(activity.data["object"]),
+         page_url <- HTML.extract_first_external_url(object, object.data["content"]),
+         {:ok, rich_media} <- Pleroma.Web.RichMedia.Parser.parse(page_url) do
+      page_url = rich_media[:url] || page_url
+      site_name = rich_media[:site_name] || URI.parse(page_url).host
+
+      rich_media
+      |> Map.take([:image, :title, :description])
+      |> Map.put(:type, "link")
+      |> Map.put(:provider_name, site_name)
+      |> Map.put(:url, page_url)
+    else
+      _ -> %{}
+    end
+  end
+
+  def status_card(conn, %{"id" => status_id}) do
+    json(conn, get_status_card(status_id))
   end
 
   def try_render(conn, target, params)

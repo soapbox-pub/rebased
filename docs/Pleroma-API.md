@@ -15,6 +15,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Params: none
 * Response: JSON
 * Example response: `{"kalsarikannit_f":"/finmoji/128px/kalsarikannit_f-128.png","perkele":"/finmoji/128px/perkele-128.png","blobdab":"/emoji/blobdab.png","happiness":"/finmoji/128px/happiness-128.png"}`
+* Note: Same data as Mastodon API’s `/api/v1/custom_emojis` but in a different format
 
 ## `/api/pleroma/follow_import`
 ### Imports your follows, for example from a Mastodon CSV file.

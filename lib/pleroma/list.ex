@@ -8,7 +8,7 @@ defmodule Pleroma.List do
   alias Pleroma.{User, Repo, Activity}
 
   schema "lists" do
-    belongs_to(:user, Pleroma.User)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:title, :string)
     field(:following, {:array, :string}, default: [])
 

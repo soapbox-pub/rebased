@@ -258,7 +258,7 @@ defmodule Pleroma.Web.Router do
 
     get("/statuses/:id", MastodonAPIController, :get_status)
     get("/statuses/:id/context", MastodonAPIController, :get_context)
-    get("/statuses/:id/card", MastodonAPIController, :empty_object)
+    get("/statuses/:id/card", MastodonAPIController, :status_card)
     get("/statuses/:id/favourited_by", MastodonAPIController, :favourited_by)
     get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
 
@@ -396,7 +396,11 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :ostatus do
-    plug(:accepts, ["xml", "atom", "html", "activity+json"])
+    plug(:accepts, ["html", "xml", "atom", "activity+json"])
+  end
+
+  pipeline :oembed do
+    plug(:accepts, ["json", "xml"])
   end
 
   scope "/", Pleroma.Web do
@@ -412,6 +416,12 @@ defmodule Pleroma.Web.Router do
     post("/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request)
     get("/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation)
     post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
+  end
+
+  scope "/", Pleroma.Web do
+    pipe_through(:oembed)
+
+    get("/oembed", OEmbed.OEmbedController, :url)
   end
 
   pipeline :activitypub do
@@ -501,6 +511,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Fallback do
     get("/registration/:token", RedirectController, :registration_page)
+    get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
     get("/*path", RedirectController, :redirector)
 
     options("/*path", RedirectController, :empty)
@@ -509,11 +520,36 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+  alias Pleroma.Web.Metadata
+  alias Pleroma.User
 
-  def redirector(conn, _params) do
+  def redirector(conn, _params, code \\ 200) do
     conn
     |> put_resp_content_type("text/html")
-    |> send_file(200, Pleroma.Plugs.InstanceStatic.file_path("index.html"))
+    |> send_file(code, index_file_path())
+  end
+
+  def redirector_with_meta(conn, %{"maybe_nickname_or_id" => maybe_nickname_or_id} = params) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(maybe_nickname_or_id) do
+      redirector_with_meta(conn, %{user: user})
+    else
+      nil ->
+        redirector(conn, params)
+    end
+  end
+
+  def redirector_with_meta(conn, params) do
+    {:ok, index_content} = File.read(index_file_path())
+    tags = Metadata.build_tags(params)
+    response = String.replace(index_content, "<!--server-generated-meta-->", tags)
+
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(200, response)
+  end
+
+  def index_file_path do
+    Pleroma.Plugs.InstanceStatic.file_path("index.html")
   end
 
   def registration_page(conn, params) do

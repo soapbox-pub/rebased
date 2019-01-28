@@ -36,6 +36,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {recipients, to, cc}
   end
 
+  defp get_recipients(%{"type" => "Create"} = data) do
+    to = data["to"] || []
+    cc = data["cc"] || []
+    actor = data["actor"] || []
+    recipients = (to ++ cc ++ [actor]) |> Enum.uniq()
+    {recipients, to, cc}
+  end
+
   defp get_recipients(data) do
     to = data["to"] || []
     cc = data["cc"] || []
@@ -56,7 +64,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp check_remote_limit(%{"object" => %{"content" => content}}) do
+  defp check_remote_limit(%{"object" => %{"content" => content}}) when not is_nil(content) do
     limit = Pleroma.Config.get([:instance, :remote_limit])
     String.length(content) <= limit
   end
@@ -410,13 +418,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
+  defp restrict_since(query, %{"since_id" => ""}), do: query
+
   defp restrict_since(query, %{"since_id" => since_id}) do
     from(activity in query, where: activity.id > ^since_id)
   end
 
   defp restrict_since(query, _), do: query
 
-  defp restrict_tag(query, %{"tag" => tag}) do
+  defp restrict_tag_reject(query, %{"tag_reject" => tag_reject})
+       when is_list(tag_reject) and tag_reject != [] do
+    from(
+      activity in query,
+      where: fragment("(not (? #> '{\"object\",\"tag\"}') \\?| ?)", activity.data, ^tag_reject)
+    )
+  end
+
+  defp restrict_tag_reject(query, _), do: query
+
+  defp restrict_tag_all(query, %{"tag_all" => tag_all})
+       when is_list(tag_all) and tag_all != [] do
+    from(
+      activity in query,
+      where: fragment("(? #> '{\"object\",\"tag\"}') \\?& ?", activity.data, ^tag_all)
+    )
+  end
+
+  defp restrict_tag_all(query, _), do: query
+
+  defp restrict_tag(query, %{"tag" => tag}) when is_list(tag) do
+    from(
+      activity in query,
+      where: fragment("(? #> '{\"object\",\"tag\"}') \\?| ?", activity.data, ^tag)
+    )
+  end
+
+  defp restrict_tag(query, %{"tag" => tag}) when is_binary(tag) do
     from(
       activity in query,
       where: fragment("? <@ (? #> '{\"object\",\"tag\"}')", ^tag, activity.data)
@@ -464,6 +501,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_local(query, _), do: query
+
+  defp restrict_max(query, %{"max_id" => ""}), do: query
 
   defp restrict_max(query, %{"max_id" => max_id}) do
     from(activity in query, where: activity.id < ^max_id)
@@ -563,6 +602,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     base_query
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
+    |> restrict_tag_reject(opts)
+    |> restrict_tag_all(opts)
     |> restrict_since(opts)
     |> restrict_local(opts)
     |> restrict_limit(opts)

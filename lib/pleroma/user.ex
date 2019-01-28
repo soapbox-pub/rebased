@@ -17,6 +17,8 @@ defmodule Pleroma.User do
 
   @type t :: %__MODULE__{}
 
+  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
@@ -404,6 +406,10 @@ defmodule Pleroma.User do
     user.info.locked || false
   end
 
+  def get_by_id(id) do
+    Repo.get_by(User, id: id)
+  end
+
   def get_by_ap_id(ap_id) do
     Repo.get_by(User, ap_id: ap_id)
   end
@@ -439,9 +445,31 @@ defmodule Pleroma.User do
     Cachex.fetch!(:user_cache, key, fn _ -> get_by_ap_id(ap_id) end)
   end
 
+  def get_cached_by_id(id) do
+    key = "id:#{id}"
+
+    ap_id =
+      Cachex.fetch!(:user_cache, key, fn _ ->
+        user = get_by_id(id)
+
+        if user do
+          Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
+          {:commit, user.ap_id}
+        else
+          {:ignore, ""}
+        end
+      end)
+
+    get_cached_by_ap_id(ap_id)
+  end
+
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
     Cachex.fetch!(:user_cache, key, fn _ -> get_or_fetch_by_nickname(nickname) end)
+  end
+
+  def get_cached_by_nickname_or_id(nickname_or_id) do
+    get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
   end
 
   def get_by_nickname(nickname) do

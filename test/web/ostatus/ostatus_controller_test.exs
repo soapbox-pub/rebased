@@ -108,6 +108,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
     conn =
       conn
+      |> put_req_header("accept", "application/xml")
       |> get(url)
 
     expected =
@@ -134,29 +135,32 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     |> response(404)
   end
 
+  test "gets an activity in xml format", %{conn: conn} do
+    note_activity = insert(:note_activity)
+    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
+
+    conn
+    |> put_req_header("accept", "application/xml")
+    |> get("/activities/#{uuid}")
+    |> response(200)
+  end
+
   test "404s on deleted objects", %{conn: conn} do
     note_activity = insert(:note_activity)
     [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"]))
     object = Object.get_by_ap_id(note_activity.data["object"]["id"])
 
     conn
+    |> put_req_header("accept", "application/xml")
     |> get("/objects/#{uuid}")
     |> response(200)
 
     Object.delete(object)
 
     conn
+    |> put_req_header("accept", "application/xml")
     |> get("/objects/#{uuid}")
     |> response(404)
-  end
-
-  test "gets an activity", %{conn: conn} do
-    note_activity = insert(:note_activity)
-    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["id"]))
-
-    conn
-    |> get("/activities/#{uuid}")
-    |> response(200)
   end
 
   test "404s on private activities", %{conn: conn} do
@@ -174,7 +178,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
     |> response(404)
   end
 
-  test "gets a notice", %{conn: conn} do
+  test "gets a notice in xml format", %{conn: conn} do
     note_activity = insert(:note_activity)
 
     conn

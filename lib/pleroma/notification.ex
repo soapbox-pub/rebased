@@ -4,13 +4,14 @@
 
 defmodule Pleroma.Notification do
   use Ecto.Schema
-  alias Pleroma.{User, Activity, Notification, Repo, Object}
+  alias Pleroma.{User, Activity, Notification, Repo}
+  alias Pleroma.Web.CommonAPI.Utils
   import Ecto.Query
 
   schema "notifications" do
     field(:seen, :boolean, default: false)
-    belongs_to(:user, Pleroma.User)
-    belongs_to(:activity, Pleroma.Activity)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:activity, Activity, type: Pleroma.FlakeId)
 
     timestamps()
   end
@@ -34,7 +35,8 @@ defmodule Pleroma.Notification do
         n in Notification,
         where: n.user_id == ^user.id,
         order_by: [desc: n.id],
-        preload: [:activity],
+        join: activity in assoc(n, :activity),
+        preload: [activity: activity],
         limit: 20
       )
 
@@ -65,7 +67,8 @@ defmodule Pleroma.Notification do
       from(
         n in Notification,
         where: n.id == ^id,
-        preload: [:activity]
+        join: activity in assoc(n, :activity),
+        preload: [activity: activity]
       )
 
     notification = Repo.one(query)
@@ -96,7 +99,7 @@ defmodule Pleroma.Notification do
     end
   end
 
-  def create_notifications(%Activity{id: _, data: %{"to" => _, "type" => type}} = activity)
+  def create_notifications(%Activity{data: %{"to" => _, "type" => type}} = activity)
       when type in ["Create", "Like", "Announce", "Follow"] do
     users = get_notified_from_activity(activity)
 
@@ -132,54 +135,12 @@ defmodule Pleroma.Notification do
       when type in ["Create", "Like", "Announce", "Follow"] do
     recipients =
       []
-      |> maybe_notify_to_recipients(activity)
-      |> maybe_notify_mentioned_recipients(activity)
+      |> Utils.maybe_notify_to_recipients(activity)
+      |> Utils.maybe_notify_mentioned_recipients(activity)
       |> Enum.uniq()
 
     User.get_users_from_set(recipients, local_only)
   end
 
   def get_notified_from_activity(_, _local_only), do: []
-
-  defp maybe_notify_to_recipients(
-         recipients,
-         %Activity{data: %{"to" => to, "type" => _type}} = _activity
-       ) do
-    recipients ++ to
-  end
-
-  defp maybe_notify_mentioned_recipients(
-         recipients,
-         %Activity{data: %{"to" => _to, "type" => type} = data} = _activity
-       )
-       when type == "Create" do
-    object = Object.normalize(data["object"])
-
-    object_data =
-      cond do
-        !is_nil(object) ->
-          object.data
-
-        is_map(data["object"]) ->
-          data["object"]
-
-        true ->
-          %{}
-      end
-
-    tagged_mentions = maybe_extract_mentions(object_data)
-
-    recipients ++ tagged_mentions
-  end
-
-  defp maybe_notify_mentioned_recipients(recipients, _), do: recipients
-
-  defp maybe_extract_mentions(%{"tag" => tag}) do
-    tag
-    |> Enum.filter(fn x -> is_map(x) end)
-    |> Enum.filter(fn x -> x["type"] == "Mention" end)
-    |> Enum.map(fn x -> x["href"] end)
-  end
-
-  defp maybe_extract_mentions(_), do: []
 end

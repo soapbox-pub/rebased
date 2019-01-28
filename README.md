@@ -12,6 +12,7 @@ Client applications that are known to work well:
 
 * Twidere
 * Tusky
+* Mastalab
 * Pawoo (Android + iOS)
 * Subway Tooter
 * Amaroq (iOS)

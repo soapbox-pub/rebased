@@ -5,11 +5,19 @@ defmodule Pleroma.Web.RichMedia.Parser do
     Pleroma.Web.RichMedia.Parsers.OEmbed
   ]
 
+  def parse(nil), do: {:error, "No URL provided"}
+
   if Mix.env() == :test do
     def parse(url), do: parse_url(url)
   else
-    def parse(url),
-      do: Cachex.fetch!(:rich_media_cache, url, fn _ -> parse_url(url) end)
+    def parse(url) do
+      with {:ok, data} <- Cachex.fetch(:rich_media_cache, url, fn _ -> parse_url(url) end) do
+        data
+      else
+        _e ->
+          {:error, "Parsing error"}
+      end
+    end
   end
 
   defp parse_url(url) do

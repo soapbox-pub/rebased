@@ -61,7 +61,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       },
       pleroma: %{
         confirmation_pending: false,
-        tags: []
+        tags: [],
+        is_admin: false,
+        is_moderator: false
       }
     }
 
@@ -102,7 +104,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       },
       pleroma: %{
         confirmation_pending: false,
-        tags: []
+        tags: [],
+        is_admin: false,
+        is_moderator: false
       }
     }
 

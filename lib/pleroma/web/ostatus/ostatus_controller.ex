@@ -7,7 +7,6 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   alias Pleroma.{User, Activity, Object}
   alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
-  alias Pleroma.Repo
   alias Pleroma.Web.{OStatus, Federator}
   alias Pleroma.Web.XML
   alias Pleroma.Web.ActivityPub.ObjectView
@@ -22,7 +21,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   def feed_redirect(conn, %{"nickname" => nickname}) do
     case get_format(conn) do
       "html" ->
-        Fallback.RedirectController.redirector(conn, nil)
+        with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+          Fallback.RedirectController.redirector_with_meta(conn, %{user: user})
+        else
+          nil -> {:error, :not_found}
+        end
 
       "activity+json" ->
         ActivityPubController.call(conn, :user)
@@ -138,24 +141,40 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def notice(conn, %{"id" => id}) do
-    with {_, %Activity{} = activity} <- {:activity, Repo.get(Activity, id)},
+    with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id(id)},
          {_, true} <- {:public?, ActivityPub.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
-          conn
-          |> put_resp_content_type("text/html")
-          |> send_file(200, Pleroma.Plugs.InstanceStatic.file_path("index.html"))
+          if activity.data["type"] == "Create" do
+            %Object{} = object = Object.normalize(activity.data["object"])
+
+            Fallback.RedirectController.redirector_with_meta(conn, %{
+              object: object,
+              url:
+                Pleroma.Web.Router.Helpers.o_status_url(
+                  Pleroma.Web.Endpoint,
+                  :notice,
+                  activity.id
+                ),
+              user: user
+            })
+          else
+            Fallback.RedirectController.redirector(conn, nil)
+          end
 
         _ ->
           represent_activity(conn, format, activity, user)
       end
     else
       {:public?, false} ->
-        {:error, :not_found}
+        conn
+        |> put_status(404)
+        |> Fallback.RedirectController.redirector(nil, 404)
 
       {:activity, nil} ->
-        {:error, :not_found}
+        conn
+        |> Fallback.RedirectController.redirector(nil, 404)
 
       e ->
         e

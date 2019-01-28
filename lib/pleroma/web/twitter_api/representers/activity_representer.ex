@@ -158,7 +158,9 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
     mentions = opts[:mentioned] || []
 
     attentions =
-      activity.recipients
+      []
+      |> Utils.maybe_notify_to_recipients(activity)
+      |> Utils.maybe_notify_mentioned_recipients(activity)
       |> Enum.map(fn ap_id -> Enum.find(mentions, fn user -> ap_id == user.ap_id end) end)
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> UserView.render("show.json", %{user: user, for: opts[:for]}) end)
