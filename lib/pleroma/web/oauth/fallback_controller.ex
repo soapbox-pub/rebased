@@ -9,7 +9,8 @@ defmodule Pleroma.Web.OAuth.FallbackController do
   # No user/password
   def call(conn, _) do
     conn
+    |> put_status(:unauthorized)
     |> put_flash(:error, "Invalid Username/Password")
-    |> OAuthController.authorize(conn.params)
+    |> OAuthController.authorize(conn.params["authorization"])
   end
 end
