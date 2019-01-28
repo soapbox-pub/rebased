@@ -1132,8 +1132,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
              )
     end
 
-    test "it returns empty for a hidden network", %{conn: conn} do
-      user = insert(:user, %{info: %{hide_network: true}})
+    test "it returns empty when hide_followers is set to true", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_followers: true}})
       follower_one = insert(:user)
       follower_two = insert(:user)
       not_follower = insert(:user)
@@ -1150,10 +1150,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [] == response
     end
 
-    test "it returns the followers for a hidden network if requested by the user themselves", %{
+    test "it returns the followers when hide_followers is set to true if requested by the user themselves", %{
       conn: conn
     } do
-      user = insert(:user, %{info: %{hide_network: true}})
+      user = insert(:user, %{info: %{hide_followers: true}})
       follower_one = insert(:user)
       follower_two = insert(:user)
       _not_follower = insert(:user)
@@ -1256,8 +1256,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
              )
     end
 
-    test "it returns empty for a hidden network", %{conn: conn} do
-      user = insert(:user, %{info: %{hide_network: true}})
+    test "it returns empty when hide_followings is set to true", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_followings: true}})
       followed_one = insert(:user)
       followed_two = insert(:user)
       not_followed = insert(:user)
@@ -1273,10 +1273,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [] == json_response(conn, 200)
     end
 
-    test "it returns friends for a hidden network if the user themselves request it", %{
+    test "it returns friends when hide_followings is set to true if the user themselves request it", %{
       conn: conn
     } do
-      user = insert(:user, %{info: %{hide_network: true}})
+      user = insert(:user, %{info: %{hide_followings: true}})
       followed_one = insert(:user)
       followed_two = insert(:user)
       _not_followed = insert(:user)
@@ -1364,27 +1364,51 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
 
-    test "it sets and un-sets hide_network", %{conn: conn} do
+    test "it sets and un-sets hide_followings", %{conn: conn} do
       user = insert(:user)
 
       conn
       |> assign(:user, user)
       |> post("/api/account/update_profile.json", %{
-        "hide_network" => "true"
+        "hide_followings" => "true"
       })
 
       user = Repo.get!(User, user.id)
-      assert user.info.hide_network == true
+      assert user.info.hide_followings == true
 
       conn =
         conn
         |> assign(:user, user)
         |> post("/api/account/update_profile.json", %{
-          "hide_network" => "false"
+          "hide_followings" => "false"
         })
 
       user = Repo.get!(User, user.id)
-      assert user.info.hide_network == false
+      assert user.info.hide_followings == false
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
+    test "it sets and un-sets hide_followers", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> post("/api/account/update_profile.json", %{
+        "hide_followers" => "true"
+      })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.hide_followers == true
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+          "hide_followers" => "false"
+        })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.hide_followers == false
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
 

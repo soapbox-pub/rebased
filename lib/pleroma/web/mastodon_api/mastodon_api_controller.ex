@@ -583,7 +583,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
-          user.info.hide_network -> []
+          user.info.hide_followers -> []
           true -> followers
         end
 
@@ -599,7 +599,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
-          user.info.hide_network -> []
+          user.info.hide_followings -> []
           true -> followers
         end
 
