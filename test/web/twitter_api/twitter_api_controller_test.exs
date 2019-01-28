@@ -1150,9 +1150,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [] == response
     end
 
-    test "it returns the followers when hide_followers is set to true if requested by the user themselves", %{
-      conn: conn
-    } do
+    test "it returns the followers when hide_followers is set to true if requested by the user themselves",
+         %{
+           conn: conn
+         } do
       user = insert(:user, %{info: %{hide_followers: true}})
       follower_one = insert(:user)
       follower_two = insert(:user)
@@ -1273,9 +1274,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [] == json_response(conn, 200)
     end
 
-    test "it returns friends when hide_followings is set to true if the user themselves request it", %{
-      conn: conn
-    } do
+    test "it returns friends when hide_followings is set to true if the user themselves request it",
+         %{
+           conn: conn
+         } do
       user = insert(:user, %{info: %{hide_followings: true}})
       followed_one = insert(:user)
       followed_two = insert(:user)
