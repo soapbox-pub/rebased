@@ -722,15 +722,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end)
   end
 
-  def publish_one(%{inbox: inbox} = activity) do
-    if Instances.reachable?(inbox) do
-      do_publish_one(activity)
-    else
-      {:error, :noop}
-    end
-  end
-
-  defp do_publish_one(%{inbox: inbox, json: json, actor: actor, id: id}) do
+  def publish_one(%{inbox: inbox, json: json, actor: actor, id: id}) do
     Logger.info("Federating #{id} to #{inbox}")
     host = URI.parse(inbox).host
 

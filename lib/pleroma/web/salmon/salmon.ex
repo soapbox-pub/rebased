@@ -168,8 +168,7 @@ defmodule Pleroma.Web.Salmon do
     do: send_to_user(salmon, feed, poster)
 
   def send_to_user(url, feed, poster) when is_binary(url) do
-    with {:reachable, true} <- {:reachable, Instances.reachable?(url)},
-         {:ok, %{status: code}} when code in 200..299 <-
+    with {:ok, %{status: code}} when code in 200..299 <-
            poster.(
              url,
              feed,

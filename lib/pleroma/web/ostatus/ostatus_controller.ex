@@ -15,7 +15,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
-  plug(:set_requester_reachable when action in [:salmon_incoming])
+  plug(Pleroma.Web.Plugs.SetRequesterReachablePlug when action in [:salmon_incoming])
 
   action_fallback(:errors)
 
@@ -202,10 +202,5 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     conn
     |> put_status(500)
     |> text("Something went wrong")
-  end
-
-  defp set_requester_reachable(conn, _) do
-    Pleroma.Web.ControllerHelper.set_requester_reachable(conn)
-    conn
   end
 end

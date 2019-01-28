@@ -18,8 +18,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   action_fallback(:errors)
 
   plug(Pleroma.Web.FederatingPlug when action in [:inbox, :relay])
+  plug(Pleroma.Web.Plugs.SetRequesterReachablePlug when action in [:inbox])
   plug(:relay_active? when action in [:relay])
-  plug(:set_requester_reachable when action in [:inbox])
 
   def relay_active?(conn, _) do
     if Keyword.get(Application.get_env(:pleroma, :instance), :allow_relay) do
@@ -290,10 +290,5 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
     |> put_status(500)
     |> json("error")
-  end
-
-  defp set_requester_reachable(conn, _) do
-    Pleroma.Web.ControllerHelper.set_requester_reachable(conn)
-    conn
   end
 end

@@ -13,7 +13,6 @@ defmodule Pleroma.Instances.Instance do
   schema "instances" do
     field(:host, :string)
     field(:unreachable_since, :naive_datetime)
-    field(:reachability_checked_at, :naive_datetime)
 
     timestamps()
   end
@@ -22,7 +21,7 @@ defmodule Pleroma.Instances.Instance do
 
   def changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:host, :unreachable_since, :reachability_checked_at])
+    |> cast(params, [:host, :unreachable_since])
     |> validate_required([:host])
     |> unique_constraint(:host)
   end
@@ -66,7 +65,7 @@ defmodule Pleroma.Instances.Instance do
          %Instance{} = existing_record <- Repo.get_by(Instance, %{host: host}) do
       {:ok, _instance} =
         existing_record
-        |> changeset(%{unreachable_since: nil, reachability_checked_at: DateTime.utc_now()})
+        |> changeset(%{unreachable_since: nil})
         |> Repo.update()
     end
   end
@@ -80,27 +79,22 @@ defmodule Pleroma.Instances.Instance do
     host = host(url)
     existing_record = Repo.get_by(Instance, %{host: host})
 
-    changes = %{
-      unreachable_since: unreachable_since,
-      reachability_checked_at: NaiveDateTime.utc_now()
-    }
+    changes = %{unreachable_since: unreachable_since}
 
-    if existing_record do
-      update_changes =
-        if existing_record.unreachable_since &&
-             NaiveDateTime.compare(existing_record.unreachable_since, unreachable_since) != :gt,
-           do: Map.delete(changes, :unreachable_since),
-           else: changes
-
-      {:ok, _instance} =
-        existing_record
-        |> changeset(update_changes)
-        |> Repo.update()
-    else
-      {:ok, _instance} =
+    cond do
+      is_nil(existing_record) ->
         %Instance{}
         |> changeset(Map.put(changes, :host, host))
         |> Repo.insert()
+
+      existing_record.unreachable_since &&
+          NaiveDateTime.compare(existing_record.unreachable_since, unreachable_since) != :gt ->
+        {:noop, existing_record}
+
+      true ->
+        existing_record
+        |> changeset(changes)
+        |> Repo.update()
     end
   end
 

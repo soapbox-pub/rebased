@@ -272,8 +272,7 @@ defmodule Pleroma.Web.Websub do
     signature = sign(secret || "", xml)
     Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
 
-    with {:reachable, true} <- {:reachable, Instances.reachable?(callback)},
-         {:ok, %{status: code}} when code in 200..299 <-
+    with {:ok, %{status: code}} when code in 200..299 <-
            @httpoison.post(
              callback,
              xml,
