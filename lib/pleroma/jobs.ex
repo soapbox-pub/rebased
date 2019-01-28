@@ -40,7 +40,7 @@ defmodule Pleroma.Jobs do
   ## Arguments
 
   - `queue_name` - a queue name(must be specified in the config).
-  - `mod` - a worker module, must have `perform` function.
+  - `mod` - a worker module (must have `perform` function).
   - `args` - a list of arguments for the `perform` function of the worker module.
   - `priority` - a job priority (`0` by default).
 
@@ -76,7 +76,6 @@ defmodule Pleroma.Jobs do
       apply(mod, :perform, args)
     end
   else
-    @spec enqueue(atom(), atom(), [any()], integer()) :: :ok
     def enqueue(queue_name, mod, args, priority \\ 1) do
       GenServer.cast(__MODULE__, {:enqueue, queue_name, mod, args, priority})
     end
@@ -92,11 +91,6 @@ defmodule Pleroma.Jobs do
       |> update_queue(queue_name, {running_jobs, queue})
       |> maybe_start_job(queue_name, running_jobs, queue)
 
-    {:noreply, state}
-  end
-
-  def handle_cast(m, state) do
-    IO.inspect("Unknown: #{inspect(m)}, #{inspect(state)}")
     {:noreply, state}
   end
 
