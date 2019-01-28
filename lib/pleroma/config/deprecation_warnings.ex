@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.DeprecationWarnings do
+defmodule Pleroma.Config.DeprecationWarnings do
   require Logger
 
   def check_frontend_config_mechanism() do
