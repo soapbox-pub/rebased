@@ -7,8 +7,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
   alias Pleroma.Web
 
-  alias Pleroma.Web.MastodonAPI
-
   alias Pleroma.Web.MastodonAPI.{
     StatusView,
     AccountView,
@@ -1347,9 +1345,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def status_card(conn, %{"id" => status_id}) do
-    data = StatusView.render("card.json", MastodonAPI.get_status_card(status_id))
+    with %Activity{} = activity <- Repo.get(Activity, status_id),
+         true <- ActivityPub.is_public?(activity) do
+      data =
+        StatusView.render(
+          "card.json",
+          Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+        )
 
-    json(conn, data)
+      json(conn, data)
+    else
+      _e ->
+        %{}
+    end
   end
 
   def try_render(conn, target, params)
