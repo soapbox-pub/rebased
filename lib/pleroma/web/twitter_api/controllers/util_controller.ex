@@ -183,25 +183,31 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
           invitesEnabled: if(Keyword.get(instance, :invites_enabled, false), do: "1", else: "0")
         }
 
-        pleroma_fe = %{
-          theme: Keyword.get(instance_fe, :theme),
-          background: Keyword.get(instance_fe, :background),
-          logo: Keyword.get(instance_fe, :logo),
-          logoMask: Keyword.get(instance_fe, :logo_mask),
-          logoMargin: Keyword.get(instance_fe, :logo_margin),
-          redirectRootNoLogin: Keyword.get(instance_fe, :redirect_root_no_login),
-          redirectRootLogin: Keyword.get(instance_fe, :redirect_root_login),
-          chatDisabled: !Keyword.get(instance_chat, :enabled),
-          showInstanceSpecificPanel: Keyword.get(instance_fe, :show_instance_panel),
-          scopeOptionsEnabled: Keyword.get(instance_fe, :scope_options_enabled),
-          formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
-          collapseMessageWithSubject: Keyword.get(instance_fe, :collapse_message_with_subject),
-          hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
-          hideUserStats: Keyword.get(instance_fe, :hide_user_stats),
-          scopeCopy: Keyword.get(instance_fe, :scope_copy),
-          subjectLineBehavior: Keyword.get(instance_fe, :subject_line_behavior),
-          alwaysShowSubjectInput: Keyword.get(instance_fe, :always_show_subject_input)
-        }
+        pleroma_fe =
+          if instance_fe do
+            %{
+              theme: Keyword.get(instance_fe, :theme),
+              background: Keyword.get(instance_fe, :background),
+              logo: Keyword.get(instance_fe, :logo),
+              logoMask: Keyword.get(instance_fe, :logo_mask),
+              logoMargin: Keyword.get(instance_fe, :logo_margin),
+              redirectRootNoLogin: Keyword.get(instance_fe, :redirect_root_no_login),
+              redirectRootLogin: Keyword.get(instance_fe, :redirect_root_login),
+              chatDisabled: !Keyword.get(instance_chat, :enabled),
+              showInstanceSpecificPanel: Keyword.get(instance_fe, :show_instance_panel),
+              scopeOptionsEnabled: Keyword.get(instance_fe, :scope_options_enabled),
+              formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
+              collapseMessageWithSubject:
+                Keyword.get(instance_fe, :collapse_message_with_subject),
+              hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
+              hideUserStats: Keyword.get(instance_fe, :hide_user_stats),
+              scopeCopy: Keyword.get(instance_fe, :scope_copy),
+              subjectLineBehavior: Keyword.get(instance_fe, :subject_line_behavior),
+              alwaysShowSubjectInput: Keyword.get(instance_fe, :always_show_subject_input)
+            }
+          else
+            Pleroma.Config.get([:frontend_configurations, :pleroma_fe])
+          end
 
         managed_config = Keyword.get(instance, :managed_config)
 
