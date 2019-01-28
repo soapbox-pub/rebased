@@ -76,7 +76,7 @@ defmodule Pleroma.Jobs do
       apply(mod, :perform, args)
     end
   else
-    def enqueue(queue_name, mod, args, priority \\ 1) do
+    def enqueue(queue_name, mod, args, priority) do
       GenServer.cast(__MODULE__, {:enqueue, queue_name, mod, args, priority})
     end
   end
