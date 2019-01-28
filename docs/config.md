@@ -115,9 +115,9 @@ To add your own configuration for PleromaFE, use it like this:
 These settings need to be complete, they will overide the defaults.
 
 ## :fe
-__THIS IS DEPRACTED__
+__THIS IS DEPRECATED__
 
-If you are using this method, please change it to the `frontend_configurations` method.
+If you are using this method, please change it to the `frontend_configurations` method. Please set this option to false in your config like this: `config :pleroma, :fe, false`.
 
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
 
