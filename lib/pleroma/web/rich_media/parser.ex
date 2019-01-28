@@ -46,11 +46,11 @@ defmodule Pleroma.Web.RichMedia.Parser do
     end)
   end
 
-  defp get_parsed_data(data) when data == %{} do
-    {:error, "No metadata found"}
+  defp get_parsed_data(%{title: title} = data) when is_binary(title) and byte_size(title) > 0 do
+    {:ok, data}
   end
 
   defp get_parsed_data(data) do
-    {:ok, data}
+    {:error, "Found metadata was invalid or incomplete: #{inspect(data)}"}
   end
 end
