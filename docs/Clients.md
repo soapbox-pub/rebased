@@ -1,5 +1,30 @@
 # Pleroma Clients
 Note: Additionnal clients may be working but theses are officially supporting Pleroma.
+Feel free to contact us to be added to this list!
+
+## Brutaldon
+- Homepage: <https://jfm.carcosa.net/projects/software/brutaldon/>
+- Source Code: <https://github.com/jfmcbrayer/brutaldon>
+- Contact: [@gcupc@glitch.social](https://glitch.social/users/gcupc)
+- Platforms: Web
+
+## Sengi
+- Source Code: <https://github.com/NicolasConstant/sengi>
+- Contact: [@sengi_app@mastodon.social](https://mastodon.social/users/sengi_app)
+- Platforms: Web
+- Note(2019-01-28): The development is currently in a early stage.
+
+## Halcyon
+- Source Code: <https://notabug.org/halcyon-suite/halcyon>
+- Contact: [@halcyon@social.csswg.org](https://social.csswg.org/users/halcyon)
+- Platforms: Web
+
+## Pinafore
+- Homepage: <https://pinafore.social/>
+- Source Code: <https://github.com/nolanlawson/pinafore>
+- Contact: [@pinafore@mastodon.technology](https://mastodon.technology/users/pinafore)
+- Note: Pleroma support is a secondary goal
+- Platforms: Web
 
 ## Roma
 - Homepage: <http://www.pleroma.com/>
