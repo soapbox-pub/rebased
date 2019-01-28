@@ -177,7 +177,7 @@ config :pleroma, :frontend_configurations,
   pleroma_fe: %{
     theme: "pleroma-dark",
     logo: "/static/logo.png",
-    background: "/static/aurora_borealis.jpg",
+    background: "/images/city.jpg",
     redirectRootNoLogin: "/main/all",
     redirectRootLogin: "/main/friends",
     showInstanceSpecificPanel: true,
