@@ -14,22 +14,6 @@ defmodule Pleroma.Web.FederatorTest do
     :ok
   end
 
-  test "enqueues an element according to priority" do
-    queue = [%{item: 1, priority: 2}]
-
-    new_queue = Federator.enqueue_sorted(queue, 2, 1)
-    assert new_queue == [%{item: 2, priority: 1}, %{item: 1, priority: 2}]
-
-    new_queue = Federator.enqueue_sorted(queue, 2, 3)
-    assert new_queue == [%{item: 1, priority: 2}, %{item: 2, priority: 3}]
-  end
-
-  test "pop first item" do
-    queue = [%{item: 2, priority: 1}, %{item: 1, priority: 2}]
-
-    assert {2, [%{item: 1, priority: 2}]} = Federator.queue_pop(queue)
-  end
-
   describe "Publish an activity" do
     setup do
       user = insert(:user)
@@ -49,7 +33,7 @@ defmodule Pleroma.Web.FederatorTest do
       relay_mock: relay_mock
     } do
       with_mocks([relay_mock]) do
-        Federator.handle(:publish, activity)
+        Federator.publish(activity)
       end
 
       assert_received :relay_publish
@@ -62,7 +46,7 @@ defmodule Pleroma.Web.FederatorTest do
       Pleroma.Config.put([:instance, :allow_relay], false)
 
       with_mocks([relay_mock]) do
-        Federator.handle(:publish, activity)
+        Federator.publish(activity)
       end
 
       refute_received :relay_publish
@@ -87,7 +71,7 @@ defmodule Pleroma.Web.FederatorTest do
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      {:ok, _activity} = Federator.handle(:incoming_ap_doc, params)
+      {:ok, _activity} = Federator.incoming_ap_doc(params)
     end
 
     test "rejects incoming AP docs with incorrect origin" do
@@ -105,7 +89,7 @@ defmodule Pleroma.Web.FederatorTest do
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      :error = Federator.handle(:incoming_ap_doc, params)
+      :error = Federator.incoming_ap_doc(params)
     end
   end
 end

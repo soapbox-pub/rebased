@@ -36,14 +36,15 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 An example for Sendgrid adapter:
 
-```
+```exs
 config :pleroma, Pleroma.Mailer,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
 ```
 
 An example for SMTP adapter:
-```
+
+```exs
 config :pleroma, Pleroma.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
@@ -163,7 +164,7 @@ their ActivityPub ID.
 
 An example:
 
-```
+```exs
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
@@ -192,18 +193,34 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 
 Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
 
-```
+```exs
 config :pleroma, :admin_token, "somerandomtoken"
 ```
 
 You can then do
-```
+
+```sh
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
 
-## Pleroma.Web.Federator
+## Pleroma.Jobs
 
-* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
+A list of job queues and their settings.
+
+Job queue settings:
+
+* `max_jobs`: The maximum amount of parallel jobs running at the same time.
+
+Example:
+
+```exs
+config :pleroma, Pleroma.Jobs,
+  federator_incoming: [max_jobs: 50],
+  federator_outgoing: [max_jobs: 50]
+```
+
+This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
+
 
 ## Pleroma.Web.Federator.RetryQueue
 

@@ -101,9 +101,10 @@ defmodule Pleroma.Application do
         ),
         worker(Pleroma.FlakeId, []),
         worker(Pleroma.Web.Federator.RetryQueue, []),
-        worker(Pleroma.Web.Federator, []),
         worker(Pleroma.Stats, []),
-        worker(Pleroma.Web.Push, [])
+        worker(Pleroma.Web.Push, []),
+        worker(Pleroma.Jobs, []),
+        worker(Task, [&Pleroma.Web.Federator.init/0], restart: :temporary)
       ] ++
         streamer_child() ++
         chat_child() ++

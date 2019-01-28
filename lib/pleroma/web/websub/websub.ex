@@ -7,7 +7,7 @@ defmodule Pleroma.Web.Websub do
   alias Pleroma.Repo
   alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   alias Pleroma.Web.OStatus.FeedRepresenter
-  alias Pleroma.Web.{XML, Endpoint, OStatus}
+  alias Pleroma.Web.{XML, Endpoint, OStatus, Federator}
   alias Pleroma.Web.Router.Helpers
   require Logger
 
@@ -77,7 +77,7 @@ defmodule Pleroma.Web.Websub do
         secret: sub.secret
       }
 
-      Pleroma.Web.Federator.enqueue(:publish_single_websub, data)
+      Federator.publish_single_websub(data)
     end)
   end
 
@@ -109,7 +109,7 @@ defmodule Pleroma.Web.Websub do
 
       websub = Repo.update!(change)
 
-      Pleroma.Web.Federator.enqueue(:verify_websub, websub)
+      Federator.verify_websub(websub)
 
       {:ok, websub}
     else
@@ -259,7 +259,7 @@ defmodule Pleroma.Web.Websub do
     subs = Repo.all(query)
 
     Enum.each(subs, fn sub ->
-      Pleroma.Web.Federator.enqueue(:request_subscription, sub)
+      Federator.request_subscription(sub)
     end)
   end
 

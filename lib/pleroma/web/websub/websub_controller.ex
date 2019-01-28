@@ -80,7 +80,7 @@ defmodule Pleroma.Web.Websub.WebsubController do
          %WebsubClientSubscription{} = websub <- Repo.get(WebsubClientSubscription, id),
          {:ok, body, _conn} = read_body(conn),
          ^signature <- Websub.sign(websub.secret, body) do
-      Federator.enqueue(:incoming_doc, body)
+      Federator.incoming_doc(body)
 
       conn
       |> send_resp(200, "OK")

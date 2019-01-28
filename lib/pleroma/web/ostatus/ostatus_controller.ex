@@ -82,7 +82,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     {:ok, body, _conn} = read_body(conn)
     {:ok, doc} = decode_or_retry(body)
 
-    Federator.enqueue(:incoming_doc, doc)
+    Federator.incoming_doc(doc)
 
     conn
     |> send_resp(200, "")
