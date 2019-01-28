@@ -15,11 +15,13 @@ defmodule Pleroma.Web.RichMedia.Parser do
     def parse(url), do: parse_url(url)
   else
     def parse(url) do
-      with {:ok, data} <- Cachex.fetch(:rich_media_cache, url, fn _ -> parse_url(url) end) do
-        data
-      else
-        _e ->
-          {:error, "Parsing error"}
+      try do
+        Cachex.fetch!(:rich_media_cache, url, fn _ ->
+          {:commit, parse_url(url)}
+        end)
+      rescue
+        e ->
+          {:error, "Cachex error: #{inspect(e)}"}
       end
     end
   end
@@ -30,8 +32,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
       html |> maybe_parse() |> get_parsed_data()
     rescue
-      _e ->
-        {:error, "Parsing error"}
+      e ->
+        {:error, "Parsing error: #{inspect(e)}"}
     end
   end
 
