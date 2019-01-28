@@ -69,7 +69,7 @@ defmodule Pleroma.HTML do
         |> Floki.attribute("a", "href")
         |> Enum.at(0)
 
-      {:commit, result}
+      {:commit, {:ok, result}}
     end)
   end
 end

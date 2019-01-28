@@ -8,7 +8,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
 
   def fetch_data_for_activity(%Activity{} = activity) do
     with %Object{} = object <- Object.normalize(activity.data["object"]),
-         page_url <- HTML.extract_first_external_url(object, object.data["content"]),
+         {:ok, page_url} <- HTML.extract_first_external_url(object, object.data["content"]),
          {:ok, rich_media} <- Parser.parse(page_url) do
       %{page_url: page_url, rich_media: rich_media}
     else
