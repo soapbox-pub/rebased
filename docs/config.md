@@ -101,7 +101,24 @@ config :pleroma, Pleroma.Mailer,
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
+
+## :frontend_configurations
+
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured.
+
+Frontends can access these settings at `/api/pleroma/frontend_configurations`
+
+To add your own configuration for PleromaFE, use it like this:
+
+`config :pleroma, :frontend_configurations, :pleroma_fe, %{theme: "my-theme", ...}`
+
+These settings need to be complete, they will overide the defaults.
+
 ## :fe
+__THIS IS DEPRECATED__
+
+If you are using this method, please change it to the `frontend_configurations` method. Please set this option to false in your config like this: `config :pleroma, :fe, false`.
+
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
 
 * `theme`: Which theme to use, they are defined in ``styles.json``

@@ -22,6 +22,8 @@ defmodule Pleroma.Application do
   def start(_type, _args) do
     import Cachex.Spec
 
+    Pleroma.Config.DeprecationWarnings.warn()
+
     # Define workers and child supervisors to be supervised
     children =
       [
