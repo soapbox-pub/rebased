@@ -88,6 +88,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           recipients: recipients
         })
 
+      Task.start(fn ->
+        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+      end)
+
       Notification.create_notifications(activity)
       stream_out(activity)
       {:ok, activity}

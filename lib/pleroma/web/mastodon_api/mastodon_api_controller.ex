@@ -6,7 +6,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.{Repo, Object, Activity, User, Notification, Stats}
   alias Pleroma.Web
-  alias Pleroma.HTML
 
   alias Pleroma.Web.MastodonAPI.{
     StatusView,
@@ -500,7 +499,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def upload(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
-           ActivityPub.upload(file,
+           ActivityPub.upload(
+             file,
              actor: User.ap_id(user),
              description: Map.get(data, "description")
            ) do
@@ -1101,7 +1101,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def login(conn, _) do
     with {:ok, app} <- get_or_make_app() do
       path =
-        o_auth_path(conn, :authorize,
+        o_auth_path(
+          conn,
+          :authorize,
           response_type: "code",
           client_id: app.client_id,
           redirect_uri: ".",
@@ -1342,27 +1344,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def get_status_card(status_id) do
-    with %Activity{} = activity <- Repo.get(Activity, status_id),
-         true <- ActivityPub.is_public?(activity),
-         %Object{} = object <- Object.normalize(activity.data["object"]),
-         page_url <- HTML.extract_first_external_url(object, object.data["content"]),
-         {:ok, rich_media} <- Pleroma.Web.RichMedia.Parser.parse(page_url) do
-      page_url = rich_media[:url] || page_url
-      site_name = rich_media[:site_name] || URI.parse(page_url).host
-
-      rich_media
-      |> Map.take([:image, :title, :description])
-      |> Map.put(:type, "link")
-      |> Map.put(:provider_name, site_name)
-      |> Map.put(:url, page_url)
-    else
-      _ -> %{}
-    end
-  end
-
   def status_card(conn, %{"id" => status_id}) do
-    json(conn, get_status_card(status_id))
+    with %Activity{} = activity <- Repo.get(Activity, status_id),
+         true <- ActivityPub.is_public?(activity) do
+      data =
+        StatusView.render(
+          "card.json",
+          Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+        )
+
+      json(conn, data)
+    else
+      _e ->
+        %{}
+    end
   end
 
   def try_render(conn, target, params)

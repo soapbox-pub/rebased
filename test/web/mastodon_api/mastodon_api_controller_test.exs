@@ -136,6 +136,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert Repo.get(Activity, id)
   end
 
+  test "posting a status with OGP link preview", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" => "http://example.com/ogp"
+      })
+
+    assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
+    assert Repo.get(Activity, id)
+  end
+
   test "posting a direct status", %{conn: conn} do
     user1 = insert(:user)
     user2 = insert(:user)
@@ -1663,9 +1677,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert response == %{
                "image" => "http://ia.media-imdb.com/images/rock.jpg",
                "provider_name" => "www.imdb.com",
+               "provider_url" => "http://www.imdb.com",
                "title" => "The Rock",
                "type" => "link",
-               "url" => "http://www.imdb.com/title/tt0117500/"
+               "url" => "http://www.imdb.com/title/tt0117500/",
+               "description" => nil,
+               "pleroma" => %{
+                 "opengraph" => %{
+                   "image" => "http://ia.media-imdb.com/images/rock.jpg",
+                   "title" => "The Rock",
+                   "type" => "video.movie",
+                   "url" => "http://www.imdb.com/title/tt0117500/"
+                 }
+               }
              }
     end
   end
