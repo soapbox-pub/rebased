@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.Web.Websub.WebsubClientSubscription
-  alias Pleroma.{Repo, Activity, Instances}
+  alias Pleroma.{Repo, Activity}
   alias Pleroma.Web.Websub
 
   test "websub subscription request", %{conn: conn} do
@@ -81,26 +81,6 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
       assert response(conn, 500) == "Error"
 
       assert length(Repo.all(Activity)) == 0
-    end
-
-    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
-      sender_url = "https://pleroma.soykaf.com"
-      Instances.set_consistently_unreachable(sender_url)
-      refute Instances.reachable?(sender_url)
-
-      websub = insert(:websub_client_subscription)
-      doc = "some stuff"
-      signature = Websub.sign(websub.secret, doc)
-
-      conn =
-        conn
-        |> put_req_header("x-hub-signature", "sha1=" <> signature)
-        |> put_req_header("content-type", "application/atom+xml")
-        |> put_req_header("referer", sender_url)
-        |> post("/push/subscriptions/#{websub.id}", doc)
-
-      assert response(conn, 200) == "OK"
-      assert Instances.reachable?(sender_url)
     end
   end
 end

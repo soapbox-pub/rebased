@@ -39,6 +39,11 @@ defmodule Pleroma.InstancesTest do
       assert Instances.reachable?(url)
       assert Instances.reachable?(URI.parse(url).host)
     end
+
+    test "returns true on non-binary input" do
+      assert Instances.reachable?(nil)
+      assert Instances.reachable?(1)
+    end
   end
 
   describe "filter_reachable/1" do
@@ -70,6 +75,19 @@ defmodule Pleroma.InstancesTest do
 
       Instances.set_reachable(url)
       assert Instances.reachable?(url)
+    end
+
+    test "returns error status on non-binary input" do
+      assert {:error, _} = Instances.set_reachable(nil)
+      assert {:error, _} = Instances.set_reachable(1)
+    end
+  end
+
+  # Note: implementation-specific (e.g. Instance) details of set_unreachable/1 should be tested in implementation-specific tests
+  describe "set_unreachable/1" do
+    test "returns error status on non-binary input" do
+      assert {:error, _} = Instances.set_unreachable(nil)
+      assert {:error, _} = Instances.set_unreachable(1)
     end
   end
 

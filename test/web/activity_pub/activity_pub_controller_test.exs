@@ -145,17 +145,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "it clears `unreachable` federation status of the sender", %{conn: conn} do
-      sender_url = "https://pleroma.soykaf.com"
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+
+      sender_url = data["actor"]
       Instances.set_consistently_unreachable(sender_url)
       refute Instances.reachable?(sender_url)
-
-      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
       conn =
         conn
         |> assign(:valid_signature, true)
         |> put_req_header("content-type", "application/activity+json")
-        |> put_req_header("referer", sender_url)
         |> post("/inbox", data)
 
       assert "ok" == json_response(conn, 200)
@@ -210,10 +209,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
 
     test "it clears `unreachable` federation status of the sender", %{conn: conn} do
-      sender_host = "pleroma.soykaf.com"
-      Instances.set_consistently_unreachable(sender_host)
-      refute Instances.reachable?(sender_host)
-
       user = insert(:user)
 
       data =
@@ -221,11 +216,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> Poison.decode!()
         |> Map.put("bcc", [user.ap_id])
 
+      sender_host = URI.parse(data["actor"]).host
+      Instances.set_consistently_unreachable(sender_host)
+      refute Instances.reachable?(sender_host)
+
       conn =
         conn
         |> assign(:valid_signature, true)
         |> put_req_header("content-type", "application/activity+json")
-        |> put_req_header("referer", "https://#{sender_host}")
         |> post("/users/#{user.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)

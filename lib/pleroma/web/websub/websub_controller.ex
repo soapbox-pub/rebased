@@ -20,8 +20,6 @@ defmodule Pleroma.Web.Websub.WebsubController do
          ]
   )
 
-  plug(Pleroma.Web.Plugs.SetRequesterReachablePlug when action in [:websub_incoming])
-
   def websub_subscription_request(conn, %{"nickname" => nickname} = params) do
     user = User.get_cached_by_nickname(nickname)
 

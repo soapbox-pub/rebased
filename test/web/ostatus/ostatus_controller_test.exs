@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
-  alias Pleroma.{User, Repo, Object, Instances}
+  alias Pleroma.{User, Repo, Object}
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus.ActivityRepresenter
 
@@ -58,24 +58,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
         |> post("/users/#{user.nickname}/salmon", salmon)
 
       assert response(conn, 200)
-    end
-
-    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
-      sender_url = "https://pleroma.soykaf.com"
-      Instances.set_consistently_unreachable(sender_url)
-      refute Instances.reachable?(sender_url)
-
-      user = insert(:user)
-      salmon = File.read!("test/fixtures/salmon.xml")
-
-      conn =
-        conn
-        |> put_req_header("content-type", "application/atom+xml")
-        |> put_req_header("referer", sender_url)
-        |> post("/users/#{user.nickname}/salmon", salmon)
-
-      assert response(conn, 200)
-      assert Instances.reachable?(sender_url)
     end
   end
 

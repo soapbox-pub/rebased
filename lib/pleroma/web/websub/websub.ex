@@ -278,8 +278,7 @@ defmodule Pleroma.Web.Websub do
              xml,
              [
                {"Content-Type", "application/atom+xml"},
-               {"X-Hub-Signature", "sha1=#{signature}"},
-               {"referer", Pleroma.Web.Endpoint.url()}
+               {"X-Hub-Signature", "sha1=#{signature}"}
              ]
            ) do
       Instances.set_reachable(callback)

@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy do
-  @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since if-unmodified-since) ++
-                      ~w(if-none-match if-range range referer)
+  @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since if-unmodified-since if-none-match if-range range)
   @resp_cache_headers ~w(etag date last-modified cache-control)
   @keep_resp_headers @resp_cache_headers ++
                        ~w(content-type content-disposition content-encoding content-range accept-ranges vary)
