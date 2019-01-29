@@ -453,9 +453,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
-           ActivityPub.accept(%{
+           ActivityPub.reject(%{
              to: follow_activity.data["to"],
-             type: "Accept",
+             type: "Reject",
              actor: followed.ap_id,
              object: follow_activity.data["id"],
              local: false
