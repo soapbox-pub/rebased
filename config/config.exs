@@ -353,6 +353,7 @@ config :pleroma, Pleroma.Web.Federator.RetryQueue,
   initial_timeout: 30,
   max_retries: 5
 
+<<<<<<< HEAD
 config :pleroma_job_queue, :queues,
   federator_incoming: 50,
   federator_outgoing: 50,
@@ -384,6 +385,8 @@ config :pleroma, :ldap,
   uid: System.get_env("LDAP_UID") || "cn"
 
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Sendmail
+
+config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
