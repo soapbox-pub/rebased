@@ -132,7 +132,7 @@ defmodule Pleroma.Application do
         []
       end ++
       if Pleroma.Config.get([Pleroma.Uploader, :proxy_remote]) do
-        [:uploadproxy]
+        [:upload]
       else
         []
       end
