@@ -20,7 +20,7 @@ defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
   end
 
   defp get_oembed_data(url) do
-    {:ok, %Tesla.Env{body: json}} = Pleroma.HTTP.get(url, [], pool: :media)
+    {:ok, %Tesla.Env{body: json}} = Pleroma.HTTP.get(url, [], adapter: [pool: :media])
 
     {:ok, data} = Jason.decode(json)
 
