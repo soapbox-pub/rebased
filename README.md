@@ -80,6 +80,10 @@ Add the following to your `dev.secret.exs` or `prod.secret.exs` if you want to p
 
 This is useful for running pleroma inside Tor or i2p.
 
+## Customization and contribution
+
+The [Pleroma Wiki](https://git.pleroma.social/pleroma/pleroma/wikis/home) offers manuals and guides on how to further customize your instance to your liking and how you can contribute to the project.
+
 ## Troubleshooting
 
 ### No incoming federation
