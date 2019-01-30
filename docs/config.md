@@ -110,7 +110,7 @@ Frontends can access these settings at `/api/pleroma/frontend_configurations`
 
 To add your own configuration for PleromaFE, use it like this:
 
-`config :pleroma, :frontend_configurations, :pleroma_fe: %{redirectRootNoLogin: "/main/all", ...}`
+`config :pleroma, :frontend_configurations, pleroma_fe: %{redirectRootNoLogin: "/main/all", ...}`
 
 These settings need to be complete, they will override the defaults. See `priv/static/static/config.json` for the available keys.
 
