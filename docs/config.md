@@ -234,3 +234,20 @@ curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerando
   * Pleroma.Web.Metadata.Providers.OpenGraph
   * Pleroma.Web.Metadata.Providers.TwitterCard
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews
+
+## :hackney_pools
+
+Advanced. Tweaks Hackney (http client) connections pools.
+
+There's three pools used:
+
+* `:federation` for the federation jobs.
+  You may want this pool max_connections to be at least equal to the number of federator jobs + retry queue jobs.
+* `:media` for rich media, media proxy
+* `:upload` for uploaded media (if using a remote uploader and `proxy_remote: true`)
+
+For each pool, the options are:
+
+* `max_connections` - how much connections a pool can hold
+* `timeout` - retention duration for connections
+
