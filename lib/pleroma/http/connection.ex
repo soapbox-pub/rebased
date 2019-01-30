@@ -10,7 +10,8 @@ defmodule Pleroma.HTTP.Connection do
   @hackney_options [
     timeout: 10000,
     recv_timeout: 20000,
-    follow_redirect: true
+    follow_redirect: true,
+    pool: :federation
   ]
   @adapter Application.get_env(:tesla, :adapter)
 

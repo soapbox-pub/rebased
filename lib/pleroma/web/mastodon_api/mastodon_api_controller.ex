@@ -1311,7 +1311,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
                [],
                adapter: [
                  timeout: timeout,
-                 recv_timeout: timeout
+                 recv_timeout: timeout,
+                 pool: :default
                ]
              ),
            {:ok, data} <- Jason.decode(body) do
