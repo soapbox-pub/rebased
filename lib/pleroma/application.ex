@@ -25,6 +25,7 @@ defmodule Pleroma.Application do
     import Cachex.Spec
 
     Pleroma.Config.DeprecationWarnings.warn()
+    setup_instrumenters()
 
     # Define workers and child supervisors to be supervised
     children =
@@ -138,6 +139,13 @@ defmodule Pleroma.Application do
       else
         []
       end
+  end
+
+  defp setup_instrumenters() do
+    Pleroma.Web.Endpoint.MetricsExporter.setup()
+    Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
+    Pleroma.Web.Endpoint.Instrumenter.setup()
+    Pleroma.Repo.Instrumenter.setup()
   end
 
   if Mix.env() == :test do

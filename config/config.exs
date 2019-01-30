@@ -8,6 +8,10 @@ use Mix.Config
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
+config :pleroma, Pleroma.Repo,
+  types: Pleroma.PostgresTypes,
+  loggers: [Pleroma.Repo.Instrumenter, Ecto.LogEntry]
+
 config :pleroma, Pleroma.Captcha,
   enabled: false,
   seconds_valid: 60,
@@ -87,6 +91,7 @@ websocket_config = [
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
+  instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
     dispatch: [
