@@ -623,8 +623,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           "in_reply_to_status_id" => private_activity_2.id
         })
 
-      assert user1.following == [user3.ap_id <> "/followers", user1.ap_id]
-
       activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
 
       assert [public_activity, private_activity_1, private_activity_3] == activities
