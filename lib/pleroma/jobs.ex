@@ -102,7 +102,11 @@ defmodule Pleroma.Jobs do
 
     running_jobs = :sets.del_element(ref, running_jobs)
 
-    state = state |> remove_ref(ref) |> maybe_start_job(queue_name, running_jobs, queue)
+    state =
+      state
+      |> remove_ref(ref)
+      |> update_queue(queue_name, {running_jobs, queue})
+      |> maybe_start_job(queue_name, running_jobs, queue)
 
     {:noreply, state}
   end
@@ -118,7 +122,7 @@ defmodule Pleroma.Jobs do
       |> add_ref(queue_name, mref)
       |> update_queue(queue_name, {:sets.add_element(mref, running_jobs), queue})
     else
-      update_queue(state, queue_name, {running_jobs, queue})
+      state
     end
   end
 
