@@ -123,7 +123,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 
 * `theme`: Which theme to use, they are defined in ``styles.json``
 * `logo`: URL of the logo, defaults to Pleroma’s logo
-* `logo_mask`: Whenether to mask the logo
+* `logo_mask`: Whether to use only the logo's shape as a mask (true) or as a regular image (false)
 * `logo_margin`: What margin to use around the logo
 * `background`: URL of the background, unless viewing a user profile with a background that is set
 * `redirect_root_no_login`: relative URL which indicates where to redirect when a user isn’t logged in.
