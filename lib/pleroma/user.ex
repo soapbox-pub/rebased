@@ -315,7 +315,16 @@ defmodule Pleroma.User do
     q =
       from(u in User,
         where: u.id == ^follower.id,
-        update: [set: [following: fragment("array_cat(?, ?)", u.following, ^followed_addresses)]]
+        update: [
+          set: [
+            following:
+              fragment(
+                "array(select distinct unnest (array_cat(?, ?)))",
+                u.following,
+                ^followed_addresses
+              )
+          ]
+        ]
       )
 
     {1, [follower]} = Repo.update_all(q, [], returning: true)
