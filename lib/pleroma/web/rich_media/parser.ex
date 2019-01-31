@@ -30,7 +30,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
     try do
       {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: [pool: :media])
 
-      html |> maybe_parse() |> get_parsed_data()
+      html |> maybe_parse() |> clean_parsed_data() |> check_parsed_data()
     rescue
       e ->
         {:error, "Parsing error: #{inspect(e)}"}
@@ -46,11 +46,31 @@ defmodule Pleroma.Web.RichMedia.Parser do
     end)
   end
 
-  defp get_parsed_data(%{title: title} = data) when is_binary(title) and byte_size(title) > 0 do
+  defp check_parsed_data(%{title: title} = data) when is_binary(title) and byte_size(title) > 0 do
     {:ok, data}
   end
 
-  defp get_parsed_data(data) do
+  defp check_parsed_data(data) do
     {:error, "Found metadata was invalid or incomplete: #{inspect(data)}"}
+  end
+
+  defp string_is_valid_unicode(data) do
+    data
+    |> :unicode.characters_to_binary()
+    |> clean_string()
+  end
+
+  defp clean_string({:error, _, _}), do: {:error, "Invalid data"}
+  defp clean_string(data), do: {:ok, data}
+
+  defp clean_parsed_data(data) do
+    data
+    |> Enum.reject(fn {_, val} ->
+      case string_is_valid_unicode(val) do
+        {:ok, _} -> false
+        _ -> true
+      end
+    end)
+    |> Map.new()
   end
 end
