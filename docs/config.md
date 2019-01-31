@@ -235,6 +235,9 @@ curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerando
   * Pleroma.Web.Metadata.Providers.TwitterCard
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews
 
+## :rich_media
+* `enabled`: if enabled the instance will parse metadata from attached links to generate link previews
+
 ## :hackney_pools
 
 Advanced. Tweaks Hackney (http client) connections pools.
