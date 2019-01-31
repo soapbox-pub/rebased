@@ -1,1 +1,0 @@
-{"version":3,"sources":["webpack:///./app/javascript/packs/mailer.js"],"names":["__webpack_require__"],"mappings":"oGAAAA,EAAQ","file":"mailer.js","sourcesContent":["require('../styles/mailer.scss');\n"],"sourceRoot":""}
