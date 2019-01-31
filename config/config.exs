@@ -235,6 +235,8 @@ config :pleroma, :mrf_simple,
   reject: [],
   accept: []
 
+config :pleroma, :rich_media, enabled: true
+
 config :pleroma, :media_proxy,
   enabled: false,
   proxy_opts: [
