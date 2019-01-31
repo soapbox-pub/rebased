@@ -657,6 +657,10 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
   end
 
+  def get("http://example.com/malformed", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}}
+  end
+
   def get("http://example.com/empty", _, _, _) do
     {:ok, %Tesla.Env{status: 200, body: "hello"}}
   end
