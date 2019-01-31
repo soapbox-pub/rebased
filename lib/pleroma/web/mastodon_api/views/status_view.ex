@@ -87,6 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourites_count: 0,
       reblogged: false,
       favourited: false,
+      bookmarked: false,
       muted: false,
       pinned: pinned?(activity, user),
       sensitive: false,
@@ -121,6 +122,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
+    bookmarked = opts[:for] && object["id"] in opts[:for].bookmarks
 
     attachment_data = object["attachment"] || []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
@@ -157,6 +159,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       favourites_count: like_count,
       reblogged: present?(repeated),
       favourited: present?(favorited),
+      bookmarked: present?(bookmarked),
       muted: false,
       pinned: pinned?(activity, user),
       sensitive: sensitive,
