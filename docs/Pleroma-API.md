@@ -52,6 +52,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
     * `confirm`
     * `captcha_solution`: optional, contains provider-specific captcha solution,
     * `captcha_token`: optional, contains provider-specific captcha token
+    * `token`: invite token required when the registerations aren't public.
 * Response: JSON. Returns a user object on success, otherwise returns `{"error": "error_msg"}`
 * Example response:
 ```
