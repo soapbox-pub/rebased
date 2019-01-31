@@ -54,11 +54,13 @@ defmodule Pleroma.Web.RichMedia.Parser do
     {:error, "Found metadata was invalid or incomplete: #{inspect(data)}"}
   end
 
-  defp string_is_valid_unicode(data) do
+  defp string_is_valid_unicode(data) when is_binary(data) do
     data
     |> :unicode.characters_to_binary()
     |> clean_string()
   end
+
+  defp string_is_valid_unicode(data), do: {:ok, data}
 
   defp clean_string({:error, _, _}), do: {:error, "Invalid data"}
   defp clean_string(data), do: {:ok, data}
