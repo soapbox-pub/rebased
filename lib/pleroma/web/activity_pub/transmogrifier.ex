@@ -141,11 +141,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("actor", get_actor(%{"actor" => actor}))
   end
 
-  def fix_likes(%{"likes" => likes} = object)
-      when is_bitstring(likes) do
-    # Check for standardisation
-    # This is what Peertube does
-    # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+  # Check for standardisation
+  # This is what Peertube does
+  # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+  # Prismo returns only an integer (count) as "likes"
+  def fix_likes(%{"likes" => likes} = object) when not is_map(likes) do
     object
     |> Map.put("likes", [])
     |> Map.put("like_count", 0)
@@ -453,9 +453,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
-           ActivityPub.accept(%{
+           ActivityPub.reject(%{
              to: follow_activity.data["to"],
-             type: "Accept",
+             type: "Reject",
              actor: followed.ap_id,
              object: follow_activity.data["id"],
              local: false

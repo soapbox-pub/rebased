@@ -50,13 +50,19 @@ defmodule Pleroma.UserTest do
 
   test "follow_all follows mutliple users" do
     user = insert(:user)
+    followed_zero = insert(:user)
     followed_one = insert(:user)
     followed_two = insert(:user)
+    not_followed = insert(:user)
+
+    {:ok, user} = User.follow(user, followed_zero)
 
     {:ok, user} = User.follow_all(user, [followed_one, followed_two])
 
     assert User.following?(user, followed_one)
     assert User.following?(user, followed_two)
+    assert User.following?(user, followed_zero)
+    refute User.following?(user, not_followed)
   end
 
   test "follow takes a user and another user" do

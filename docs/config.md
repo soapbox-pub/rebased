@@ -102,7 +102,24 @@ config :pleroma, Pleroma.Mailer,
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
+
+## :frontend_configurations
+
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured.
+
+Frontends can access these settings at `/api/pleroma/frontend_configurations`
+
+To add your own configuration for PleromaFE, use it like this:
+
+`config :pleroma, :frontend_configurations, pleroma_fe: %{redirectRootNoLogin: "/main/all", ...}`
+
+These settings need to be complete, they will override the defaults. See `priv/static/static/config.json` for the available keys.
+
 ## :fe
+__THIS IS DEPRECATED__
+
+If you are using this method, please change it to the `frontend_configurations` method. Please set this option to false in your config like this: `config :pleroma, :fe, false`.
+
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
 
 * `theme`: Which theme to use, they are defined in ``styles.json``
@@ -234,3 +251,20 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
   * Pleroma.Web.Metadata.Providers.OpenGraph
   * Pleroma.Web.Metadata.Providers.TwitterCard
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews
+
+## :hackney_pools
+
+Advanced. Tweaks Hackney (http client) connections pools.
+
+There's three pools used:
+
+* `:federation` for the federation jobs.
+  You may want this pool max_connections to be at least equal to the number of federator jobs + retry queue jobs.
+* `:media` for rich media, media proxy
+* `:upload` for uploaded media (if using a remote uploader and `proxy_remote: true`)
+
+For each pool, the options are:
+
+* `max_connections` - how much connections a pool can hold
+* `timeout` - retention duration for connections
+

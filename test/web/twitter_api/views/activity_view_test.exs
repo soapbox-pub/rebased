@@ -148,7 +148,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "text" => "Hey @shp!",
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user}),
-      "visibility" => "direct"
+      "visibility" => "direct",
+      "card" => nil
     }
 
     assert result == expected

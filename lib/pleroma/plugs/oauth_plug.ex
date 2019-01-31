@@ -33,7 +33,12 @@ defmodule Pleroma.Plugs.OAuthPlug do
   #
   @spec fetch_user_and_token(String.t()) :: {:ok, User.t(), Token.t()} | nil
   defp fetch_user_and_token(token) do
-    query = from(q in Token, where: q.token == ^token, preload: [:user])
+    query =
+      from(t in Token,
+        where: t.token == ^token,
+        join: user in assoc(t, :user),
+        preload: [user: user]
+      )
 
     with %Token{user: %{info: %{deactivated: false} = _} = user} = token_record <- Repo.one(query) do
       {:ok, user, token_record}

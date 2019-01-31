@@ -64,7 +64,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp check_remote_limit(%{"object" => %{"content" => content}}) do
+  defp check_remote_limit(%{"object" => %{"content" => content}}) when not is_nil(content) do
     limit = Pleroma.Config.get([:instance, :remote_limit])
     String.length(content) <= limit
   end
@@ -87,6 +87,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           actor: map["actor"],
           recipients: recipients
         })
+
+      Task.start(fn ->
+        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+      end)
 
       Notification.create_notifications(activity)
       stream_out(activity)
@@ -426,7 +430,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_since(query, _), do: query
 
-  defp restrict_tag(query, %{"tag" => tag}) do
+  defp restrict_tag_reject(query, %{"tag_reject" => tag_reject})
+       when is_list(tag_reject) and tag_reject != [] do
+    from(
+      activity in query,
+      where: fragment("(not (? #> '{\"object\",\"tag\"}') \\?| ?)", activity.data, ^tag_reject)
+    )
+  end
+
+  defp restrict_tag_reject(query, _), do: query
+
+  defp restrict_tag_all(query, %{"tag_all" => tag_all})
+       when is_list(tag_all) and tag_all != [] do
+    from(
+      activity in query,
+      where: fragment("(? #> '{\"object\",\"tag\"}') \\?& ?", activity.data, ^tag_all)
+    )
+  end
+
+  defp restrict_tag_all(query, _), do: query
+
+  defp restrict_tag(query, %{"tag" => tag}) when is_list(tag) do
+    from(
+      activity in query,
+      where: fragment("(? #> '{\"object\",\"tag\"}') \\?| ?", activity.data, ^tag)
+    )
+  end
+
+  defp restrict_tag(query, %{"tag" => tag}) when is_binary(tag) do
     from(
       activity in query,
       where: fragment("? <@ (? #> '{\"object\",\"tag\"}')", ^tag, activity.data)
@@ -575,6 +606,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     base_query
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
+    |> restrict_tag_reject(opts)
+    |> restrict_tag_all(opts)
     |> restrict_since(opts)
     |> restrict_local(opts)
     |> restrict_limit(opts)

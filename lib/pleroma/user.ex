@@ -309,20 +309,21 @@ defmodule Pleroma.User do
   @doc "A mass follow for local users. Ignores blocks and has no side effects"
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
-    following =
-      (follower.following ++ Enum.map(followeds, fn %{follower_address: fa} -> fa end))
-      |> Enum.uniq()
+    followed_addresses = Enum.map(followeds, fn %{follower_address: fa} -> fa end)
 
-    {:ok, follower} =
-      follower
-      |> follow_changeset(%{following: following})
-      |> update_and_set_cache
+    q =
+      from(u in User,
+        where: u.id == ^follower.id,
+        update: [set: [following: fragment("array_cat(?, ?)", u.following, ^followed_addresses)]]
+      )
+
+    {1, [follower]} = Repo.update_all(q, [], returning: true)
 
     Enum.each(followeds, fn followed ->
       update_follower_count(followed)
     end)
 
-    {:ok, follower}
+    set_cache(follower)
   end
 
   def follow(%User{} = follower, %User{info: info} = followed) do
@@ -343,18 +344,17 @@ defmodule Pleroma.User do
           Websub.subscribe(follower, followed)
         end
 
-        following =
-          [ap_followers | follower.following]
-          |> Enum.uniq()
+        q =
+          from(u in User,
+            where: u.id == ^follower.id,
+            update: [push: [following: ^ap_followers]]
+          )
 
-        follower =
-          follower
-          |> follow_changeset(%{following: following})
-          |> update_and_set_cache
+        {1, [follower]} = Repo.update_all(q, [], returning: true)
 
         {:ok, _} = update_follower_count(followed)
 
-        follower
+        set_cache(follower)
     end
   end
 
@@ -362,16 +362,17 @@ defmodule Pleroma.User do
     ap_followers = followed.follower_address
 
     if following?(follower, followed) and follower.ap_id != followed.ap_id do
-      following =
-        follower.following
-        |> List.delete(ap_followers)
+      q =
+        from(u in User,
+          where: u.id == ^follower.id,
+          update: [pull: [following: ^ap_followers]]
+        )
 
-      {:ok, follower} =
-        follower
-        |> follow_changeset(%{following: following})
-        |> update_and_set_cache
+      {1, [follower]} = Repo.update_all(q, [], returning: true)
 
       {:ok, followed} = update_follower_count(followed)
+
+      set_cache(follower)
 
       {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
     else
@@ -423,12 +424,16 @@ defmodule Pleroma.User do
     get_by_nickname(nickname)
   end
 
+  def set_cache(user) do
+    Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
+    Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
+    Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user))
+    {:ok, user}
+  end
+
   def update_and_set_cache(changeset) do
     with {:ok, user} <- Repo.update(changeset) do
-      Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
-      Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
-      Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user))
-      {:ok, user}
+      set_cache(user)
     else
       e -> e
     end

@@ -19,5 +19,8 @@
   "loginMethod": "password",
   "webPushNotifications": false,
   "noAttachmentLinks": false,
-  "nsfwCensorImage": ""
+  "nsfwCensorImage": "",
+  "useOneClickNsfw": true,
+  "playVideosInline": false,
+  "useContainFit": false
 }

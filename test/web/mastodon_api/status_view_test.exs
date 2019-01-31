@@ -84,6 +84,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
+      card: nil,
       reblog: nil,
       content: HtmlSanitizeEx.basic_html(note.data["object"]["content"]),
       created_at: created_at,

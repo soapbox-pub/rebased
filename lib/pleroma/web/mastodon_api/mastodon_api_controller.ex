@@ -499,7 +499,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def upload(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
-           ActivityPub.upload(file,
+           ActivityPub.upload(
+             file,
              actor: User.ap_id(user),
              description: Map.get(data, "description")
            ) do
@@ -540,15 +541,34 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def hashtag_timeline(%{assigns: %{user: user}} = conn, params) do
     local_only = params["local"] in [true, "True", "true", "1"]
 
-    params =
+    tags =
+      [params["tag"], params["any"]]
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.filter(& &1)
+      |> Enum.map(&String.downcase(&1))
+
+    tag_all =
+      params["all"] ||
+        []
+        |> Enum.map(&String.downcase(&1))
+
+    tag_reject =
+      params["none"] ||
+        []
+        |> Enum.map(&String.downcase(&1))
+
+    query_params =
       params
       |> Map.put("type", "Create")
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
-      |> Map.put("tag", String.downcase(params["tag"]))
+      |> Map.put("tag", tags)
+      |> Map.put("tag_all", tag_all)
+      |> Map.put("tag_reject", tag_reject)
 
     activities =
-      ActivityPub.fetch_public_activities(params)
+      ActivityPub.fetch_public_activities(query_params)
       |> Enum.reverse()
 
     conn
@@ -1081,7 +1101,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def login(conn, _) do
     with {:ok, app} <- get_or_make_app() do
       path =
-        o_auth_path(conn, :authorize,
+        o_auth_path(
+          conn,
+          :authorize,
           response_type: "code",
           client_id: app.client_id,
           redirect_uri: ".",
@@ -1289,7 +1311,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
                [],
                adapter: [
                  timeout: timeout,
-                 recv_timeout: timeout
+                 recv_timeout: timeout,
+                 pool: :default
                ]
              ),
            {:ok, data} <- Jason.decode(body) do
@@ -1319,6 +1342,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end
     else
       json(conn, [])
+    end
+  end
+
+  def status_card(conn, %{"id" => status_id}) do
+    with %Activity{} = activity <- Repo.get(Activity, status_id),
+         true <- ActivityPub.is_public?(activity) do
+      data =
+        StatusView.render(
+          "card.json",
+          Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+        )
+
+      json(conn, data)
+    else
+      _e ->
+        %{}
     end
   end
 

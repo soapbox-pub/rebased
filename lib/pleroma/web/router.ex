@@ -239,12 +239,6 @@ defmodule Pleroma.Web.Router do
     put("/settings", MastodonAPIController, :put_settings)
   end
 
-  scope "/api", Pleroma.Web.RichMedia do
-    pipe_through(:authenticated_api)
-
-    get("/rich_media/parse", RichMediaController, :parse)
-  end
-
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
     get("/instance", MastodonAPIController, :masto_instance)
@@ -258,7 +252,7 @@ defmodule Pleroma.Web.Router do
 
     get("/statuses/:id", MastodonAPIController, :get_status)
     get("/statuses/:id/context", MastodonAPIController, :get_context)
-    get("/statuses/:id/card", MastodonAPIController, :empty_object)
+    get("/statuses/:id/card", MastodonAPIController, :status_card)
     get("/statuses/:id/favourited_by", MastodonAPIController, :favourited_by)
     get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
 
@@ -284,6 +278,7 @@ defmodule Pleroma.Web.Router do
     post("/help/test", TwitterAPI.UtilController, :help_test)
     get("/statusnet/config", TwitterAPI.UtilController, :config)
     get("/statusnet/version", TwitterAPI.UtilController, :version)
+    get("/pleroma/frontend_configurations", TwitterAPI.UtilController, :frontend_configurations)
   end
 
   scope "/api", Pleroma.Web do
@@ -523,10 +518,10 @@ defmodule Fallback.RedirectController do
   alias Pleroma.Web.Metadata
   alias Pleroma.User
 
-  def redirector(conn, _params) do
+  def redirector(conn, _params, code \\ 200) do
     conn
     |> put_resp_content_type("text/html")
-    |> send_file(200, index_file_path())
+    |> send_file(code, index_file_path())
   end
 
   def redirector_with_meta(conn, %{"maybe_nickname_or_id" => maybe_nickname_or_id} = params) do

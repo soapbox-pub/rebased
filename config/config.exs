@@ -15,6 +15,20 @@ config :pleroma, Pleroma.Captcha,
   seconds_valid: 60,
   method: Pleroma.Captcha.Kocaptcha
 
+config :pleroma, :hackney_pools,
+  federation: [
+    max_connections: 50,
+    timeout: 150_000
+  ],
+  media: [
+    max_connections: 50,
+    timeout: 150_000
+  ],
+  upload: [
+    max_connections: 25,
+    timeout: 300_000
+  ]
+
 config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.ch"
 
 # Upload configuration
@@ -22,7 +36,14 @@ config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
   filters: [],
   proxy_remote: false,
-  proxy_opts: []
+  proxy_opts: [
+    redirect_on_failure: false,
+    max_body_length: 25 * 1_048_576,
+    http: [
+      follow_redirect: true,
+      pool: :upload
+    ]
+  ]
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "uploads"
 
@@ -154,6 +175,7 @@ config :pleroma, :markup,
     Pleroma.HTML.Scrubber.Default
   ]
 
+# Deprecated, will be gone in 1.0
 config :pleroma, :fe,
   theme: "pleroma-dark",
   logo: "/static/logo.png",
@@ -171,6 +193,24 @@ config :pleroma, :fe,
   scope_copy: true,
   subject_line_behavior: "email",
   always_show_subject_input: true
+
+config :pleroma, :frontend_configurations,
+  pleroma_fe: %{
+    theme: "pleroma-dark",
+    logo: "/static/logo.png",
+    background: "/images/city.jpg",
+    redirectRootNoLogin: "/main/all",
+    redirectRootLogin: "/main/friends",
+    showInstanceSpecificPanel: true,
+    scopeOptionsEnabled: false,
+    formattingOptionsEnabled: false,
+    collapseMessageWithSubject: false,
+    hidePostStats: false,
+    hideUserStats: false,
+    scopeCopy: true,
+    subjectLineBehavior: "email",
+    alwaysShowSubjectInput: true
+  }
 
 config :pleroma, :activitypub,
   accept_blocks: true,
@@ -195,7 +235,16 @@ config :pleroma, :mrf_simple,
   reject: [],
   accept: []
 
-config :pleroma, :media_proxy, enabled: false
+config :pleroma, :media_proxy,
+  enabled: false,
+  proxy_opts: [
+    redirect_on_failure: false,
+    max_body_length: 25 * 1_048_576,
+    http: [
+      follow_redirect: true,
+      pool: :media
+    ]
+  ]
 
 config :pleroma, :chat, enabled: true
 

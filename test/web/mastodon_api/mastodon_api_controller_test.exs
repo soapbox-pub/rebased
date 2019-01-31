@@ -136,6 +136,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert Repo.get(Activity, id)
   end
 
+  test "posting a status with OGP link preview", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" => "http://example.com/ogp"
+      })
+
+    assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
+    assert Repo.get(Activity, id)
+  end
+
   test "posting a direct status", %{conn: conn} do
     user1 = insert(:user)
     user2 = insert(:user)
@@ -1044,6 +1058,34 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end)
   end
 
+  test "multi-hashtag timeline", %{conn: conn} do
+    user = insert(:user)
+
+    {:ok, activity_test} = CommonAPI.post(user, %{"status" => "#test"})
+    {:ok, activity_test1} = CommonAPI.post(user, %{"status" => "#test #test1"})
+    {:ok, activity_none} = CommonAPI.post(user, %{"status" => "#test #none"})
+
+    any_test =
+      conn
+      |> get("/api/v1/timelines/tag/test", %{"any" => ["test1"]})
+
+    [status_none, status_test1, status_test] = json_response(any_test, 200)
+
+    assert to_string(activity_test.id) == status_test["id"]
+    assert to_string(activity_test1.id) == status_test1["id"]
+    assert to_string(activity_none.id) == status_none["id"]
+
+    restricted_test =
+      conn
+      |> get("/api/v1/timelines/tag/test", %{"all" => ["test1"], "none" => ["none"]})
+
+    assert [status_test1] == json_response(restricted_test, 200)
+
+    all_test = conn |> get("/api/v1/timelines/tag/test", %{"all" => ["none"]})
+
+    assert [status_none] == json_response(all_test, 200)
+  end
+
   test "getting followers", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
@@ -1622,6 +1664,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> assign(:user, user)
                |> post("/api/v1/statuses/#{activity_two.id}/pin")
                |> json_response(400)
+    end
+
+    test "Status rich-media Card", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "http://example.com/ogp"})
+
+      response =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}/card")
+        |> json_response(200)
+
+      assert response == %{
+               "image" => "http://ia.media-imdb.com/images/rock.jpg",
+               "provider_name" => "www.imdb.com",
+               "provider_url" => "http://www.imdb.com",
+               "title" => "The Rock",
+               "type" => "link",
+               "url" => "http://www.imdb.com/title/tt0117500/",
+               "description" => nil,
+               "pleroma" => %{
+                 "opengraph" => %{
+                   "image" => "http://ia.media-imdb.com/images/rock.jpg",
+                   "title" => "The Rock",
+                   "type" => "video.movie",
+                   "url" => "http://www.imdb.com/title/tt0117500/"
+                 }
+               }
+             }
     end
   end
 end

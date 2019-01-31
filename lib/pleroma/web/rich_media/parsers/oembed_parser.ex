@@ -20,8 +20,12 @@ defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
   end
 
   defp get_oembed_data(url) do
-    {:ok, %Tesla.Env{body: json}} = Pleroma.HTTP.get(url)
+    {:ok, %Tesla.Env{body: json}} = Pleroma.HTTP.get(url, [], adapter: [pool: :media])
 
-    {:ok, Poison.decode!(json)}
+    {:ok, data} = Jason.decode(json)
+
+    data = data |> Map.new(fn {k, v} -> {String.to_atom(k), v} end)
+
+    {:ok, data}
   end
 end

@@ -65,28 +65,27 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/oembed") ==
              {:ok,
               %{
-                "author_name" => "‮‭‬bees‬",
-                "author_url" => "https://www.flickr.com/photos/bees/",
-                "cache_age" => 3600,
-                "flickr_type" => "photo",
-                "height" => "768",
-                "html" =>
+                author_name: "‮‭‬bees‬",
+                author_url: "https://www.flickr.com/photos/bees/",
+                cache_age: 3600,
+                flickr_type: "photo",
+                height: "768",
+                html:
                   "<a data-flickr-embed=\"true\" href=\"https://www.flickr.com/photos/bees/2362225867/\" title=\"Bacon Lollys by ‮‭‬bees‬, on Flickr\"><img src=\"https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_b.jpg\" width=\"1024\" height=\"768\" alt=\"Bacon Lollys\"></a><script async src=\"https://embedr.flickr.com/assets/client-code.js\" charset=\"utf-8\"></script>",
-                "license" => "All Rights Reserved",
-                "license_id" => 0,
-                "provider_name" => "Flickr",
-                "provider_url" => "https://www.flickr.com/",
-                "thumbnail_height" => 150,
-                "thumbnail_url" =>
-                  "https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_q.jpg",
-                "thumbnail_width" => 150,
-                "title" => "Bacon Lollys",
-                "type" => "photo",
-                "url" => "https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_b.jpg",
-                "version" => "1.0",
-                "web_page" => "https://www.flickr.com/photos/bees/2362225867/",
-                "web_page_short_url" => "https://flic.kr/p/4AK2sc",
-                "width" => "1024"
+                license: "All Rights Reserved",
+                license_id: 0,
+                provider_name: "Flickr",
+                provider_url: "https://www.flickr.com/",
+                thumbnail_height: 150,
+                thumbnail_url: "https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_q.jpg",
+                thumbnail_width: 150,
+                title: "Bacon Lollys",
+                type: "photo",
+                url: "https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_b.jpg",
+                version: "1.0",
+                web_page: "https://www.flickr.com/photos/bees/2362225867/",
+                web_page_short_url: "https://flic.kr/p/4AK2sc",
+                width: "1024"
               }}
   end
 end

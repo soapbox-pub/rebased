@@ -64,6 +64,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert user.info.ap_enabled
       assert user.follower_address == "http://mastodon.example.org/users/admin/followers"
     end
+
+    test "it fetches the appropriate tag-restricted posts" do
+      user = insert(:user)
+
+      {:ok, status_one} = CommonAPI.post(user, %{"status" => ". #test"})
+      {:ok, status_two} = CommonAPI.post(user, %{"status" => ". #essais"})
+      {:ok, status_three} = CommonAPI.post(user, %{"status" => ". #test #reject"})
+
+      fetch_one = ActivityPub.fetch_activities([], %{"tag" => "test"})
+      fetch_two = ActivityPub.fetch_activities([], %{"tag" => ["test", "essais"]})
+
+      fetch_three =
+        ActivityPub.fetch_activities([], %{
+          "tag" => ["test", "essais"],
+          "tag_reject" => ["reject"]
+        })
+
+      fetch_four =
+        ActivityPub.fetch_activities([], %{
+          "tag" => ["test"],
+          "tag_all" => ["test", "reject"]
+        })
+
+      assert fetch_one == [status_one, status_three]
+      assert fetch_two == [status_one, status_two, status_three]
+      assert fetch_three == [status_one, status_two]
+      assert fetch_four == [status_three]
+    end
   end
 
   describe "insertion" do
@@ -83,6 +111,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       assert {:error, {:remote_limit_error, _}} = ActivityPub.insert(data)
+    end
+
+    test "doesn't drop activities with content being null" do
+      data = %{
+        "ok" => true,
+        "object" => %{
+          "content" => nil
+        }
+      }
+
+      assert {:ok, _} = ActivityPub.insert(data)
     end
 
     test "returns the activity if one with the same id is already in" do
@@ -583,8 +622,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           "visibility" => "private",
           "in_reply_to_status_id" => private_activity_2.id
         })
-
-      assert user1.following == [user3.ap_id <> "/followers", user1.ap_id]
 
       activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
 
