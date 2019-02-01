@@ -905,7 +905,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       res = ListView.render("list.json", list: list)
       json(conn, res)
     else
-      _e -> json(conn, "error")
+      _e ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Record not found"})
     end
   end
 
