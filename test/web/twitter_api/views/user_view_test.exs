@@ -100,7 +100,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "hide_network" => false,
+      "hide_followings" => false,
+      "hide_followers" => false,
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
@@ -147,7 +148,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "hide_network" => false,
+      "hide_followings" => false,
+      "hide_followers" => false,
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
@@ -195,7 +197,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "hide_network" => false,
+      "hide_followings" => false,
+      "hide_followers" => false,
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
@@ -257,7 +260,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "hide_network" => false,
+      "hide_followings" => false,
+      "hide_followers" => false,
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
