@@ -82,4 +82,8 @@ defmodule Pleroma.Web.Endpoint do
     port = System.get_env("PORT") || raise "expected the PORT environment variable to be set"
     {:ok, Keyword.put(config, :http, [:inet6, port: port])}
   end
+
+  def websocket_url do
+    String.replace_leading(url(), "http", "ws")
+  end
 end
