@@ -31,8 +31,8 @@ defmodule Pleroma.Object do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
   end
 
-  def normalize(obj) when is_map(obj), do: Object.get_by_ap_id(obj["id"])
-  def normalize(ap_id) when is_binary(ap_id), do: Object.get_by_ap_id(ap_id)
+  def normalize(%{"id" => ap_id}), do: normalize(ap_id)
+  def normalize(ap_id) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
   def normalize(_), do: nil
 
   # Owned objects can only be mutated by their owner
