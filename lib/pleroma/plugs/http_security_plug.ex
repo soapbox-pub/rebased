@@ -43,9 +43,11 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       "media-src 'self' https:",
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self'",
-      "script-src 'self'",
       "connect-src 'self' " <> String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws"),
       "manifest-src 'self'",
+      if Mix.env() == :dev do
+        "script-src 'self' 'unsafe-eval'"
+      end,
       if scheme == "https" do
         "upgrade-insecure-requests"
       end
