@@ -696,6 +696,14 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: "hello"}}
   end
 
+  def get("http://404.site" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
+       body: ""
+     }}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Not implemented the mock response for get #{inspect(url)}, #{query}, #{inspect(body)}, #{
@@ -712,6 +720,26 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://200.site" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://connrefused.site" <> _, _, _, _) do
+    {:error, :connrefused}
+  end
+
+  def post("http://404.site" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
        body: ""
      }}
   end

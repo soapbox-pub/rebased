@@ -14,6 +14,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
+
   action_fallback(:errors)
 
   def feed_redirect(conn, %{"nickname" => nickname}) do
