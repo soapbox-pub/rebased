@@ -12,7 +12,7 @@ defmodule Pleroma.Web.NodeInfoTest do
 
     conn =
       conn
-      |> get("/nodeinfo/2.0.json")
+      |> get("/nodeinfo/2.1.json")
 
     assert result = json_response(conn, 200)
 
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.NodeInfoTest do
   test "nodeinfo shows restricted nicknames", %{conn: conn} do
     conn =
       conn
-      |> get("/nodeinfo/2.0.json")
+      |> get("/nodeinfo/2.1.json")
 
     assert result = json_response(conn, 200)
 
@@ -42,7 +42,7 @@ defmodule Pleroma.Web.NodeInfoTest do
     |> json_response(404)
 
     conn
-    |> get("/nodeinfo/2.0.json")
+    |> get("/nodeinfo/2.1.json")
     |> json_response(404)
 
     instance =
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.NodeInfoTest do
     |> json_response(200)
 
     conn
-    |> get("/nodeinfo/2.0.json")
+    |> get("/nodeinfo/2.1.json")
     |> json_response(200)
   end
 end

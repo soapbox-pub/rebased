@@ -8,9 +8,11 @@ defmodule Pleroma.Application do
 
   @name "Pleroma"
   @version Mix.Project.config()[:version]
+  @repository "https://git.pleroma.social/pleroma/pleroma"
   def name, do: @name
   def version, do: @version
   def named_version(), do: @name <> " " <> @version
+  def repository, do: @repository
 
   def user_agent() do
     info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"

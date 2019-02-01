@@ -17,8 +17,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     response = %{
       links: [
         %{
-          rel: "http://nodeinfo.diaspora.software/ns/schema/2.0",
-          href: Web.base_url() <> "/nodeinfo/2.0.json"
+          rel: "http://nodeinfo.diaspora.software/ns/schema/2.1",
+          href: Web.base_url() <> "/nodeinfo/2.1.json"
         }
       ]
     }
@@ -26,8 +26,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     json(conn, response)
   end
 
-  # Schema definition: https://github.com/jhass/nodeinfo/blob/master/schemas/2.0/schema.json
-  def nodeinfo(conn, %{"version" => "2.0"}) do
+  # Schema definition: https://github.com/jhass/nodeinfo/blob/master/schemas/2.1/schema.json
+  def nodeinfo(conn, %{"version" => "2.1"}) do
     instance = Application.get_env(:pleroma, :instance)
     media_proxy = Application.get_env(:pleroma, :media_proxy)
     suggestions = Application.get_env(:pleroma, :suggestions)
@@ -99,10 +99,11 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       |> Enum.filter(& &1)
 
     response = %{
-      version: "2.0",
+      version: "2.1",
       software: %{
         name: Pleroma.Application.name(),
-        version: Pleroma.Application.version()
+        version: Pleroma.Application.version(),
+        repository: Pleroma.Application.repository(),
       },
       protocols: ["ostatus", "activitypub"],
       services: %{
@@ -146,7 +147,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     conn
     |> put_resp_header(
       "content-type",
-      "application/json; profile=http://nodeinfo.diaspora.software/ns/schema/2.0#; charset=utf-8"
+      "application/json; profile=http://nodeinfo.diaspora.software/ns/schema/2.1#; charset=utf-8"
     )
     |> json(response)
   end
