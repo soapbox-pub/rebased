@@ -193,7 +193,7 @@ defmodule Pleroma.Factory do
   def websub_subscription_factory do
     %Pleroma.Web.Websub.WebsubServerSubscription{
       topic: "http://example.org",
-      callback: "http://example/org/callback",
+      callback: "http://example.org/callback",
       secret: "here's a secret",
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 100),
       state: "requested"
@@ -218,6 +218,13 @@ defmodule Pleroma.Factory do
       website: "https://example.com",
       client_id: "aaabbb==",
       client_secret: "aaa;/&bbb"
+    }
+  end
+
+  def instance_factory do
+    %Pleroma.Instances.Instance{
+      host: "domain.com",
+      unreachable_since: nil
     }
   end
 end

@@ -6,8 +6,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
-  alias Pleroma.{Object, Repo, User}
-  alias Pleroma.Activity
+  alias Pleroma.{Object, Repo, Activity, User, Instances}
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -144,6 +143,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       :timer.sleep(500)
       assert Activity.get_by_ap_id(data["id"])
     end
+
+    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
+      data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
+
+      sender_url = data["actor"]
+      Instances.set_consistently_unreachable(sender_url)
+      refute Instances.reachable?(sender_url)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      assert Instances.reachable?(sender_url)
+    end
   end
 
   describe "/users/:nickname/inbox" do
@@ -190,6 +206,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user.nickname}/inbox")
 
       assert response(conn, 200) =~ note_activity.data["object"]["content"]
+    end
+
+    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("bcc", [user.ap_id])
+
+      sender_host = URI.parse(data["actor"]).host
+      Instances.set_consistently_unreachable(sender_host)
+      refute Instances.reachable?(sender_host)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      assert Instances.reachable?(sender_host)
     end
   end
 

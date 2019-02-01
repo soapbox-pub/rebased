@@ -7,11 +7,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.{Activity, Object, User}
+  alias Pleroma.{Activity, Object, User, Instances}
   alias Pleroma.Builders.ActivityBuilder
 
   import Pleroma.Factory
   import Tesla.Mock
+  import Mock
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -694,6 +695,46 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_user_activities(user, nil, %{"pinned" => "true"})
 
     assert 3 = length(activities)
+  end
+
+  describe "publish_one/1" do
+    test_with_mock "it calls `Instances.set_unreachable` on target inbox on non-2xx HTTP response code",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://404.site/users/nick1/inbox"
+
+      assert {:error, _} =
+               ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+
+      assert called(Instances.set_unreachable(inbox))
+    end
+
+    test_with_mock "it calls `Instances.set_unreachable` on target inbox on request error of any kind",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://connrefused.site/users/nick1/inbox"
+
+      assert {:error, _} =
+               ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+
+      assert called(Instances.set_unreachable(inbox))
+    end
+
+    test_with_mock "it does NOT call `Instances.set_unreachable` if target is reachable",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://200.site/users/nick1/inbox"
+
+      assert {:ok, _} = ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+
+      refute called(Instances.set_unreachable(inbox))
+    end
   end
 
   def data_uri do

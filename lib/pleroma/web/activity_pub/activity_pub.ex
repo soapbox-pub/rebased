@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.{Activity, Repo, Object, Upload, User, Notification}
+  alias Pleroma.{Activity, Repo, Object, Upload, User, Notification, Instances}
   alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Federator
@@ -734,7 +734,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def publish(actor, activity) do
-    followers =
+    remote_followers =
       if actor.follower_address in activity.recipients do
         {:ok, followers} = User.get_followers(actor)
         followers |> Enum.filter(&(!&1.local))
@@ -745,13 +745,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = is_public?(activity)
 
     remote_inboxes =
-      (Pleroma.Web.Salmon.remote_users(activity) ++ followers)
+      (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
       |> Enum.filter(fn user -> User.ap_enabled?(user) end)
       |> Enum.map(fn %{info: %{source_data: data}} ->
         (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
       end)
       |> Enum.uniq()
       |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
+      |> Instances.filter_reachable()
 
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Jason.encode!(data)
@@ -779,15 +780,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         digest: digest
       })
 
-    @httpoison.post(
-      inbox,
-      json,
-      [
-        {"Content-Type", "application/activity+json"},
-        {"signature", signature},
-        {"digest", digest}
-      ]
-    )
+    with {:ok, %{status: code}} when code in 200..299 <-
+           result =
+             @httpoison.post(
+               inbox,
+               json,
+               [
+                 {"Content-Type", "application/activity+json"},
+                 {"signature", signature},
+                 {"digest", digest}
+               ]
+             ) do
+      Instances.set_reachable(inbox)
+      result
+    else
+      {_post_result, response} ->
+        Instances.set_unreachable(inbox)
+        {:error, response}
+    end
   end
 
   # TODO:

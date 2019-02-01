@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Salmon do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
   use Bitwise
+  alias Pleroma.Instances
   alias Pleroma.Web.XML
   alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.User
@@ -163,23 +164,28 @@ defmodule Pleroma.Web.Salmon do
 
   # push an activity to remote accounts
   #
-  defp send_to_user(%{info: %{salmon: salmon}}, feed, poster),
+  def send_to_user(%{info: %{salmon: salmon}}, feed, poster),
     do: send_to_user(salmon, feed, poster)
 
-  defp send_to_user(url, feed, poster) when is_binary(url) do
-    with {:ok, %{status: code}} <-
+  def send_to_user(url, feed, poster) when is_binary(url) do
+    with {:ok, %{status: code}} when code in 200..299 <-
            poster.(
              url,
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}]
            ) do
+      Instances.set_reachable(url)
       Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)
+      :ok
     else
-      e -> Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
+      e ->
+        Instances.set_unreachable(url)
+        Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
+        :error
     end
   end
 
-  defp send_to_user(_, _, _), do: nil
+  def send_to_user(_, _, _), do: :noop
 
   @supported_activities [
     "Create",
@@ -209,12 +215,16 @@ defmodule Pleroma.Web.Salmon do
       {:ok, private, _} = keys_from_pem(keys)
       {:ok, feed} = encode(private, feed)
 
-      remote_users(activity)
+      remote_users = remote_users(activity)
+
+      salmon_urls = Enum.map(remote_users, & &1.info.salmon)
+      reachable_salmon_urls = Instances.filter_reachable(salmon_urls)
+
+      remote_users
+      |> Enum.filter(&(&1.info.salmon in reachable_salmon_urls))
       |> Enum.each(fn remote_user ->
-        Task.start(fn ->
-          Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
-          send_to_user(remote_user, feed, poster)
-        end)
+        Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
+        Pleroma.Web.Federator.enqueue(:publish_single_salmon, {remote_user, feed, poster})
       end)
     end
   end
