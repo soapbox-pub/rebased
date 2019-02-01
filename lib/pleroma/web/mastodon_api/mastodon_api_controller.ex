@@ -138,7 +138,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       version: "#{@mastodon_api_level} (compatible; #{Pleroma.Application.named_version()})",
       email: Keyword.get(instance, :email),
       urls: %{
-        streaming_api: String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws")
+        streaming_api: Pleroma.Web.Endpoint.websocket_url()
       },
       stats: Stats.get_stats(),
       thumbnail: Web.base_url() <> "/instance/thumbnail.jpeg",
