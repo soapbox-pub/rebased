@@ -6,9 +6,9 @@ defmodule Pleroma.Application do
   use Application
   import Supervisor.Spec
 
-  @name "Pleroma"
+  @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
-  @repository "https://git.pleroma.social/pleroma/pleroma"
+  @repository Mix.Project.config()[:source_url]
   def name, do: @name
   def version, do: @version
   def named_version(), do: @name <> " " <> @version
