@@ -25,7 +25,7 @@ defmodule Pleroma.Web.Endpoint do
     at: "/",
     from: :pleroma,
     only:
-      ~w(index.html static finmoji emoji packs sounds images instance sw.js favicon.png schemas doc)
+      ~w(index.html static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc)
   )
 
   # Code reloading can be explicitly enabled under the
