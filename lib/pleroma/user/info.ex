@@ -30,8 +30,7 @@ defmodule Pleroma.User.Info do
     field(:topic, :string, default: nil)
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
-    field(:hide_followers, :boolean, default: false)
-    field(:hide_followings, :boolean, default: false)
+    field(:hide_network, :boolean, default: false)
     field(:pinned_activities, {:array, :string}, default: [])
 
     # Found in the wild
@@ -144,8 +143,7 @@ defmodule Pleroma.User.Info do
       :no_rich_text,
       :default_scope,
       :banner,
-      :hide_followings,
-      :hide_followers,
+      :hide_network,
       :background
     ])
   end

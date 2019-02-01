@@ -503,7 +503,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
-          user.info.hide_followers -> []
+          user.info.hide_network -> []
           true -> followers
         end
 
@@ -523,7 +523,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       friends =
         cond do
           for_user && user.id == for_user.id -> friends
-          user.info.hide_followings -> []
+          user.info.hide_network -> []
           true -> friends
         end
 
@@ -618,7 +618,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp build_info_cng(user, params) do
     info_params =
-      ["no_rich_text", "locked", "hide_followers", "hide_followings"]
+      ["no_rich_text", "locked", "hide_network"]
       |> Enum.reduce(%{}, fn key, res ->
         if value = params[key] do
           Map.put(res, key, value == "true")
