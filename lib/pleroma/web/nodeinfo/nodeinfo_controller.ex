@@ -103,7 +103,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       software: %{
         name: Pleroma.Application.name(),
         version: Pleroma.Application.version(),
-        repository: Pleroma.Application.repository(),
+        repository: Pleroma.Application.repository()
       },
       protocols: ["ostatus", "activitypub"],
       services: %{
