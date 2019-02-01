@@ -168,7 +168,10 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       |> Map.get(:software)
       |> Map.put(:repository, Pleroma.Application.repository())
 
-    response = raw_response |> Map.put(:software, updated_software)
+    response =
+      raw_response
+      |> Map.put(:software, updated_software)
+      |> Map.put(:version, "2.1")
 
     conn
     |> put_resp_header(
