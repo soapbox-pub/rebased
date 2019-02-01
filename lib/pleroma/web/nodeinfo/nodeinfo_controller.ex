@@ -106,7 +106,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     %{
       version: "2.0",
       software: %{
-        name: Pleroma.Application.name(),
+        name: Pleroma.Application.name() |> String.downcase,
         version: Pleroma.Application.version(),
       },
       protocols: ["ostatus", "activitypub"],
