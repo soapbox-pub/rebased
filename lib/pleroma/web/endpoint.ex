@@ -84,6 +84,6 @@ defmodule Pleroma.Web.Endpoint do
   end
 
   def websocket_url do
-    String.replace_leading(static_url(), "http", "ws")
+    String.replace_leading(url(), "http", "ws")
   end
 end
