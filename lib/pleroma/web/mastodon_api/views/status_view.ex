@@ -186,11 +186,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     page_url_data = URI.parse(page_url)
 
     image_url =
-      if %URI{host: nil} = page_url_data do
+      with %URI{host: nil} <- page_url_data do
         rich_media[:image]
       else
-        URI.merge(page_url_data, URI.parse(rich_media[:image]))
-        |> to_string
+        _ ->
+          URI.merge(page_url_data, URI.parse(rich_media[:image]))
+          |> to_string
       end
 
     site_name = rich_media[:site_name] || page_url_data.host
