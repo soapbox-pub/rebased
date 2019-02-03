@@ -6,12 +6,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   alias Pleroma.User
   @behaviour Pleroma.Web.ActivityPub.MRF
 
-  defp delist_message(object) do
-    follower_collection = User.get_by_ap_id(object["actor"].follower_address)
+  defp delist_message(message) do
+    follower_collection = User.get_by_ap_id(message["actor"].follower_address)
 
-    object
-    |> Kernel.update_in(["to"], [follower_collection])
-    |> Kernel.update_in(["cc"], ["https://www.w3.org/ns/activitystreams#Public"])
+    message
+    |> Map.put(["to"], [follower_collection])
+    |> Map.put(["cc"], ["https://www.w3.org/ns/activitystreams#Public"])
   end
 
   @impl true
@@ -32,9 +32,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
 
       length(recipients) > delist_threshold and delist_threshold > 0 ->
         if Enum.member?(object["to"], "https://www.w3.org/ns/activitystreams#Public") or
-             Enum.member?(object["to"], "https://www.w3.org/ns/activitystreams#Public") do
-          delist_message(object)
-          {:ok, object}
+             Enum.member?(object["cc"], "https://www.w3.org/ns/activitystreams#Public") do
+          {:ok, delist_message(object)}
         else
           {:ok, object}
         end
