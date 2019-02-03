@@ -13,10 +13,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
     recipients = (object["to"] || []) ++ (object["cc"] || [])
 
     cond do
-      length(recipients) > reject_threshold ->
+      length(recipients) > reject_threshold and reject_threshold != 0 ->
         {:reject, nil}
 
-      length(recipients) > delist_threshold ->
+      length(recipients) > delist_threshold and delist_threshold != 0 ->
         if Enum.member?(object["to"], "https://www.w3.org/ns/activitystreams#Public") or
              Enum.member?(object["cc"], "https://www.w3.org/ns/activitystreams#Public") do
           object

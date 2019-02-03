@@ -148,7 +148,8 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `allow_direct`: whether to allow direct messages
 
 ## :mrf_hellthread
-* `threshold`: Number of mentioned users after which the message gets discarded as spam
+* `delist_threshold`: Number of mentioned users after which the message gets delisted. Set to 0 to disable.
+* `reject_threshold`: Number of mentioned users after which the messaged gets rejected. Set to 0 to disable.
 
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
