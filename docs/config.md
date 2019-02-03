@@ -17,7 +17,7 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ## Pleroma.Upload.Filter.Mogrify
 
-* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", {"impode", "1"}]`.
+* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"impode", "1"}]`.
 
 ## Pleroma.Upload.Filter.Dedupe
 
