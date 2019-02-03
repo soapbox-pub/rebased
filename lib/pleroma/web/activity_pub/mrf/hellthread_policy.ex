@@ -19,15 +19,15 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
       length(recipients) > delist_threshold and delist_threshold != 0 ->
         if Enum.member?(object["to"], "https://www.w3.org/ns/activitystreams#Public") or
              Enum.member?(object["cc"], "https://www.w3.org/ns/activitystreams#Public") do
+          follower_collection = User.get_by_ap_id(object["actor"].follower_address)
+
           object
-          |> Kernel.update_in(["object", "to"], [
-            User.get_cached_by_ap_id(object["actor"].follower_address)
-          ])
+          |> Kernel.update_in(["object", "to"], [follower_collection])
           |> Kernel.update_in(["object", "cc"], ["https://www.w3.org/ns/activitystreams#Public"])
-          |> Kernel.update_in(["to"], [
-            User.get_cached_by_ap_id(object["actor"].follower_address)
-          ])
+          |> Kernel.update_in(["to"], [follower_collection])
           |> Kernel.update_in(["cc"], ["https://www.w3.org/ns/activitystreams#Public"])
+
+          {:ok, object}
         else
           {:ok, object}
         end
