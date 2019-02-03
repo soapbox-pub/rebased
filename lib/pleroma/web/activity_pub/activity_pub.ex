@@ -792,7 +792,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
                  {"digest", digest}
                ]
              ) do
-      if params[:unreachable_since], do: Instances.set_reachable(inbox)
+      if !Map.has_key?(params, :unreachable_since) || params[:unreachable_since],
+        do: Instances.set_reachable(inbox)
+
       result
     else
       {_post_result, response} ->

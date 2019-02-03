@@ -95,15 +95,18 @@ defmodule Pleroma.Web.FederatorTest do
         info: %{ap_enabled: true, source_data: %{"inbox" => inbox2}}
       })
 
-      Instances.set_unreachable(
-        URI.parse(inbox2).host,
-        Instances.reachability_datetime_threshold()
-      )
+      dt = NaiveDateTime.utc_now()
+      Instances.set_unreachable(inbox1, dt)
+
+      Instances.set_consistently_unreachable(URI.parse(inbox2).host)
 
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
-      assert called(Federator.enqueue(:publish_single_ap, %{inbox: inbox1}))
+      assert called(
+               Federator.enqueue(:publish_single_ap, %{inbox: inbox1, unreachable_since: dt})
+             )
+
       refute called(Federator.enqueue(:publish_single_ap, %{inbox: inbox2}))
     end
 
@@ -128,11 +131,20 @@ defmodule Pleroma.Web.FederatorTest do
           callback: "https://pleroma2.soykaf.com/cb"
         })
 
+      dt = NaiveDateTime.utc_now()
+      Instances.set_unreachable(sub2.callback, dt)
+
       Instances.set_consistently_unreachable(sub1.callback)
 
       {:ok, _activity} = CommonAPI.post(user, %{"status" => "HI"})
 
-      assert called(Federator.enqueue(:publish_single_websub, %{callback: sub2.callback}))
+      assert called(
+               Federator.enqueue(:publish_single_websub, %{
+                 callback: sub2.callback,
+                 unreachable_since: dt
+               })
+             )
+
       refute called(Federator.enqueue(:publish_single_websub, %{callback: sub1.callback}))
     end
 
@@ -158,12 +170,21 @@ defmodule Pleroma.Web.FederatorTest do
           info: %{salmon: "https://domain2.com/salmon"}
         })
 
+      dt = NaiveDateTime.utc_now()
+      Instances.set_unreachable(remote_user2.ap_id, dt)
+
       Instances.set_consistently_unreachable("domain.com")
 
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
-      assert called(Federator.enqueue(:publish_single_salmon, %{recipient: remote_user2}))
+      assert called(
+               Federator.enqueue(:publish_single_salmon, %{
+                 recipient: remote_user2,
+                 unreachable_since: dt
+               })
+             )
+
       refute called(Federator.enqueue(:publish_single_websub, %{recipient: remote_user1}))
     end
   end

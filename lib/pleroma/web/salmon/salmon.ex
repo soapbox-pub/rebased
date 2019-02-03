@@ -173,7 +173,9 @@ defmodule Pleroma.Web.Salmon do
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}]
            ) do
-      if params[:unreachable_since], do: Instances.set_reachable(url)
+      if !Map.has_key?(params, :unreachable_since) || params[:unreachable_since],
+        do: Instances.set_reachable(url)
+
       Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)
       :ok
     else

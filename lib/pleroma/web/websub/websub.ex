@@ -283,7 +283,9 @@ defmodule Pleroma.Web.Websub do
                {"X-Hub-Signature", "sha1=#{signature}"}
              ]
            ) do
-      if params[:unreachable_since], do: Instances.set_reachable(callback)
+      if !Map.has_key?(params, :unreachable_since) || params[:unreachable_since],
+        do: Instances.set_reachable(callback)
+
       Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)
       {:ok, code}
     else
