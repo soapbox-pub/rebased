@@ -32,6 +32,7 @@ defmodule Pleroma.DataCase do
 
   setup tags do
     Cachex.clear(:user_cache)
+    Cachex.clear(:object_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
     unless tags[:async] do
