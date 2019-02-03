@@ -108,7 +108,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "locked" => user.info.locked,
       "default_scope" => user.info.default_scope,
       "no_rich_text" => user.info.no_rich_text,
-      "hide_network" => user.info.hide_network,
+      "hide_followers" => user.info.hide_followers,
+      "hide_followings" => user.info.hide_followings,
       "fields" => fields,
 
       # Pleroma extension
