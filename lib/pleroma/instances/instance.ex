@@ -26,7 +26,7 @@ defmodule Pleroma.Instances.Instance do
     |> unique_constraint(:host)
   end
 
-  def filter_reachable([]), do: []
+  def filter_reachable([]), do: %{}
 
   def filter_reachable(urls_or_hosts) when is_list(urls_or_hosts) do
     hosts =
@@ -34,17 +34,28 @@ defmodule Pleroma.Instances.Instance do
       |> Enum.map(&(&1 && host(&1)))
       |> Enum.filter(&(to_string(&1) != ""))
 
-    unreachable_hosts =
+    unreachable_since_by_host =
       Repo.all(
         from(i in Instance,
-          where:
-            i.host in ^hosts and
-              i.unreachable_since <= ^Instances.reachability_datetime_threshold(),
-          select: i.host
+          where: i.host in ^hosts,
+          select: {i.host, i.unreachable_since}
         )
       )
+      |> Map.new(& &1)
 
-    Enum.filter(urls_or_hosts, &(&1 && host(&1) not in unreachable_hosts))
+    reachability_datetime_threshold = Instances.reachability_datetime_threshold()
+
+    for entry <- Enum.filter(urls_or_hosts, &is_binary/1) do
+      host = host(entry)
+      unreachable_since = unreachable_since_by_host[host]
+
+      if !unreachable_since ||
+           NaiveDateTime.compare(unreachable_since, reachability_datetime_threshold) == :gt do
+        {entry, unreachable_since}
+      end
+    end
+    |> Enum.filter(& &1)
+    |> Map.new(& &1)
   end
 
   def reachable?(url_or_host) when is_binary(url_or_host) do

@@ -47,7 +47,7 @@ defmodule Pleroma.InstancesTest do
   end
 
   describe "filter_reachable/1" do
-    test "keeps only reachable elements of supplied list" do
+    setup do
       host = "consistently-unreachable.name"
       url1 = "http://eventually-unreachable.com/path"
       url2 = "http://domain.com/path"
@@ -55,7 +55,26 @@ defmodule Pleroma.InstancesTest do
       Instances.set_consistently_unreachable(host)
       Instances.set_unreachable(url1)
 
-      assert [url1, url2] == Instances.filter_reachable([host, url1, url2])
+      result = Instances.filter_reachable([host, url1, url2, nil])
+      %{result: result, url1: url1, url2: url2}
+    end
+
+    test "returns a map with keys containing 'not marked consistently unreachable' elements of supplied list",
+         %{result: result, url1: url1, url2: url2} do
+      assert is_map(result)
+      assert Enum.sort([url1, url2]) == result |> Map.keys() |> Enum.sort()
+    end
+
+    test "returns a map with `unreachable_since` values for keys",
+         %{result: result, url1: url1, url2: url2} do
+      assert is_map(result)
+      assert %NaiveDateTime{} = result[url1]
+      assert is_nil(result[url2])
+    end
+
+    test "returns an empty map for empty list or list containing no hosts / url" do
+      assert %{} == Instances.filter_reachable([])
+      assert %{} == Instances.filter_reachable([nil])
     end
   end
 

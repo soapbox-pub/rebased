@@ -70,7 +70,8 @@ defmodule Pleroma.Web.Websub do
     subscriptions = Repo.all(query)
 
     callbacks = Enum.map(subscriptions, & &1.callback)
-    reachable_callbacks = Instances.filter_reachable(callbacks)
+    reachable_callbacks_metadata = Instances.filter_reachable(callbacks)
+    reachable_callbacks = Map.keys(reachable_callbacks_metadata)
 
     subscriptions
     |> Enum.filter(&(&1.callback in reachable_callbacks))
@@ -79,7 +80,8 @@ defmodule Pleroma.Web.Websub do
         xml: response,
         topic: topic,
         callback: sub.callback,
-        secret: sub.secret
+        secret: sub.secret,
+        unreachable_since: reachable_callbacks_metadata[sub.callback]
       }
 
       Pleroma.Web.Federator.enqueue(:publish_single_websub, data)
@@ -268,7 +270,7 @@ defmodule Pleroma.Web.Websub do
     end)
   end
 
-  def publish_one(%{xml: xml, topic: topic, callback: callback, secret: secret}) do
+  def publish_one(%{xml: xml, topic: topic, callback: callback, secret: secret} = params) do
     signature = sign(secret || "", xml)
     Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
 
@@ -281,12 +283,12 @@ defmodule Pleroma.Web.Websub do
                {"X-Hub-Signature", "sha1=#{signature}"}
              ]
            ) do
-      Instances.set_reachable(callback)
+      if params[:unreachable_since], do: Instances.set_reachable(callback)
       Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)
       {:ok, code}
     else
       {_post_result, response} ->
-        Instances.set_unreachable(callback)
+        unless params[:unreachable_since], do: Instances.set_reachable(callback)
         Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(response)}" end)
         {:error, response}
     end

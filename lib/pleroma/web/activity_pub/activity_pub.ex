@@ -744,7 +744,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     public = is_public?(activity)
 
-    remote_inboxes =
+    reachable_inboxes_metadata =
       (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
       |> Enum.filter(fn user -> User.ap_enabled?(user) end)
       |> Enum.map(fn %{info: %{source_data: data}} ->
@@ -757,17 +757,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Jason.encode!(data)
 
-    Enum.each(remote_inboxes, fn inbox ->
+    Enum.each(reachable_inboxes_metadata, fn {inbox, unreachable_since} ->
       Federator.enqueue(:publish_single_ap, %{
         inbox: inbox,
         json: json,
         actor: actor,
-        id: activity.data["id"]
+        id: activity.data["id"],
+        unreachable_since: unreachable_since
       })
     end)
   end
 
-  def publish_one(%{inbox: inbox, json: json, actor: actor, id: id}) do
+  def publish_one(%{inbox: inbox, json: json, actor: actor, id: id} = params) do
     Logger.info("Federating #{id} to #{inbox}")
     host = URI.parse(inbox).host
 
@@ -791,11 +792,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
                  {"digest", digest}
                ]
              ) do
-      Instances.set_reachable(inbox)
+      if params[:unreachable_since], do: Instances.set_reachable(inbox)
       result
     else
       {_post_result, response} ->
-        Instances.set_unreachable(inbox)
+        unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
         {:error, response}
     end
   end

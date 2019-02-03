@@ -124,8 +124,8 @@ defmodule Pleroma.Web.Federator do
     end
   end
 
-  def handle(:publish_single_salmon, {user_or_url, feed, poster}) do
-    Salmon.send_to_user(user_or_url, feed, poster)
+  def handle(:publish_single_salmon, params) do
+    Salmon.send_to_user(params)
   end
 
   def handle(:publish_single_ap, params) do

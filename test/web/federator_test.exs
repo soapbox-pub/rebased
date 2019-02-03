@@ -163,8 +163,8 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
-      assert called(Federator.enqueue(:publish_single_salmon, {remote_user2, :_, :_}))
-      refute called(Federator.enqueue(:publish_single_websub, {remote_user1, :_, :_}))
+      assert called(Federator.enqueue(:publish_single_salmon, %{recipient: remote_user2}))
+      refute called(Federator.enqueue(:publish_single_websub, %{recipient: remote_user1}))
     end
   end
 
