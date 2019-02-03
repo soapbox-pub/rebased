@@ -698,7 +698,57 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "publish_one/1" do
-    test_with_mock "it calls `Instances.set_unreachable` on target inbox on non-2xx HTTP response code",
+    test_with_mock "calls `Instances.set_reachable` on successful federation if `unreachable_since` is not specified",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://200.site/users/nick1/inbox"
+
+      assert {:ok, _} = ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+
+      assert called(Instances.set_reachable(inbox))
+    end
+
+    test_with_mock "calls `Instances.set_reachable` on successful federation if `unreachable_since` is set",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://200.site/users/nick1/inbox"
+
+      assert {:ok, _} =
+               ActivityPub.publish_one(%{
+                 inbox: inbox,
+                 json: "{}",
+                 actor: actor,
+                 id: 1,
+                 unreachable_since: NaiveDateTime.utc_now()
+               })
+
+      assert called(Instances.set_reachable(inbox))
+    end
+
+    test_with_mock "does NOT call `Instances.set_reachable` on successful federation if `unreachable_since` is nil",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://200.site/users/nick1/inbox"
+
+      assert {:ok, _} =
+               ActivityPub.publish_one(%{
+                 inbox: inbox,
+                 json: "{}",
+                 actor: actor,
+                 id: 1,
+                 unreachable_since: nil
+               })
+
+      refute called(Instances.set_reachable(inbox))
+    end
+
+    test_with_mock "calls `Instances.set_unreachable` on target inbox on non-2xx HTTP response code",
                    Instances,
                    [:passthrough],
                    [] do
@@ -724,7 +774,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert called(Instances.set_unreachable(inbox))
     end
 
-    test_with_mock "it does NOT call `Instances.set_unreachable` if target is reachable",
+    test_with_mock "does NOT call `Instances.set_unreachable` if target is reachable",
                    Instances,
                    [:passthrough],
                    [] do
@@ -732,6 +782,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       inbox = "http://200.site/users/nick1/inbox"
 
       assert {:ok, _} = ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+
+      refute called(Instances.set_unreachable(inbox))
+    end
+
+    test_with_mock "does NOT call `Instances.set_unreachable` if target instance has non-nil `unreachable_since`",
+                   Instances,
+                   [:passthrough],
+                   [] do
+      actor = insert(:user)
+      inbox = "http://connrefused.site/users/nick1/inbox"
+
+      assert {:error, _} =
+               ActivityPub.publish_one(%{
+                 inbox: inbox,
+                 json: "{}",
+                 actor: actor,
+                 id: 1,
+                 unreachable_since: NaiveDateTime.utc_now()
+               })
 
       refute called(Instances.set_unreachable(inbox))
     end
