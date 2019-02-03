@@ -530,6 +530,8 @@ defmodule Pleroma.Web.OStatusTest do
         note_object.data
         |> Map.put("type", "Article")
 
+      Cachex.clear(:object_cache)
+
       cs = Object.change(note_object, %{data: note_data})
       {:ok, _article_object} = Repo.update(cs)
 

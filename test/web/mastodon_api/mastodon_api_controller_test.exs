@@ -137,6 +137,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "posting a status with OGP link preview", %{conn: conn} do
+    Pleroma.Config.put([:rich_media, :enabled], true)
     user = insert(:user)
 
     conn =
@@ -148,6 +149,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
     assert Repo.get(Activity, id)
+    Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
   test "posting a direct status", %{conn: conn} do
@@ -1667,6 +1669,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "Status rich-media Card", %{conn: conn, user: user} do
+      Pleroma.Config.put([:rich_media, :enabled], true)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "http://example.com/ogp"})
 
       response =
@@ -1691,6 +1694,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                  }
                }
              }
+
+      Pleroma.Config.put([:rich_media, :enabled], false)
     end
   end
 
