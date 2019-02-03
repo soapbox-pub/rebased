@@ -124,10 +124,10 @@ defmodule Pleroma.Upload do
 
           :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Mogrify]]
 
-          :pleroma, Pleroma.Upload.Filter.Mogrify, args: "strip"
+          :pleroma, Pleroma.Upload.Filter.Mogrify, args: ["strip", "auto-orient"]
         """)
 
-        Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: "strip")
+        Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: ["strip", "auto-orient"])
         Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Mogrify])
       else
         opts
