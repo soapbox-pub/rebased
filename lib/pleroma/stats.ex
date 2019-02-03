@@ -23,7 +23,7 @@ defmodule Pleroma.Stats do
   def schedule_update do
     spawn(fn ->
       # 1 hour
-      Process.sleep(1000 * 60 * 60 * 1)
+      Process.sleep(1000 * 60 * 60)
       schedule_update()
     end)
 

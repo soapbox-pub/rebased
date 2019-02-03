@@ -211,7 +211,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
       user = Repo.get(User, user.id)
 
-      if length(user.following) == 0 do
+      if Enum.empty?(user.following) do
         Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")
       end
     else

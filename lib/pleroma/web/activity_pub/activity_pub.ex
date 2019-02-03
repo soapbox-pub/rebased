@@ -119,7 +119,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data["object"]
           |> Map.get("tag", [])
           |> Enum.filter(fn tag -> is_bitstring(tag) end)
-          |> Enum.map(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
+          |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
 
           if activity.data["object"]["attachment"] != [] do
             Pleroma.Web.Streamer.stream("public:media", activity)

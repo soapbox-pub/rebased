@@ -6,8 +6,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
   alias Pleroma.{Activity, Formatter, Object, Repo}
-  alias Pleroma.User
-  alias Pleroma.Web
+  alias Pleroma.{User, Web}
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy

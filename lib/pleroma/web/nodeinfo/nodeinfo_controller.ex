@@ -5,10 +5,7 @@
 defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Stats
-  alias Pleroma.Web
-  alias Pleroma.{User, Repo}
-  alias Pleroma.Config
+  alias Pleroma.{Config, Repo, Stats, User, Web}
   alias Pleroma.Web.ActivityPub.MRF
 
   plug(Pleroma.Web.FederatingPlug)
@@ -32,7 +29,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
   # returns a nodeinfo 2.0 map, since 2.1 just adds a repository field
   # under software.
-  def raw_nodeinfo() do
+  def raw_nodeinfo do
     instance = Application.get_env(:pleroma, :instance)
     media_proxy = Application.get_env(:pleroma, :media_proxy)
     suggestions = Application.get_env(:pleroma, :suggestions)
@@ -66,10 +63,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       Config.get([:mrf_user_allowlist], [])
       |> Enum.into(%{}, fn {k, v} -> {k, length(v)} end)
 
-    mrf_transparency = Keyword.get(instance, :mrf_transparency)
-
     federation_response =
-      if mrf_transparency do
+      if Keyword.get(instance, :mrf_transparency) do
         %{
           mrf_policies: mrf_policies,
           mrf_simple: mrf_simple,

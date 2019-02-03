@@ -25,7 +25,7 @@ defmodule Pleroma.Web.Federator do
   def start_link do
     spawn(fn ->
       # 1 minute
-      Process.sleep(1000 * 60 * 1)
+      Process.sleep(1000 * 60)
       enqueue(:refresh_subscriptions, nil)
     end)
 
@@ -197,7 +197,6 @@ defmodule Pleroma.Web.Federator do
   end
 
   def handle_cast(m, state) do
-    IO.inspect("Unknown: #{inspect(m)}, #{inspect(state)}")
     {:noreply, state}
   end
 

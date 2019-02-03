@@ -4,11 +4,11 @@
 
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
-  alias Pleroma.User
-  alias Pleroma.Web.MastodonAPI.AccountView
+
+  alias Pleroma.{HTML, User}
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.HTML
 
   def render("accounts.json", %{users: users} = opts) do
     users
