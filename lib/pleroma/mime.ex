@@ -102,8 +102,16 @@ defmodule Pleroma.MIME do
     "audio/ogg"
   end
 
-  defp check_mime_type(<<0x52, 0x49, 0x46, 0x46, _::binary>>) do
+  defp check_mime_type(<<"RIFF", _::binary-size(4), "WAVE", _::binary>>) do
     "audio/wav"
+  end
+
+  defp check_mime_type(<<"RIFF", _::binary-size(4), "WEBP", _::binary>>) do
+    "image/webp"
+  end
+
+  defp check_mime_type(<<"RIFF", _::binary-size(4), "AVI.", _::binary>>) do
+    "video/avi"
   end
 
   defp check_mime_type(_) do
