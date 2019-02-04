@@ -50,10 +50,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
       cc =
         List.delete(cc, user.follower_address) ++ ["https://www.w3.org/ns/activitystreams#Public"]
 
+      object =
+        message["object"]
+        |> Map.put("to", to)
+        |> Map.put("cc", cc)
+
       message =
         message
         |> Map.put("to", to)
         |> Map.put("cc", cc)
+        |> Map.put("object", object)
 
       {:ok, message}
     else
@@ -74,10 +80,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
 
       cc = List.delete(cc, "https://www.w3.org/ns/activitystreams#Public")
 
+      object =
+        message["object"]
+        |> Map.put("to", to)
+        |> Map.put("cc", cc)
+
       message =
         message
         |> Map.put("to", to)
         |> Map.put("cc", cc)
+        |> Map.put("object", object)
 
       {:ok, message}
     else
