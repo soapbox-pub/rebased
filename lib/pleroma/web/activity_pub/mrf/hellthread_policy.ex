@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   end
 
   @impl true
-  def filter(%{"type" => "Create"} = object) do
+  def filter(%{"type" => "Create"} = message) do
     delist_threshold = Pleroma.Config.get([:mrf_hellthread, :delist_threshold])
 
     reject_threshold =
@@ -24,25 +24,25 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
         Pleroma.Config.get([:mrf_hellthread, :threshold])
       )
 
-    recipients = (object["to"] || []) ++ (object["cc"] || [])
+    recipients = (message["to"] || []) ++ (message["cc"] || [])
 
     cond do
       length(recipients) > reject_threshold and reject_threshold > 0 ->
         {:reject, nil}
 
       length(recipients) > delist_threshold and delist_threshold > 0 ->
-        if Enum.member?(object["to"], "https://www.w3.org/ns/activitystreams#Public") or
-             Enum.member?(object["cc"], "https://www.w3.org/ns/activitystreams#Public") do
-          {:ok, delist_message(object)}
+        if Enum.member?(message["to"], "https://www.w3.org/ns/activitystreams#Public") or
+             Enum.member?(message["cc"], "https://www.w3.org/ns/activitystreams#Public") do
+          {:ok, delist_message(message)}
         else
-          {:ok, object}
+          {:ok, message}
         end
 
       true ->
-        {:ok, object}
+        {:ok, message}
     end
   end
 
   @impl true
-  def filter(object), do: {:ok, object}
+  def filter(message), do: {:ok, message}
 end
