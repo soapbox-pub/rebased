@@ -7,7 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp delist_message(message) do
-    follower_collection = User.get_by_ap_id(message["actor"].follower_address)
+    follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
 
     message
     |> Map.put("to", [follower_collection])
@@ -44,5 +44,5 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   end
 
   @impl true
-  def filter(message), do: {:ok, message}
+  def filter(message), do: {:ok_notcreate, message}
 end
