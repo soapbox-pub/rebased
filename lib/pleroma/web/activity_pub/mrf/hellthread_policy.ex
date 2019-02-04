@@ -44,5 +44,5 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   end
 
   @impl true
-  def filter(message), do: {:ok_notcreate, message}
+  def filter(message), do: {:ok, message}
 end
