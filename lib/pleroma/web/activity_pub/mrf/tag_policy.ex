@@ -37,6 +37,54 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
     {:ok, message}
   end
 
+  defp process_tag(
+         "mrf_tag:force-unlisted",
+         %{"type" => "Create", "to" => to, "cc" => cc, "actor" => actor} = message
+       ) do
+    user = User.get_cached_by_ap_id(actor)
+
+    if Enum.member?(to, "https://www.w3.org/ns/activitystreams#Public") do
+      to =
+        List.delete(to, "https://www.w3.org/ns/activitystreams#Public") ++ [user.follower_address]
+
+      cc =
+        List.delete(cc, user.follower_address) ++ ["https://www.w3.org/ns/activitystreams#Public"]
+
+      message =
+        message
+        |> Map.put("to", to)
+        |> Map.put("cc", cc)
+
+      {:ok, message}
+    else
+      {:ok, message}
+    end
+  end
+
+  defp process_tag(
+         "mrf_tag:sandbox",
+         %{"type" => "Create", "to" => to, "cc" => cc, "actor" => actor} = message
+       ) do
+    user = User.get_cached_by_ap_id(actor)
+
+    if Enum.member?(to, "https://www.w3.org/ns/activitystreams#Public") or
+         Enum.member?(cc, "https://www.w3.org/ns/activitystreams#Public") do
+      to =
+        List.delete(to, "https://www.w3.org/ns/activitystreams#Public") ++ [user.follower_address]
+
+      cc = List.delete(cc, "https://www.w3.org/ns/activitystreams#Public")
+
+      message =
+        message
+        |> Map.put("to", to)
+        |> Map.put("cc", cc)
+
+      {:ok, message}
+    else
+      {:ok, message}
+    end
+  end
+
   defp process_tag(_, message), do: {:ok, message}
 
   @impl true
