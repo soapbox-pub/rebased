@@ -227,7 +227,9 @@ config :pleroma, :mrf_rejectnonpublic,
   allow_followersonly: false,
   allow_direct: false
 
-config :pleroma, :mrf_hellthread, threshold: 10
+config :pleroma, :mrf_hellthread,
+  delist_threshold: 5,
+  reject_threshold: 10
 
 config :pleroma, :mrf_simple,
   media_removal: [],
