@@ -97,8 +97,6 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "is_admin" => false,
-      "is_moderator" => false,
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
@@ -147,8 +145,6 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "is_admin" => false,
-      "is_moderator" => false,
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
@@ -198,8 +194,6 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "is_admin" => false,
-      "is_moderator" => false,
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
@@ -220,6 +214,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     represented = UserView.render("show.json", %{user: user, for: user})
 
     assert represented["rights"]["delete_others_notice"]
+    assert represented["role"] == "moderator"
   end
 
   test "a user that is a admin" do
@@ -227,6 +222,21 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     represented = UserView.render("show.json", %{user: user, for: user})
 
     assert represented["rights"]["admin"]
+    assert represented["role"] == "admin"
+  end
+
+  test "A moderator with hidden role for another user", %{user: user} do
+    admin = insert(:user, %{info: %{is_moderator: true, show_role: false}})
+    represented = UserView.render("show.json", %{user: admin, for: user})
+
+    assert represented["role"] == nil
+  end
+
+  test "An admin with hidden role for another user", %{user: user} do
+    admin = insert(:user, %{info: %{is_admin: true, show_role: false}})
+    represented = UserView.render("show.json", %{user: admin, for: user})
+
+    assert represented["role"] == nil
   end
 
   test "A blocked user for the blocker" do
@@ -263,8 +273,6 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
-      "is_admin" => false,
-      "is_moderator" => false,
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,

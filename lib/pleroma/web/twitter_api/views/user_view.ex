@@ -105,8 +105,6 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "cover_photo" => User.banner_url(user) |> MediaProxy.url(),
       "background_image" => image_url(user.info.background) |> MediaProxy.url(),
       "is_local" => user.local,
-      "is_moderator" => user.info.is_moderator,
-      "is_admin" => user.info.is_admin,
       "locked" => user.info.locked,
       "default_scope" => user.info.default_scope,
       "no_rich_text" => user.info.no_rich_text,
@@ -121,12 +119,32 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       }
     }
 
+    data =
+      if(user.info.is_admin || user.info.is_moderator,
+        do: maybe_with_role(data, user, for_user),
+        else: data
+      )
+
     if assigns[:token] do
       Map.put(data, "token", token_string(assigns[:token]))
     else
       data
     end
   end
+
+  defp maybe_with_role(data, %User{id: id} = user, %User{id: id}) do
+    Map.merge(data, %{"role" => role(user), "show_role" => user.info.show_role})
+  end
+
+  defp maybe_with_role(data, %User{info: %{show_role: true}} = user, _user) do
+    Map.merge(data, %{"role" => role(user)})
+  end
+
+  defp maybe_with_role(data, _, _), do: data
+
+  defp role(%User{info: %{:is_admin => true}}), do: "admin"
+  defp role(%User{info: %{:is_moderator => true}}), do: "moderator"
+  defp role(_), do: "member"
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil
