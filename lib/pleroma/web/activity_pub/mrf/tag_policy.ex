@@ -88,7 +88,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
   defp process_tag(_, message), do: {:ok, message}
 
   @impl true
-  def filter(%{"actor" => actor} = message) do
+  def filter(%{"object" => target_actor, "type" => "Follow"} = message) do
+    User.get_cached_by_ap_id(target_actor)
+    |> get_tags()
+    |> Enum.reduce({:ok, message}, fn
+      tag, {:ok, message} ->
+        process_tag(tag, message)
+
+      _, error ->
+        error
+    end)
+  end
+
+  @impl true
+  def filter(%{"actor" => actor, "type" => "Create"} = message) do
     User.get_cached_by_ap_id(actor)
     |> get_tags()
     |> Enum.reduce({:ok, message}, fn
@@ -99,4 +112,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
         error
     end)
   end
+
+  @impl true
+  def filter(message), do: {:ok, message}
 end
