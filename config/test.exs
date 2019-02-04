@@ -36,6 +36,7 @@ config :pbkdf2_elixir, rounds: 1
 config :pleroma, :websub, Pleroma.Web.WebsubMock
 config :pleroma, :ostatus, Pleroma.Web.OStatusMock
 config :tesla, adapter: Tesla.Mock
+config :pleroma, :rich_media, enabled: false
 
 config :web_push_encryption, :vapid_details,
   subject: "mailto:administrator@example.com",

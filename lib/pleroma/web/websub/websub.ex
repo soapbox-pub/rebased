@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Websub do
   alias Ecto.Changeset
   alias Pleroma.Repo
+  alias Pleroma.Instances
   alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.{XML, Endpoint, OStatus, Federator}
@@ -53,28 +54,34 @@ defmodule Pleroma.Web.Websub do
   ]
   def publish(topic, user, %{data: %{"type" => type}} = activity)
       when type in @supported_activities do
-    # TODO: Only send to still valid subscriptions.
+    response =
+      user
+      |> FeedRepresenter.to_simple_form([activity], [user])
+      |> :xmerl.export_simple(:xmerl_xml)
+      |> to_string
+
     query =
       from(
         sub in WebsubServerSubscription,
         where: sub.topic == ^topic and sub.state == "active",
-        where: fragment("? > NOW()", sub.valid_until)
+        where: fragment("? > (NOW() at time zone 'UTC')", sub.valid_until)
       )
 
     subscriptions = Repo.all(query)
 
-    Enum.each(subscriptions, fn sub ->
-      response =
-        user
-        |> FeedRepresenter.to_simple_form([activity], [user])
-        |> :xmerl.export_simple(:xmerl_xml)
-        |> to_string
+    callbacks = Enum.map(subscriptions, & &1.callback)
+    reachable_callbacks_metadata = Instances.filter_reachable(callbacks)
+    reachable_callbacks = Map.keys(reachable_callbacks_metadata)
 
+    subscriptions
+    |> Enum.filter(&(&1.callback in reachable_callbacks))
+    |> Enum.each(fn sub ->
       data = %{
         xml: response,
         topic: topic,
         callback: sub.callback,
-        secret: sub.secret
+        secret: sub.secret,
+        unreachable_since: reachable_callbacks_metadata[sub.callback]
       }
 
       Federator.publish_single_websub(data)
@@ -263,11 +270,11 @@ defmodule Pleroma.Web.Websub do
     end)
   end
 
-  def publish_one(%{xml: xml, topic: topic, callback: callback, secret: secret}) do
+  def publish_one(%{xml: xml, topic: topic, callback: callback, secret: secret} = params) do
     signature = sign(secret || "", xml)
     Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
 
-    with {:ok, %{status: code}} <-
+    with {:ok, %{status: code}} when code in 200..299 <-
            @httpoison.post(
              callback,
              xml,
@@ -276,12 +283,16 @@ defmodule Pleroma.Web.Websub do
                {"X-Hub-Signature", "sha1=#{signature}"}
              ]
            ) do
+      if !Map.has_key?(params, :unreachable_since) || params[:unreachable_since],
+        do: Instances.set_reachable(callback)
+
       Logger.info(fn -> "Pushed to #{callback}, code #{code}" end)
       {:ok, code}
     else
-      e ->
-        Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(e)}" end)
-        {:error, e}
+      {_post_result, response} ->
+        unless params[:unreachable_since], do: Instances.set_reachable(callback)
+        Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(response)}" end)
+        {:error, response}
     end
   end
 end

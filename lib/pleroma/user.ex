@@ -39,6 +39,7 @@ defmodule Pleroma.User do
     field(:follower_address, :string)
     field(:search_rank, :float, virtual: true)
     field(:tags, {:array, :string}, default: [])
+    field(:bookmarks, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
     embeds_one(:info, Pleroma.User.Info)
@@ -314,7 +315,16 @@ defmodule Pleroma.User do
     q =
       from(u in User,
         where: u.id == ^follower.id,
-        update: [set: [following: fragment("array_cat(?, ?)", u.following, ^followed_addresses)]]
+        update: [
+          set: [
+            following:
+              fragment(
+                "array(select distinct unnest (array_cat(?, ?)))",
+                u.following,
+                ^followed_addresses
+              )
+          ]
+        ]
       )
 
     {1, [follower]} = Repo.update_all(q, [], returning: true)
@@ -1159,6 +1169,22 @@ defmodule Pleroma.User do
       |> Repo.update()
 
     updated_user
+  end
+
+  def bookmark(%User{} = user, status_id) do
+    bookmarks = Enum.uniq(user.bookmarks ++ [status_id])
+    update_bookmarks(user, bookmarks)
+  end
+
+  def unbookmark(%User{} = user, status_id) do
+    bookmarks = Enum.uniq(user.bookmarks -- [status_id])
+    update_bookmarks(user, bookmarks)
+  end
+
+  def update_bookmarks(%User{} = user, bookmarks) do
+    user
+    |> change(%{bookmarks: bookmarks})
+    |> update_and_set_cache
   end
 
   defp normalize_tags(tags) do

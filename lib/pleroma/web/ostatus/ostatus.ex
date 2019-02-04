@@ -48,6 +48,9 @@ defmodule Pleroma.Web.OStatus do
 
   def handle_incoming(xml_string) do
     with doc when doc != :error <- parse_document(xml_string) do
+      with {:ok, actor_user} <- find_make_or_update_user(doc),
+           do: Pleroma.Instances.set_reachable(actor_user.ap_id)
+
       entries = :xmerl_xpath.string('//entry', doc)
 
       activities =

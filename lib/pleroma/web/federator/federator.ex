@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.User
   alias Pleroma.Activity
   alias Pleroma.Jobs
-  alias Pleroma.Web.{WebFinger, Websub}
+  alias Pleroma.Web.{WebFinger, Websub, Salmon}
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
@@ -56,6 +56,10 @@ defmodule Pleroma.Web.Federator do
 
   def refresh_subscriptions() do
     Jobs.enqueue(:federator_out, __MODULE__, [:refresh_subscriptions])
+  end
+
+  def publish_single_salmon(params) do
+    Jobs.enqueue(:federator_out, __MODULE__, [:publish_single_salmon, params])
   end
 
   # Job Worker Callbacks
@@ -143,6 +147,10 @@ defmodule Pleroma.Web.Federator do
         Logger.info(Poison.encode!(params, pretty: 2))
         :error
     end
+  end
+
+  def perform(:publish_single_salmon, params) do
+    Salmon.send_to_user(params)
   end
 
   def perform(:publish_single_ap, params) do

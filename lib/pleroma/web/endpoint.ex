@@ -25,7 +25,7 @@ defmodule Pleroma.Web.Endpoint do
     at: "/",
     from: :pleroma,
     only:
-      ~w(index.html static finmoji emoji packs sounds images instance sw.js favicon.png schemas doc)
+      ~w(index.html static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc)
   )
 
   # Code reloading can be explicitly enabled under the
@@ -81,5 +81,9 @@ defmodule Pleroma.Web.Endpoint do
   def load_from_system_env(config) do
     port = System.get_env("PORT") || raise "expected the PORT environment variable to be set"
     {:ok, Keyword.put(config, :http, [:inet6, port: port])}
+  end
+
+  def websocket_url do
+    String.replace_leading(url(), "http", "ws")
   end
 end

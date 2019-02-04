@@ -6,7 +6,7 @@ defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
-  alias Pleroma.{Object, Repo, User, Activity}
+  alias Pleroma.{Object, Repo, User, Activity, Instances}
   import Pleroma.Factory
   import ExUnit.CaptureLog
 
@@ -311,6 +311,22 @@ defmodule Pleroma.Web.OStatusTest do
     refute User.following?(follower, followed)
   end
 
+  test "it clears `unreachable` federation status of the sender" do
+    incoming_reaction_xml = File.read!("test/fixtures/share-gs.xml")
+    doc = XML.parse_document(incoming_reaction_xml)
+    actor_uri = XML.string_from_xpath("//author/uri[1]", doc)
+    reacted_to_author_uri = XML.string_from_xpath("//author/uri[2]", doc)
+
+    Instances.set_consistently_unreachable(actor_uri)
+    Instances.set_consistently_unreachable(reacted_to_author_uri)
+    refute Instances.reachable?(actor_uri)
+    refute Instances.reachable?(reacted_to_author_uri)
+
+    {:ok, _} = OStatus.handle_incoming(incoming_reaction_xml)
+    assert Instances.reachable?(actor_uri)
+    refute Instances.reachable?(reacted_to_author_uri)
+  end
+
   describe "new remote user creation" do
     test "returns local users" do
       local_user = insert(:user)
@@ -513,6 +529,8 @@ defmodule Pleroma.Web.OStatusTest do
       note_data =
         note_object.data
         |> Map.put("type", "Article")
+
+      Cachex.clear(:object_cache)
 
       cs = Object.change(note_object, %{data: note_data})
       {:ok, _article_object} = Repo.update(cs)

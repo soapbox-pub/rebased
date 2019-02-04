@@ -4,9 +4,11 @@
 
 defmodule Pleroma.Web.Websub.WebsubController do
   use Pleroma.Web, :controller
+
   alias Pleroma.{Repo, User}
   alias Pleroma.Web.{Websub, Federator}
   alias Pleroma.Web.Websub.WebsubClientSubscription
+
   require Logger
 
   plug(

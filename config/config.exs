@@ -146,6 +146,7 @@ config :pleroma, :instance,
   banner_upload_limit: 4_000_000,
   registrations_open: true,
   federating: true,
+  federation_reachability_timeout_days: 7,
   allow_relay: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
@@ -226,7 +227,9 @@ config :pleroma, :mrf_rejectnonpublic,
   allow_followersonly: false,
   allow_direct: false
 
-config :pleroma, :mrf_hellthread, threshold: 10
+config :pleroma, :mrf_hellthread,
+  delist_threshold: 5,
+  reject_threshold: 10
 
 config :pleroma, :mrf_simple,
   media_removal: [],
@@ -234,6 +237,8 @@ config :pleroma, :mrf_simple,
   federated_timeline_removal: [],
   reject: [],
   accept: []
+
+config :pleroma, :rich_media, enabled: true
 
 config :pleroma, :media_proxy,
   enabled: false,

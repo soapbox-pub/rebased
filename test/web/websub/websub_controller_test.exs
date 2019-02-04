@@ -50,35 +50,37 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
     assert_in_delta NaiveDateTime.diff(websub.valid_until, NaiveDateTime.utc_now()), 100, 5
   end
 
-  test "handles incoming feed updates", %{conn: conn} do
-    websub = insert(:websub_client_subscription)
-    doc = "some stuff"
-    signature = Websub.sign(websub.secret, doc)
+  describe "websub_incoming" do
+    test "handles incoming feed updates", %{conn: conn} do
+      websub = insert(:websub_client_subscription)
+      doc = "some stuff"
+      signature = Websub.sign(websub.secret, doc)
 
-    conn =
-      conn
-      |> put_req_header("x-hub-signature", "sha1=" <> signature)
-      |> put_req_header("content-type", "application/atom+xml")
-      |> post("/push/subscriptions/#{websub.id}", doc)
+      conn =
+        conn
+        |> put_req_header("x-hub-signature", "sha1=" <> signature)
+        |> put_req_header("content-type", "application/atom+xml")
+        |> post("/push/subscriptions/#{websub.id}", doc)
 
-    assert response(conn, 200) == "OK"
+      assert response(conn, 200) == "OK"
 
-    assert length(Repo.all(Activity)) == 1
-  end
+      assert length(Repo.all(Activity)) == 1
+    end
 
-  test "rejects incoming feed updates with the wrong signature", %{conn: conn} do
-    websub = insert(:websub_client_subscription)
-    doc = "some stuff"
-    signature = Websub.sign("wrong secret", doc)
+    test "rejects incoming feed updates with the wrong signature", %{conn: conn} do
+      websub = insert(:websub_client_subscription)
+      doc = "some stuff"
+      signature = Websub.sign("wrong secret", doc)
 
-    conn =
-      conn
-      |> put_req_header("x-hub-signature", "sha1=" <> signature)
-      |> put_req_header("content-type", "application/atom+xml")
-      |> post("/push/subscriptions/#{websub.id}", doc)
+      conn =
+        conn
+        |> put_req_header("x-hub-signature", "sha1=" <> signature)
+        |> put_req_header("content-type", "application/atom+xml")
+        |> post("/push/subscriptions/#{websub.id}", doc)
 
-    assert response(conn, 500) == "Error"
+      assert response(conn, 500) == "Error"
 
-    assert length(Repo.all(Activity)) == 0
+      assert length(Repo.all(Activity)) == 0
+    end
   end
 end

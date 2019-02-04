@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Salmon do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
   use Bitwise
+  alias Pleroma.Instances
   alias Pleroma.Web.XML
   alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.User
@@ -161,25 +162,31 @@ defmodule Pleroma.Web.Salmon do
     |> Enum.filter(fn user -> user && !user.local end)
   end
 
-  # push an activity to remote accounts
-  #
-  defp send_to_user(%{info: %{salmon: salmon}}, feed, poster),
-    do: send_to_user(salmon, feed, poster)
+  @doc "Pushes an activity to remote account."
+  def send_to_user(%{recipient: %{info: %{salmon: salmon}}} = params),
+    do: send_to_user(Map.put(params, :recipient, salmon))
 
-  defp send_to_user(url, feed, poster) when is_binary(url) do
-    with {:ok, %{status: code}} <-
+  def send_to_user(%{recipient: url, feed: feed, poster: poster} = params) when is_binary(url) do
+    with {:ok, %{status: code}} when code in 200..299 <-
            poster.(
              url,
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}]
            ) do
+      if !Map.has_key?(params, :unreachable_since) || params[:unreachable_since],
+        do: Instances.set_reachable(url)
+
       Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)
+      :ok
     else
-      e -> Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
+      e ->
+        unless params[:unreachable_since], do: Instances.set_reachable(url)
+        Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
+        :error
     end
   end
 
-  defp send_to_user(_, _, _), do: nil
+  def send_to_user(_), do: :noop
 
   @supported_activities [
     "Create",
@@ -209,12 +216,23 @@ defmodule Pleroma.Web.Salmon do
       {:ok, private, _} = keys_from_pem(keys)
       {:ok, feed} = encode(private, feed)
 
-      remote_users(activity)
+      remote_users = remote_users(activity)
+
+      salmon_urls = Enum.map(remote_users, & &1.info.salmon)
+      reachable_urls_metadata = Instances.filter_reachable(salmon_urls)
+      reachable_urls = Map.keys(reachable_urls_metadata)
+
+      remote_users
+      |> Enum.filter(&(&1.info.salmon in reachable_urls))
       |> Enum.each(fn remote_user ->
-        Task.start(fn ->
-          Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
-          send_to_user(remote_user, feed, poster)
-        end)
+        Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
+
+        Pleroma.Web.Federator.publish_single_salmon(%{
+          recipient: remote_user,
+          feed: feed,
+          poster: poster,
+          unreachable_since: reachable_urls_metadata[remote_user.info.salmon]
+        })
       end)
     end
   end

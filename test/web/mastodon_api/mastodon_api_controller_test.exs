@@ -137,6 +137,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "posting a status with OGP link preview", %{conn: conn} do
+    Pleroma.Config.put([:rich_media, :enabled], true)
     user = insert(:user)
 
     conn =
@@ -148,6 +149,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
     assert Repo.get(Activity, id)
+    Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
   test "posting a direct status", %{conn: conn} do
@@ -1667,6 +1669,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "Status rich-media Card", %{conn: conn, user: user} do
+      Pleroma.Config.put([:rich_media, :enabled], true)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "http://example.com/ogp"})
 
       response =
@@ -1691,6 +1694,59 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                  }
                }
              }
+
+      Pleroma.Config.put([:rich_media, :enabled], false)
     end
+  end
+
+  test "bookmarks" do
+    user = insert(:user)
+    for_user = insert(:user)
+
+    {:ok, activity1} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo?"
+      })
+
+    {:ok, activity2} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo!"
+      })
+
+    response1 =
+      build_conn()
+      |> assign(:user, for_user)
+      |> post("/api/v1/statuses/#{activity1.id}/bookmark")
+
+    assert json_response(response1, 200)["bookmarked"] == true
+
+    response2 =
+      build_conn()
+      |> assign(:user, for_user)
+      |> post("/api/v1/statuses/#{activity2.id}/bookmark")
+
+    assert json_response(response2, 200)["bookmarked"] == true
+
+    bookmarks =
+      build_conn()
+      |> assign(:user, for_user)
+      |> get("/api/v1/bookmarks")
+
+    assert [json_response(response2, 200), json_response(response1, 200)] ==
+             json_response(bookmarks, 200)
+
+    response1 =
+      build_conn()
+      |> assign(:user, for_user)
+      |> post("/api/v1/statuses/#{activity1.id}/unbookmark")
+
+    assert json_response(response1, 200)["bookmarked"] == false
+
+    bookmarks =
+      build_conn()
+      |> assign(:user, for_user)
+      |> get("/api/v1/bookmarks")
+
+    assert [json_response(response2, 200)] == json_response(bookmarks, 200)
   end
 end

@@ -88,4 +88,8 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 width: "1024"
               }}
   end
+
+  test "rejects invalid OGP data" do
+    assert {:error, _} = Pleroma.Web.RichMedia.Parser.parse("http://example.com/malformed")
+  end
 end

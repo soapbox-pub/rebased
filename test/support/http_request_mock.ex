@@ -143,7 +143,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://squeet.me/xrd/?uri=lain@squeet.me", _, _,
+  def get(
+        "https://squeet.me/xrd/?uri=lain@squeet.me",
+        _,
+        _,
         Accept: "application/xrd+xml,application/jrd+json"
       ) do
     {:ok,
@@ -153,7 +156,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://mst3k.interlinked.me/users/luciferMysticus", _, _,
+  def get(
+        "https://mst3k.interlinked.me/users/luciferMysticus",
+        _,
+        _,
         Accept: "application/activity+json"
       ) do
     {:ok,
@@ -171,7 +177,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://hubzilla.example.org/channel/kaniini", _, _,
+  def get(
+        "https://hubzilla.example.org/channel/kaniini",
+        _,
+        _,
         Accept: "application/activity+json"
       ) do
     {:ok,
@@ -248,7 +257,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://mastodon.example.org/@admin/99541947525187367", _, _,
+  def get(
+        "http://mastodon.example.org/@admin/99541947525187367",
+        _,
+        _,
         Accept: "application/activity+json"
       ) do
     {:ok,
@@ -274,7 +286,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://mstdn.io/users/mayuutann/statuses/99568293732299394", _, _,
+  def get(
+        "https://mstdn.io/users/mayuutann/statuses/99568293732299394",
+        _,
+        _,
         Accept: "application/activity+json"
       ) do
     {:ok,
@@ -429,7 +444,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://social.sakamoto.gq/objects/0ccc1a2c-66b0-4305-b23a-7f7f2b040056", _, _,
+  def get(
+        "https://social.sakamoto.gq/objects/0ccc1a2c-66b0-4305-b23a-7f7f2b040056",
+        _,
+        _,
         Accept: "application/atom+xml"
       ) do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/httpoison_mock/sakamoto.atom")}}
@@ -510,7 +528,10 @@ defmodule HttpRequestMock do
      %Tesla.Env{status: 200, body: File.read!("test/fixtures/httpoison_mock/squeet.me_host_meta")}}
   end
 
-  def get("https://squeet.me/xrd?uri=lain@squeet.me", _, _,
+  def get(
+        "https://squeet.me/xrd?uri=lain@squeet.me",
+        _,
+        _,
         Accept: "application/xrd+xml,application/jrd+json"
       ) do
     {:ok,
@@ -541,7 +562,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://framatube.org/main/xrd?uri=framasoft@framatube.org", _, _,
+  def get(
+        "http://framatube.org/main/xrd?uri=framasoft@framatube.org",
+        _,
+        _,
         Accept: "application/xrd+xml,application/jrd+json"
       ) do
     {:ok,
@@ -560,7 +584,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("http://gnusocial.de/main/xrd?uri=winterdienst@gnusocial.de", _, _,
+  def get(
+        "http://gnusocial.de/main/xrd?uri=winterdienst@gnusocial.de",
+        _,
+        _,
         Accept: "application/xrd+xml,application/jrd+json"
       ) do
     {:ok,
@@ -594,7 +621,10 @@ defmodule HttpRequestMock do
      }}
   end
 
-  def get("https://gerzilla.de/xrd/?uri=kaniini@gerzilla.de", _, _,
+  def get(
+        "https://gerzilla.de/xrd/?uri=kaniini@gerzilla.de",
+        _,
+        _,
         Accept: "application/xrd+xml,application/jrd+json"
       ) do
     {:ok,
@@ -657,8 +687,21 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
   end
 
+  def get("http://example.com/malformed", _, _, _) do
+    {:ok,
+     %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}}
+  end
+
   def get("http://example.com/empty", _, _, _) do
     {:ok, %Tesla.Env{status: 200, body: "hello"}}
+  end
+
+  def get("http://404.site" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
+       body: ""
+     }}
   end
 
   def get(url, query, body, headers) do
@@ -677,6 +720,26 @@ defmodule HttpRequestMock do
     {:ok,
      %Tesla.Env{
        status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://200.site" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://connrefused.site" <> _, _, _, _) do
+    {:error, :connrefused}
+  end
+
+  def post("http://404.site" <> _, _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 404,
        body: ""
      }}
   end

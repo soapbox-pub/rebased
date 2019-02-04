@@ -92,6 +92,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       replies_count: 0,
       favourites_count: 0,
       reblogged: false,
+      bookmarked: false,
       favourited: false,
       muted: false,
       pinned: false,

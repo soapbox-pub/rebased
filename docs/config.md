@@ -17,7 +17,7 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ## Pleroma.Upload.Filter.Mogrify
 
-* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", {"impode", "1"}]`.
+* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"impode", "1"}]`.
 
 ## Pleroma.Upload.Filter.Dedupe
 
@@ -73,6 +73,7 @@ config :pleroma, Pleroma.Mailer,
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `account_activation_required`: Require users to confirm their emails before signing in.
 * `federating`: Enable federation with other instances
+* `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance
 * `rewrite_policy`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
   * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default)
@@ -124,7 +125,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 
 * `theme`: Which theme to use, they are defined in ``styles.json``
 * `logo`: URL of the logo, defaults to Pleroma’s logo
-* `logo_mask`: Whenether to mask the logo
+* `logo_mask`: Whether to use only the logo's shape as a mask (true) or as a regular image (false)
 * `logo_margin`: What margin to use around the logo
 * `background`: URL of the background, unless viewing a user profile with a background that is set
 * `redirect_root_no_login`: relative URL which indicates where to redirect when a user isn’t logged in.
@@ -148,7 +149,8 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `allow_direct`: whether to allow direct messages
 
 ## :mrf_hellthread
-* `threshold`: Number of mentioned users after which the message gets discarded as spam
+* `delist_threshold`: Number of mentioned users after which the message gets delisted (the message can still be seen, but it will not show up in public timelines and mentioned users won't get notifications about it). Set to 0 to disable.
+* `reject_threshold`: Number of mentioned users after which the messaged gets rejected. Set to 0 to disable.
 
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
@@ -251,6 +253,9 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
   * Pleroma.Web.Metadata.Providers.OpenGraph
   * Pleroma.Web.Metadata.Providers.TwitterCard
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews
+
+## :rich_media
+* `enabled`: if enabled the instance will parse metadata from attached links to generate link previews
 
 ## :hackney_pools
 
