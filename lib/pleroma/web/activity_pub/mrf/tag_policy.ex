@@ -85,6 +85,21 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
     end
   end
 
+  defp process_tag(
+         "mrf_tag:disable-remote-subscription",
+         %{"type" => "Follow", "actor" => actor} = message
+       ) do
+    user = User.get_cached_by_ap_id(actor)
+
+    if user.local == true do
+      {:ok, message}
+    else
+      {:reject, nil}
+    end
+  end
+
+  defp process_tag("mrf_tag:disable-any-subscription", %{"type" => "Follow"}), do: {:reject, nil}
+
   defp process_tag(_, message), do: {:ok, message}
 
   def filter_message(actor, message) do
