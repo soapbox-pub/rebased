@@ -10,8 +10,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
     follower_collection = User.get_by_ap_id(message["actor"].follower_address)
 
     message
-    |> Map.put(["to"], [follower_collection])
-    |> Map.put(["cc"], ["https://www.w3.org/ns/activitystreams#Public"])
+    |> Map.put("to", [follower_collection])
+    |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])
   end
 
   @impl true
