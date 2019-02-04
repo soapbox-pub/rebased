@@ -182,8 +182,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
-    page_url = rich_media[:url] || page_url
-    page_url_data = URI.parse(page_url)
+    page_url_data =
+      if rich_media[:url] != nil do
+        URI.merge(URI.parse(page_url), URI.parse(rich_media[:url]))
+      else
+        page_url
+      end
+
+    page_url = page_url_data |> to_string
+
+    image_url =
+      URI.merge(page_url_data, URI.parse(rich_media[:image]))
+      |> to_string
+
     site_name = rich_media[:site_name] || page_url_data.host
 
     %{
@@ -191,7 +202,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       provider_name: site_name,
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
-      image: rich_media[:image] |> MediaProxy.url(),
+      image: image_url |> MediaProxy.url(),
       title: rich_media[:title],
       description: rich_media[:description],
       pleroma: %{
