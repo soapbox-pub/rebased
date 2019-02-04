@@ -105,6 +105,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "cover_photo" => User.banner_url(user) |> MediaProxy.url(),
       "background_image" => image_url(user.info.background) |> MediaProxy.url(),
       "is_local" => user.local,
+      "is_moderator" => user.info.is_moderator,
+      "is_admin" => user.info.is_admin,
       "locked" => user.info.locked,
       "default_scope" => user.info.default_scope,
       "no_rich_text" => user.info.no_rich_text,
