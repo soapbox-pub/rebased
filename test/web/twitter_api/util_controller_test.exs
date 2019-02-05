@@ -36,6 +36,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   describe "GET /api/statusnet/config.json" do
     test "it returns the managed config", %{conn: conn} do
       Pleroma.Config.put([:instance, :managed_config], false)
+      Pleroma.Config.put([:fe, :theme], "rei-ayanami-towel")
 
       response =
         conn
