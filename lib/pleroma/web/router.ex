@@ -198,6 +198,8 @@ defmodule Pleroma.Web.Router do
     post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
     post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
     post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
+    post("/statuses/:id/mute", MastodonAPIController, :mute_conversation)
+    post("/statuses/:id/unmute", MastodonAPIController, :unmute_conversation)
 
     post("/notifications/clear", MastodonAPIController, :clear_notifications)
     post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)

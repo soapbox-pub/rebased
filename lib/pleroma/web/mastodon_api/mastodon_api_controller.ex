@@ -445,6 +445,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def mute_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with {:ok, activity} <- Pleroma.Web.ThreadMute.add_mute(user, id) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    end
+  end
+
+  def unmute_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with {:ok, activity} <- Pleroma.Web.ThreadMute.remove_mute(user, id) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    end
+  end
+
   def notifications(%{assigns: %{user: user}} = conn, params) do
     notifications = Notification.for_user(user, params)
 
