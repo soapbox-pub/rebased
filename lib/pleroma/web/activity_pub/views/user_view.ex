@@ -239,6 +239,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
     if offset < total do
       Map.put(map, "next", "#{iri}?page=#{page + 1}")
+    else
+      map
     end
   end
 end
