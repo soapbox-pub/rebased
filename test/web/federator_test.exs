@@ -87,11 +87,9 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
-      assert called(
-               Federator.enqueue(:publish_single_ap, %{inbox: inbox1, unreachable_since: dt})
-             )
+      assert called(Federator.publish_single_ap(%{inbox: inbox1, unreachable_since: dt}))
 
-      refute called(Federator.enqueue(:publish_single_ap, %{inbox: inbox2}))
+      refute called(Federator.publish_single_ap(%{inbox: inbox2}))
     end
 
     test_with_mock "it federates only to reachable instances via Websub",
@@ -123,13 +121,13 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} = CommonAPI.post(user, %{"status" => "HI"})
 
       assert called(
-               Federator.enqueue(:publish_single_websub, %{
+               Federator.publish_single_websub(%{
                  callback: sub2.callback,
                  unreachable_since: dt
                })
              )
 
-      refute called(Federator.enqueue(:publish_single_websub, %{callback: sub1.callback}))
+      refute called(Federator.publish_single_websub(%{callback: sub1.callback}))
     end
 
     test_with_mock "it federates only to reachable instances via Salmon",
@@ -163,13 +161,13 @@ defmodule Pleroma.Web.FederatorTest do
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
       assert called(
-               Federator.enqueue(:publish_single_salmon, %{
+               Federator.publish_single_salmon(%{
                  recipient: remote_user2,
                  unreachable_since: dt
                })
              )
 
-      refute called(Federator.enqueue(:publish_single_websub, %{recipient: remote_user1}))
+      refute called(Federator.publish_single_websub(%{recipient: remote_user1}))
     end
   end
 
