@@ -1261,8 +1261,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
              )
     end
 
-    test "it returns empty when hide_followings is set to true", %{conn: conn} do
-      user = insert(:user, %{info: %{hide_followings: true}})
+    test "it returns empty when hide_follows is set to true", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_follows: true}})
       followed_one = insert(:user)
       followed_two = insert(:user)
       not_followed = insert(:user)
@@ -1278,11 +1278,11 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [] == json_response(conn, 200)
     end
 
-    test "it returns friends when hide_followings is set to true if the user themselves request it",
+    test "it returns friends when hide_follows is set to true if the user themselves request it",
          %{
            conn: conn
          } do
-      user = insert(:user, %{info: %{hide_followings: true}})
+      user = insert(:user, %{info: %{hide_follows: true}})
       followed_one = insert(:user)
       followed_two = insert(:user)
       _not_followed = insert(:user)
@@ -1370,27 +1370,27 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
 
-    test "it sets and un-sets hide_followings", %{conn: conn} do
+    test "it sets and un-sets hide_follows", %{conn: conn} do
       user = insert(:user)
 
       conn
       |> assign(:user, user)
       |> post("/api/account/update_profile.json", %{
-        "hide_followings" => "true"
+        "hide_follows" => "true"
       })
 
       user = Repo.get!(User, user.id)
-      assert user.info.hide_followings == true
+      assert user.info.hide_follows == true
 
       conn =
         conn
         |> assign(:user, user)
         |> post("/api/account/update_profile.json", %{
-          "hide_followings" => "false"
+          "hide_follows" => "false"
         })
 
       user = Repo.get!(User, user.id)
-      assert user.info.hide_followings == false
+      assert user.info.hide_follows == false
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
 
