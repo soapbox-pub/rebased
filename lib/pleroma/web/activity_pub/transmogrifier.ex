@@ -313,6 +313,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("tag", combined)
   end
 
+  def fix_tag(%{"tag" => %{} = tag} = object), do: Map.put(object, "tag", [tag])
+
   def fix_tag(object), do: object
 
   # content map usually only has one language so this will do for now.

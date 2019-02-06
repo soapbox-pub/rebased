@@ -198,6 +198,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def whoami(%{assigns: %{user: %User{} = user}} = conn, _params) do
+    conn
+    |> put_resp_header("content-type", "application/activity+json")
+    |> json(UserView.render("user.json", %{user: user}))
+  end
+
+  def whoami(_conn, _params), do: {:error, :not_found}
+
   def read_inbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
     if nickname == user.nickname do
       conn
