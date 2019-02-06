@@ -235,4 +235,44 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
              ]
     end
   end
+
+  describe "rich media cards" do
+    test "a rich media card without a site name renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        image: page_url <> "/example.jpg",
+        title: "Example website"
+      }
+
+      %{provider_name: "example.com"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
+
+    test "a rich media card without a site name or image renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        title: "Example website"
+      }
+
+      %{provider_name: "example.com"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
+
+    test "a rich media card without an image renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        site_name: "Example site name",
+        title: "Example website"
+      }
+
+      %{provider_name: "Example site name"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
+  end
 end
