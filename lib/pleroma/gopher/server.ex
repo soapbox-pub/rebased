@@ -47,7 +47,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
     {:ok, pid}
   end
 
-  def init(ref, socket, transport, _Opts = []) do
+  def init(ref, socket, transport, [] = _Opts) do
     :ok = :ranch.accept_ack(ref)
     loop(socket, transport)
   end

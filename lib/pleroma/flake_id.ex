@@ -27,7 +27,7 @@ defmodule Pleroma.FlakeId do
     Kernel.to_string(id)
   end
 
-  def to_string(flake = <<_::integer-size(64), _::integer-size(48), _::integer-size(16)>>) do
+  def to_string(<<_::integer-size(64), _::integer-size(48), _::integer-size(16)>> = flake) do
     encode_base62(flake)
   end
 
@@ -42,7 +42,7 @@ defmodule Pleroma.FlakeId do
     def from_string(unquote(Kernel.to_string(i))), do: <<0::integer-size(128)>>
   end
 
-  def from_string(flake = <<_::integer-size(128)>>), do: flake
+  def from_string(<<_::integer-size(128)>> = flake), do: flake
 
   def from_string(string) when is_binary(string) and byte_size(string) < 18 do
     case Integer.parse(string) do

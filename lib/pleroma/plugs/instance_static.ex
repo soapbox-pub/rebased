@@ -33,7 +33,7 @@ defmodule Pleroma.Plugs.InstanceStatic do
   for only <- @only do
     at = Plug.Router.Utils.split("/")
 
-    def call(conn = %{request_path: "/" <> unquote(only) <> _}, opts) do
+    def call(%{request_path: "/" <> unquote(only) <> _} = conn, opts) do
       call_static(
         conn,
         opts,

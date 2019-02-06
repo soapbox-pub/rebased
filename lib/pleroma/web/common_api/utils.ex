@@ -94,7 +94,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id()
 
-  def maybe_add_attachments(text, _attachments, _no_links = true), do: text
+  def maybe_add_attachments(text, _attachments, true = _no_links), do: text
 
   def maybe_add_attachments(text, attachments, _no_links) do
     add_attachments(text, attachments)
