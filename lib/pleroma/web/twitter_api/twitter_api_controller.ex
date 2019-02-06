@@ -24,7 +24,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     conn
     |> put_view(UserView)
-    |> render("show.json", %{user: user, token: token})
+    |> render("show.json", %{user: user, token: token, for: user})
   end
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => _} = status_data) do
@@ -618,7 +618,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp build_info_cng(user, params) do
     info_params =
-      ["no_rich_text", "locked", "hide_followers", "hide_followings"]
+      ["no_rich_text", "locked", "hide_followers", "hide_followings", "show_role"]
       |> Enum.reduce(%{}, fn key, res ->
         if value = params[key] do
           Map.put(res, key, value == "true")

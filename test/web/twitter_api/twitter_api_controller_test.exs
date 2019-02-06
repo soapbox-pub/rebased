@@ -62,7 +62,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post("/api/account/verify_credentials.json")
         |> json_response(200)
 
-      assert response == UserView.render("show.json", %{user: user, token: response["token"]})
+      assert response ==
+               UserView.render("show.json", %{user: user, token: response["token"], for: user})
     end
   end
 
@@ -107,7 +108,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post(request_path, %{status: "Nice meme.", visibility: "private"})
 
       assert json_response(conn, 200) ==
-               ActivityRepresenter.to_map(Repo.one(Activity), %{user: user})
+               ActivityRepresenter.to_map(Repo.one(Activity), %{user: user, for: user})
     end
   end
 
@@ -418,6 +419,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert Enum.at(response, 0) ==
                ActivityRepresenter.to_map(activity, %{
                  user: current_user,
+                 for: current_user,
                  mentioned: [current_user]
                })
     end
@@ -547,7 +549,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert length(response) == 1
-      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: current_user})
+
+      assert Enum.at(response, 0) ==
+               ActivityRepresenter.to_map(activity, %{user: current_user, for: current_user})
     end
 
     test "with credentials with user_id", %{conn: conn, user: current_user} do
@@ -1414,6 +1418,30 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
 
+    test "it sets and un-sets show_role", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> post("/api/account/update_profile.json", %{
+        "show_role" => "true"
+      })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.show_role == true
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+          "show_role" => "false"
+        })
+
+      user = Repo.get!(User, user.id)
+      assert user.info.show_role == false
+      assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
     test "it locks an account", %{conn: conn} do
       user = insert(:user)
 
@@ -1814,7 +1842,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       user = refresh_record(user)
 
-      assert json_response(response, 200) == ActivityRepresenter.to_map(activity, %{user: user})
+      assert json_response(response, 200) ==
+               ActivityRepresenter.to_map(activity, %{user: user, for: user})
     end
   end
 
@@ -1843,7 +1872,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       user = refresh_record(user)
 
-      assert json_response(response, 200) == ActivityRepresenter.to_map(activity, %{user: user})
+      assert json_response(response, 200) ==
+               ActivityRepresenter.to_map(activity, %{user: user, for: user})
     end
   end
 end
