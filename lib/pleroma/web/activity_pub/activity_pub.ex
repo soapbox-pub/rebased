@@ -19,19 +19,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp get_recipients(%{"type" => "Announce"} = data) do
     to = data["to"] || []
     cc = data["cc"] || []
-    recipients = to ++ cc
     actor = User.get_cached_by_ap_id(data["actor"])
 
-    recipients
-    |> Enum.filter(fn recipient ->
-      case User.get_cached_by_ap_id(recipient) do
-        nil ->
-          true
+    recipients =
+      (to ++ cc)
+      |> Enum.filter(fn recipient ->
+        case User.get_cached_by_ap_id(recipient) do
+          nil ->
+            true
 
-        user ->
-          User.following?(user, actor)
-      end
-    end)
+          user ->
+            User.following?(user, actor)
+        end
+      end)
 
     {recipients, to, cc}
   end
