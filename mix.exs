@@ -94,7 +94,14 @@ defmodule Pleroma.Mixfile do
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
        ref: "479dd343f4e563ff91215c8275f3b5c67e032850"},
-      {:pleroma_job_queue, "~> 0.2.0"}
+      {:pleroma_job_queue, "~> 0.2.0"},
+      {:telemetry, "~> 0.3"},
+      {:prometheus_ex, "~> 3.0"},
+      {:prometheus_plugs, "~> 1.1"},
+      {:prometheus_phoenix, "~> 1.2"},
+      {:prometheus_ecto, "~> 1.4"},
+      {:prometheus_process_collector, "~> 1.4"},
+      {:recon, github: "ferd/recon"}
     ]
   end
 
