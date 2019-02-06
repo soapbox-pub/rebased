@@ -194,7 +194,7 @@ defmodule Pleroma.Web.Federator do
     {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
 
-  def handle_cast(m, state) do
+  def handle_cast(_, state) do
     {:noreply, state}
   end
 
