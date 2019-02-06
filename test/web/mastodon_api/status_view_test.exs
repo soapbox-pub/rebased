@@ -274,5 +274,20 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       %{provider_name: "Example site name"} =
         StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
+
+    test "a rich media card with all relevant data renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        site_name: "Example site name",
+        title: "Example website",
+        image: page_url <> "/example.jpg",
+        description: "Example description"
+      }
+
+      %{provider_name: "Example site name"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
   end
 end
