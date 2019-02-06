@@ -100,6 +100,26 @@ config :pleroma, Pleroma.Mailer,
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
+
+An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
+```
+config :logger, 
+  backends: [{ExSyslogger, :ex_syslogger}]
+
+config :logger, :ex_syslogger,
+  level: :warn
+```
+
+Another example, keeping console output and adding the pid to syslog output:
+```
+config :logger,
+  backends: [:console, {ExSyslogger, :ex_syslogger}]
+
+config :logger, :ex_syslogger,
+  level: :warn,
+  option: [:pid, :ndelay]
+```
+
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
 
