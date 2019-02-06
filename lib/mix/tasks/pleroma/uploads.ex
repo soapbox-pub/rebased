@@ -20,7 +20,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
    - `--delete` - delete local uploads after migrating them to the target uploader
 
 
-   A list of avalible uploaders can be seen in config.exs
+   A list of available uploaders can be seen in config.exs
   """
   def run(["migrate_local", target_uploader | args]) do
     delete? = Enum.member?(args, "--delete")
