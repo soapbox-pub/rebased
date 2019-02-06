@@ -4,14 +4,14 @@
 
 defmodule Pleroma.Web.TwitterAPI.UtilController do
   use Pleroma.Web, :controller
+
   require Logger
-  alias Pleroma.Web
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.WebFinger
-  alias Pleroma.Web.CommonAPI
+
   alias Comeonin.Pbkdf2
+  alias Pleroma.{Emoji, PasswordResetToken, User, Repo}
+  alias Pleroma.Web
+  alias Pleroma.Web.{CommonAPI, OStatus, WebFinger}
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.{Repo, PasswordResetToken, User, Emoji}
 
   def show_password_reset(conn, %{"token" => token}) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),

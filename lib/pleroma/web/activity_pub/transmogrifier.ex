@@ -6,12 +6,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   @moduledoc """
   A module to handle coding from internal to wire ActivityPub and back.
   """
-  alias Pleroma.User
-  alias Pleroma.Object
-  alias Pleroma.Activity
-  alias Pleroma.Repo
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.{Activity, User, Object, Repo}
+  alias Pleroma.Web.ActivityPub.{ActivityPub, Utils}
 
   import Ecto.Query
 

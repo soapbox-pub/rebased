@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus.FeedRepresenter do
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.OStatus.{UserRepresenter, ActivityRepresenter}
   alias Pleroma.User
-  alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.{OStatus, MediaProxy}
+  alias Pleroma.Web.OStatus.{UserRepresenter, ActivityRepresenter}
 
   def to_simple_form(user, activities, _users) do
     most_recent_update =

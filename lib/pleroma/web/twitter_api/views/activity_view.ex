@@ -4,19 +4,11 @@
 
 defmodule Pleroma.Web.TwitterAPI.ActivityView do
   use Pleroma.Web, :view
+  alias Pleroma.{Activity, Formatter, HTML, Object, Repo, User}
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.User
-  alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Activity
-  alias Pleroma.HTML
-  alias Pleroma.Object
-  alias Pleroma.User
-  alias Pleroma.Repo
-  alias Pleroma.Formatter
+  alias Pleroma.Web.TwitterAPI.{ActivityView, TwitterAPI, UserView}
+  alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
 
   import Ecto.Query
   require Logger

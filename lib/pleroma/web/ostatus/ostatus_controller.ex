@@ -5,13 +5,11 @@
 defmodule Pleroma.Web.OStatus.OStatusController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.{User, Activity, Object}
-  alias Pleroma.Web.OStatus.{FeedRepresenter, ActivityRepresenter}
-  alias Pleroma.Web.{OStatus, Federator}
+  alias Pleroma.{Activity, Object, User}
+  alias Pleroma.Web.ActivityPub.{ActivityPub, ActivityPubController, ObjectView}
+  alias Pleroma.Web.OStatus.{ActivityRepresenter, FeedRepresenter}
+  alias Pleroma.Web.{Federator, OStatus}
   alias Pleroma.Web.XML
-  alias Pleroma.Web.ActivityPub.ObjectView
-  alias Pleroma.Web.ActivityPub.ActivityPubController
-  alias Pleroma.Web.ActivityPub.ActivityPub
 
   plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
 

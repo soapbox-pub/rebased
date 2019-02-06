@@ -5,11 +5,11 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.{Activity, Repo, Object, Upload, User, Notification, Instances}
   alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
-  alias Pleroma.Web.WebFinger
-  alias Pleroma.Web.Federator
-  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.{WebFinger, Federator, OStatus}
+
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
+
   require Logger
 
   @httpoison Application.get_env(:pleroma, :httpoison)

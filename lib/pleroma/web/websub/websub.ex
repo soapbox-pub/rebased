@@ -4,8 +4,7 @@
 
 defmodule Pleroma.Web.Websub do
   alias Ecto.Changeset
-  alias Pleroma.Repo
-  alias Pleroma.Instances
+  alias Pleroma.{Instances, Repo}
   alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.{XML, Endpoint, OStatus}

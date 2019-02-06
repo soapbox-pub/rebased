@@ -125,6 +125,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   @doc "The default HTML scrubbing policy: no "
 
   require HtmlSanitizeEx.Scrubber.Meta
+
   alias HtmlSanitizeEx.Scrubber.Meta
 
   @markup Application.get_env(:pleroma, :markup)

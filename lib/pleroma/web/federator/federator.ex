@@ -4,15 +4,13 @@
 
 defmodule Pleroma.Web.Federator do
   use GenServer
-  alias Pleroma.User
-  alias Pleroma.Activity
+
+  alias Pleroma.{Activity, User}
   alias Pleroma.Web.{WebFinger, Websub, Salmon}
+  alias Pleroma.Web.ActivityPub.{ActivityPub, Relay, Transmogrifier, Utils}
   alias Pleroma.Web.Federator.RetryQueue
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.OStatus
+
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)

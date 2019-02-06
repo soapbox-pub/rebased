@@ -7,9 +7,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Comeonin.Pbkdf2
   alias Pleroma.{Activity, Formatter, Object, Repo}
   alias Pleroma.{User, Web}
+  alias Pleroma.Web.{Endpoint, MediaProxy}
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.MediaProxy
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
