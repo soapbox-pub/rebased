@@ -26,12 +26,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   require Logger
 
   @httpoison Application.get_env(:pleroma, :httpoison)
+  @local_mastodon_name "Mastodon-Local"
 
   action_fallback(:errors)
 
   def create_app(conn, params) do
-    with cs <- App.register_changeset(%App{}, params) |> IO.inspect(),
-         {:ok, app} <- Repo.insert(cs) |> IO.inspect() do
+    with cs <- App.register_changeset(%App{}, params),
+         false <- cs.changes[:client_name] == @local_mastodon_name,
+         {:ok, app} <- Repo.insert(cs) do
       res = %{
         id: app.id |> to_string,
         name: app.client_name,
@@ -1154,16 +1156,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   defp get_or_make_app() do
-    with %App{} = app <- Repo.get_by(App, client_name: "Mastodon-Local") do
+    find_attrs = %{client_name: @local_mastodon_name, redirect_uris: "."}
+
+    with %App{} = app <- Repo.get_by(App, find_attrs) do
       {:ok, app}
     else
       _e ->
-        cs =
-          App.register_changeset(%App{}, %{
-            client_name: "Mastodon-Local",
-            redirect_uris: ".",
-            scopes: "read,write,follow"
-          })
+        cs = App.register_changeset(%App{}, Map.put(find_attrs, :scopes, "read,write,follow"))
 
         Repo.insert(cs)
     end

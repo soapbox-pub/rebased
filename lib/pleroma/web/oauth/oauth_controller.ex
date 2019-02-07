@@ -37,6 +37,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
+         true <- redirect_uri in String.split(app.redirect_uris),
          {:ok, auth} <- Authorization.create_authorization(app, user) do
       # Special case: Local MastodonFE.
       redirect_uri =
