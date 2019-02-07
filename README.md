@@ -10,9 +10,9 @@ For clients it supports both the [GNU Social API with Qvitter extensions](https:
 
 Client applications that are committed to supporting Pleroma:
 
-* Mastalab (Android)
-* Tusky (Android)
-* Twidere (Android)
+* Mastalab (Android, Streaming Ready)
+* Tusky (Android, No Streaming)
+* Twidere (Android, No Streaming)
 * Mast (iOS)
 * Amaroq (iOS)
 
