@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.ThreadMute do
   use Ecto.Schema
 
-  alias Pleroma.{Activity, Notification, User}
+  alias Pleroma.{Activity, Notification, User, Repo}
 
   schema "thread_mutes" do
     belongs_to(:user, User, type: Pleroma.FlakeId)
@@ -13,9 +13,8 @@ defmodule Pleroma.Web.ThreadMute do
   end
 
   def add_mute(user, id) do
-    user_id = user.id
     %{data: %{"context" => context}} = Activity.get_by_id(id)
-    Pleroma.Repo.insert(%Pleroma.Web.ThreadMute{user: user_id, context: context})
+    Repo.insert(%Pleroma.Web.ThreadMute{}, %{user_id: user.id, context: context})
   end
 
   def remove_mute(user, id) do
