@@ -3,10 +3,10 @@ defmodule Pleroma.Repo.Migrations.CreateThreadMutes do
 
   def change do
     create table(:thread_mutes) do
-      add :user_id, references(:users, type: :uuid, on_delete: :delete_all)
+      add :user, references(:users, type: :uuid, on_delete: :delete_all)
       add :context, :string
     end
     
-    create index(:thread_mutes, [:user_id])
+    create index(:thread_mutes, [:user])
   end
 end

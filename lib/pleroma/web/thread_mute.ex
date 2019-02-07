@@ -8,14 +8,14 @@ defmodule Pleroma.Web.ThreadMute do
   alias Pleroma.{Activity, Notification, User}
 
   schema "thread_mutes" do
-    field(:user_id, :string)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:context, :string)
   end
 
   def add_mute(user, id) do
-    %{id: user_id} = user
+    user_id = user.id
     %{data: %{"context" => context}} = Activity.get_by_id(id)
-    Pleroma.Repo.insert(%Pleroma.Web.ThreadMute{user_id: user_id, context: context})
+    Pleroma.Repo.insert(%Pleroma.Web.ThreadMute{user: user_id, context: context})
   end
 
   def remove_mute(user, id) do
