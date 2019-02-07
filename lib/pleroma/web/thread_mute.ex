@@ -15,7 +15,7 @@ defmodule Pleroma.Web.ThreadMute do
   def add_mute(user, id) do
     user_id = user.id
     %{data: %{"context" => context}} = Activity.get_by_id(id)
-    Pleroma.Repo.insert(%Pleroma.Web.ThreadMute{user: user_id, context: context})
+    Pleroma.Repo.insert(%Pleroma.Web.ThreadMute{}, %{user: user_id, context: context})
   end
 
   def remove_mute(user, id) do
