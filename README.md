@@ -18,7 +18,6 @@ Client applications that are committed to supporting Pleroma:
 
 Client applications that are known to work well:
 
-* Pawoo (Android + iOS)
 * Tootdon (Android + iOS)
 * Tootle (iOS)
 * Whalebird (Windows + Mac + Linux)
