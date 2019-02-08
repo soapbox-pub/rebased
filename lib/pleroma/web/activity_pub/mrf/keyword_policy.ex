@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
            string_matches?(content, pattern)
          end) do
       to = List.delete(to, "https://www.w3.org/ns/activitystreams#Public")
-      cc = ["https://www.w3.org/ns/activitystreams#Public" | [message["cc"] || []]]
+      cc = ["https://www.w3.org/ns/activitystreams#Public" | message["cc"] || []]
 
       message =
         message
