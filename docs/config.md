@@ -151,6 +151,11 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `delist_threshold`: Number of mentioned users after which the message gets delisted (the message can still be seen, but it will not show up in public timelines and mentioned users won't get notifications about it). Set to 0 to disable.
 * `reject_threshold`: Number of mentioned users after which the messaged gets rejected. Set to 0 to disable.
 
+## :mrf_keyword
+* `reject`: A list of patterns which result in message being rejected, each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
+* `ftl_removal`: A list of patterns which result in message being removed from federated timelines(a.k.a unlisted), each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
+* `replace`: A list of tuples containing `{pattern, replacement`, `pattern` can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
+
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.

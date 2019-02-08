@@ -44,6 +44,33 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       Application.get_env(:pleroma, :mrf_simple)
       |> Enum.into(%{})
 
+    # This horror is needed to convert regex sigils to strings
+    mrf_keyword =
+      Application.get_env(:pleroma, :mrf_keyword)
+      |> Enum.map(fn {key, value} ->
+        {key,
+         Enum.map(value, fn
+           {pattern, replacement} ->
+             %{
+               "pattern" =>
+                 if not is_binary(pattern) do
+                   inspect(pattern)
+                 else
+                   pattern
+                 end,
+               "replacement" => replacement
+             }
+
+           pattern ->
+             if not is_binary(pattern) do
+               inspect(pattern)
+             else
+               pattern
+             end
+         end)}
+      end)
+      |> Enum.into(%{})
+
     mrf_policies =
       MRF.get_policies()
       |> Enum.map(fn policy -> to_string(policy) |> String.split(".") |> List.last() end)
@@ -73,6 +100,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         %{
           mrf_policies: mrf_policies,
           mrf_simple: mrf_simple,
+          mrf_keyword: mrf_keyword,
           mrf_user_allowlist: mrf_user_allowlist,
           quarantined_instances: quarantined
         }
