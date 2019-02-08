@@ -46,7 +46,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
     # This horror is needed to convert regex sigils to strings
     mrf_keyword =
-      Application.get_env(:pleroma, :mrf_keyword)
+      Application.get_env(:pleroma, :mrf_keyword, [])
       |> Enum.map(fn {key, value} ->
         {key,
          Enum.map(value, fn
