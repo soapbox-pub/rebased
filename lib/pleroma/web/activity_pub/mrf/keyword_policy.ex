@@ -35,7 +35,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
         |> Map.put("to", to)
         |> Map.put("cc", cc)
 
-      IO.inspect(message)
       {:ok, message}
     else
       {:ok, message}
