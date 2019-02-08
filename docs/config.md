@@ -174,7 +174,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 ## :mrf_keyword
 * `reject`: A list of patterns which result in message being rejected, each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
 * `federated_timeline_removal`: A list of patterns which result in message being removed from federated timelines (a.k.a unlisted), each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
-* `replace`: A list of tuples containing `{pattern, replacement`, `pattern` can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
+* `replace`: A list of tuples containing `{pattern, replacement}`, `pattern` can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
 
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
