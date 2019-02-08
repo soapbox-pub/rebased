@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Web.ThreadMute do
   use Ecto.Schema
-
-  alias Pleroma.{Activity, Notification, User, Repo}
+  alias Pleroma.{Activity, Repo, User}
+  require Ecto.Query
 
   schema "thread_mutes" do
     belongs_to(:user, User, type: Pleroma.FlakeId)
@@ -19,8 +19,9 @@ defmodule Pleroma.Web.ThreadMute do
   end
 
   def remove_mute(user, id) do
-  end
-
-  def mute_thread() do
+    user_id = Pleroma.FlakeId.from_string(user.id)
+    %{data: %{"context" => context}} = Activity.get_by_id(id)
+    Ecto.Query.from(m in "thread_mutes", where: m.user_id == ^user_id and m.context == ^context)
+    |> Repo.delete_all
   end
 end
