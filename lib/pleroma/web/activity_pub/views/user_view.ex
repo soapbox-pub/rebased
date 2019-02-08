@@ -86,7 +86,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     query = from(user in query, select: [:ap_id])
     following = Repo.all(query)
 
-    collection(following, "#{user.ap_id}/following", page, !user.info.hide_network)
+    collection(following, "#{user.ap_id}/following", page, !user.info.hide_follows)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "id" => "#{user.ap_id}/following",
       "type" => "OrderedCollection",
       "totalItems" => length(following),
-      "first" => collection(following, "#{user.ap_id}/following", 1, !user.info.hide_network)
+      "first" => collection(following, "#{user.ap_id}/following", 1, !user.info.hide_follows)
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
@@ -109,7 +109,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     query = from(user in query, select: [:ap_id])
     followers = Repo.all(query)
 
-    collection(followers, "#{user.ap_id}/followers", page, !user.info.hide_network)
+    collection(followers, "#{user.ap_id}/followers", page, !user.info.hide_followers)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -122,7 +122,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "id" => "#{user.ap_id}/followers",
       "type" => "OrderedCollection",
       "totalItems" => length(followers),
-      "first" => collection(followers, "#{user.ap_id}/followers", 1, !user.info.hide_network)
+      "first" => collection(followers, "#{user.ap_id}/followers", 1, !user.info.hide_followers)
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
@@ -239,6 +239,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
     if offset < total do
       Map.put(map, "next", "#{iri}?page=#{page + 1}")
+    else
+      map
     end
   end
 end
