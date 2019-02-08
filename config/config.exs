@@ -115,7 +115,7 @@ config :logger, :console,
 config :logger, :ex_syslogger,
   level: :debug,
   ident: "Pleroma",
-  format: "$date $time $metadata[$level] $message",
+  format: "$metadata[$level] $message",
   metadata: [:request_id]
 
 config :mime, :types, %{

@@ -59,6 +59,8 @@ defmodule Pleroma.HTML do
     end)
   end
 
+  def extract_first_external_url(_, nil), do: {:error, "No content"}
+
   def extract_first_external_url(object, content) do
     key = "URL|#{object.id}"
 

@@ -1101,9 +1101,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(user.id)
   end
 
-  test "getting followers, hide_network", %{conn: conn} do
+  test "getting followers, hide_followers", %{conn: conn} do
     user = insert(:user)
-    other_user = insert(:user, %{info: %{hide_network: true}})
+    other_user = insert(:user, %{info: %{hide_followers: true}})
     {:ok, _user} = User.follow(user, other_user)
 
     conn =
@@ -1113,9 +1113,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert [] == json_response(conn, 200)
   end
 
-  test "getting followers, hide_network, same user requesting", %{conn: conn} do
+  test "getting followers, hide_followers, same user requesting", %{conn: conn} do
     user = insert(:user)
-    other_user = insert(:user, %{info: %{hide_network: true}})
+    other_user = insert(:user, %{info: %{hide_followers: true}})
     {:ok, _user} = User.follow(user, other_user)
 
     conn =
@@ -1139,8 +1139,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(other_user.id)
   end
 
-  test "getting following, hide_network", %{conn: conn} do
-    user = insert(:user, %{info: %{hide_network: true}})
+  test "getting following, hide_follows", %{conn: conn} do
+    user = insert(:user, %{info: %{hide_follows: true}})
     other_user = insert(:user)
     {:ok, user} = User.follow(user, other_user)
 
@@ -1151,8 +1151,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert [] == json_response(conn, 200)
   end
 
-  test "getting following, hide_network, same user requesting", %{conn: conn} do
-    user = insert(:user, %{info: %{hide_network: true}})
+  test "getting following, hide_follows, same user requesting", %{conn: conn} do
+    user = insert(:user, %{info: %{hide_follows: true}})
     other_user = insert(:user)
     {:ok, user} = User.follow(user, other_user)
 
