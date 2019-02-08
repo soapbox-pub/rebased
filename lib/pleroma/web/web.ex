@@ -71,6 +71,7 @@ defmodule Pleroma.Web do
   def router do
     quote do
       use Phoenix.Router
+      # credo:disable-for-next-line Credo.Check.Consistency.MultiAliasImportRequireUse
       import Plug.Conn
       import Phoenix.Controller
     end
@@ -78,6 +79,7 @@ defmodule Pleroma.Web do
 
   def channel do
     quote do
+      # credo:disable-for-next-line Credo.Check.Consistency.MultiAliasImportRequireUse
       use Phoenix.Channel
       import Pleroma.Web.Gettext
     end

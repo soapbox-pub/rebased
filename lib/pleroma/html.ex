@@ -83,8 +83,7 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   """
 
   @markup Application.get_env(:pleroma, :markup)
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
@@ -125,12 +124,10 @@ defmodule Pleroma.HTML.Scrubber.Default do
   @doc "The default HTML scrubbing policy: no "
 
   require HtmlSanitizeEx.Scrubber.Meta
-
   alias HtmlSanitizeEx.Scrubber.Meta
 
   @markup Application.get_env(:pleroma, :markup)
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
