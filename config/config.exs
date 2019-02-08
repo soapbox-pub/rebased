@@ -240,7 +240,7 @@ config :pleroma, :mrf_simple,
 
 config :pleroma, :mrf_keyword,
   reject: [],
-  ftl_removal: [],
+  federated_timeline_removal: [],
   replace: []
 
 config :pleroma, :rich_media, enabled: true

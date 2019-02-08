@@ -24,7 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
   defp check_ftl_removal(%{"to" => to, "object" => %{"content" => content}} = message) do
     if "https://www.w3.org/ns/activitystreams#Public" in to and
-         Enum.any?(Pleroma.Config.get([:mrf_keyword, :ftl_removal]), fn pattern ->
+         Enum.any?(Pleroma.Config.get([:mrf_keyword, :federated_timeline_removal]), fn pattern ->
            string_matches?(content, pattern)
          end) do
       to = List.delete(to, "https://www.w3.org/ns/activitystreams#Public")
