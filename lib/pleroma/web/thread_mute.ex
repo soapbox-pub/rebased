@@ -21,7 +21,8 @@ defmodule Pleroma.Web.ThreadMute do
   def remove_mute(user, id) do
     user_id = Pleroma.FlakeId.from_string(user.id)
     %{data: %{"context" => context}} = Activity.get_by_id(id)
+
     Ecto.Query.from(m in "thread_mutes", where: m.user_id == ^user_id and m.context == ^context)
-    |> Repo.delete_all
+    |> Repo.delete_all()
   end
 end
