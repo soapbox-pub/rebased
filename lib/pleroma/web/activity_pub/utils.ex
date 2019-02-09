@@ -3,11 +3,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
-  alias Pleroma.{Repo, Web, Object, Activity, User, Notification}
+  alias Pleroma.Repo
+  alias Pleroma.Web
+  alias Pleroma.Object
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Notification
   alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Endpoint
-  alias Ecto.{Changeset, UUID}
+  alias Ecto.Changeset
+  alias Ecto.UUID
+
   import Ecto.Query
+
   require Logger
 
   @supported_object_types ["Article", "Note", "Video", "Page"]

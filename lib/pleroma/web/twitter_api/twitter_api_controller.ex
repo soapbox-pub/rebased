@@ -8,10 +8,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   alias Ecto.Changeset
-  alias Pleroma.Web.ActivityPub.{ActivityPub, Utils}
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.TwitterAPI.{ActivityView, NotificationView, TwitterAPI, UserView}
-  alias Pleroma.{Activity, Object, Notification, Repo, User}
+  alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.NotificationView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Notification
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   require Logger
 

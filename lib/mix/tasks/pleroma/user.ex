@@ -5,7 +5,8 @@
 defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
   import Ecto.Changeset
-  alias Pleroma.{Repo, User}
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Mix.Tasks.Pleroma.Common
 
   @shortdoc "Manages Pleroma users"

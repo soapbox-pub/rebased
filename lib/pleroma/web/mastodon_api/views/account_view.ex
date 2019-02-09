@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
 
-  alias Pleroma.{HTML, User}
+  alias Pleroma.HTML
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MediaProxy

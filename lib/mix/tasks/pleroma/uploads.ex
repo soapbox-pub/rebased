@@ -4,7 +4,8 @@
 
 defmodule Mix.Tasks.Pleroma.Uploads do
   use Mix.Task
-  alias Pleroma.{Upload, Uploaders.Local}
+  alias Pleroma.Upload
+  alias Pleroma.Uploaders.Local
   alias Mix.Tasks.Pleroma.Common
   require Logger
 

@@ -5,9 +5,13 @@
 defmodule Pleroma.Web.ActivityPub.UserView do
   use Pleroma.Web, :view
 
-  alias Pleroma.Web.{WebFinger, Salmon}
-  alias Pleroma.{User, Repo}
-  alias Pleroma.Web.ActivityPub.{ActivityPub, Transmogrifier, Utils}
+  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Salmon
+  alias Pleroma.User
+  alias Pleroma.Repo
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
 
   import Ecto.Query
 

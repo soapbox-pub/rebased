@@ -37,7 +37,10 @@ end
 
 defmodule Pleroma.Gopher.Server.ProtocolHandler do
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.{Activity, HTML, User, Repo}
+  alias Pleroma.Activity
+  alias Pleroma.HTML
+  alias Pleroma.User
+  alias Pleroma.Repo
 
   def start_link(ref, socket, transport, opts) do
     pid = spawn_link(__MODULE__, :init, [ref, socket, transport, opts])

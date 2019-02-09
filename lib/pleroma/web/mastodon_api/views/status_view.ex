@@ -5,9 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.StatusView do
   use Pleroma.Web, :view
 
-  alias Pleroma.{Activity, HTML, Repo, User}
+  alias Pleroma.Activity
+  alias Pleroma.HTML
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MastodonAPI.{AccountView, StatusView}
+  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
   # TODO: Add cached version.

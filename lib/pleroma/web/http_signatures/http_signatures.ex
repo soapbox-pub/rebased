@@ -5,7 +5,8 @@
 # https://tools.ietf.org/html/draft-cavage-http-signatures-08
 defmodule Pleroma.Web.HTTPSignatures do
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.{ActivityPub, Utils}
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
 
   require Logger
 

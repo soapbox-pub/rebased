@@ -4,7 +4,9 @@
 
 defmodule Pleroma.Web.TwitterAPI.UserView do
   use Pleroma.Web, :view
-  alias Pleroma.{Formatter, HTML, User}
+  alias Pleroma.Formatter
+  alias Pleroma.HTML
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
 

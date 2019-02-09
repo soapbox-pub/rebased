@@ -2,13 +2,19 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
+# FIXME: Remove this module?
 # THIS MODULE IS DEPRECATED! DON'T USE IT!
 # USE THE Pleroma.Web.TwitterAPI.Views.ActivityView MODULE!
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter do
   use Pleroma.Web.TwitterAPI.Representers.BaseRepresenter
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
-  alias Pleroma.{Activity, Formatter, HTML, User}
-  alias Pleroma.Web.TwitterAPI.{ActivityView, TwitterAPI, UserView}
+  alias Pleroma.Activity
+  alias Pleroma.Formatter
+  alias Pleroma.HTML
+  alias Pleroma.User
+  alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
 

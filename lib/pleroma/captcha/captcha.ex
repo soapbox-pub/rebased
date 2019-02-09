@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Captcha do
-  alias Plug.Crypto.{KeyGenerator, MessageEncryptor}
   alias Calendar.DateTime
+  alias Plug.Crypto.KeyGenerator
+  alias Plug.Crypto.MessageEncryptor
 
   use GenServer
 

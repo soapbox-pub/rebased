@@ -8,9 +8,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   require Logger
 
   alias Comeonin.Pbkdf2
-  alias Pleroma.{Emoji, PasswordResetToken, User, Repo}
+  alias Pleroma.Emoji
+  alias Pleroma.PasswordResetToken
+  alias Pleroma.User
+  alias Pleroma.Repo
   alias Pleroma.Web
-  alias Pleroma.Web.{CommonAPI, OStatus, WebFinger}
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.WebFinger
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   def show_password_reset(conn, %{"token" => token}) do

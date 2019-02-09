@@ -7,7 +7,8 @@ defmodule Pleroma.Web.Salmon do
 
   use Bitwise
 
-  alias Pleroma.{Instances, User}
+  alias Pleroma.Instances
+  alias Pleroma.User
   alias Pleroma.Web.XML
   alias Pleroma.Web.OStatus.ActivityRepresenter
 

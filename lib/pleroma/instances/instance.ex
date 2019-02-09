@@ -1,7 +1,8 @@
 defmodule Pleroma.Instances.Instance do
   @moduledoc "Instance."
 
-  alias Pleroma.{Instances, Repo}
+  alias Pleroma.Instances
+  alias Pleroma.Repo
   alias Pleroma.Instances.Instance
 
   use Ecto.Schema

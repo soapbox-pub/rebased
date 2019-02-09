@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Helpers do
-  alias Pleroma.{Activity, Object, HTML}
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.HTML
   alias Pleroma.Web.RichMedia.Parser
 
   def fetch_data_for_activity(%Activity{} = activity) do

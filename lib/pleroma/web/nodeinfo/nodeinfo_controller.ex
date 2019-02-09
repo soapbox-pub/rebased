@@ -5,7 +5,11 @@
 defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.{Config, Repo, Stats, User, Web}
+  alias Pleroma.Config
+  alias Pleroma.Repo
+  alias Pleroma.Stats
+  alias Pleroma.User
+  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.MRF
 
   plug(Pleroma.Web.FederatingPlug)

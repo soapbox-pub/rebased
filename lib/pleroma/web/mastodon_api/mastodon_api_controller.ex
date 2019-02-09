@@ -4,22 +4,31 @@
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
-  alias Pleroma.{Activity, Config, Filter, Notification, Object, Repo, Stats, User}
+  alias Pleroma.Activity
+  alias Pleroma.Config
+  alias Pleroma.Filter
+  alias Pleroma.Notification
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.Stats
+  alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.{CommonAPI, MediaProxy, Push}
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.Push
   alias Push.Subscription
 
-  alias Pleroma.Web.MastodonAPI.{
-    AccountView,
-    FilterView,
-    ListView,
-    MastodonView,
-    PushSubscriptionView,
-    StatusView
-  }
-
-  alias Pleroma.Web.ActivityPub.{ActivityPub, Utils}
-  alias Pleroma.Web.OAuth.{App, Authorization, Token}
+  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.FilterView
+  alias Pleroma.Web.MastodonAPI.ListView
+  alias Pleroma.Web.MastodonAPI.MastodonView
+  alias Pleroma.Web.MastodonAPI.PushSubscriptionView
+  alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
 
   import Ecto.Query
   require Logger

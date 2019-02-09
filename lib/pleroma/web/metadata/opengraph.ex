@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
-  alias Pleroma.{HTML, Formatter, User}
-  alias Pleroma.Web.{Metadata, MediaProxy}
+  alias Pleroma.HTML
+  alias Pleroma.Formatter
+  alias Pleroma.User
+  alias Pleroma.Web.Metadata
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Metadata.Providers.Provider
 
   @behaviour Provider

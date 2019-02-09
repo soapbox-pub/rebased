@@ -4,7 +4,8 @@
 
 defmodule Pleroma.Web.ActivityPub.ObjectView do
   use Pleroma.Web, :view
-  alias Pleroma.{Object, Activity}
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   def render("object.json", %{object: %Object{} = object}) do

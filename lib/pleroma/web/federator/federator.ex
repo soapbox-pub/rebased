@@ -5,9 +5,15 @@
 defmodule Pleroma.Web.Federator do
   use GenServer
 
-  alias Pleroma.{Activity, User}
-  alias Pleroma.Web.{WebFinger, Websub, Salmon}
-  alias Pleroma.Web.ActivityPub.{ActivityPub, Relay, Transmogrifier, Utils}
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Websub
+  alias Pleroma.Web.Salmon
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
 

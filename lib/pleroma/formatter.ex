@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Formatter do
-  alias Pleroma.{Emoji, HTML, User}
+  alias Pleroma.Emoji
+  alias Pleroma.HTML
+  alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
   @tag_regex ~r/((?<=[^&])|\A)(\#)(\w+)/u

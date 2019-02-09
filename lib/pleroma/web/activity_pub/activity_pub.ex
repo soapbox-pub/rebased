@@ -3,9 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.{Activity, Repo, Object, Upload, User, Notification, Instances}
-  alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
-  alias Pleroma.Web.{WebFinger, Federator, OStatus}
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.Object
+  alias Pleroma.Upload
+  alias Pleroma.User
+  alias Pleroma.Notification
+  alias Pleroma.Instances
+  alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.MRF
+  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Federator
+  alias Pleroma.Web.OStatus
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
