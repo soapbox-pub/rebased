@@ -104,8 +104,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicyTest do
                  }
 
                  {:ok, %{"object" => %{"content" => result}}} = KeywordPolicy.filter(message)
-                 IO.inspect(content)
-                 IO.inspect(result)
                  result == "ZFS is free software"
                end)
     end
