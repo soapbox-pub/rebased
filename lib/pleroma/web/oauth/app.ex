@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.OAuth.App do
   use Ecto.Schema
-  import Ecto.{Changeset}
+  import Ecto.Changeset
 
   schema "apps" do
     field(:client_name, :string)

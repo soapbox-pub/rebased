@@ -10,7 +10,8 @@ defmodule Pleroma.Web.OAuth.Authorization do
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.App
 
-  import Ecto.{Changeset, Query}
+  import Ecto.Changeset
+  import Ecto.Query
 
   schema "oauth_authorizations" do
     field(:token, :string)

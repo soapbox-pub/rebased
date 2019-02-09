@@ -24,7 +24,8 @@ defmodule Pleroma.Web do
     quote do
       use Phoenix.Controller, namespace: Pleroma.Web
       import Plug.Conn
-      import Pleroma.Web.{Gettext, Router.Helpers}
+      import Pleroma.Web.Gettext
+      import Pleroma.Web.Router.Helpers
     end
   end
 
@@ -37,7 +38,9 @@ defmodule Pleroma.Web do
       # Import convenience functions from controllers
       import Phoenix.Controller, only: [get_csrf_token: 0, get_flash: 2, view_module: 1]
 
-      import Pleroma.Web.{ErrorHelpers, Gettext, Router.Helpers}
+      import Pleroma.Web.ErrorHelpers
+      import Pleroma.Web.Gettext
+      import Pleroma.Web.Router.Helpers
 
       require Logger
 

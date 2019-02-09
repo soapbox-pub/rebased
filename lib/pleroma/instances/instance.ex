@@ -7,7 +7,8 @@ defmodule Pleroma.Instances.Instance do
 
   use Ecto.Schema
 
-  import Ecto.{Query, Changeset}
+  import Ecto.Query
+  import Ecto.Changeset
 
   schema "instances" do
     field(:host, :string)
