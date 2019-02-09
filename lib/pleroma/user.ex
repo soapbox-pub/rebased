@@ -96,12 +96,6 @@ defmodule Pleroma.User do
     "#{ap_id(user)}/followers"
   end
 
-  def follow_changeset(struct, params \\ %{}) do
-    struct
-    |> cast(params, [:following])
-    |> validate_required([:following])
-  end
-
   def user_info(%User{} = user) do
     oneself = if user.local, do: 1, else: 0
 
@@ -256,8 +250,8 @@ defmodule Pleroma.User do
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset),
-         {:ok, _} <- try_send_confirmation_email(user),
-         {:ok, user} <- autofollow_users(user) do
+         {:ok, user} <- autofollow_users(user),
+         {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
   end
@@ -307,10 +301,13 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "A mass follow for local users. Ignores blocks and has no side effects"
+  @doc "A mass follow for local users. Respects blocks but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
-    followed_addresses = Enum.map(followeds, fn %{follower_address: fa} -> fa end)
+    followed_addresses =
+      followeds
+      |> Enum.reject(fn %{ap_id: ap_id} -> ap_id in follower.info.blocks end)
+      |> Enum.map(fn %{follower_address: fa} -> fa end)
 
     q =
       from(u in User,
