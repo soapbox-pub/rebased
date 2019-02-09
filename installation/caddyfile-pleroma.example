@@ -24,6 +24,11 @@ example.tld  {
   # If you do not want to use the mediaproxy function, remove these lines.
   # To use this directive, you need the http.cache plugin for Caddy.
   cache {
+    match_path /media
+    default_max_age 720m
+  }
+
+  cache {
     match_path /proxy
     default_max_age 720m
   }
