@@ -618,6 +618,32 @@ defmodule Pleroma.User do
     )
   end
 
+  def update_follow_request_count(%User{} = user) do
+    subquery =
+      user
+      |> User.get_follow_requests_query()
+      |> select([a], %{count: count(a.id)})
+
+    User
+    |> where(id: ^user.id)
+    |> join(:inner, [u], s in subquery(subquery))
+    |> update([u, s],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{follow_request_count}', ?::varchar::jsonb, true)",
+            u.info,
+            s.count
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> {:ok, user}
+      _ -> {:error, user}
+    end
+  end
+
   def get_follow_requests(%User{} = user) do
     q = get_follow_requests_query(user)
     reqs = Repo.all(q)
