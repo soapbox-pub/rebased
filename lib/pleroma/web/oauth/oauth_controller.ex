@@ -38,7 +38,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         {:ok, auth} <- Authorization.create_authorization(app, user) do
+         {:ok, auth} <- Authorization.create_authorization(app, user, params["scope"]) do
       # Special case: Local MastodonFE.
       redirect_uri =
         if redirect_uri == "." do
@@ -81,8 +81,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  # TODO
-  # - proper scope handling
   def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
     with %App{} = app <- get_app_from_request(conn, params),
          fixed_token = fix_padding(params["code"]),
@@ -96,7 +94,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         refresh_token: token.refresh_token,
         created_at: DateTime.to_unix(inserted_at),
         expires_in: 60 * 10,
-        scope: "read write follow"
+        scope: token.scope
       }
 
       json(conn, response)
@@ -107,8 +105,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  # TODO
-  # - investigate a way to verify the user wants to grant read/write/follow once scope handling is done
   def token_exchange(
         conn,
         %{"grant_type" => "password", "username" => name, "password" => password} = params
@@ -117,14 +113,14 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
-         {:ok, auth} <- Authorization.create_authorization(app, user),
+         {:ok, auth} <- Authorization.create_authorization(app, user, params["scope"]),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
         token_type: "Bearer",
         access_token: token.token,
         refresh_token: token.refresh_token,
         expires_in: 60 * 10,
-        scope: "read write follow"
+        scope: token.scope
       }
 
       json(conn, response)

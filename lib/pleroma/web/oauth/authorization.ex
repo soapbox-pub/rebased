@@ -6,12 +6,14 @@ defmodule Pleroma.Web.OAuth.Authorization do
   use Ecto.Schema
 
   alias Pleroma.{User, Repo}
+  alias Pleroma.Web.OAuth
   alias Pleroma.Web.OAuth.{Authorization, App}
 
   import Ecto.{Changeset, Query}
 
   schema "oauth_authorizations" do
     field(:token, :string)
+    field(:scope, :string)
     field(:valid_until, :naive_datetime)
     field(:used, :boolean, default: false)
     belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
@@ -20,7 +22,8 @@ defmodule Pleroma.Web.OAuth.Authorization do
     timestamps()
   end
 
-  def create_authorization(%App{} = app, %User{} = user) do
+  def create_authorization(%App{} = app, %User{} = user, scope \\ nil) do
+    scopes = OAuth.parse_scopes(scope || app.scopes)
     token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
 
     authorization = %Authorization{
@@ -28,6 +31,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
       used: false,
       user_id: user.id,
       app_id: app.id,
+      scope: Enum.join(scopes, " "),
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
     }
 
