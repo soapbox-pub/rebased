@@ -97,6 +97,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
       timeout: 150_000
     )
     |> Stream.chunk_every(@log_every)
+    # credo:disable-for-next-line Credo.Check.Warning.UnusedEnumOperation
     |> Enum.reduce(0, fn done, count ->
       count = count + length(done)
       Mix.shell().info("Uploaded #{count}/#{total_count} files")
