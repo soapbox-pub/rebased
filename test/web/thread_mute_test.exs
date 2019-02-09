@@ -18,17 +18,20 @@ defmodule Pleroma.Web.ThreadMuteTest do
     end
 
     test "add mute", %{user: user, activity: activity} do
-      id = activity.id
-      {:ok, _activity} = add_mute(user, id)
+      {:ok, _activity} = add_mute(user, activity.id)
       assert muted?(user, activity)
     end
 
     test "remove mute", %{user: user, activity: activity} do
-      id = activity.id
-
-      add_mute(user, id)
-      {:ok, _activity} = remove_mute(user, id)
+      add_mute(user, activity.id)
+      {:ok, _activity} = remove_mute(user, activity.id)
       refute muted?(user, activity)
+    end
+
+    test "check that mutes can't be duplicate", %{user: user, activity: activity} do
+      add_mute(user, activity.id)
+      assert muted?(user, activity)
+      {:error, _} = add_mute(user, activity.id)
     end
   end
 end

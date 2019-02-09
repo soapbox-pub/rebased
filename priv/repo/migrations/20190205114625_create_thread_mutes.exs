@@ -7,6 +7,6 @@ defmodule Pleroma.Repo.Migrations.CreateThreadMutes do
       add :context, :string
     end
     
-    create index(:thread_mutes, [:user_id])
+    create unique_index(:thread_mutes, [:user_id, :context], name: :unique_index)
   end
 end

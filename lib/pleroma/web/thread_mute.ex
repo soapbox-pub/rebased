@@ -13,12 +13,22 @@ defmodule Pleroma.Web.ThreadMute do
     field(:context, :string)
   end
 
+  def changeset(mute, params \\ %{}) do
+    mute
+    |> Ecto.Changeset.cast(params, [:user_id, :context])
+    |> Ecto.Changeset.foreign_key_constraint(:user_id)
+    |> Ecto.Changeset.unique_constraint(:user_id, name: :unique_index)
+  end
+
   def add_mute(user, id) do
     activity = Activity.get_by_id(id)
     context = activity.data["context"]
-    mute = %Pleroma.Web.ThreadMute{user_id: user.id, context: context}
-    Repo.insert(mute)
-    {:ok, activity}
+    changeset = changeset(%Pleroma.Web.ThreadMute{}, %{user_id: user.id, context: context})
+
+    case Repo.insert(changeset) do
+      {:ok, _} -> {:ok, activity}
+      {:error, _} -> {:error, "conversation is already muted"}
+    end
   end
 
   def remove_mute(user, id) do
