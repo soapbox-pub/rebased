@@ -113,8 +113,7 @@ defmodule Pleroma.Notification do
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user) do
     unless User.blocks?(user, %{ap_id: activity.data["actor"]}) or
-             ThreadMute.muted?(user, activity) or
-             user.ap_id == activity.data["actor"] or
+             ThreadMute.muted?(user, activity) or user.ap_id == activity.data["actor"] or
              (activity.data["type"] == "Follow" and
                 Enum.any?(Notification.for_user(user), fn notif ->
                   notif.activity.data["type"] == "Follow" and
