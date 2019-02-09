@@ -8,18 +8,33 @@ defmodule Pleroma.Web.ThreadMuteTest do
 
   import Pleroma.Factory
 
-  test "add a mute" do
-    user = insert(:user, %{id: "1"})
+  describe "mute tests" do
+    setup do
+      user = insert(:user, %{id: "1"})
 
-    activity =
-      insert(:note_activity, %{
-        data: %{"context" => "http://localhost:4000/contexts/361ca23e-ffa7-4773-b981-a355a18dc592"}
-      })
+      activity =
+        insert(:note_activity, %{
+          data: %{
+            "context" => "http://localhost:4000/contexts/361ca23e-ffa7-4773-b981-a355a18dc592"
+          }
+        })
 
-    id = activity.id
-    {:ok, mute} = add_mute(user, id)
+      [user: user, activity: activity]
+    end
 
-    assert mute.user_id == "1"
-    assert mute.context == "http://localhost:4000/contexts/361ca23e-ffa7-4773-b981-a355a18dc592"
+    test "add mute", %{user: user, activity: activity} do
+      id = activity.id
+      {:ok, mute} = add_mute(user, id)
+
+      assert mute.user_id == "1"
+      assert mute.context == "http://localhost:4000/contexts/361ca23e-ffa7-4773-b981-a355a18dc592"
+    end
+
+    test "remove mute", %{user: user, activity: activity} do
+      id = activity.id
+
+      add_mute(user, id)
+      {1, nil} = remove_mute(user, id)
+    end
   end
 end
