@@ -154,10 +154,20 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:authenticated_api)
-    post("/blocks_import", UtilController, :blocks_import)
-    post("/follow_import", UtilController, :follow_import)
-    post("/change_password", UtilController, :change_password)
-    post("/delete_account", UtilController, :delete_account)
+
+    scope [] do
+      pipe_through(:oauth_write)
+
+      post("/change_password", UtilController, :change_password)
+      post("/delete_account", UtilController, :delete_account)
+    end
+
+    scope [] do
+      pipe_through(:oauth_follow)
+
+      post("/blocks_import", UtilController, :blocks_import)
+      post("/follow_import", UtilController, :follow_import)
+    end
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
@@ -170,86 +180,104 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 
-    patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
     get("/accounts/verify_credentials", MastodonAPIController, :verify_credentials)
-    get("/accounts/relationships", MastodonAPIController, :relationships)
-    get("/accounts/search", MastodonAPIController, :account_search)
-    post("/accounts/:id/follow", MastodonAPIController, :follow)
-    post("/accounts/:id/unfollow", MastodonAPIController, :unfollow)
-    post("/accounts/:id/block", MastodonAPIController, :block)
-    post("/accounts/:id/unblock", MastodonAPIController, :unblock)
-    post("/accounts/:id/mute", MastodonAPIController, :relationship_noop)
-    post("/accounts/:id/unmute", MastodonAPIController, :relationship_noop)
-    get("/accounts/:id/lists", MastodonAPIController, :account_lists)
 
-    get("/follow_requests", MastodonAPIController, :follow_requests)
-    post("/follow_requests/:id/authorize", MastodonAPIController, :authorize_follow_request)
-    post("/follow_requests/:id/reject", MastodonAPIController, :reject_follow_request)
+    scope [] do
+      pipe_through(:oauth_read)
 
-    post("/follows", MastodonAPIController, :follow)
+      get("/accounts/relationships", MastodonAPIController, :relationships)
+      get("/accounts/search", MastodonAPIController, :account_search)
 
-    get("/blocks", MastodonAPIController, :blocks)
+      get("/accounts/:id/lists", MastodonAPIController, :account_lists)
 
-    get("/mutes", MastodonAPIController, :empty_array)
+      get("/follow_requests", MastodonAPIController, :follow_requests)
+      get("/blocks", MastodonAPIController, :blocks)
+      get("/mutes", MastodonAPIController, :empty_array)
 
-    get("/timelines/home", MastodonAPIController, :home_timeline)
+      get("/timelines/home", MastodonAPIController, :home_timeline)
+      get("/timelines/direct", MastodonAPIController, :dm_timeline)
 
-    get("/timelines/direct", MastodonAPIController, :dm_timeline)
+      get("/favourites", MastodonAPIController, :favourites)
+      get("/bookmarks", MastodonAPIController, :bookmarks)
 
-    get("/favourites", MastodonAPIController, :favourites)
-    get("/bookmarks", MastodonAPIController, :bookmarks)
+      post("/notifications/clear", MastodonAPIController, :clear_notifications)
+      post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
+      get("/notifications", MastodonAPIController, :notifications)
+      get("/notifications/:id", MastodonAPIController, :get_notification)
 
-    post("/statuses", MastodonAPIController, :post_status)
-    delete("/statuses/:id", MastodonAPIController, :delete_status)
+      get("/lists", MastodonAPIController, :get_lists)
+      get("/lists/:id", MastodonAPIController, :get_list)
+      get("/lists/:id/accounts", MastodonAPIController, :list_accounts)
 
-    post("/statuses/:id/reblog", MastodonAPIController, :reblog_status)
-    post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
-    post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
-    post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
-    post("/statuses/:id/pin", MastodonAPIController, :pin_status)
-    post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
-    post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
-    post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
+      get("/domain_blocks", MastodonAPIController, :domain_blocks)
 
-    post("/notifications/clear", MastodonAPIController, :clear_notifications)
-    post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
-    get("/notifications", MastodonAPIController, :notifications)
-    get("/notifications/:id", MastodonAPIController, :get_notification)
+      get("/filters", MastodonAPIController, :get_filters)
 
-    post("/media", MastodonAPIController, :upload)
-    put("/media/:id", MastodonAPIController, :update_media)
+      get("/suggestions", MastodonAPIController, :suggestions)
 
-    get("/lists", MastodonAPIController, :get_lists)
-    get("/lists/:id", MastodonAPIController, :get_list)
-    delete("/lists/:id", MastodonAPIController, :delete_list)
-    post("/lists", MastodonAPIController, :create_list)
-    put("/lists/:id", MastodonAPIController, :rename_list)
-    get("/lists/:id/accounts", MastodonAPIController, :list_accounts)
-    post("/lists/:id/accounts", MastodonAPIController, :add_to_list)
-    delete("/lists/:id/accounts", MastodonAPIController, :remove_from_list)
+      get("/endorsements", MastodonAPIController, :empty_array)
+    end
 
-    get("/domain_blocks", MastodonAPIController, :domain_blocks)
-    post("/domain_blocks", MastodonAPIController, :block_domain)
-    delete("/domain_blocks", MastodonAPIController, :unblock_domain)
+    scope [] do
+      pipe_through(:oauth_write)
 
-    get("/filters", MastodonAPIController, :get_filters)
-    post("/filters", MastodonAPIController, :create_filter)
-    get("/filters/:id", MastodonAPIController, :get_filter)
-    put("/filters/:id", MastodonAPIController, :update_filter)
-    delete("/filters/:id", MastodonAPIController, :delete_filter)
+      patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
 
-    post("/push/subscription", MastodonAPIController, :create_push_subscription)
-    get("/push/subscription", MastodonAPIController, :get_push_subscription)
-    put("/push/subscription", MastodonAPIController, :update_push_subscription)
-    delete("/push/subscription", MastodonAPIController, :delete_push_subscription)
+      post("/statuses", MastodonAPIController, :post_status)
+      delete("/statuses/:id", MastodonAPIController, :delete_status)
 
-    get("/suggestions", MastodonAPIController, :suggestions)
+      post("/statuses/:id/reblog", MastodonAPIController, :reblog_status)
+      post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
+      post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
+      post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
+      post("/statuses/:id/pin", MastodonAPIController, :pin_status)
+      post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
+      post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
+      post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
 
-    get("/endorsements", MastodonAPIController, :empty_array)
+      post("/media", MastodonAPIController, :upload)
+      put("/media/:id", MastodonAPIController, :update_media)
+
+      delete("/lists/:id", MastodonAPIController, :delete_list)
+      post("/lists", MastodonAPIController, :create_list)
+      put("/lists/:id", MastodonAPIController, :rename_list)
+
+      post("/lists/:id/accounts", MastodonAPIController, :add_to_list)
+      delete("/lists/:id/accounts", MastodonAPIController, :remove_from_list)
+
+      post("/filters", MastodonAPIController, :create_filter)
+      get("/filters/:id", MastodonAPIController, :get_filter)
+      put("/filters/:id", MastodonAPIController, :update_filter)
+      delete("/filters/:id", MastodonAPIController, :delete_filter)
+    end
+
+    scope [] do
+      pipe_through(:oauth_follow)
+
+      post("/follows", MastodonAPIController, :follow)
+      post("/accounts/:id/follow", MastodonAPIController, :follow)
+
+      post("/accounts/:id/unfollow", MastodonAPIController, :unfollow)
+      post("/accounts/:id/block", MastodonAPIController, :block)
+      post("/accounts/:id/unblock", MastodonAPIController, :unblock)
+      post("/accounts/:id/mute", MastodonAPIController, :relationship_noop)
+      post("/accounts/:id/unmute", MastodonAPIController, :relationship_noop)
+
+      post("/follow_requests/:id/authorize", MastodonAPIController, :authorize_follow_request)
+      post("/follow_requests/:id/reject", MastodonAPIController, :reject_follow_request)
+
+      post("/domain_blocks", MastodonAPIController, :block_domain)
+      delete("/domain_blocks", MastodonAPIController, :unblock_domain)
+
+      post("/push/subscription", MastodonAPIController, :create_push_subscription)
+      get("/push/subscription", MastodonAPIController, :get_push_subscription)
+      put("/push/subscription", MastodonAPIController, :update_push_subscription)
+      delete("/push/subscription", MastodonAPIController, :delete_push_subscription)
+    end
   end
 
   scope "/api/web", Pleroma.Web.MastodonAPI do
-    pipe_through(:authenticated_api)
+    pipe_through([:authenticated_api, :oauth_write])
 
     put("/settings", MastodonAPIController, :put_settings)
   end
@@ -510,7 +538,6 @@ defmodule Pleroma.Web.Router do
     pipe_through(:mastodon_html)
 
     get("/web/login", MastodonAPIController, :login)
-    post("/web/login", MastodonAPIController, :login_post)
     get("/web/*path", MastodonAPIController, :index)
     delete("/auth/sign_out", MastodonAPIController, :logout)
   end
