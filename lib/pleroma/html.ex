@@ -125,6 +125,8 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
+  # credo:disable-for-previous-line
+  # No idea how to fix this one…
 
   @markup Application.get_env(:pleroma, :markup)
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
