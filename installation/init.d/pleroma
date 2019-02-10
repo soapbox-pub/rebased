@@ -1,7 +1,7 @@
 #!/sbin/openrc-run
 
 # Requires OpenRC >= 0.35
-directory=~pleroma/pleroma
+directory=/opt/pleroma
 
 command=/usr/bin/mix
 command_args="phx.server"
