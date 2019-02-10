@@ -450,6 +450,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    else
+      {:error, reason} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(:bad_request, Jason.encode!(%{"error" => reason}))
     end
   end
 

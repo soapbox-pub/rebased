@@ -20,40 +20,42 @@ defmodule Pleroma.Web.ThreadMute do
     |> Ecto.Changeset.unique_constraint(:user_id, name: :unique_index)
   end
 
+  def query(user, context) do
+    user_id = Pleroma.FlakeId.from_string(user.id)
+
+    ThreadMute
+    |> Ecto.Query.where(user_id: ^user_id)
+    |> Ecto.Query.where(context: ^context)
+  end
+
   def add_mute(user, id) do
     activity = Activity.get_by_id(id)
-    context = activity.data["context"]
-    changeset = changeset(%Pleroma.Web.ThreadMute{}, %{user_id: user.id, context: context})
 
-    case Repo.insert(changeset) do
-      {:ok, _} -> {:ok, activity}
+    with changeset <-
+           changeset(%ThreadMute{}, %{user_id: user.id, context: activity.data["context"]}),
+         {:ok, _} <- Repo.insert(changeset) do
+      {:ok, activity}
+    else
       {:error, _} -> {:error, "conversation is already muted"}
     end
   end
 
   def remove_mute(user, id) do
-    user_id = Pleroma.FlakeId.from_string(user.id)
     activity = Activity.get_by_id(id)
-    context = activity.data["context"]
 
-    Ecto.Query.from(m in ThreadMute, where: m.user_id == ^user_id and m.context == ^context)
+    query(user, activity.data["context"])
     |> Repo.delete_all()
 
     {:ok, activity}
   end
 
+  def muted?(%{id: nil} = _user, _), do: false
+
   def muted?(user, activity) do
-    user_id = Pleroma.FlakeId.from_string(user.id)
-    context = activity.data["context"]
-
-    result =
-      Ecto.Query.from(m in ThreadMute,
-        where: m.user_id == ^user_id and m.context == ^context
-      )
-      |> Repo.all()
-
-    case result do
-      [] -> false
+    with query <- query(user, activity.data["context"]),
+         [] <- Repo.all(query) do
+      false
+    else
       _ -> true
     end
   end
