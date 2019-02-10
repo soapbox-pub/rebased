@@ -36,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/timelines/home")
 
-    assert length(json_response(conn, 200)) == 0
+    assert Enum.empty?(json_response(conn, 200))
 
     {:ok, user} = User.follow(user, following)
 

@@ -81,7 +81,7 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
 
       assert response(conn, 500) == "Error"
 
-      assert length(Repo.all(Activity)) == 0
+      assert Enum.empty?(Repo.all(Activity))
     end
   end
 end

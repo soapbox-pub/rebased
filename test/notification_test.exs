@@ -300,7 +300,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
@@ -308,7 +308,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "liking an activity results in 1 notification, then 0 if the activity is unliked" do
@@ -317,7 +317,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
@@ -325,7 +325,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _, _, _} = CommonAPI.unfavorite(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity results in 1 notification, then 0 if the activity is deleted" do
@@ -334,7 +334,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
 
@@ -342,7 +342,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity results in 1 notification, then 0 if the activity is unrepeated" do
@@ -351,7 +351,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
 
@@ -359,7 +359,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _, _} = CommonAPI.unrepeat(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "liking an activity which is already deleted does not generate a notification" do
@@ -368,15 +368,15 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:error, _} = CommonAPI.favorite(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity which is already deleted does not generate a notification" do
@@ -385,15 +385,15 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:error, _} = CommonAPI.repeat(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "replying to a deleted post without tagging does not generate a notification" do
@@ -409,7 +409,7 @@ defmodule Pleroma.NotificationTest do
           "in_reply_to_status_id" => activity.id
         })
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
   end
 end
