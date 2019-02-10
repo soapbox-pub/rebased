@@ -27,6 +27,12 @@ Feel free to contact us to be added to this list!
 - Contact: [@eurasierboy@mastodon.social](https://mastodon.social/users/eurasierboy)
 - Platforms: iOS
 
+### Nekonium
+- Homepage: [F-Droid Repository](https://repo.gdgd.jp.net/), [Google Play](https://play.google.com/store/apps/details?id=com.apps.nekonium), [Amazon](https://www.amazon.co.jp/dp/B076FXPRBC/)
+- Source: <https://git.gdgd.jp.net/lin/nekonium/>
+- Contact: [@lin@pleroma.gdgd.jp.net](https://pleroma.gdgd.jp.net/users/lin)
+- Platforms: Android
+
 ### Mastalab
 - Source Code: <https://gitlab.com/tom79/mastalab/>
 - Contact: [@tom79@mastodon.social](https://mastodon.social/users/tom79)
