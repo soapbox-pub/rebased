@@ -554,6 +554,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def revoke_token(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
+    Token.delete_user_token(user, id)
+
+    json_reply(conn, 201, "")
+  end
+
   def blocks(%{assigns: %{user: user}} = conn, _params) do
     with blocked_users <- User.blocked_users(user) do
       conn

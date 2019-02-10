@@ -8,6 +8,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Builders.{ActivityBuilder, UserBuilder}
   alias Pleroma.{Repo, Activity, User, Object, Notification}
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.NotificationView
   alias Pleroma.Web.CommonAPI
@@ -1878,12 +1879,16 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   end
 
   describe "GET /api/oauth_tokens" do
-    test "renders list" do
-      token = insert(:oauth_token)
+    setup do
+      token = insert(:oauth_token) |> Repo.preload(:user)
 
+      %{token: token}
+    end
+
+    test "renders list", %{token: token} do
       response =
         build_conn()
-        |> assign(:user, Repo.get(User, token.user_id))
+        |> assign(:user, token.user)
         |> get("/api/oauth_tokens")
 
       keys =
@@ -1892,6 +1897,18 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> Map.keys()
 
       assert keys -- ["id", "refresh_token", "token", "valid_until"] == []
+    end
+
+    test "revoke token", %{token: token} do
+      response =
+        build_conn()
+        |> assign(:user, token.user)
+        |> delete("/api/oauth_tokens/#{token.id}")
+
+      tokens = Token.get_user_tokens(token.user)
+
+      assert tokens == []
+      assert response.status == 201
     end
   end
 end
