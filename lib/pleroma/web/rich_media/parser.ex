@@ -9,6 +9,13 @@ defmodule Pleroma.Web.RichMedia.Parser do
     Pleroma.Web.RichMedia.Parsers.OEmbed
   ]
 
+  @hackney_options [
+    pool: :media,
+    timeout: 2_000,
+    recv_timeout: 2_000,
+    max_body: 2_000_000
+  ]
+
   def parse(nil), do: {:error, "No URL provided"}
 
   if Mix.env() == :test do
@@ -28,7 +35,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
   defp parse_url(url) do
     try do
-      {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: [pool: :media])
+      {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
 
       html |> maybe_parse() |> clean_parsed_data() |> check_parsed_data()
     rescue
