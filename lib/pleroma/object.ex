@@ -4,8 +4,15 @@
 
 defmodule Pleroma.Object do
   use Ecto.Schema
-  alias Pleroma.{Repo, Object, User, Activity, ObjectTombstone}
-  import Ecto.{Query, Changeset}
+
+  alias Pleroma.Repo
+  alias Pleroma.Object
+  alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.ObjectTombstone
+
+  import Ecto.Query
+  import Ecto.Changeset
 
   schema "objects" do
     field(:data, :map)

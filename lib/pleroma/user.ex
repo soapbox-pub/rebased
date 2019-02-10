@@ -5,13 +5,23 @@
 defmodule Pleroma.User do
   use Ecto.Schema
 
-  import Ecto.{Changeset, Query}
-  alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
+  import Ecto.Changeset
+  import Ecto.Query
+
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Web
+  alias Pleroma.Activity
+  alias Pleroma.Notification
   alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
-  alias Pleroma.Web.{OStatus, Websub, OAuth}
-  alias Pleroma.Web.ActivityPub.{Utils, ActivityPub}
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Websub
+  alias Pleroma.Web.OAuth
+  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   require Logger
 

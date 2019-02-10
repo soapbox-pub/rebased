@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus.FollowHandler do
-  alias Pleroma.Web.{XML, OStatus}
+  alias Pleroma.Web.XML
+  alias Pleroma.Web.OStatus
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.User
 

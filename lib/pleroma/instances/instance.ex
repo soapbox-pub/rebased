@@ -2,13 +2,13 @@ defmodule Pleroma.Instances.Instance do
   @moduledoc "Instance."
 
   alias Pleroma.Instances
+  alias Pleroma.Repo
   alias Pleroma.Instances.Instance
 
   use Ecto.Schema
 
-  import Ecto.{Query, Changeset}
-
-  alias Pleroma.Repo
+  import Ecto.Query
+  import Ecto.Changeset
 
   schema "instances" do
     field(:host, :string)

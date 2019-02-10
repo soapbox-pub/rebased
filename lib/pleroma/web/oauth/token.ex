@@ -7,8 +7,11 @@ defmodule Pleroma.Web.OAuth.Token do
 
   import Ecto.Query
 
-  alias Pleroma.{User, Repo}
-  alias Pleroma.Web.OAuth.{Token, App, Authorization}
+  alias Pleroma.User
+  alias Pleroma.Repo
+  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web.OAuth.Authorization
 
   schema "oauth_tokens" do
     field(:token, :string)

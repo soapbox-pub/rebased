@@ -3,8 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.{UserInviteToken, User, Activity, Repo, Object}
-  alias Pleroma.{UserEmail, Mailer}
+  alias Pleroma.UserInviteToken
+  alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.Object
+  alias Pleroma.UserEmail
+  alias Pleroma.Mailer
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI
