@@ -6,8 +6,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Object, Activity, Notification}
-  alias Pleroma.Web.{OStatus, CommonAPI}
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Ecto.Changeset

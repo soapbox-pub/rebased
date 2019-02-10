@@ -7,7 +7,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   import Pleroma.Factory
 
   alias Pleroma.Repo
-  alias Pleroma.Web.OAuth.{Authorization, Token}
+  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
 
   test "redirects with oauth authorization" do
     user = insert(:user)

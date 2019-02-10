@@ -6,7 +6,8 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.Web.Websub.WebsubClientSubscription
-  alias Pleroma.{Repo, Activity}
+  alias Pleroma.Activity
+  alias Pleroma.Repo
   alias Pleroma.Web.Websub
 
   test "websub subscription request", %{conn: conn} do

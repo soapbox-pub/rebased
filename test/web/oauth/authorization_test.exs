@@ -4,7 +4,8 @@
 
 defmodule Pleroma.Web.OAuth.AuthorizationTest do
   use Pleroma.DataCase
-  alias Pleroma.Web.OAuth.{Authorization, App}
+  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.App
   import Pleroma.Factory
 
   test "create an authorization token for a valid app" do

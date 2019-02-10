@@ -5,7 +5,9 @@
 defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
-  alias Pleroma.{User, Repo, Object}
+  alias Pleroma.User
+  alias Pleroma.Repo
+  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus.ActivityRepresenter
 

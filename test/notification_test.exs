@@ -6,7 +6,8 @@ defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.{User, Notification}
+  alias Pleroma.User
+  alias Pleroma.Notification
   alias Pleroma.Web.ActivityPub.Transmogrifier
   import Pleroma.Factory
 
