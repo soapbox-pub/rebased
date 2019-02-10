@@ -15,12 +15,13 @@ server {
     return         301 https://$server_name$request_uri;
 
     # Uncomment this if you need to use the 'webroot' method with certbot. Make sure
-    # that you also create the .well-known/acme-challenge directory structure in pleroma/priv/static and
-    # that is is accessible by the webserver. You may need to load this file with the ssl
-    # server block commented out, run certbot to get the certificate, and then uncomment it.
+    # that the directory exists and that it is accessible by the webserver. If you followed
+    # the guide, you already ran 'sudo mkdir -p /var/lib/letsencrypt' to create the folder.
+    # You may need to load this file with the ssl server block commented out, run certbot
+    # to get the certificate, and then uncomment it.
     #
     # location ~ /\.well-known/acme-challenge {
-    #     root <path to install>/pleroma/priv/static/;
+    #     root /var/lib/letsencrypt/.well-known/acme-challenge;
     # }
 }
 
