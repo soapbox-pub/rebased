@@ -1786,4 +1786,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> json_response(200)
     end
   end
+
+  test "flavours switching (Pleroma Extension)", %{conn: conn} do
+    user = insert(:user)
+
+    get_old_flavour =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/pleroma/flavour")
+
+    assert "glitch" == json_response(get_old_flavour, 200)
+
+    set_flavour =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/flavour/vanilla")
+
+    assert "vanilla" == json_response(set_flavour, 200)
+
+    get_new_flavour =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/flavour/vanilla")
+
+    assert json_response(set_flavour, 200) == json_response(get_new_flavour, 200)
+  end
 end
