@@ -67,6 +67,10 @@ Feel free to contact us to be added to this list!
 - Source Code: <https://github.com/jfmcbrayer/brutaldon>
 - Contact: [@gcupc@glitch.social](https://glitch.social/users/gcupc)
 
+### Feather
+- Source Code: <https://github.com/kaniini/feather>
+- Contact: [@kaniini@pleroma.site](https://pleroma.site/kaniini)
+
 ### Halcyon
 - Source Code: <https://notabug.org/halcyon-suite/halcyon>
 - Contact: [@halcyon@social.csswg.org](https://social.csswg.org/users/halcyon)
