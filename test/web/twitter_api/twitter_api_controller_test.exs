@@ -1876,4 +1876,22 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                ActivityRepresenter.to_map(activity, %{user: user, for: user})
     end
   end
+
+  describe "GET /api/oauth_tokens" do
+    test "renders list" do
+      token = insert(:oauth_token)
+
+      response =
+        build_conn()
+        |> assign(:user, Repo.get(User, token.user_id))
+        |> get("/api/oauth_tokens")
+
+      keys =
+        json_response(response, 200)
+        |> hd()
+        |> Map.keys()
+
+      assert keys -- ["id", "refresh_token", "token", "valid_until"] == []
+    end
+  end
 end

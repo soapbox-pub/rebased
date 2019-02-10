@@ -52,4 +52,12 @@ defmodule Pleroma.Web.OAuth.Token do
     )
     |> Repo.delete_all()
   end
+
+  def get_user_tokens(%User{id: user_id}) do
+    from(
+      t in Pleroma.Web.OAuth.Token,
+      where: t.user_id == ^user_id
+    )
+    |> Repo.all()
+  end
 end
