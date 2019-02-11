@@ -142,8 +142,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     context = context || generate_id("contexts")
     changeset = Object.context_mapping(context)
 
-    with {:ok, object} <- Object.insert_or_get(changeset) do
-      object
+    case Repo.insert(changeset) do
+      {:ok, object} ->
+        object
+
+      # This should be solved by an upsert, but it seems ecto
+      # has problems accessing the constraint inside the jsonb.
+      {:error, _} ->
+        Object.get_cached_by_ap_id(context)
     end
   end
 

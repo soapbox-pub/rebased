@@ -310,8 +310,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     else
       _e ->
         changeset = Object.context_mapping(context)
-        {:ok, object} = Object.insert_or_get(changeset)
-        object.id
+
+        case Repo.insert(changeset) do
+          {:ok, %{id: id}} ->
+            id
+
+          # This should be solved by an upsert, but it seems ecto
+          # has problems accessing the constraint inside the jsonb.
+          {:error, _} ->
+            Object.get_cached_by_ap_id(context).id
+        end
     end
   end
 

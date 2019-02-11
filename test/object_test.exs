@@ -57,32 +57,4 @@ defmodule Pleroma.ObjectTest do
       assert cached_object.data["type"] == "Tombstone"
     end
   end
-
-  describe "insert_or_get" do
-    test "inserting the same object twice (by id) just returns the original object" do
-      data = %{data: %{"id" => Ecto.UUID.generate()}}
-      cng = Object.change(%Object{}, data)
-      {:ok, object} = Object.insert_or_get(cng)
-      {:ok, second_object} = Object.insert_or_get(cng)
-
-      Cachex.clear(:object_cache)
-      {:ok, third_object} = Object.insert_or_get(cng)
-
-      assert object == second_object
-      assert object == third_object
-    end
-  end
-
-  describe "create" do
-    test "inserts an object for a given data set" do
-      data = %{"id" => Ecto.UUID.generate()}
-
-      {:ok, object} = Object.create(data)
-      assert object.data["id"] == data["id"]
-
-      # Works when doing it twice.
-      {:ok, object} = Object.create(data)
-      assert object.data["id"] == data["id"]
-    end
-  end
 end
