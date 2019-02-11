@@ -3,44 +3,120 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
-  alias Pleroma.Web.Metadata.Providers.Provider
+  alias Pleroma.User
   alias Pleroma.Web.Metadata
+  alias Pleroma.Web.Metadata.Providers.Provider
+  alias Pleroma.Web.Metadata.Utils
 
   @behaviour Provider
 
   @impl Provider
-  def build_tags(%{object: object}) do
-    if Metadata.activity_nsfw?(object) or object.data["attachment"] == [] do
-      build_tags(nil)
-    else
-      case find_first_acceptable_media_type(object) do
-        "image" ->
-          [{:meta, [property: "twitter:card", content: "summary_large_image"], []}]
-
-        "audio" ->
-          [{:meta, [property: "twitter:card", content: "player"], []}]
-
-        "video" ->
-          [{:meta, [property: "twitter:card", content: "player"], []}]
-
-        _ ->
-          build_tags(nil)
+  def build_tags(%{
+        object: object,
+        user: user
+      }) do
+    attachments = build_attachments(object)
+    scrubbed_content = Utils.scrub_html_and_truncate(object)
+    # Zero width space
+    content =
+      if scrubbed_content != "" and scrubbed_content != "\u200B" do
+        "“" <> scrubbed_content <> "”"
+      else
+        ""
       end
-    end
+
+    [
+      {:meta,
+       [
+         property: "twitter:title",
+         content: Utils.user_name_string(user)
+       ], []},
+      {:meta,
+       [
+         property: "twitter:description",
+         content: content
+       ], []}
+    ] ++
+      if attachments == [] or Metadata.activity_nsfw?(object) do
+        [
+          {:meta,
+           [property: "twitter:image", content: Utils.attachment_url(User.avatar_url(user))], []},
+          {:meta, [property: "twitter:card", content: "summary_large_image"], []}
+        ]
+      else
+        attachments
+      end
   end
 
   @impl Provider
-  def build_tags(_) do
-    [{:meta, [property: "twitter:card", content: "summary"], []}]
+  def build_tags(%{user: user}) do
+    with truncated_bio = Utils.scrub_html_and_truncate(user.bio || "") do
+      [
+        {:meta,
+         [
+           property: "twitter:title",
+           content: Utils.user_name_string(user)
+         ], []},
+        {:meta, [property: "twitter:description", content: truncated_bio], []},
+        {:meta, [property: "twitter:image", content: Utils.attachment_url(User.avatar_url(user))],
+         []},
+        {:meta, [property: "twitter:card", content: "summary"], []}
+      ]
+    end
   end
 
-  def find_first_acceptable_media_type(%{data: %{"attachment" => attachment}}) do
-    Enum.find_value(attachment, fn attachment ->
-      Enum.find_value(attachment["url"], fn url ->
-        Enum.find(["image", "audio", "video"], fn media_type ->
-          String.starts_with?(url["mediaType"], media_type)
+  defp build_attachments(%{data: %{"attachment" => attachments}}) do
+    Enum.reduce(attachments, [], fn attachment, acc ->
+      rendered_tags =
+        Enum.reduce(attachment["url"], [], fn url, acc ->
+          content_type = url["mediaType"]
+
+          media_type =
+            Enum.find(["image", "audio", "video"], fn media_type ->
+              String.starts_with?(url["mediaType"], media_type)
+            end)
+
+          # TODO: Add additional properties to objects when we have the data available.
+          case media_type do
+            "audio" ->
+              [
+                {:meta, [property: "twitter:card", content: "player"], []},
+                {:meta, [property: "twitter:player", content: Utils.attachment_url(url["href"])],
+                 []}
+                | acc
+              ]
+
+            "image" ->
+              [
+                {:meta, [property: "twitter:card", content: "summary_large_image"], []},
+                {:meta,
+                 [
+                   property: "twitter:player",
+                   content:
+                     Utils.attachment_url(
+                       Pleroma.Uploaders.Uploader.preview_url(content_type, url["href"])
+                     )
+                 ], []}
+                | acc
+              ]
+
+            # TODO: Need the true width and height values here or Twitter renders an iFrame with a bad aspect ratio
+            "video" ->
+              [
+                {:meta, [property: "twitter:card", content: "player"], []},
+                {:meta, [property: "twitter:player", content: Utils.attachment_url(url["href"])],
+                 []},
+                {:meta, [property: "twitter:player:width", content: "1280"], []},
+                {:meta, [property: "twitter:player:height", content: "720"], []}
+                | acc
+              ]
+
+            _ ->
+              acc
+          end
         end)
-      end)
+
+      acc ++ rendered_tags
     end)
   end
 end

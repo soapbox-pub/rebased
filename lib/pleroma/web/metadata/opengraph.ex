@@ -3,12 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
-  alias Pleroma.HTML
-  alias Pleroma.Formatter
   alias Pleroma.User
   alias Pleroma.Web.Metadata
-  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.Metadata.Providers.Provider
+  alias Pleroma.Web.Metadata.Utils
 
   @behaviour Provider
 
@@ -19,7 +17,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
         user: user
       }) do
     attachments = build_attachments(object)
-    scrubbed_content = scrub_html_and_truncate(object)
+    scrubbed_content = Utils.scrub_html_and_truncate(object)
     # Zero width space
     content =
       if scrubbed_content != "" and scrubbed_content != "\u200B" do
@@ -44,13 +42,14 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
       {:meta,
        [
          property: "og:description",
-         content: "#{user_name_string(user)}" <> content
+         content: "#{Utils.user_name_string(user)}" <> content
        ], []},
       {:meta, [property: "og:type", content: "website"], []}
     ] ++
       if attachments == [] or Metadata.activity_nsfw?(object) do
         [
-          {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
+          {:meta, [property: "og:image", content: Utils.attachment_url(User.avatar_url(user))],
+           []},
           {:meta, [property: "og:image:width", content: 150], []},
           {:meta, [property: "og:image:height", content: 150], []}
         ]
@@ -61,17 +60,17 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
   @impl Provider
   def build_tags(%{user: user}) do
-    with truncated_bio = scrub_html_and_truncate(user.bio || "") do
+    with truncated_bio = Utils.scrub_html_and_truncate(user.bio || "") do
       [
         {:meta,
          [
            property: "og:title",
-           content: user_name_string(user)
+           content: Utils.user_name_string(user)
          ], []},
         {:meta, [property: "og:url", content: User.profile_url(user)], []},
         {:meta, [property: "og:description", content: truncated_bio], []},
         {:meta, [property: "og:type", content: "website"], []},
-        {:meta, [property: "og:image", content: attachment_url(User.avatar_url(user))], []},
+        {:meta, [property: "og:image", content: Utils.attachment_url(User.avatar_url(user))], []},
         {:meta, [property: "og:image:width", content: 150], []},
         {:meta, [property: "og:image:height", content: 150], []}
       ]
@@ -93,13 +92,14 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
           case media_type do
             "audio" ->
               [
-                {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])], []}
+                {:meta,
+                 [property: "og:" <> media_type, content: Utils.attachment_url(url["href"])], []}
                 | acc
               ]
 
             "image" ->
               [
-                {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])],
+                {:meta, [property: "og:" <> media_type, content: Utils.attachment_url(url["href"])],
                  []},
                 {:meta, [property: "og:image:width", content: 150], []},
                 {:meta, [property: "og:image:height", content: 150], []}
@@ -108,7 +108,8 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
             "video" ->
               [
-                {:meta, [property: "og:" <> media_type, content: attachment_url(url["href"])], []}
+                {:meta,
+                 [property: "og:" <> media_type, content: Utils.attachment_url(url["href"])], []}
                 | acc
               ]
 
@@ -119,38 +120,5 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
       acc ++ rendered_tags
     end)
-  end
-
-  defp scrub_html_and_truncate(%{data: %{"content" => content}} = object) do
-    content
-    # html content comes from DB already encoded, decode first and scrub after
-    |> HtmlEntities.decode()
-    |> String.replace(~r/<br\s?\/?>/, " ")
-    |> HTML.get_cached_stripped_html_for_object(object, __MODULE__)
-    |> Formatter.demojify()
-    |> Formatter.truncate()
-  end
-
-  defp scrub_html_and_truncate(content) when is_binary(content) do
-    content
-    # html content comes from DB already encoded, decode first and scrub after
-    |> HtmlEntities.decode()
-    |> String.replace(~r/<br\s?\/?>/, " ")
-    |> HTML.strip_tags()
-    |> Formatter.demojify()
-    |> Formatter.truncate()
-  end
-
-  defp attachment_url(url) do
-    MediaProxy.url(url)
-  end
-
-  defp user_name_string(user) do
-    "#{user.name} " <>
-      if user.local do
-        "(@#{user.nickname}@#{Pleroma.Web.Endpoint.host()})"
-      else
-        "(@#{user.nickname})"
-      end
   end
 end
