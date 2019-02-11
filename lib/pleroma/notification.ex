@@ -6,7 +6,7 @@ defmodule Pleroma.Notification do
   use Ecto.Schema
   alias Pleroma.{User, Activity, Notification, Repo}
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.ThreadMute
+  alias Pleroma.Web.CommonAPI
   import Ecto.Query
 
   schema "notifications" do
@@ -113,7 +113,7 @@ defmodule Pleroma.Notification do
   # TODO move to sql, too.
   def create_notification(%Activity{} = activity, %User{} = user) do
     unless User.blocks?(user, %{ap_id: activity.data["actor"]}) or
-             ThreadMute.muted?(user, activity) or user.ap_id == activity.data["actor"] or
+             CommonAPI.thread_muted?(user, activity) or user.ap_id == activity.data["actor"] or
              (activity.data["type"] == "Follow" and
                 Enum.any?(Notification.for_user(user), fn notif ->
                   notif.activity.data["type"] == "Follow" and

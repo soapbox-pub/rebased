@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.HTML
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -160,7 +161,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: present?(repeated),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
-      muted: Pleroma.Web.ThreadMute.muted?(user, activity),
+      muted: CommonAPI.thread_muted?(user, activity),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",

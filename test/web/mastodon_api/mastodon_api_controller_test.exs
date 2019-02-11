@@ -1749,4 +1749,37 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert [json_response(response2, 200)] == json_response(bookmarks, 200)
   end
+
+  describe "conversation muting" do
+    setup do
+
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HIE"})
+
+      [user: user, activity: activity]
+    end
+
+    test "mute conversation", %{conn: conn, user: user, activity: activity} do
+      id_str = to_string(activity.id)
+
+      assert %{"id" => ^id_str, "muted" => true} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity.id}/mute")
+               |> json_response(200)
+    end
+
+    test "unmute conversation", %{conn: conn, user: user, activity: activity} do
+      {:ok, _} = CommonAPI.add_mute(user, activity)
+
+      id_str = to_string(activity.id)
+      user = refresh_record(user)
+
+      assert %{"id" => ^id_str, "muted" => false} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity.id}/unmute")
+               |> json_response(200)
+    end
+  end
 end
