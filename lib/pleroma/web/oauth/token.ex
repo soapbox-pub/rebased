@@ -47,7 +47,7 @@ defmodule Pleroma.Web.OAuth.Token do
 
   def delete_user_tokens(%User{id: user_id}) do
     from(
-      t in Pleroma.Web.OAuth.Token,
+      t in Token,
       where: t.user_id == ^user_id
     )
     |> Repo.delete_all()
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.OAuth.Token do
 
   def delete_user_token(%User{id: user_id}, token_id) do
     from(
-      t in Pleroma.Web.OAuth.Token,
+      t in Token,
       where: t.user_id == ^user_id,
       where: t.id == ^token_id
     )
