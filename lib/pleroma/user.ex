@@ -11,7 +11,6 @@ defmodule Pleroma.User do
   alias Comeonin.Pbkdf2
   alias Pleroma.Activity
   alias Pleroma.Bookmark
-  alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Registration
@@ -1331,18 +1330,15 @@ defmodule Pleroma.User do
     end
   end
 
-  def parse_bio(bio, user \\ %User{info: %{source_data: %{}}})
-  def parse_bio(nil, _user), do: ""
-  def parse_bio(bio, _user) when bio == "", do: bio
+  def parse_bio(bio) when is_binary(bio) and bio != "" do
+    bio
+    |> CommonUtils.format_input("text/plain", mentions_format: :full)
+    |> elem(0)
+  end
 
-  def parse_bio(bio, user) do
-    emoji =
-      (user.info.source_data["tag"] || [])
-      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
-      |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
-        {String.trim(name, ":"), url}
-      end)
+  def parse_bio(_), do: ""
 
+  def parse_bio(bio, user) when is_binary(bio) and bio != "" do
     # TODO: get profile URLs other than user.ap_id
     profile_urls = [user.ap_id]
 
@@ -1352,8 +1348,9 @@ defmodule Pleroma.User do
       rel: &RelMe.maybe_put_rel_me(&1, profile_urls)
     )
     |> elem(0)
-    |> Formatter.emojify(emoji)
   end
+
+  def parse_bio(_, _), do: ""
 
   def tag(user_identifiers, tags) when is_list(user_identifiers) do
     Repo.transaction(fn ->
