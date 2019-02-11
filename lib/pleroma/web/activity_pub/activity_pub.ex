@@ -3,13 +3,22 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
-  alias Pleroma.{Activity, Repo, Object, Upload, User, Notification, Instances}
-  alias Pleroma.Web.ActivityPub.{Transmogrifier, MRF}
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.Object
+  alias Pleroma.Upload
+  alias Pleroma.User
+  alias Pleroma.Notification
+  alias Pleroma.Instances
+  alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Federator
   alias Pleroma.Web.OStatus
+
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
+
   require Logger
 
   @httpoison Application.get_env(:pleroma, :httpoison)
@@ -19,19 +28,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp get_recipients(%{"type" => "Announce"} = data) do
     to = data["to"] || []
     cc = data["cc"] || []
-    recipients = to ++ cc
     actor = User.get_cached_by_ap_id(data["actor"])
 
-    recipients
-    |> Enum.filter(fn recipient ->
-      case User.get_cached_by_ap_id(recipient) do
-        nil ->
-          true
+    recipients =
+      (to ++ cc)
+      |> Enum.filter(fn recipient ->
+        case User.get_cached_by_ap_id(recipient) do
+          nil ->
+            true
 
-        user ->
-          User.following?(user, actor)
-      end
-    end)
+          user ->
+            User.following?(user, actor)
+        end
+      end)
 
     {recipients, to, cc}
   end
@@ -119,7 +128,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data["object"]
           |> Map.get("tag", [])
           |> Enum.filter(fn tag -> is_bitstring(tag) end)
-          |> Enum.map(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
+          |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
 
           if activity.data["object"]["attachment"] != [] do
             Pleroma.Web.Streamer.stream("public:media", activity)

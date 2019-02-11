@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus.ActivityRepresenter do
-  alias Pleroma.{Activity, User, Object}
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Object
   alias Pleroma.Web.OStatus.UserRepresenter
+
   require Logger
 
   defp get_href(id) do

@@ -4,8 +4,15 @@
 
 defmodule Pleroma.Object do
   use Ecto.Schema
-  alias Pleroma.{Repo, Object, User, Activity, ObjectTombstone}
-  import Ecto.{Query, Changeset}
+
+  alias Pleroma.Repo
+  alias Pleroma.Object
+  alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.ObjectTombstone
+
+  import Ecto.Query
+  import Ecto.Changeset
 
   schema "objects" do
     field(:data, :map)
@@ -13,9 +20,29 @@ defmodule Pleroma.Object do
     timestamps()
   end
 
+  def insert_or_get(cng) do
+    {_, data} = fetch_field(cng, :data)
+    id = data["id"] || data[:id]
+    key = "object:#{id}"
+
+    fetcher = fn _ ->
+      with nil <- get_by_ap_id(id),
+           {:ok, object} <- Repo.insert(cng) do
+        {:commit, object}
+      else
+        %Object{} = object -> {:commit, object}
+        e -> {:ignore, e}
+      end
+    end
+
+    with {state, object} when state in [:commit, :ok] <- Cachex.fetch(:object_cache, key, fetcher) do
+      {:ok, object}
+    end
+  end
+
   def create(data) do
     Object.change(%Object{}, %{data: data})
-    |> Repo.insert()
+    |> insert_or_get()
   end
 
   def change(struct, params \\ %{}) do

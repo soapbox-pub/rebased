@@ -180,7 +180,7 @@ defmodule Pleroma.Upload do
   end
 
   # For Mix.Tasks.MigrateLocalUploads
-  defp prepare_upload(upload = %__MODULE__{tempfile: path}, _opts) do
+  defp prepare_upload(%__MODULE__{tempfile: path} = upload, _opts) do
     with {:ok, content_type} <- Pleroma.MIME.file_mime_type(path) do
       {:ok, %__MODULE__{upload | content_type: content_type}}
     end

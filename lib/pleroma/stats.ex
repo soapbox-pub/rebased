@@ -4,7 +4,8 @@
 
 defmodule Pleroma.Stats do
   import Ecto.Query
-  alias Pleroma.{User, Repo}
+  alias Pleroma.User
+  alias Pleroma.Repo
 
   def start_link do
     agent = Agent.start_link(fn -> {[], %{}} end, name: __MODULE__)
@@ -23,7 +24,7 @@ defmodule Pleroma.Stats do
   def schedule_update do
     spawn(fn ->
       # 1 hour
-      Process.sleep(1000 * 60 * 60 * 1)
+      Process.sleep(1000 * 60 * 60)
       schedule_update()
     end)
 

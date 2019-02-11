@@ -9,7 +9,7 @@ defmodule Pleroma.Web.MediaProxy do
 
   def url(""), do: nil
 
-  def url(url = "/" <> _), do: url
+  def url("/" <> _ = url), do: url
 
   def url(url) do
     config = Application.get_env(:pleroma, :media_proxy, [])

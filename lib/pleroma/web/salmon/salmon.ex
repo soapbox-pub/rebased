@@ -6,10 +6,12 @@ defmodule Pleroma.Web.Salmon do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
   use Bitwise
+
   alias Pleroma.Instances
+  alias Pleroma.User
   alias Pleroma.Web.XML
   alias Pleroma.Web.OStatus.ActivityRepresenter
-  alias Pleroma.User
+
   require Logger
 
   def decode(salmon) do

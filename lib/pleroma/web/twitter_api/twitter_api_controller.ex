@@ -7,12 +7,19 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
-  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView}
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.{Repo, Activity, Object, User, Notification}
+  alias Ecto.Changeset
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
-  alias Ecto.Changeset
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.NotificationView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Notification
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   require Logger
 
@@ -24,7 +31,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     conn
     |> put_view(UserView)
-    |> render("show.json", %{user: user, token: token})
+    |> render("show.json", %{user: user, token: token, for: user})
   end
 
   def status_update(%{assigns: %{user: user}} = conn, %{"status" => _} = status_data) do
@@ -523,7 +530,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       friends =
         cond do
           for_user && user.id == for_user.id -> friends
-          user.info.hide_followings -> []
+          user.info.hide_follows -> []
           true -> friends
         end
 
@@ -618,7 +625,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp build_info_cng(user, params) do
     info_params =
-      ["no_rich_text", "locked", "hide_followers", "hide_followings"]
+      ["no_rich_text", "locked", "hide_followers", "hide_follows", "show_role"]
       |> Enum.reduce(%{}, fn key, res ->
         if value = params[key] do
           Map.put(res, key, value == "true")

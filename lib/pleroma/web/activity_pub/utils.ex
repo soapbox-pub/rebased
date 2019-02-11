@@ -3,11 +3,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
-  alias Pleroma.{Repo, Web, Object, Activity, User, Notification}
+  alias Pleroma.Repo
+  alias Pleroma.Web
+  alias Pleroma.Object
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Notification
   alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Endpoint
-  alias Ecto.{Changeset, UUID}
+  alias Ecto.Changeset
+  alias Ecto.UUID
+
   import Ecto.Query
+
   require Logger
 
   @supported_object_types ["Article", "Note", "Video", "Page"]
@@ -134,14 +142,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     context = context || generate_id("contexts")
     changeset = Object.context_mapping(context)
 
-    case Repo.insert(changeset) do
-      {:ok, object} ->
-        object
-
-      # This should be solved by an upsert, but it seems ecto
-      # has problems accessing the constraint inside the jsonb.
-      {:error, _} ->
-        Object.get_cached_by_ap_id(context)
+    with {:ok, object} <- Object.insert_or_get(changeset) do
+      object
     end
   end
 

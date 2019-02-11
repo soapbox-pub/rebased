@@ -3,8 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.{UserInviteToken, User, Activity, Repo, Object}
-  alias Pleroma.{UserEmail, Mailer}
+  alias Pleroma.UserInviteToken
+  alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.Object
+  alias Pleroma.UserEmail
+  alias Pleroma.Mailer
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI
@@ -305,16 +310,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     else
       _e ->
         changeset = Object.context_mapping(context)
-
-        case Repo.insert(changeset) do
-          {:ok, %{id: id}} ->
-            id
-
-          # This should be solved by an upsert, but it seems ecto
-          # has problems accessing the constraint inside the jsonb.
-          {:error, _} ->
-            Object.get_cached_by_ap_id(context).id
-        end
+        {:ok, object} = Object.insert_or_get(changeset)
+        object.id
     end
   end
 

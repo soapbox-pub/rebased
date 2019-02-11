@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Web.MastodonAPI.FilterView do
   use Pleroma.Web, :view
-  alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MastodonAPI.FilterView
 
   def render("filters.json", %{filters: filters} = opts) do
     render_many(filters, FilterView, "filter.json", opts)

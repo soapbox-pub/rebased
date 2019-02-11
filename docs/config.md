@@ -101,6 +101,26 @@ config :pleroma, Pleroma.Mailer,
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
+
+An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
+```
+config :logger, 
+  backends: [{ExSyslogger, :ex_syslogger}]
+
+config :logger, :ex_syslogger,
+  level: :warn
+```
+
+Another example, keeping console output and adding the pid to syslog output:
+```
+config :logger,
+  backends: [:console, {ExSyslogger, :ex_syslogger}]
+
+config :logger, :ex_syslogger,
+  level: :warn,
+  option: [:pid, :ndelay]
+```
+
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
 
@@ -151,6 +171,11 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 ## :mrf_hellthread
 * `delist_threshold`: Number of mentioned users after which the message gets delisted (the message can still be seen, but it will not show up in public timelines and mentioned users won't get notifications about it). Set to 0 to disable.
 * `reject_threshold`: Number of mentioned users after which the messaged gets rejected. Set to 0 to disable.
+
+## :mrf_keyword
+* `reject`: A list of patterns which result in message being rejected, each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
+* `federated_timeline_removal`: A list of patterns which result in message being removed from federated timelines (a.k.a unlisted), each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
+* `replace`: A list of tuples containing `{pattern, replacement}`, `pattern` can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
 
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy

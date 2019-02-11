@@ -10,9 +10,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MediaProxy
 
   # TODO: Add cached version.
   defp get_replied_to_activities(activities) do
@@ -182,11 +182,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def render("card.json", %{rich_media: rich_media, page_url: page_url}) do
+    page_url_data = URI.parse(page_url)
+
     page_url_data =
       if rich_media[:url] != nil do
-        URI.merge(URI.parse(page_url), URI.parse(rich_media[:url]))
+        URI.merge(page_url_data, URI.parse(rich_media[:url]))
       else
-        page_url
+        page_url_data
       end
 
     page_url = page_url_data |> to_string

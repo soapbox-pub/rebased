@@ -441,8 +441,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["first"]["orderedItems"] == [user_two.ap_id]
     end
 
-    test "it returns returns empty if the user has 'hide_followings' set", %{conn: conn} do
-      user = insert(:user, %{info: %{hide_followings: true}})
+    test "it returns returns empty if the user has 'hide_follows' set", %{conn: conn} do
+      user = insert(:user, %{info: %{hide_follows: true}})
       user_two = insert(:user)
       User.follow(user, user_two)
 

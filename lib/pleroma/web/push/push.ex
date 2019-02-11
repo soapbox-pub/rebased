@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.Push do
   use GenServer
 
-  alias Pleroma.{Repo, User}
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.Push.Subscription
 
   require Logger

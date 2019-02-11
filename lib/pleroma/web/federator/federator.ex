@@ -3,16 +3,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Federator do
-  alias Pleroma.User
   alias Pleroma.Activity
-  alias Pleroma.Jobs
-  alias Pleroma.Web.{WebFinger, Websub, Salmon}
-  alias Pleroma.Web.Federator.RetryQueue
+  alias Pleroma.User
+  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Websub
+  alias Pleroma.Web.Salmon
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
+  alias Pleroma.Jobs
+
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
