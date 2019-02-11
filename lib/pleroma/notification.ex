@@ -4,9 +4,14 @@
 
 defmodule Pleroma.Notification do
   use Ecto.Schema
-  alias Pleroma.{User, Activity, Notification, Repo}
+
+  alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Repo
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.CommonAPI
+
   import Ecto.Query
 
   schema "notifications" do

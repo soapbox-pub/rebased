@@ -1752,7 +1752,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   describe "conversation muting" do
     setup do
-
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HIE"})
 

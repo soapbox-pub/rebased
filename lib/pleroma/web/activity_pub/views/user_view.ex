@@ -4,13 +4,15 @@
 
 defmodule Pleroma.Web.ActivityPub.UserView do
   use Pleroma.Web, :view
-  alias Pleroma.Web.Salmon
+
   alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Salmon
   alias Pleroma.User
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+
   import Ecto.Query
 
   # the instance itself is not a Person, but instead an Application

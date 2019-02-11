@@ -7,7 +7,8 @@ defmodule Pleroma.UserEmail do
 
   import Swoosh.Email
 
-  alias Pleroma.Web.{Endpoint, Router}
+  alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.Router
 
   defp instance_config, do: Pleroma.Config.get(:instance)
 

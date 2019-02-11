@@ -5,12 +5,15 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
-  alias Pleroma.{Activity, Formatter, Object, Repo}
+  alias Pleroma.Activity
+  alias Pleroma.Formatter
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.ActivityPub.Utils
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
@@ -95,7 +98,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id()
 
-  def maybe_add_attachments(text, _attachments, _no_links = true), do: text
+  def maybe_add_attachments(text, _attachments, true = _no_links), do: text
 
   def maybe_add_attachments(text, attachments, _no_links) do
     add_attachments(text, attachments)
