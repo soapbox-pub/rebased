@@ -7,6 +7,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Repo
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.ThreadMute
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Formatter
@@ -217,6 +218,29 @@ defmodule Pleroma.Web.CommonAPI do
 
       _ ->
         {:error, "Could not unpin"}
+    end
+  end
+
+  def add_mute(user, activity) do
+    with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]) do
+      {:ok, activity}
+    else
+      {:error, _} -> {:error, "conversation is already muted"}
+    end
+  end
+
+  def remove_mute(user, activity) do
+    ThreadMute.remove_mute(user.id, activity.data["context"])
+    {:ok, activity}
+  end
+
+  def thread_muted?(%{id: nil} = _user, _activity), do: false
+
+  def thread_muted?(user, activity) do
+    with [] <- ThreadMute.check_muted(user.id, activity.data["context"]) do
+      false
+    else
+      _ -> true
     end
   end
 end

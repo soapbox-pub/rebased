@@ -456,6 +456,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def mute_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Activity.get_by_id(id)
+
+    with {:ok, activity} <- CommonAPI.add_mute(user, activity) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    else
+      {:error, reason} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(:bad_request, Jason.encode!(%{"error" => reason}))
+    end
+  end
+
+  def unmute_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    activity = Activity.get_by_id(id)
+
+    with {:ok, activity} <- CommonAPI.remove_mute(user, activity) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    end
+  end
+
   def notifications(%{assigns: %{user: user}} = conn, params) do
     notifications = Notification.for_user(user, params)
 
