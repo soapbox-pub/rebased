@@ -34,6 +34,21 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
 
   defp csp_string do
     scheme = Config.get([Pleroma.Web.Endpoint, :url])[:scheme]
+    websocket_url = String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws")
+
+    connect_src =
+      if Mix.env() == :dev do
+        "connect-src 'self' http://localhost:3035/ " <> websocket_url
+      else
+        "connect-src 'self' " <> websocket_url
+      end
+
+    script_src =
+      if Mix.env() == :dev do
+        "script-src 'self' 'unsafe-eval'"
+      else
+        "script-src 'self'"
+      end
 
     [
       "default-src 'none'",
@@ -43,9 +58,9 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       "media-src 'self' https:",
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self'",
-      "script-src 'self'",
-      "connect-src 'self' " <> String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws"),
       "manifest-src 'self'",
+      connect_src,
+      script_src,
       if scheme == "https" do
         "upgrade-insecure-requests"
       end
