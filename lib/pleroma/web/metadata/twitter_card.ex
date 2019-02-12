@@ -69,8 +69,6 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
-          content_type = url["mediaType"]
-
           media_type =
             Enum.find(["image", "audio", "video"], fn media_type ->
               String.starts_with?(url["mediaType"], media_type)
@@ -92,10 +90,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                 {:meta,
                  [
                    property: "twitter:player",
-                   content:
-                     Utils.attachment_url(
-                       Pleroma.Uploaders.Uploader.preview_url(content_type, url["href"])
-                     )
+                   content: Utils.attachment_url(url["href"])
                  ], []}
                 | acc
               ]
