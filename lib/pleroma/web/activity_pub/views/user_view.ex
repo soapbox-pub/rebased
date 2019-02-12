@@ -18,6 +18,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   def render("endpoints.json", %{user: %User{local: true} = _user}) do
     %{
       "oauthAuthorizationEndpoint" => "#{Pleroma.Web.Endpoint.url()}/oauth/authorize",
+      "oauthRegistrationEndpoint" => "#{Pleroma.Web.Endpoint.url()}/api/v1/apps",
       "oauthTokenEndpoint" => "#{Pleroma.Web.Endpoint.url()}/oauth/token"
     }
     |> Map.merge(render("endpoints.json", %{user: nil}))
