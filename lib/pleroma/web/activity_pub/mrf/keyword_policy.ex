@@ -12,9 +12,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     String.match?(string, pattern)
   end
 
-  defp check_reject(%{"object" => %{"content" => content}} = message) do
+  defp check_reject(%{"object" => %{"content" => content, "summary" => summary}} = message) do
     if Enum.any?(Pleroma.Config.get([:mrf_keyword, :reject]), fn pattern ->
-         string_matches?(content, pattern)
+         string_matches?(content, pattern) or string_matches?(summary, pattern)
        end) do
       {:reject, nil}
     else
@@ -22,10 +22,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     end
   end
 
-  defp check_ftl_removal(%{"to" => to, "object" => %{"content" => content}} = message) do
+  defp check_ftl_removal(
+         %{"to" => to, "object" => %{"content" => content, "summary" => summary}} = message
+       ) do
     if "https://www.w3.org/ns/activitystreams#Public" in to and
          Enum.any?(Pleroma.Config.get([:mrf_keyword, :federated_timeline_removal]), fn pattern ->
-           string_matches?(content, pattern)
+           string_matches?(content, pattern) or string_matches?(summary, pattern)
          end) do
       to = List.delete(to, "https://www.w3.org/ns/activitystreams#Public")
       cc = ["https://www.w3.org/ns/activitystreams#Public" | message["cc"] || []]
@@ -41,14 +43,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
     end
   end
 
-  defp check_replace(%{"object" => %{"content" => content}} = message) do
-    content =
-      Enum.reduce(Pleroma.Config.get([:mrf_keyword, :replace]), content, fn {pattern, replacement},
-                                                                            acc ->
-        String.replace(acc, pattern, replacement)
+  defp check_replace(%{"object" => %{"content" => content, "summary" => summary}} = message) do
+    {content, summary} =
+      Enum.reduce(Pleroma.Config.get([:mrf_keyword, :replace]), {content, summary}, fn {pattern,
+                                                                                        replacement},
+                                                                                       {content_acc,
+                                                                                        summary_acc} ->
+        {String.replace(content_acc, pattern, replacement),
+         String.replace(summary_acc, pattern, replacement)}
       end)
 
-    {:ok, put_in(message["object"]["content"], content)}
+    {:ok,
+     message
+     |> put_in(["object", "content"], content)
+     |> put_in(["object", "summary"], summary)}
   end
 
   @impl true
