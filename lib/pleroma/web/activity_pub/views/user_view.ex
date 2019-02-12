@@ -15,12 +15,28 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
   import Ecto.Query
 
+  def render("endpoints.json", %{user: %{local: true} = _user}) do
+    %{
+      "oauthAuthorizationEndpoint" => "#{Pleroma.Web.Endpoint.url()}/oauth/authorize",
+      "oauthTokenEndpoint" => "#{Pleroma.Web.Endpoint.url()}/oauth/token"
+    }
+    |> Map.merge(render("endpoints.json", nil))
+  end
+
+  def render("endpoints.json", _) do
+    %{
+      "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
+    }
+  end
+
   # the instance itself is not a Person, but instead an Application
   def render("user.json", %{user: %{nickname: nil} = user}) do
     {:ok, user} = WebFinger.ensure_keys_present(user)
     {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
+
+    endpoints = render("endpoints.json", %{user: user})
 
     %{
       "id" => user.ap_id,
@@ -37,9 +53,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "owner" => user.ap_id,
         "publicKeyPem" => public_key
       },
-      "endpoints" => %{
-        "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
-      }
+      "endpoints" => endpoints
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
@@ -49,6 +63,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
+
+    endpoints = render("endpoints.json", %{user: user})
 
     %{
       "id" => user.ap_id,
@@ -67,9 +83,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "owner" => user.ap_id,
         "publicKeyPem" => public_key
       },
-      "endpoints" => %{
-        "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
-      },
+      "endpoints" => endpoints,
       "icon" => %{
         "type" => "Image",
         "url" => User.avatar_url(user)
