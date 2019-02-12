@@ -99,8 +99,8 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
             "image" ->
               [
-                {:meta, [property: "og:" <> media_type, content: Utils.attachment_url(url["href"])],
-                 []},
+                {:meta,
+                 [property: "og:" <> media_type, content: Utils.attachment_url(url["href"])], []},
                 {:meta, [property: "og:image:width", content: 150], []},
                 {:meta, [property: "og:image:height", content: 150], []}
                 | acc
