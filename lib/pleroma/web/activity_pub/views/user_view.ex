@@ -15,12 +15,12 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
   import Ecto.Query
 
-  def render("endpoints.json", %{user: %{local: true} = _user}) do
+  def render("endpoints.json", %{user: %User{local: true} = _user}) do
     %{
       "oauthAuthorizationEndpoint" => "#{Pleroma.Web.Endpoint.url()}/oauth/authorize",
       "oauthTokenEndpoint" => "#{Pleroma.Web.Endpoint.url()}/oauth/token"
     }
-    |> Map.merge(render("endpoints.json", nil))
+    |> Map.merge(render("endpoints.json", %{user: nil}))
   end
 
   def render("endpoints.json", _) do
