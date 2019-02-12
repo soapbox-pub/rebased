@@ -151,8 +151,8 @@ defmodule Pleroma.Web.CommonAPI do
            ),
          {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
          context <- make_context(in_reply_to),
-         cw <- data["spoiler_text"],
-         full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
+         cw <- data["spoiler_text"] || "",
+         full_payload <- String.trim(status <> cw),
          length when length in 1..limit <- String.length(full_payload),
          object <-
            make_note_data(
@@ -170,10 +170,7 @@ defmodule Pleroma.Web.CommonAPI do
            Map.put(
              object,
              "emoji",
-             (Formatter.get_emoji(status) ++ Formatter.get_emoji(data["spoiler_text"]))
-             |> Enum.reduce(%{}, fn {name, file, _}, acc ->
-               Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
-             end)
+             Formatter.get_emoji_map(full_payload)
            ) do
       res =
         ActivityPub.create(
