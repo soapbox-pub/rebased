@@ -311,12 +311,12 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "A mass follow for local users. Respects blocks but does not create activities."
+  @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
     followed_addresses =
       followeds
-      |> Enum.reject(fn %{ap_id: ap_id} -> ap_id in follower.info.blocks end)
+      |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
       |> Enum.map(fn %{follower_address: fa} -> fa end)
 
     q =
