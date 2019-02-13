@@ -54,6 +54,10 @@
         border-bottom: 2px solid #4b8ed8;
       }
 
+      input[type="checkbox"] {
+        width: auto;
+      }
+
       button {
         box-sizing: border-box;
         width: 100%;

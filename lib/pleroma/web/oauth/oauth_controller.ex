@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Web.OAuth
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Pleroma.{Repo, User}
   alias Comeonin.Pbkdf2
@@ -18,7 +19,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     render(conn, "show.html", %{
       response_type: params["response_type"],
       client_id: params["client_id"],
-      scope: params["scope"],
+      scopes: scopes(params) || [],
       redirect_uri: params["redirect_uri"],
       state: params["state"]
     })
@@ -38,7 +39,10 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         {:ok, auth} <- Authorization.create_authorization(app, user, params["scope"]) do
+         scopes <- scopes(params) || app.scopes,
+         [] <- scopes -- app.scopes,
+         true <- Enum.any?(scopes),
+         {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
       # Special case: Local MastodonFE.
       redirect_uri =
         if redirect_uri == "." do
@@ -94,7 +98,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         refresh_token: token.refresh_token,
         created_at: DateTime.to_unix(inserted_at),
         expires_in: 60 * 10,
-        scope: token.scope
+        scope: Enum.join(token.scopes)
       }
 
       json(conn, response)
@@ -113,14 +117,15 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
-         {:ok, auth} <- Authorization.create_authorization(app, user, params["scope"]),
+         scopes <- scopes(params) || app.scopes,
+         {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
         token_type: "Bearer",
         access_token: token.token,
         refresh_token: token.refresh_token,
         expires_in: 60 * 10,
-        scope: token.scope
+        scope: Enum.join(token.scopes, " ")
       }
 
       json(conn, response)
@@ -192,4 +197,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       nil
     end
   end
+
+  defp scopes(params),
+    do: OAuth.parse_scopes(params["scopes"] || params["scope"])
 end

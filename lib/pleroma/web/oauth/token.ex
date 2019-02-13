@@ -8,13 +8,12 @@ defmodule Pleroma.Web.OAuth.Token do
   import Ecto.Query
 
   alias Pleroma.{User, Repo}
-  alias Pleroma.Web.OAuth
   alias Pleroma.Web.OAuth.{Token, App, Authorization}
 
   schema "oauth_tokens" do
     field(:token, :string)
     field(:refresh_token, :string)
-    field(:scope, :string)
+    field(:scopes, {:array, :string}, default: [])
     field(:valid_until, :naive_datetime)
     belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
     belongs_to(:app, App)
@@ -25,19 +24,19 @@ defmodule Pleroma.Web.OAuth.Token do
   def exchange_token(app, auth) do
     with {:ok, auth} <- Authorization.use_token(auth),
          true <- auth.app_id == app.id do
-      create_token(app, Repo.get(User, auth.user_id), auth.scope)
+      create_token(app, Repo.get(User, auth.user_id), auth.scopes)
     end
   end
 
-  def create_token(%App{} = app, %User{} = user, scope \\ nil) do
-    scopes = OAuth.parse_scopes(scope || app.scopes)
+  def create_token(%App{} = app, %User{} = user, scopes \\ nil) do
+    scopes = scopes || app.scopes
     token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
     refresh_token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
 
     token = %Token{
       token: token,
       refresh_token: refresh_token,
-      scope: Enum.join(scopes, " "),
+      scopes: scopes,
       user_id: user.id,
       app_id: app.id,
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)

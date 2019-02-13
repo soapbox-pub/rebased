@@ -19,6 +19,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.OAuth
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Pleroma.Web.MediaProxy
 
@@ -31,7 +32,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   action_fallback(:errors)
 
   def create_app(conn, params) do
-    with cs <- App.register_changeset(%App{}, params),
+    scopes = OAuth.parse_scopes(params["scope"] || params["scopes"])
+    app_attrs = params |> Map.drop(["scope", "scopes"]) |> Map.put("scopes", scopes)
+
+    with cs <- App.register_changeset(%App{}, app_attrs),
          false <- cs.changes[:client_name] == @local_mastodon_name,
          {:ok, app} <- Repo.insert(cs) do
       res = %{
@@ -1162,7 +1166,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       {:ok, app}
     else
       _e ->
-        cs = App.register_changeset(%App{}, Map.put(find_attrs, :scopes, "read,write,follow"))
+        cs =
+          App.register_changeset(
+            %App{},
+            Map.put(find_attrs, :scopes, ["read", "write", "follow"])
+          )
 
         Repo.insert(cs)
     end

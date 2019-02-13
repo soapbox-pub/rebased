@@ -1,4 +1,4 @@
-defmodule Pleroma.Repo.Migrations.DataMigrationPopulateOAuthScope do
+defmodule Pleroma.Repo.Migrations.DataMigrationPopulateOAuthScopes do
   use Ecto.Migration
 
   require Ecto.Query
@@ -11,16 +11,15 @@ defmodule Pleroma.Repo.Migrations.DataMigrationPopulateOAuthScope do
   def up do
     for app <- Repo.all(Query.from(app in App)) do
       scopes = OAuth.parse_scopes(app.scopes)
-      scope = Enum.join(scopes, " ")
 
       Repo.update_all(
         Query.from(auth in Authorization, where: auth.app_id == ^app.id),
-        set: [scope: scope]
+        set: [scopes: scopes]
       )
 
       Repo.update_all(
         Query.from(token in Token, where: token.app_id == ^app.id),
-        set: [scope: scope]
+        set: [scopes: scopes]
       )
     end
   end

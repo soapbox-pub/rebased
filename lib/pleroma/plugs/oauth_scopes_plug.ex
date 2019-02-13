@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Plugs.OAuthScopesPlug do
   import Plug.Conn
-  alias Pleroma.Web.OAuth
 
   @behaviour Plug
 
@@ -12,7 +11,7 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
 
   def call(%Plug.Conn{assigns: assigns} = conn, %{required_scopes: required_scopes}) do
     token = assigns[:token]
-    granted_scopes = token && OAuth.parse_scopes(token.scope)
+    granted_scopes = token && token.scopes
 
     if is_nil(token) || required_scopes -- granted_scopes == [] do
       conn

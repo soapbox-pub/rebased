@@ -5,12 +5,20 @@
 <%= label f, :name, "Name or email" %>
 <%= text_input f, :name %>
 <br>
+<br>
 <%= label f, :password, "Password" %>
 <%= password_input f, :password %>
 <br>
-<%= label f, :scope, "Scopes" %>
-<%= text_input f, :scope, value: @scope %>
 <br>
+
+<%= label f, :scope, "Permissions" %>
+<br>
+<%= for scope <- @scopes do %>
+  <%= checkbox f, :"scopes_#{scope}", hidden_input: false, value: scope, checked_value: scope, name: "authorization[scopes][]" %>
+  <%= label f, :"scopes_#{scope}", String.capitalize(scope) %>
+  <br>
+<% end %>
+
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :response_type, value: @response_type %>
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>

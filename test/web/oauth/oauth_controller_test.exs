@@ -21,6 +21,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "password" => "test",
           "client_id" => app.client_id,
           "redirect_uri" => app.redirect_uris,
+          "scope" => Enum.join(app.scopes, " "),
           "state" => "statepassed"
         }
       })

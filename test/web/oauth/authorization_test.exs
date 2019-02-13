@@ -12,7 +12,7 @@ defmodule Pleroma.Web.OAuth.AuthorizationTest do
       Repo.insert(
         App.register_changeset(%App{}, %{
           client_name: "client",
-          scopes: "scope",
+          scopes: ["scope"],
           redirect_uris: "url"
         })
       )
@@ -32,7 +32,7 @@ defmodule Pleroma.Web.OAuth.AuthorizationTest do
       Repo.insert(
         App.register_changeset(%App{}, %{
           client_name: "client",
-          scopes: "scope",
+          scopes: ["scope"],
           redirect_uris: "url"
         })
       )
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.OAuth.AuthorizationTest do
       Repo.insert(
         App.register_changeset(%App{}, %{
           client_name: "client",
-          scopes: "scope",
+          scopes: ["scope"],
           redirect_uris: "url"
         })
       )
