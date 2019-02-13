@@ -15,4 +15,32 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
     assert String.contains?(result["publicKey"]["publicKeyPem"], "BEGIN PUBLIC KEY")
   end
+
+  describe "endpoints" do
+    test "local users have a usable endpoints structure" do
+      user = insert(:user)
+      {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+
+      result = UserView.render("user.json", %{user: user})
+
+      assert result["id"] == user.ap_id
+
+      %{
+        "sharedInbox" => _,
+        "oauthAuthorizationEndpoint" => _,
+        "oauthRegistrationEndpoint" => _,
+        "oauthTokenEndpoint" => _
+      } = result["endpoints"]
+    end
+
+    test "remote users have an empty endpoints structure" do
+      user = insert(:user, local: false)
+      {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+
+      result = UserView.render("user.json", %{user: user})
+
+      assert result["id"] == user.ap_id
+      assert result["endpoints"] == %{}
+    end
+  end
 end
