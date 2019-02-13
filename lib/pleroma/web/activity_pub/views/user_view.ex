@@ -12,23 +12,21 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.Router.Helpers
+  alias Pleroma.Web.Endpoint
 
   import Ecto.Query
 
-  def render("endpoints.json", %{user: %User{local: true} = _user}) do
+  def render("endpoints.json", %{user: %User{nickname: _nickname, local: true} = _user}) do
     %{
-      "oauthAuthorizationEndpoint" => "#{Pleroma.Web.Endpoint.url()}/oauth/authorize",
-      "oauthRegistrationEndpoint" => "#{Pleroma.Web.Endpoint.url()}/api/v1/apps",
-      "oauthTokenEndpoint" => "#{Pleroma.Web.Endpoint.url()}/oauth/token"
+      "oauthAuthorizationEndpoint" => Helpers.o_auth_url(Endpoint, :authorize),
+      "oauthRegistrationEndpoint" => Helpers.mastodon_api_url(Endpoint, :create_app),
+      "oauthTokenEndpoint" => Helpers.o_auth_url(Endpoint, :token_exchange),
+      "sharedInbox" => Helpers.activity_pub_url(Endpoint, :inbox)
     }
-    |> Map.merge(render("endpoints.json", %{user: nil}))
   end
 
-  def render("endpoints.json", _) do
-    %{
-      "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
-    }
-  end
+  def render("endpoints.json", _), do: %{}
 
   # the instance itself is not a Person, but instead an Application
   def render("user.json", %{user: %{nickname: nil} = user}) do
