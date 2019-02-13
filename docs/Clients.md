@@ -7,6 +7,7 @@ Feel free to contact us to be added to this list!
 - Homepage: <http://www.pleroma.com/desktop-app/>
 - Source Code: ???
 - Platforms: Windows, Mac, (Linux?)
+- Features: Streaming Ready
 
 ### Social
 - Source Code: <https://gitlab.gnome.org/BrainBlasted/Social>
@@ -19,6 +20,7 @@ Feel free to contact us to be added to this list!
 - Source Code: <https://github.com/h3poteto/whalebird-desktop>
 - Contact: [@h3poteto@pleroma.io](https://pleroma.io/users/h3poteto)
 - Platforms: Windows, Mac, Linux
+- Features: Streaming Ready
 
 ## Handheld
 ### Amaroq
