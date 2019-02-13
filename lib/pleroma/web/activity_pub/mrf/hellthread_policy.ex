@@ -7,56 +7,66 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp delist_message(message) do
+    delist_threshold = Pleroma.Config.get([:mrf_hellthread, :delist_threshold])
     follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
 
-    message
-    |> Map.put("to", [follower_collection])
-    |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])
+    message =
+      with {:public, recipients} <- get_recipient_count(message) do
+        if recipients > delist_threshold and delist_threshold > 0 do
+          message
+          |> Map.put("to", [follower_collection])
+          |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])
+        else
+          message
+        end
+      else
+        _ -> message
+      end
+
+    {:ok, message}
   end
 
-  defp get_recipient_count(message) do
-    recipients = (message["to"] || []) ++ (message["cc"] || [])
-
-    cond do
-      Enum.member?(recipients, "https://www.w3.org/ns/activitystreams#Public") &&
-          Enum.find(recipients, &String.ends_with?(&1, "/followers")) ->
-        length(recipients) - 2
-
-      Enum.member?(recipients, "https://www.w3.org/ns/activitystreams#Public") ||
-          Enum.find(recipients, &String.ends_with?(&1, "/followers")) ->
-        length(recipients) - 1
-
-      true ->
-        length(recipients)
-    end
-  end
-
-  @impl true
-  def filter(%{"type" => "Create"} = message) do
-    delist_threshold = Pleroma.Config.get([:mrf_hellthread, :delist_threshold])
-
+  defp reject_message(message) do
     reject_threshold =
       Pleroma.Config.get(
         [:mrf_hellthread, :reject_threshold],
         Pleroma.Config.get([:mrf_hellthread, :threshold])
       )
 
-    recipients = get_recipient_count(message)
-
-    cond do
-      recipients > reject_threshold and reject_threshold > 0 ->
+    with {_, recipients} <- get_recipient_count(message) do
+      if recipients > reject_threshold and reject_threshold > 0 do
         {:reject, nil}
-
-      recipients > delist_threshold and delist_threshold > 0 ->
-        if Enum.member?(message["to"], "https://www.w3.org/ns/activitystreams#Public") or
-             Enum.member?(message["cc"], "https://www.w3.org/ns/activitystreams#Public") do
-          {:ok, delist_message(message)}
-        else
-          {:ok, message}
-        end
-
-      true ->
+      else
         {:ok, message}
+      end
+    end
+  end
+
+  defp get_recipient_count(message) do
+    recipients = (message["to"] || []) ++ (message["cc"] || [])
+    follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
+
+    if Enum.member?(recipients, "https://www.w3.org/ns/activitystreams#Public") do
+      recipients
+      |> List.delete("https://www.w3.org/ns/activitystreams#Public")
+      |> List.delete(follower_collection)
+
+      {:public, length(recipients)}
+    else
+      recipients
+      |> List.delete(follower_collection)
+
+      {:not_public, length(recipients)}
+    end
+  end
+
+  @impl true
+  def filter(%{"type" => "Create"} = message) do
+    with {:ok, message} <- reject_message(message),
+         {:ok, message} <- delist_message(message) do
+      {:ok, message}
+    else
+      _e -> {:reject, nil}
     end
   end
 
