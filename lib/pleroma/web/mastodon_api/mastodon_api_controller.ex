@@ -19,11 +19,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.OAuth
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Pleroma.Web.MediaProxy
 
+  import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
   import Ecto.Query
+
   require Logger
 
   @httpoison Application.get_env(:pleroma, :httpoison)
@@ -32,8 +33,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   action_fallback(:errors)
 
   def create_app(conn, params) do
-    scopes = OAuth.parse_scopes(params["scope"] || params["scopes"])
-    app_attrs = params |> Map.drop(["scope", "scopes"]) |> Map.put("scopes", scopes)
+    scopes = oauth_scopes(params, [])
+
+    app_attrs =
+      params
+      |> Map.drop(["scope", "scopes"])
+      |> Map.put("scopes", scopes)
 
     with cs <- App.register_changeset(%App{}, app_attrs),
          false <- cs.changes[:client_name] == @local_mastodon_name,

@@ -5,10 +5,11 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Web.OAuth
   alias Pleroma.Web.OAuth.{Authorization, Token, App}
   alias Pleroma.{Repo, User}
   alias Comeonin.Pbkdf2
+
+  import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
 
   plug(:fetch_session)
   plug(:fetch_flash)
@@ -19,7 +20,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     render(conn, "show.html", %{
       response_type: params["response_type"],
       client_id: params["client_id"],
-      scopes: scopes(params) || [],
+      scopes: oauth_scopes(params, []),
       redirect_uri: params["redirect_uri"],
       state: params["state"]
     })
@@ -39,7 +40,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         scopes <- scopes(params) || app.scopes,
+         scopes <- oauth_scopes(params, app.scopes),
          [] <- scopes -- app.scopes,
          true <- Enum.any?(scopes),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
@@ -117,7 +118,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
-         scopes <- scopes(params) || app.scopes,
+         scopes <- oauth_scopes(params, app.scopes),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
@@ -197,7 +198,4 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       nil
     end
   end
-
-  defp scopes(params),
-    do: OAuth.parse_scopes(params["scopes"] || params["scope"])
 end
