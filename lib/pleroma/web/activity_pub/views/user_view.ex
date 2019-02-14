@@ -104,8 +104,14 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     query = User.get_friends_query(user)
     query = from(user in query, select: [:ap_id])
     following = Repo.all(query)
+    total =
+      if !user.info.hide_follows do
+        length(following)
+      else
+        0
+      end
 
-    collection(following, "#{user.ap_id}/following", page, !user.info.hide_follows)
+    collection(following, "#{user.ap_id}/following", page, !user.info.hide_follows, total)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -113,11 +119,17 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     query = User.get_friends_query(user)
     query = from(user in query, select: [:ap_id])
     following = Repo.all(query)
+    total =
+      if !user.info.hide_follows do
+        length(following)
+      else
+        0
+      end
 
     %{
       "id" => "#{user.ap_id}/following",
       "type" => "OrderedCollection",
-      "totalItems" => length(following),
+      "totalItems" => total,
       "first" => collection(following, "#{user.ap_id}/following", 1, !user.info.hide_follows)
     }
     |> Map.merge(Utils.make_json_ld_header())
@@ -127,8 +139,14 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     query = User.get_followers_query(user)
     query = from(user in query, select: [:ap_id])
     followers = Repo.all(query)
+    total =
+      if !user.info.hide_followers do
+        length(followers)
+      else
+        0
+      end
 
-    collection(followers, "#{user.ap_id}/followers", page, !user.info.hide_followers)
+    collection(followers, "#{user.ap_id}/followers", page, !user.info.hide_followers, total)
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -136,20 +154,23 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     query = User.get_followers_query(user)
     query = from(user in query, select: [:ap_id])
     followers = Repo.all(query)
+    total =
+      if !user.info.hide_followers do
+        length(followers)
+      else
+        0
+      end
 
     %{
       "id" => "#{user.ap_id}/followers",
       "type" => "OrderedCollection",
-      "totalItems" => length(followers),
-      "first" => collection(followers, "#{user.ap_id}/followers", 1, !user.info.hide_followers)
+      "totalItems" => total,
+      "first" => collection(followers, "#{user.ap_id}/followers", 1, !user.info.hide_followers, total)
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
 
   def render("outbox.json", %{user: user, max_id: max_qid}) do
-    # XXX: technically note_count is wrong for this, but it's better than nothing
-    info = User.user_info(user)
-
     params = %{
       "limit" => "10"
     }
