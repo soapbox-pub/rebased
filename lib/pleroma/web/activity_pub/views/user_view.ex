@@ -177,7 +177,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "id" => "#{iri}?max_id=#{max_id}",
       "type" => "OrderedCollectionPage",
       "partOf" => iri,
-      "totalItems" => info.note_count,
       "orderedItems" => collection,
       "next" => "#{iri}?max_id=#{min_id}"
     }
@@ -186,7 +185,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       %{
         "id" => iri,
         "type" => "OrderedCollection",
-        "totalItems" => info.note_count,
         "first" => page
       }
       |> Map.merge(Utils.make_json_ld_header())
