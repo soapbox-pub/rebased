@@ -12,8 +12,25 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.Router.Helpers
+  alias Pleroma.Web.Endpoint
 
   import Ecto.Query
+
+  def render("endpoints.json", %{user: %User{nickname: nil, local: true} = _user}) do
+    %{"sharedInbox" => Helpers.activity_pub_url(Endpoint, :inbox)}
+  end
+
+  def render("endpoints.json", %{user: %User{local: true} = _user}) do
+    %{
+      "oauthAuthorizationEndpoint" => Helpers.o_auth_url(Endpoint, :authorize),
+      "oauthRegistrationEndpoint" => Helpers.mastodon_api_url(Endpoint, :create_app),
+      "oauthTokenEndpoint" => Helpers.o_auth_url(Endpoint, :token_exchange),
+      "sharedInbox" => Helpers.activity_pub_url(Endpoint, :inbox)
+    }
+  end
+
+  def render("endpoints.json", _), do: %{}
 
   # the instance itself is not a Person, but instead an Application
   def render("user.json", %{user: %{nickname: nil} = user}) do
@@ -21,6 +38,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
+
+    endpoints = render("endpoints.json", %{user: user})
 
     %{
       "id" => user.ap_id,
@@ -37,9 +56,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "owner" => user.ap_id,
         "publicKeyPem" => public_key
       },
-      "endpoints" => %{
-        "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
-      }
+      "endpoints" => endpoints
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
@@ -49,6 +66,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
+
+    endpoints = render("endpoints.json", %{user: user})
 
     %{
       "id" => user.ap_id,
@@ -67,9 +86,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "owner" => user.ap_id,
         "publicKeyPem" => public_key
       },
-      "endpoints" => %{
-        "sharedInbox" => "#{Pleroma.Web.Endpoint.url()}/inbox"
-      },
+      "endpoints" => endpoints,
       "icon" => %{
         "type" => "Image",
         "url" => User.avatar_url(user)
