@@ -1128,4 +1128,58 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         )
     end
   end
+
+  describe "reserialization" do
+    test "successfully reserializes a message with inReplyTo == nil" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "type" => "Create",
+        "object" => %{
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [],
+          "type" => "Note",
+          "content" => "Hi",
+          "inReplyTo" => nil,
+          "attributedTo" => user.ap_id
+        },
+        "actor" => user.ap_id
+      }
+
+      {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      {:ok, _} = Transmogrifier.prepare_outgoing(activity.data)
+    end
+
+    test "successfully reserializes a message with AS2 objects in IR" do
+      user = insert(:user)
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [],
+        "type" => "Create",
+        "object" => %{
+          "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+          "cc" => [],
+          "type" => "Note",
+          "content" => "Hi",
+          "inReplyTo" => nil,
+          "attributedTo" => user.ap_id,
+          "tag" => [
+            %{"name" => "#2hu", "href" => "http://example.com/2hu", "type" => "Hashtag"},
+            %{"name" => "Bob", "href" => "http://example.com/bob", "type" => "Mention"}
+          ]
+        },
+        "actor" => user.ap_id
+      }
+
+      {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      {:ok, _} = Transmogrifier.prepare_outgoing(activity.data)
+    end
+  end
 end
