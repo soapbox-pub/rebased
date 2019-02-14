@@ -649,7 +649,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     if object = Object.normalize(id), do: {:ok, object}, else: nil
   end
 
-  def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) do
+  def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) when is_binary(inReplyTo) do
     with false <- String.starts_with?(inReplyTo, "http"),
          {:ok, %{data: replied_to_object}} <- get_obj_helper(inReplyTo) do
       Map.put(object, "inReplyTo", replied_to_object["external_url"] || inReplyTo)
