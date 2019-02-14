@@ -818,8 +818,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     if object = Object.get_cached_by_ap_id(id) do
       {:ok, object}
     else
-      Logger.info("Fetching #{id} via AP")
-
       with {:ok, data} <- fetch_and_contain_remote_object_from_id(id),
            nil <- Object.normalize(data),
            params <- %{
@@ -851,7 +849,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_and_contain_remote_object_from_id(id) do
-    Logger.info("Fetching #{id} via AP")
+    Logger.info("Fetching object #{id} via AP")
 
     with true <- String.starts_with?(id, "http"),
          {:ok, %{body: body, status: code}} when code in 200..299 <-
