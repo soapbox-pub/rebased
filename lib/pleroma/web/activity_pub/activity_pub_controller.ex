@@ -4,12 +4,16 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
-  alias Pleroma.{Activity, User, Object}
-  alias Pleroma.Web.ActivityPub.{ObjectView, UserView}
+
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator
 
   require Logger
@@ -17,6 +21,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   action_fallback(:errors)
 
   plug(Pleroma.Web.FederatingPlug when action in [:inbox, :relay])
+  plug(:set_requester_reachable when action in [:inbox])
   plug(:relay_active? when action in [:relay])
 
   def relay_active?(conn, _) do
@@ -48,6 +53,49 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(ObjectView.render("object.json", %{object: object}))
+    else
+      {:public?, false} ->
+        {:error, :not_found}
+    end
+  end
+
+  def object_likes(conn, %{"uuid" => uuid, "page" => page}) do
+    with ap_id <- o_status_url(conn, :object, uuid),
+         %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
+         {_, true} <- {:public?, ActivityPub.is_public?(object)},
+         likes <- Utils.get_object_likes(object) do
+      {page, _} = Integer.parse(page)
+
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(ObjectView.render("likes.json", ap_id, likes, page))
+    else
+      {:public?, false} ->
+        {:error, :not_found}
+    end
+  end
+
+  def object_likes(conn, %{"uuid" => uuid}) do
+    with ap_id <- o_status_url(conn, :object, uuid),
+         %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
+         {_, true} <- {:public?, ActivityPub.is_public?(object)},
+         likes <- Utils.get_object_likes(object) do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(ObjectView.render("likes.json", ap_id, likes))
+    else
+      {:public?, false} ->
+        {:error, :not_found}
+    end
+  end
+
+  def activity(conn, %{"uuid" => uuid}) do
+    with ap_id <- o_status_url(conn, :activity, uuid),
+         %Activity{} = activity <- Activity.normalize(ap_id),
+         {_, true} <- {:public?, ActivityPub.is_public?(activity)} do
+      conn
+      |> put_resp_header("content-type", "application/activity+json")
+      |> json(ObjectView.render("object.json", %{object: activity}))
     else
       {:public?, false} ->
         {:error, :not_found}
@@ -153,6 +201,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def whoami(%{assigns: %{user: %User{} = user}} = conn, _params) do
+    conn
+    |> put_resp_header("content-type", "application/activity+json")
+    |> json(UserView.render("user.json", %{user: user}))
+  end
+
+  def whoami(_conn, _params), do: {:error, :not_found}
+
   def read_inbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
     if nickname == user.nickname do
       conn
@@ -165,9 +221,48 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  def handle_user_activity(user, %{"type" => "Create"} = params) do
+    object =
+      params["object"]
+      |> Map.merge(Map.take(params, ["to", "cc"]))
+      |> Map.put("attributedTo", user.ap_id())
+      |> Transmogrifier.fix_object()
+
+    ActivityPub.create(%{
+      to: params["to"],
+      actor: user,
+      context: object["context"],
+      object: object,
+      additional: Map.take(params, ["cc"])
+    })
+  end
+
+  def handle_user_activity(user, %{"type" => "Delete"} = params) do
+    with %Object{} = object <- Object.normalize(params["object"]),
+         true <- user.info.is_moderator || user.ap_id == object.data["actor"],
+         {:ok, delete} <- ActivityPub.delete(object) do
+      {:ok, delete}
+    else
+      _ -> {:error, "Can't delete object"}
+    end
+  end
+
+  def handle_user_activity(user, %{"type" => "Like"} = params) do
+    with %Object{} = object <- Object.normalize(params["object"]),
+         {:ok, activity, _object} <- ActivityPub.like(user, object) do
+      {:ok, activity}
+    else
+      _ -> {:error, "Can't like object"}
+    end
+  end
+
+  def handle_user_activity(_, _) do
+    {:error, "Unhandled activity type"}
+  end
+
   def update_outbox(
         %{assigns: %{user: user}} = conn,
-        %{"nickname" => nickname, "type" => "Create"} = params
+        %{"nickname" => nickname} = params
       ) do
     if nickname == user.nickname do
       actor = user.ap_id()
@@ -178,24 +273,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
         |> Map.put("actor", actor)
         |> Transmogrifier.fix_addressing()
 
-      object =
-        params["object"]
-        |> Map.merge(Map.take(params, ["to", "cc"]))
-        |> Map.put("attributedTo", actor)
-        |> Transmogrifier.fix_object()
-
-      with {:ok, %Activity{} = activity} <-
-             ActivityPub.create(%{
-               to: params["to"],
-               actor: user,
-               context: object["context"],
-               object: object,
-               additional: Map.take(params, ["cc"])
-             }) do
+      with {:ok, %Activity{} = activity} <- handle_user_activity(user, params) do
         conn
         |> put_status(:created)
         |> put_resp_header("location", activity.data["id"])
         |> json(activity.data)
+      else
+        {:error, message} ->
+          conn
+          |> put_status(:bad_request)
+          |> json(message)
       end
     else
       conn
@@ -214,5 +301,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     conn
     |> put_status(500)
     |> json("error")
+  end
+
+  defp set_requester_reachable(%Plug.Conn{} = conn, _) do
+    with actor <- conn.params["actor"],
+         true <- is_binary(actor) do
+      Pleroma.Instances.set_reachable(actor)
+    end
+
+    conn
   end
 end

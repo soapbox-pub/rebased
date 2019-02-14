@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
 
       assert activity =
-               Activity.get_create_activity_by_object_ap_id(
+               Activity.get_create_by_object_ap_id(
                  "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
                )
 
@@ -162,6 +162,36 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"]["url"] == "https://prismo.news/posts/83"
     end
 
+    test "it cleans up incoming notices which are not really DMs" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      to = [user.ap_id, other_user.ap_id]
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("to", to)
+        |> Map.put("cc", [])
+
+      object =
+        data["object"]
+        |> Map.put("to", to)
+        |> Map.put("cc", [])
+
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["to"] == []
+      assert data["cc"] == to
+
+      object = data["object"]
+
+      assert object["to"] == []
+      assert object["cc"] == to
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 
@@ -263,7 +293,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"] ==
                "http://mastodon.example.org/users/admin/statuses/99541947525187367"
 
-      assert Activity.get_create_activity_by_object_ap_id(data["object"])
+      assert Activity.get_create_by_object_ap_id(data["object"])
     end
 
     test "it works for incoming announces with an existing activity" do
@@ -285,7 +315,23 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert data["object"] == activity.data["object"]["id"]
 
-      assert Activity.get_create_activity_by_object_ap_id(data["object"]).id == activity.id
+      assert Activity.get_create_by_object_ap_id(data["object"]).id == activity.id
+    end
+
+    test "it does not clobber the addressing on announce activities" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey"})
+
+      data =
+        File.read!("test/fixtures/mastodon-announce.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"]["id"])
+        |> Map.put("to", ["http://mastodon.example.org/users/admin/followers"])
+        |> Map.put("cc", [])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["to"] == ["http://mastodon.example.org/users/admin/followers"]
     end
 
     test "it works for incoming update activities" do
@@ -829,11 +875,60 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert length(modified["object"]["tag"]) == 2
 
       assert is_nil(modified["object"]["emoji"])
-      assert is_nil(modified["object"]["likes"])
       assert is_nil(modified["object"]["like_count"])
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["context_id"])
+    end
+
+    test "it strips internal fields of article" do
+      activity = insert(:article_activity)
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert length(modified["object"]["tag"]) == 2
+
+      assert is_nil(modified["object"]["emoji"])
+      assert is_nil(modified["object"]["like_count"])
+      assert is_nil(modified["object"]["announcements"])
+      assert is_nil(modified["object"]["announcement_count"])
+      assert is_nil(modified["object"]["context_id"])
+    end
+
+    test "it adds like collection to object" do
+      activity = insert(:note_activity)
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["object"]["likes"]["type"] == "OrderedCollection"
+      assert modified["object"]["likes"]["totalItems"] == 0
+    end
+
+    test "the directMessage flag is present" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == false
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "@#{other_user.nickname} :moominmamma:"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == false
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "@#{other_user.nickname} :moominmamma:",
+          "visibility" => "direct"
+        })
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert modified["directMessage"] == true
     end
   end
 

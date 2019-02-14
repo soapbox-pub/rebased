@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset=utf-8 />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,minimal-ui" />
     <title>
     <%= Application.get_env(:pleroma, :instance)[:name] %>
     </title>
@@ -63,6 +64,32 @@
         padding: 10px;
         margin-top: 30px;
         text-transform: uppercase;
+        font-weight: 500;
+        font-size: 16px;
+      }
+
+      .alert-danger {
+        box-sizing: border-box;
+        width: 100%;
+        color: #D8000C;
+        background-color: #FFD2D2;
+        border-radius: 4px;
+        border: none;
+        padding: 10px;
+        margin-top: 20px;
+        font-weight: 500;
+        font-size: 16px;
+      }
+
+      .alert-info {
+        box-sizing: border-box;
+        width: 100%;
+        color: #00529B;
+        background-color: #BDE5F8;
+        border-radius: 4px;
+        border: none;
+        padding: 10px;
+        margin-top: 20px;
         font-weight: 500;
         font-size: 16px;
       }

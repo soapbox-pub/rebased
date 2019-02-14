@@ -3,7 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI do
-  alias Pleroma.{User, Repo, Activity, Object}
+  alias Pleroma.User
+  alias Pleroma.Repo
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.ThreadMute
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Formatter
@@ -14,6 +18,7 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, activity_id),
          %Object{} = object <- Object.normalize(object_id),
          true <- user.info.is_moderator || user.ap_id == object.data["actor"],
+         {:ok, _} <- unpin(activity_id, user),
          {:ok, delete} <- ActivityPub.delete(object) do
       {:ok, delete}
     end
@@ -102,7 +107,14 @@ defmodule Pleroma.Web.CommonAPI do
              attachments,
              tags,
              get_content_type(data["content_type"]),
-             Enum.member?([true, "true"], data["no_attachment_links"])
+             Enum.member?(
+               [true, "true"],
+               Map.get(
+                 data,
+                 "no_attachment_links",
+                 Pleroma.Config.get([:instance, :no_attachment_links], false)
+               )
+             )
            ),
          context <- make_context(inReplyTo),
          cw <- data["spoiler_text"],
@@ -124,7 +136,7 @@ defmodule Pleroma.Web.CommonAPI do
            Map.put(
              object,
              "emoji",
-             Formatter.get_emoji(status)
+             (Formatter.get_emoji(status) ++ Formatter.get_emoji(data["spoiler_text"]))
              |> Enum.reduce(%{}, fn {name, file}, acc ->
                Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
              end)
@@ -135,7 +147,7 @@ defmodule Pleroma.Web.CommonAPI do
           actor: user,
           context: context,
           object: object,
-          additional: %{"cc" => cc}
+          additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
         })
 
       res
@@ -163,5 +175,72 @@ defmodule Pleroma.Web.CommonAPI do
       actor: user.ap_id,
       object: Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
     })
+  end
+
+  def pin(id_or_ap_id, %{ap_id: user_ap_id} = user) do
+    with %Activity{
+           actor: ^user_ap_id,
+           data: %{
+             "type" => "Create",
+             "object" => %{
+               "to" => object_to,
+               "type" => "Note"
+             }
+           }
+         } = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         true <- Enum.member?(object_to, "https://www.w3.org/ns/activitystreams#Public"),
+         %{valid?: true} = info_changeset <-
+           Pleroma.User.Info.add_pinnned_activity(user.info, activity),
+         changeset <-
+           Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
+      {:ok, activity}
+    else
+      %{errors: [pinned_activities: {err, _}]} ->
+        {:error, err}
+
+      _ ->
+        {:error, "Could not pin"}
+    end
+  end
+
+  def unpin(id_or_ap_id, user) do
+    with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
+         %{valid?: true} = info_changeset <-
+           Pleroma.User.Info.remove_pinnned_activity(user.info, activity),
+         changeset <-
+           Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
+      {:ok, activity}
+    else
+      %{errors: [pinned_activities: {err, _}]} ->
+        {:error, err}
+
+      _ ->
+        {:error, "Could not unpin"}
+    end
+  end
+
+  def add_mute(user, activity) do
+    with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]) do
+      {:ok, activity}
+    else
+      {:error, _} -> {:error, "conversation is already muted"}
+    end
+  end
+
+  def remove_mute(user, activity) do
+    ThreadMute.remove_mute(user.id, activity.data["context"])
+    {:ok, activity}
+  end
+
+  def thread_muted?(%{id: nil} = _user, _activity), do: false
+
+  def thread_muted?(user, activity) do
+    with [] <- ThreadMute.check_muted(user.id, activity.data["context"]) do
+      false
+    else
+      _ -> true
+    end
   end
 end

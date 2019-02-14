@@ -5,7 +5,8 @@
 defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
   import Ecto.Changeset
-  alias Pleroma.{Repo, User}
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Mix.Tasks.Pleroma.Common
 
   @shortdoc "Manages Pleroma users"
@@ -22,6 +23,7 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--password PASSWORD` - the user's password
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
+  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions 
 
   ## Generate an invite link.
 
@@ -51,6 +53,14 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--locked`/`--no-locked` - whether the user's account is locked
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
+
+  ## Add tags to a user.
+
+      mix pleroma.user tag NICKNAME TAGS
+
+  ## Delete tags from a user.
+
+      mix pleroma.user untag NICKNAME TAGS
   """
   def run(["new", nickname, email | rest]) do
     {options, [], []} =
@@ -61,7 +71,11 @@ defmodule Mix.Tasks.Pleroma.User do
           bio: :string,
           password: :string,
           moderator: :boolean,
-          admin: :boolean
+          admin: :boolean,
+          assume_yes: :boolean
+        ],
+        aliases: [
+          y: :assume_yes
         ]
       )
 
@@ -79,6 +93,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     moderator? = Keyword.get(options, :moderator, false)
     admin? = Keyword.get(options, :admin, false)
+    assume_yes? = Keyword.get(options, :assume_yes, false)
 
     Mix.shell().info("""
     A user will be created with the following information:
@@ -93,7 +108,7 @@ defmodule Mix.Tasks.Pleroma.User do
       - admin: #{if(admin?, do: "true", else: "false")}
     """)
 
-    proceed? = Mix.shell().yes?("Continue?")
+    proceed? = assume_yes? or Mix.shell().yes?("Continue?")
 
     unless not proceed? do
       Common.start_pleroma()
@@ -197,7 +212,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
       user = Repo.get(User, user.id)
 
-      if length(user.following) == 0 do
+      if Enum.empty?(user.following) do
         Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")
       end
     else
@@ -240,6 +255,32 @@ defmodule Mix.Tasks.Pleroma.User do
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")
+    end
+  end
+
+  def run(["tag", nickname | tags]) do
+    Common.start_pleroma()
+
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      user = user |> User.tag(tags)
+
+      Mix.shell().info("Tags of #{user.nickname}: #{inspect(tags)}")
+    else
+      _ ->
+        Mix.shell().error("Could not change user tags for #{nickname}")
+    end
+  end
+
+  def run(["untag", nickname | tags]) do
+    Common.start_pleroma()
+
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      user = user |> User.untag(tags)
+
+      Mix.shell().info("Tags of #{user.nickname}: #{inspect(tags)}")
+    else
+      _ ->
+        Mix.shell().error("Could not change user tags for #{nickname}")
     end
   end
 

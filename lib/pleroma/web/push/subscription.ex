@@ -4,13 +4,16 @@
 
 defmodule Pleroma.Web.Push.Subscription do
   use Ecto.Schema
+
   import Ecto.Changeset
-  alias Pleroma.{Repo, User}
+
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Push.Subscription
 
   schema "push_subscriptions" do
-    belongs_to(:user, User)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     belongs_to(:token, Token)
     field(:endpoint, :string)
     field(:key_p256dh, :string)

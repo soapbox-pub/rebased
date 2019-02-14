@@ -17,7 +17,13 @@
             "toot": "http://joinmastodon.org/ns#",
             "totalItems": "as:totalItems",
             "value": "schema:value",
-            "sensitive": "as:sensitive"
+            "sensitive": "as:sensitive",
+            "litepub": "http://litepub.social/ns#",
+            "directMessage": "litepub:directMessage",
+            "oauthRegistrationEndpoint": {
+                "@id": "litepub:oauthRegistrationEndpoint",
+                "@type": "@id"
+            }
         }
     ]
 }

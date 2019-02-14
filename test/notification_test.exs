@@ -6,7 +6,8 @@ defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.{User, Notification}
+  alias Pleroma.User
+  alias Pleroma.Notification
   alias Pleroma.Web.ActivityPub.Transmogrifier
   import Pleroma.Factory
 
@@ -45,6 +46,43 @@ defmodule Pleroma.NotificationTest do
       author = User.get_by_ap_id(activity.data["actor"])
 
       assert nil == Notification.create_notification(activity, author)
+    end
+
+    test "it doesn't create a notification for follow-unfollow-follow chains" do
+      user = insert(:user)
+      followed_user = insert(:user)
+      {:ok, _, _, activity} = TwitterAPI.follow(user, %{"user_id" => followed_user.id})
+      Notification.create_notification(activity, followed_user)
+      TwitterAPI.unfollow(user, %{"user_id" => followed_user.id})
+      {:ok, _, _, activity_dupe} = TwitterAPI.follow(user, %{"user_id" => followed_user.id})
+      assert nil == Notification.create_notification(activity_dupe, followed_user)
+    end
+
+    test "it doesn't create a notification for like-unlike-like chains" do
+      user = insert(:user)
+      liked_user = insert(:user)
+      {:ok, status} = TwitterAPI.create_status(liked_user, %{"status" => "Yui is best yuru"})
+      {:ok, fav_status} = TwitterAPI.fav(user, status.id)
+      Notification.create_notification(fav_status, liked_user)
+      TwitterAPI.unfav(user, status.id)
+      {:ok, dupe} = TwitterAPI.fav(user, status.id)
+      assert nil == Notification.create_notification(dupe, liked_user)
+    end
+
+    test "it doesn't create a notification for repeat-unrepeat-repeat chains" do
+      user = insert(:user)
+      retweeted_user = insert(:user)
+
+      {:ok, status} =
+        TwitterAPI.create_status(retweeted_user, %{
+          "status" => "Send dupe notifications to the shadow realm"
+        })
+
+      {:ok, retweeted_activity} = TwitterAPI.repeat(user, status.id)
+      Notification.create_notification(retweeted_activity, retweeted_user)
+      TwitterAPI.unrepeat(user, status.id)
+      {:ok, dupe} = TwitterAPI.repeat(user, status.id)
+      assert nil == Notification.create_notification(dupe, retweeted_user)
     end
   end
 
@@ -262,7 +300,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
@@ -270,7 +308,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "liking an activity results in 1 notification, then 0 if the activity is unliked" do
@@ -279,7 +317,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
@@ -287,7 +325,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _, _, _} = CommonAPI.unfavorite(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity results in 1 notification, then 0 if the activity is deleted" do
@@ -296,7 +334,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
 
@@ -304,7 +342,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity results in 1 notification, then 0 if the activity is unrepeated" do
@@ -313,7 +351,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
 
@@ -321,7 +359,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _, _} = CommonAPI.unrepeat(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "liking an activity which is already deleted does not generate a notification" do
@@ -330,15 +368,15 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:error, _} = CommonAPI.favorite(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity which is already deleted does not generate a notification" do
@@ -347,15 +385,15 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:error, _} = CommonAPI.repeat(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "replying to a deleted post without tagging does not generate a notification" do
@@ -371,7 +409,7 @@ defmodule Pleroma.NotificationTest do
           "in_reply_to_status_id" => activity.id
         })
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
   end
 end

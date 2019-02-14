@@ -6,11 +6,13 @@ defmodule Pleroma.Application do
   use Application
   import Supervisor.Spec
 
-  @name "Pleroma"
+  @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
+  @repository Mix.Project.config()[:source_url]
   def name, do: @name
   def version, do: @version
   def named_version(), do: @name <> " " <> @version
+  def repository, do: @repository
 
   def user_agent() do
     info = "#{Pleroma.Web.base_url()} <#{Pleroma.Config.get([:instance, :email], "")}>"
@@ -21,6 +23,8 @@ defmodule Pleroma.Application do
   # for more information on OTP Applications
   def start(_type, _args) do
     import Cachex.Spec
+
+    Pleroma.Config.DeprecationWarnings.warn()
 
     # Define workers and child supervisors to be supervised
     children =
@@ -66,6 +70,17 @@ defmodule Pleroma.Application do
         worker(
           Cachex,
           [
+            :rich_media_cache,
+            [
+              default_ttl: :timer.minutes(120),
+              limit: 5000
+            ]
+          ],
+          id: :cachex_rich_media
+        ),
+        worker(
+          Cachex,
+          [
             :scrubber_cache,
             [
               limit: 2500
@@ -88,11 +103,15 @@ defmodule Pleroma.Application do
           ],
           id: :cachex_idem
         ),
-        worker(Pleroma.Web.Federator.RetryQueue, []),
-        worker(Pleroma.Web.Federator, []),
-        worker(Pleroma.Stats, []),
-        worker(Pleroma.Web.Push, [])
+        worker(Pleroma.FlakeId, [])
       ] ++
+        hackney_pool_children() ++
+        [
+          worker(Pleroma.Web.Federator.RetryQueue, []),
+          worker(Pleroma.Web.Federator, []),
+          worker(Pleroma.Stats, []),
+          worker(Pleroma.Web.Push, [])
+        ] ++
         streamer_child() ++
         chat_child() ++
         [
@@ -105,6 +124,20 @@ defmodule Pleroma.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  def enabled_hackney_pools() do
+    [:media] ++
+      if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
+        [:federation]
+      else
+        []
+      end ++
+      if Pleroma.Config.get([Pleroma.Uploader, :proxy_remote]) do
+        [:upload]
+      else
+        []
+      end
   end
 
   if Mix.env() == :test do
@@ -121,6 +154,13 @@ defmodule Pleroma.Application do
       else
         []
       end
+    end
+  end
+
+  defp hackney_pool_children() do
+    for pool <- enabled_hackney_pools() do
+      options = Pleroma.Config.get([:hackney_pools, pool])
+      :hackney_pool.child_spec(pool, options)
     end
   end
 end

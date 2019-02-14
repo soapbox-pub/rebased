@@ -4,8 +4,10 @@
 
 defmodule Pleroma.Web.OStatus.NoteHandler do
   require Logger
-  alias Pleroma.Web.{XML, OStatus}
-  alias Pleroma.{Object, Activity}
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
@@ -86,7 +88,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   end
 
   def fetch_replied_to_activity(entry, inReplyTo) do
-    with %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(inReplyTo) do
+    with %Activity{} = activity <- Activity.get_create_by_object_ap_id(inReplyTo) do
       activity
     else
       _e ->
@@ -103,7 +105,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   # TODO: Clean this up a bit.
   def handle_note(entry, doc \\ nil) do
     with id <- XML.string_from_xpath("//id", entry),
-         activity when is_nil(activity) <- Activity.get_create_activity_by_object_ap_id(id),
+         activity when is_nil(activity) <- Activity.get_create_by_object_ap_id(id),
          [author] <- :xmerl_xpath.string('//author[1]', doc),
          {:ok, actor} <- OStatus.find_make_or_update_user(author),
          content_html <- OStatus.get_content(entry),

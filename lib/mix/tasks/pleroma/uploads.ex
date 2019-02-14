@@ -4,7 +4,8 @@
 
 defmodule Mix.Tasks.Pleroma.Uploads do
   use Mix.Task
-  alias Pleroma.{Upload, Uploaders.Local}
+  alias Pleroma.Upload
+  alias Pleroma.Uploaders.Local
   alias Mix.Tasks.Pleroma.Common
   require Logger
 
@@ -20,7 +21,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
    - `--delete` - delete local uploads after migrating them to the target uploader
 
 
-   A list of avalible uploaders can be seen in config.exs
+   A list of available uploaders can be seen in config.exs
   """
   def run(["migrate_local", target_uploader | args]) do
     delete? = Enum.member?(args, "--delete")
@@ -96,6 +97,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
       timeout: 150_000
     )
     |> Stream.chunk_every(@log_every)
+    # credo:disable-for-next-line Credo.Check.Warning.UnusedEnumOperation
     |> Enum.reduce(0, fn done, count ->
       count = count + length(done)
       Mix.shell().info("Uploaded #{count}/#{total_count} files")

@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.{Repo, User}
+  alias Pleroma.Repo
+  alias Pleroma.User
   import Pleroma.Factory
 
   describe "/api/pleroma/admin/user" do

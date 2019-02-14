@@ -1,11 +1,14 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   use Pleroma.DataCase
-  alias Pleroma.{User, Activity, Object}
-  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, ObjectRepresenter}
+  alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   import Pleroma.Factory
@@ -107,7 +110,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
           "published" => date,
           "type" => "Note",
           "content" => content_html,
-          "summary" => "2hu",
+          "summary" => "2hu :2hu:",
           "inReplyToStatusId" => 213_123,
           "attachment" => [
             object
@@ -129,7 +132,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
     }
 
     expected_html =
-      "<p>2hu</p>alert('YAY')Some <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" /> content mentioning <a href=\"#{
+      "<p>2hu <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" /></p>alert('YAY')Some <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" /> content mentioning <a href=\"#{
         mentioned_user.ap_id
       }\">@shp</a>"
 
@@ -138,7 +141,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "user" => UserView.render("show.json", %{user: user, for: follower}),
       "is_local" => false,
       "statusnet_html" => expected_html,
-      "text" => "2hu" <> content,
+      "text" => "2hu :2hu:" <> content,
       "is_post_verb" => true,
       "created_at" => "Tue May 24 13:26:08 +0000 2016",
       "in_reply_to_status_id" => 213_123,
@@ -157,13 +160,17 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "repeat_num" => 3,
       "favorited" => false,
       "repeated" => false,
+      "pinned" => false,
       "external_url" => "some url",
       "tags" => ["nsfw", "content", "mentioning"],
       "activity_type" => "post",
       "possibly_sensitive" => true,
       "uri" => activity.data["object"]["id"],
       "visibility" => "direct",
-      "summary" => "2hu"
+      "card" => nil,
+      "summary" => "2hu :2hu:",
+      "summary_html" =>
+        "2hu <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" />"
     }
 
     assert ActivityRepresenter.to_map(activity, %{

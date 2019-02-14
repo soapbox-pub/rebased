@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Plugs.UserFetcherPlug do
-  import Plug.Conn
-  alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Repo
+
+  import Plug.Conn
 
   def init(options) do
     options

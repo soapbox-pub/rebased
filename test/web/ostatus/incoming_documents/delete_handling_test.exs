@@ -2,8 +2,17 @@ defmodule Pleroma.Web.OStatus.DeleteHandlingTest do
   use Pleroma.DataCase
 
   import Pleroma.Factory
-  alias Pleroma.{Repo, Activity, Object}
+  import Tesla.Mock
+
+  alias Pleroma.Repo
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Web.OStatus
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   describe "deletions" do
     test "it removes the mentioned activity" do

@@ -6,9 +6,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   @moduledoc """
   A module to handle coding from internal to wire ActivityPub and back.
   """
+  alias Pleroma.Activity
   alias Pleroma.User
   alias Pleroma.Object
-  alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -93,12 +93,47 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_addressing(map) do
-    map
+  def fix_explicit_addressing(%{"to" => to, "cc" => cc} = object, explicit_mentions) do
+    explicit_to =
+      to
+      |> Enum.filter(fn x -> x in explicit_mentions end)
+
+    explicit_cc =
+      to
+      |> Enum.filter(fn x -> x not in explicit_mentions end)
+
+    final_cc =
+      (cc ++ explicit_cc)
+      |> Enum.uniq()
+
+    object
+    |> Map.put("to", explicit_to)
+    |> Map.put("cc", final_cc)
+  end
+
+  def fix_explicit_addressing(object, _explicit_mentions), do: object
+
+  # if directMessage flag is set to true, leave the addressing alone
+  def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
+
+  def fix_explicit_addressing(object) do
+    explicit_mentions =
+      object
+      |> Utils.determine_explicit_mentions()
+
+    explicit_mentions = explicit_mentions ++ ["https://www.w3.org/ns/activitystreams#Public"]
+
+    object
+    |> fix_explicit_addressing(explicit_mentions)
+  end
+
+  def fix_addressing(object) do
+    object
     |> fix_addressing_list("to")
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
+    |> fix_explicit_addressing
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
@@ -106,11 +141,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("actor", get_actor(%{"actor" => actor}))
   end
 
-  def fix_likes(%{"likes" => likes} = object)
-      when is_bitstring(likes) do
-    # Check for standardisation
-    # This is what Peertube does
-    # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+  # Check for standardisation
+  # This is what Peertube does
+  # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
+  # Prismo returns only an integer (count) as "likes"
+  def fix_likes(%{"likes" => likes} = object) when not is_map(likes) do
     object
     |> Map.put("likes", [])
     |> Map.put("like_count", 0)
@@ -141,7 +176,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     case fetch_obj_helper(in_reply_to_id) do
       {:ok, replied_object} ->
         with %Activity{} = activity <-
-               Activity.get_create_activity_by_object_ap_id(replied_object.data["id"]) do
+               Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
           object
           |> Map.put("inReplyTo", replied_object.data["id"])
           |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
@@ -278,6 +313,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("tag", combined)
   end
 
+  def fix_tag(%{"tag" => %{} = tag} = object), do: Map.put(object, "tag", [tag])
+
   def fix_tag(object), do: object
 
   # content map usually only has one language so this will do for now.
@@ -334,7 +371,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       Map.put(data, "actor", actor)
       |> fix_addressing
 
-    with nil <- Activity.get_create_activity_by_object_ap_id(object["id"]),
+    with nil <- Activity.get_create_by_object_ap_id(object["id"]),
          %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
       object = fix_object(data["object"])
 
@@ -348,6 +385,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         additional:
           Map.take(data, [
             "cc",
+            "directMessage",
             "id"
           ])
       }
@@ -417,9 +455,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
-           ActivityPub.accept(%{
+           ActivityPub.reject(%{
              to: follow_activity.data["to"],
-             type: "Accept",
+             type: "Reject",
              actor: followed.ap_id,
              object: follow_activity.data["id"],
              local: false
@@ -451,7 +489,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
-         {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false) do
+         public <- ActivityPub.is_public?(data),
+         {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false, public) do
       {:ok, activity}
     else
       _e -> :error
@@ -629,6 +668,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> add_mention_tags
     |> add_emoji_tags
     |> add_attributed_to
+    |> add_likes
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
@@ -641,7 +681,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   #  internal -> Mastodon
   #  """
 
-  def prepare_outgoing(%{"type" => "Create", "object" => %{"type" => "Note"} = object} = data) do
+  def prepare_outgoing(%{"type" => "Create", "object" => object} = data) do
     object =
       object
       |> prepare_object
@@ -788,6 +828,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("attributedTo", attributedTo)
   end
 
+  def add_likes(%{"id" => id, "like_count" => likes} = object) do
+    likes = %{
+      "id" => "#{id}/likes",
+      "first" => "#{id}/likes?page=1",
+      "type" => "OrderedCollection",
+      "totalItems" => likes
+    }
+
+    object
+    |> Map.put("likes", likes)
+  end
+
+  def add_likes(object) do
+    object
+  end
+
   def prepare_attachments(object) do
     attachments =
       (object["attachment"] || [])
@@ -803,7 +859,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   defp strip_internal_fields(object) do
     object
     |> Map.drop([
-      "likes",
       "like_count",
       "announcements",
       "announcement_count",
@@ -847,15 +902,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     maybe_retire_websub(user.ap_id)
 
-    # Only do this for recent activties, don't go through the whole db.
-    # Only look at the last 1000 activities.
-    since = (Repo.aggregate(Activity, :max, :id) || 0) - 1_000
-
     q =
       from(
         a in Activity,
         where: ^old_follower_address in a.recipients,
-        where: a.id > ^since,
         update: [
           set: [
             recipients:

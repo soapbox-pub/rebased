@@ -9,11 +9,19 @@ defmodule Pleroma.Web.OStatus do
   import Pleroma.Web.XML
   require Logger
 
-  alias Pleroma.{Repo, User, Web, Object, Activity}
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web
+  alias Pleroma.Object
+  alias Pleroma.Activity
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.{WebFinger, Websub}
-  alias Pleroma.Web.OStatus.{FollowHandler, UnfollowHandler, NoteHandler, DeleteHandler}
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Websub
+  alias Pleroma.Web.OStatus.FollowHandler
+  alias Pleroma.Web.OStatus.UnfollowHandler
+  alias Pleroma.Web.OStatus.NoteHandler
+  alias Pleroma.Web.OStatus.DeleteHandler
 
   def is_representable?(%Activity{data: data}) do
     object = Object.normalize(data["object"])
@@ -48,6 +56,9 @@ defmodule Pleroma.Web.OStatus do
 
   def handle_incoming(xml_string) do
     with doc when doc != :error <- parse_document(xml_string) do
+      with {:ok, actor_user} <- find_make_or_update_user(doc),
+           do: Pleroma.Instances.set_reachable(actor_user.ap_id)
+
       entries = :xmerl_xpath.string('//entry', doc)
 
       activities =
@@ -148,7 +159,7 @@ defmodule Pleroma.Web.OStatus do
     Logger.debug("Trying to get entry from db")
 
     with id when not is_nil(id) <- string_from_xpath("//activity:object[1]/id", entry),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     else
       _ ->

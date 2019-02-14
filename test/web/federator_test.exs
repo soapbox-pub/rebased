@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.FederatorTest do
-  alias Pleroma.Web.Federator
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Federator
+  alias Pleroma.Instances
   use Pleroma.DataCase
   import Pleroma.Factory
   import Mock
@@ -68,6 +69,124 @@ defmodule Pleroma.Web.FederatorTest do
       refute_received :relay_publish
 
       Pleroma.Config.put([:instance, :allow_relay], true)
+    end
+  end
+
+  describe "Targets reachability filtering in `publish`" do
+    test_with_mock "it federates only to reachable instances via AP",
+                   Federator,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+
+      {inbox1, inbox2} =
+        {"https://domain.com/users/nick1/inbox", "https://domain2.com/users/nick2/inbox"}
+
+      insert(:user, %{
+        local: false,
+        nickname: "nick1@domain.com",
+        ap_id: "https://domain.com/users/nick1",
+        info: %{ap_enabled: true, source_data: %{"inbox" => inbox1}}
+      })
+
+      insert(:user, %{
+        local: false,
+        nickname: "nick2@domain2.com",
+        ap_id: "https://domain2.com/users/nick2",
+        info: %{ap_enabled: true, source_data: %{"inbox" => inbox2}}
+      })
+
+      dt = NaiveDateTime.utc_now()
+      Instances.set_unreachable(inbox1, dt)
+
+      Instances.set_consistently_unreachable(URI.parse(inbox2).host)
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
+
+      assert called(
+               Federator.enqueue(:publish_single_ap, %{inbox: inbox1, unreachable_since: dt})
+             )
+
+      refute called(Federator.enqueue(:publish_single_ap, %{inbox: inbox2}))
+    end
+
+    test_with_mock "it federates only to reachable instances via Websub",
+                   Federator,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+      websub_topic = Pleroma.Web.OStatus.feed_path(user)
+
+      sub1 =
+        insert(:websub_subscription, %{
+          topic: websub_topic,
+          state: "active",
+          callback: "http://pleroma.soykaf.com/cb"
+        })
+
+      sub2 =
+        insert(:websub_subscription, %{
+          topic: websub_topic,
+          state: "active",
+          callback: "https://pleroma2.soykaf.com/cb"
+        })
+
+      dt = NaiveDateTime.utc_now()
+      Instances.set_unreachable(sub2.callback, dt)
+
+      Instances.set_consistently_unreachable(sub1.callback)
+
+      {:ok, _activity} = CommonAPI.post(user, %{"status" => "HI"})
+
+      assert called(
+               Federator.enqueue(:publish_single_websub, %{
+                 callback: sub2.callback,
+                 unreachable_since: dt
+               })
+             )
+
+      refute called(Federator.enqueue(:publish_single_websub, %{callback: sub1.callback}))
+    end
+
+    test_with_mock "it federates only to reachable instances via Salmon",
+                   Federator,
+                   [:passthrough],
+                   [] do
+      user = insert(:user)
+
+      remote_user1 =
+        insert(:user, %{
+          local: false,
+          nickname: "nick1@domain.com",
+          ap_id: "https://domain.com/users/nick1",
+          info: %{salmon: "https://domain.com/salmon"}
+        })
+
+      remote_user2 =
+        insert(:user, %{
+          local: false,
+          nickname: "nick2@domain2.com",
+          ap_id: "https://domain2.com/users/nick2",
+          info: %{salmon: "https://domain2.com/salmon"}
+        })
+
+      dt = NaiveDateTime.utc_now()
+      Instances.set_unreachable(remote_user2.ap_id, dt)
+
+      Instances.set_consistently_unreachable("domain.com")
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
+
+      assert called(
+               Federator.enqueue(:publish_single_salmon, %{
+                 recipient: remote_user2,
+                 unreachable_since: dt
+               })
+             )
+
+      refute called(Federator.enqueue(:publish_single_websub, %{recipient: remote_user1}))
     end
   end
 

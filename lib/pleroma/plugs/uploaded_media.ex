@@ -23,7 +23,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
     %{static_plug_opts: static_plug_opts}
   end
 
-  def call(conn = %{request_path: <<"/", @path, "/", file::binary>>}, opts) do
+  def call(%{request_path: <<"/", @path, "/", file::binary>>} = conn, opts) do
     config = Pleroma.Config.get([Pleroma.Upload])
 
     with uploader <- Keyword.fetch!(config, :uploader),

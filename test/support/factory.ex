@@ -57,6 +57,24 @@ defmodule Pleroma.Factory do
     %Pleroma.Object{data: Map.merge(data, %{"to" => [user2.ap_id]})}
   end
 
+  def article_factory do
+    note_factory()
+    |> Map.put("type", "Article")
+  end
+
+  def tombstone_factory do
+    data = %{
+      "type" => "Tombstone",
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "formerType" => "Note",
+      "deleted" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    %Pleroma.Object{
+      data: data
+    }
+  end
+
   def direct_note_activity_factory do
     dm = insert(:direct_note)
 
@@ -88,6 +106,26 @@ defmodule Pleroma.Factory do
       "object" => note.data,
       "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "context" => note.data["context"]
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+  end
+
+  def article_activity_factory do
+    article = insert(:article)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+      "type" => "Create",
+      "actor" => article.data["actor"],
+      "to" => article.data["to"],
+      "object" => article.data,
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "context" => article.data["context"]
     }
 
     %Pleroma.Activity{
@@ -155,7 +193,7 @@ defmodule Pleroma.Factory do
   def websub_subscription_factory do
     %Pleroma.Web.Websub.WebsubServerSubscription{
       topic: "http://example.org",
-      callback: "http://example/org/callback",
+      callback: "http://example.org/callback",
       secret: "here's a secret",
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 100),
       state: "requested"
@@ -180,6 +218,13 @@ defmodule Pleroma.Factory do
       website: "https://example.com",
       client_id: "aaabbb==",
       client_secret: "aaa;/&bbb"
+    }
+  end
+
+  def instance_factory do
+    %Pleroma.Instances.Instance{
+      host: "domain.com",
+      unreachable_since: nil
     }
   end
 end

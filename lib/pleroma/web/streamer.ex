@@ -5,7 +5,11 @@
 defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
-  alias Pleroma.{User, Notification, Activity, Object, Repo}
+  alias Pleroma.User
+  alias Pleroma.Notification
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   @keepalive_interval :timer.seconds(30)
@@ -202,6 +206,15 @@ defmodule Pleroma.Web.Streamer do
       else
         send(socket.transport_pid, {:text, represent_update(item)})
       end
+    end)
+  end
+
+  def push_to_socket(topics, topic, %Activity{id: id, data: %{"type" => "Delete"}}) do
+    Enum.each(topics[topic] || [], fn socket ->
+      send(
+        socket.transport_pid,
+        {:text, %{event: "delete", payload: to_string(id)} |> Jason.encode!()}
+      )
     end)
   end
 

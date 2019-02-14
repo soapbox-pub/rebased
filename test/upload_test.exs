@@ -137,5 +137,35 @@ defmodule Pleroma.UploadTest do
 
       refute data["name"] == "an [image.jpg"
     end
+
+    test "escapes invalid characters in url" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "an… image.jpg"
+      }
+
+      {:ok, data} = Upload.store(file)
+      [attachment_url | _] = data["url"]
+
+      assert Path.basename(attachment_url["href"]) == "an%E2%80%A6%20image.jpg"
+    end
+
+    test "replaces : (colon) and ? (question-mark) to %3A and %3F (respectively)" do
+      File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image_tmp.jpg"),
+        filename: "is:an?image.jpg"
+      }
+
+      {:ok, data} = Upload.store(file)
+      [attachment_url | _] = data["url"]
+
+      assert Path.basename(attachment_url["href"]) == "is%3Aan%3Fimage.jpg"
+    end
   end
 end

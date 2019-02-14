@@ -107,6 +107,11 @@ defmodule Pleroma.Web.Router do
     get("/captcha", UtilController, :captcha)
   end
 
+  scope "/api/pleroma", Pleroma.Web do
+    pipe_through(:pleroma_api)
+    post("/uploader_callback/:upload_path", UploaderController, :callback)
+  end
+
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through(:admin_api)
     delete("/user", AdminAPIController, :user_delete)
@@ -180,6 +185,7 @@ defmodule Pleroma.Web.Router do
     get("/timelines/direct", MastodonAPIController, :dm_timeline)
 
     get("/favourites", MastodonAPIController, :favourites)
+    get("/bookmarks", MastodonAPIController, :bookmarks)
 
     post("/statuses", MastodonAPIController, :post_status)
     delete("/statuses/:id", MastodonAPIController, :delete_status)
@@ -188,6 +194,12 @@ defmodule Pleroma.Web.Router do
     post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
     post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
     post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
+    post("/statuses/:id/pin", MastodonAPIController, :pin_status)
+    post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
+    post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
+    post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
+    post("/statuses/:id/mute", MastodonAPIController, :mute_conversation)
+    post("/statuses/:id/unmute", MastodonAPIController, :unmute_conversation)
 
     post("/notifications/clear", MastodonAPIController, :clear_notifications)
     post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
@@ -245,7 +257,7 @@ defmodule Pleroma.Web.Router do
 
     get("/statuses/:id", MastodonAPIController, :get_status)
     get("/statuses/:id/context", MastodonAPIController, :get_context)
-    get("/statuses/:id/card", MastodonAPIController, :empty_object)
+    get("/statuses/:id/card", MastodonAPIController, :status_card)
     get("/statuses/:id/favourited_by", MastodonAPIController, :favourited_by)
     get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
 
@@ -271,6 +283,7 @@ defmodule Pleroma.Web.Router do
     post("/help/test", TwitterAPI.UtilController, :help_test)
     get("/statusnet/config", TwitterAPI.UtilController, :config)
     get("/statusnet/version", TwitterAPI.UtilController, :version)
+    get("/pleroma/frontend_configurations", TwitterAPI.UtilController, :frontend_configurations)
   end
 
   scope "/api", Pleroma.Web do
@@ -347,6 +360,9 @@ defmodule Pleroma.Web.Router do
     post("/statuses/unretweet/:id", TwitterAPI.Controller, :unretweet)
     post("/statuses/destroy/:id", TwitterAPI.Controller, :delete_post)
 
+    post("/statuses/pin/:id", TwitterAPI.Controller, :pin)
+    post("/statuses/unpin/:id", TwitterAPI.Controller, :unpin)
+
     get("/pleroma/friend_requests", TwitterAPI.Controller, :friend_requests)
     post("/pleroma/friendships/approve", TwitterAPI.Controller, :approve_friend_request)
     post("/pleroma/friendships/deny", TwitterAPI.Controller, :deny_friend_request)
@@ -380,7 +396,11 @@ defmodule Pleroma.Web.Router do
   end
 
   pipeline :ostatus do
-    plug(:accepts, ["xml", "atom", "html", "activity+json"])
+    plug(:accepts, ["html", "xml", "atom", "activity+json"])
+  end
+
+  pipeline :oembed do
+    plug(:accepts, ["json", "xml"])
   end
 
   scope "/", Pleroma.Web do
@@ -398,6 +418,12 @@ defmodule Pleroma.Web.Router do
     post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
   end
 
+  scope "/", Pleroma.Web do
+    pipe_through(:oembed)
+
+    get("/oembed", OEmbed.OEmbedController, :url)
+  end
+
   pipeline :activitypub do
     plug(:accepts, ["activity+json"])
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
@@ -410,6 +436,7 @@ defmodule Pleroma.Web.Router do
     get("/users/:nickname/followers", ActivityPubController, :followers)
     get("/users/:nickname/following", ActivityPubController, :following)
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
+    get("/objects/:uuid/likes", ActivityPubController, :object_likes)
   end
 
   pipeline :activitypub_client do
@@ -429,6 +456,7 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through([:activitypub_client])
 
+    get("/api/ap/whoami", ActivityPubController, :whoami)
     get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
     post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
   end
@@ -440,8 +468,8 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through(:activitypub)
-    post("/users/:nickname/inbox", ActivityPubController, :inbox)
     post("/inbox", ActivityPubController, :inbox)
+    post("/users/:nickname/inbox", ActivityPubController, :inbox)
   end
 
   scope "/.well-known", Pleroma.Web do
@@ -484,6 +512,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Fallback do
     get("/registration/:token", RedirectController, :registration_page)
+    get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
     get("/*path", RedirectController, :redirector)
 
     options("/*path", RedirectController, :empty)
@@ -492,11 +521,36 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+  alias Pleroma.Web.Metadata
+  alias Pleroma.User
 
-  def redirector(conn, _params) do
+  def redirector(conn, _params, code \\ 200) do
     conn
     |> put_resp_content_type("text/html")
-    |> send_file(200, Pleroma.Plugs.InstanceStatic.file_path("index.html"))
+    |> send_file(code, index_file_path())
+  end
+
+  def redirector_with_meta(conn, %{"maybe_nickname_or_id" => maybe_nickname_or_id} = params) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(maybe_nickname_or_id) do
+      redirector_with_meta(conn, %{user: user})
+    else
+      nil ->
+        redirector(conn, params)
+    end
+  end
+
+  def redirector_with_meta(conn, params) do
+    {:ok, index_content} = File.read(index_file_path())
+    tags = Metadata.build_tags(params)
+    response = String.replace(index_content, "<!--server-generated-meta-->", tags)
+
+    conn
+    |> put_resp_content_type("text/html")
+    |> send_resp(200, response)
+  end
+
+  def index_file_path do
+    Pleroma.Plugs.InstanceStatic.file_path("index.html")
   end
 
   def registration_page(conn, params) do

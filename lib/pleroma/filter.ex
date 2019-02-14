@@ -4,11 +4,15 @@
 
 defmodule Pleroma.Filter do
   use Ecto.Schema
-  import Ecto.{Changeset, Query}
-  alias Pleroma.{User, Repo}
+
+  import Ecto.Changeset
+  import Ecto.Query
+
+  alias Pleroma.User
+  alias Pleroma.Repo
 
   schema "filters" do
-    belongs_to(:user, User)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:filter_id, :integer)
     field(:hide, :boolean, default: false)
     field(:whole_word, :boolean, default: true)

@@ -140,6 +140,15 @@ defmodule Pleroma.MediaProxyTest do
 
       assert String.starts_with?(encoded, Pleroma.Config.get([:media_proxy, :base_url]))
     end
+
+    # https://git.pleroma.social/pleroma/pleroma/issues/580
+    test "encoding S3 links (must preserve `%2F`)" do
+      url =
+        "https://s3.amazonaws.com/example/test.png?X-Amz-Credential=your-access-key-id%2F20130721%2Fus-east-1%2Fs3%2Faws4_request"
+
+      encoded = url(url)
+      assert decode_result(encoded) == url
+    end
   end
 
   describe "when disabled" do

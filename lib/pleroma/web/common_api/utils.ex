@@ -5,22 +5,25 @@
 defmodule Pleroma.Web.CommonAPI.Utils do
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
-  alias Pleroma.{Activity, Formatter, Object, Repo}
+  alias Pleroma.Activity
+  alias Pleroma.Formatter
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.ActivityPub.Utils
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_activity_by_object_ap_id(id)
+    activity = Repo.get(Activity, id) || Activity.get_create_by_object_ap_id(id)
 
     activity &&
       if activity.data["type"] == "Create" do
         activity
       else
-        Activity.get_create_activity_by_object_ap_id(activity.data["object"])
+        Activity.get_create_by_object_ap_id(activity.data["object"])
       end
   end
 
@@ -111,7 +114,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_context(%Activity{data: %{"context" => context}}), do: context
   def make_context(_), do: Utils.generate_context_id()
 
-  def maybe_add_attachments(text, _attachments, _no_links = true), do: text
+  def maybe_add_attachments(text, _attachments, true = _no_links), do: text
 
   def maybe_add_attachments(text, attachments, _no_links) do
     add_attachments(text, attachments)
@@ -132,16 +135,18 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Enum.join([text | attachment_text], "<br>")
   end
 
+  def format_input(text, mentions, tags, format, options \\ [])
+
   @doc """
   Formatting text to plain text.
   """
-  def format_input(text, mentions, tags, "text/plain") do
+  def format_input(text, mentions, tags, "text/plain", options) do
     text
     |> Formatter.html_escape("text/plain")
     |> String.replace(~r/\r?\n/, "<br>")
     |> (&{[], &1}).()
     |> Formatter.add_links()
-    |> Formatter.add_user_links(mentions)
+    |> Formatter.add_user_links(mentions, options[:user_links] || [])
     |> Formatter.add_hashtag_links(tags)
     |> Formatter.finalize()
   end
@@ -149,26 +154,24 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   @doc """
   Formatting text to html.
   """
-  def format_input(text, mentions, _tags, "text/html") do
+  def format_input(text, mentions, _tags, "text/html", options) do
     text
     |> Formatter.html_escape("text/html")
-    |> String.replace(~r/\r?\n/, "<br>")
     |> (&{[], &1}).()
-    |> Formatter.add_user_links(mentions)
+    |> Formatter.add_user_links(mentions, options[:user_links] || [])
     |> Formatter.finalize()
   end
 
   @doc """
   Formatting text to markdown.
   """
-  def format_input(text, mentions, tags, "text/markdown") do
+  def format_input(text, mentions, tags, "text/markdown", options) do
     text
     |> Formatter.mentions_escape(mentions)
     |> Earmark.as_html!()
     |> Formatter.html_escape("text/html")
-    |> String.replace(~r/\r?\n/, "")
     |> (&{[], &1}).()
-    |> Formatter.add_user_links(mentions)
+    |> Formatter.add_user_links(mentions, options[:user_links] || [])
     |> Formatter.add_hashtag_links(tags)
     |> Formatter.finalize()
   end
@@ -277,4 +280,46 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       }
     end)
   end
+
+  def maybe_notify_to_recipients(
+        recipients,
+        %Activity{data: %{"to" => to, "type" => _type}} = _activity
+      ) do
+    recipients ++ to
+  end
+
+  def maybe_notify_mentioned_recipients(
+        recipients,
+        %Activity{data: %{"to" => _to, "type" => type} = data} = _activity
+      )
+      when type == "Create" do
+    object = Object.normalize(data["object"])
+
+    object_data =
+      cond do
+        !is_nil(object) ->
+          object.data
+
+        is_map(data["object"]) ->
+          data["object"]
+
+        true ->
+          %{}
+      end
+
+    tagged_mentions = maybe_extract_mentions(object_data)
+
+    recipients ++ tagged_mentions
+  end
+
+  def maybe_notify_mentioned_recipients(recipients, _), do: recipients
+
+  def maybe_extract_mentions(%{"tag" => tag}) do
+    tag
+    |> Enum.filter(fn x -> is_map(x) end)
+    |> Enum.filter(fn x -> x["type"] == "Mention" end)
+    |> Enum.map(fn x -> x["href"] end)
+  end
+
+  def maybe_extract_mentions(_), do: []
 end

@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Formatter do
+  alias Pleroma.Emoji
+  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.HTML
-  alias Pleroma.Emoji
 
   @tag_regex ~r/((?<=[^&])|\A)(\#)(\w+)/u
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
@@ -43,7 +43,7 @@ defmodule Pleroma.Formatter do
 
   def emojify(text, nil), do: text
 
-  def emojify(text, emoji) do
+  def emojify(text, emoji, strip \\ false) do
     Enum.reduce(emoji, text, fn {emoji, file}, text ->
       emoji = HTML.strip_tags(emoji)
       file = HTML.strip_tags(file)
@@ -51,13 +51,23 @@ defmodule Pleroma.Formatter do
       String.replace(
         text,
         ":#{emoji}:",
-        "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{
-          MediaProxy.url(file)
-        }' />"
+        if not strip do
+          "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{
+            MediaProxy.url(file)
+          }' />"
+        else
+          ""
+        end
       )
       |> HTML.filter_tags()
     end)
   end
+
+  def demojify(text) do
+    emojify(text, Emoji.get_all(), true)
+  end
+
+  def demojify(text, nil), do: text
 
   def get_emoji(text) when is_binary(text) do
     Enum.filter(Emoji.get_all(), fn {emoji, _} -> String.contains?(text, ":#{emoji}:") end)
@@ -120,7 +130,7 @@ defmodule Pleroma.Formatter do
   end
 
   @doc "Adds the links to mentioned users"
-  def add_user_links({subs, text}, mentions) do
+  def add_user_links({subs, text}, mentions, options \\ []) do
     mentions =
       mentions
       |> Enum.sort_by(fn {name, _} -> -String.length(name) end)
@@ -142,10 +152,16 @@ defmodule Pleroma.Formatter do
               ap_id
             end
 
-          short_match = String.split(match, "@") |> tl() |> hd()
+          nickname =
+            if options[:format] == :full do
+              User.full_nickname(match)
+            else
+              User.local_nickname(match)
+            end
 
           {uuid,
-           "<span><a data-user='#{id}' class='mention' href='#{ap_id}'>@<span>#{short_match}</span></a></span>"}
+           "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>" <>
+             "@<span>#{nickname}</span></a></span>"}
         end)
 
     {subs, uuid_text}
@@ -168,7 +184,7 @@ defmodule Pleroma.Formatter do
       subs ++
         Enum.map(tags, fn {tag_text, tag, uuid} ->
           url =
-            "<a data-tag='#{tag}' href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{
+            "<a class='hashtag' data-tag='#{tag}' href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{
               tag_text
             }</a>"
 
@@ -182,5 +198,17 @@ defmodule Pleroma.Formatter do
     Enum.reduce(subs, text, fn {uuid, replacement}, result_text ->
       String.replace(result_text, uuid, replacement)
     end)
+  end
+
+  def truncate(text, max_length \\ 200, omission \\ "...") do
+    # Remove trailing whitespace
+    text = Regex.replace(~r/([^ \t\r\n])([ \t]+$)/u, text, "\\g{1}")
+
+    if String.length(text) < max_length do
+      text
+    else
+      length_with_omission = max_length - String.length(omission)
+      String.slice(text, 0, length_with_omission) <> omission
+    end
   end
 end

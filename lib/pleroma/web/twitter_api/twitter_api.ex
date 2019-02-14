@@ -3,8 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.{UserInviteToken, User, Activity, Repo, Object}
-  alias Pleroma.{UserEmail, Mailer}
+  alias Pleroma.UserInviteToken
+  alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.Object
+  alias Pleroma.UserEmail
+  alias Pleroma.Mailer
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI
@@ -70,28 +75,36 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def repeat(%User{} = user, ap_id_or_id) do
     with {:ok, _announce, %{data: %{"id" => id}}} <- CommonAPI.repeat(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     end
   end
 
   def unrepeat(%User{} = user, ap_id_or_id) do
     with {:ok, _unannounce, %{data: %{"id" => id}}} <- CommonAPI.unrepeat(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     end
   end
 
+  def pin(%User{} = user, ap_id_or_id) do
+    CommonAPI.pin(ap_id_or_id, user)
+  end
+
+  def unpin(%User{} = user, ap_id_or_id) do
+    CommonAPI.unpin(ap_id_or_id, user)
+  end
+
   def fav(%User{} = user, ap_id_or_id) do
     with {:ok, _fav, %{data: %{"id" => id}}} <- CommonAPI.favorite(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     end
   end
 
   def unfav(%User{} = user, ap_id_or_id) do
     with {:ok, _unfav, _fav, %{data: %{"id" => id}}} <- CommonAPI.unfavorite(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     end
   end

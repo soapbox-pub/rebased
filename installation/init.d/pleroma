@@ -1,7 +1,7 @@
 #!/sbin/openrc-run
 
 # Requires OpenRC >= 0.35
-directory=~pleroma/pleroma
+directory=/opt/pleroma
 
 command=/usr/bin/mix
 command_args="phx.server"
@@ -12,7 +12,7 @@ export PORT=4000
 export MIX_ENV=prod
 
 # Ask process to terminate within 30 seconds, otherwise kill it
-retry="SIGTERM/30 SIGKILL/5"
+retry="SIGTERM/30/SIGKILL/5"
 
 pidfile="/var/run/pleroma.pid"
 

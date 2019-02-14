@@ -4,8 +4,13 @@
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
-  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView}
-  alias Pleroma.{Activity, User, Object, Repo, UserInviteToken}
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.ActivityView
 
@@ -38,7 +43,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
 
     expected_text =
-      "Hello again, <span><a data-user='#{mentioned_user.id}' class='mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+      "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
 
     assert get_in(activity.data, ["object", "content"]) == expected_text
     assert get_in(activity.data, ["object", "type"]) == "Note"
@@ -200,12 +205,27 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   test "it favorites a status, returns the updated activity" do
     user = insert(:user)
+    other_user = insert(:user)
     note_activity = insert(:note_activity)
 
     {:ok, status} = TwitterAPI.fav(user, note_activity.id)
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+    assert ActivityView.render("activity.json", %{activity: updated_activity})["fave_num"] == 1
+
+    object = Object.normalize(note_activity.data["object"])
+
+    assert object.data["like_count"] == 1
 
     assert status == updated_activity
+
+    {:ok, _status} = TwitterAPI.fav(other_user, note_activity.id)
+
+    object = Object.normalize(note_activity.data["object"])
+
+    assert object.data["like_count"] == 2
+
+    updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
+    assert ActivityView.render("activity.json", %{activity: updated_activity})["fave_num"] == 2
   end
 
   test "it unfavorites a status, returns the updated activity" do
@@ -328,7 +348,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user2} = TwitterAPI.register_user(data2)
 
     expected_text =
-      "<span><a data-user='#{user1.id}' class='mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
+      "<span class='h-card'><a data-user='#{user1.id}' class='u-url mention' href='#{user1.ap_id}'>@<span>john</span></a></span> test"
 
     assert user2.bio == expected_text
   end
@@ -451,7 +471,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       assert represented["id"] == UserView.render("show.json", %{user: remote, for: user})["id"]
 
       # Also fetches the feed.
-      # assert Activity.get_create_activity_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")
+      # assert Activity.get_create_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")
     end
   end
 end

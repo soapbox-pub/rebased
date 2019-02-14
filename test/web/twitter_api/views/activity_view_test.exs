@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
@@ -25,6 +25,37 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
   import Mock
 
+  test "returns a temporary ap_id based user for activities missing db users" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    Repo.delete(user)
+    Cachex.clear(:user_cache)
+
+    %{"user" => tw_user} = ActivityView.render("activity.json", activity: activity)
+
+    assert tw_user["screen_name"] == "erroruser@example.com"
+    assert tw_user["name"] == user.ap_id
+    assert tw_user["statusnet_profile_url"] == user.ap_id
+  end
+
+  test "tries to get a user by nickname if fetching by ap_id doesn't work" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    {:ok, user} =
+      user
+      |> Ecto.Changeset.change(%{ap_id: "#{user.ap_id}/extension/#{user.nickname}"})
+      |> Repo.update()
+
+    Cachex.clear(:user_cache)
+
+    result = ActivityView.render("activity.json", activity: activity)
+    assert result["user"]["id"] == user.id
+  end
+
   test "a create activity with a html status" do
     text = """
     #Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg
@@ -35,10 +66,43 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     result = ActivityView.render("activity.json", activity: activity)
 
     assert result["statusnet_html"] ==
-             "<a data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\">#cycling</a> <a data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\">#CHScycling</a> <a data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\">#commute</a><br />MVIMG_20181211_054020.jpg"
+             "<a class=\"hashtag\" data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a class=\"hashtag\" data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\">#cycling</a> <a class=\"hashtag\" data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\">#CHScycling</a> <a class=\"hashtag\" data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\">#commute</a><br />MVIMG_20181211_054020.jpg"
 
     assert result["text"] ==
              "#Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg"
+  end
+
+  test "a create activity with a summary containing emoji" do
+    {:ok, activity} =
+      CommonAPI.post(insert(:user), %{
+        "spoiler_text" => ":woollysocks: meow",
+        "status" => "."
+      })
+
+    result = ActivityView.render("activity.json", activity: activity)
+
+    expected = ":woollysocks: meow"
+
+    expected_html =
+      "<img height=\"32px\" width=\"32px\" alt=\"woollysocks\" title=\"woollysocks\" src=\"http://localhost:4001/finmoji/128px/woollysocks-128.png\" /> meow"
+
+    assert result["summary"] == expected
+    assert result["summary_html"] == expected_html
+  end
+
+  test "a create activity with a summary containing invalid HTML" do
+    {:ok, activity} =
+      CommonAPI.post(insert(:user), %{
+        "spoiler_text" => "<span style=\"color: magenta; font-size: 32px;\">meow</span>",
+        "status" => "."
+      })
+
+    result = ActivityView.render("activity.json", activity: activity)
+
+    expected = "meow"
+
+    assert result["summary"] == expected
+    assert result["summary_html"] == expected
   end
 
   test "a create activity with a note" do
@@ -72,15 +136,20 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "possibly_sensitive" => false,
       "repeat_num" => 0,
       "repeated" => false,
+      "pinned" => false,
       "statusnet_conversation_id" => convo_id,
+      "summary" => "",
+      "summary_html" => "",
       "statusnet_html" =>
-        "Hey <span><a data-user=\"#{other_user.id}\" href=\"#{other_user.ap_id}\">@<span>shp</span></a></span>!",
+        "Hey <span class=\"h-card\"><a data-user=\"#{other_user.id}\" class=\"u-url mention\" href=\"#{
+          other_user.ap_id
+        }\">@<span>shp</span></a></span>!",
       "tags" => [],
       "text" => "Hey @shp!",
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user}),
       "visibility" => "direct",
-      "summary" => nil
+      "card" => nil
     }
 
     assert result == expected
@@ -276,7 +345,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
         "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
       )
 
-    %Activity{} = activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+    %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
 
     result = ActivityView.render("activity.json", activity: activity)
 

@@ -3,11 +3,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
-  alias Pleroma.{Repo, Web, Object, Activity, User, Notification}
+  alias Pleroma.Repo
+  alias Pleroma.Web
+  alias Pleroma.Object
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Notification
   alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Endpoint
-  alias Ecto.{Changeset, UUID}
+  alias Ecto.Changeset
+  alias Ecto.UUID
+
   import Ecto.Query
+
   require Logger
 
   @supported_object_types ["Article", "Note", "Video", "Page"]
@@ -24,6 +32,20 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def normalize_params(params) do
     Map.put(params, "actor", get_ap_id(params["actor"]))
   end
+
+  def determine_explicit_mentions(%{"tag" => tag} = _object) when is_list(tag) do
+    tag
+    |> Enum.filter(fn x -> is_map(x) end)
+    |> Enum.filter(fn x -> x["type"] == "Mention" end)
+    |> Enum.map(fn x -> x["href"] end)
+  end
+
+  def determine_explicit_mentions(%{"tag" => tag} = object) when is_map(tag) do
+    Map.put(object, "tag", [tag])
+    |> determine_explicit_mentions()
+  end
+
+  def determine_explicit_mentions(_), do: []
 
   defp recipient_in_collection(ap_id, coll) when is_binary(coll), do: ap_id == coll
   defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
@@ -198,7 +220,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     # Update activities that already had this. Could be done in a seperate process.
     # Alternatively, just don't do this and fetch the current object each time. Most
     # could probably be taken from cache.
-    relevant_activities = Activity.all_by_object_ap_id(id)
+    relevant_activities = Activity.get_all_create_by_object_ap_id(id)
 
     Enum.map(relevant_activities, fn activity ->
       new_activity_data = activity.data |> Map.put("object", object.data)
@@ -231,6 +253,27 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Repo.one(query)
   end
 
+  @doc """
+  Returns like activities targeting an object
+  """
+  def get_object_likes(%{data: %{"id" => id}}) do
+    query =
+      from(
+        activity in Activity,
+        # this is to use the index
+        where:
+          fragment(
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
+            activity.data,
+            activity.data,
+            ^id
+          ),
+        where: fragment("(?)->>'type' = 'Like'", activity.data)
+      )
+
+    Repo.all(query)
+  end
+
   def make_like_data(%User{ap_id: ap_id} = actor, %{data: %{"id" => id}} = object, activity_id) do
     data = %{
       "type" => "Like",
@@ -250,7 +293,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
            |> Map.put("#{property}_count", length(element))
            |> Map.put("#{property}s", element),
          changeset <- Changeset.change(object, data: new_data),
-         {:ok, object} <- Repo.update(changeset),
+         {:ok, object} <- Object.update_and_set_cache(changeset),
          _ <- update_object_in_activities(object) do
       {:ok, object}
     end
@@ -281,6 +324,25 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Updates a follow activity's state (for locked accounts).
   """
+  def update_follow_state(
+        %Activity{data: %{"actor" => actor, "object" => object, "state" => "pending"}} = activity,
+        state
+      ) do
+    try do
+      Ecto.Adapters.SQL.query!(
+        Repo,
+        "UPDATE activities SET data = jsonb_set(data, '{state}', $1) WHERE data->>'type' = 'Follow' AND data->>'actor' = $2 AND data->>'object' = $3 AND data->>'state' = 'pending'",
+        [state, actor, object]
+      )
+
+      activity = Repo.get(Activity, activity.id)
+      {:ok, activity}
+    rescue
+      e ->
+        {:error, e}
+    end
+  end
+
   def update_follow_state(%Activity{} = activity, state) do
     with new_data <-
            activity.data
@@ -365,9 +427,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   # for relayed messages, we only want to send to subscribers
   def make_announce_data(
-        %User{ap_id: ap_id, nickname: nil} = user,
+        %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
-        activity_id
+        activity_id,
+        false
       ) do
     data = %{
       "type" => "Announce",
@@ -384,7 +447,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def make_announce_data(
         %User{ap_id: ap_id} = user,
         %Object{data: %{"id" => id}} = object,
-        activity_id
+        activity_id,
+        true
       ) do
     data = %{
       "type" => "Announce",

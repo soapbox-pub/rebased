@@ -7,7 +7,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   import Pleroma.Factory
 
   alias Pleroma.Repo
-  alias Pleroma.Web.OAuth.{Authorization, Token}
+  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
 
   test "redirects with oauth authorization" do
     user = insert(:user)
@@ -32,6 +33,31 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
     assert %{"state" => "statepassed", "code" => code} = query
     assert Repo.get_by(Authorization, token: code)
+  end
+
+  test "correctly handles wrong credentials", %{conn: conn} do
+    user = insert(:user)
+    app = insert(:oauth_app)
+
+    result =
+      conn
+      |> post("/oauth/authorize", %{
+        "authorization" => %{
+          "name" => user.nickname,
+          "password" => "wrong",
+          "client_id" => app.client_id,
+          "redirect_uri" => app.redirect_uris,
+          "state" => "statepassed"
+        }
+      })
+      |> html_response(:unauthorized)
+
+    # Keep the details
+    assert result =~ app.client_id
+    assert result =~ app.redirect_uris
+
+    # Error message
+    assert result =~ "Invalid"
   end
 
   test "issues a token for an all-body request" do

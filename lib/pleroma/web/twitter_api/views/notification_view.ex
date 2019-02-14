@@ -4,10 +4,11 @@
 
 defmodule Pleroma.Web.TwitterAPI.NotificationView do
   use Pleroma.Web, :view
-  alias Pleroma.{Notification, User}
+  alias Pleroma.Notification
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.UserView
 
   defp get_user(ap_id, opts) do
     cond do

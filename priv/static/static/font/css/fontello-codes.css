@@ -22,6 +22,7 @@
 .icon-attention:before { content: '\e814'; } /* '' */
 .icon-plus:before { content: '\e815'; } /* '' */
 .icon-adjust:before { content: '\e816'; } /* '' */
+.icon-edit:before { content: '\e817'; } /* '' */
 .icon-spin3:before { content: '\e832'; } /* '' */
 .icon-spin4:before { content: '\e834'; } /* '' */
 .icon-link-ext:before { content: '\f08e'; } /* '' */
@@ -32,6 +33,7 @@
 .icon-plus-squared:before { content: '\f0fe'; } /* '' */
 .icon-reply:before { content: '\f112'; } /* '' */
 .icon-lock-open-alt:before { content: '\f13e'; } /* '' */
+.icon-play-circled:before { content: '\f144'; } /* '' */
 .icon-thumbs-up-alt:before { content: '\f164'; } /* '' */
 .icon-binoculars:before { content: '\f1e5'; } /* '' */
 .icon-user-plus:before { content: '\f234'; } /* '' */

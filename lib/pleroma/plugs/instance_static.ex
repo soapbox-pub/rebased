@@ -21,7 +21,7 @@ defmodule Pleroma.Plugs.InstanceStatic do
     end
   end
 
-  @only ~w(index.html static emoji packs sounds images instance favicon.png)
+  @only ~w(index.html static emoji packs sounds images instance favicon.png sw.js sw-pleroma.js)
 
   def init(opts) do
     opts
@@ -33,7 +33,7 @@ defmodule Pleroma.Plugs.InstanceStatic do
   for only <- @only do
     at = Plug.Router.Utils.split("/")
 
-    def call(conn = %{request_path: "/" <> unquote(only) <> _}, opts) do
+    def call(%{request_path: "/" <> unquote(only) <> _} = conn, opts) do
       call_static(
         conn,
         opts,

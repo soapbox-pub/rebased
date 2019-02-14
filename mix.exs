@@ -32,7 +32,11 @@ defmodule Pleroma.Mixfile do
   #
   # Type `mix help compile.app` for more information.
   def application do
-    [mod: {Pleroma.Application, []}, extra_applications: [:logger, :runtime_tools, :comeonin]]
+    [
+      mod: {Pleroma.Application, []},
+      extra_applications: [:logger, :runtime_tools, :comeonin],
+      included_applications: [:ex_syslogger]
+    ]
   end
 
   # Specifies which paths to compile per environment.
@@ -55,6 +59,7 @@ defmodule Pleroma.Mixfile do
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:html_sanitize_ex, "~> 1.3.0"},
+      {:html_entities, "~> 0.4"},
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
@@ -75,7 +80,9 @@ defmodule Pleroma.Mixfile do
       {:web_push_encryption, "~> 0.2.1"},
       {:swoosh, "~> 0.20"},
       {:gen_smtp, "~> 0.13"},
-      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test}
+      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
+      {:floki, "~> 0.20.0"},
+      {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"}
     ]
   end
 

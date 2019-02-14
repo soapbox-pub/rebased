@@ -5,17 +5,29 @@
 defmodule Pleroma.User do
   use Ecto.Schema
 
-  import Ecto.{Changeset, Query}
-  alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
+  import Ecto.Changeset
+  import Ecto.Query
+
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Web
+  alias Pleroma.Activity
+  alias Pleroma.Notification
   alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
-  alias Pleroma.Web.{OStatus, Websub, OAuth}
-  alias Pleroma.Web.ActivityPub.{Utils, ActivityPub}
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Websub
+  alias Pleroma.Web.OAuth
+  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   require Logger
 
   @type t :: %__MODULE__{}
+
+  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
 
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
@@ -35,8 +47,9 @@ defmodule Pleroma.User do
     field(:avatar, :map)
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
-    field(:search_distance, :float, virtual: true)
+    field(:search_rank, :float, virtual: true)
     field(:tags, {:array, :string}, default: [])
+    field(:bookmarks, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
     embeds_one(:info, Pleroma.User.Info)
@@ -44,20 +57,28 @@ defmodule Pleroma.User do
     timestamps()
   end
 
-  def auth_active?(%User{} = user) do
-    (user.info && !user.info.confirmation_pending) ||
-      !Pleroma.Config.get([:instance, :account_activation_required])
+  def auth_active?(%User{local: false}), do: true
+
+  def auth_active?(%User{info: %User.Info{confirmation_pending: false}}), do: true
+
+  def auth_active?(%User{info: %User.Info{confirmation_pending: true}}),
+    do: !Pleroma.Config.get([:instance, :account_activation_required])
+
+  def auth_active?(_), do: false
+
+  def visible_for?(user, for_user \\ nil)
+
+  def visible_for?(%User{id: user_id}, %User{id: for_id}) when user_id == for_id, do: true
+
+  def visible_for?(%User{} = user, for_user) do
+    auth_active?(user) || superuser?(for_user)
   end
 
-  def remote_or_auth_active?(%User{} = user), do: !user.local || auth_active?(user)
+  def visible_for?(_, _), do: false
 
-  def visible_for?(%User{} = user, for_user \\ nil) do
-    User.remote_or_auth_active?(user) || (for_user && for_user.id == user.id) ||
-      User.superuser?(for_user)
-  end
-
-  def superuser?(nil), do: false
-  def superuser?(%User{} = user), do: user.info && User.Info.superuser?(user.info)
+  def superuser?(%User{local: true, info: %User.Info{is_admin: true}}), do: true
+  def superuser?(%User{local: true, info: %User.Info{is_moderator: true}}), do: true
+  def superuser?(_), do: false
 
   def avatar_url(user) do
     case user.avatar do
@@ -83,12 +104,6 @@ defmodule Pleroma.User do
 
   def ap_followers(%User{} = user) do
     "#{ap_id(user)}/followers"
-  end
-
-  def follow_changeset(struct, params \\ %{}) do
-    struct
-    |> cast(params, [:following])
-    |> validate_required([:following])
   end
 
   def user_info(%User{} = user) do
@@ -229,10 +244,24 @@ defmodule Pleroma.User do
     end
   end
 
+  defp autofollow_users(user) do
+    candidates = Pleroma.Config.get([:instance, :autofollowed_nicknames])
+
+    autofollowed_users =
+      from(u in User,
+        where: u.local == true,
+        where: u.nickname in ^candidates
+      )
+      |> Repo.all()
+
+    follow_all(user, autofollowed_users)
+  end
+
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset),
-         {:ok, _} = try_send_confirmation_email(user) do
+         {:ok, user} <- autofollow_users(user),
+         {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
   end
@@ -282,6 +311,38 @@ defmodule Pleroma.User do
     end
   end
 
+  @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
+  @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
+  def follow_all(follower, followeds) do
+    followed_addresses =
+      followeds
+      |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
+      |> Enum.map(fn %{follower_address: fa} -> fa end)
+
+    q =
+      from(u in User,
+        where: u.id == ^follower.id,
+        update: [
+          set: [
+            following:
+              fragment(
+                "array(select distinct unnest (array_cat(?, ?)))",
+                u.following,
+                ^followed_addresses
+              )
+          ]
+        ]
+      )
+
+    {1, [follower]} = Repo.update_all(q, [], returning: true)
+
+    Enum.each(followeds, fn followed ->
+      update_follower_count(followed)
+    end)
+
+    set_cache(follower)
+  end
+
   def follow(%User{} = follower, %User{info: info} = followed) do
     user_config = Application.get_env(:pleroma, :user)
     deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
@@ -300,18 +361,17 @@ defmodule Pleroma.User do
           Websub.subscribe(follower, followed)
         end
 
-        following =
-          [ap_followers | follower.following]
-          |> Enum.uniq()
+        q =
+          from(u in User,
+            where: u.id == ^follower.id,
+            update: [push: [following: ^ap_followers]]
+          )
 
-        follower =
-          follower
-          |> follow_changeset(%{following: following})
-          |> update_and_set_cache
+        {1, [follower]} = Repo.update_all(q, [], returning: true)
 
         {:ok, _} = update_follower_count(followed)
 
-        follower
+        set_cache(follower)
     end
   end
 
@@ -319,16 +379,17 @@ defmodule Pleroma.User do
     ap_followers = followed.follower_address
 
     if following?(follower, followed) and follower.ap_id != followed.ap_id do
-      following =
-        follower.following
-        |> List.delete(ap_followers)
+      q =
+        from(u in User,
+          where: u.id == ^follower.id,
+          update: [pull: [following: ^ap_followers]]
+        )
 
-      {:ok, follower} =
-        follower
-        |> follow_changeset(%{following: following})
-        |> update_and_set_cache
+      {1, [follower]} = Repo.update_all(q, [], returning: true)
 
       {:ok, followed} = update_follower_count(followed)
+
+      set_cache(follower)
 
       {:ok, follower, Utils.fetch_latest_follow(follower, followed)}
     else
@@ -363,16 +424,33 @@ defmodule Pleroma.User do
     user.info.locked || false
   end
 
+  def get_by_id(id) do
+    Repo.get_by(User, id: id)
+  end
+
   def get_by_ap_id(ap_id) do
     Repo.get_by(User, ap_id: ap_id)
   end
 
+  # This is mostly an SPC migration fix. This guesses the user nickname (by taking the last part of the ap_id and the domain) and tries to get that user
+  def get_by_guessed_nickname(ap_id) do
+    domain = URI.parse(ap_id).host
+    name = List.last(String.split(ap_id, "/"))
+    nickname = "#{name}@#{domain}"
+
+    get_by_nickname(nickname)
+  end
+
+  def set_cache(user) do
+    Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
+    Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
+    Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user))
+    {:ok, user}
+  end
+
   def update_and_set_cache(changeset) do
     with {:ok, user} <- Repo.update(changeset) do
-      Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
-      Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
-      Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user))
-      {:ok, user}
+      set_cache(user)
     else
       e -> e
     end
@@ -389,16 +467,37 @@ defmodule Pleroma.User do
     Cachex.fetch!(:user_cache, key, fn _ -> get_by_ap_id(ap_id) end)
   end
 
+  def get_cached_by_id(id) do
+    key = "id:#{id}"
+
+    ap_id =
+      Cachex.fetch!(:user_cache, key, fn _ ->
+        user = get_by_id(id)
+
+        if user do
+          Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
+          {:commit, user.ap_id}
+        else
+          {:ignore, ""}
+        end
+      end)
+
+    get_cached_by_ap_id(ap_id)
+  end
+
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
     Cachex.fetch!(:user_cache, key, fn _ -> get_or_fetch_by_nickname(nickname) end)
   end
 
+  def get_cached_by_nickname_or_id(nickname_or_id) do
+    get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
+  end
+
   def get_by_nickname(nickname) do
     Repo.get_by(User, nickname: nickname) ||
       if Regex.match?(~r(@#{Pleroma.Web.Endpoint.host()})i, nickname) do
-        [local_nickname, _] = String.split(nickname, "@")
-        Repo.get_by(User, nickname: local_nickname)
+        Repo.get_by(User, nickname: local_nickname(nickname))
       end
   end
 
@@ -437,7 +536,7 @@ defmodule Pleroma.User do
     end
   end
 
-  def get_followers_query(%User{id: id, follower_address: follower_address}) do
+  def get_followers_query(%User{id: id, follower_address: follower_address}, nil) do
     from(
       u in User,
       where: fragment("? <@ ?", ^[follower_address], u.following),
@@ -445,13 +544,29 @@ defmodule Pleroma.User do
     )
   end
 
-  def get_followers(user) do
-    q = get_followers_query(user)
+  def get_followers_query(user, page) do
+    from(
+      u in get_followers_query(user, nil),
+      limit: 20,
+      offset: ^((page - 1) * 20)
+    )
+  end
+
+  def get_followers_query(user), do: get_followers_query(user, nil)
+
+  def get_followers(user, page \\ nil) do
+    q = get_followers_query(user, page)
 
     {:ok, Repo.all(q)}
   end
 
-  def get_friends_query(%User{id: id, following: following}) do
+  def get_followers_ids(user, page \\ nil) do
+    q = get_followers_query(user, page)
+
+    Repo.all(from(u in q, select: u.id))
+  end
+
+  def get_friends_query(%User{id: id, following: following}, nil) do
     from(
       u in User,
       where: u.follower_address in ^following,
@@ -459,10 +574,26 @@ defmodule Pleroma.User do
     )
   end
 
-  def get_friends(user) do
-    q = get_friends_query(user)
+  def get_friends_query(user, page) do
+    from(
+      u in get_friends_query(user, nil),
+      limit: 20,
+      offset: ^((page - 1) * 20)
+    )
+  end
+
+  def get_friends_query(user), do: get_friends_query(user, nil)
+
+  def get_friends(user, page \\ nil) do
+    q = get_friends_query(user, page)
 
     {:ok, Repo.all(q)}
+  end
+
+  def get_friends_ids(user, page \\ nil) do
+    q = get_friends_query(user, page)
+
+    Repo.all(from(u in q, select: u.id))
   end
 
   def get_follow_requests_query(%User{} = user) do
@@ -596,37 +727,120 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def search(query, resolve \\ false) do
-    # strip the beginning @ off if there is a query
+  def search(query, resolve \\ false, for_user \\ nil) do
+    # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
-    if resolve do
-      User.get_or_fetch_by_nickname(query)
-    end
+    if resolve, do: User.get_or_fetch_by_nickname(query)
 
-    inner =
-      from(
-        u in User,
-        select_merge: %{
-          search_distance:
-            fragment(
-              "? <-> (? || ?)",
-              ^query,
-              u.nickname,
-              u.name
-            )
-        },
-        where: not is_nil(u.nickname)
-      )
+    fts_results = do_search(fts_search_subquery(query), for_user)
 
+    {:ok, trigram_results} =
+      Repo.transaction(fn ->
+        Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
+        do_search(trigram_search_subquery(query), for_user)
+      end)
+
+    Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
+  end
+
+  defp do_search(subquery, for_user, options \\ []) do
     q =
       from(
-        s in subquery(inner),
-        order_by: s.search_distance,
-        limit: 20
+        s in subquery(subquery),
+        order_by: [desc: s.search_rank],
+        limit: ^(options[:limit] || 20)
       )
 
-    Repo.all(q)
+    results =
+      q
+      |> Repo.all()
+      |> Enum.filter(&(&1.search_rank > 0))
+
+    boost_search_results(results, for_user)
+  end
+
+  defp fts_search_subquery(query) do
+    processed_query =
+      query
+      |> String.replace(~r/\W+/, " ")
+      |> String.trim()
+      |> String.split()
+      |> Enum.map(&(&1 <> ":*"))
+      |> Enum.join(" | ")
+
+    from(
+      u in User,
+      select_merge: %{
+        search_rank:
+          fragment(
+            """
+            ts_rank_cd(
+              setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
+              setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B'),
+              to_tsquery('simple', ?),
+              32
+            )
+            """,
+            u.nickname,
+            u.name,
+            ^processed_query
+          )
+      },
+      where:
+        fragment(
+          """
+            (setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
+            setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B')) @@ to_tsquery('simple', ?)
+          """,
+          u.nickname,
+          u.name,
+          ^processed_query
+        )
+    )
+  end
+
+  defp trigram_search_subquery(query) do
+    from(
+      u in User,
+      select_merge: %{
+        search_rank:
+          fragment(
+            "similarity(?, trim(? || ' ' || coalesce(?, '')))",
+            ^query,
+            u.nickname,
+            u.name
+          )
+      },
+      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^query)
+    )
+  end
+
+  defp boost_search_results(results, nil), do: results
+
+  defp boost_search_results(results, for_user) do
+    friends_ids = get_friends_ids(for_user)
+    followers_ids = get_followers_ids(for_user)
+
+    Enum.map(
+      results,
+      fn u ->
+        search_rank_coef =
+          cond do
+            u.id in friends_ids ->
+              1.2
+
+            u.id in followers_ids ->
+              1.1
+
+            true ->
+              1
+          end
+
+        Map.put(u, :search_rank, u.search_rank * search_rank_coef)
+      end
+    )
+    |> Enum.sort_by(&(-&1.search_rank))
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
@@ -726,7 +940,7 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
-  def local_user_query() do
+  def local_user_query do
     from(
       u in User,
       where: u.local == true,
@@ -734,7 +948,14 @@ defmodule Pleroma.User do
     )
   end
 
-  def moderator_user_query() do
+  def active_local_user_query do
+    from(
+      u in local_user_query(),
+      where: fragment("not (?->'deactivated' @> 'true')", u.info)
+    )
+  end
+
+  def moderator_user_query do
     from(
       u in User,
       where: u.local == true,
@@ -920,7 +1141,7 @@ defmodule Pleroma.User do
       end)
 
     bio
-    |> CommonUtils.format_input(mentions, tags, "text/plain")
+    |> CommonUtils.format_input(mentions, tags, "text/plain", user_links: [format: :full])
     |> Formatter.emojify(emoji)
   end
 
@@ -957,6 +1178,22 @@ defmodule Pleroma.User do
     updated_user
   end
 
+  def bookmark(%User{} = user, status_id) do
+    bookmarks = Enum.uniq(user.bookmarks ++ [status_id])
+    update_bookmarks(user, bookmarks)
+  end
+
+  def unbookmark(%User{} = user, status_id) do
+    bookmarks = Enum.uniq(user.bookmarks -- [status_id])
+    update_bookmarks(user, bookmarks)
+  end
+
+  def update_bookmarks(%User{} = user, bookmarks) do
+    user
+    |> change(%{bookmarks: bookmarks})
+    |> update_and_set_cache
+  end
+
   defp normalize_tags(tags) do
     [tags]
     |> List.flatten()
@@ -969,5 +1206,25 @@ defmodule Pleroma.User do
     else
       @strict_local_nickname_regex
     end
+  end
+
+  def local_nickname(nickname_or_mention) do
+    nickname_or_mention
+    |> full_nickname()
+    |> String.split("@")
+    |> hd()
+  end
+
+  def full_nickname(nickname_or_mention),
+    do: String.trim_leading(nickname_or_mention, "@")
+
+  def error_user(ap_id) do
+    %User{
+      name: ap_id,
+      ap_id: ap_id,
+      info: %User.Info{},
+      nickname: "erroruser@example.com",
+      inserted_at: NaiveDateTime.utc_now()
+    }
   end
 end

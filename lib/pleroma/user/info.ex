@@ -23,6 +23,7 @@ defmodule Pleroma.User.Info do
     field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
     field(:is_admin, :boolean, default: false)
+    field(:show_role, :boolean, default: true)
     field(:keys, :string, default: nil)
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
@@ -30,7 +31,9 @@ defmodule Pleroma.User.Info do
     field(:topic, :string, default: nil)
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
-    field(:hide_network, :boolean, default: false)
+    field(:hide_followers, :boolean, default: false)
+    field(:hide_follows, :boolean, default: false)
+    field(:pinned_activities, {:array, :string}, default: [])
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -40,8 +43,6 @@ defmodule Pleroma.User.Info do
     # host -> Where is this used?
     # subject _> Where is this used?
   end
-
-  def superuser?(info), do: info.is_admin || info.is_moderator
 
   def set_activation_status(info, deactivated) do
     params = %{deactivated: deactivated}
@@ -144,8 +145,10 @@ defmodule Pleroma.User.Info do
       :no_rich_text,
       :default_scope,
       :banner,
-      :hide_network,
-      :background
+      :hide_follows,
+      :hide_followers,
+      :background,
+      :show_role
     ])
   end
 
@@ -195,7 +198,30 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [
       :is_moderator,
-      :is_admin
+      :is_admin,
+      :show_role
     ])
+  end
+
+  def add_pinnned_activity(info, %Pleroma.Activity{id: id}) do
+    if id not in info.pinned_activities do
+      max_pinned_statuses = Pleroma.Config.get([:instance, :max_pinned_statuses], 0)
+      params = %{pinned_activities: info.pinned_activities ++ [id]}
+
+      info
+      |> cast(params, [:pinned_activities])
+      |> validate_length(:pinned_activities,
+        max: max_pinned_statuses,
+        message: "You have already pinned the maximum number of statuses"
+      )
+    else
+      change(info)
+    end
+  end
+
+  def remove_pinnned_activity(info, %Pleroma.Activity{id: id}) do
+    params = %{pinned_activities: List.delete(info.pinned_activities, id)}
+
+    cast(info, params, [:pinned_activities])
   end
 end

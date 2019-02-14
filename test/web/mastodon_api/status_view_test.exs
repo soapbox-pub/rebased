@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
+  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.User
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.CommonAPI
@@ -17,6 +18,36 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
+  end
+
+  test "returns a temporary ap_id based user for activities missing db users" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    Repo.delete(user)
+    Cachex.clear(:user_cache)
+
+    %{account: ms_user} = StatusView.render("status.json", activity: activity)
+
+    assert ms_user.acct == "erroruser@example.com"
+  end
+
+  test "tries to get a user by nickname if fetching by ap_id doesn't work" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    {:ok, user} =
+      user
+      |> Ecto.Changeset.change(%{ap_id: "#{user.ap_id}/extension/#{user.nickname}"})
+      |> Repo.update()
+
+    Cachex.clear(:user_cache)
+
+    result = StatusView.render("status.json", activity: activity)
+
+    assert result[:account][:id] == to_string(user.id)
   end
 
   test "a note with null content" do
@@ -54,6 +85,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
+      card: nil,
       reblog: nil,
       content: HtmlSanitizeEx.basic_html(note.data["object"]["content"]),
       created_at: created_at,
@@ -61,8 +93,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       replies_count: 0,
       favourites_count: 0,
       reblogged: false,
+      bookmarked: false,
       favourited: false,
       muted: false,
+      pinned: false,
       sensitive: false,
       spoiler_text: note.data["object"]["summary"],
       visibility: "public",
@@ -118,7 +152,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("status.json", %{activity: activity})
 
-    assert status.mentions == [AccountView.render("mention.json", %{user: user})]
+    actor = Repo.get_by(User, ap_id: activity.actor)
+
+    assert status.mentions ==
+             Enum.map([user, actor], fn u -> AccountView.render("mention.json", %{user: u}) end)
   end
 
   test "attachments" do
@@ -171,7 +208,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
       )
 
-    %Activity{} = activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+    %Activity{} = activity = Activity.get_create_by_object_ap_id(object.data["id"])
 
     represented = StatusView.render("status.json", %{for: user, activity: activity})
 
@@ -197,6 +234,61 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
                %{name: "mastodon", url: "/tag/mastodon"},
                %{name: "nextcloud", url: "/tag/nextcloud"}
              ]
+    end
+  end
+
+  describe "rich media cards" do
+    test "a rich media card without a site name renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        image: page_url <> "/example.jpg",
+        title: "Example website"
+      }
+
+      %{provider_name: "example.com"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
+
+    test "a rich media card without a site name or image renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        title: "Example website"
+      }
+
+      %{provider_name: "example.com"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
+
+    test "a rich media card without an image renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        site_name: "Example site name",
+        title: "Example website"
+      }
+
+      %{provider_name: "Example site name"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
+    end
+
+    test "a rich media card with all relevant data renders correctly" do
+      page_url = "http://example.com"
+
+      card = %{
+        url: page_url,
+        site_name: "Example site name",
+        title: "Example website",
+        image: page_url <> "/example.jpg",
+        description: "Example description"
+      }
+
+      %{provider_name: "Example site name"} =
+        StatusView.render("card.json", %{page_url: page_url, rich_media: card})
     end
   end
 end

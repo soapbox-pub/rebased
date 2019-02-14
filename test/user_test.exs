@@ -4,7 +4,9 @@
 
 defmodule Pleroma.UserTest do
   alias Pleroma.Builders.UserBuilder
-  alias Pleroma.{User, Repo, Activity}
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   use Pleroma.DataCase
 
@@ -46,6 +48,43 @@ defmodule Pleroma.UserTest do
     expected_followers_collection = "#{User.ap_id(user)}/followers"
 
     assert expected_followers_collection == User.ap_followers(user)
+  end
+
+  test "follow_all follows mutliple users" do
+    user = insert(:user)
+    followed_zero = insert(:user)
+    followed_one = insert(:user)
+    followed_two = insert(:user)
+    blocked = insert(:user)
+    not_followed = insert(:user)
+    reverse_blocked = insert(:user)
+
+    {:ok, user} = User.block(user, blocked)
+    {:ok, reverse_blocked} = User.block(reverse_blocked, user)
+
+    {:ok, user} = User.follow(user, followed_zero)
+
+    {:ok, user} = User.follow_all(user, [followed_one, followed_two, blocked, reverse_blocked])
+
+    assert User.following?(user, followed_one)
+    assert User.following?(user, followed_two)
+    assert User.following?(user, followed_zero)
+    refute User.following?(user, not_followed)
+    refute User.following?(user, blocked)
+    refute User.following?(user, reverse_blocked)
+  end
+
+  test "follow_all follows mutliple users without duplicating" do
+    user = insert(:user)
+    followed_zero = insert(:user)
+    followed_one = insert(:user)
+    followed_two = insert(:user)
+
+    {:ok, user} = User.follow_all(user, [followed_zero, followed_one])
+    assert length(user.following) == 3
+
+    {:ok, user} = User.follow_all(user, [followed_one, followed_two])
+    assert length(user.following) == 4
   end
 
   test "follow takes a user and another user" do
@@ -141,6 +180,23 @@ defmodule Pleroma.UserTest do
       password_confirmation: "test",
       email: "email@example.com"
     }
+
+    test "it autofollows accounts that are set for it" do
+      user = insert(:user)
+      remote_user = insert(:user, %{local: false})
+
+      Pleroma.Config.put([:instance, :autofollowed_nicknames], [
+        user.nickname,
+        remote_user.nickname
+      ])
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+
+      {:ok, registered_user} = User.register(cng)
+
+      assert User.following?(registered_user, user)
+      refute User.following?(registered_user, remote_user)
+    end
 
     test "it requires an email, name, nickname and password, bio is optional" do
       @full_user_data
@@ -644,12 +700,13 @@ defmodule Pleroma.UserTest do
         "status" => "hey @#{addressed.nickname} @#{addressed_remote.nickname}"
       })
 
-    assert [addressed] == User.get_recipients_from_activity(activity)
+    assert Enum.map([actor, addressed], & &1.ap_id) --
+             Enum.map(User.get_recipients_from_activity(activity), & &1.ap_id) == []
 
     {:ok, user} = User.follow(user, actor)
     {:ok, _user_two} = User.follow(user_two, actor)
     recipients = User.get_recipients_from_activity(activity)
-    assert length(recipients) == 2
+    assert length(recipients) == 3
     assert user in recipients
     assert addressed in recipients
   end
@@ -747,14 +804,200 @@ defmodule Pleroma.UserTest do
   end
 
   describe "User.search" do
-    test "finds a user, ranking by similarity" do
-      _user = insert(:user, %{name: "lain"})
-      _user_two = insert(:user, %{name: "ean"})
-      _user_three = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social"})
-      user_four = insert(:user, %{nickname: "lain@pleroma.soykaf.com"})
+    test "finds a user by full or partial nickname" do
+      user = insert(:user, %{nickname: "john"})
 
-      assert user_four ==
-               User.search("lain@ple") |> List.first() |> Map.put(:search_distance, nil)
+      Enum.each(["john", "jo", "j"], fn query ->
+        assert user == User.search(query) |> List.first() |> Map.put(:search_rank, nil)
+      end)
     end
+
+    test "finds a user by full or partial name" do
+      user = insert(:user, %{name: "John Doe"})
+
+      Enum.each(["John Doe", "JOHN", "doe", "j d", "j", "d"], fn query ->
+        assert user == User.search(query) |> List.first() |> Map.put(:search_rank, nil)
+      end)
+    end
+
+    test "finds users, preferring nickname matches over name matches" do
+      u1 = insert(:user, %{name: "lain", nickname: "nick1"})
+      u2 = insert(:user, %{nickname: "lain", name: "nick1"})
+
+      assert [u2.id, u1.id] == Enum.map(User.search("lain"), & &1.id)
+    end
+
+    test "finds users, considering density of matched tokens" do
+      u1 = insert(:user, %{name: "Bar Bar plus Word Word"})
+      u2 = insert(:user, %{name: "Word Word Bar Bar Bar"})
+
+      assert [u2.id, u1.id] == Enum.map(User.search("bar word"), & &1.id)
+    end
+
+    test "finds users, ranking by similarity" do
+      u1 = insert(:user, %{name: "lain"})
+      _u2 = insert(:user, %{name: "ean"})
+      u3 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social"})
+      u4 = insert(:user, %{nickname: "lain@pleroma.soykaf.com"})
+
+      assert [u4.id, u3.id, u1.id] == Enum.map(User.search("lain@ple"), & &1.id)
+    end
+
+    test "finds users, handling misspelled requests" do
+      u1 = insert(:user, %{name: "lain"})
+
+      assert [u1.id] == Enum.map(User.search("laiin"), & &1.id)
+    end
+
+    test "finds users, boosting ranks of friends and followers" do
+      u1 = insert(:user)
+      u2 = insert(:user, %{name: "Doe"})
+      follower = insert(:user, %{name: "Doe"})
+      friend = insert(:user, %{name: "Doe"})
+
+      {:ok, follower} = User.follow(follower, u1)
+      {:ok, u1} = User.follow(u1, friend)
+
+      assert [friend.id, follower.id, u2.id] == Enum.map(User.search("doe", false, u1), & &1.id)
+    end
+
+    test "finds a user whose name is nil" do
+      _user = insert(:user, %{name: "notamatch", nickname: "testuser@pleroma.amplifie.red"})
+      user_two = insert(:user, %{name: nil, nickname: "lain@pleroma.soykaf.com"})
+
+      assert user_two ==
+               User.search("lain@pleroma.soykaf.com")
+               |> List.first()
+               |> Map.put(:search_rank, nil)
+    end
+
+    test "does not yield false-positive matches" do
+      insert(:user, %{name: "John Doe"})
+
+      Enum.each(["mary", "a", ""], fn query ->
+        assert [] == User.search(query)
+      end)
+    end
+  end
+
+  test "auth_active?/1 works correctly" do
+    Pleroma.Config.put([:instance, :account_activation_required], true)
+
+    local_user = insert(:user, local: true, info: %{confirmation_pending: true})
+    confirmed_user = insert(:user, local: true, info: %{confirmation_pending: false})
+    remote_user = insert(:user, local: false)
+
+    refute User.auth_active?(local_user)
+    assert User.auth_active?(confirmed_user)
+    assert User.auth_active?(remote_user)
+
+    Pleroma.Config.put([:instance, :account_activation_required], false)
+  end
+
+  describe "superuser?/1" do
+    test "returns false for unprivileged users" do
+      user = insert(:user, local: true)
+
+      refute User.superuser?(user)
+    end
+
+    test "returns false for remote users" do
+      user = insert(:user, local: false)
+      remote_admin_user = insert(:user, local: false, info: %{is_admin: true})
+
+      refute User.superuser?(user)
+      refute User.superuser?(remote_admin_user)
+    end
+
+    test "returns true for local moderators" do
+      user = insert(:user, local: true, info: %{is_moderator: true})
+
+      assert User.superuser?(user)
+    end
+
+    test "returns true for local admins" do
+      user = insert(:user, local: true, info: %{is_admin: true})
+
+      assert User.superuser?(user)
+    end
+  end
+
+  describe "visible_for?/2" do
+    test "returns true when the account is itself" do
+      user = insert(:user, local: true)
+
+      assert User.visible_for?(user, user)
+    end
+
+    test "returns false when the account is unauthenticated and auth is required" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      user = insert(:user, local: true, info: %{confirmation_pending: true})
+      other_user = insert(:user, local: true)
+
+      refute User.visible_for?(user, other_user)
+
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+    end
+
+    test "returns true when the account is unauthenticated and auth is not required" do
+      user = insert(:user, local: true, info: %{confirmation_pending: true})
+      other_user = insert(:user, local: true)
+
+      assert User.visible_for?(user, other_user)
+    end
+
+    test "returns true when the account is unauthenticated and being viewed by a privileged account (auth required)" do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
+
+      user = insert(:user, local: true, info: %{confirmation_pending: true})
+      other_user = insert(:user, local: true, info: %{is_admin: true})
+
+      assert User.visible_for?(user, other_user)
+
+      Pleroma.Config.put([:instance, :account_activation_required], false)
+    end
+  end
+
+  describe "parse_bio/2" do
+    test "preserves hosts in user links text" do
+      remote_user = insert(:user, local: false, nickname: "nick@domain.com")
+      user = insert(:user)
+      bio = "A.k.a. @nick@domain.com"
+
+      expected_text =
+        "A.k.a. <span class='h-card'><a data-user='#{remote_user.id}' class='u-url mention' href='#{
+          remote_user.ap_id
+        }'>" <> "@<span>nick@domain.com</span></a></span>"
+
+      assert expected_text == User.parse_bio(bio, user)
+    end
+  end
+
+  test "bookmarks" do
+    user = insert(:user)
+
+    {:ok, activity1} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo!"
+      })
+
+    id1 = activity1.data["object"]["id"]
+
+    {:ok, activity2} =
+      CommonAPI.post(user, %{
+        "status" => "heweoo!"
+      })
+
+    id2 = activity2.data["object"]["id"]
+
+    assert {:ok, user_state1} = User.bookmark(user, id1)
+    assert user_state1.bookmarks == [id1]
+
+    assert {:ok, user_state2} = User.unbookmark(user, id1)
+    assert user_state2.bookmarks == []
+
+    assert {:ok, user_state3} = User.bookmark(user, id2)
+    assert user_state3.bookmarks == [id2]
   end
 end

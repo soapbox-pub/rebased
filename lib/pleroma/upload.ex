@@ -34,8 +34,9 @@ defmodule Pleroma.Upload do
   require Logger
 
   @type source ::
-          Plug.Upload.t() | data_uri_string ::
-          String.t() | {:from_local, name :: String.t(), id :: String.t(), path :: String.t()}
+          Plug.Upload.t()
+          | (data_uri_string :: String.t())
+          | {:from_local, name :: String.t(), id :: String.t(), path :: String.t()}
 
   @type option ::
           {:type, :avatar | :banner | :background}
@@ -123,10 +124,10 @@ defmodule Pleroma.Upload do
 
           :pleroma, Pleroma.Upload, [filters: [Pleroma.Upload.Filter.Mogrify]]
 
-          :pleroma, Pleroma.Upload.Filter.Mogrify, args: "strip"
+          :pleroma, Pleroma.Upload.Filter.Mogrify, args: ["strip", "auto-orient"]
         """)
 
-        Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: "strip")
+        Pleroma.Config.put([Pleroma.Upload.Filter.Mogrify], args: ["strip", "auto-orient"])
         Map.put(opts, :filters, opts.filters ++ [Pleroma.Upload.Filter.Mogrify])
       else
         opts
@@ -179,7 +180,7 @@ defmodule Pleroma.Upload do
   end
 
   # For Mix.Tasks.MigrateLocalUploads
-  defp prepare_upload(upload = %__MODULE__{tempfile: path}, _opts) do
+  defp prepare_upload(%__MODULE__{tempfile: path} = upload, _opts) do
     with {:ok, content_type} <- Pleroma.MIME.file_mime_type(path) do
       {:ok, %__MODULE__{upload | content_type: content_type}}
     end
@@ -215,6 +216,12 @@ defmodule Pleroma.Upload do
   end
 
   defp url_from_spec(base_url, {:file, path}) do
+    path =
+      path
+      |> URI.encode()
+      |> String.replace("?", "%3F")
+      |> String.replace(":", "%3A")
+
     [base_url, "media", path]
     |> Path.join()
   end

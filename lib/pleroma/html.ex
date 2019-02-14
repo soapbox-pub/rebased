@@ -28,13 +28,18 @@ defmodule Pleroma.HTML do
   def filter_tags(html), do: filter_tags(html, nil)
   def strip_tags(html), do: Scrubber.scrub(html, Scrubber.StripTags)
 
-  def get_cached_scrubbed_html_for_object(content, scrubbers, object) do
-    key = "#{generate_scrubber_signature(scrubbers)}|#{object.id}"
+  def get_cached_scrubbed_html_for_object(content, scrubbers, object, module) do
+    key = "#{module}#{generate_scrubber_signature(scrubbers)}|#{object.id}"
     Cachex.fetch!(:scrubber_cache, key, fn _key -> ensure_scrubbed_html(content, scrubbers) end)
   end
 
-  def get_cached_stripped_html_for_object(content, object) do
-    get_cached_scrubbed_html_for_object(content, HtmlSanitizeEx.Scrubber.StripTags, object)
+  def get_cached_stripped_html_for_object(content, object, module) do
+    get_cached_scrubbed_html_for_object(
+      content,
+      HtmlSanitizeEx.Scrubber.StripTags,
+      object,
+      module
+    )
   end
 
   def ensure_scrubbed_html(
@@ -50,15 +55,23 @@ defmodule Pleroma.HTML do
 
   defp generate_scrubber_signature(scrubbers) do
     Enum.reduce(scrubbers, "", fn scrubber, signature ->
-      # If a scrubber does not have a version(e.g HtmlSanitizeEx.Scrubber.StripTags) it is assumed it is always 0)
-      version =
-        if Kernel.function_exported?(scrubber, :version, 0) do
-          scrubber.version
-        else
-          0
-        end
+      "#{signature}#{to_string(scrubber)}"
+    end)
+  end
 
-      "#{signature}#{to_string(scrubber)}#{version}"
+  def extract_first_external_url(_, nil), do: {:error, "No content"}
+
+  def extract_first_external_url(object, content) do
+    key = "URL|#{object.id}"
+
+    Cachex.fetch!(:scrubber_cache, key, fn _key ->
+      result =
+        content
+        |> Floki.filter_out("a.mention")
+        |> Floki.attribute("a", "href")
+        |> Enum.at(0)
+
+      {:commit, {:ok, result}}
     end)
   end
 end
@@ -70,29 +83,24 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   """
 
   @markup Application.get_env(:pleroma, :markup)
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
-
-  def version do
-    0
-  end
 
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
   # links
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
 
   # paragraphs and linebreaks
   Meta.allow_tag_with_these_attributes("br", [])
   Meta.allow_tag_with_these_attributes("p", [])
 
   # microformats
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_these_attributes("span", ["class"])
 
   # allow inline images for custom emoji
   @allow_inline_images Keyword.get(@markup, :allow_inline_images)
@@ -117,20 +125,17 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
-
-  def version do
-    0
-  end
+  # credo:disable-for-previous-line
+  # No idea how to fix this one…
 
   @markup Application.get_env(:pleroma, :markup)
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
 
   Meta.allow_tag_with_these_attributes("abbr", ["title"])
 
@@ -145,7 +150,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes("ol", [])
   Meta.allow_tag_with_these_attributes("p", [])
   Meta.allow_tag_with_these_attributes("pre", [])
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_these_attributes("span", ["class"])
   Meta.allow_tag_with_these_attributes("strong", [])
   Meta.allow_tag_with_these_attributes("u", [])
   Meta.allow_tag_with_these_attributes("ul", [])
@@ -198,10 +203,6 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
   @moduledoc "Transforms inline image URIs to use MediaProxy."
 
   alias Pleroma.Web.MediaProxy
-
-  def version do
-    0
-  end
 
   def before_scrub(html), do: html
 
