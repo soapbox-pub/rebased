@@ -42,5 +42,16 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       assert result["id"] == user.ap_id
       assert result["endpoints"] == %{}
     end
+
+    test "instance users do not expose oAuth endpoints" do
+      user = insert(:user, nickname: nil, local: true)
+      {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+
+      result = UserView.render("user.json", %{user: user})
+
+      refute result["endpoints"]["oauthAuthorizationEndpoint"]
+      refute result["endpoints"]["oauthRegistrationEndpoint"]
+      refute result["endpoints"]["oauthTokenEndpoint"]
+    end
   end
 end

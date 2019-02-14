@@ -17,7 +17,11 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
   import Ecto.Query
 
-  def render("endpoints.json", %{user: %User{nickname: _nickname, local: true} = _user}) do
+  def render("endpoints.json", %{user: %User{nickname: nil, local: true} = _user}) do
+    %{"sharedInbox" => Helpers.activity_pub_url(Endpoint, :inbox)}
+  end
+
+  def render("endpoints.json", %{user: %User{local: true} = _user}) do
     %{
       "oauthAuthorizationEndpoint" => Helpers.o_auth_url(Endpoint, :authorize),
       "oauthRegistrationEndpoint" => Helpers.mastodon_api_url(Endpoint, :create_app),
