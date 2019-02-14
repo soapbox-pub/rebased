@@ -731,7 +731,7 @@ defmodule Pleroma.User do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
-    if resolve, do: User.get_or_fetch_by_nickname(query)
+    if resolve, do: get_or_fetch(query)
 
     fts_results = do_search(fts_search_subquery(query), for_user)
 
