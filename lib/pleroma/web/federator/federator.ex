@@ -38,31 +38,31 @@ defmodule Pleroma.Web.Federator do
   end
 
   def publish(activity, priority \\ 1) do
-    Jobs.enqueue(:federator_out, __MODULE__, [:publish, activity], priority)
+    Jobs.enqueue(:federator_outgoing, __MODULE__, [:publish, activity], priority)
   end
 
   def publish_single_ap(params) do
-    Jobs.enqueue(:federator_out, __MODULE__, [:publish_single_ap, params])
+    Jobs.enqueue(:federator_outgoing, __MODULE__, [:publish_single_ap, params])
   end
 
   def publish_single_websub(websub) do
-    Jobs.enqueue(:federator_out, __MODULE__, [:publish_single_websub, websub])
+    Jobs.enqueue(:federator_outgoing, __MODULE__, [:publish_single_websub, websub])
   end
 
   def verify_websub(websub) do
-    Jobs.enqueue(:federator_out, __MODULE__, [:verify_websub, websub])
+    Jobs.enqueue(:federator_outgoing, __MODULE__, [:verify_websub, websub])
   end
 
   def request_subscription(sub) do
-    Jobs.enqueue(:federator_out, __MODULE__, [:request_subscription, sub])
+    Jobs.enqueue(:federator_outgoing, __MODULE__, [:request_subscription, sub])
   end
 
   def refresh_subscriptions() do
-    Jobs.enqueue(:federator_out, __MODULE__, [:refresh_subscriptions])
+    Jobs.enqueue(:federator_outgoing, __MODULE__, [:refresh_subscriptions])
   end
 
   def publish_single_salmon(params) do
-    Jobs.enqueue(:federator_out, __MODULE__, [:publish_single_salmon, params])
+    Jobs.enqueue(:federator_outgoing, __MODULE__, [:publish_single_salmon, params])
   end
 
   # Job Worker Callbacks
