@@ -6,8 +6,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Object, Activity, Notification}
-  alias Pleroma.Web.{OStatus, CommonAPI}
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Ecto.Changeset
@@ -31,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/timelines/home")
 
-    assert length(json_response(conn, 200)) == 0
+    assert Enum.empty?(json_response(conn, 200))
 
     {:ok, user} = User.follow(user, following)
 
