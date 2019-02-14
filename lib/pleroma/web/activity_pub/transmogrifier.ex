@@ -765,12 +765,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def add_hashtags(object) do
     tags =
       (object["tag"] || [])
-      |> Enum.map(fn tag ->
-        %{
-          "href" => Pleroma.Web.Endpoint.url() <> "/tags/#{tag}",
-          "name" => "##{tag}",
-          "type" => "Hashtag"
-        }
+      |> Enum.map(fn
+        # Expand internal representation tags into AS2 tags.
+        tag when is_binary(tag) ->
+          %{
+            "href" => Pleroma.Web.Endpoint.url() <> "/tags/#{tag}",
+            "name" => "##{tag}",
+            "type" => "Hashtag"
+          }
+
+        # Do not process tags which are already AS2 tag objects.
+        tag when is_map(tag) ->
+          tag
       end)
 
     object
