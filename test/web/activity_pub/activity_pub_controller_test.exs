@@ -397,7 +397,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == []
-      assert result["totalItems"] == 1
+      assert result["totalItems"] == 0
     end
 
     test "it works for more than 10 users", %{conn: conn} do
@@ -452,7 +452,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == []
-      assert result["totalItems"] == 1
+      assert result["totalItems"] == 0
     end
 
     test "it works for more than 10 users", %{conn: conn} do
