@@ -14,7 +14,7 @@
 <%= label f, :scope, "Permissions" %>
 <br>
 <%= for scope <- @scopes do %>
-  <%= checkbox f, :"scopes_#{scope}", hidden_input: false, value: scope, checked_value: scope, name: "authorization[scopes][]" %>
+  <%= checkbox f, :"scopes_#{scope}", value: scope, checked_value: scope, unchecked_value: "", name: "authorization[scopes][]" %>
   <%= label f, :"scopes_#{scope}", String.capitalize(scope) %>
   <br>
 <% end %>

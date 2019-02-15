@@ -74,16 +74,23 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
   end
 
+  pipeline :oauth_read_or_unauthenticated do
+    plug(Pleroma.Plugs.OAuthScopesPlug, %{
+      scopes: ["read"],
+      fallback: :proceed_unauthenticated
+    })
+  end
+
   pipeline :oauth_read do
-    plug(Pleroma.Plugs.OAuthScopesPlug, %{required_scopes: ["read"]})
+    plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["read"]})
   end
 
   pipeline :oauth_write do
-    plug(Pleroma.Plugs.OAuthScopesPlug, %{required_scopes: ["write"]})
+    plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["write"]})
   end
 
   pipeline :oauth_follow do
-    plug(Pleroma.Plugs.OAuthScopesPlug, %{required_scopes: ["follow"]})
+    plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["follow"]})
   end
 
   pipeline :well_known do
@@ -113,6 +120,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
+
     get("/password_reset/:token", UtilController, :show_password_reset)
     post("/password_reset", UtilController, :password_reset)
     get("/emoji", UtilController, :emoji)
@@ -125,7 +133,8 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
-    pipe_through(:admin_api)
+    pipe_through([:admin_api, :oauth_write])
+
     delete("/user", AdminAPIController, :user_delete)
     post("/user", AdminAPIController, :user_create)
     put("/users/tag", AdminAPIController, :tag_users)
@@ -147,9 +156,14 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_html)
-    get("/ostatus_subscribe", UtilController, :remote_follow)
-    post("/ostatus_subscribe", UtilController, :do_remote_follow)
+
     post("/main/ostatus", UtilController, :remote_subscribe)
+    get("/ostatus_subscribe", UtilController, :remote_follow)
+
+    scope [] do
+      pipe_through(:oauth_follow)
+      post("/ostatus_subscribe", UtilController, :do_remote_follow)
+    end
   end
 
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
@@ -180,10 +194,10 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 
-    get("/accounts/verify_credentials", MastodonAPIController, :verify_credentials)
-
     scope [] do
       pipe_through(:oauth_read)
+
+      get("/accounts/verify_credentials", MastodonAPIController, :verify_credentials)
 
       get("/accounts/relationships", MastodonAPIController, :relationships)
       get("/accounts/search", MastodonAPIController, :account_search)
@@ -284,33 +298,40 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
+
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)
     post("/apps", MastodonAPIController, :create_app)
     get("/custom_emojis", MastodonAPIController, :custom_emojis)
 
-    get("/timelines/public", MastodonAPIController, :public_timeline)
-    get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
-    get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
-
-    get("/statuses/:id", MastodonAPIController, :get_status)
-    get("/statuses/:id/context", MastodonAPIController, :get_context)
     get("/statuses/:id/card", MastodonAPIController, :status_card)
+
     get("/statuses/:id/favourited_by", MastodonAPIController, :favourited_by)
     get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
 
-    get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
-    get("/accounts/:id/followers", MastodonAPIController, :followers)
-    get("/accounts/:id/following", MastodonAPIController, :following)
-    get("/accounts/:id", MastodonAPIController, :user)
-
     get("/trends", MastodonAPIController, :empty_array)
 
-    get("/search", MastodonAPIController, :search)
+    scope [] do
+      pipe_through(:oauth_read_or_unauthenticated)
+
+      get("/timelines/public", MastodonAPIController, :public_timeline)
+      get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
+      get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
+
+      get("/statuses/:id", MastodonAPIController, :get_status)
+      get("/statuses/:id/context", MastodonAPIController, :get_context)
+
+      get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
+      get("/accounts/:id/followers", MastodonAPIController, :followers)
+      get("/accounts/:id/following", MastodonAPIController, :following)
+      get("/accounts/:id", MastodonAPIController, :user)
+
+      get("/search", MastodonAPIController, :search)
+    end
   end
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
-    pipe_through(:api)
+    pipe_through([:api, :oauth_read_or_unauthenticated])
     get("/search", MastodonAPIController, :search2)
   end
 
@@ -327,18 +348,10 @@ defmodule Pleroma.Web.Router do
   scope "/api", Pleroma.Web do
     pipe_through(:api)
 
-    get("/statuses/user_timeline", TwitterAPI.Controller, :user_timeline)
-    get("/qvitter/statuses/user_timeline", TwitterAPI.Controller, :user_timeline)
-    get("/users/show", TwitterAPI.Controller, :show_user)
-
-    get("/statuses/followers", TwitterAPI.Controller, :followers)
-    get("/statuses/friends", TwitterAPI.Controller, :friends)
-    get("/statuses/blocks", TwitterAPI.Controller, :blocks)
-    get("/statuses/show/:id", TwitterAPI.Controller, :fetch_status)
-    get("/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation)
-
     post("/account/register", TwitterAPI.Controller, :register)
     post("/account/password_reset", TwitterAPI.Controller, :password_reset)
+
+    post("/account/resend_confirmation_email", TwitterAPI.Controller, :resend_confirmation_email)
 
     get(
       "/account/confirm_email/:user_id/:token",
@@ -347,14 +360,26 @@ defmodule Pleroma.Web.Router do
       as: :confirm_email
     )
 
-    post("/account/resend_confirmation_email", TwitterAPI.Controller, :resend_confirmation_email)
+    scope [] do
+      pipe_through(:oauth_read_or_unauthenticated)
 
-    get("/search", TwitterAPI.Controller, :search)
-    get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)
+      get("/statuses/user_timeline", TwitterAPI.Controller, :user_timeline)
+      get("/qvitter/statuses/user_timeline", TwitterAPI.Controller, :user_timeline)
+      get("/users/show", TwitterAPI.Controller, :show_user)
+
+      get("/statuses/followers", TwitterAPI.Controller, :followers)
+      get("/statuses/friends", TwitterAPI.Controller, :friends)
+      get("/statuses/blocks", TwitterAPI.Controller, :blocks)
+      get("/statuses/show/:id", TwitterAPI.Controller, :fetch_status)
+      get("/statusnet/conversation/:id", TwitterAPI.Controller, :fetch_conversation)
+
+      get("/search", TwitterAPI.Controller, :search)
+      get("/statusnet/tags/timeline/:tag", TwitterAPI.Controller, :public_and_external_timeline)
+    end
   end
 
   scope "/api", Pleroma.Web do
-    pipe_through(:api)
+    pipe_through([:api, :oauth_read_or_unauthenticated])
 
     get("/statuses/public_timeline", TwitterAPI.Controller, :public_timeline)
 
@@ -368,18 +393,18 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/api", Pleroma.Web, as: :twitter_api_search do
-    pipe_through(:api)
+    pipe_through([:api, :oauth_read_or_unauthenticated])
     get("/pleroma/search_user", TwitterAPI.Controller, :search_user)
   end
 
   scope "/api", Pleroma.Web, as: :authenticated_twitter_api do
     pipe_through(:authenticated_api)
 
-    get("/account/verify_credentials", TwitterAPI.Controller, :verify_credentials)
-    post("/account/verify_credentials", TwitterAPI.Controller, :verify_credentials)
-
     scope [] do
       pipe_through(:oauth_read)
+
+      get("/account/verify_credentials", TwitterAPI.Controller, :verify_credentials)
+      post("/account/verify_credentials", TwitterAPI.Controller, :verify_credentials)
 
       get("/statuses/home_timeline", TwitterAPI.Controller, :friends_timeline)
       get("/statuses/friends_timeline", TwitterAPI.Controller, :friends_timeline)
@@ -506,9 +531,16 @@ defmodule Pleroma.Web.Router do
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through([:activitypub_client])
 
-    get("/api/ap/whoami", ActivityPubController, :whoami)
-    get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
-    post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
+    scope [] do
+      pipe_through(:oauth_read)
+      get("/api/ap/whoami", ActivityPubController, :whoami)
+      get("/users/:nickname/inbox", ActivityPubController, :read_inbox)
+    end
+
+    scope [] do
+      pipe_through(:oauth_write)
+      post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
+    end
   end
 
   scope "/relay", Pleroma.Web.ActivityPub do
@@ -518,6 +550,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through(:activitypub)
+
     post("/users/:nickname/inbox", ActivityPubController, :inbox)
     post("/inbox", ActivityPubController, :inbox)
   end
@@ -538,8 +571,12 @@ defmodule Pleroma.Web.Router do
     pipe_through(:mastodon_html)
 
     get("/web/login", MastodonAPIController, :login)
-    get("/web/*path", MastodonAPIController, :index)
     delete("/auth/sign_out", MastodonAPIController, :logout)
+
+    scope [] do
+      pipe_through(:oauth_read)
+      get("/web/*path", MastodonAPIController, :index)
+    end
   end
 
   pipeline :remote_media do
@@ -547,6 +584,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/proxy/", Pleroma.Web.MediaProxy do
     pipe_through(:remote_media)
+
     get("/:sig/:url", MediaProxyController, :remote)
     get("/:sig/:url/:filename", MediaProxyController, :remote)
   end

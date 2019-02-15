@@ -7,22 +7,35 @@ defmodule Pleroma.Plugs.OAuthScopesPlug do
 
   @behaviour Plug
 
-  def init(%{required_scopes: _} = options), do: options
+  def init(%{scopes: _} = options), do: options
 
-  def call(%Plug.Conn{assigns: assigns} = conn, %{required_scopes: required_scopes}) do
+  def call(%Plug.Conn{assigns: assigns} = conn, %{scopes: scopes} = options) do
+    op = options[:op] || :|
     token = assigns[:token]
-    granted_scopes = token && token.scopes
 
-    if is_nil(token) || required_scopes -- granted_scopes == [] do
-      conn
-    else
-      missing_scopes = required_scopes -- granted_scopes
-      error_message = "Insufficient permissions: #{Enum.join(missing_scopes, ", ")}."
+    cond do
+      is_nil(token) ->
+        conn
 
-      conn
-      |> put_resp_content_type("application/json")
-      |> send_resp(403, Jason.encode!(%{error: error_message}))
-      |> halt()
+      op == :| && scopes -- token.scopes != scopes ->
+        conn
+
+      op == :& && scopes -- token.scopes == [] ->
+        conn
+
+      options[:fallback] == :proceed_unauthenticated ->
+        conn
+        |> assign(:user, nil)
+        |> assign(:token, nil)
+
+      true ->
+        missing_scopes = scopes -- token.scopes
+        error_message = "Insufficient permissions: #{Enum.join(missing_scopes, " #{op} ")}."
+
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{error: error_message}))
+        |> halt()
     end
   end
 end

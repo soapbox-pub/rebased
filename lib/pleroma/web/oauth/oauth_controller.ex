@@ -17,10 +17,20 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
   def authorize(conn, params) do
+    params_scopes = oauth_scopes(params, nil)
+
+    scopes =
+      if params_scopes do
+        params_scopes
+      else
+        app = Repo.get_by(App, client_id: params["client_id"])
+        app && app.scopes
+      end
+
     render(conn, "show.html", %{
       response_type: params["response_type"],
       client_id: params["client_id"],
-      scopes: oauth_scopes(params, []),
+      scopes: scopes || [],
       redirect_uri: params["redirect_uri"],
       state: params["state"]
     })
@@ -33,14 +43,14 @@ defmodule Pleroma.Web.OAuth.OAuthController do
             "password" => password,
             "client_id" => client_id,
             "redirect_uri" => redirect_uri
-          } = params
+          } = auth_params
       }) do
     with %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         scopes <- oauth_scopes(params, app.scopes),
+         scopes <- oauth_scopes(auth_params, []),
          [] <- scopes -- app.scopes,
          true <- Enum.any?(scopes),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
@@ -64,8 +74,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
           url_params = %{:code => auth.token}
 
           url_params =
-            if params["state"] do
-              Map.put(url_params, :state, params["state"])
+            if auth_params["state"] do
+              Map.put(url_params, :state, auth_params["state"])
             else
               url_params
             end
@@ -75,14 +85,20 @@ defmodule Pleroma.Web.OAuth.OAuthController do
           redirect(conn, external: url)
       end
     else
-      {:auth_active, false} ->
-        conn
-        |> put_flash(:error, "Account confirmation pending")
-        |> put_status(:forbidden)
-        |> authorize(params)
+      res ->
+        msg =
+          if res == {:auth_active, false},
+            do: "Account confirmation pending",
+            else: "Invalid Username/Password/Permissions"
 
-      error ->
-        error
+        app = Repo.get_by(App, client_id: client_id)
+        available_scopes = (app && app.scopes) || oauth_scopes(auth_params, [])
+        scope_param = Enum.join(available_scopes, " ")
+
+        conn
+        |> put_flash(:error, msg)
+        |> put_status(:unauthorized)
+        |> authorize(Map.merge(auth_params, %{"scope" => scope_param}))
     end
   end
 
@@ -119,6 +135,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          scopes <- oauth_scopes(params, app.scopes),
+         [] <- scopes -- app.scopes,
+         true <- Enum.any?(scopes),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{

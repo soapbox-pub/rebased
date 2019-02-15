@@ -6,7 +6,7 @@ defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
   def oauth_scopes(params, default) do
-    Pleroma.Web.OAuth.parse_scopes(params["scopes"] || params["scope"], default)
+    Pleroma.Web.OAuth.parse_scopes(params["scope"] || params["scopes"], default)
   end
 
   def json_response(conn, status, json) do

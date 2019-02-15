@@ -33,7 +33,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   action_fallback(:errors)
 
   def create_app(conn, params) do
-    scopes = oauth_scopes(params, [])
+    scopes = oauth_scopes(params, ["read"])
 
     app_attrs =
       params
