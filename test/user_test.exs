@@ -878,6 +878,16 @@ defmodule Pleroma.UserTest do
         assert [] == User.search(query)
       end)
     end
+
+    test "works with URIs" do
+      results = User.search("http://mastodon.example.org/users/admin", true)
+      result = results |> List.first()
+
+      user = User.get_by_ap_id("http://mastodon.example.org/users/admin")
+
+      assert length(results) == 1
+      assert user == result |> Map.put(:search_rank, nil)
+    end
   end
 
   test "auth_active?/1 works correctly" do
