@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
       assert "https://www.w3.org/ns/activitystreams#Public" in message["cc"]
     end
 
-    test "threshold test", %{message: message} do
+    test "excludes follower collection and public URI from threshold count", %{message: message} do
       Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 3})
 
       {:ok, _} = filter(message)

@@ -10,17 +10,22 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
     delist_threshold = Pleroma.Config.get([:mrf_hellthread, :delist_threshold])
     follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
 
+    follower_collection? = Enum.member?(message["to"] ++ message["cc"], follower_collection)
+
     message =
-      with {:public, recipients} <- get_recipient_count(message) do
-        if recipients > delist_threshold and delist_threshold > 0 do
+      case recipients = get_recipient_count(message) do
+        {:public, _} when follower_collection? and recipients > delist_threshold ->
           message
           |> Map.put("to", [follower_collection])
           |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])
-        else
+
+        {:public, _} when recipients > delist_threshold ->
           message
-        end
-      else
-        _ -> message
+          |> Map.put("to", [])
+          |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])
+
+        _ ->
+          message
       end
 
     {:ok, message}
