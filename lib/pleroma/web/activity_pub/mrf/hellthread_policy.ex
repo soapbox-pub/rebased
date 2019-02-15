@@ -47,14 +47,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
     follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
 
     if Enum.member?(recipients, "https://www.w3.org/ns/activitystreams#Public") do
-      recipients
-      |> List.delete("https://www.w3.org/ns/activitystreams#Public")
-      |> List.delete(follower_collection)
+      recipients =
+        recipients
+        |> List.delete("https://www.w3.org/ns/activitystreams#Public")
+        |> List.delete(follower_collection)
 
       {:public, length(recipients)}
     else
-      recipients
-      |> List.delete(follower_collection)
+      recipients =
+        recipients
+        |> List.delete(follower_collection)
 
       {:not_public, length(recipients)}
     end
