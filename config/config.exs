@@ -228,8 +228,8 @@ config :pleroma, :mrf_rejectnonpublic,
   allow_direct: false
 
 config :pleroma, :mrf_hellthread,
-  delist_threshold: 5,
-  reject_threshold: 10
+  delist_threshold: 10,
+  reject_threshold: 20
 
 config :pleroma, :mrf_simple,
   media_removal: [],
