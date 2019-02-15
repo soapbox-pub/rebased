@@ -31,8 +31,8 @@ defmodule Pleroma.Web.OAuth.Token do
   end
 
   def create_token(%App{} = app, %User{} = user) do
-    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
-    refresh_token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+    refresh_token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
 
     token = %Token{
       token: token,

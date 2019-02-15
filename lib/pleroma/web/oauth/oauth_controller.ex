@@ -173,7 +173,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     token
     |> URI.decode()
     |> Base.url_decode64!(padding: false)
-    |> Base.url_encode64()
+    |> Base.url_encode64(padding: false)
   end
 
   defp get_app_from_request(conn, params) do
