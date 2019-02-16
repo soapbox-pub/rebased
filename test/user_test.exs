@@ -212,6 +212,7 @@ defmodule Pleroma.UserTest do
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
       assert activity.data["object"]["content"] =~ "cool site"
+      assert activity.actor == welcome_user.ap_id
 
       Pleroma.Config.put([:instance, :welcome_user_nickname], nil)
       Pleroma.Config.put([:instance, :welcome_message], nil)
