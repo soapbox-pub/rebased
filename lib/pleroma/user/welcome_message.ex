@@ -1,7 +1,6 @@
 defmodule Pleroma.User.WelcomeMessage do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-  import Ecto.Query
 
   def post_welcome_message_to_user(user) do
     with %User{} = sender_user <- welcome_user(),
@@ -16,14 +15,12 @@ defmodule Pleroma.User.WelcomeMessage do
   end
 
   defp welcome_user() do
-    if nickname = Pleroma.Config.get([:instance, :welcome_user_nickname]) do
-      from(u in User,
-        where: u.local == true,
-        where: u.nickname == ^nickname
-      )
-      |> Pleroma.Repo.one()
+    with nickname when is_binary(nickname) <-
+           Pleroma.Config.get([:instance, :welcome_user_nickname]),
+         %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
+      user
     else
-      nil
+      _ -> nil
     end
   end
 
