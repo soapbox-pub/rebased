@@ -1218,7 +1218,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert Enum.sort(expected) == Enum.sort(result)
     end
 
-    test "it returns 20 friends per page", %{conn: conn} do
+    test "it returns 20 friends per page, except if 'export' is set to true", %{conn: conn} do
       user = insert(:user)
       followeds = insert_list(21, :user)
 
@@ -1242,6 +1242,14 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       result = json_response(res_conn, 200)
       assert length(result) == 1
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/statuses/friends", %{all: true})
+
+      result = json_response(res_conn, 200)
+      assert length(result) == 21
     end
 
     test "it returns a given user's friends with user_id", %{conn: conn} do
