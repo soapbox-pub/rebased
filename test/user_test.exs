@@ -196,6 +196,26 @@ defmodule Pleroma.UserTest do
 
       assert User.following?(registered_user, user)
       refute User.following?(registered_user, remote_user)
+
+      Pleroma.Config.put([:instance, :autofollowed_nicknames], [])
+    end
+
+    test "it sends a welcome message if it is set" do
+      welcome_user = insert(:user)
+
+      Pleroma.Config.put([:instance, :welcome_user_nickname], welcome_user.nickname)
+      Pleroma.Config.put([:instance, :welcome_message], "Hello, this is a cool site")
+
+      cng = User.register_changeset(%User{}, @full_user_data)
+      {:ok, registered_user} = User.register(cng)
+
+      activity = Repo.one(Pleroma.Activity)
+      assert registered_user.ap_id in activity.recipients
+      assert activity.data["object"]["content"] =~ "cool site"
+      assert activity.actor == welcome_user.ap_id
+
+      Pleroma.Config.put([:instance, :welcome_user_nickname], nil)
+      Pleroma.Config.put([:instance, :welcome_message], nil)
     end
 
     test "it requires an email, name, nickname and password, bio is optional" do

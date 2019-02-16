@@ -162,7 +162,9 @@ config :pleroma, :instance,
   mrf_transparency: true,
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
-  no_attachment_links: false
+  no_attachment_links: false,
+  welcome_user_nickname: nil,
+  welcome_message: nil
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
