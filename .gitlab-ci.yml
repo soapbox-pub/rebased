@@ -1,7 +1,8 @@
 image: elixir:1.7.2
 
 services:
-  - postgres:9.6.2
+  - name: postgres:9.6.2
+    command: ["postgres", "-c", "fsync=off"]
 
 variables:
   POSTGRES_DB: pleroma_test
