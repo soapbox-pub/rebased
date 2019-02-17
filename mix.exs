@@ -21,7 +21,13 @@ defmodule Pleroma.Mixfile do
       homepage_url: "https://pleroma.social/",
       docs: [
         logo: "priv/static/static/logo.png",
-        extras: ["README.md", "docs/config.md", "docs/Pleroma-API.md", "docs/Admin-API.md", "docs/Differences-in-MastodonAPI-Responses.md"],
+        extras: [
+          "README.md",
+          "docs/config.md",
+          "docs/Pleroma-API.md",
+          "docs/Admin-API.md",
+          "docs/Differences-in-MastodonAPI-Responses.md"
+        ],
         main: "readme",
         output: "priv/static/doc"
       ]
