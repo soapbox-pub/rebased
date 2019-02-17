@@ -166,7 +166,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",
       visibility: get_visibility(object),
-      media_attachments: attachments |> Enum.take(4),
+      media_attachments: attachments,
       mentions: mentions,
       tags: build_tags(tags),
       application: %{
