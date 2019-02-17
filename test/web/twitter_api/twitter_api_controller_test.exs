@@ -1896,7 +1896,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> hd()
         |> Map.keys()
 
-      assert keys -- ["id", "refresh_token", "token", "valid_until"] == []
+      assert keys -- ["id", "app_name", "valid_until"] == []
     end
 
     test "revoke token", %{token: token} do
