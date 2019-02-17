@@ -1156,7 +1156,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           response_type: "code",
           client_id: app.client_id,
           redirect_uri: ".",
-          scope: app.scopes
+          scope: Enum.join(app.scopes, " ")
         )
 
       conn

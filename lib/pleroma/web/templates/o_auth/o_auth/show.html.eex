@@ -13,9 +13,10 @@
 
 <%= label f, :scope, "Permissions" %>
 <br>
-<%= for scope <- @scopes do %>
-  <%= checkbox f, :"scopes_#{scope}", value: scope, checked_value: scope, unchecked_value: "", name: "authorization[scopes][]" %>
-  <%= label f, :"scopes_#{scope}", String.capitalize(scope) %>
+<%= for scope <- @available_scopes do %>
+  <%# Note: using hidden input with `unchecked_value` in order to distinguish user's empty selection from `scope` param being omitted %>
+  <%= checkbox f, :"scope_#{scope}", value: scope in @scopes && scope, checked_value: scope, unchecked_value: "", name: "authorization[scope][]" %>
+  <%= label f, :"scope_#{scope}", String.capitalize(scope) %>
   <br>
 <% end %>
 
