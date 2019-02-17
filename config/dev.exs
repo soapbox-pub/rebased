@@ -16,7 +16,8 @@ config :pleroma, Pleroma.Web.Endpoint,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
-  watchers: []
+  watchers: [],
+  secure_cookie_flag: false
 
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Local
 

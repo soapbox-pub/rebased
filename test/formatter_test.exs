@@ -197,7 +197,7 @@ defmodule Pleroma.FormatterTest do
 
       {subs, text} = Formatter.add_user_links({[], text}, mentions)
 
-      assert length(subs) == 0
+      assert Enum.empty?(subs)
       Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
 
       expected_text = "@a hi"

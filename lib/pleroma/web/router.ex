@@ -468,8 +468,8 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through(:activitypub)
-    post("/users/:nickname/inbox", ActivityPubController, :inbox)
     post("/inbox", ActivityPubController, :inbox)
+    post("/users/:nickname/inbox", ActivityPubController, :inbox)
   end
 
   scope "/.well-known", Pleroma.Web do

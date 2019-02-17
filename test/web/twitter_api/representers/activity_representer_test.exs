@@ -4,8 +4,11 @@
 
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   use Pleroma.DataCase
-  alias Pleroma.{User, Activity, Object}
-  alias Pleroma.Web.TwitterAPI.Representers.{ActivityRepresenter, ObjectRepresenter}
+  alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
+  alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   import Pleroma.Factory

@@ -649,7 +649,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     if object = Object.normalize(id), do: {:ok, object}, else: nil
   end
 
-  def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) do
+  def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) when is_binary(inReplyTo) do
     with false <- String.starts_with?(inReplyTo, "http"),
          {:ok, %{data: replied_to_object}} <- get_obj_helper(inReplyTo) do
       Map.put(object, "inReplyTo", replied_to_object["external_url"] || inReplyTo)
@@ -765,12 +765,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def add_hashtags(object) do
     tags =
       (object["tag"] || [])
-      |> Enum.map(fn tag ->
-        %{
-          "href" => Pleroma.Web.Endpoint.url() <> "/tags/#{tag}",
-          "name" => "##{tag}",
-          "type" => "Hashtag"
-        }
+      |> Enum.map(fn
+        # Expand internal representation tags into AS2 tags.
+        tag when is_binary(tag) ->
+          %{
+            "href" => Pleroma.Web.Endpoint.url() <> "/tags/#{tag}",
+            "name" => "##{tag}",
+            "type" => "Hashtag"
+          }
+
+        # Do not process tags which are already AS2 tag objects.
+        tag when is_map(tag) ->
+          tag
       end)
 
     object

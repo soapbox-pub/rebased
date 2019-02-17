@@ -6,7 +6,9 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
   use Pleroma.DataCase
 
   alias Pleroma.Web.OStatus.ActivityRepresenter
-  alias Pleroma.{User, Activity, Object}
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.OStatus
 

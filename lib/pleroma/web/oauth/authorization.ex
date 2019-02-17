@@ -24,7 +24,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
   end
 
   def create_authorization(%App{} = app, %User{} = user) do
-    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
 
     authorization = %Authorization{
       token: token,

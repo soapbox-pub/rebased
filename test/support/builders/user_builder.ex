@@ -1,5 +1,6 @@
 defmodule Pleroma.Builders.UserBuilder do
-  alias Pleroma.{User, Repo}
+  alias Pleroma.User
+  alias Pleroma.Repo
 
   def build(data \\ %{}) do
     user = %User{
