@@ -6,7 +6,8 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.Web.Websub.WebsubClientSubscription
-  alias Pleroma.{Repo, Activity}
+  alias Pleroma.Activity
+  alias Pleroma.Repo
   alias Pleroma.Web.Websub
 
   test "websub subscription request", %{conn: conn} do
@@ -80,7 +81,7 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
 
       assert response(conn, 500) == "Error"
 
-      assert length(Repo.all(Activity)) == 0
+      assert Enum.empty?(Repo.all(Activity))
     end
   end
 end

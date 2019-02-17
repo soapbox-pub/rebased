@@ -27,7 +27,7 @@ defmodule Pleroma.Uploaders.S3 do
       ])}}
   end
 
-  def put_file(upload = %Pleroma.Upload{}) do
+  def put_file(%Pleroma.Upload{} = upload) do
     config = Pleroma.Config.get([__MODULE__])
     bucket = Keyword.get(config, :bucket)
 

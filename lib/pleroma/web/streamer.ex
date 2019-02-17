@@ -5,7 +5,11 @@
 defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
-  alias Pleroma.{User, Notification, Activity, Object, Repo}
+  alias Pleroma.User
+  alias Pleroma.Notification
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   @keepalive_interval :timer.seconds(30)

@@ -4,7 +4,11 @@
 
 defmodule Pleroma.Activity do
   use Ecto.Schema
-  alias Pleroma.{Repo, Activity, Notification}
+
+  alias Pleroma.Repo
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+
   import Ecto.Query
 
   @type t :: %__MODULE__{}

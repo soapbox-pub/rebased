@@ -4,11 +4,12 @@
 
 defmodule Pleroma.Web.MediaProxy.MediaProxyController do
   use Pleroma.Web, :controller
-  alias Pleroma.{Web.MediaProxy, ReverseProxy}
+  alias Pleroma.ReverseProxy
+  alias Pleroma.Web.MediaProxy
 
   @default_proxy_opts [max_body_length: 25 * 1_048_576, http: [follow_redirect: true]]
 
-  def remote(conn, params = %{"sig" => sig64, "url" => url64}) do
+  def remote(conn, %{"sig" => sig64, "url" => url64} = params) do
     with config <- Pleroma.Config.get([:media_proxy], []),
          true <- Keyword.get(config, :enabled, false),
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),

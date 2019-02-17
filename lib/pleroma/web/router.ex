@@ -240,14 +240,16 @@ defmodule Pleroma.Web.Router do
       post("/statuses", MastodonAPIController, :post_status)
       delete("/statuses/:id", MastodonAPIController, :delete_status)
 
-      post("/statuses/:id/reblog", MastodonAPIController, :reblog_status)
-      post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
-      post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
-      post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
-      post("/statuses/:id/pin", MastodonAPIController, :pin_status)
-      post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
-      post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
-      post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
+    post("/statuses/:id/reblog", MastodonAPIController, :reblog_status)
+    post("/statuses/:id/unreblog", MastodonAPIController, :unreblog_status)
+    post("/statuses/:id/favourite", MastodonAPIController, :fav_status)
+    post("/statuses/:id/unfavourite", MastodonAPIController, :unfav_status)
+    post("/statuses/:id/pin", MastodonAPIController, :pin_status)
+    post("/statuses/:id/unpin", MastodonAPIController, :unpin_status)
+    post("/statuses/:id/bookmark", MastodonAPIController, :bookmark_status)
+    post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
+    post("/statuses/:id/mute", MastodonAPIController, :mute_conversation)
+    post("/statuses/:id/unmute", MastodonAPIController, :unmute_conversation)
 
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
@@ -550,9 +552,8 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through(:activitypub)
-
-    post("/users/:nickname/inbox", ActivityPubController, :inbox)
     post("/inbox", ActivityPubController, :inbox)
+    post("/users/:nickname/inbox", ActivityPubController, :inbox)
   end
 
   scope "/.well-known", Pleroma.Web do

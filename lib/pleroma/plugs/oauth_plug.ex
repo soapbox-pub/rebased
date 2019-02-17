@@ -6,11 +6,9 @@ defmodule Pleroma.Plugs.OAuthPlug do
   import Plug.Conn
   import Ecto.Query
 
-  alias Pleroma.{
-    User,
-    Repo,
-    Web.OAuth.Token
-  }
+  alias Pleroma.User
+  alias Pleroma.Repo
+  alias Pleroma.Web.OAuth.Token
 
   @realm_reg Regex.compile!("Bearer\:?\s+(.*)$", "i")
 

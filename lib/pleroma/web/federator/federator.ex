@@ -4,15 +4,19 @@
 
 defmodule Pleroma.Web.Federator do
   use GenServer
-  alias Pleroma.User
+
   alias Pleroma.Activity
-  alias Pleroma.Web.{WebFinger, Websub, Salmon}
-  alias Pleroma.Web.Federator.RetryQueue
+  alias Pleroma.User
+  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Websub
+  alias Pleroma.Web.Salmon
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
+
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
@@ -25,7 +29,7 @@ defmodule Pleroma.Web.Federator do
   def start_link do
     spawn(fn ->
       # 1 minute
-      Process.sleep(1000 * 60 * 1)
+      Process.sleep(1000 * 60)
       enqueue(:refresh_subscriptions, nil)
     end)
 
@@ -196,8 +200,7 @@ defmodule Pleroma.Web.Federator do
     {:noreply, %{in: {i_running_jobs, i_queue}, out: {o_running_jobs, o_queue}}}
   end
 
-  def handle_cast(m, state) do
-    IO.inspect("Unknown: #{inspect(m)}, #{inspect(state)}")
+  def handle_cast(_, state) do
     {:noreply, state}
   end
 

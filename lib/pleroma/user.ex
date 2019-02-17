@@ -5,13 +5,23 @@
 defmodule Pleroma.User do
   use Ecto.Schema
 
-  import Ecto.{Changeset, Query}
-  alias Pleroma.{Repo, User, Object, Web, Activity, Notification}
+  import Ecto.Changeset
+  import Ecto.Query
+
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Web
+  alias Pleroma.Activity
+  alias Pleroma.Notification
   alias Comeonin.Pbkdf2
   alias Pleroma.Formatter
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
-  alias Pleroma.Web.{OStatus, Websub, OAuth}
-  alias Pleroma.Web.ActivityPub.{Utils, ActivityPub}
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Websub
+  alias Pleroma.Web.OAuth
+  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   require Logger
 
@@ -94,12 +104,6 @@ defmodule Pleroma.User do
 
   def ap_followers(%User{} = user) do
     "#{ap_id(user)}/followers"
-  end
-
-  def follow_changeset(struct, params \\ %{}) do
-    struct
-    |> cast(params, [:following])
-    |> validate_required([:following])
   end
 
   def user_info(%User{} = user) do
@@ -256,8 +260,9 @@ defmodule Pleroma.User do
   @doc "Inserts provided changeset, performs post-registration actions (confirmation email sending etc.)"
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset),
-         {:ok, _} <- try_send_confirmation_email(user),
-         {:ok, user} <- autofollow_users(user) do
+         {:ok, user} <- autofollow_users(user),
+         {:ok, _} <- Pleroma.User.WelcomeMessage.post_welcome_message_to_user(user),
+         {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
   end
@@ -307,10 +312,13 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "A mass follow for local users. Ignores blocks and has no side effects"
+  @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
-    followed_addresses = Enum.map(followeds, fn %{follower_address: fa} -> fa end)
+    followed_addresses =
+      followeds
+      |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
+      |> Enum.map(fn %{follower_address: fa} -> fa end)
 
     q =
       from(u in User,
@@ -724,7 +732,7 @@ defmodule Pleroma.User do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
-    if resolve, do: User.get_or_fetch_by_nickname(query)
+    if resolve, do: get_or_fetch(query)
 
     fts_results = do_search(fts_search_subquery(query), for_user)
 

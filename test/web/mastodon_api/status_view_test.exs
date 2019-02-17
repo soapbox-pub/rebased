@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.MastodonAPI.{StatusView, AccountView}
+  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.User
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.CommonAPI

@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.FederatorTest do
-  alias Pleroma.Web.{CommonAPI, Federator}
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Federator
   alias Pleroma.Instances
   use Pleroma.DataCase
   import Pleroma.Factory

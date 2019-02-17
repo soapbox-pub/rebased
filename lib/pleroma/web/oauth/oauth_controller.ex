@@ -5,8 +5,11 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Web.OAuth.{Authorization, Token, App}
-  alias Pleroma.{Repo, User}
+  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.OAuth.App
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Comeonin.Pbkdf2
 
   import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
@@ -186,7 +189,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     token
     |> URI.decode()
     |> Base.url_decode64!(padding: false)
-    |> Base.url_encode64()
+    |> Base.url_encode64(padding: false)
   end
 
   defp get_app_from_request(conn, params) do

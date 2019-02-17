@@ -4,11 +4,14 @@
 
 defmodule Pleroma.Web.Websub do
   alias Ecto.Changeset
-  alias Pleroma.Repo
   alias Pleroma.Instances
-  alias Pleroma.Web.Websub.{WebsubServerSubscription, WebsubClientSubscription}
+  alias Pleroma.Repo
+  alias Pleroma.Web.Websub.WebsubServerSubscription
+  alias Pleroma.Web.Websub.WebsubClientSubscription
   alias Pleroma.Web.OStatus.FeedRepresenter
-  alias Pleroma.Web.{XML, Endpoint, OStatus}
+  alias Pleroma.Web.XML
+  alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.OStatus
   alias Pleroma.Web.Router.Helpers
   require Logger
 

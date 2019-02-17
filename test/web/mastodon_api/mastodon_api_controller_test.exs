@@ -6,8 +6,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Object, Activity, Notification}
-  alias Pleroma.Web.{OStatus, CommonAPI}
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Ecto.Changeset
@@ -31,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/timelines/home")
 
-    assert length(json_response(conn, 200)) == 0
+    assert Enum.empty?(json_response(conn, 200))
 
     {:ok, user} = User.follow(user, following)
 
@@ -1748,5 +1753,37 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> get("/api/v1/bookmarks")
 
     assert [json_response(response2, 200)] == json_response(bookmarks, 200)
+  end
+
+  describe "conversation muting" do
+    setup do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HIE"})
+
+      [user: user, activity: activity]
+    end
+
+    test "mute conversation", %{conn: conn, user: user, activity: activity} do
+      id_str = to_string(activity.id)
+
+      assert %{"id" => ^id_str, "muted" => true} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity.id}/mute")
+               |> json_response(200)
+    end
+
+    test "unmute conversation", %{conn: conn, user: user, activity: activity} do
+      {:ok, _} = CommonAPI.add_mute(user, activity)
+
+      id_str = to_string(activity.id)
+      user = refresh_record(user)
+
+      assert %{"id" => ^id_str, "muted" => false} =
+               conn
+               |> assign(:user, user)
+               |> post("/api/v1/statuses/#{activity.id}/unmute")
+               |> json_response(200)
+    end
   end
 end

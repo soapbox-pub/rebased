@@ -6,7 +6,8 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   require Logger
 
   alias Pleroma.Web.OAuth.Token
-  alias Pleroma.{User, Repo}
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   @behaviour :cowboy_websocket_handler
 

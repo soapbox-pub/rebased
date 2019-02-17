@@ -4,8 +4,13 @@
 
 defmodule Pleroma.List do
   use Ecto.Schema
-  import Ecto.{Changeset, Query}
-  alias Pleroma.{User, Repo, Activity}
+
+  import Ecto.Query
+  import Ecto.Changeset
+
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   schema "lists" do
     belongs_to(:user, User, type: Pleroma.FlakeId)

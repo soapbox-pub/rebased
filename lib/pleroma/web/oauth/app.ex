@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.OAuth.App do
   use Ecto.Schema
-  import Ecto.{Changeset}
+  import Ecto.Changeset
 
   schema "apps" do
     field(:client_name, :string)
@@ -25,8 +25,14 @@ defmodule Pleroma.Web.OAuth.App do
 
     if changeset.valid? do
       changeset
-      |> put_change(:client_id, :crypto.strong_rand_bytes(32) |> Base.url_encode64())
-      |> put_change(:client_secret, :crypto.strong_rand_bytes(32) |> Base.url_encode64())
+      |> put_change(
+        :client_id,
+        :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+      )
+      |> put_change(
+        :client_secret,
+        :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+      )
     else
       changeset
     end

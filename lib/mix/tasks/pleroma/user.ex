@@ -5,7 +5,8 @@
 defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
   import Ecto.Changeset
-  alias Pleroma.{Repo, User}
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Mix.Tasks.Pleroma.Common
 
   @shortdoc "Manages Pleroma users"
@@ -211,7 +212,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
       user = Repo.get(User, user.id)
 
-      if length(user.following) == 0 do
+      if Enum.empty?(user.following) do
         Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")
       end
     else

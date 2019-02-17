@@ -7,7 +7,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.{Activity, Object, User, Instances}
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.User
+  alias Pleroma.Instances
   alias Pleroma.Builders.ActivityBuilder
 
   import Pleroma.Factory

@@ -162,7 +162,9 @@ config :pleroma, :instance,
   mrf_transparency: true,
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
-  no_attachment_links: false
+  no_attachment_links: false,
+  welcome_user_nickname: nil,
+  welcome_message: nil
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -228,8 +230,8 @@ config :pleroma, :mrf_rejectnonpublic,
   allow_direct: false
 
 config :pleroma, :mrf_hellthread,
-  delist_threshold: 5,
-  reject_threshold: 10
+  delist_threshold: 10,
+  reject_threshold: 20
 
 config :pleroma, :mrf_simple,
   media_removal: [],

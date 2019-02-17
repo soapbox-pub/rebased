@@ -7,8 +7,11 @@ defmodule Pleroma.Web.OAuth.Token do
 
   import Ecto.Query
 
-  alias Pleroma.{User, Repo}
-  alias Pleroma.Web.OAuth.{Token, App, Authorization}
+  alias Pleroma.User
+  alias Pleroma.Repo
+  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web.OAuth.Authorization
 
   schema "oauth_tokens" do
     field(:token, :string)
@@ -30,8 +33,8 @@ defmodule Pleroma.Web.OAuth.Token do
 
   def create_token(%App{} = app, %User{} = user, scopes \\ nil) do
     scopes = scopes || app.scopes
-    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
-    refresh_token = :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+    refresh_token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
 
     token = %Token{
       token: token,

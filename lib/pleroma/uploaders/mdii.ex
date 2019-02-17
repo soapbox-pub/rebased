@@ -25,7 +25,7 @@ defmodule Pleroma.Uploaders.MDII do
     query = "#{cgi}?#{extension}"
 
     with {:ok, %{status: 200, body: body}} <-
-           @httpoison.post(query, file_data, adapter: [pool: :default]) do
+           @httpoison.post(query, file_data, [], adapter: [pool: :default]) do
       remote_file_name = String.split(body) |> List.first()
       public_url = "#{files}/#{remote_file_name}.#{extension}"
       {:ok, {:url, public_url}}

@@ -71,6 +71,32 @@
         font-weight: 500;
         font-size: 16px;
       }
+
+      .alert-danger {
+        box-sizing: border-box;
+        width: 100%;
+        color: #D8000C;
+        background-color: #FFD2D2;
+        border-radius: 4px;
+        border: none;
+        padding: 10px;
+        margin-top: 20px;
+        font-weight: 500;
+        font-size: 16px;
+      }
+
+      .alert-info {
+        box-sizing: border-box;
+        width: 100%;
+        color: #00529B;
+        background-color: #BDE5F8;
+        border-radius: 4px;
+        border: none;
+        padding: 10px;
+        margin-top: 20px;
+        font-weight: 500;
+        font-size: 16px;
+      }
     </style>
   </head>
   <body>
