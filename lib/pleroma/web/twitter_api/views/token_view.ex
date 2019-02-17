@@ -14,9 +14,8 @@ defmodule Pleroma.Web.TwitterAPI.TokenView do
   def render("show.json", %{token: token_entry}) do
     %{
       id: token_entry.id,
-      token: token_entry.token,
-      refresh_token: token_entry.refresh_token,
-      valid_until: token_entry.valid_until
+      valid_until: token_entry.valid_until,
+      app_name: token_entry.app.client_name
     }
   end
 end

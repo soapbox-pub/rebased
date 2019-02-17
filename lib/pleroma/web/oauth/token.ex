@@ -68,5 +68,6 @@ defmodule Pleroma.Web.OAuth.Token do
       where: t.user_id == ^user_id
     )
     |> Repo.all()
+    |> Repo.preload(:app)
   end
 end
