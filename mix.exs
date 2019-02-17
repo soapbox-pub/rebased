@@ -26,6 +26,7 @@ defmodule Pleroma.Mixfile do
           "docs/config.md",
           "docs/Pleroma-API.md",
           "docs/Admin-API.md",
+          "docs/Clients.md",
           "docs/Differences-in-MastodonAPI-Responses.md"
         ],
         main: "readme",
