@@ -392,6 +392,9 @@ defmodule Pleroma.Web.Router do
     get("/qvitter/mutes", TwitterAPI.Controller, :raw_empty_array)
 
     get("/externalprofile/show", TwitterAPI.Controller, :external_profile)
+
+    get("/oauth_tokens", TwitterAPI.Controller, :oauth_tokens)
+    delete("/oauth_tokens/:id", TwitterAPI.Controller, :revoke_token)
   end
 
   pipeline :ap_relay do

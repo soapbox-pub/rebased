@@ -8,6 +8,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   alias Ecto.Changeset
+  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView, TokenView}
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.{Repo, Activity, Object, User, Notification}
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
@@ -543,6 +547,20 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     else
       _e -> bad_request_reply(conn, "Can't get friends")
     end
+  end
+
+  def oauth_tokens(%{assigns: %{user: user}} = conn, _params) do
+    with oauth_tokens <- Token.get_user_tokens(user) do
+      conn
+      |> put_view(TokenView)
+      |> render("index.json", %{tokens: oauth_tokens})
+    end
+  end
+
+  def revoke_token(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
+    Token.delete_user_token(user, id)
+
+    json_reply(conn, 201, "")
   end
 
   def blocks(%{assigns: %{user: user}} = conn, _params) do
