@@ -35,9 +35,25 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_replied_to_activity(_), do: nil
 
-  def attachments_from_ids(ids) do
+  def attachments_from_ids(data) do
+    if Map.has_key?(data, "descriptions") do
+      attachments_from_ids_descs(data["media_ids"], data["descriptions"])
+    else
+      attachments_from_ids_no_descs(data["media_ids"])
+    end
+  end
+
+  def attachments_from_ids_no_descs(ids) do
     Enum.map(ids || [], fn media_id ->
       Repo.get(Object, media_id).data
+    end)
+  end
+
+  def attachments_from_ids_descs(ids, descs_str) do
+    {_, descs} = Jason.decode(descs_str)
+
+    Enum.map(ids || [], fn media_id ->
+      Map.put(Repo.get(Object, media_id).data, "name", descs[media_id])
     end)
   end
 
