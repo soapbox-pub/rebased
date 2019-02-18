@@ -573,7 +573,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          {:ok, _activity} <-
            ActivityPub.accept(%{
              to: [follower.ap_id],
-             actor: followed.ap_id,
+             actor: followed,
              object: follow_activity.data["id"],
              type: "Accept"
            }) do
@@ -593,7 +593,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          {:ok, _activity} <-
            ActivityPub.reject(%{
              to: [follower.ap_id],
-             actor: followed.ap_id,
+             actor: followed,
              object: follow_activity.data["id"],
              type: "Reject"
            }) do

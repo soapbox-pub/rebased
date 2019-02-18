@@ -937,7 +937,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/authorize works" do
-      user = insert(:user, %{info: %Pleroma.User.Info{locked: true}})
+      user = insert(:user, %{info: %User.Info{locked: true}})
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
@@ -946,6 +946,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
+      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
@@ -959,6 +960,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == true
+      assert user.info.follow_request_count == 0
     end
 
     test "verify_credentials", %{conn: conn} do
@@ -979,6 +981,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
+      user = Repo.get(User, user.id)
+      assert user.info.follow_request_count == 1
+
       conn =
         build_conn()
         |> assign(:user, user)
@@ -991,6 +996,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
+      assert user.info.follow_request_count == 0
     end
   end
 
