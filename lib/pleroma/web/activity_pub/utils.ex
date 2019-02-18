@@ -164,7 +164,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         _ -> 5
       end
 
-    Pleroma.Web.Federator.enqueue(:publish, activity, priority)
+    Pleroma.Web.Federator.publish(activity, priority)
     :ok
   end
 
