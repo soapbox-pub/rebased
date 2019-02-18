@@ -524,6 +524,9 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def friends(%{assigns: %{user: for_user}} = conn, params) do
     {:ok, page} = Ecto.Type.cast(:integer, params["page"] || 1)
+    {:ok, export} = Ecto.Type.cast(:boolean, params["all"] || false)
+
+    page = if export, do: nil, else: page
 
     with {:ok, user} <- TwitterAPI.get_user(conn.assigns[:user], params),
          {:ok, friends} <- User.get_friends(user, page) do
