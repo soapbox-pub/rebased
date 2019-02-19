@@ -1690,6 +1690,24 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert [relationship] = json_response(conn, 200)
       assert other_user.id == relationship["id"]
     end
+
+    test "requires 'read' permission", %{conn: conn} do
+      token1 = insert(:oauth_token, scopes: ["write"])
+      token2 = insert(:oauth_token, scopes: ["read"])
+
+      for token <- [token1, token2] do
+        conn =
+          conn
+          |> put_req_header("authorization", "Bearer #{token.token}")
+          |> get("/api/pleroma/friend_requests")
+
+        if token == token1 do
+          assert %{"error" => "Insufficient permissions: read."} == json_response(conn, 403)
+        else
+          assert json_response(conn, 200)
+        end
+      end
+    end
   end
 
   describe "POST /api/pleroma/friendships/approve" do
