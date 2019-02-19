@@ -194,6 +194,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          true <- String.starts_with?(url["mediaType"], ["audio", "video"]) do
       conn
       |> put_layout(:metadata_player)
+      |> put_resp_header("x-frame-options", "ALLOW")
+      |> put_resp_header(
+        "content-security-policy",
+        "default-src 'none'; img-src 'self' data: https:; media-src 'self' https:;"
+      )
       |> put_view(Pleroma.Web.Metadata.PlayerView)
       |> render("player.html", url)
     else
