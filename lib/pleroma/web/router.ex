@@ -124,6 +124,8 @@ defmodule Pleroma.Web.Router do
     post("/permission_group/:nickname/:permission_group", AdminAPIController, :right_add)
     delete("/permission_group/:nickname/:permission_group", AdminAPIController, :right_delete)
 
+    put("/activation_status/:nickname", AdminAPIController, :set_activation_status)
+
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
