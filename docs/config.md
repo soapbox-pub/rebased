@@ -36,14 +36,15 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 An example for Sendgrid adapter:
 
-```
+```exs
 config :pleroma, Pleroma.Mailer,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
 ```
 
 An example for SMTP adapter:
-```
+
+```exs
 config :pleroma, Pleroma.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
@@ -97,6 +98,8 @@ config :pleroma, Pleroma.Mailer,
 * `max_pinned_statuses`: The maximum number of pinned statuses. `0` will disable the feature.
 * `autofollowed_nicknames`: Set to nicknames of (local) users that every new user should automatically follow.
 * `no_attachment_links`: Set to true to disable automatically adding attachment link text to statuses
+* `welcome_message`: A message that will be send to a newly registered users as a direct message.
+* `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
@@ -207,7 +210,7 @@ their ActivityPub ID.
 
 An example:
 
-```
+```exs
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
@@ -236,18 +239,34 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 
 Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
 
-```
+```exs
 config :pleroma, :admin_token, "somerandomtoken"
 ```
 
 You can then do
-```
+
+```sh
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
 
-## Pleroma.Web.Federator
+## Pleroma.Jobs
 
-* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
+A list of job queues and their settings.
+
+Job queue settings:
+
+* `max_jobs`: The maximum amount of parallel jobs running at the same time.
+
+Example:
+
+```exs
+config :pleroma, Pleroma.Jobs,
+  federator_incoming: [max_jobs: 50],
+  federator_outgoing: [max_jobs: 50]
+```
+
+This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
+
 
 ## Pleroma.Web.Federator.RetryQueue
 

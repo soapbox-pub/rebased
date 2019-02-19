@@ -5,8 +5,13 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
-  alias Pleroma.Web.ActivityPub.{UserView, ObjectView}
-  alias Pleroma.{Object, Repo, Activity, User, Instances}
+  alias Pleroma.Web.ActivityPub.UserView
+  alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Instances
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -397,7 +402,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == []
-      assert result["totalItems"] == 1
+      assert result["totalItems"] == 0
     end
 
     test "it works for more than 10 users", %{conn: conn} do
@@ -452,7 +457,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       assert result["first"]["orderedItems"] == []
-      assert result["totalItems"] == 1
+      assert result["totalItems"] == 0
     end
 
     test "it works for more than 10 users", %{conn: conn} do

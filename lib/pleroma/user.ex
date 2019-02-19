@@ -237,6 +237,7 @@ defmodule Pleroma.User do
       changeset
       |> put_change(:password_hash, hashed)
       |> put_change(:ap_id, ap_id)
+      |> unique_constraint(:ap_id)
       |> put_change(:following, [followers])
       |> put_change(:follower_address, followers)
     else
@@ -261,6 +262,7 @@ defmodule Pleroma.User do
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset),
          {:ok, user} <- autofollow_users(user),
+         {:ok, _} <- Pleroma.User.WelcomeMessage.post_welcome_message_to_user(user),
          {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
@@ -311,12 +313,12 @@ defmodule Pleroma.User do
     end
   end
 
-  @doc "A mass follow for local users. Respects blocks but does not create activities."
+  @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
     followed_addresses =
       followeds
-      |> Enum.reject(fn %{ap_id: ap_id} -> ap_id in follower.info.blocks end)
+      |> Enum.reject(fn followed -> blocks?(follower, followed) || blocks?(followed, follower) end)
       |> Enum.map(fn %{follower_address: fa} -> fa end)
 
     q =
@@ -618,6 +620,32 @@ defmodule Pleroma.User do
     )
   end
 
+  def update_follow_request_count(%User{} = user) do
+    subquery =
+      user
+      |> User.get_follow_requests_query()
+      |> select([a], %{count: count(a.id)})
+
+    User
+    |> where(id: ^user.id)
+    |> join(:inner, [u], s in subquery(subquery))
+    |> update([u, s],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{follow_request_count}', ?::varchar::jsonb, true)",
+            u.info,
+            s.count
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> {:ok, user}
+      _ -> {:error, user}
+    end
+  end
+
   def get_follow_requests(%User{} = user) do
     q = get_follow_requests_query(user)
     reqs = Repo.all(q)
@@ -731,7 +759,7 @@ defmodule Pleroma.User do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
-    if resolve, do: User.get_or_fetch_by_nickname(query)
+    if resolve, do: get_or_fetch(query)
 
     fts_results = do_search(fts_search_subquery(query), for_user)
 
@@ -1173,7 +1201,7 @@ defmodule Pleroma.User do
     {:ok, updated_user} =
       user
       |> change(%{tags: new_tags})
-      |> Repo.update()
+      |> update_and_set_cache()
 
     updated_user
   end

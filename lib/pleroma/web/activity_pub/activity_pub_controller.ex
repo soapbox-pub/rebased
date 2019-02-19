@@ -155,13 +155,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          true <- Utils.recipient_in_message(user.ap_id, params),
          params <- Utils.maybe_splice_recipient(user.ap_id, params) do
-      Federator.enqueue(:incoming_ap_doc, params)
+      Federator.incoming_ap_doc(params)
       json(conn, "ok")
     end
   end
 
   def inbox(%{assigns: %{valid_signature: true}} = conn, params) do
-    Federator.enqueue(:incoming_ap_doc, params)
+    Federator.incoming_ap_doc(params)
     json(conn, "ok")
   end
 

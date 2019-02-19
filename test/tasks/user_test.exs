@@ -151,7 +151,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ "Successfully unsubscribed"
 
       user = User.get_by_nickname(user.nickname)
-      assert length(user.following) == 0
+      assert Enum.empty?(user.following)
       assert user.info.deactivated
     end
 

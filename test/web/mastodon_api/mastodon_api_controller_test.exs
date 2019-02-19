@@ -6,8 +6,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.{Repo, User, Object, Activity, Notification}
-  alias Pleroma.Web.{OStatus, CommonAPI}
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Object
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Ecto.Changeset
@@ -31,7 +36,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/timelines/home")
 
-    assert length(json_response(conn, 200)) == 0
+    assert Enum.empty?(json_response(conn, 200))
 
     {:ok, user} = User.follow(user, following)
 
@@ -932,7 +937,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "/api/v1/follow_requests/:id/authorize works" do
-      user = insert(:user, %{info: %Pleroma.User.Info{locked: true}})
+      user = insert(:user, %{info: %User.Info{locked: true}})
       other_user = insert(:user)
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
@@ -941,6 +946,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
+      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
@@ -954,6 +960,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == true
+      assert user.info.follow_request_count == 0
     end
 
     test "verify_credentials", %{conn: conn} do
@@ -974,6 +981,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
+      user = Repo.get(User, user.id)
+      assert user.info.follow_request_count == 1
+
       conn =
         build_conn()
         |> assign(:user, user)
@@ -986,6 +996,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
+      assert user.info.follow_request_count == 0
     end
   end
 
@@ -1780,5 +1791,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> post("/api/v1/statuses/#{activity.id}/unmute")
                |> json_response(200)
     end
+  end
+
+  test "flavours switching (Pleroma Extension)", %{conn: conn} do
+    user = insert(:user)
+
+    get_old_flavour =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/pleroma/flavour")
+
+    assert "glitch" == json_response(get_old_flavour, 200)
+
+    set_flavour =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/flavour/vanilla")
+
+    assert "vanilla" == json_response(set_flavour, 200)
+
+    get_new_flavour =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/flavour/vanilla")
+
+    assert json_response(set_flavour, 200) == json_response(get_new_flavour, 200)
   end
 end

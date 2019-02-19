@@ -229,7 +229,7 @@ defmodule Pleroma.Web.Salmon do
       |> Enum.each(fn remote_user ->
         Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
 
-        Pleroma.Web.Federator.enqueue(:publish_single_salmon, %{
+        Pleroma.Web.Federator.publish_single_salmon(%{
           recipient: remote_user,
           feed: feed,
           poster: poster,

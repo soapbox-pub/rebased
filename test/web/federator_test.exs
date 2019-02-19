@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.FederatorTest do
-  alias Pleroma.Web.{CommonAPI, Federator}
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Federator
   alias Pleroma.Instances
   use Pleroma.DataCase
   import Pleroma.Factory
@@ -12,22 +13,6 @@ defmodule Pleroma.Web.FederatorTest do
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
-  end
-
-  test "enqueues an element according to priority" do
-    queue = [%{item: 1, priority: 2}]
-
-    new_queue = Federator.enqueue_sorted(queue, 2, 1)
-    assert new_queue == [%{item: 2, priority: 1}, %{item: 1, priority: 2}]
-
-    new_queue = Federator.enqueue_sorted(queue, 2, 3)
-    assert new_queue == [%{item: 1, priority: 2}, %{item: 2, priority: 3}]
-  end
-
-  test "pop first item" do
-    queue = [%{item: 2, priority: 1}, %{item: 1, priority: 2}]
-
-    assert {2, [%{item: 1, priority: 2}]} = Federator.queue_pop(queue)
   end
 
   describe "Publish an activity" do
@@ -49,7 +34,7 @@ defmodule Pleroma.Web.FederatorTest do
       relay_mock: relay_mock
     } do
       with_mocks([relay_mock]) do
-        Federator.handle(:publish, activity)
+        Federator.publish(activity)
       end
 
       assert_received :relay_publish
@@ -62,7 +47,7 @@ defmodule Pleroma.Web.FederatorTest do
       Pleroma.Config.put([:instance, :allow_relay], false)
 
       with_mocks([relay_mock]) do
-        Federator.handle(:publish, activity)
+        Federator.publish(activity)
       end
 
       refute_received :relay_publish
@@ -103,11 +88,9 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
-      assert called(
-               Federator.enqueue(:publish_single_ap, %{inbox: inbox1, unreachable_since: dt})
-             )
+      assert called(Federator.publish_single_ap(%{inbox: inbox1, unreachable_since: dt}))
 
-      refute called(Federator.enqueue(:publish_single_ap, %{inbox: inbox2}))
+      refute called(Federator.publish_single_ap(%{inbox: inbox2}))
     end
 
     test_with_mock "it federates only to reachable instances via Websub",
@@ -139,13 +122,13 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} = CommonAPI.post(user, %{"status" => "HI"})
 
       assert called(
-               Federator.enqueue(:publish_single_websub, %{
+               Federator.publish_single_websub(%{
                  callback: sub2.callback,
                  unreachable_since: dt
                })
              )
 
-      refute called(Federator.enqueue(:publish_single_websub, %{callback: sub1.callback}))
+      refute called(Federator.publish_single_websub(%{callback: sub1.callback}))
     end
 
     test_with_mock "it federates only to reachable instances via Salmon",
@@ -179,13 +162,13 @@ defmodule Pleroma.Web.FederatorTest do
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
       assert called(
-               Federator.enqueue(:publish_single_salmon, %{
+               Federator.publish_single_salmon(%{
                  recipient: remote_user2,
                  unreachable_since: dt
                })
              )
 
-      refute called(Federator.enqueue(:publish_single_websub, %{recipient: remote_user1}))
+      refute called(Federator.publish_single_websub(%{recipient: remote_user1}))
     end
   end
 
@@ -205,7 +188,7 @@ defmodule Pleroma.Web.FederatorTest do
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      {:ok, _activity} = Federator.handle(:incoming_ap_doc, params)
+      {:ok, _activity} = Federator.incoming_ap_doc(params)
     end
 
     test "rejects incoming AP docs with incorrect origin" do
@@ -223,7 +206,7 @@ defmodule Pleroma.Web.FederatorTest do
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      :error = Federator.handle(:incoming_ap_doc, params)
+      :error = Federator.incoming_ap_doc(params)
     end
   end
 end

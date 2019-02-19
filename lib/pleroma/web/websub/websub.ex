@@ -13,6 +13,7 @@ defmodule Pleroma.Web.Websub do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Router.Helpers
+  alias Pleroma.Web.Federator
   require Logger
 
   import Ecto.Query
@@ -87,7 +88,7 @@ defmodule Pleroma.Web.Websub do
         unreachable_since: reachable_callbacks_metadata[sub.callback]
       }
 
-      Pleroma.Web.Federator.enqueue(:publish_single_websub, data)
+      Federator.publish_single_websub(data)
     end)
   end
 
@@ -119,7 +120,7 @@ defmodule Pleroma.Web.Websub do
 
       websub = Repo.update!(change)
 
-      Pleroma.Web.Federator.enqueue(:verify_websub, websub)
+      Federator.verify_websub(websub)
 
       {:ok, websub}
     else
@@ -269,7 +270,7 @@ defmodule Pleroma.Web.Websub do
     subs = Repo.all(query)
 
     Enum.each(subs, fn sub ->
-      Pleroma.Web.Federator.enqueue(:request_subscription, sub)
+      Federator.request_subscription(sub)
     end)
   end
 

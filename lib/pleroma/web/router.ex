@@ -236,6 +236,9 @@ defmodule Pleroma.Web.Router do
     get("/suggestions", MastodonAPIController, :suggestions)
 
     get("/endorsements", MastodonAPIController, :empty_array)
+
+    post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
+    get("/pleroma/flavour", MastodonAPIController, :get_flavour)
   end
 
   scope "/api/web", Pleroma.Web.MastodonAPI do
@@ -389,6 +392,9 @@ defmodule Pleroma.Web.Router do
     get("/qvitter/mutes", TwitterAPI.Controller, :raw_empty_array)
 
     get("/externalprofile/show", TwitterAPI.Controller, :external_profile)
+
+    get("/oauth_tokens", TwitterAPI.Controller, :oauth_tokens)
+    delete("/oauth_tokens/:id", TwitterAPI.Controller, :revoke_token)
   end
 
   pipeline :ap_relay do
@@ -469,8 +475,8 @@ defmodule Pleroma.Web.Router do
 
   scope "/", Pleroma.Web.ActivityPub do
     pipe_through(:activitypub)
-    post("/users/:nickname/inbox", ActivityPubController, :inbox)
     post("/inbox", ActivityPubController, :inbox)
+    post("/users/:nickname/inbox", ActivityPubController, :inbox)
   end
 
   scope "/.well-known", Pleroma.Web do
