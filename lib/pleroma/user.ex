@@ -1201,7 +1201,7 @@ defmodule Pleroma.User do
     {:ok, updated_user} =
       user
       |> change(%{tags: new_tags})
-      |> Repo.update()
+      |> update_and_set_cache()
 
     updated_user
   end
