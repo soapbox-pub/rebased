@@ -172,9 +172,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     # only accept false as false value
     local = !(params[:local] == false)
 
-    with data <- %{"to" => to, "type" => "Accept", "actor" => actor, "object" => object},
+    with data <- %{"to" => to, "type" => "Accept", "actor" => actor.ap_id, "object" => object},
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity) do
+         :ok <- maybe_federate(activity),
+         _ <- User.update_follow_request_count(actor) do
       {:ok, activity}
     end
   end
@@ -183,9 +184,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     # only accept false as false value
     local = !(params[:local] == false)
 
-    with data <- %{"to" => to, "type" => "Reject", "actor" => actor, "object" => object},
+    with data <- %{"to" => to, "type" => "Reject", "actor" => actor.ap_id, "object" => object},
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity) do
+         :ok <- maybe_federate(activity),
+         _ <- User.update_follow_request_count(actor) do
       {:ok, activity}
     end
   end
@@ -283,7 +285,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def follow(follower, followed, activity_id \\ nil, local \\ true) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity) do
+         :ok <- maybe_federate(activity),
+         _ <- User.update_follow_request_count(followed) do
       {:ok, activity}
     end
   end
@@ -293,7 +296,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, follow_activity} <- update_follow_state(follow_activity, "cancelled"),
          unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
-         :ok <- maybe_federate(activity) do
+         :ok <- maybe_federate(activity),
+         _ <- User.update_follow_request_count(followed) do
       {:ok, activity}
     end
   end
@@ -753,21 +757,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     public = is_public?(activity)
 
-    reachable_inboxes_metadata =
-      (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
-      |> Enum.filter(fn user -> User.ap_enabled?(user) end)
-      |> Enum.map(fn %{info: %{source_data: data}} ->
-        (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
-      end)
-      |> Enum.uniq()
-      |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
-      |> Instances.filter_reachable()
-
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Jason.encode!(data)
 
-    Enum.each(reachable_inboxes_metadata, fn {inbox, unreachable_since} ->
-      Federator.enqueue(:publish_single_ap, %{
+    (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
+    |> Enum.filter(fn user -> User.ap_enabled?(user) end)
+    |> Enum.map(fn %{info: %{source_data: data}} ->
+      (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
+    end)
+    |> Enum.uniq()
+    |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
+    |> Instances.filter_reachable()
+    |> Enum.each(fn {inbox, unreachable_since} ->
+      Federator.publish_single_ap(%{
         inbox: inbox,
         json: json,
         actor: actor,
@@ -876,7 +878,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def is_private?(activity) do
-    !is_public?(activity) && Enum.any?(activity.data["to"], &String.contains?(&1, "/followers"))
+    unless is_public?(activity) do
+      follower_address = User.get_cached_by_ap_id(activity.data["actor"]).follower_address
+      Enum.any?(activity.data["to"], &(&1 == follower_address))
+    else
+      false
+    end
   end
 
   def is_direct?(%Activity{data: %{"directMessage" => true}}), do: true

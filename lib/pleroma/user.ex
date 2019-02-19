@@ -237,6 +237,7 @@ defmodule Pleroma.User do
       changeset
       |> put_change(:password_hash, hashed)
       |> put_change(:ap_id, ap_id)
+      |> unique_constraint(:ap_id)
       |> put_change(:following, [followers])
       |> put_change(:follower_address, followers)
     else
@@ -617,6 +618,32 @@ defmodule Pleroma.User do
           ^%{"object" => user.ap_id}
         )
     )
+  end
+
+  def update_follow_request_count(%User{} = user) do
+    subquery =
+      user
+      |> User.get_follow_requests_query()
+      |> select([a], %{count: count(a.id)})
+
+    User
+    |> where(id: ^user.id)
+    |> join(:inner, [u], s in subquery(subquery))
+    |> update([u, s],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{follow_request_count}', ?::varchar::jsonb, true)",
+            u.info,
+            s.count
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> {:ok, user}
+      _ -> {:error, user}
+    end
   end
 
   def get_follow_requests(%User{} = user) do
@@ -1174,7 +1201,7 @@ defmodule Pleroma.User do
     {:ok, updated_user} =
       user
       |> change(%{tags: new_tags})
-      |> Repo.update()
+      |> update_and_set_cache()
 
     updated_user
   end

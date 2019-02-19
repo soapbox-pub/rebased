@@ -12,14 +12,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
     follower_collection? = Enum.member?(message["to"] ++ message["cc"], follower_collection)
 
     message =
-      case recipients = get_recipient_count(message) do
-        {:public, _}
+      case get_recipient_count(message) do
+        {:public, recipients}
         when follower_collection? and recipients > threshold ->
           message
           |> Map.put("to", [follower_collection])
           |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])
 
-        {:public, _} when recipients > threshold ->
+        {:public, recipients} when recipients > threshold ->
           message
           |> Map.put("to", [])
           |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])

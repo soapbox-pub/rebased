@@ -8,32 +8,47 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
 
   import Pleroma.Web.ActivityPub.MRF.HellthreadPolicy
 
-  describe "hellthread filter tests" do
-    setup do
-      user = insert(:user)
+  setup do
+    user = insert(:user)
 
-      message = %{
-        "actor" => user.ap_id,
-        "cc" => [user.follower_address],
-        "type" => "Create",
-        "to" => [
-          "https://www.w3.org/ns/activitystreams#Public",
-          "https://instace.tld/users/user1",
-          "https://instace.tld/users/user2",
-          "https://instace.tld/users/user3"
-        ]
-      }
+    message = %{
+      "actor" => user.ap_id,
+      "cc" => [user.follower_address],
+      "type" => "Create",
+      "to" => [
+        "https://www.w3.org/ns/activitystreams#Public",
+        "https://instance.tld/users/user1",
+        "https://instance.tld/users/user2",
+        "https://instance.tld/users/user3"
+      ]
+    }
 
-      [user: user, message: message]
-    end
+    [user: user, message: message]
+  end
 
-    test "reject test", %{message: message} do
+  describe "reject" do
+    test "rejects the message if the recipient count is above reject_threshold", %{
+      message: message
+    } do
       Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 2})
 
       {:reject, nil} = filter(message)
     end
 
-    test "delist test", %{user: user, message: message} do
+    test "does not reject the message if the recipient count is below reject_threshold", %{
+      message: message
+    } do
+      Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 3})
+
+      assert {:ok, ^message} = filter(message)
+    end
+  end
+
+  describe "delist" do
+    test "delists the message if the recipient count is above delist_threshold", %{
+      user: user,
+      message: message
+    } do
       Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 2, reject_threshold: 0})
 
       {:ok, message} = filter(message)
@@ -41,10 +56,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicyTest do
       assert "https://www.w3.org/ns/activitystreams#Public" in message["cc"]
     end
 
-    test "excludes follower collection and public URI from threshold count", %{message: message} do
-      Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 3})
+    test "does not delist the message if the recipient count is below delist_threshold", %{
+      message: message
+    } do
+      Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 4, reject_threshold: 0})
 
-      {:ok, _} = filter(message)
+      assert {:ok, ^message} = filter(message)
     end
+  end
+
+  test "excludes follower collection and public URI from threshold count", %{message: message} do
+    Pleroma.Config.put([:mrf_hellthread], %{delist_threshold: 0, reject_threshold: 3})
+
+    assert {:ok, ^message} = filter(message)
   end
 end

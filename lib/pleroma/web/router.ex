@@ -230,6 +230,8 @@ defmodule Pleroma.Web.Router do
       get("/suggestions", MastodonAPIController, :suggestions)
 
       get("/endorsements", MastodonAPIController, :empty_array)
+
+      get("/pleroma/flavour", MastodonAPIController, :get_flavour)
     end
 
     scope [] do
@@ -265,6 +267,8 @@ defmodule Pleroma.Web.Router do
       get("/filters/:id", MastodonAPIController, :get_filter)
       put("/filters/:id", MastodonAPIController, :update_filter)
       delete("/filters/:id", MastodonAPIController, :delete_filter)
+
+      post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
     end
 
     scope [] do
@@ -401,6 +405,9 @@ defmodule Pleroma.Web.Router do
 
   scope "/api", Pleroma.Web, as: :authenticated_twitter_api do
     pipe_through(:authenticated_api)
+
+    get("/oauth_tokens", TwitterAPI.Controller, :oauth_tokens)
+    delete("/oauth_tokens/:id", TwitterAPI.Controller, :revoke_token)
 
     scope [] do
       pipe_through(:oauth_read)

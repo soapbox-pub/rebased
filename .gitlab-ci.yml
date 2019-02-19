@@ -1,7 +1,8 @@
 image: elixir:1.7.2
 
 services:
-  - postgres:9.6.2
+  - name: postgres:9.6.2
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
 
 variables:
   POSTGRES_DB: pleroma_test
@@ -35,4 +36,4 @@ lint:
 unit-testing:
   stage: test
   script:
-    - mix test --trace
+    - mix test --trace --preload-modules

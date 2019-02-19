@@ -406,7 +406,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       if not User.locked?(followed) do
         ActivityPub.accept(%{
           to: [follower.ap_id],
-          actor: followed.ap_id,
+          actor: followed,
           object: data,
           local: true
         })
@@ -432,7 +432,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            ActivityPub.accept(%{
              to: follow_activity.data["to"],
              type: "Accept",
-             actor: followed.ap_id,
+             actor: followed,
              object: follow_activity.data["id"],
              local: false
            }) do
@@ -458,7 +458,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
            ActivityPub.reject(%{
              to: follow_activity.data["to"],
              type: "Reject",
-             actor: followed.ap_id,
+             actor: followed,
              object: follow_activity.data["id"],
              local: false
            }) do
