@@ -876,7 +876,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def is_private?(activity) do
-    !is_public?(activity) && Enum.any?(activity.data["to"], &String.contains?(&1, "/followers"))
+    unless is_public?(activity) do
+      follower_address = User.get_cached_by_ap_id(activity.data["actor"]).follower_address
+      Enum.any?(activity.data["to"], &(&1 == follower_address))
+    else
+      false
+    end
   end
 
   def is_direct?(%Activity{data: %{"directMessage" => true}}), do: true
