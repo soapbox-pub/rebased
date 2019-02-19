@@ -104,8 +104,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
               [
                 {:meta, [property: "twitter:card", content: "player"], []},
                 {:meta, [property: "twitter:player", content: player_url(id)], []},
-                {:meta, [property: "twitter:player:width", content: "1280"], []},
-                {:meta, [property: "twitter:player:height", content: "720"], []}
+                {:meta, [property: "twitter:player:width", content: "480"], []},
+                {:meta, [property: "twitter:player:height", content: "480"], []}
                 | acc
               ]
 
