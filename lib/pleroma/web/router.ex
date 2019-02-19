@@ -409,6 +409,7 @@ defmodule Pleroma.Web.Router do
     get("/objects/:uuid", OStatus.OStatusController, :object)
     get("/activities/:uuid", OStatus.OStatusController, :activity)
     get("/notice/:id", OStatus.OStatusController, :notice)
+    get("/notice/:id/embed_player", OStatus.OStatusController, :notice_player)
     get("/users/:nickname/feed", OStatus.OStatusController, :feed)
     get("/users/:nickname", OStatus.OStatusController, :feed_redirect)
 

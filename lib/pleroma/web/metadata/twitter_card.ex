@@ -12,10 +12,11 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
 
   @impl Provider
   def build_tags(%{
+        activity_id: id,
         object: object,
         user: user
       }) do
-    attachments = build_attachments(object)
+    attachments = build_attachments(id, object)
     scrubbed_content = Utils.scrub_html_and_truncate(object)
     # Zero width space
     content =
@@ -65,7 +66,9 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     end
   end
 
-  defp build_attachments(%{data: %{"attachment" => attachments}}) do
+  defp build_attachments(id, z = %{data: %{"attachment" => attachments}}) do
+    IO.puts(inspect(z))
+
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
@@ -79,8 +82,9 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
             "audio" ->
               [
                 {:meta, [property: "twitter:card", content: "player"], []},
-                {:meta, [property: "twitter:player", content: Utils.attachment_url(url["href"])],
-                 []}
+                {:meta, [property: "twitter:player:width", content: "480"], []},
+                {:meta, [property: "twitter:player:height", content: "80"], []},
+                {:meta, [property: "twitter:player", content: player_url(id)], []}
                 | acc
               ]
 
@@ -99,8 +103,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
             "video" ->
               [
                 {:meta, [property: "twitter:card", content: "player"], []},
-                {:meta, [property: "twitter:player", content: Utils.attachment_url(url["href"])],
-                 []},
+                {:meta, [property: "twitter:player", content: player_url(id)], []},
                 {:meta, [property: "twitter:player:width", content: "1280"], []},
                 {:meta, [property: "twitter:player:height", content: "720"], []}
                 | acc
@@ -113,5 +116,9 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
 
       acc ++ rendered_tags
     end)
+  end
+
+  defp player_url(id) do
+    Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice_player, id)
   end
 end
