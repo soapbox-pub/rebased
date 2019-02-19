@@ -4,13 +4,16 @@
 
 defmodule Pleroma.Web.ErrorView do
   use Pleroma.Web, :view
+  require Logger
 
   def render("404.json", _assigns) do
     %{errors: %{detail: "Page not found"}}
   end
 
-  def render("500.json", _assigns) do
-    %{errors: %{detail: "Internal server error"}}
+  def render("500.json", assigns) do
+    Logger.error("Internal server error: #{inspect(assigns[:reason])}")
+
+    %{errors: %{detail: "Internal server error", reason: inspect(assigns[:reason])}}
   end
 
   # In case no render clause matches or no
