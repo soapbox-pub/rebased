@@ -237,6 +237,7 @@ defmodule Pleroma.User do
       changeset
       |> put_change(:password_hash, hashed)
       |> put_change(:ap_id, ap_id)
+      |> unique_constraint(:ap_id)
       |> put_change(:following, [followers])
       |> put_change(:follower_address, followers)
     else
