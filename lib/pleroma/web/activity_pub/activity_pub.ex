@@ -577,7 +577,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_reblogs(query, _), do: query
 
   defp restrict_muted(query, %{"muting_user" => %User{info: info}}) do
-    mutes = info["mutes"] || []
+    mutes = info.mutes
 
     from(
       activity in query,

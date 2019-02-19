@@ -769,22 +769,34 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def mute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
     with %User{} = muted <- Repo.get(User, id),
          {:ok, muter} <- User.mute(muter, muted) do
-      render(conn, AccountView, "relationship.json", %{user: muter, target: muted})
+      conn
+      |> put_view(AccountView)
+      |> render("relationship.json", %{user: muter, target: muted})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
   def unmute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
     with %User{} = muted <- Repo.get(User, id),
          {:ok, muter} <- User.unmute(muter, muted) do
-      render(conn, AccountView, "relationship.json", %{user: muter, target: muted})
+      conn
+      |> put_view(AccountView)
+      |> render("relationship.json", %{user: muter, target: muted})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
-  # TODO: Use proper query
   def mutes(%{assigns: %{user: user}} = conn, _) do
-    with muted_users <- user.info["mutes"] || [],
-         accounts <- Enum.map(muted_users, fn ap_id -> User.get_cached_by_ap_id(ap_id) end) do
-      res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
+    with muted_accounts <- User.muted_users(user) do
+      res = AccountView.render("accounts.json", users: muted_accounts, for: user, as: :user)
       json(conn, res)
     end
   end
