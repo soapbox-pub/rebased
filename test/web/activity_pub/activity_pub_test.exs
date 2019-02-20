@@ -277,6 +277,48 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_one)
   end
 
+  test "doesn't return muted activities" do
+    activity_one = insert(:note_activity)
+    activity_two = insert(:note_activity)
+    activity_three = insert(:note_activity)
+    user = insert(:user)
+    booster = insert(:user)
+    {:ok, user} = User.mute(user, %User{ap_id: activity_one.data["actor"]})
+
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_three)
+    refute Enum.member?(activities, activity_one)
+
+    {:ok, user} = User.unmute(user, %User{ap_id: activity_one.data["actor"]})
+
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_three)
+    assert Enum.member?(activities, activity_one)
+
+    {:ok, user} = User.mute(user, %User{ap_id: activity_three.data["actor"]})
+    {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
+    %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
+    activity_three = Repo.get(Activity, activity_three.id)
+
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+    assert Enum.member?(activities, activity_two)
+    refute Enum.member?(activities, activity_three)
+    refute Enum.member?(activities, boost_activity)
+    assert Enum.member?(activities, activity_one)
+
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => nil})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_three)
+    assert Enum.member?(activities, boost_activity)
+    assert Enum.member?(activities, activity_one)
+  end
+
   test "excludes reblogs on request" do
     user = insert(:user)
     {:ok, expected_activity} = ActivityBuilder.insert(%{"type" => "Create"}, %{:user => user})

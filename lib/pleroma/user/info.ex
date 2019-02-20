@@ -19,6 +19,7 @@ defmodule Pleroma.User.Info do
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
+    field(:mutes, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
@@ -74,12 +75,28 @@ defmodule Pleroma.User.Info do
     |> validate_required([:follower_count])
   end
 
+  def set_mutes(info, mutes) do
+    params = %{mutes: mutes}
+
+    info
+    |> cast(params, [:mutes])
+    |> validate_required([:mutes])
+  end
+
   def set_blocks(info, blocks) do
     params = %{blocks: blocks}
 
     info
     |> cast(params, [:blocks])
     |> validate_required([:blocks])
+  end
+
+  def add_to_mutes(info, muted) do
+    set_mutes(info, Enum.uniq([muted | info.mutes]))
+  end
+
+  def remove_from_mutes(info, muted) do
+    set_mutes(info, List.delete(info.mutes, muted))
   end
 
   def add_to_block(info, blocked) do
