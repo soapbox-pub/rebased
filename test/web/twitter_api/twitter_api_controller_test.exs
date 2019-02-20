@@ -14,6 +14,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Notification
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.Controller
   alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.NotificationView
   alias Pleroma.Web.CommonAPI
@@ -22,6 +23,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Ecto.Changeset
 
   import Pleroma.Factory
+  import Mock
 
   @banner "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
 
@@ -186,6 +188,20 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_timeline.json")
       |> json_response(200)
+    end
+
+    test_with_mock "treats user as unauthenticated if `assigns[:token]` is present but lacks `read` permission",
+                   Controller,
+                   [:passthrough],
+                   [] do
+      token = insert(:oauth_token, scopes: ["write"])
+
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{token.token}")
+      |> get("/api/statuses/public_timeline.json")
+      |> json_response(200)
+
+      assert called(Controller.public_timeline(%{assigns: %{user: nil}}, :_))
     end
   end
 
