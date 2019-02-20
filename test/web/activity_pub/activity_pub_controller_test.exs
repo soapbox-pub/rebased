@@ -41,7 +41,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/users/:nickname" do
-    test "it returns a json representation of the user with accept application/json", %{conn: conn} do
+    test "it returns a json representation of the user with accept application/json", %{
+      conn: conn
+    } do
       user = insert(:user)
 
       conn =
@@ -54,7 +56,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
 
-    test "it returns a json representation of the user with accept application/activity+json", %{conn: conn} do
+    test "it returns a json representation of the user with accept application/activity+json", %{
+      conn: conn
+    } do
       user = insert(:user)
 
       conn =
@@ -67,12 +71,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
 
-    test "it returns a json representation of the user with accept application/ld+json", %{conn: conn} do
+    test "it returns a json representation of the user with accept application/ld+json", %{
+      conn: conn
+    } do
       user = insert(:user)
 
       conn =
         conn
-        |> put_req_header("accept", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
+        |> put_req_header(
+          "accept",
+          "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+        )
         |> get("/users/#{user.nickname}")
 
       user = Repo.get(User, user.id)
@@ -82,7 +91,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/object/:uuid" do
-    test "it returns a json representation of the object with accept application/json", %{conn: conn} do
+    test "it returns a json representation of the object with accept application/json", %{
+      conn: conn
+    } do
       note = insert(:note)
       uuid = String.split(note.data["id"], "/") |> List.last()
 
@@ -94,7 +105,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
     end
 
-    test "it returns a json representation of the object with accept application/activity+json", %{conn: conn} do
+    test "it returns a json representation of the object with accept application/activity+json",
+         %{conn: conn} do
       note = insert(:note)
       uuid = String.split(note.data["id"], "/") |> List.last()
 
@@ -106,13 +118,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
     end
 
-    test "it returns a json representation of the object with accept application/ld+json", %{conn: conn} do
+    test "it returns a json representation of the object with accept application/ld+json", %{
+      conn: conn
+    } do
       note = insert(:note)
       uuid = String.split(note.data["id"], "/") |> List.last()
 
       conn =
         conn
-        |> put_req_header("accept", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
+        |> put_req_header(
+          "accept",
+          "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\""
+        )
         |> get("/objects/#{uuid}")
 
       assert json_response(conn, 200) == ObjectView.render("object.json", %{object: note})
