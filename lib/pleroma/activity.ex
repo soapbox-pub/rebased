@@ -113,4 +113,14 @@ defmodule Pleroma.Activity do
   end
 
   def mastodon_notification_type(%Activity{}), do: nil
+
+  def all_by_actor_and_id(actor, status_ids \\ [])
+  def all_by_actor_and_id(_actor, []), do: []
+
+  def all_by_actor_and_id(actor, status_ids) do
+    Activity
+    |> where([s], s.id in ^status_ids)
+    |> where([s], s.actor == ^actor)
+    |> Repo.all()
+  end
 end

@@ -273,7 +273,7 @@ defmodule Pleroma.User do
          Pleroma.Config.get([:instance, :account_activation_required]) do
       user
       |> Pleroma.UserEmail.account_confirmation_email()
-      |> Pleroma.Mailer.deliver()
+      |> Pleroma.Mailer.deliver_async()
     else
       {:ok, :noop}
     end
@@ -1283,5 +1283,14 @@ defmodule Pleroma.User do
       nickname: "erroruser@example.com",
       inserted_at: NaiveDateTime.utc_now()
     }
+  end
+
+  def all_superusers do
+    from(
+      u in User,
+      where: u.local == true,
+      where: fragment("?->'is_admin' @> 'true' OR ?->'is_moderator' @> 'true'", u.info, u.info)
+    )
+    |> Repo.all()
   end
 end

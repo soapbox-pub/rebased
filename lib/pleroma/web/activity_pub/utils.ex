@@ -598,4 +598,20 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     }
     |> Map.merge(additional)
   end
+
+  #### Flag-related helpers
+
+  def make_flag_data(params, additional) do
+    status_ap_ids = Enum.map(params.statuses || [], & &1.data["id"])
+    object = [params.account.ap_id] ++ status_ap_ids
+
+    %{
+      "type" => "Flag",
+      "actor" => params.actor.ap_id,
+      "content" => params.content,
+      "object" => object,
+      "context" => params.context
+    }
+    |> Map.merge(additional)
+  end
 end

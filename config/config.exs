@@ -164,7 +164,8 @@ config :pleroma, :instance,
   max_pinned_statuses: 1,
   no_attachment_links: false,
   welcome_user_nickname: nil,
-  welcome_message: nil
+  welcome_message: nil,
+  max_report_comment_size: 1000
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -340,7 +341,8 @@ config :pleroma, Pleroma.Web.Federator.RetryQueue,
 
 config :pleroma, Pleroma.Jobs,
   federator_incoming: [max_jobs: 50],
-  federator_outgoing: [max_jobs: 50]
+  federator_outgoing: [max_jobs: 50],
+  mailer: [max_jobs: 10]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
