@@ -353,6 +353,31 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def flag(
+        %{
+          actor: actor,
+          context: context,
+          account: account,
+          statuses: statuses,
+          content: content
+        } = params
+      ) do
+    additional = params[:additional] || %{}
+
+    # only accept false as false value
+    local = !(params[:local] == false)
+
+    %{
+      actor: actor,
+      context: context,
+      account: account,
+      statuses: statuses,
+      content: content
+    }
+    |> make_flag_data(additional)
+    |> insert(local)
+  end
+
   def fetch_activities_for_context(context, opts \\ %{}) do
     public = ["https://www.w3.org/ns/activitystreams#Public"]
 

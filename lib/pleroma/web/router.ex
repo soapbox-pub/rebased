@@ -275,6 +275,8 @@ defmodule Pleroma.Web.Router do
       delete("/filters/:id", MastodonAPIController, :delete_filter)
 
       post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
+
+      post("/reports", MastodonAPIController, :reports)
     end
 
     scope [] do

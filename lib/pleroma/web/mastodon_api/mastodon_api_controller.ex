@@ -24,6 +24,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.MastodonView
   alias Pleroma.Web.MastodonAPI.PushSubscriptionView
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MastodonAPI.ReportView
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.OAuth.App
@@ -1530,6 +1531,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       _e ->
         %{}
+    end
+  end
+
+  def reports(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.report(user, params) do
+      {:ok, activity} ->
+        conn
+        |> put_view(ReportView)
+        |> try_render("report.json", %{activity: activity})
+
+      {:error, err} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: err})
     end
   end
 

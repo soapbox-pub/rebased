@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
@@ -740,6 +740,37 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     activities = ActivityPub.fetch_user_activities(user, nil, %{"pinned" => "true"})
 
     assert 3 = length(activities)
+  end
+
+  test "it can create a Flag activity" do
+    reporter = insert(:user)
+    target_account = insert(:user)
+    {:ok, activity} = CommonAPI.post(target_account, %{"status" => "foobar"})
+    context = Utils.generate_context_id()
+    content = "foobar"
+
+    reporter_ap_id = reporter.ap_id
+    target_ap_id = target_account.ap_id
+    activity_ap_id = activity.data["id"]
+
+    assert {:ok, activity} =
+             ActivityPub.flag(%{
+               actor: reporter,
+               context: context,
+               account: target_account,
+               statuses: [activity],
+               content: content
+             })
+
+    assert %Activity{
+             actor: ^reporter_ap_id,
+             data: %{
+               "type" => "Flag",
+               "content" => ^content,
+               "context" => ^context,
+               "object" => [^target_ap_id, ^activity_ap_id]
+             }
+           } = activity
   end
 
   describe "publish_one/1" do

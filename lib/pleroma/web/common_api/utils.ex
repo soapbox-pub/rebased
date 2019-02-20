@@ -322,4 +322,22 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def maybe_extract_mentions(_), do: []
+
+  def make_report_content_html(nil), do: {:ok, nil}
+
+  def make_report_content_html(comment) do
+    max_size = Pleroma.Config.get([:instance, :max_report_comment_size], 1000)
+
+    if String.length(comment) <= max_size do
+      {:ok, format_input(comment, [], [], "text/plain")}
+    else
+      {:error, "Comment must be up to #{max_size} characters"}
+    end
+  end
+
+  def get_report_statuses(%User{ap_id: actor}, %{"status_ids" => status_ids}) do
+    {:ok, Activity.all_by_actor_and_id(actor, status_ids)}
+  end
+
+  def get_report_statuses(_, _), do: {:ok, nil}
 end
