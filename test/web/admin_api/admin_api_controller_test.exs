@@ -159,6 +159,54 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "PUT /api/pleroma/admin/activation_status" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        conn
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+
+      %{conn: conn}
+    end
+
+    test "deactivates the user", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: false})
+
+      user = Repo.get(User, user.id)
+      assert user.info.deactivated == true
+      assert json_response(conn, :no_content)
+    end
+
+    test "activates the user", %{conn: conn} do
+      user = insert(:user, info: %{deactivated: true})
+
+      conn =
+        conn
+        |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: true})
+
+      user = Repo.get(User, user.id)
+      assert user.info.deactivated == false
+      assert json_response(conn, :no_content)
+    end
+
+    test "returns 403 when requested by a non-admin", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: false})
+
+      assert json_response(conn, :forbidden)
+    end
+  end
+
   describe "POST /api/pleroma/admin/email_invite, with valid config" do
     setup do
       registrations_open = Pleroma.Config.get([:instance, :registrations_open])

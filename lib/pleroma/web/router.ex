@@ -145,6 +145,8 @@ defmodule Pleroma.Web.Router do
     post("/permission_group/:nickname/:permission_group", AdminAPIController, :right_add)
     delete("/permission_group/:nickname/:permission_group", AdminAPIController, :right_delete)
 
+    put("/activation_status/:nickname", AdminAPIController, :set_activation_status)
+
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
@@ -206,7 +208,7 @@ defmodule Pleroma.Web.Router do
 
       get("/follow_requests", MastodonAPIController, :follow_requests)
       get("/blocks", MastodonAPIController, :blocks)
-      get("/mutes", MastodonAPIController, :empty_array)
+      get("/mutes", MastodonAPIController, :mutes)
 
       get("/timelines/home", MastodonAPIController, :home_timeline)
       get("/timelines/direct", MastodonAPIController, :dm_timeline)
@@ -280,8 +282,8 @@ defmodule Pleroma.Web.Router do
       post("/accounts/:id/unfollow", MastodonAPIController, :unfollow)
       post("/accounts/:id/block", MastodonAPIController, :block)
       post("/accounts/:id/unblock", MastodonAPIController, :unblock)
-      post("/accounts/:id/mute", MastodonAPIController, :relationship_noop)
-      post("/accounts/:id/unmute", MastodonAPIController, :relationship_noop)
+      post("/accounts/:id/mute", MastodonAPIController, :mute)
+      post("/accounts/:id/unmute", MastodonAPIController, :unmute)
 
       post("/follow_requests/:id/authorize", MastodonAPIController, :authorize_follow_request)
       post("/follow_requests/:id/reject", MastodonAPIController, :reject_follow_request)

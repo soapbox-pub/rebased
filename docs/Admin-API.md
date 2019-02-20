@@ -66,6 +66,14 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
     * On success: JSON of the ``user.info``
 * Note: An admin cannot revoke their own admin status.
 
+## `/api/pleroma/admin/activation_status/:nickname`
+
+### Active or deactivate a user
+* Method: `PUT`
+* Params:
+    * `nickname`
+    * `status` BOOLEAN field, false value means deactivation.
+
 ## `/api/pleroma/admin/relay`
 ### Follow a Relay
 * Methods: `POST`

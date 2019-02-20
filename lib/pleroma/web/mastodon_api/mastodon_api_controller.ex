@@ -241,6 +241,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       params
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("blocking_user", user)
+      |> Map.put("muting_user", user)
       |> Map.put("user", user)
 
     activities =
@@ -263,6 +264,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("type", ["Create", "Announce"])
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
+      |> Map.put("muting_user", user)
       |> ActivityPub.fetch_public_activities()
       |> Enum.reverse()
 
@@ -629,6 +631,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("type", "Create")
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
+      |> Map.put("muting_user", user)
       |> Map.put("tag", tags)
       |> Map.put("tag_all", tag_all)
       |> Map.put("tag_reject", tag_reject)
@@ -769,6 +772,41 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: follower, target: followed})
+    end
+  end
+
+  def mute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
+    with %User{} = muted <- Repo.get(User, id),
+         {:ok, muter} <- User.mute(muter, muted) do
+      conn
+      |> put_view(AccountView)
+      |> render("relationship.json", %{user: muter, target: muted})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
+    end
+  end
+
+  def unmute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
+    with %User{} = muted <- Repo.get(User, id),
+         {:ok, muter} <- User.unmute(muter, muted) do
+      conn
+      |> put_view(AccountView)
+      |> render("relationship.json", %{user: muter, target: muted})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
+    end
+  end
+
+  def mutes(%{assigns: %{user: user}} = conn, _) do
+    with muted_accounts <- User.muted_users(user) do
+      res = AccountView.render("accounts.json", users: muted_accounts, for: user, as: :user)
+      json(conn, res)
     end
   end
 
@@ -1027,6 +1065,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         params
         |> Map.put("type", "Create")
         |> Map.put("blocking_user", user)
+        |> Map.put("muting_user", user)
 
       # we must filter the following list for the user to avoid leaking statuses the user
       # does not actually have permission to see (for more info, peruse security issue #270).

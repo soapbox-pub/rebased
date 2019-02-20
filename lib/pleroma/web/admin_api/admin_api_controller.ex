@@ -124,6 +124,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(%{error: "No such permission_group"})
   end
 
+  def set_activation_status(conn, %{"nickname" => nickname, "status" => status}) do
+    with {:ok, status} <- Ecto.Type.cast(:boolean, status),
+         %User{} = user <- User.get_by_nickname(nickname),
+         {:ok, _} <- User.deactivate(user, !status),
+         do: json_response(conn, :no_content, "")
+  end
+
   def relay_follow(conn, %{"relay_url" => target}) do
     with {:ok, _message} <- Relay.follow(target) do
       json(conn, target)

@@ -594,6 +594,29 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "mutes" do
+    test "it mutes people" do
+      user = insert(:user)
+      muted_user = insert(:user)
+
+      refute User.mutes?(user, muted_user)
+
+      {:ok, user} = User.mute(user, muted_user)
+
+      assert User.mutes?(user, muted_user)
+    end
+
+    test "it unmutes users" do
+      user = insert(:user)
+      muted_user = insert(:user)
+
+      {:ok, user} = User.mute(user, muted_user)
+      {:ok, user} = User.unmute(user, muted_user)
+
+      refute User.mutes?(user, muted_user)
+    end
+  end
+
   describe "blocks" do
     test "it blocks people" do
       user = insert(:user)

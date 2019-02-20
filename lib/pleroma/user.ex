@@ -888,6 +888,30 @@ defmodule Pleroma.User do
     )
   end
 
+  def mute(muter, %User{ap_id: ap_id}) do
+    info_cng =
+      muter.info
+      |> User.Info.add_to_mutes(ap_id)
+
+    cng =
+      change(muter)
+      |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
+  end
+
+  def unmute(muter, %{ap_id: ap_id}) do
+    info_cng =
+      muter.info
+      |> User.Info.remove_from_mutes(ap_id)
+
+    cng =
+      change(muter)
+      |> put_embed(:info, info_cng)
+
+    update_and_set_cache(cng)
+  end
+
   def block(blocker, %User{ap_id: ap_id} = blocked) do
     # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
     blocker =
@@ -930,6 +954,8 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
+  def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.info.mutes, ap_id)
+
   def blocks?(user, %{ap_id: ap_id}) do
     blocks = user.info.blocks
     domain_blocks = user.info.domain_blocks
@@ -940,6 +966,9 @@ defmodule Pleroma.User do
         host == domain
       end)
   end
+
+  def muted_users(user),
+    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.mutes))
 
   def blocked_users(user),
     do: Repo.all(from(u in User, where: u.ap_id in ^user.info.blocks))
