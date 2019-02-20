@@ -1273,15 +1273,25 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   defp get_or_make_app() do
     find_attrs = %{client_name: @local_mastodon_name, redirect_uris: "."}
+    scopes = ["read", "write", "follow", "push"]
 
     with %App{} = app <- Repo.get_by(App, find_attrs) do
+      {:ok, app} =
+        if app.scopes == scopes do
+          {:ok, app}
+        else
+          app
+          |> Ecto.Changeset.change(%{scopes: scopes})
+          |> Repo.update()
+        end
+
       {:ok, app}
     else
       _e ->
         cs =
           App.register_changeset(
             %App{},
-            Map.put(find_attrs, :scopes, ["read", "write", "follow"])
+            Map.put(find_attrs, :scopes, scopes)
           )
 
         Repo.insert(cs)

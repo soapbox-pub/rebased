@@ -93,6 +93,10 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["follow"]})
   end
 
+  pipeline :oauth_push do
+    plug(Pleroma.Plugs.OAuthScopesPlug, %{scopes: ["push"]})
+  end
+
   pipeline :well_known do
     plug(:accepts, ["json", "jrd+json", "xml", "xrd+xml"])
   end
@@ -290,6 +294,10 @@ defmodule Pleroma.Web.Router do
 
       post("/domain_blocks", MastodonAPIController, :block_domain)
       delete("/domain_blocks", MastodonAPIController, :unblock_domain)
+    end
+
+    scope [] do
+      pipe_through(:oauth_push)
 
       post("/push/subscription", MastodonAPIController, :create_push_subscription)
       get("/push/subscription", MastodonAPIController, :get_push_subscription)

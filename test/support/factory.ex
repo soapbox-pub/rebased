@@ -214,7 +214,7 @@ defmodule Pleroma.Factory do
     %Pleroma.Web.OAuth.App{
       client_name: "Some client",
       redirect_uris: "https://example.com/callback",
-      scopes: ["read", "write", "follow"],
+      scopes: ["read", "write", "follow", "push"],
       website: "https://example.com",
       client_id: "aaabbb==",
       client_secret: "aaa;/&bbb"
