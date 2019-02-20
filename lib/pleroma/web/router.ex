@@ -582,7 +582,7 @@ defmodule Pleroma.Web.Router do
     delete("/auth/sign_out", MastodonAPIController, :logout)
 
     scope [] do
-      pipe_through(:oauth_read)
+      pipe_through(:oauth_read_or_unauthenticated)
       get("/web/*path", MastodonAPIController, :index)
     end
   end
