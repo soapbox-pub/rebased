@@ -81,7 +81,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     expected = %{
       id: to_string(note.id),
       uri: note.data["object"]["id"],
-      url: note.data["object"]["id"],
+      url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, note),
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
