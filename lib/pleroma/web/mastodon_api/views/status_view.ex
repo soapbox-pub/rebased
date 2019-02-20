@@ -144,10 +144,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     card = render("card.json", Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity))
 
+    url =
+      if user.local do
+        Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity)
+      else
+        object["external_url"] || object["id"]
+      end
+
     %{
       id: to_string(activity.id),
       uri: object["id"],
-      url: object["external_url"] || object["id"],
+      url: url,
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
