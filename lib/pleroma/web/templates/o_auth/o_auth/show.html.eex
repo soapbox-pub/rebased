@@ -9,13 +9,24 @@
 <%= label f, :name, "Name or email" %>
 <%= text_input f, :name %>
 <br>
+<br>
 <%= label f, :password, "Password" %>
 <%= password_input f, :password %>
 <br>
+<br>
+
+<%= label f, :scope, "Permissions" %>
+<br>
+<%= for scope <- @available_scopes do %>
+  <%# Note: using hidden input with `unchecked_value` in order to distinguish user's empty selection from `scope` param being omitted %>
+  <%= checkbox f, :"scope_#{scope}", value: scope in @scopes && scope, checked_value: scope, unchecked_value: "", name: "authorization[scope][]" %>
+  <%= label f, :"scope_#{scope}", String.capitalize(scope) %>
+  <br>
+<% end %>
+
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :response_type, value: @response_type %>
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
-<%= hidden_input f, :scope, value: @scope %>
 <%= hidden_input f, :state, value: @state%>
 <%= submit "Authorize" %>
 <% end %>

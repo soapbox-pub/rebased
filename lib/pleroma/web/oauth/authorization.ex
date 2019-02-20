@@ -15,6 +15,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
 
   schema "oauth_authorizations" do
     field(:token, :string)
+    field(:scopes, {:array, :string}, default: [])
     field(:valid_until, :naive_datetime)
     field(:used, :boolean, default: false)
     belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
@@ -23,7 +24,8 @@ defmodule Pleroma.Web.OAuth.Authorization do
     timestamps()
   end
 
-  def create_authorization(%App{} = app, %User{} = user) do
+  def create_authorization(%App{} = app, %User{} = user, scopes \\ nil) do
+    scopes = scopes || app.scopes
     token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
 
     authorization = %Authorization{
@@ -31,6 +33,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
       used: false,
       user_id: user.id,
       app_id: app.id,
+      scopes: scopes,
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
     }
 

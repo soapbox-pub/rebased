@@ -1556,6 +1556,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user_response = json_response(conn, 200)
       assert user_response["header"] != User.banner_url(user)
     end
+
+    test "requires 'write' permission", %{conn: conn} do
+      token1 = insert(:oauth_token, scopes: ["read"])
+      token2 = insert(:oauth_token, scopes: ["write", "follow"])
+
+      for token <- [token1, token2] do
+        conn =
+          conn
+          |> put_req_header("authorization", "Bearer #{token.token}")
+          |> patch("/api/v1/accounts/update_credentials", %{})
+
+        if token == token1 do
+          assert %{"error" => "Insufficient permissions: write."} == json_response(conn, 403)
+        else
+          assert json_response(conn, 200)
+        end
+      end
+    end
   end
 
   test "get instance information", %{conn: conn} do

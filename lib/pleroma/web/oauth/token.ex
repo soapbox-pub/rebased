@@ -16,6 +16,7 @@ defmodule Pleroma.Web.OAuth.Token do
   schema "oauth_tokens" do
     field(:token, :string)
     field(:refresh_token, :string)
+    field(:scopes, {:array, :string}, default: [])
     field(:valid_until, :naive_datetime)
     belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
     belongs_to(:app, App)
@@ -26,17 +27,19 @@ defmodule Pleroma.Web.OAuth.Token do
   def exchange_token(app, auth) do
     with {:ok, auth} <- Authorization.use_token(auth),
          true <- auth.app_id == app.id do
-      create_token(app, Repo.get(User, auth.user_id))
+      create_token(app, Repo.get(User, auth.user_id), auth.scopes)
     end
   end
 
-  def create_token(%App{} = app, %User{} = user) do
+  def create_token(%App{} = app, %User{} = user, scopes \\ nil) do
+    scopes = scopes || app.scopes
     token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
     refresh_token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
 
     token = %Token{
       token: token,
       refresh_token: refresh_token,
+      scopes: scopes,
       user_id: user.id,
       app_id: app.id,
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)

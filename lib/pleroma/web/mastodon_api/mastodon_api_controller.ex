@@ -30,7 +30,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
 
+  import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
   import Ecto.Query
+
   require Logger
 
   @httpoison Application.get_env(:pleroma, :httpoison)
@@ -39,7 +41,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   action_fallback(:errors)
 
   def create_app(conn, params) do
-    with cs <- App.register_changeset(%App{}, params),
+    scopes = oauth_scopes(params, ["read"])
+
+    app_attrs =
+      params
+      |> Map.drop(["scope", "scopes"])
+      |> Map.put("scopes", scopes)
+
+    with cs <- App.register_changeset(%App{}, app_attrs),
          false <- cs.changes[:client_name] == @local_mastodon_name,
          {:ok, app} <- Repo.insert(cs) do
       res = %{
@@ -1254,7 +1263,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           response_type: "code",
           client_id: app.client_id,
           redirect_uri: ".",
-          scope: app.scopes
+          scope: Enum.join(app.scopes, " ")
         )
 
       conn
@@ -1264,12 +1273,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   defp get_or_make_app() do
     find_attrs = %{client_name: @local_mastodon_name, redirect_uris: "."}
+    scopes = ["read", "write", "follow", "push"]
 
     with %App{} = app <- Repo.get_by(App, find_attrs) do
+      {:ok, app} =
+        if app.scopes == scopes do
+          {:ok, app}
+        else
+          app
+          |> Ecto.Changeset.change(%{scopes: scopes})
+          |> Repo.update()
+        end
+
       {:ok, app}
     else
       _e ->
-        cs = App.register_changeset(%App{}, Map.put(find_attrs, :scopes, "read,write,follow"))
+        cs =
+          App.register_changeset(
+            %App{},
+            Map.put(find_attrs, :scopes, scopes)
+          )
 
         Repo.insert(cs)
     end

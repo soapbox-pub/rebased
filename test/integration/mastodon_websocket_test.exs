@@ -80,7 +80,7 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
         Pleroma.Repo.insert(
           OAuth.App.register_changeset(%OAuth.App{}, %{
             client_name: "client",
-            scopes: "scope",
+            scopes: ["scope"],
             redirect_uris: "url"
           })
         )

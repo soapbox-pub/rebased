@@ -12,16 +12,23 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.User
   alias Comeonin.Pbkdf2
 
+  import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
+
   plug(:fetch_session)
   plug(:fetch_flash)
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
   def authorize(conn, params) do
+    app = Repo.get_by(App, client_id: params["client_id"])
+    available_scopes = (app && app.scopes) || []
+    scopes = oauth_scopes(params, nil) || available_scopes
+
     render(conn, "show.html", %{
       response_type: params["response_type"],
       client_id: params["client_id"],
-      scope: params["scope"],
+      available_scopes: available_scopes,
+      scopes: scopes,
       redirect_uri: params["redirect_uri"],
       state: params["state"]
     })
@@ -34,14 +41,18 @@ defmodule Pleroma.Web.OAuth.OAuthController do
             "password" => password,
             "client_id" => client_id,
             "redirect_uri" => redirect_uri
-          } = params
+          } = auth_params
       }) do
     with %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
-         {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         {:ok, auth} <- Authorization.create_authorization(app, user) do
+         scopes <- oauth_scopes(auth_params, []),
+         {:unsupported_scopes, []} <- {:unsupported_scopes, scopes -- app.scopes},
+         # Note: `scope` param is intentionally not optional in this context
+         {:missing_scopes, false} <- {:missing_scopes, scopes == []},
+         {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
+         {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
       # Special case: Local MastodonFE.
       redirect_uri =
         if redirect_uri == "." do
@@ -62,8 +73,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
           url_params = %{:code => auth.token}
 
           url_params =
-            if params["state"] do
-              Map.put(url_params, :state, params["state"])
+            if auth_params["state"] do
+              Map.put(url_params, :state, auth_params["state"])
             else
               url_params
             end
@@ -73,19 +84,23 @@ defmodule Pleroma.Web.OAuth.OAuthController do
           redirect(conn, external: url)
       end
     else
+      {scopes_issue, _} when scopes_issue in [:unsupported_scopes, :missing_scopes] ->
+        conn
+        |> put_flash(:error, "Permissions not specified.")
+        |> put_status(:unauthorized)
+        |> authorize(auth_params)
+
       {:auth_active, false} ->
         conn
-        |> put_flash(:error, "Account confirmation pending")
+        |> put_flash(:error, "Account confirmation pending.")
         |> put_status(:forbidden)
-        |> authorize(params)
+        |> authorize(auth_params)
 
       error ->
         error
     end
   end
 
-  # TODO
-  # - proper scope handling
   def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
     with %App{} = app <- get_app_from_request(conn, params),
          fixed_token = fix_padding(params["code"]),
@@ -99,7 +114,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         refresh_token: token.refresh_token,
         created_at: DateTime.to_unix(inserted_at),
         expires_in: 60 * 10,
-        scope: "read write follow"
+        scope: Enum.join(token.scopes)
       }
 
       json(conn, response)
@@ -110,8 +125,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  # TODO
-  # - investigate a way to verify the user wants to grant read/write/follow once scope handling is done
   def token_exchange(
         conn,
         %{"grant_type" => "password", "username" => name, "password" => password} = params
@@ -120,14 +133,17 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          %User{} = user <- User.get_by_nickname_or_email(name),
          true <- Pbkdf2.checkpw(password, user.password_hash),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
-         {:ok, auth} <- Authorization.create_authorization(app, user),
+         scopes <- oauth_scopes(params, app.scopes),
+         [] <- scopes -- app.scopes,
+         true <- Enum.any?(scopes),
+         {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response = %{
         token_type: "Bearer",
         access_token: token.token,
         refresh_token: token.refresh_token,
         expires_in: 60 * 10,
-        scope: "read write follow"
+        scope: Enum.join(token.scopes, " ")
       }
 
       json(conn, response)
