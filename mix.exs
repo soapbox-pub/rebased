@@ -89,7 +89,8 @@ defmodule Pleroma.Mixfile do
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
       {:floki, "~> 0.20.0"},
-      {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"}
+      {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
+      {:timex, "~> 3.5"}
     ]
   end
 

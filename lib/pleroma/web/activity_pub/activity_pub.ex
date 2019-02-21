@@ -823,11 +823,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
 
+    date =
+      NaiveDateTime.utc_now()
+      |> Timex.format!("{WDshort}, {D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
+
     signature =
       Pleroma.Web.HTTPSignatures.sign(actor, %{
         host: host,
         "content-length": byte_size(json),
-        digest: digest
+        digest: digest,
+        date: date
       })
 
     with {:ok, %{status: code}} when code in 200..299 <-
@@ -837,6 +842,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
                json,
                [
                  {"Content-Type", "application/activity+json"},
+                 {"Date", date},
                  {"signature", signature},
                  {"digest", digest}
                ]
