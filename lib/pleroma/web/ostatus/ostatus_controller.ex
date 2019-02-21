@@ -33,6 +33,9 @@ defmodule Pleroma.Web.OStatus.OStatusController do
       "activity+json" ->
         ActivityPubController.call(conn, :user)
 
+      "json" ->
+        ActivityPubController.call(conn, :user)
+
       _ ->
         with %User{} = user <- User.get_cached_by_nickname(nickname) do
           redirect(conn, external: OStatus.feed_path(user))
@@ -94,7 +97,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def object(conn, %{"uuid" => uuid}) do
-    if get_format(conn) == "activity+json" do
+    if get_format(conn) in ["activity+json", "json"] do
       ActivityPubController.call(conn, :object)
     else
       with id <- o_status_url(conn, :object, uuid),
@@ -119,7 +122,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def activity(conn, %{"uuid" => uuid}) do
-    if get_format(conn) == "activity+json" do
+    if get_format(conn) in ["activity+json", "json"] do
       ActivityPubController.call(conn, :activity)
     else
       with id <- o_status_url(conn, :activity, uuid),
