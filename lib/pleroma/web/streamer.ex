@@ -10,7 +10,7 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
-  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
 
   @keepalive_interval :timer.seconds(30)
 
@@ -73,7 +73,7 @@ defmodule Pleroma.Web.Streamer do
   def handle_cast(%{action: :stream, topic: "list", item: item}, topics) do
     # filter the recipient list if the activity is not public, see #270.
     recipient_lists =
-      case ActivityPub.is_public?(item) do
+      case Visibility.is_public?(item) do
         true ->
           Pleroma.List.get_lists_from_activity(item)
 
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.Streamer do
           |> Enum.filter(fn list ->
             owner = Repo.get(User, list.user_id)
 
-            ActivityPub.visible_for_user?(item, owner)
+            Visibility.visible_for_user?(item, owner)
           end)
       end
 
