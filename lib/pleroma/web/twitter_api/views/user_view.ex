@@ -67,6 +67,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
         {String.trim(name, ":"), url}
       end)
 
+    emoji = Enum.dedup(emoji ++ user.info.emoji)
+
     # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
     # For example: [{"name": "Pronoun", "value": "she/her"}, …]
     fields =
