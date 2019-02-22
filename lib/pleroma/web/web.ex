@@ -27,7 +27,7 @@ defmodule Pleroma.Web do
       import Pleroma.Web.Gettext
       import Pleroma.Web.Router.Helpers
 
-      plug(:put_layout, Application.get_env(:pleroma, :app_template, "app.html"))
+      plug(:put_layout, Application.get_env(:pleroma, :app_layout, "app.html"))
     end
   end
 
