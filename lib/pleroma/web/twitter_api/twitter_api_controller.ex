@@ -654,11 +654,17 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp parse_profile_bio(user, params) do
     if bio = params["description"] do
+      emojis_text = (params["description"] || "") <> " " <> (params["name"] || "")
+
+      emojis =
+        ((user.info.emoji || []) ++ Formatter.get_emoji_map(emojis_text))
+        |> Enum.dedup()
+
       user_info =
         user.info
         |> Map.put(
-          "emojis",
-          Formatter.get_emoji_map(params["description"])
+          "emoji",
+          emojis
         )
 
       params
