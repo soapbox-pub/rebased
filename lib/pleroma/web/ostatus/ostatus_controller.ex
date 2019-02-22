@@ -156,6 +156,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
             %Object{} = object = Object.normalize(activity.data["object"])
 
             Fallback.RedirectController.redirector_with_meta(conn, %{
+              activity_id: activity.id,
               object: object,
               url:
                 Pleroma.Web.Router.Helpers.o_status_url(
@@ -184,6 +185,30 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
       e ->
         e
+    end
+  end
+
+  # Returns an HTML embedded <audio> or <video> player suitable for embed iframes.
+  def notice_player(conn, %{"id" => id}) do
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
+         true <- ActivityPub.is_public?(activity),
+         %Object{} = object <- Object.normalize(activity.data["object"]),
+         %{data: %{"attachment" => [%{"url" => [url | _]} | _]}} <- object,
+         true <- String.starts_with?(url["mediaType"], ["audio", "video"]) do
+      conn
+      |> put_layout(:metadata_player)
+      |> put_resp_header("x-frame-options", "ALLOW")
+      |> put_resp_header(
+        "content-security-policy",
+        "default-src 'none';style-src 'self' 'unsafe-inline';img-src 'self' data: https:; media-src 'self' https:;"
+      )
+      |> put_view(Pleroma.Web.Metadata.PlayerView)
+      |> render("player.html", url)
+    else
+      _error ->
+        conn
+        |> put_status(404)
+        |> Fallback.RedirectController.redirector(nil, 404)
     end
   end
 
