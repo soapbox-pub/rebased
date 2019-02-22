@@ -301,3 +301,12 @@ For each pool, the options are:
 * `max_connections` - how much connections a pool can hold
 * `timeout` - retention duration for connections
 
+## :ldap
+
+* `enabled`: enables LDAP authentication
+* `host`: LDAP server hostname
+* `port`: LDAP port, e.g. 389 or 636
+* `ssl`: true to use SSL
+* `sslopts`: additional SSL options
+* `base`: LDAP base, e.g. "dc=example,dc=com"
+* `uid`: attribute type to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"

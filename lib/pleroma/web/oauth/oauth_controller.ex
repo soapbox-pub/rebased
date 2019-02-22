@@ -130,8 +130,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         %{"grant_type" => "password", "username" => name, "password" => password} = params
       ) do
     with %App{} = app <- get_app_from_request(conn, params),
-         %User{} = user <- User.get_by_nickname_or_email(name),
-         true <- Pbkdf2.checkpw(password, user.password_hash),
+         %User{} = user <- get_user(name, password),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          scopes <- oauth_scopes(params, app.scopes),
          [] <- scopes -- app.scopes,
@@ -213,6 +212,30 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       )
     else
       nil
+    end
+  end
+
+  defp get_user(name, password) do
+    if Pleroma.Config.get([:ldap, :enabled]) do
+      case Pleroma.LDAP.get_user(name, password) do
+        %User{} = user ->
+          user
+
+        {:error, {:ldap_connection_error, _}} ->
+          # When LDAP is unavailable, try default login
+          with %User{} = user <- User.get_by_nickname_or_email(name),
+               true <- Pbkdf2.checkpw(password, user.password_hash) do
+            user
+          end
+
+        error ->
+          error
+      end
+    else
+      with %User{} = user <- User.get_by_nickname_or_email(name),
+           true <- Pbkdf2.checkpw(password, user.password_hash) do
+        user
+      end
     end
   end
 end
