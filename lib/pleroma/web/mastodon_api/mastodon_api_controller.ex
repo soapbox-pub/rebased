@@ -1518,9 +1518,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def status_card(conn, %{"id" => status_id}) do
+  def status_card(%{assigns: %{user: user}} = conn, %{"id" => status_id}) do
     with %Activity{} = activity <- Repo.get(Activity, status_id),
-         true <- ActivityPub.is_public?(activity) do
+         true <- ActivityPub.visible_for_user?(activity, user) do
       data =
         StatusView.render(
           "card.json",
