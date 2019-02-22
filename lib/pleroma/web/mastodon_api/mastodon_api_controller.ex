@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.Filter
+  alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
@@ -96,6 +97,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end
       end)
 
+    emojis_text = (user_params["display_name"] || "") <> (user_params["note"] || "")
+
+    user_info_emojis =
+      ((user.info.emoji || []) ++ Formatter.get_emoji_map(emojis_text))
+      |> Enum.dedup()
+
     info_params =
       [:no_rich_text, :locked, :hide_followers, :hide_follows, :hide_favorites, :show_role]
       |> Enum.reduce(%{}, fn key, acc ->
@@ -112,6 +119,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           _ -> :error
         end
       end)
+      |> Map.put(:emoji, user_info_emojis)
 
     info_cng = User.Info.profile_update(user.info, info_params)
 
