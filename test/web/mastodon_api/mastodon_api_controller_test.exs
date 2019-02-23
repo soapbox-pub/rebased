@@ -1744,6 +1744,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                }
              }
 
+      # works with private posts
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "http://example.com/ogp", "visibility" => "direct"})
+
+      response_two =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/statuses/#{activity.id}/card")
+        |> json_response(200)
+
+      assert response_two == response
+
       Pleroma.Config.put([:rich_media, :enabled], false)
     end
   end
