@@ -8,10 +8,17 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.HTML
   alias Pleroma.Web.RichMedia.Parser
 
+  defp validate_page_url(nil), do: :error
+  defp validate_page_url(%URI{authority: nil}), do: :error
+  defp validate_page_url(%URI{scheme: nil}), do: :error
+  defp validate_page_url(%URI{}), do: :ok
+  defp validate_page_url(page_url), do: URI.parse(page_url) |> validate_page_url
+
   def fetch_data_for_activity(%Activity{} = activity) do
     with true <- Pleroma.Config.get([:rich_media, :enabled]),
          %Object{} = object <- Object.normalize(activity.data["object"]),
          {:ok, page_url} <- HTML.extract_first_external_url(object, object.data["content"]),
+         :ok <- validate_page_url(page_url),
          {:ok, rich_media} <- Parser.parse(page_url) do
       %{page_url: page_url, rich_media: rich_media}
     else
