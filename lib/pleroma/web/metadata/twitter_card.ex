@@ -66,9 +66,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     end
   end
 
-  defp build_attachments(id, z = %{data: %{"attachment" => attachments}}) do
-    IO.puts(inspect(z))
-
+  defp build_attachments(id, %{data: %{"attachment" => attachments}}) do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
