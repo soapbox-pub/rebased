@@ -229,18 +229,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def get_by_id_or_nickname(id_or_nickname) do
-    if !is_integer(id_or_nickname) && :error == Integer.parse(id_or_nickname) do
-      Repo.get_by(User, nickname: id_or_nickname)
-    else
-      Repo.get(User, id_or_nickname)
-    end
-  end
-
   def get_user(user \\ nil, params) do
     case params do
       %{"user_id" => user_id} ->
-        case target = get_by_id_or_nickname(user_id) do
+        case target = User.get_cached_by_nickname_or_id(user_id) do
           nil ->
             {:error, "No user with such user_id"}
 
