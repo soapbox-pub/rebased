@@ -27,6 +27,10 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
     end
   end
 
+  def is_announceable?(activity, user) do
+    is_public?(activity) || activity.data["actor"] == user.ap_id
+  end
+
   def is_direct?(%Activity{data: %{"directMessage" => true}}), do: true
   def is_direct?(%Object{data: %{"directMessage" => true}}), do: true
 
