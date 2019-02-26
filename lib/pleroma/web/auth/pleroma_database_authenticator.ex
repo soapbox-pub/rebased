@@ -1,8 +1,8 @@
-defmodule Pleroma.Web.Authenticator do
+defmodule Pleroma.Web.Auth.PleromaDatabaseAuthenticator do
   alias Pleroma.User
   alias Comeonin.Pbkdf2
 
-  @behaviour Pleroma.Web.AuthenticatorAdapter
+  @behaviour Pleroma.Web.Auth.DatabaseAuthenticator
 
   def get_user(%Plug.Conn{} = conn) do
     %{"authorization" => %{"name" => name, "password" => password}} = conn.params
