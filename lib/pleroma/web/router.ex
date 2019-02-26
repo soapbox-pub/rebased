@@ -139,7 +139,9 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through([:admin_api, :oauth_write])
 
+    get("/users", AdminAPIController, :list_users)
     delete("/user", AdminAPIController, :user_delete)
+    patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     post("/user", AdminAPIController, :user_create)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)

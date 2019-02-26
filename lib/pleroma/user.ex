@@ -772,6 +772,12 @@ defmodule Pleroma.User do
     Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
   end
 
+  def all_except_one(user) do
+    query = from(u in User, where: u.id != ^user.id)
+
+    Repo.all(query)
+  end
+
   defp do_search(subquery, for_user, options \\ []) do
     q =
       from(
