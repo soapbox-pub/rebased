@@ -304,6 +304,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/users/:nickname/outbox" do
+    test "it will not bomb when there is no activity", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/users/#{user.nickname}/outbox")
+
+      result = json_response(conn, 200)
+      assert user.ap_id <> "/outbox" == result["id"]
+    end
+
     test "it returns a note activity in a collection", %{conn: conn} do
       note_activity = insert(:note_activity)
       user = User.get_cached_by_ap_id(note_activity.data["actor"])

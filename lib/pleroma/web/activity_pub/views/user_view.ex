@@ -188,14 +188,24 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       end
 
     activities = ActivityPub.fetch_user_activities(user, nil, params)
-    min_id = Enum.at(Enum.reverse(activities), 0).id
-    max_id = Enum.at(activities, 0).id
 
-    collection =
-      Enum.map(activities, fn act ->
-        {:ok, data} = Transmogrifier.prepare_outgoing(act.data)
-        data
-      end)
+    {max_id, min_id, collection} =
+      if length(activities) > 0 do
+        {
+          Enum.at(Enum.reverse(activities), 0).id,
+          Enum.at(activities, 0).id,
+          Enum.map(activities, fn act ->
+            {:ok, data} = Transmogrifier.prepare_outgoing(act.data)
+            data
+          end)
+        }
+      else
+        {
+          0,
+          0,
+          []
+        }
+      end
 
     iri = "#{user.ap_id}/outbox"
 

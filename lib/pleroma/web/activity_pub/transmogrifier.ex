@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
 
   import Ecto.Query
 
@@ -489,7 +490,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- get_actor(data),
          %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
          {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
-         public <- ActivityPub.is_public?(data),
+         public <- Visibility.is_public?(data),
          {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false, public) do
       {:ok, activity}
     else
