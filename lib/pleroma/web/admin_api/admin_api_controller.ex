@@ -6,6 +6,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
@@ -41,6 +42,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(user.nickname)
   end
 
+  def user_toggle_activation(conn, %{"nickname" => nickname}) do
+    user = User.get_by_nickname(nickname)
+
+    {:ok, updated_user} = User.deactivate(user, !user.info.deactivated)
+
+    conn
+    |> json(UserView.render("show_for_admin.json", %{user: updated_user}))
+  end
+
   def tag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do
     with {:ok, _} <- User.tag(nicknames, tags),
          do: json_response(conn, :no_content, "")
@@ -49,6 +59,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   def untag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do
     with {:ok, _} <- User.untag(nicknames, tags),
          do: json_response(conn, :no_content, "")
+  end
+
+  def list_users(%{assigns: %{user: admin}} = conn, _data) do
+    users = User.all_except_one(admin)
+
+    conn
+    |> json(UserView.render("index_for_admin.json", %{users: users}))
   end
 
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})

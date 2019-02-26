@@ -9,6 +9,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.TwitterAPI.UserView
 
   def render("show.json", %{user: user = %User{}} = assigns) do
     render_one(user, Pleroma.Web.TwitterAPI.UserView, "user.json", assigns)
@@ -24,6 +25,19 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     if User.visible_for?(user, assigns[:for]),
       do: do_render("user.json", assigns),
       else: %{}
+  end
+
+  def render("index_for_admin.json", %{users: users} = opts) do
+    users
+    |> render_many(UserView, "show_for_admin.json", opts)
+  end
+
+  def render("show_for_admin.json", %{user: user}) do
+    %{
+      "id" => user.id,
+      "nickname" => user.nickname,
+      "deactivated" => user.info.deactivated
+    }
   end
 
   def render("short.json", %{
