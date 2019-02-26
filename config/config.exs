@@ -344,6 +344,16 @@ config :pleroma, Pleroma.Jobs,
   federator_outgoing: [max_jobs: 50],
   mailer: [max_jobs: 10]
 
+config :auto_linker,
+  opts: [
+    scheme: true,
+    extra: true,
+    class: false,
+    strip_prefix: false,
+    new_window: false,
+    rel: false
+  ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"

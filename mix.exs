@@ -90,7 +90,10 @@ defmodule Pleroma.Mixfile do
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
       {:floki, "~> 0.20.0"},
       {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
-      {:timex, "~> 3.5"}
+      {:timex, "~> 3.5"},
+      {:auto_linker,
+       git: "https://git.pleroma.social/pleroma/auto_linker.git",
+       ref: "94193ca5f97c1f9fdf3d1469653e2d46fac34bcd"}
     ]
   end
 

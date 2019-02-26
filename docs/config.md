@@ -107,7 +107,7 @@ config :pleroma, Pleroma.Mailer,
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```
-config :logger, 
+config :logger,
   backends: [{ExSyslogger, :ex_syslogger}]
 
 config :logger, :ex_syslogger,
@@ -301,3 +301,28 @@ For each pool, the options are:
 * `max_connections` - how much connections a pool can hold
 * `timeout` - retention duration for connections
 
+## :auto_linker
+
+Configuration for the `auto_linker` library:
+
+* `class: "auto-linker"` - specify the class to be added to the generated link. false to clear
+* `rel: "noopener noreferrer"` - override the rel attribute. false to clear
+* `new_window: true` - set to false to remove `target='_blank'` attribute
+* `scheme: false` - Set to true to link urls with schema `http://google.com`
+* `truncate: false` - Set to a number to truncate urls longer then the number. Truncated urls will end in `..`
+* `strip_prefix: true` - Strip the scheme prefix
+* `extra: false` - link urls with rarely used schemes (magnet, ipfs, irc, etc.)
+
+Example:
+
+```exs
+config :auto_linker,
+  opts: [
+    scheme: true,
+    extra: true,
+    class: false,
+    strip_prefix: false,
+    new_window: false,
+    rel: false
+  ]
+```

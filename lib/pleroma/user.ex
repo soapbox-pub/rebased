@@ -1193,9 +1193,6 @@ defmodule Pleroma.User do
   def parse_bio(bio, _user) when bio == "", do: bio
 
   def parse_bio(bio, user) do
-    mentions = Formatter.parse_mentions(bio)
-    tags = Formatter.parse_tags(bio)
-
     emoji =
       (user.info.source_data["tag"] || [])
       |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
@@ -1204,7 +1201,8 @@ defmodule Pleroma.User do
       end)
 
     bio
-    |> CommonUtils.format_input(mentions, tags, "text/plain", user_links: [format: :full])
+    |> CommonUtils.format_input("text/plain", mentions_format: :full)
+    |> elem(0)
     |> Formatter.emojify(emoji)
   end
 
