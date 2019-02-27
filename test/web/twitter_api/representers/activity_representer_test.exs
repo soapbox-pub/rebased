@@ -13,36 +13,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   alias Pleroma.Web.TwitterAPI.UserView
   import Pleroma.Factory
 
-  test "an announce activity" do
-    user = insert(:user)
-    note_activity = insert(:note_activity)
-    activity_actor = Repo.get_by(User, ap_id: note_activity.data["actor"])
-    object = Object.get_by_ap_id(note_activity.data["object"]["id"])
-
-    {:ok, announce_activity, _object} = ActivityPub.announce(user, object)
-    note_activity = Activity.get_by_ap_id(note_activity.data["id"])
-
-    status =
-      ActivityRepresenter.to_map(announce_activity, %{
-        users: [user, activity_actor],
-        announced_activity: note_activity,
-        for: user
-      })
-
-    assert status["id"] == announce_activity.id
-    assert status["user"] == UserView.render("show.json", %{user: user, for: user})
-
-    retweeted_status =
-      ActivityRepresenter.to_map(note_activity, %{user: activity_actor, for: user})
-
-    assert retweeted_status["repeated"] == true
-    assert retweeted_status["id"] == note_activity.id
-    assert status["statusnet_conversation_id"] == retweeted_status["statusnet_conversation_id"]
-
-    assert status["retweeted_status"] == retweeted_status
-    assert status["activity_type"] == "repeat"
-  end
-
   test "a like activity" do
     user = insert(:user)
     note_activity = insert(:note_activity)
@@ -168,6 +138,7 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       "uri" => activity.data["object"]["id"],
       "visibility" => "direct",
       "card" => nil,
+      "muted" => false,
       "summary" => "2hu :2hu:",
       "summary_html" =>
         "2hu <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" />"
@@ -178,18 +149,6 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
              for: follower,
              mentioned: [mentioned_user]
            }) == expected_status
-  end
-
-  test "an undo for a follow" do
-    follower = insert(:user)
-    followed = insert(:user)
-
-    {:ok, _follow} = ActivityPub.follow(follower, followed)
-    {:ok, unfollow} = ActivityPub.unfollow(follower, followed)
-
-    map = ActivityRepresenter.to_map(unfollow, %{user: follower})
-    assert map["is_post_verb"] == false
-    assert map["activity_type"] == "undo"
   end
 
   test "a delete activity" do
