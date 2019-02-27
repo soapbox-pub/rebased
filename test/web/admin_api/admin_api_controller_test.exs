@@ -330,4 +330,39 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     assert conn.status == 200
   end
+
+  test "GET /api/pleroma/admin/users" do
+    admin = insert(:user, info: %{is_admin: true})
+    user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, admin)
+      |> get("/api/pleroma/admin/users")
+
+    assert json_response(conn, 200) == [
+             %{
+               "deactivated" => user.info.deactivated,
+               "id" => user.id,
+               "nickname" => user.nickname
+             }
+           ]
+  end
+
+  test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation" do
+    admin = insert(:user, info: %{is_admin: true})
+    user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, admin)
+      |> patch("/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
+
+    assert json_response(conn, 200) ==
+             %{
+               "deactivated" => !user.info.deactivated,
+               "id" => user.id,
+               "nickname" => user.nickname
+             }
+  end
 end
