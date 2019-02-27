@@ -186,9 +186,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     options = Keyword.put(options, :mentions_escape, true)
 
     text
-    |> Formatter.html_escape("text/html")
     |> Formatter.linkify(options)
     |> (fn {text, mentions, tags} -> {Earmark.as_html!(text), mentions, tags} end).()
+    |> Formatter.html_escape("text/html")
   end
 
   def make_note_data(
