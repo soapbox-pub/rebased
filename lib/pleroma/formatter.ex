@@ -91,6 +91,10 @@ defmodule Pleroma.Formatter do
 
   def get_emoji(_), do: []
 
+  def html_escape({text, mentions, hashtags}, type) do
+    {html_escape(text, type), mentions, hashtags}
+  end
+
   def html_escape(text, "text/html") do
     HTML.filter_tags(text)
   end
