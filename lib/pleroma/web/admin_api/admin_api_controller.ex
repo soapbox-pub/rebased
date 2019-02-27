@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
+  @users_page_size 50
+
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
@@ -61,11 +63,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          do: json_response(conn, :no_content, "")
   end
 
-  def list_users(%{assigns: %{user: admin}} = conn, _data) do
-    users = User.all_except_one(admin)
-
-    conn
-    |> json(UserView.render("index_for_admin.json", %{users: users}))
+  def list_users(%{assigns: %{user: admin}} = conn, %{"page" => page_string}) do
+    with {page, _} <- Integer.parse(page_string),
+         users <- User.all_except_one(admin, page, @users_page_size),
+         count <- User.count_all_except_one(admin),
+         do:
+           conn
+           |> json(
+             UserView.render("index_for_admin.json", %{
+               users: users,
+               count: count,
+               page_size: @users_page_size
+             })
+           )
   end
 
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})

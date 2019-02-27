@@ -338,15 +338,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     conn =
       build_conn()
       |> assign(:user, admin)
-      |> get("/api/pleroma/admin/users")
+      |> get("/api/pleroma/admin/users?page=1")
 
-    assert json_response(conn, 200) == [
-             %{
-               "deactivated" => user.info.deactivated,
-               "id" => user.id,
-               "nickname" => user.nickname
-             }
-           ]
+    assert json_response(conn, 200) == %{
+             "count" => 1,
+             "page_size" => 50,
+             "users" => [
+               %{
+                 "deactivated" => user.info.deactivated,
+                 "id" => user.id,
+                 "nickname" => user.nickname
+               }
+             ]
+           }
   end
 
   test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation" do

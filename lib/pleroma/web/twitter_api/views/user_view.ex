@@ -27,9 +27,12 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       else: %{}
   end
 
-  def render("index_for_admin.json", %{users: users} = opts) do
-    users
-    |> render_many(UserView, "show_for_admin.json", opts)
+  def render("index_for_admin.json", %{users: users, count: count, page_size: page_size} = opts) do
+    %{
+      users: render_many(users, UserView, "show_for_admin.json", opts),
+      count: count,
+      page_size: page_size
+    }
   end
 
   def render("show_for_admin.json", %{user: user}) do
