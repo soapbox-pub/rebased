@@ -168,7 +168,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: present?(repeated),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
-      muted: CommonAPI.thread_muted?(user, activity),
+      muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
       spoiler_text: object["summary"] || "",
