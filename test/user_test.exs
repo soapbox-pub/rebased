@@ -50,6 +50,20 @@ defmodule Pleroma.UserTest do
     assert expected_followers_collection == User.ap_followers(user)
   end
 
+  test "returns all pending follow requests" do
+    unlocked = insert(:user)
+    locked = insert(:user, %{info: %{locked: true}})
+    follower = insert(:user)
+
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(follower, %{"user_id" => unlocked.id})
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(follower, %{"user_id" => locked.id})
+
+    assert {:ok, []} = User.get_follow_requests(unlocked)
+    assert {:ok, [activity]} = User.get_follow_requests(locked)
+
+    assert activity
+  end
+
   test "follow_all follows mutliple users" do
     user = insert(:user)
     followed_zero = insert(:user)
