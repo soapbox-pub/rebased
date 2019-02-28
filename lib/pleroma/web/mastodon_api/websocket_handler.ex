@@ -37,12 +37,12 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
       {:error, code} ->
         Logger.debug("#{__MODULE__} denied connection: #{inspect(code)} - #{inspect(req)}")
         {:ok, req} = :cowboy_req.reply(code, req)
-        {:stop, req}
+        {:ok, req, state}
 
       error ->
         Logger.debug("#{__MODULE__} denied connection: #{inspect(error)} - #{inspect(req)}")
         {:ok, req} = :cowboy_req.reply(400, req)
-        {:stop, req}
+        {:ok, req, state}
     end
   end
 
