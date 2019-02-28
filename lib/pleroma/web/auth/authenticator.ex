@@ -2,13 +2,13 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.Auth.DatabaseAuthenticator do
+defmodule Pleroma.Web.Auth.Authenticator do
   alias Pleroma.User
 
   def implementation do
     Pleroma.Config.get(
-      Pleroma.Web.Auth.DatabaseAuthenticator,
-      Pleroma.Web.Auth.PleromaDatabaseAuthenticator
+      Pleroma.Web.Auth.Authenticator,
+      Pleroma.Web.Auth.PleromaAuthenticator
     )
   end
 
@@ -17,4 +17,9 @@ defmodule Pleroma.Web.Auth.DatabaseAuthenticator do
 
   @callback handle_error(Plug.Conn.t(), any()) :: any()
   def handle_error(plug, error), do: implementation().handle_error(plug, error)
+
+  @callback auth_template() :: String.t() | nil
+  def auth_template do
+    implementation().auth_template() || Pleroma.Config.get(:auth_template, "show.html")
+  end
 end

@@ -2,11 +2,11 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.Auth.PleromaDatabaseAuthenticator do
+defmodule Pleroma.Web.Auth.PleromaAuthenticator do
   alias Pleroma.User
   alias Comeonin.Pbkdf2
 
-  @behaviour Pleroma.Web.Auth.DatabaseAuthenticator
+  @behaviour Pleroma.Web.Auth.Authenticator
 
   def get_user(%Plug.Conn{} = conn) do
     %{"authorization" => %{"name" => name, "password" => password}} = conn.params
@@ -23,4 +23,6 @@ defmodule Pleroma.Web.Auth.PleromaDatabaseAuthenticator do
   def handle_error(%Plug.Conn{} = _conn, error) do
     error
   end
+
+  def auth_template, do: nil
 end
