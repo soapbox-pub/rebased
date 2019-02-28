@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Web.Auth.DatabaseAuthenticator
+  alias Pleroma.Web.Auth.Authenticator
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.App
@@ -25,7 +25,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     available_scopes = (app && app.scopes) || []
     scopes = oauth_scopes(params, nil) || available_scopes
 
-    render(conn, DatabaseAuthenticator.auth_template(), %{
+    render(conn, Authenticator.auth_template(), %{
       response_type: params["response_type"],
       client_id: params["client_id"],
       available_scopes: available_scopes,
@@ -43,7 +43,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
             "redirect_uri" => redirect_uri
           } = auth_params
       }) do
-    with {_, {:ok, %User{} = user}} <- {:get_user, DatabaseAuthenticator.get_user(conn)},
+    with {_, {:ok, %User{} = user}} <- {:get_user, Authenticator.get_user(conn)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
          scopes <- oauth_scopes(auth_params, []),
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         |> authorize(auth_params)
 
       error ->
-        DatabaseAuthenticator.handle_error(conn, error)
+        Authenticator.handle_error(conn, error)
     end
   end
 
