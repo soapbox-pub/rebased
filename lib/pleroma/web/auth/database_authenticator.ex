@@ -17,4 +17,9 @@ defmodule Pleroma.Web.Auth.DatabaseAuthenticator do
 
   @callback handle_error(Plug.Conn.t(), any()) :: any()
   def handle_error(plug, error), do: implementation().handle_error(plug, error)
+
+  @callback auth_template() :: String.t() | nil
+  def auth_template do
+    implementation().auth_template() || Pleroma.Config.get(:auth_template, "show.html")
+  end
 end

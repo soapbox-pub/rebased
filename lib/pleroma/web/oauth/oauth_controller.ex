@@ -25,9 +25,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     available_scopes = (app && app.scopes) || []
     scopes = oauth_scopes(params, nil) || available_scopes
 
-    template = Pleroma.Config.get(:auth_template, "show.html")
-
-    render(conn, template, %{
+    render(conn, DatabaseAuthenticator.auth_template(), %{
       response_type: params["response_type"],
       client_id: params["client_id"],
       available_scopes: available_scopes,

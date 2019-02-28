@@ -23,4 +23,6 @@ defmodule Pleroma.Web.Auth.PleromaDatabaseAuthenticator do
   def handle_error(%Plug.Conn{} = _conn, error) do
     error
   end
+
+  def auth_template, do: nil
 end
