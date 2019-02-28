@@ -356,7 +356,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "renders empty array for the second page" do
       admin = insert(:user, info: %{is_admin: true})
-      user = insert(:user)
+      insert(:user)
 
       conn =
         build_conn()
@@ -386,5 +386,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "id" => user.id,
                "nickname" => user.nickname
              }
+  end
+
+  test "GET /api/pleroma/admin/users/search" do
+    admin = insert(:user, info: %{is_admin: true})
+    user = insert(:user, nickname: "bob")
+
+    conn =
+      build_conn()
+      |> assign(:user, admin)
+      |> get("/api/pleroma/admin/users/search?query=bo")
+
+    assert json_response(conn, 200) == %{
+             "count" => 1,
+             "page_size" => 50,
+             "users" => [
+               %{
+                 "deactivated" => user.info.deactivated,
+                 "id" => user.id,
+                 "nickname" => user.nickname
+               }
+             ]
+           }
   end
 end

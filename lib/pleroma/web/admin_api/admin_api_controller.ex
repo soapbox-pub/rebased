@@ -78,6 +78,19 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            )
   end
 
+  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => query}) do
+    users = User.search(query, true, admin, @users_page_size)
+
+    conn
+    |> json(
+      AccountView.render("index.json", %{
+        users: users,
+        count: length(users),
+        page_size: @users_page_size
+      })
+    )
+  end
+
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})
       when permission_group in ["moderator", "admin"] do
     user = User.get_by_nickname(nickname)

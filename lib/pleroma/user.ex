@@ -755,18 +755,18 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def search(query, resolve \\ false, for_user \\ nil) do
+  def search(query, resolve \\ false, for_user \\ nil, limit \\ 20) do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
     if resolve, do: get_or_fetch(query)
 
-    fts_results = do_search(fts_search_subquery(query), for_user)
+    fts_results = do_search(fts_search_subquery(query), for_user, %{limit: limit})
 
     {:ok, trigram_results} =
       Repo.transaction(fn ->
         Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
-        do_search(trigram_search_subquery(query), for_user)
+        do_search(trigram_search_subquery(query), for_user, %{limit: limit})
       end)
 
     Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
@@ -793,7 +793,7 @@ defmodule Pleroma.User do
     Repo.aggregate(query, :count, :id)
   end
 
-  defp do_search(subquery, for_user, options \\ []) do
+  defp do_search(subquery, for_user, options) do
     q =
       from(
         s in subquery(subquery),
