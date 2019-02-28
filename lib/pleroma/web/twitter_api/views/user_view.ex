@@ -132,6 +132,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
           "confirmation_pending" => user_info.confirmation_pending,
           "tags" => user.tags
         }
+        |> maybe_with_activation_status(user, for_user)
         |> maybe_with_follow_request_count(user, for_user)
     }
 
@@ -147,6 +148,12 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       data
     end
   end
+
+  defp maybe_with_activation_status(data, user, %User{info: %{is_admin: true}}) do
+    Map.put(data, "deactivated", user.info.deactivated)
+  end
+
+  defp maybe_with_activation_status(data, _, _), do: data
 
   defp maybe_with_follow_request_count(data, %User{id: id, info: %{locked: true}} = user, %User{
          id: id
