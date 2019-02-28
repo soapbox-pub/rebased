@@ -25,7 +25,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     available_scopes = (app && app.scopes) || []
     scopes = oauth_scopes(params, nil) || available_scopes
 
-    template = Application.get_env(:pleroma, :auth_template, "show.html")
+    template = Pleroma.Config.get(:auth_template, "show.html")
 
     render(conn, template, %{
       response_type: params["response_type"],
