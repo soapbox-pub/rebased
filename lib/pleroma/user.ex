@@ -613,9 +613,10 @@ defmodule Pleroma.User do
         ),
       where:
         fragment(
-          "? @> ?",
+          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
           a.data,
-          ^%{"object" => user.ap_id}
+          a.data,
+          ^user.ap_id
         )
     )
   end
