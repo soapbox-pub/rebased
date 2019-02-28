@@ -93,10 +93,10 @@ config :pleroma, Pleroma.Web.Endpoint,
     dispatch: [
       {:_,
        [
-         {"/api/v1/streaming", Elixir.Pleroma.Web.MastodonAPI.WebsocketHandler, []},
-         {"/socket/websocket", Phoenix.Endpoint.CowboyWebSocket,
+         {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+         {"/socket/websocket", Phoenix.Endpoint.CowboyWebsocket,
           {nil, {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
-         {:_, Plug.Adapters.Cowboy.Handler, {Pleroma.Web.Endpoint, []}}
+         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
        ]}
     ]
   ],
