@@ -23,13 +23,16 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   ]
   @anonymous_streams ["public", "public:local", "hashtag"]
 
-  def init(%{qs: qs} = req, _state) do
+  # Handled by periodic keepalive in Pleroma.Web.Streamer.
+  @timeout :infinity
+
+  def init(%{qs: qs} = req, state) do
     with params <- :cow_qs.parse_qs(qs),
          access_token <- List.keyfind(params, "access_token", 0),
          {_, stream} <- List.keyfind(params, "stream", 0),
          {:ok, user} <- allow_request(stream, access_token),
          topic when is_binary(topic) <- expand_topic(stream, params) do
-      {:cowboy_websocket, req, %{user: user, topic: topic}}
+      {:cowboy_websocket, req, %{user: user, topic: topic}, %{idle_timeout: @timeout}}
     else
       {:error, code} ->
         Logger.debug("#{__MODULE__} denied connection: #{inspect(code)} - #{inspect(req)}")
