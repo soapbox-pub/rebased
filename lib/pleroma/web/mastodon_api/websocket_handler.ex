@@ -23,9 +23,8 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   ]
   @anonymous_streams ["public", "public:local", "hashtag"]
 
-  def init(req, _state) do
-    with {qs, req} <- :cowboy_req.qs(req),
-         params <- :cow_qs.parse_qs(qs),
+  def init(%{qs: qs} = req, _state) do
+    with params <- :cow_qs.parse_qs(qs),
          access_token <- List.keyfind(params, "access_token", 0),
          {_, stream} <- List.keyfind(params, "stream", 0),
          {:ok, user} <- allow_request(stream, access_token),
@@ -39,6 +38,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
       error ->
         Logger.debug("#{__MODULE__} denied connection: #{inspect(error)} - #{inspect(req)}")
+        {:ok, req} = :cowboy_req.reply(400, req)
         {:stop, req}
     end
   end
