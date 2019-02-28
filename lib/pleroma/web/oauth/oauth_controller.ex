@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Web.Auth.DatabaseAuthenticator
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.App
@@ -24,27 +25,27 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     available_scopes = (app && app.scopes) || []
     scopes = oauth_scopes(params, nil) || available_scopes
 
-    render(conn, "show.html", %{
+    template = Pleroma.Config.get(:auth_template, "show.html")
+
+    render(conn, template, %{
       response_type: params["response_type"],
       client_id: params["client_id"],
       available_scopes: available_scopes,
       scopes: scopes,
       redirect_uri: params["redirect_uri"],
-      state: params["state"]
+      state: params["state"],
+      params: params
     })
   end
 
   def create_authorization(conn, %{
         "authorization" =>
           %{
-            "name" => name,
-            "password" => password,
             "client_id" => client_id,
             "redirect_uri" => redirect_uri
           } = auth_params
       }) do
-    with %User{} = user <- User.get_by_nickname_or_email(name),
-         true <- Pbkdf2.checkpw(password, user.password_hash),
+    with {_, {:ok, %User{} = user}} <- {:get_user, DatabaseAuthenticator.get_user(conn)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
          scopes <- oauth_scopes(auth_params, []),
@@ -53,9 +54,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:missing_scopes, false} <- {:missing_scopes, scopes == []},
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
-      # Special case: Local MastodonFE.
       redirect_uri =
         if redirect_uri == "." do
+          # Special case: Local MastodonFE
           mastodon_api_url(conn, :login)
         else
           redirect_uri
@@ -97,7 +98,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         |> authorize(auth_params)
 
       error ->
-        error
+        DatabaseAuthenticator.handle_error(conn, error)
     end
   end
 
