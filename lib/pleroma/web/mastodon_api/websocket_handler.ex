@@ -9,7 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  @behaviour :cowboy_websocket_handler
+  @behaviour :cowboy_websocket
 
   @streams [
     "public",
@@ -23,40 +23,37 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   ]
   @anonymous_streams ["public", "public:local", "hashtag"]
 
-  # Handled by periodic keepalive in Pleroma.Web.Streamer.
-  @timeout :infinity
-
-  def init(_type, _req, _opts) do
-    {:upgrade, :protocol, :cowboy_websocket}
-  end
-
-  def websocket_init(_type, req, _opts) do
+  def init(req, _state) do
     with {qs, req} <- :cowboy_req.qs(req),
          params <- :cow_qs.parse_qs(qs),
          access_token <- List.keyfind(params, "access_token", 0),
          {_, stream} <- List.keyfind(params, "stream", 0),
          {:ok, user} <- allow_request(stream, access_token),
          topic when is_binary(topic) <- expand_topic(stream, params) do
-      send(self(), :subscribe)
-      {:ok, req, %{user: user, topic: topic}, @timeout}
+      {:cowboy_websocket, req, %{user: user, topic: topic}}
     else
       {:error, code} ->
         Logger.debug("#{__MODULE__} denied connection: #{inspect(code)} - #{inspect(req)}")
         {:ok, req} = :cowboy_req.reply(code, req)
-        {:shutdown, req}
+        {:stop, req}
 
       error ->
         Logger.debug("#{__MODULE__} denied connection: #{inspect(error)} - #{inspect(req)}")
-        {:shutdown, req}
+        {:stop, req}
     end
   end
 
-  # We never receive messages.
-  def websocket_handle(_frame, req, state) do
-    {:ok, req, state}
+  def websocket_init(state) do
+    send(self(), :subscribe)
+    {:ok, state}
   end
 
-  def websocket_info(:subscribe, req, state) do
+  # We never receive messages.
+  def websocket_handle(_frame, state) do
+    {:ok, state}
+  end
+
+  def websocket_info(:subscribe, state) do
     Logger.debug(
       "#{__MODULE__} accepted websocket connection for user #{
         (state.user || %{id: "anonymous"}).id
@@ -64,14 +61,14 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     )
 
     Pleroma.Web.Streamer.add_socket(state.topic, streamer_socket(state))
-    {:ok, req, state}
+    {:ok, state}
   end
 
-  def websocket_info({:text, message}, req, state) do
-    {:reply, {:text, message}, req, state}
+  def websocket_info({:text, message}, state) do
+    {:reply, {:text, message}, state}
   end
 
-  def websocket_terminate(reason, _req, state) do
+  def terminate(reason, _req, state) do
     Logger.debug(
       "#{__MODULE__} terminating websocket connection for user #{
         (state.user || %{id: "anonymous"}).id
