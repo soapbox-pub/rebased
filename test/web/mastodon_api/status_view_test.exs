@@ -126,6 +126,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert status == expected
   end
 
+  test "tells if the message is muted for some reason" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.mute(user, other_user)
+
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
+    status = StatusView.render("status.json", %{activity: activity})
+
+    assert status.muted == false
+
+    status = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert status.muted == true
+  end
+
   test "a reply" do
     note = insert(:note_activity)
     user = insert(:user)

@@ -291,6 +291,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     refute Enum.member?(activities, activity_one)
 
+    # Calling with 'with_muted' will deliver muted activities, too.
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => user, "with_muted" => true})
+
+    assert Enum.member?(activities, activity_two)
+    assert Enum.member?(activities, activity_three)
+    assert Enum.member?(activities, activity_one)
+
     {:ok, user} = User.unmute(user, %User{ap_id: activity_one.data["actor"]})
 
     activities = ActivityPub.fetch_activities([], %{"muting_user" => user})

@@ -56,6 +56,22 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     assert result["user"]["id"] == user.id
   end
 
+  test "tells if the message is muted for some reason" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.mute(user, other_user)
+
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
+    status = ActivityView.render("activity.json", %{activity: activity})
+
+    assert status["muted"] == false
+
+    status = ActivityView.render("activity.json", %{activity: activity, for: user})
+
+    assert status["muted"] == true
+  end
+
   test "a create activity with a html status" do
     text = """
     #Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg
@@ -149,7 +165,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "uri" => activity.data["object"]["id"],
       "user" => UserView.render("show.json", %{user: user}),
       "visibility" => "direct",
-      "card" => nil
+      "card" => nil,
+      "muted" => false
     }
 
     assert result == expected
