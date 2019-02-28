@@ -239,6 +239,13 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     assert represented["role"] == nil
   end
 
+  test "A regular user for the admin", %{user: user} do
+    admin = insert(:user, %{info: %{is_admin: true}})
+    represented = UserView.render("show.json", %{user: user, for: admin})
+
+    assert represented["pleroma"]["deactivated"] == false
+  end
+
   test "A blocked user for the blocker" do
     user = insert(:user)
     blocker = insert(:user)
