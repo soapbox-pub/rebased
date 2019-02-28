@@ -8,7 +8,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.TwitterAPI.UserView
+  alias Pleroma.Web.MastodonAPI.Admin.AccountView
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     {:ok, updated_user} = User.deactivate(user, !user.info.deactivated)
 
     conn
-    |> json(UserView.render("show_for_admin.json", %{user: updated_user}))
+    |> json(AccountView.render("show.json", %{user: updated_user}))
   end
 
   def tag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do
@@ -70,7 +70,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          do:
            conn
            |> json(
-             UserView.render("index_for_admin.json", %{
+             AccountView.render("index.json", %{
                users: users,
                count: count,
                page_size: @users_page_size
