@@ -345,6 +345,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "count" => 1,
                "page_size" => 50,
                "users" => [
+                %{
+                  "deactivated" => admin.info.deactivated,
+                  "id" => admin.id,
+                  "nickname" => admin.nickname
+                },
                  %{
                    "deactivated" => user.info.deactivated,
                    "id" => user.id,
@@ -399,16 +404,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/users/search?query=bo")
 
       assert json_response(conn, 200) == %{
-              "count" => 1,
-              "page_size" => 50,
-              "users" => [
-                %{
-                  "deactivated" => user.info.deactivated,
-                  "id" => user.id,
-                  "nickname" => user.nickname
-                }
-              ]
-            }
+               "count" => 1,
+               "page_size" => 50,
+               "users" => [
+                 %{
+                   "deactivated" => user.info.deactivated,
+                   "id" => user.id,
+                   "nickname" => user.nickname
+                 }
+               ]
+             }
     end
 
     test "only local users" do
@@ -423,16 +428,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/users/search?query=bo&local=true")
 
       assert json_response(conn, 200) == %{
-              "count" => 1,
-              "page_size" => 50,
-              "users" => [
-                %{
-                  "deactivated" => user.info.deactivated,
-                  "id" => user.id,
-                  "nickname" => user.nickname
-                }
-              ]
-            }
+               "count" => 1,
+               "page_size" => 50,
+               "users" => [
+                 %{
+                   "deactivated" => user.info.deactivated,
+                   "id" => user.id,
+                   "nickname" => user.nickname
+                 }
+               ]
+             }
     end
   end
 end

@@ -65,7 +65,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def list_users(%{assigns: %{user: admin}} = conn, %{"page" => page_string}) do
     with {page, _} <- Integer.parse(page_string),
-         users <- User.all_except_one(admin, page, @users_page_size),
+         users <- User.all(page, @users_page_size),
          count <- User.count_all_except_one(admin),
          do:
            conn

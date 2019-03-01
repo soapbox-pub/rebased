@@ -779,10 +779,9 @@ defmodule Pleroma.User do
     Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
   end
 
-  def all_except_one(user, page, page_size) do
+  def all(page, page_size) do
     from(
       u in User,
-      where: u.id != ^user.id,
       limit: ^page_size,
       offset: ^((page - 1) * page_size),
       order_by: u.id
