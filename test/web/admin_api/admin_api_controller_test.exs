@@ -345,11 +345,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "count" => 1,
                "page_size" => 50,
                "users" => [
-                %{
-                  "deactivated" => admin.info.deactivated,
-                  "id" => admin.id,
-                  "nickname" => admin.nickname
-                },
+                 %{
+                   "deactivated" => admin.info.deactivated,
+                   "id" => admin.id,
+                   "nickname" => admin.nickname
+                 },
                  %{
                    "deactivated" => user.info.deactivated,
                    "id" => user.id,
