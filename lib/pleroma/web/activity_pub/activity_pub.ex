@@ -828,7 +828,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     date =
       NaiveDateTime.utc_now()
-      |> Timex.format!("{WDshort}, {D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
+      |> Timex.format!("{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
 
     signature =
       Pleroma.Web.HTTPSignatures.sign(actor, %{
