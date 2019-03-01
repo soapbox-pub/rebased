@@ -20,6 +20,26 @@ Authentication is required and the user must be an admin.
 ]
 ```
 
+## `/api/pleroma/admin/users/search?query={query}`
+
+### Search users
+
+- Method `GET`
+- Params:
+  - `query`
+- Response:
+
+```JSON
+[
+    {
+        "deactivated": bool,
+        "id": integer,
+        "nickname": string
+    },
+    ...
+]
+```
+
 ## `/api/pleroma/admin/user`
 
 ### Remove a user
