@@ -388,25 +388,51 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
   end
 
-  test "GET /api/pleroma/admin/users/search" do
-    admin = insert(:user, info: %{is_admin: true})
-    user = insert(:user, nickname: "bob")
+  describe "GET /api/pleroma/admin/users/search" do
+    test "regular search" do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user, nickname: "bob")
 
-    conn =
-      build_conn()
-      |> assign(:user, admin)
-      |> get("/api/pleroma/admin/users/search?query=bo")
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users/search?query=bo")
 
-    assert json_response(conn, 200) == %{
-             "count" => 1,
-             "page_size" => 50,
-             "users" => [
-               %{
-                 "deactivated" => user.info.deactivated,
-                 "id" => user.id,
-                 "nickname" => user.nickname
-               }
-             ]
-           }
+      assert json_response(conn, 200) == %{
+              "count" => 1,
+              "page_size" => 50,
+              "users" => [
+                %{
+                  "deactivated" => user.info.deactivated,
+                  "id" => user.id,
+                  "nickname" => user.nickname
+                }
+              ]
+            }
+    end
+
+    test "only local users" do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user, nickname: "bob")
+
+      insert(:user, nickname: "bobb", local: false)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users/search?query=bo&local=true")
+
+      assert json_response(conn, 200) == %{
+              "count" => 1,
+              "page_size" => 50,
+              "users" => [
+                %{
+                  "deactivated" => user.info.deactivated,
+                  "id" => user.id,
+                  "nickname" => user.nickname
+                }
+              ]
+            }
+    end
   end
 end

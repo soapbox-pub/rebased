@@ -755,18 +755,25 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  def search(query, resolve \\ false, for_user \\ nil, limit \\ 20) do
+  def search(term, options \\ %{}) do
     # Strip the beginning @ off if there is a query
-    query = String.trim_leading(query, "@")
+    term = String.trim_leading(term, "@")
+    query = options[:query] || User
 
-    if resolve, do: get_or_fetch(query)
+    if options[:resolve], do: get_or_fetch(term)
 
-    fts_results = do_search(fts_search_subquery(query), for_user, %{limit: limit})
+    fts_results =
+      do_search(fts_search_subquery(term, query), options[:for_user], %{
+        limit: options[:limit]
+      })
 
     {:ok, trigram_results} =
       Repo.transaction(fn ->
         Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
-        do_search(trigram_search_subquery(query), for_user, %{limit: limit})
+
+        do_search(trigram_search_subquery(term, query), options[:for_user], %{
+          limit: options[:limit]
+        })
       end)
 
     Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
@@ -809,9 +816,9 @@ defmodule Pleroma.User do
     boost_search_results(results, for_user)
   end
 
-  defp fts_search_subquery(query) do
+  defp fts_search_subquery(term, query) do
     processed_query =
-      query
+      term
       |> String.replace(~r/\W+/, " ")
       |> String.trim()
       |> String.split()
@@ -819,7 +826,7 @@ defmodule Pleroma.User do
       |> Enum.join(" | ")
 
     from(
-      u in User,
+      u in query,
       select_merge: %{
         search_rank:
           fragment(
@@ -849,19 +856,19 @@ defmodule Pleroma.User do
     )
   end
 
-  defp trigram_search_subquery(query) do
+  defp trigram_search_subquery(term, query) do
     from(
-      u in User,
+      u in query,
       select_merge: %{
         search_rank:
           fragment(
             "similarity(?, trim(? || ' ' || coalesce(?, '')))",
-            ^query,
+            ^term,
             u.nickname,
             u.name
           )
       },
-      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^query)
+      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
     )
   end
 
@@ -1016,6 +1023,14 @@ defmodule Pleroma.User do
       |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
+  end
+
+  def maybe_local_user_query(local) when local == true do
+    local_user_query()
+  end
+
+  def maybe_local_user_query(local) when local == false do
+    User
   end
 
   def local_user_query do

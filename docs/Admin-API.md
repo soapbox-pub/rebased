@@ -20,13 +20,14 @@ Authentication is required and the user must be an admin.
 ]
 ```
 
-## `/api/pleroma/admin/users/search?query={query}`
+## `/api/pleroma/admin/users/search?query={query}&local={local}`
 
-### Search users
+### Search users by name or nickname
 
 - Method `GET`
 - Params:
-  - `query`
+  - `query`: **string** search term
+  - `local`: **bool** whether to return only local users
 - Response:
 
 ```JSON

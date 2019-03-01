@@ -78,8 +78,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            )
   end
 
-  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => query}) do
-    users = User.search(query, true, admin, @users_page_size)
+  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => term} = params) do
+    users =
+      User.search(term,
+        query: User.maybe_local_user_query(params["local"] == "true"),
+        resolve: true,
+        for_user: admin,
+        limit: @users_page_size
+      )
 
     conn
     |> json(
