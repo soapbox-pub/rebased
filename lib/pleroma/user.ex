@@ -763,17 +763,13 @@ defmodule Pleroma.User do
     if options[:resolve], do: get_or_fetch(term)
 
     fts_results =
-      do_search(fts_search_subquery(term, query), options[:for_user], %{
-        limit: options[:limit]
-      })
+      do_search(fts_search_subquery(term, query), options[:for_user], limit: options[:limit])
 
     {:ok, trigram_results} =
       Repo.transaction(fn ->
         Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
 
-        do_search(trigram_search_subquery(term, query), options[:for_user], %{
-          limit: options[:limit]
-        })
+        do_search(trigram_search_subquery(term, query), options[:for_user], limit: options[:limit])
       end)
 
     Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
@@ -1024,12 +1020,8 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
-  def maybe_local_user_query(local) when local == true do
-    local_user_query()
-  end
-
-  def maybe_local_user_query(local) when local == false do
-    User
+  def maybe_local_user_query(local) do
+    if local, do: local_user_query(), else: User
   end
 
   def local_user_query do

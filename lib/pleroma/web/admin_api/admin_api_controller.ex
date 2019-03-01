@@ -70,11 +70,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          do:
            conn
            |> json(
-             AccountView.render("index.json", %{
+             AccountView.render("index.json",
                users: users,
                count: count,
                page_size: @users_page_size
-             })
+             )
            )
   end
 
@@ -89,11 +89,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(
-      AccountView.render("index.json", %{
+      AccountView.render("index.json",
         users: users,
         count: length(users),
         page_size: @users_page_size
-      })
+      )
     )
   end
 
