@@ -55,9 +55,8 @@ defmodule Pleroma.Mixfile do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      # Until Phoenix 1.4.1 is released
-      {:phoenix, github: "phoenixframework/phoenix", branch: "v1.4"},
-      {:plug_cowboy, "~> 1.0"},
+      {:phoenix, "~> 1.4.1"},
+      {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 3.3"},
       {:postgrex, ">= 0.13.5"},
