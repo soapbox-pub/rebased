@@ -55,6 +55,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         ActivityPub.fetch_activities([], %{:visibility => "public", "actor_id" => user.ap_id})
 
       assert activities == [public_activity]
+
+      activities =
+        ActivityPub.fetch_activities([], %{
+          :visibility => ~w[private public],
+          "actor_id" => user.ap_id
+        })
+
+      assert activities == [public_activity, private_activity]
     end
   end
 
