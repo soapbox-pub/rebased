@@ -113,7 +113,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         refresh_token: token.refresh_token,
         created_at: DateTime.to_unix(inserted_at),
         expires_in: 60 * 10,
-        scope: Enum.join(token.scopes)
+        scope: Enum.join(token.scopes, " ")
       }
 
       json(conn, response)
