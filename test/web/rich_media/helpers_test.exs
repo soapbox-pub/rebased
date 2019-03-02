@@ -20,7 +20,27 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
         "content_type" => "text/markdown"
       })
 
+    Pleroma.Config.put([:rich_media, :enabled], true)
+
     assert %{} == Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+
+    Pleroma.Config.put([:rich_media, :enabled], false)
+  end
+
+  test "refuses to crawl malformed URLs" do
+    user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" => "[test](example.com[]/ogp)",
+        "content_type" => "text/markdown"
+      })
+
+    Pleroma.Config.put([:rich_media, :enabled], true)
+
+    assert %{} == Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+
+    Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
   test "crawls valid, complete URLs" do
