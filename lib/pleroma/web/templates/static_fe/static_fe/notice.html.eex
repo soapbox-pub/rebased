@@ -1,0 +1,6 @@
+<div class="activity">
+  <%= render("user_card.html", %{user: @user}) %>
+  <div class="activity-content">
+    <div class="e-content"><%= @object.data["content"] %></div>
+  </div>
+</div>
