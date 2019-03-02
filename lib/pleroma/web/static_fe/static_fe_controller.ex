@@ -31,7 +31,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEController do
     end
   end
 
-  def show(%{path_info: ["notice", notice_id]} = conn, _params), do: show_notice(conn, %{"notice_id" => notice_id})
+  def show(%{path_info: ["notice", notice_id]} = conn, _params),
+    do: show_notice(conn, %{"notice_id" => notice_id})
 
   # Fallback for unhandled types
   def show(conn, _params) do
