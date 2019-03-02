@@ -10,12 +10,10 @@ defmodule Pleroma.Web.RelMe do
     max_body: 2_000_000
   ]
 
-  def parse(nil), do: {:error, "No URL provided"}
-
   if Mix.env() == :test do
-    def parse(url), do: parse_url(url)
+    def parse(url) when is_binary(url), do: parse_url(url)
   else
-    def parse(url) do
+    def parse(url) when is_binary(url) do
       Cachex.fetch!(:rel_me_cache, url, fn _ ->
         {:commit, parse_url(url)}
       end)
@@ -24,20 +22,27 @@ defmodule Pleroma.Web.RelMe do
     end
   end
 
+  def parse(_), do: {:error, "No URL provided"}
+
   defp parse_url(url) do
     {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
 
-    Floki.attribute(html, "link[rel=me]", "href") ++ Floki.attribute(html, "a[rel=me]", "href")
+    data =
+      Floki.attribute(html, "link[rel=me]", "href") ++ Floki.attribute(html, "a[rel=me]", "href")
+
+    {:ok, data}
   rescue
     e -> {:error, "Parsing error: #{inspect(e)}"}
   end
 
-  def maybe_put_rel_me("http" <> _ = target_page, urls) when not is_nil(urls) do
-    if Enum.any?(parse(target_page), fn x -> x in urls end) do
-      "rel=\"me\" "
-    else
-      ""
-    end
+  def maybe_put_rel_me("http" <> _ = target_page, profile_urls) when is_list(profile_urls) do
+    {:ok, rel_me_hrefs} = parse(target_page)
+
+    true = Enum.any?(rel_me_hrefs, fn x -> x in profile_urls end)
+
+    "rel=\"me\" "
+  rescue
+    _ -> ""
   end
 
   def maybe_put_rel_me(_, _) do
