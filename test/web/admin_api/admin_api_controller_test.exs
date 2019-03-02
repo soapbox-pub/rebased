@@ -342,7 +342,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/users?page=1")
 
       assert json_response(conn, 200) == %{
-               "count" => 1,
+               "count" => 2,
                "page_size" => 50,
                "users" => [
                  %{
@@ -369,7 +369,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> get("/api/pleroma/admin/users?page=2")
 
       assert json_response(conn, 200) == %{
-               "count" => 1,
+               "count" => 2,
                "page_size" => 50,
                "users" => []
              }
@@ -416,8 +416,48 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
 
-    test "only local users" do
+    test "regular search with page size" do
       admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user, nickname: "bob")
+      user2 = insert(:user, nickname: "bo")
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users/search?query=bo&page_size=1&page=1")
+
+      assert json_response(conn, 200) == %{
+               "count" => 2,
+               "page_size" => 1,
+               "users" => [
+                 %{
+                   "deactivated" => user.info.deactivated,
+                   "id" => user.id,
+                   "nickname" => user.nickname
+                 }
+               ]
+             }
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users/search?query=bo&page_size=1&page=2")
+
+      assert json_response(conn, 200) == %{
+               "count" => 2,
+               "page_size" => 1,
+               "users" => [
+                 %{
+                   "deactivated" => user2.info.deactivated,
+                   "id" => user2.id,
+                   "nickname" => user2.nickname
+                 }
+               ]
+             }
+    end
+
+    test "only local users" do
+      admin = insert(:user, info: %{is_admin: true}, nickname: "john")
       user = insert(:user, nickname: "bob")
 
       insert(:user, nickname: "bobb", local: false)

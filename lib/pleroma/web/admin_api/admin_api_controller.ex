@@ -63,38 +63,40 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          do: json_response(conn, :no_content, "")
   end
 
-  def list_users(%{assigns: %{user: admin}} = conn, %{"page" => page_string}) do
-    with {page, _} <- Integer.parse(page_string),
-         users <- User.all(page, @users_page_size),
-         count <- User.count_all_except_one(admin),
+  def list_users(conn, params) do
+    {page, page_size} = page_params(params)
+
+    with {:ok, users, count} <- User.all_for_admin(page, page_size),
          do:
            conn
            |> json(
              AccountView.render("index.json",
                users: users,
                count: count,
-               page_size: @users_page_size
+               page_size: page_size
              )
            )
   end
 
-  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => term} = params) do
-    users =
-      User.search(term,
-        query: User.maybe_local_user_query(params["local"] == "true"),
-        resolve: true,
-        for_user: admin,
-        limit: @users_page_size
-      )
+  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => query} = params) do
+    {page, page_size} = page_params(params)
 
-    conn
-    |> json(
-      AccountView.render("index.json",
-        users: users,
-        count: length(users),
-        page_size: @users_page_size
-      )
-    )
+    with {:ok, users, count} <-
+           User.search_for_admin(query, %{
+             admin: admin,
+             local: params["local"] == "true",
+             page: page,
+             page_size: page_size
+           }),
+         do:
+           conn
+           |> json(
+             AccountView.render("index.json",
+               users: users,
+               count: count,
+               page_size: page_size
+             )
+           )
   end
 
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})
@@ -239,5 +241,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_status(500)
     |> json("Something went wrong")
+  end
+
+  defp page_params(params) do
+    {get_page(params["page"]), get_page_size(params["page_size"])}
+  end
+
+  defp get_page(page_string) when is_nil(page_string), do: 1
+
+  defp get_page(page_string) do
+    case Integer.parse(page_string) do
+      {page, _} -> page
+      :error -> 1
+    end
+  end
+
+  defp get_page_size(page_size_string) when is_nil(page_size_string), do: @users_page_size
+
+  defp get_page_size(page_size_string) do
+    case Integer.parse(page_size_string) do
+      {page_size, _} -> page_size
+      :error -> @users_page_size
+    end
   end
 end
