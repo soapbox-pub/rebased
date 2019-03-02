@@ -5,24 +5,17 @@
 defmodule Pleroma.Web.StaticFE.StaticFEController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Repo
-  alias Pleroma.Activity
-  alias Pleroma.Object
-  alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.StaticFE.ActivityRepresenter
 
   require Logger
 
   def show_notice(conn, %{"notice_id" => notice_id}) do
-    with %Activity{} = activity <- Repo.get(Activity, notice_id),
-         true <- Visibility.is_public?(activity),
-         %User{} = user <- User.get_or_fetch(activity.data["actor"]),
-         %Object{} = object <- Object.normalize(activity.data["object"]) do
+    with {:ok, data} <- ActivityRepresenter.represent(notice_id) do
       conn
       |> put_layout(:static_fe)
       |> put_status(200)
       |> put_view(Pleroma.Web.StaticFE.StaticFEView)
-      |> render("notice.html", %{notice: activity, object: object, user: user})
+      |> render("notice.html", data)
     else
       _ ->
         conn
