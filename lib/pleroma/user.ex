@@ -1204,7 +1204,7 @@ defmodule Pleroma.User do
       end)
 
     # TODO: get profile URLs other than user.ap_id
-    profile_urls = user[:ap_id]
+    profile_urls = [user[:ap_id]]
 
     bio
     |> CommonUtils.format_input("text/plain", %{
