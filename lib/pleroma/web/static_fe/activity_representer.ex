@@ -17,8 +17,8 @@ defmodule Pleroma.Web.StaticFE.ActivityRepresenter do
     |> set_attachments(object)
   end
 
-  def prepare_activity(%User{} = user, %Activity{} = activity), do:
-    prepare_activity(user, Object.normalize(activity.data["object"]))
+  def prepare_activity(%User{} = user, %Activity{} = activity),
+    do: prepare_activity(user, Object.normalize(activity.data["object"]))
 
   defp set_user(data, %User{} = user), do: Map.put(data, :user, user)
 
