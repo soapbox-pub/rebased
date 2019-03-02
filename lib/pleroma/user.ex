@@ -648,15 +648,14 @@ defmodule Pleroma.User do
   end
 
   def get_follow_requests(%User{} = user) do
-    q = get_follow_requests_query(user)
-    reqs = Repo.all(q)
-
     users =
-      Enum.map(reqs, fn req -> req.actor end)
-      |> Enum.uniq()
-      |> Enum.map(fn ap_id -> get_by_ap_id(ap_id) end)
-      |> Enum.filter(fn u -> !is_nil(u) end)
-      |> Enum.filter(fn u -> !following?(u, user) end)
+      user
+      |> User.get_follow_requests_query()
+      |> join(:inner, [a], u in User, a.actor == u.ap_id)
+      |> where([a, u], not fragment("? @> ?", u.following, ^[user.follower_address]))
+      |> group_by([a, u], u.id)
+      |> select([a, u], u)
+      |> Repo.all()
 
     {:ok, users}
   end
