@@ -1207,10 +1207,10 @@ defmodule Pleroma.User do
     profile_urls = [user.ap_id]
 
     bio
-    |> CommonUtils.format_input("text/plain", [
+    |> CommonUtils.format_input("text/plain",
       mentions_format: :full,
       rel: &RelMe.maybe_put_rel_me(&1, profile_urls)
-    ])
+    )
     |> elem(0)
     |> Formatter.emojify(emoji)
   end
