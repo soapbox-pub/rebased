@@ -9,6 +9,8 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Formatter
 
+  import Phoenix.HTML
+
   def emoji_for_user(%User{} = user) do
     (user.info.source_data["tag"] || [])
     |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)

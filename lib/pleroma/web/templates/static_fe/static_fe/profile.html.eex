@@ -1,0 +1,7 @@
+<h1><%= raw (@data.user.name |> Formatter.emojify(emoji_for_user(@data.user))) %></h1>
+<p><%= raw @data.user.bio %></p>
+<div class="activity-stream">
+<%= for activity <- @data.timeline do %>
+  <%= render("notice.html", %{data: activity}) %>
+<% end %>
+</div>

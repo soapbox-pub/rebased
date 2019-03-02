@@ -1,6 +1,6 @@
 <div class="activity">
-  <%= render("user_card.html", %{user: @user}) %>
+  <%= render("user_card.html", %{user: @data.user}) %>
   <div class="activity-content">
-    <div class="e-content"><%= @object.data["content"] %></div>
+    <div class="e-content"><%= raw @data.content %></div>
   </div>
 </div>
