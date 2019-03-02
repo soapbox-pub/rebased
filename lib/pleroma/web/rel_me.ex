@@ -40,12 +40,12 @@ defmodule Pleroma.Web.RelMe do
 
     true = Enum.any?(rel_me_hrefs, fn x -> x in profile_urls end)
 
-    "rel=\"me\" "
+    "me"
   rescue
-    _ -> ""
+    _ -> nil
   end
 
   def maybe_put_rel_me(_, _) do
-    ""
+    nil
   end
 end

@@ -37,13 +37,14 @@ defmodule Pleroma.Web.RelMeTest do
 
   test "maybe_put_rel_me/2" do
     profile_urls = ["https://social.example.org/users/lain"]
-    attr = "rel=\"me\" "
+    attr = "me"
+    fallback = nil
 
     assert Pleroma.Web.RelMe.maybe_put_rel_me("http://example.com/rel_me/null", profile_urls) ==
-             ""
+             fallback
 
     assert Pleroma.Web.RelMe.maybe_put_rel_me("http://example.com/rel_me/error", profile_urls) ==
-             ""
+             fallback
 
     assert Pleroma.Web.RelMe.maybe_put_rel_me("http://example.com/rel_me/anchor", profile_urls) ==
              attr
