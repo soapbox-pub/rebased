@@ -336,3 +336,8 @@ config :auto_linker,
 * `sslopts`: additional SSL options
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: attribute type to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
+
+## Pleroma.Web.Auth.Authenticator
+
+* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
+* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication

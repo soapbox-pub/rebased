@@ -2,15 +2,51 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.LDAP do
+defmodule Pleroma.Web.Auth.LDAPAuthenticator do
   alias Pleroma.User
 
   require Logger
 
+  @behaviour Pleroma.Web.Auth.Authenticator
+
   @connection_timeout 10_000
   @search_timeout 10_000
 
-  def get_user(name, password) do
+  def get_user(%Plug.Conn{} = conn) do
+    if Pleroma.Config.get([:ldap, :enabled]) do
+      {name, password} =
+        case conn.params do
+          %{"authorization" => %{"name" => name, "password" => password}} ->
+            {name, password}
+
+          %{"grant_type" => "password", "username" => name, "password" => password} ->
+            {name, password}
+        end
+
+      case ldap_user(name, password) do
+        %User{} = user ->
+          {:ok, user}
+
+        {:error, {:ldap_connection_error, _}} ->
+          # When LDAP is unavailable, try default authenticator
+          Pleroma.Web.Auth.PleromaAuthenticator.get_user(conn)
+
+        error ->
+          error
+      end
+    else
+      # Fall back to default authenticator
+      Pleroma.Web.Auth.PleromaAuthenticator.get_user(conn)
+    end
+  end
+
+  def handle_error(%Plug.Conn{} = _conn, error) do
+    error
+  end
+
+  def auth_template, do: nil
+
+  defp ldap_user(name, password) do
     ldap = Pleroma.Config.get(:ldap, [])
     host = Keyword.get(ldap, :host, "localhost")
     port = Keyword.get(ldap, :port, 389)
@@ -50,7 +86,7 @@ defmodule Pleroma.LDAP do
     end
   end
 
-  def register_user(connection, base, uid, name, password) do
+  defp register_user(connection, base, uid, name, password) do
     case :eldap.search(connection, [
            {:base, to_charlist(base)},
            {:filter, :eldap.equalityMatch(to_charlist(uid), to_charlist(name))},

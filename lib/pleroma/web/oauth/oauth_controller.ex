@@ -11,7 +11,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Comeonin.Pbkdf2
 
   import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
 
@@ -126,10 +125,10 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   def token_exchange(
         conn,
-        %{"grant_type" => "password", "username" => name, "password" => password} = params
+        %{"grant_type" => "password"} = params
       ) do
-    with %App{} = app <- get_app_from_request(conn, params),
-         %User{} = user <- get_user(name, password),
+    with {_, {:ok, %User{} = user}} <- {:get_user, Authenticator.get_user(conn)},
+         %App{} = app <- get_app_from_request(conn, params),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          scopes <- oauth_scopes(params, app.scopes),
          [] <- scopes -- app.scopes,
@@ -211,30 +210,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       )
     else
       nil
-    end
-  end
-
-  defp get_user(name, password) do
-    if Pleroma.Config.get([:ldap, :enabled]) do
-      case Pleroma.LDAP.get_user(name, password) do
-        %User{} = user ->
-          user
-
-        {:error, {:ldap_connection_error, _}} ->
-          # When LDAP is unavailable, try default login
-          with %User{} = user <- User.get_by_nickname_or_email(name),
-               true <- Pbkdf2.checkpw(password, user.password_hash) do
-            user
-          end
-
-        error ->
-          error
-      end
-    else
-      with %User{} = user <- User.get_by_nickname_or_email(name),
-           true <- Pbkdf2.checkpw(password, user.password_hash) do
-        user
-      end
     end
   end
 end
