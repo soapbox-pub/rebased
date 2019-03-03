@@ -690,7 +690,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       followed = Repo.get(User, followed.id)
 
       refute User.ap_followers(followed) in current_user.following
-      assert followed.info.follow_request_count == 1
 
       assert json_response(conn, 200) ==
                UserView.render("show.json", %{user: followed, for: current_user})
@@ -1757,7 +1756,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
-      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
@@ -1769,7 +1767,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert relationship = json_response(conn, 200)
       assert other_user.id == relationship["id"]
       assert relationship["follows_you"] == true
-      assert user.info.follow_request_count == 0
     end
   end
 
@@ -1784,7 +1781,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
-      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
@@ -1796,7 +1792,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert relationship = json_response(conn, 200)
       assert other_user.id == relationship["id"]
       assert relationship["follows_you"] == false
-      assert user.info.follow_request_count == 0
     end
   end
 

@@ -175,8 +175,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with data <- %{"to" => to, "type" => "Accept", "actor" => actor.ap_id, "object" => object},
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.update_follow_request_count(actor) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -187,8 +186,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     with data <- %{"to" => to, "type" => "Reject", "actor" => actor.ap_id, "object" => object},
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.update_follow_request_count(actor) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -286,8 +284,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def follow(follower, followed, activity_id \\ nil, local \\ true) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.update_follow_request_count(followed) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
@@ -297,8 +294,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, follow_activity} <- update_follow_state(follow_activity, "cancelled"),
          unfollow_data <- make_unfollow_data(follower, followed, follow_activity, activity_id),
          {:ok, activity} <- insert(unfollow_data, local),
-         :ok <- maybe_federate(activity),
-         _ <- User.update_follow_request_count(followed) do
+         :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
   end
