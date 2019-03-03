@@ -8,6 +8,7 @@ defmodule Pleroma.Web.StaticFE.StaticFEView do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Formatter
+  alias Pleroma.Web.Router.Helpers
 
   import Phoenix.HTML
 
