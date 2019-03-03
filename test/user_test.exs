@@ -1054,6 +1054,22 @@ defmodule Pleroma.UserTest do
 
       assert expected_text == User.parse_bio(bio, user)
     end
+
+    test "Adds rel=me on linkbacked urls" do
+      user = insert(:user, ap_id: "http://social.example.org/users/lain")
+
+      bio = "http://example.org/rel_me/null"
+      expected_text = "<a href=\"#{bio}\">#{bio}</a>"
+      assert expected_text == User.parse_bio(bio, user)
+
+      bio = "http://example.org/rel_me/link"
+      expected_text = "<a href=\"#{bio}\">#{bio}</a>"
+      assert expected_text == User.parse_bio(bio, user)
+
+      bio = "http://example.org/rel_me/anchor"
+      expected_text = "<a href=\"#{bio}\">#{bio}</a>"
+      assert expected_text == User.parse_bio(bio, user)
+    end
   end
 
   test "bookmarks" do
