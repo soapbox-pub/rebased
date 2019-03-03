@@ -133,7 +133,6 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
           "tags" => user.tags
         }
         |> maybe_with_activation_status(user, for_user)
-        |> maybe_with_follow_request_count(user, for_user)
     }
 
     data =
@@ -154,14 +153,6 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
   end
 
   defp maybe_with_activation_status(data, _, _), do: data
-
-  defp maybe_with_follow_request_count(data, %User{id: id, info: %{locked: true}} = user, %User{
-         id: id
-       }) do
-    Map.put(data, "follow_request_count", user.info.follow_request_count)
-  end
-
-  defp maybe_with_follow_request_count(data, _, _), do: data
 
   defp maybe_with_role(data, %User{id: id} = user, %User{id: id}) do
     Map.merge(data, %{"role" => role(user), "show_role" => user.info.show_role})
