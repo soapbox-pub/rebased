@@ -197,10 +197,12 @@ defmodule Pleroma.Web.Streamer do
       if socket.assigns[:user] do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
         blocks = user.info.blocks || []
+        mutes = user.info.mutes || []
 
         parent = Object.normalize(item.data["object"])
 
-        unless is_nil(parent) or item.actor in blocks or parent.data["actor"] in blocks do
+        unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
+                 parent.data["actor"] in blocks or parent.data["actor"] in mutes do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
@@ -224,8 +226,9 @@ defmodule Pleroma.Web.Streamer do
       if socket.assigns[:user] do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
         blocks = user.info.blocks || []
+        mutes = user.info.mutes || []
 
-        unless item.actor in blocks do
+        unless item.actor in blocks or item.actor in mutes do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
