@@ -10,6 +10,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.TwitterAPI.ActivityView
@@ -309,7 +310,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "visibility" => StatusView.get_visibility(object),
       "summary" => summary,
       "summary_html" => summary |> Formatter.emojify(object["emoji"]),
-      "card" => card
+      "card" => card,
+      "muted" => CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user)
     }
   end
 

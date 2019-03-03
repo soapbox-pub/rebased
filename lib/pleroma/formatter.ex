@@ -8,33 +8,51 @@ defmodule Pleroma.Formatter do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
-  @tag_regex ~r/((?<=[^&])|\A)(\#)(\w+)/u
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
+  @link_regex ~r{((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+}ui
 
-  # Modified from https://www.w3.org/TR/html5/forms.html#valid-e-mail-address
-  @mentions_regex ~r/@[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]*@?[a-zA-Z0-9_-](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*/u
+  @auto_linker_config hashtag: true,
+                      hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
+                      mention: true,
+                      mention_handler: &Pleroma.Formatter.mention_handler/4
 
-  def parse_tags(text, data \\ %{}) do
-    Regex.scan(@tag_regex, text)
-    |> Enum.map(fn ["#" <> tag = full_tag | _] -> {full_tag, String.downcase(tag)} end)
-    |> (fn map ->
-          if data["sensitive"] in [true, "True", "true", "1"],
-            do: [{"#nsfw", "nsfw"}] ++ map,
-            else: map
-        end).()
+  def mention_handler("@" <> nickname, buffer, opts, acc) do
+    case User.get_cached_by_nickname(nickname) do
+      %User{id: id} = user ->
+        ap_id = get_ap_id(user)
+        nickname_text = get_nickname_text(nickname, opts) |> maybe_escape(opts)
+
+        link =
+          "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>@<span>#{
+            nickname_text
+          }</span></a></span>"
+
+        {link, %{acc | mentions: MapSet.put(acc.mentions, {"@" <> nickname, user})}}
+
+      _ ->
+        {buffer, acc}
+    end
   end
 
-  @doc "Parses mentions text and returns list {nickname, user}."
-  @spec parse_mentions(binary()) :: list({binary(), User.t()})
-  def parse_mentions(text) do
-    Regex.scan(@mentions_regex, text)
-    |> List.flatten()
-    |> Enum.uniq()
-    |> Enum.map(fn nickname ->
-      with nickname <- String.trim_leading(nickname, "@"),
-           do: {"@" <> nickname, User.get_cached_by_nickname(nickname)}
-    end)
-    |> Enum.filter(fn {_match, user} -> user end)
+  def hashtag_handler("#" <> tag = tag_text, _buffer, _opts, acc) do
+    tag = String.downcase(tag)
+    url = "#{Pleroma.Web.base_url()}/tag/#{tag}"
+    link = "<a class='hashtag' data-tag='#{tag}' href='#{url}' rel='tag'>#{tag_text}</a>"
+
+    {link, %{acc | tags: MapSet.put(acc.tags, {tag_text, tag})}}
+  end
+
+  @doc """
+  Parses a text and replace plain text links with HTML. Returns a tuple with a result text, mentions, and hashtags.
+  """
+  @spec linkify(String.t(), keyword()) ::
+          {String.t(), [{String.t(), User.t()}], [{String.t(), String.t()}]}
+  def linkify(text, options \\ []) do
+    options = options ++ @auto_linker_config
+    acc = %{mentions: MapSet.new(), tags: MapSet.new()}
+    {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
+
+    {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
   end
 
   def emojify(text) do
@@ -48,9 +66,7 @@ defmodule Pleroma.Formatter do
       emoji = HTML.strip_tags(emoji)
       file = HTML.strip_tags(file)
 
-      String.replace(
-        text,
-        ":#{emoji}:",
+      html =
         if not strip do
           "<img height='32px' width='32px' alt='#{emoji}' title='#{emoji}' src='#{
             MediaProxy.url(file)
@@ -58,8 +74,8 @@ defmodule Pleroma.Formatter do
         else
           ""
         end
-      )
-      |> HTML.filter_tags()
+
+      String.replace(text, ":#{emoji}:", html) |> HTML.filter_tags()
     end)
   end
 
@@ -75,12 +91,10 @@ defmodule Pleroma.Formatter do
 
   def get_emoji(_), do: []
 
-  @link_regex ~r/[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+/ui
+  def html_escape({text, mentions, hashtags}, type) do
+    {html_escape(text, type), mentions, hashtags}
+  end
 
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
-
-  # TODO: make it use something other than @link_regex
   def html_escape(text, "text/html") do
     HTML.filter_tags(text)
   end
@@ -94,112 +108,6 @@ defmodule Pleroma.Formatter do
     |> Enum.join("")
   end
 
-  @doc """
-  Escapes a special characters in mention names.
-  """
-  @spec mentions_escape(String.t(), list({String.t(), any()})) :: String.t()
-  def mentions_escape(text, mentions) do
-    mentions
-    |> Enum.reduce(text, fn {name, _}, acc ->
-      escape_name = String.replace(name, @markdown_characters_regex, "\\\\\\1")
-      String.replace(acc, name, escape_name)
-    end)
-  end
-
-  @doc "changes scheme:... urls to html links"
-  def add_links({subs, text}) do
-    links =
-      text
-      |> String.split([" ", "\t", "<br>"])
-      |> Enum.filter(fn word -> String.starts_with?(word, @valid_schemes) end)
-      |> Enum.filter(fn word -> Regex.match?(@link_regex, word) end)
-      |> Enum.map(fn url -> {Ecto.UUID.generate(), url} end)
-      |> Enum.sort_by(fn {_, url} -> -String.length(url) end)
-
-    uuid_text =
-      links
-      |> Enum.reduce(text, fn {uuid, url}, acc -> String.replace(acc, url, uuid) end)
-
-    subs =
-      subs ++
-        Enum.map(links, fn {uuid, url} ->
-          {uuid, "<a href=\"#{url}\">#{url}</a>"}
-        end)
-
-    {subs, uuid_text}
-  end
-
-  @doc "Adds the links to mentioned users"
-  def add_user_links({subs, text}, mentions, options \\ []) do
-    mentions =
-      mentions
-      |> Enum.sort_by(fn {name, _} -> -String.length(name) end)
-      |> Enum.map(fn {name, user} -> {name, user, Ecto.UUID.generate()} end)
-
-    uuid_text =
-      mentions
-      |> Enum.reduce(text, fn {match, _user, uuid}, text ->
-        String.replace(text, match, uuid)
-      end)
-
-    subs =
-      subs ++
-        Enum.map(mentions, fn {match, %User{id: id, ap_id: ap_id, info: info}, uuid} ->
-          ap_id =
-            if is_binary(info.source_data["url"]) do
-              info.source_data["url"]
-            else
-              ap_id
-            end
-
-          nickname =
-            if options[:format] == :full do
-              User.full_nickname(match)
-            else
-              User.local_nickname(match)
-            end
-
-          {uuid,
-           "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>" <>
-             "@<span>#{nickname}</span></a></span>"}
-        end)
-
-    {subs, uuid_text}
-  end
-
-  @doc "Adds the hashtag links"
-  def add_hashtag_links({subs, text}, tags) do
-    tags =
-      tags
-      |> Enum.sort_by(fn {name, _} -> -String.length(name) end)
-      |> Enum.map(fn {name, short} -> {name, short, Ecto.UUID.generate()} end)
-
-    uuid_text =
-      tags
-      |> Enum.reduce(text, fn {match, _short, uuid}, text ->
-        String.replace(text, ~r/((?<=[^&])|(\A))#{match}/, uuid)
-      end)
-
-    subs =
-      subs ++
-        Enum.map(tags, fn {tag_text, tag, uuid} ->
-          url =
-            "<a class='hashtag' data-tag='#{tag}' href='#{Pleroma.Web.base_url()}/tag/#{tag}' rel='tag'>#{
-              tag_text
-            }</a>"
-
-          {uuid, url}
-        end)
-
-    {subs, uuid_text}
-  end
-
-  def finalize({subs, text}) do
-    Enum.reduce(subs, text, fn {uuid, replacement}, result_text ->
-      String.replace(result_text, uuid, replacement)
-    end)
-  end
-
   def truncate(text, max_length \\ 200, omission \\ "...") do
     # Remove trailing whitespace
     text = Regex.replace(~r/([^ \t\r\n])([ \t]+$)/u, text, "\\g{1}")
@@ -211,4 +119,16 @@ defmodule Pleroma.Formatter do
       String.slice(text, 0, length_with_omission) <> omission
     end
   end
+
+  defp get_ap_id(%User{info: %{source_data: %{"url" => url}}}) when is_binary(url), do: url
+  defp get_ap_id(%User{ap_id: ap_id}), do: ap_id
+
+  defp get_nickname_text(nickname, %{mentions_format: :full}), do: User.full_nickname(nickname)
+  defp get_nickname_text(nickname, _), do: User.local_nickname(nickname)
+
+  defp maybe_escape(str, %{mentions_escape: true}) do
+    String.replace(str, @markdown_characters_regex, "\\\\\\1")
+  end
+
+  defp maybe_escape(str, _), do: str
 end

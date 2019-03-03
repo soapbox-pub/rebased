@@ -22,6 +22,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.RelMe
 
   require Logger
 
@@ -547,11 +548,8 @@ defmodule Pleroma.User do
   end
 
   def get_followers_query(user, page) do
-    from(
-      u in get_followers_query(user, nil),
-      limit: 20,
-      offset: ^((page - 1) * 20)
-    )
+    from(u in get_followers_query(user, nil))
+    |> paginate(page, 20)
   end
 
   def get_followers_query(user), do: get_followers_query(user, nil)
@@ -577,11 +575,8 @@ defmodule Pleroma.User do
   end
 
   def get_friends_query(user, page) do
-    from(
-      u in get_friends_query(user, nil),
-      limit: 20,
-      offset: ^((page - 1) * 20)
-    )
+    from(u in get_friends_query(user, nil))
+    |> paginate(page, 20)
   end
 
   def get_friends_query(user), do: get_friends_query(user, nil)
@@ -613,71 +608,65 @@ defmodule Pleroma.User do
         ),
       where:
         fragment(
-          "? @> ?",
+          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
           a.data,
-          ^%{"object" => user.ap_id}
+          a.data,
+          ^user.ap_id
         )
     )
   end
 
-  def update_follow_request_count(%User{} = user) do
-    subquery =
+  def get_follow_requests(%User{} = user) do
+    users =
       user
       |> User.get_follow_requests_query()
-      |> select([a], %{count: count(a.id)})
-
-    User
-    |> where(id: ^user.id)
-    |> join(:inner, [u], s in subquery(subquery))
-    |> update([u, s],
-      set: [
-        info:
-          fragment(
-            "jsonb_set(?, '{follow_request_count}', ?::varchar::jsonb, true)",
-            u.info,
-            s.count
-          )
-      ]
-    )
-    |> Repo.update_all([], returning: true)
-    |> case do
-      {1, [user]} -> {:ok, user}
-      _ -> {:error, user}
-    end
-  end
-
-  def get_follow_requests(%User{} = user) do
-    q = get_follow_requests_query(user)
-    reqs = Repo.all(q)
-
-    users =
-      Enum.map(reqs, fn req -> req.actor end)
-      |> Enum.uniq()
-      |> Enum.map(fn ap_id -> get_by_ap_id(ap_id) end)
-      |> Enum.filter(fn u -> !is_nil(u) end)
-      |> Enum.filter(fn u -> !following?(u, user) end)
+      |> join(:inner, [a], u in User, a.actor == u.ap_id)
+      |> where([a, u], not fragment("? @> ?", u.following, ^[user.follower_address]))
+      |> group_by([a, u], u.id)
+      |> select([a, u], u)
+      |> Repo.all()
 
     {:ok, users}
   end
 
   def increase_note_count(%User{} = user) do
-    info_cng = User.Info.add_to_note_count(user.info, 1)
-
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    User
+    |> where(id: ^user.id)
+    |> update([u],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{note_count}', ((?->>'note_count')::int + 1)::varchar::jsonb, true)",
+            u.info,
+            u.info
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 
   def decrease_note_count(%User{} = user) do
-    info_cng = User.Info.add_to_note_count(user.info, -1)
-
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    User
+    |> where(id: ^user.id)
+    |> update([u],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{note_count}', (greatest(0, (?->>'note_count')::int - 1))::varchar::jsonb, true)",
+            u.info,
+            u.info
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 
   def update_note_count(%User{} = user) do
@@ -701,24 +690,29 @@ defmodule Pleroma.User do
 
   def update_follower_count(%User{} = user) do
     follower_count_query =
-      from(
-        u in User,
-        where: ^user.follower_address in u.following,
-        where: u.id != ^user.id,
-        select: count(u.id)
-      )
+      User
+      |> where([u], ^user.follower_address in u.following)
+      |> where([u], u.id != ^user.id)
+      |> select([u], %{count: count(u.id)})
 
-    follower_count = Repo.one(follower_count_query)
-
-    info_cng =
-      user.info
-      |> User.Info.set_follower_count(follower_count)
-
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    User
+    |> where(id: ^user.id)
+    |> join(:inner, [u], s in subquery(follower_count_query))
+    |> update([u, s],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
+            u.info,
+            s.count
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 
   def get_users_from_set_query(ap_ids, false) do
@@ -755,6 +749,46 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
+  @spec search_for_admin(binary(), %{
+          admin: Pleroma.User.t(),
+          local: boolean(),
+          page: number(),
+          page_size: number()
+        }) :: {:ok, [Pleroma.User.t()], number()}
+  def search_for_admin(term, %{admin: admin, local: local, page: page, page_size: page_size}) do
+    term = String.trim_leading(term, "@")
+
+    local_paginated_query =
+      User
+      |> maybe_local_user_query(local)
+      |> paginate(page, page_size)
+
+    search_query = fts_search_subquery(term, local_paginated_query)
+
+    count =
+      term
+      |> fts_search_subquery()
+      |> maybe_local_user_query(local)
+      |> Repo.aggregate(:count, :id)
+
+    {:ok, do_search(search_query, admin), count}
+  end
+
+  @spec all_for_admin(number(), number()) :: {:ok, [Pleroma.User.t()], number()}
+  def all_for_admin(page, page_size) do
+    query = from(u in User, order_by: u.id)
+
+    paginated_query =
+      query
+      |> paginate(page, page_size)
+
+    count =
+      query
+      |> Repo.aggregate(:count, :id)
+
+    {:ok, Repo.all(paginated_query), count}
+  end
+
   def search(query, resolve \\ false, for_user \\ nil) do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
@@ -788,9 +822,9 @@ defmodule Pleroma.User do
     boost_search_results(results, for_user)
   end
 
-  defp fts_search_subquery(query) do
+  defp fts_search_subquery(term, query \\ User) do
     processed_query =
-      query
+      term
       |> String.replace(~r/\W+/, " ")
       |> String.trim()
       |> String.split()
@@ -798,7 +832,7 @@ defmodule Pleroma.User do
       |> Enum.join(" | ")
 
     from(
-      u in User,
+      u in query,
       select_merge: %{
         search_rank:
           fragment(
@@ -828,19 +862,19 @@ defmodule Pleroma.User do
     )
   end
 
-  defp trigram_search_subquery(query) do
+  defp trigram_search_subquery(term) do
     from(
       u in User,
       select_merge: %{
         search_rank:
           fragment(
             "similarity(?, trim(? || ' ' || coalesce(?, '')))",
-            ^query,
+            ^term,
             u.nickname,
             u.name
           )
       },
-      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^query)
+      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
     )
   end
 
@@ -954,6 +988,7 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
+  def mutes?(nil, _), do: false
   def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.info.mutes, ap_id)
 
   def blocks?(user, %{ap_id: ap_id}) do
@@ -997,9 +1032,13 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
-  def local_user_query do
+  def maybe_local_user_query(query, local) do
+    if local, do: local_user_query(query), else: query
+  end
+
+  def local_user_query(query \\ User) do
     from(
-      u in User,
+      u in query,
       where: u.local == true,
       where: not is_nil(u.nickname)
     )
@@ -1187,9 +1226,6 @@ defmodule Pleroma.User do
   def parse_bio(bio, _user) when bio == "", do: bio
 
   def parse_bio(bio, user) do
-    mentions = Formatter.parse_mentions(bio)
-    tags = Formatter.parse_tags(bio)
-
     emoji =
       (user.info.source_data["tag"] || [])
       |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
@@ -1197,8 +1233,15 @@ defmodule Pleroma.User do
         {String.trim(name, ":"), url}
       end)
 
+    # TODO: get profile URLs other than user.ap_id
+    profile_urls = [user.ap_id]
+
     bio
-    |> CommonUtils.format_input(mentions, tags, "text/plain", user_links: [format: :full])
+    |> CommonUtils.format_input("text/plain",
+      mentions_format: :full,
+      rel: &RelMe.maybe_put_rel_me(&1, profile_urls)
+    )
+    |> elem(0)
     |> Formatter.emojify(emoji)
   end
 
@@ -1292,5 +1335,12 @@ defmodule Pleroma.User do
       where: fragment("?->'is_admin' @> 'true' OR ?->'is_moderator' @> 'true'", u.info, u.info)
     )
     |> Repo.all()
+  end
+
+  defp paginate(query, page, page_size) do
+    from(u in query,
+      limit: ^page_size,
+      offset: ^((page - 1) * page_size)
+    )
   end
 end

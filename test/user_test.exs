@@ -50,6 +50,34 @@ defmodule Pleroma.UserTest do
     assert expected_followers_collection == User.ap_followers(user)
   end
 
+  test "returns all pending follow requests" do
+    unlocked = insert(:user)
+    locked = insert(:user, %{info: %{locked: true}})
+    follower = insert(:user)
+
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(follower, %{"user_id" => unlocked.id})
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(follower, %{"user_id" => locked.id})
+
+    assert {:ok, []} = User.get_follow_requests(unlocked)
+    assert {:ok, [activity]} = User.get_follow_requests(locked)
+
+    assert activity
+  end
+
+  test "doesn't return already accepted or duplicate follow requests" do
+    locked = insert(:user, %{info: %{locked: true}})
+    pending_follower = insert(:user)
+    accepted_follower = insert(:user)
+
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(pending_follower, %{"user_id" => locked.id})
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(pending_follower, %{"user_id" => locked.id})
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(accepted_follower, %{"user_id" => locked.id})
+    User.maybe_follow(accepted_follower, locked)
+
+    assert {:ok, [activity]} = User.get_follow_requests(locked)
+    assert activity
+  end
+
   test "follow_all follows mutliple users" do
     user = insert(:user)
     followed_zero = insert(:user)
@@ -901,7 +929,8 @@ defmodule Pleroma.UserTest do
       {:ok, follower} = User.follow(follower, u1)
       {:ok, u1} = User.follow(u1, friend)
 
-      assert [friend.id, follower.id, u2.id] == Enum.map(User.search("doe", false, u1), & &1.id)
+      assert [friend.id, follower.id, u2.id] --
+               Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
     end
 
     test "finds a user whose name is nil" do
@@ -923,7 +952,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "works with URIs" do
-      results = User.search("http://mastodon.example.org/users/admin", true)
+      results = User.search("http://mastodon.example.org/users/admin", resolve: true)
       result = results |> List.first()
 
       user = User.get_by_ap_id("http://mastodon.example.org/users/admin")
@@ -1023,6 +1052,22 @@ defmodule Pleroma.UserTest do
           remote_user.ap_id
         }'>" <> "@<span>nick@domain.com</span></a></span>"
 
+      assert expected_text == User.parse_bio(bio, user)
+    end
+
+    test "Adds rel=me on linkbacked urls" do
+      user = insert(:user, ap_id: "http://social.example.org/users/lain")
+
+      bio = "http://example.org/rel_me/null"
+      expected_text = "<a href=\"#{bio}\">#{bio}</a>"
+      assert expected_text == User.parse_bio(bio, user)
+
+      bio = "http://example.org/rel_me/link"
+      expected_text = "<a href=\"#{bio}\">#{bio}</a>"
+      assert expected_text == User.parse_bio(bio, user)
+
+      bio = "http://example.org/rel_me/anchor"
+      expected_text = "<a href=\"#{bio}\">#{bio}</a>"
       assert expected_text == User.parse_bio(bio, user)
     end
   end

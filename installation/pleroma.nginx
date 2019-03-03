@@ -11,7 +11,9 @@ proxy_cache_path /tmp/pleroma-media-cache levels=1:2 keys_zone=pleroma_media_cac
 
 server {
     server_name    example.tld;
+
     listen         80;
+    listen         [::]:80;
     return         301 https://$server_name$request_uri;
 
     # Uncomment this if you need to use the 'webroot' method with certbot. Make sure
@@ -29,7 +31,10 @@ server {
 ssl_session_cache shared:ssl_session_cache:10m;
 
 server {
+    server_name example.tld;
+
     listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     ssl_session_timeout 5m;
 
     ssl_trusted_certificate   /etc/letsencrypt/live/example.tld/fullchain.pem;
@@ -47,8 +52,6 @@ server {
     ssl_ecdh_curve X25519:prime256v1:secp384r1:secp521r1;
     ssl_stapling on;
     ssl_stapling_verify on;
-
-    server_name example.tld;
 
     gzip_vary on;
     gzip_proxied any;

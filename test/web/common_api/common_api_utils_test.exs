@@ -57,19 +57,19 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
     assert expected == Utils.emoji_from_profile(user)
   end
 
-  describe "format_input/4" do
+  describe "format_input/3" do
     test "works for bare text/plain" do
       text = "hello world!"
       expected = "hello world!"
 
-      output = Utils.format_input(text, [], [], "text/plain")
+      {output, [], []} = Utils.format_input(text, "text/plain")
 
       assert output == expected
 
       text = "hello world!\n\nsecond paragraph!"
       expected = "hello world!<br><br>second paragraph!"
 
-      output = Utils.format_input(text, [], [], "text/plain")
+      {output, [], []} = Utils.format_input(text, "text/plain")
 
       assert output == expected
     end
@@ -78,14 +78,14 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       text = "<p>hello world!</p>"
       expected = "<p>hello world!</p>"
 
-      output = Utils.format_input(text, [], [], "text/html")
+      {output, [], []} = Utils.format_input(text, "text/html")
 
       assert output == expected
 
       text = "<p>hello world!</p>\n\n<p>second paragraph</p>"
       expected = "<p>hello world!</p>\n\n<p>second paragraph</p>"
 
-      output = Utils.format_input(text, [], [], "text/html")
+      {output, [], []} = Utils.format_input(text, "text/html")
 
       assert output == expected
     end
@@ -94,14 +94,44 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       text = "**hello world**"
       expected = "<p><strong>hello world</strong></p>\n"
 
-      output = Utils.format_input(text, [], [], "text/markdown")
+      {output, [], []} = Utils.format_input(text, "text/markdown")
 
       assert output == expected
 
       text = "**hello world**\n\n*another paragraph*"
       expected = "<p><strong>hello world</strong></p>\n<p><em>another paragraph</em></p>\n"
 
-      output = Utils.format_input(text, [], [], "text/markdown")
+      {output, [], []} = Utils.format_input(text, "text/markdown")
+
+      assert output == expected
+
+      text = """
+      > cool quote
+
+      by someone
+      """
+
+      expected = "<blockquote><p>cool quote</p>\n</blockquote>\n<p>by someone</p>\n"
+
+      {output, [], []} = Utils.format_input(text, "text/markdown")
+
+      assert output == expected
+    end
+
+    test "works for text/markdown with mentions" do
+      {:ok, user} =
+        UserBuilder.insert(%{nickname: "user__test", ap_id: "http://foo.com/user__test"})
+
+      text = "**hello world**\n\n*another @user__test and @user__test google.com paragraph*"
+
+      expected =
+        "<p><strong>hello world</strong></p>\n<p><em>another <span class=\"h-card\"><a data-user=\"#{
+          user.id
+        }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> and <span class=\"h-card\"><a data-user=\"#{
+          user.id
+        }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> <a href=\"http://google.com\">google.com</a> paragraph</em></p>\n"
+
+      {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output == expected
     end

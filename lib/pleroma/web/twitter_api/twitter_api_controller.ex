@@ -13,6 +13,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.{Repo, Activity, Object, User, Notification}
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.TwitterAPI.ActivityView
@@ -166,6 +167,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       params
       |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
       |> Map.put("blocking_user", user)
+      |> Map.put(:visibility, ~w[unlisted public private])
 
     activities = ActivityPub.fetch_activities([user.ap_id], params)
 
@@ -268,7 +270,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
-         true <- ActivityPub.visible_for_user?(activity, user) do
+         true <- Visibility.visible_for_user?(activity, user) do
       conn
       |> put_view(ActivityView)
       |> render("activity.json", %{activity: activity, for: user})
@@ -701,7 +703,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def search_user(%{assigns: %{user: user}} = conn, %{"query" => query}) do
-    users = User.search(query, true, user)
+    users = User.search(query, resolve: true, for_user: user)
 
     conn
     |> put_view(UserView)

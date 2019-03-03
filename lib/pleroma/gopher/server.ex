@@ -37,6 +37,7 @@ end
 
 defmodule Pleroma.Gopher.Server.ProtocolHandler do
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Activity
   alias Pleroma.HTML
   alias Pleroma.User
@@ -110,7 +111,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
 
   def response("/notices/" <> id) do
     with %Activity{} = activity <- Repo.get(Activity, id),
-         true <- ActivityPub.is_public?(activity) do
+         true <- Visibility.is_public?(activity) do
       activities =
         ActivityPub.fetch_activities_for_context(activity.data["context"])
         |> render_activities

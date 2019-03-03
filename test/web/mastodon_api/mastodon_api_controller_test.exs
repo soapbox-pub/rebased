@@ -946,7 +946,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
-      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
@@ -960,7 +959,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == true
-      assert user.info.follow_request_count == 0
     end
 
     test "verify_credentials", %{conn: conn} do
@@ -982,7 +980,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
       user = Repo.get(User, user.id)
-      assert user.info.follow_request_count == 1
 
       conn =
         build_conn()
@@ -996,7 +993,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       other_user = Repo.get(User, other_user.id)
 
       assert User.following?(other_user, user) == false
-      assert user.info.follow_request_count == 0
     end
   end
 
@@ -1743,6 +1739,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                  }
                }
              }
+
+      # works with private posts
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "http://example.com/ogp", "visibility" => "direct"})
+
+      response_two =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/statuses/#{activity.id}/card")
+        |> json_response(200)
+
+      assert response_two == response
 
       Pleroma.Config.put([:rich_media, :enabled], false)
     end

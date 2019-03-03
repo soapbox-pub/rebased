@@ -9,6 +9,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.OStatus.ActivityRepresenter
@@ -102,7 +103,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     else
       with id <- o_status_url(conn, :object, uuid),
            {_, %Activity{} = activity} <- {:activity, Activity.get_create_by_object_ap_id(id)},
-           {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+           {_, true} <- {:public?, Visibility.is_public?(activity)},
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
@@ -127,7 +128,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
     else
       with id <- o_status_url(conn, :activity, uuid),
            {_, %Activity{} = activity} <- {:activity, Activity.normalize(id)},
-           {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+           {_, true} <- {:public?, Visibility.is_public?(activity)},
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case format = get_format(conn) do
           "html" -> redirect(conn, to: "/notice/#{activity.id}")
@@ -148,7 +149,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   def notice(conn, %{"id" => id}) do
     with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id(id)},
-         {_, true} <- {:public?, ActivityPub.is_public?(activity)},
+         {_, true} <- {:public?, Visibility.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
@@ -191,7 +192,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   # Returns an HTML embedded <audio> or <video> player suitable for embed iframes.
   def notice_player(conn, %{"id" => id}) do
     with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
-         true <- ActivityPub.is_public?(activity),
+         true <- Visibility.is_public?(activity),
          %Object{} = object <- Object.normalize(activity.data["object"]),
          %{data: %{"attachment" => [%{"url" => [url | _]} | _]}} <- object,
          true <- String.starts_with?(url["mediaType"], ["audio", "video"]) do

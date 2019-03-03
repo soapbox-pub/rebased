@@ -27,6 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.ReportView
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
@@ -307,7 +308,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
-         true <- ActivityPub.visible_for_user?(activity, user) do
+         true <- Visibility.visible_for_user?(activity, user) do
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user})
@@ -449,7 +450,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def bookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
          %User{} = user <- User.get_by_nickname(user.nickname),
-         true <- ActivityPub.visible_for_user?(activity, user),
+         true <- Visibility.visible_for_user?(activity, user),
          {:ok, user} <- User.bookmark(user, activity.data["object"]["id"]) do
       conn
       |> put_view(StatusView)
@@ -460,7 +461,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def unbookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Repo.get(Activity, id),
          %User{} = user <- User.get_by_nickname(user.nickname),
-         true <- ActivityPub.visible_for_user?(activity, user),
+         true <- Visibility.visible_for_user?(activity, user),
          {:ok, user} <- User.unbookmark(user, activity.data["object"]["id"]) do
       conn
       |> put_view(StatusView)
@@ -867,7 +868,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       if Regex.match?(~r/https?:/, query) do
         with {:ok, object} <- ActivityPub.fetch_object_from_id(query),
              %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
-             true <- ActivityPub.visible_for_user?(activity, user) do
+             true <- Visibility.visible_for_user?(activity, user) do
           [activity]
         else
           _e -> []
@@ -893,7 +894,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, params["resolve"] == "true", user)
+    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
 
     statuses = status_search(user, query)
 
@@ -918,7 +919,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, params["resolve"] == "true", user)
+    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
 
     statuses = status_search(user, query)
 
@@ -940,7 +941,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, params["resolve"] == "true", user)
+    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
 
     res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
 
@@ -1518,9 +1519,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def status_card(conn, %{"id" => status_id}) do
+  def status_card(%{assigns: %{user: user}} = conn, %{"id" => status_id}) do
     with %Activity{} = activity <- Repo.get(Activity, status_id),
-         true <- ActivityPub.is_public?(activity) do
+         true <- Visibility.visible_for_user?(activity, user) do
       data =
         StatusView.render(
           "card.json",

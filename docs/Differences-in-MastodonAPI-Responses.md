@@ -9,3 +9,7 @@ Pleroma uses 128-bit ids as opposed to Mastodon's 64 bits. However just like Mas
 ## Attachment cap
 
 Some apps operate under the assumption that no more than 4 attachments can be returned or uploaded. Pleroma however does not enforce any limits on attachment count neither when returning the status object nor when posting.
+
+## Timelines
+
+Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.

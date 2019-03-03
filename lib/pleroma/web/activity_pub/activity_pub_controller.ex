@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
@@ -49,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def object(conn, %{"uuid" => uuid}) do
     with ap_id <- o_status_url(conn, :object, uuid),
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, ActivityPub.is_public?(object)} do
+         {_, true} <- {:public?, Visibility.is_public?(object)} do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(ObjectView.render("object.json", %{object: object}))
@@ -62,7 +63,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def object_likes(conn, %{"uuid" => uuid, "page" => page}) do
     with ap_id <- o_status_url(conn, :object, uuid),
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, ActivityPub.is_public?(object)},
+         {_, true} <- {:public?, Visibility.is_public?(object)},
          likes <- Utils.get_object_likes(object) do
       {page, _} = Integer.parse(page)
 
@@ -78,7 +79,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def object_likes(conn, %{"uuid" => uuid}) do
     with ap_id <- o_status_url(conn, :object, uuid),
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
-         {_, true} <- {:public?, ActivityPub.is_public?(object)},
+         {_, true} <- {:public?, Visibility.is_public?(object)},
          likes <- Utils.get_object_likes(object) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
@@ -92,7 +93,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def activity(conn, %{"uuid" => uuid}) do
     with ap_id <- o_status_url(conn, :activity, uuid),
          %Activity{} = activity <- Activity.normalize(ap_id),
-         {_, true} <- {:public?, ActivityPub.is_public?(activity)} do
+         {_, true} <- {:public?, Visibility.is_public?(activity)} do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(ObjectView.render("object.json", %{object: activity}))

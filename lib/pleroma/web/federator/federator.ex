@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.Websub
   alias Pleroma.Web.Salmon
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
@@ -94,7 +95,7 @@ defmodule Pleroma.Web.Federator do
     with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
       {:ok, actor} = WebFinger.ensure_keys_present(actor)
 
-      if ActivityPub.is_public?(activity) do
+      if Visibility.is_public?(activity) do
         if OStatus.is_representable?(activity) do
           Logger.info(fn -> "Sending #{activity.data["id"]} out via WebSub" end)
           Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
