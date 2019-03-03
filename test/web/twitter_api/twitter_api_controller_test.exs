@@ -427,7 +427,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
     test "with credentials", %{conn: conn, user: current_user} do
       {:ok, activity} =
-        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: current_user})
+        CommonAPI.post(current_user, %{
+          "status" => "why is tenshi eating a corndog so cute?",
+          "visibility" => "public"
+        })
 
       conn =
         conn
@@ -444,6 +447,23 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  for: current_user,
                  mentioned: [current_user]
                })
+    end
+
+    test "does not show DMs in mentions timeline", %{conn: conn, user: current_user} do
+      {:ok, _activity} =
+        CommonAPI.post(current_user, %{
+          "status" => "Have you guys ever seen how cute tenshi eating a corndog is?",
+          "visibility" => "direct"
+        })
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/statuses/mentions.json")
+
+      response = json_response(conn, 200)
+
+      assert length(response) == 0
     end
   end
 

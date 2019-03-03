@@ -167,6 +167,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       params
       |> Map.put("type", ["Create", "Announce", "Follow", "Like"])
       |> Map.put("blocking_user", user)
+      |> Map.put(:visibility, ~w[unlisted public private])
 
     activities = ActivityPub.fetch_activities([user.ap_id], params)
 
