@@ -3,10 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
+  @users_page_size 50
+
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.TwitterAPI.UserView
+  alias Pleroma.Web.MastodonAPI.Admin.AccountView
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
@@ -48,7 +50,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     {:ok, updated_user} = User.deactivate(user, !user.info.deactivated)
 
     conn
-    |> json(UserView.render("show_for_admin.json", %{user: updated_user}))
+    |> json(AccountView.render("show.json", %{user: updated_user}))
   end
 
   def tag_users(conn, %{"nicknames" => nicknames, "tags" => tags}) do
@@ -61,11 +63,40 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          do: json_response(conn, :no_content, "")
   end
 
-  def list_users(%{assigns: %{user: admin}} = conn, _data) do
-    users = User.all_except_one(admin)
+  def list_users(conn, params) do
+    {page, page_size} = page_params(params)
 
-    conn
-    |> json(UserView.render("index_for_admin.json", %{users: users}))
+    with {:ok, users, count} <- User.all_for_admin(page, page_size),
+         do:
+           conn
+           |> json(
+             AccountView.render("index.json",
+               users: users,
+               count: count,
+               page_size: page_size
+             )
+           )
+  end
+
+  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => query} = params) do
+    {page, page_size} = page_params(params)
+
+    with {:ok, users, count} <-
+           User.search_for_admin(query, %{
+             admin: admin,
+             local: params["local"] == "true",
+             page: page,
+             page_size: page_size
+           }),
+         do:
+           conn
+           |> json(
+             AccountView.render("index.json",
+               users: users,
+               count: count,
+               page_size: page_size
+             )
+           )
   end
 
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})
@@ -210,5 +241,27 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     conn
     |> put_status(500)
     |> json("Something went wrong")
+  end
+
+  defp page_params(params) do
+    {get_page(params["page"]), get_page_size(params["page_size"])}
+  end
+
+  defp get_page(page_string) when is_nil(page_string), do: 1
+
+  defp get_page(page_string) do
+    case Integer.parse(page_string) do
+      {page, _} -> page
+      :error -> 1
+    end
+  end
+
+  defp get_page_size(page_size_string) when is_nil(page_size_string), do: @users_page_size
+
+  defp get_page_size(page_size_string) do
+    case Integer.parse(page_size_string) do
+      {page_size, _} -> page_size
+      :error -> @users_page_size
+    end
   end
 end

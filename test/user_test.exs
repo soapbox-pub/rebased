@@ -929,7 +929,8 @@ defmodule Pleroma.UserTest do
       {:ok, follower} = User.follow(follower, u1)
       {:ok, u1} = User.follow(u1, friend)
 
-      assert [friend.id, follower.id, u2.id] == Enum.map(User.search("doe", false, u1), & &1.id)
+      assert [friend.id, follower.id, u2.id] --
+               Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
     end
 
     test "finds a user whose name is nil" do
@@ -951,7 +952,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "works with URIs" do
-      results = User.search("http://mastodon.example.org/users/admin", true)
+      results = User.search("http://mastodon.example.org/users/admin", resolve: true)
       result = results |> List.first()
 
       user = User.get_by_ap_id("http://mastodon.example.org/users/admin")

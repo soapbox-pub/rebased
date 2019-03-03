@@ -547,11 +547,8 @@ defmodule Pleroma.User do
   end
 
   def get_followers_query(user, page) do
-    from(
-      u in get_followers_query(user, nil),
-      limit: 20,
-      offset: ^((page - 1) * 20)
-    )
+    from(u in get_followers_query(user, nil))
+    |> paginate(page, 20)
   end
 
   def get_followers_query(user), do: get_followers_query(user, nil)
@@ -577,11 +574,8 @@ defmodule Pleroma.User do
   end
 
   def get_friends_query(user, page) do
-    from(
-      u in get_friends_query(user, nil),
-      limit: 20,
-      offset: ^((page - 1) * 20)
-    )
+    from(u in get_friends_query(user, nil))
+    |> paginate(page, 20)
   end
 
   def get_friends_query(user), do: get_friends_query(user, nil)
@@ -754,6 +748,46 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
+  @spec search_for_admin(binary(), %{
+          admin: Pleroma.User.t(),
+          local: boolean(),
+          page: number(),
+          page_size: number()
+        }) :: {:ok, [Pleroma.User.t()], number()}
+  def search_for_admin(term, %{admin: admin, local: local, page: page, page_size: page_size}) do
+    term = String.trim_leading(term, "@")
+
+    local_paginated_query =
+      User
+      |> maybe_local_user_query(local)
+      |> paginate(page, page_size)
+
+    search_query = fts_search_subquery(term, local_paginated_query)
+
+    count =
+      term
+      |> fts_search_subquery()
+      |> maybe_local_user_query(local)
+      |> Repo.aggregate(:count, :id)
+
+    {:ok, do_search(search_query, admin), count}
+  end
+
+  @spec all_for_admin(number(), number()) :: {:ok, [Pleroma.User.t()], number()}
+  def all_for_admin(page, page_size) do
+    query = from(u in User, order_by: u.id)
+
+    paginated_query =
+      query
+      |> paginate(page, page_size)
+
+    count =
+      query
+      |> Repo.aggregate(:count, :id)
+
+    {:ok, Repo.all(paginated_query), count}
+  end
+
   def search(query, resolve \\ false, for_user \\ nil) do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
@@ -769,12 +803,6 @@ defmodule Pleroma.User do
       end)
 
     Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
-  end
-
-  def all_except_one(user) do
-    query = from(u in User, where: u.id != ^user.id)
-
-    Repo.all(query)
   end
 
   defp do_search(subquery, for_user, options \\ []) do
@@ -793,9 +821,9 @@ defmodule Pleroma.User do
     boost_search_results(results, for_user)
   end
 
-  defp fts_search_subquery(query) do
+  defp fts_search_subquery(term, query \\ User) do
     processed_query =
-      query
+      term
       |> String.replace(~r/\W+/, " ")
       |> String.trim()
       |> String.split()
@@ -803,7 +831,7 @@ defmodule Pleroma.User do
       |> Enum.join(" | ")
 
     from(
-      u in User,
+      u in query,
       select_merge: %{
         search_rank:
           fragment(
@@ -833,19 +861,19 @@ defmodule Pleroma.User do
     )
   end
 
-  defp trigram_search_subquery(query) do
+  defp trigram_search_subquery(term) do
     from(
       u in User,
       select_merge: %{
         search_rank:
           fragment(
             "similarity(?, trim(? || ' ' || coalesce(?, '')))",
-            ^query,
+            ^term,
             u.nickname,
             u.name
           )
       },
-      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^query)
+      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
     )
   end
 
@@ -1003,9 +1031,13 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
-  def local_user_query do
+  def maybe_local_user_query(query, local) do
+    if local, do: local_user_query(query), else: query
+  end
+
+  def local_user_query(query \\ User) do
     from(
-      u in User,
+      u in query,
       where: u.local == true,
       where: not is_nil(u.nickname)
     )
@@ -1296,5 +1328,12 @@ defmodule Pleroma.User do
       where: fragment("?->'is_admin' @> 'true' OR ?->'is_moderator' @> 'true'", u.info, u.info)
     )
     |> Repo.all()
+  end
+
+  defp paginate(query, page, page_size) do
+    from(u in query,
+      limit: ^page_size,
+      offset: ^((page - 1) * page_size)
+    )
   end
 end

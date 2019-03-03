@@ -703,7 +703,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def search_user(%{assigns: %{user: user}} = conn, %{"query" => query}) do
-    users = User.search(query, true, user)
+    users = User.search(query, resolve: true, for_user: user)
 
     conn
     |> put_view(UserView)

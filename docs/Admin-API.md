@@ -7,17 +7,51 @@ Authentication is required and the user must be an admin.
 ### List users
 
 - Method `GET`
+- Params:
+  - `page`: **integer** page number
+  - `page_size`: **integer** number of users per page (default is `50`)
 - Response:
 
 ```JSON
-[
+{
+  "page_size": integer,
+  "count": integer,
+  "users": [
     {
-        "deactivated": bool,
-        "id": integer,
-        "nickname": string
+      "deactivated": bool,
+      "id": integer,
+      "nickname": string
     },
     ...
-]
+  ]
+}
+```
+
+## `/api/pleroma/admin/users/search?query={query}&local={local}&page={page}&page_size={page_size}`
+
+### Search users by name or nickname
+
+- Method `GET`
+- Params:
+  - `query`: **string** search term
+  - `local`: **bool** whether to return only local users
+  - `page`: **integer** page number
+  - `page_size`: **integer** number of users per page (default is `50`)
+- Response:
+
+```JSON
+{
+  "page_size": integer,
+  "count": integer,
+  "users": [
+    {
+      "deactivated": bool,
+      "id": integer,
+      "nickname": string
+    },
+    ...
+  ]
+}
 ```
 
 ## `/api/pleroma/admin/user`
@@ -49,9 +83,9 @@ Authentication is required and the user must be an admin.
 
 ```JSON
 {
-    "deactivated": bool,
-    "id": integer,
-    "nickname": string
+  "deactivated": bool,
+  "id": integer,
+  "nickname": string
 }
 ```
 
@@ -81,8 +115,8 @@ Authentication is required and the user must be an admin.
 
 ```JSON
 {
-    "is_moderator": bool,
-    "is_admin": bool
+  "is_moderator": bool,
+  "is_admin": bool
 }
 ```
 
@@ -98,8 +132,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ```JSON
 {
-    "is_moderator": bool,
-    "is_admin": bool
+  "is_moderator": bool,
+  "is_admin": bool
 }
 ```
 
