@@ -177,13 +177,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def dm_timeline(%{assigns: %{user: user}} = conn, params) do
-    query =
-      ActivityPub.fetch_activities_query(
-        [user.ap_id],
-        Map.merge(params, %{"type" => "Create", "user" => user, visibility: "direct"})
-      )
+    params =
+      params
+      |> Map.put("type", "Create")
+      |> Map.put("blocking_user", user)
+      |> Map.put("user", user)
+      |> Map.put(:visibility, "direct")
 
-    activities = Repo.all(query)
+    activities =
+      ActivityPub.fetch_activities_query([user.ap_id], params)
+      |> Repo.all()
 
     conn
     |> put_view(ActivityView)

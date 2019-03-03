@@ -248,6 +248,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert status["url"] != direct.data["id"]
   end
 
+  test "doesn't include DMs from blocked users", %{conn: conn} do
+    blocker = insert(:user)
+    blocked = insert(:user)
+    user = insert(:user)
+    {:ok, blocker} = User.block(blocker, blocked)
+
+    {:ok, _blocked_direct} =
+      CommonAPI.post(blocked, %{
+        "status" => "Hi @#{blocker.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, direct} =
+      CommonAPI.post(user, %{
+        "status" => "Hi @#{blocker.nickname}!",
+        "visibility" => "direct"
+      })
+
+    res_conn =
+      conn
+      |> assign(:user, user)
+      |> get("api/v1/timelines/direct")
+
+    [status] = json_response(res_conn, 200)
+    assert status["id"] == direct.id
+  end
+
   test "replying to a status", %{conn: conn} do
     user = insert(:user)
 

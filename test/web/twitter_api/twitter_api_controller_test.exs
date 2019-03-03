@@ -415,6 +415,33 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert status["id"] == direct_two.id
       assert status_two["id"] == direct.id
     end
+
+    test "doesn't include DMs from blocked users", %{conn: conn} do
+      blocker = insert(:user)
+      blocked = insert(:user)
+      user = insert(:user)
+      {:ok, blocker} = User.block(blocker, blocked)
+
+      {:ok, _blocked_direct} =
+        CommonAPI.post(blocked, %{
+          "status" => "Hi @#{blocker.nickname}!",
+          "visibility" => "direct"
+        })
+
+      {:ok, direct} =
+        CommonAPI.post(user, %{
+          "status" => "Hi @#{blocker.nickname}!",
+          "visibility" => "direct"
+        })
+
+      res_conn =
+        conn
+        |> assign(:user, blocker)
+        |> get("/api/statuses/dm_timeline.json")
+
+      [status] = json_response(res_conn, 200)
+      assert status["id"] == direct.id
+    end
   end
 
   describe "GET /statuses/mentions.json" do
@@ -1762,8 +1789,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> assign(:user, user)
         |> post("/api/pleroma/friendships/approve", %{"user_id" => other_user.id})
 
-      user = Repo.get(User, user.id)
-
       assert relationship = json_response(conn, 200)
       assert other_user.id == relationship["id"]
       assert relationship["follows_you"] == true
@@ -1786,8 +1811,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         build_conn()
         |> assign(:user, user)
         |> post("/api/pleroma/friendships/deny", %{"user_id" => other_user.id})
-
-      user = Repo.get(User, user.id)
 
       assert relationship = json_response(conn, 200)
       assert other_user.id == relationship["id"]
