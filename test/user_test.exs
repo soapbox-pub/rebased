@@ -64,6 +64,20 @@ defmodule Pleroma.UserTest do
     assert activity
   end
 
+  test "doesn't return already accepted or duplicate follow requests" do
+    locked = insert(:user, %{info: %{locked: true}})
+    pending_follower = insert(:user)
+    accepted_follower = insert(:user)
+
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(pending_follower, %{"user_id" => locked.id})
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(pending_follower, %{"user_id" => locked.id})
+    Pleroma.Web.TwitterAPI.TwitterAPI.follow(accepted_follower, %{"user_id" => locked.id})
+    User.maybe_follow(accepted_follower, locked)
+
+    assert {:ok, [activity]} = User.get_follow_requests(locked)
+    assert activity
+  end
+
   test "follow_all follows mutliple users" do
     user = insert(:user)
     followed_zero = insert(:user)
