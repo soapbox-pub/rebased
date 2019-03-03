@@ -81,6 +81,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp check_remote_limit(_), do: true
 
+  def increase_note_count_if_public(actor, object) do
+    if is_public?(object), do: User.increase_note_count(actor), else: {:ok, actor}
+  end
+
+  def decrease_note_count_if_public(actor, object) do
+    if is_public?(object), do: User.decrease_note_count(actor), else: {:ok, actor}
+  end
+
   def insert(map, local \\ true) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map),
@@ -163,7 +171,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            ),
          {:ok, activity} <- insert(create_data, local),
          # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
-         {:ok, _actor} <- User.increase_note_count(actor),
+         {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
@@ -312,7 +320,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with {:ok, _} <- Object.delete(object),
          {:ok, activity} <- insert(data, local),
          # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
-         {:ok, _actor} <- User.decrease_note_count(user),
+         {:ok, _actor} <- decrease_note_count_if_public(user, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
     end
