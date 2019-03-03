@@ -662,23 +662,43 @@ defmodule Pleroma.User do
   end
 
   def increase_note_count(%User{} = user) do
-    info_cng = User.Info.add_to_note_count(user.info, 1)
-
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    User
+    |> where(id: ^user.id)
+    |> update([u],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{note_count}', ((?->>'note_count')::int + 1)::varchar::jsonb, true)",
+            u.info,
+            u.info
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 
   def decrease_note_count(%User{} = user) do
-    info_cng = User.Info.add_to_note_count(user.info, -1)
-
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    User
+    |> where(id: ^user.id)
+    |> update([u],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{note_count}', (greatest(0, (?->>'note_count')::int - 1))::varchar::jsonb, true)",
+            u.info,
+            u.info
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 
   def update_note_count(%User{} = user) do
@@ -702,24 +722,29 @@ defmodule Pleroma.User do
 
   def update_follower_count(%User{} = user) do
     follower_count_query =
-      from(
-        u in User,
-        where: ^user.follower_address in u.following,
-        where: u.id != ^user.id,
-        select: count(u.id)
-      )
+      User
+      |> where([u], ^user.follower_address in u.following)
+      |> where([u], u.id != ^user.id)
+      |> select([u], %{count: count(u.id)})
 
-    follower_count = Repo.one(follower_count_query)
-
-    info_cng =
-      user.info
-      |> User.Info.set_follower_count(follower_count)
-
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    User
+    |> where(id: ^user.id)
+    |> join(:inner, [u], s in subquery(follower_count_query))
+    |> update([u, s],
+      set: [
+        info:
+          fragment(
+            "jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
+            u.info,
+            s.count
+          )
+      ]
+    )
+    |> Repo.update_all([], returning: true)
+    |> case do
+      {1, [user]} -> set_cache(user)
+      _ -> {:error, user}
+    end
   end
 
   def get_users_from_set_query(ap_ids, false) do
