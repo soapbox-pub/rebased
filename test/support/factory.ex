@@ -23,7 +23,7 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def note_factory do
+  def note_factory(attrs \\ %{}) do
     text = sequence(:text, &"This is :moominmamma: note #{&1}")
 
     user = insert(:user)
@@ -46,7 +46,7 @@ defmodule Pleroma.Factory do
     }
 
     %Pleroma.Object{
-      data: data
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
     }
   end
 
@@ -95,8 +95,8 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def note_activity_factory do
-    note = insert(:note)
+  def note_activity_factory(attrs \\ %{}) do
+    note = attrs[:note] || insert(:note)
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
@@ -135,9 +135,9 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def announce_activity_factory do
-    note_activity = insert(:note_activity)
-    user = insert(:user)
+  def announce_activity_factory(attrs \\ %{}) do
+    note_activity = attrs[:note_activity] || insert(:note_activity)
+    user = attrs[:user] || insert(:user)
 
     data = %{
       "type" => "Announce",
