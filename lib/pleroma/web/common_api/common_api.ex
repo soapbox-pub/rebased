@@ -14,6 +14,19 @@ defmodule Pleroma.Web.CommonAPI do
 
   import Pleroma.Web.CommonAPI.Utils
 
+  def follow(follower, followed) do
+    with {:ok, follower} <- User.maybe_direct_follow(follower, followed),
+         {:ok, activity} <- ActivityPub.follow(follower, followed),
+         {:ok, follower, followed} <-
+           User.wait_and_refresh(
+             Pleroma.Config.get([:activitypub, :follow_handshake_timeout]),
+             follower,
+             followed
+           ) do
+      {:ok, follower, followed, activity}
+    end
+  end
+
   def delete(activity_id, user) do
     with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, activity_id),
          %Object{} = object <- Object.normalize(object_id),
