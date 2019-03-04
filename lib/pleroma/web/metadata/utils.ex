@@ -17,14 +17,14 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> Formatter.truncate()
   end
 
-  def scrub_html_and_truncate(content) when is_binary(content) do
+  def scrub_html_and_truncate(content, max_length \\ 200) when is_binary(content) do
     content
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.strip_tags()
     |> Formatter.demojify()
-    |> Formatter.truncate()
+    |> Formatter.truncate(max_length)
   end
 
   def attachment_url(url) do

@@ -7,7 +7,10 @@ defmodule Pleroma.Web.Push do
 
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Web.Push.Subscription
+  alias Pleroma.Web.Metadata.Utils
 
   require Logger
   import Ecto.Query
@@ -119,21 +122,43 @@ defmodule Pleroma.Web.Push do
     {:noreply, state}
   end
 
+  # Pleroma.Repo.all(Pleroma.Object)
+  # Pleroma.Repo.all(Pleroma.Activity)
+
+  def format_body(
+        %{activity: %{data: %{"type" => "Create", "object" => %{"content" => content}}}},
+        actor
+      ) do
+    "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
+  end
+
+  def format_body(
+        %{activity: %{data: %{"type" => "Announce", "object" => activity_id}}},
+        actor
+      ) do
+    %Activity{data: %{"object" => %{"id" => object_id}}} = Activity.get_by_ap_id(activity_id)
+    %Object{data: %{"content" => content}} = Object.get_by_ap_id(object_id)
+
+    "@#{actor.nickname} repeated: #{Utils.scrub_html_and_truncate(content, 80)}"
+  end
+
+  def format_body(
+        %{activity: %{data: %{"type" => type}}},
+        actor
+      )
+      when type in ["Follow", "Like"] do
+    case type do
+      "Follow" -> "@#{actor.nickname} has followed you"
+      "Like" -> "@#{actor.nickname} has favorited your post"
+    end
+  end
+
   defp format_title(%{activity: %{data: %{"type" => type}}}) do
     case type do
       "Create" -> "New Mention"
       "Follow" -> "New Follower"
       "Announce" -> "New Repeat"
       "Like" -> "New Favorite"
-    end
-  end
-
-  defp format_body(%{activity: %{data: %{"type" => type}}}, actor) do
-    case type do
-      "Create" -> "@#{actor.nickname} has mentioned you"
-      "Follow" -> "@#{actor.nickname} has followed you"
-      "Announce" -> "@#{actor.nickname} has repeated your post"
-      "Like" -> "@#{actor.nickname} has favorited your post"
     end
   end
 end
