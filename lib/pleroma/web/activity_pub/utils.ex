@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   alias Pleroma.Web
   alias Pleroma.Object
   alias Pleroma.Activity
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.User
   alias Pleroma.Notification
   alias Pleroma.Web.Router.Helpers
@@ -274,13 +275,31 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Repo.all(query)
   end
 
-  def make_like_data(%User{ap_id: ap_id} = actor, %{data: %{"id" => id}} = object, activity_id) do
+  def make_like_data(
+        %User{ap_id: ap_id} = actor,
+        %{data: %{"actor" => object_actor_id, "id" => id}} = object,
+        activity_id
+      ) do
+    object_actor = User.get_cached_by_ap_id(object_actor_id)
+
+    to =
+      if Visibility.is_public?(object) do
+        [actor.follower_address, object.data["actor"]]
+      else
+        [object.data["actor"]]
+      end
+
+    cc =
+      (object.data["to"] ++ (object.data["cc"] || []))
+      |> List.delete(actor.ap_id)
+      |> List.delete(object_actor.follower_address)
+
     data = %{
       "type" => "Like",
       "actor" => ap_id,
       "object" => id,
-      "to" => [actor.follower_address, object.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "to" => to,
+      "cc" => cc,
       "context" => object.data["context"]
     }
 
