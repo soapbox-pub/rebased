@@ -292,13 +292,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def dm_timeline(%{assigns: %{user: user}} = conn, params) do
-    query =
-      ActivityPub.fetch_activities_query(
-        [user.ap_id],
-        Map.merge(params, %{"type" => "Create", visibility: "direct"})
-      )
+    params =
+      params
+      |> Map.put("type", "Create")
+      |> Map.put("blocking_user", user)
+      |> Map.put("user", user)
+      |> Map.put(:visibility, "direct")
 
-    activities = Repo.all(query)
+    activities =
+      ActivityPub.fetch_activities_query([user.ap_id], params)
+      |> Repo.all()
 
     conn
     |> add_link_headers(:dm_timeline, activities)
@@ -733,14 +736,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
-         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, _activity} <- ActivityPub.follow(follower, followed),
-         {:ok, follower, followed} <-
-           User.wait_and_refresh(
-             Config.get([:activitypub, :follow_handshake_timeout]),
-             follower,
-             followed
-           ) do
+         {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: follower, target: followed})
@@ -754,8 +750,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def follow(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
     with %User{} = followed <- Repo.get_by(User, nickname: uri),
-         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, _activity} <- ActivityPub.follow(follower, followed) do
+         {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
       conn
       |> put_view(AccountView)
       |> render("account.json", %{user: followed, for: follower})

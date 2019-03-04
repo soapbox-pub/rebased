@@ -28,18 +28,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def follow(%User{} = follower, params) do
-    with {:ok, %User{} = followed} <- get_user(params),
-         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, activity} <- ActivityPub.follow(follower, followed),
-         {:ok, follower, followed} <-
-           User.wait_and_refresh(
-             Pleroma.Config.get([:activitypub, :follow_handshake_timeout]),
-             follower,
-             followed
-           ) do
-      {:ok, follower, followed, activity}
-    else
-      err -> err
+    with {:ok, %User{} = followed} <- get_user(params) do
+      CommonAPI.follow(follower, followed)
     end
   end
 
