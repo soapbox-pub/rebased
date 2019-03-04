@@ -122,9 +122,6 @@ defmodule Pleroma.Web.Push do
     {:noreply, state}
   end
 
-  # Pleroma.Repo.all(Pleroma.Object)
-  # Pleroma.Repo.all(Pleroma.Activity)
-
   def format_body(
         %{activity: %{data: %{"type" => "Create", "object" => %{"content" => content}}}},
         actor
