@@ -41,7 +41,6 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
   alias Pleroma.Activity
   alias Pleroma.HTML
   alias Pleroma.User
-  alias Pleroma.Repo
 
   def start_link(ref, socket, transport, opts) do
     pid = spawn_link(__MODULE__, :init, [ref, socket, transport, opts])
@@ -110,7 +109,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
   end
 
   def response("/notices/" <> id) do
-    with %Activity{} = activity <- Repo.get(Activity, id),
+    with %Activity{} = activity <- Activity.get_by_id(id),
          true <- Visibility.is_public?(activity) do
       activities =
         ActivityPub.fetch_activities_for_context(activity.data["context"])

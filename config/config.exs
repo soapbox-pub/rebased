@@ -343,7 +343,8 @@ config :pleroma, Pleroma.Web.Federator.RetryQueue,
 config :pleroma, Pleroma.Jobs,
   federator_incoming: [max_jobs: 50],
   federator_outgoing: [max_jobs: 50],
-  mailer: [max_jobs: 10]
+  mailer: [max_jobs: 10],
+  user: [max_jobs: 10]
 
 config :auto_linker,
   opts: [

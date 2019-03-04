@@ -42,7 +42,10 @@ defmodule Pleroma.Activity do
   end
 
   def get_by_id(id) do
-    Repo.get(Activity, id)
+    Activity
+    |> where([a], a.id == ^id)
+    |> restrict_disabled_users()
+    |> Repo.one()
   end
 
   def by_object_ap_id(ap_id) do
@@ -92,6 +95,7 @@ defmodule Pleroma.Activity do
 
   def get_create_by_object_ap_id(ap_id) when is_binary(ap_id) do
     create_by_object_ap_id(ap_id)
+    |> restrict_disabled_users()
     |> Repo.one()
   end
 
@@ -122,5 +126,15 @@ defmodule Pleroma.Activity do
     |> where([s], s.id in ^status_ids)
     |> where([s], s.actor == ^actor)
     |> Repo.all()
+  end
+
+  def restrict_disabled_users(query) do
+    from(activity in query,
+      where:
+        fragment(
+          "? not in (SELECT ap_id FROM users WHERE info->'disabled' @> 'true')",
+          activity.actor
+        )
+    )
   end
 end

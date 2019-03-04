@@ -36,22 +36,22 @@ defmodule Pleroma.Notification do
   defp restrict_since(query, _), do: query
 
   def for_user(user, opts \\ %{}) do
-    query =
-      from(
-        n in Notification,
-        where: n.user_id == ^user.id,
-        order_by: [desc: n.id],
-        join: activity in assoc(n, :activity),
-        preload: [activity: activity],
-        limit: 20
-      )
-
-    query =
-      query
-      |> restrict_since(opts)
-      |> restrict_max(opts)
-
-    Repo.all(query)
+    from(
+      n in Notification,
+      where: n.user_id == ^user.id,
+      order_by: [desc: n.id],
+      join: activity in assoc(n, :activity),
+      preload: [activity: activity],
+      limit: 20,
+      where:
+        fragment(
+          "? not in (SELECT ap_id FROM users WHERE info->'disabled' @> 'true')",
+          activity.actor
+        )
+    )
+    |> restrict_since(opts)
+    |> restrict_max(opts)
+    |> Repo.all()
   end
 
   def set_read_up_to(%{id: user_id} = _user, id) do

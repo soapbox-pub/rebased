@@ -36,6 +36,7 @@ defmodule Pleroma.User.Info do
     field(:hide_follows, :boolean, default: false)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
+    field(:disabled, :boolean, default: false)
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -52,6 +53,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:deactivated])
     |> validate_required([:deactivated])
+  end
+
+  def set_disabled_status(info, disabled) do
+    params = %{disabled: disabled}
+
+    info
+    |> cast(params, [:disabled])
+    |> validate_required([:disabled])
   end
 
   def add_to_note_count(info, number) do

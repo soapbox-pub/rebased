@@ -143,6 +143,7 @@ defmodule Pleroma.Web.Router do
     get("/users/search", AdminAPIController, :search_users)
     delete("/user", AdminAPIController, :user_delete)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
+    patch("/users/:nickname/toggle_disabled", AdminAPIController, :user_toggle_disabled)
     post("/user", AdminAPIController, :user_create)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
@@ -183,6 +184,7 @@ defmodule Pleroma.Web.Router do
 
       post("/change_password", UtilController, :change_password)
       post("/delete_account", UtilController, :delete_account)
+      post("/disable_account", UtilController, :disable_account)
     end
 
     scope [] do

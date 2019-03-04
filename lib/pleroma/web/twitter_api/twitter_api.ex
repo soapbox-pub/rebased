@@ -21,7 +21,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def delete(%User{} = user, id) do
-    with %Activity{data: %{"type" => _type}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"type" => _type}} <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.delete(id, user) do
       {:ok, activity}
     end
@@ -232,21 +232,27 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   def get_user(user \\ nil, params) do
     case params do
       %{"user_id" => user_id} ->
-        case target = User.get_cached_by_nickname_or_id(user_id) do
+        case User.get_cached_by_nickname_or_id(user_id) do
           nil ->
             {:error, "No user with such user_id"}
 
-          _ ->
-            {:ok, target}
+          %User{info: %{disabled: true}} ->
+            {:error, "User has been disabled"}
+
+          user ->
+            {:ok, user}
         end
 
       %{"screen_name" => nickname} ->
-        case target = Repo.get_by(User, nickname: nickname) do
+        case User.get_by_nickname(nickname) do
           nil ->
             {:error, "No user with such screen_name"}
 
-          _ ->
-            {:ok, target}
+          %User{info: %{disabled: true}} ->
+            {:error, "User has been disabled"}
+
+          user ->
+            {:ok, user}
         end
 
       _ ->

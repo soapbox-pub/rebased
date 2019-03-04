@@ -703,6 +703,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
+    |> Activity.restrict_disabled_users()
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
