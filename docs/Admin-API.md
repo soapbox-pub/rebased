@@ -9,7 +9,7 @@ Authentication is required and the user must be an admin.
 - Method `GET`
 - Params:
   - `query`: **string** *optional* search term
-  - `only_local`: **bool** *optional* whether to return only local users
+  - `local_only`: **bool** *optional* whether to return only local users
   - `page`: **integer** *optional* page number
   - `page_size`: **integer** *optional* number of users per page (default is `50`)
 - Response:
