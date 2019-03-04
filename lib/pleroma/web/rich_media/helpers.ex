@@ -8,14 +8,18 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.HTML
   alias Pleroma.Web.RichMedia.Parser
 
-  defp validate_page_url(nil), do: :error
+  defp validate_page_url(page_url) when is_binary(page_url) do
+    if AutoLinker.Parser.is_url?(page_url, true) do
+      URI.parse(page_url) |> validate_page_url
+    else
+      :error
+    end
+  end
+
   defp validate_page_url(%URI{authority: nil}), do: :error
   defp validate_page_url(%URI{scheme: nil}), do: :error
   defp validate_page_url(%URI{}), do: :ok
-
-  defp validate_page_url(page_url) do
-    AutoLinker.Parser.is_url?(page_url, true) && URI.parse(page_url) |> validate_page_url
-  end
+  defp validate_page_url(_), do: :error
 
   def fetch_data_for_activity(%Activity{} = activity) do
     with true <- Pleroma.Config.get([:rich_media, :enabled]),
