@@ -310,7 +310,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
     user = User.get_cached_by_ap_id(actor)
 
-    to = object.data["to"] || [] ++ object.data["cc"] ||
+    to =
+      object.data["to"] || [] ++ object.data["cc"] ||
         [] ++ [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
 
     data = %{
