@@ -691,6 +691,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = Repo.get(User, user.id)
       assert user.info.note_count == 10
     end
+    
+    test "it creates a delete activity and checks that it is also sent to users mentioned by the deleted object" do
+      user = insert(:user)
+      note = insert(:note_activity)
+      object = Object.get_by_ap_id(note.data["object"]["id"])
+      object = Kernel.put_in(object.data["to"], [user.ap_id])
+      {:ok, delete} = ActivityPub.delete(object)
+
+      assert user.ap_id in delete.data["to"]
+    end
   end
 
   describe "timeline post-processing" do
