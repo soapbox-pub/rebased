@@ -4,9 +4,9 @@ defmodule Pleroma.Web.OStatus.DeleteHandlingTest do
   import Pleroma.Factory
   import Tesla.Mock
 
-  alias Pleroma.Repo
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Web.OStatus
 
   setup do

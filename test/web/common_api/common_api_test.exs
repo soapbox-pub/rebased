@@ -4,9 +4,9 @@
 
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.User
   alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 

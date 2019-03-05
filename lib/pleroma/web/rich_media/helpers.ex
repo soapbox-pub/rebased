@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Activity
-  alias Pleroma.Object
   alias Pleroma.HTML
+  alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
   defp validate_page_url(page_url) when is_binary(page_url) do

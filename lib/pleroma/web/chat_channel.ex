@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Web.ChatChannel do
   use Phoenix.Channel
-  alias Pleroma.Web.ChatChannel.ChatChannelState
   alias Pleroma.User
+  alias Pleroma.Web.ChatChannel.ChatChannelState
 
   def join("chat:public", _message, socket) do
     send(self(), :after_join)

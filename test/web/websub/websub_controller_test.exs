@@ -5,10 +5,10 @@
 defmodule Pleroma.Web.Websub.WebsubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
-  alias Pleroma.Web.Websub.WebsubClientSubscription
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.Web.Websub
+  alias Pleroma.Web.Websub.WebsubClientSubscription
 
   test "websub subscription request", %{conn: conn} do
     user = insert(:user)

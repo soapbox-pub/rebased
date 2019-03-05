@@ -4,13 +4,14 @@
 
 defmodule Pleroma.Web.OStatus.NoteHandler do
   require Logger
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.XML
+
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
 
   @doc """
   Get the context for this note. Uses this:

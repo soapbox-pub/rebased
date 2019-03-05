@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI do
-  alias Pleroma.User
-  alias Pleroma.Repo
   alias Pleroma.Activity
+  alias Pleroma.Formatter
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.ThreadMute
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Formatter
 
   import Pleroma.Web.CommonAPI.Utils
 

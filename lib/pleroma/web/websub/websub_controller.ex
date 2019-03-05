@@ -7,8 +7,8 @@ defmodule Pleroma.Web.Websub.WebsubController do
 
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web.Websub
   alias Pleroma.Web.Federator
+  alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubClientSubscription
 
   require Logger

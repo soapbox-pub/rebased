@@ -5,13 +5,13 @@
 defmodule Pleroma.Web.Push.Impl do
   @moduledoc "The module represents implementation push web notification"
 
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Activity
-  alias Pleroma.Object
-  alias Pleroma.Web.Push.Subscription
   alias Pleroma.Web.Metadata.Utils
-  alias Pleroma.Notification
+  alias Pleroma.Web.Push.Subscription
 
   require Logger
   import Ecto.Query

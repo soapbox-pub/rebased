@@ -4,10 +4,10 @@
 
 defmodule Mix.Tasks.Pleroma.RelayTest do
   alias Pleroma.Activity
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Relay
+  alias Pleroma.Web.ActivityPub.Utils
   use Pleroma.DataCase
 
   setup_all do

@@ -4,18 +4,18 @@
 
 defmodule Pleroma.Web.Federator do
   alias Pleroma.Activity
+  alias Pleroma.Jobs
   alias Pleroma.User
-  alias Pleroma.Web.WebFinger
-  alias Pleroma.Web.Websub
-  alias Pleroma.Web.Salmon
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
-  alias Pleroma.Jobs
+  alias Pleroma.Web.Salmon
+  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Websub
 
   require Logger
 

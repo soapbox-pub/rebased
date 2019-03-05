@@ -8,8 +8,8 @@ defmodule Pleroma.Filter do
   import Ecto.Changeset
   import Ecto.Query
 
-  alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.User
 
   schema "filters" do
     belongs_to(:user, User, type: Pleroma.FlakeId)

@@ -8,21 +8,21 @@ defmodule Pleroma.User do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Comeonin.Pbkdf2
+  alias Pleroma.Activity
+  alias Pleroma.Formatter
+  alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Object
   alias Pleroma.Web
-  alias Pleroma.Activity
-  alias Pleroma.Notification
-  alias Comeonin.Pbkdf2
-  alias Pleroma.Formatter
-  alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Websub
-  alias Pleroma.Web.OAuth
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
+  alias Pleroma.Web.OAuth
+  alias Pleroma.Web.OStatus
   alias Pleroma.Web.RelMe
+  alias Pleroma.Web.Websub
 
   require Logger
 

@@ -5,12 +5,12 @@
 defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.OStatus.ActivityRepresenter
 
   import Pleroma.Factory
   import Tesla.Mock

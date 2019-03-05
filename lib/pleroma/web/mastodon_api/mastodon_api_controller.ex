@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
+
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Filter
@@ -13,19 +14,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.MediaProxy
-
-  alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.MastodonAPI.FilterView
-  alias Pleroma.Web.MastodonAPI.ListView
-  alias Pleroma.Web.MastodonAPI.MastodonView
-  alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.MastodonAPI.ReportView
-  alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.FilterView
+  alias Pleroma.Web.MastodonAPI.ListView
+  alias Pleroma.Web.MastodonAPI.MastodonAPI
+  alias Pleroma.Web.MastodonAPI.MastodonView
+  alias Pleroma.Web.MastodonAPI.ReportView
+  alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token

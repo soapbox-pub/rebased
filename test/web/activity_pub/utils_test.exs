@@ -1,7 +1,7 @@
 defmodule Pleroma.Web.ActivityPub.UtilsTest do
   use Pleroma.DataCase
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 

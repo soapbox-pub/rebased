@@ -631,8 +631,8 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
-  alias Pleroma.Web.Metadata
   alias Pleroma.User
+  alias Pleroma.Web.Metadata
 
   def redirector(conn, _params, code \\ 200) do
     conn

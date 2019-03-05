@@ -4,17 +4,17 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
-  alias Pleroma.Repo
+  alias Pleroma.Instances
+  alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Upload
   alias Pleroma.User
-  alias Pleroma.Notification
-  alias Pleroma.Instances
-  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.MRF
-  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Federator
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.WebFinger
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils

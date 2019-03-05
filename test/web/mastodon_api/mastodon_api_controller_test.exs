@@ -5,17 +5,17 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Repo
-  alias Pleroma.User
-  alias Pleroma.Object
+  alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Notification
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.FilterView
-  alias Ecto.Changeset
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock

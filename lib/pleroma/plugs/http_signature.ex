@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
-  alias Pleroma.Web.HTTPSignatures
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.HTTPSignatures
   import Plug.Conn
   require Logger
 

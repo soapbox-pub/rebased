@@ -4,13 +4,13 @@
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.OStatus
-  alias Pleroma.Activity
-  alias Pleroma.User
-  alias Pleroma.Repo
   alias Pleroma.Web.Websub.WebsubClientSubscription
 
   import Pleroma.Factory

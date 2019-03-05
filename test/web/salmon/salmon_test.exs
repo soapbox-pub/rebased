@@ -4,10 +4,10 @@
 
 defmodule Pleroma.Web.Salmon.SalmonTest do
   use Pleroma.DataCase
-  alias Pleroma.Web.Salmon
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.Salmon
   import Pleroma.Factory
 
   @magickey "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwQhh-1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"

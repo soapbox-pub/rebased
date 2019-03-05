@@ -9,8 +9,8 @@ defmodule Pleroma.Web.Salmon do
 
   alias Pleroma.Instances
   alias Pleroma.User
-  alias Pleroma.Web.XML
   alias Pleroma.Web.OStatus.ActivityRepresenter
+  alias Pleroma.Web.XML
 
   require Logger
 
