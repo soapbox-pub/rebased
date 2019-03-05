@@ -6,7 +6,6 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Config
-  alias Pleroma.Repo
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web
@@ -86,8 +85,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       end
 
     staff_accounts =
-      User.moderator_user_query()
-      |> Repo.all()
+      User.all_superusers()
       |> Enum.map(fn u -> u.ap_id end)
 
     mrf_user_allowlist =
