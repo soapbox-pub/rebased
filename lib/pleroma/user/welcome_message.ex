@@ -14,7 +14,7 @@ defmodule Pleroma.User.WelcomeMessage do
     end
   end
 
-  defp welcome_user() do
+  defp welcome_user do
     with nickname when is_binary(nickname) <-
            Pleroma.Config.get([:instance, :welcome_user_nickname]),
          %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
@@ -24,7 +24,7 @@ defmodule Pleroma.User.WelcomeMessage do
     end
   end
 
-  defp welcome_message() do
+  defp welcome_message do
     Pleroma.Config.get([:instance, :welcome_message])
   end
 end

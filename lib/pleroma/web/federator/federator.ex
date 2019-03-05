@@ -22,7 +22,7 @@ defmodule Pleroma.Web.Federator do
   @websub Application.get_env(:pleroma, :websub)
   @ostatus Application.get_env(:pleroma, :ostatus)
 
-  def init() do
+  def init do
     # 1 minute
     Process.sleep(1000 * 60)
     refresh_subscriptions()
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.Federator do
     Jobs.enqueue(:federator_outgoing, __MODULE__, [:request_subscription, sub])
   end
 
-  def refresh_subscriptions() do
+  def refresh_subscriptions do
     Jobs.enqueue(:federator_outgoing, __MODULE__, [:refresh_subscriptions])
   end
 

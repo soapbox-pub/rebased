@@ -10,7 +10,7 @@ defmodule Pleroma.Captcha do
   use GenServer
 
   @doc false
-  def start_link() do
+  def start_link do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
@@ -22,7 +22,7 @@ defmodule Pleroma.Captcha do
   @doc """
   Ask the configured captcha service for a new captcha
   """
-  def new() do
+  def new do
     GenServer.call(__MODULE__, :new)
   end
 

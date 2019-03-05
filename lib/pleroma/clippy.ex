@@ -7,13 +7,13 @@ defmodule Pleroma.Clippy do
   # No software is complete until they have a Clippy implementation.
   # A ballmer peak _may_ be required to change this module.
 
-  def tip() do
+  def tip do
     tips()
     |> Enum.random()
     |> puts()
   end
 
-  def tips() do
+  def tips do
     host = Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host])
 
     [

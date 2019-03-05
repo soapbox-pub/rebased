@@ -5,7 +5,7 @@
 defmodule Pleroma.Config.DeprecationWarnings do
   require Logger
 
-  def check_frontend_config_mechanism() do
+  def check_frontend_config_mechanism do
     if Pleroma.Config.get(:fe) do
       Logger.warn("""
       !!!DEPRECATION WARNING!!!

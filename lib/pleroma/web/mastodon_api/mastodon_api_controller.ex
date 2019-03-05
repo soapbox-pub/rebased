@@ -1274,7 +1274,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  defp get_or_make_app() do
+  defp get_or_make_app do
     find_attrs = %{client_name: @local_mastodon_name, redirect_uris: "."}
     scopes = ["read", "write", "follow", "push"]
 

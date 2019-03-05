@@ -1340,7 +1340,7 @@ defmodule Pleroma.User do
     |> Enum.map(&String.downcase(&1))
   end
 
-  defp local_nickname_regex() do
+  defp local_nickname_regex do
     if Pleroma.Config.get([:instance, :extended_nickname_format]) do
       @extended_local_nickname_regex
     else

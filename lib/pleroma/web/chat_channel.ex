@@ -48,7 +48,7 @@ defmodule Pleroma.Web.ChatChannel.ChatChannelState do
     end)
   end
 
-  def messages() do
+  def messages do
     Agent.get(__MODULE__, fn state -> state[:messages] |> Enum.reverse() end)
   end
 end
