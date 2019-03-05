@@ -20,7 +20,6 @@ defmodule Mix.Tasks.Pleroma.Uploads do
    Options:
    - `--delete` - delete local uploads after migrating them to the target uploader
 
-
    A list of available uploaders can be seen in config.exs
   """
   def run(["migrate_local", target_uploader | args]) do
