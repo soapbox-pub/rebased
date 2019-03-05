@@ -490,7 +490,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       response = json_response(conn, 200)
 
-      assert length(response) == 0
+      assert Enum.empty?(response)
     end
   end
 

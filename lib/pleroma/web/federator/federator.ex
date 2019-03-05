@@ -24,7 +24,7 @@ defmodule Pleroma.Web.Federator do
 
   def init() do
     # 1 minute
-    Process.sleep(1000 * 60 * 1)
+    Process.sleep(1000 * 60)
     refresh_subscriptions()
   end
 
