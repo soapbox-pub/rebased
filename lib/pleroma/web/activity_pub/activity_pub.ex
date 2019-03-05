@@ -170,7 +170,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              additional
            ),
          {:ok, activity} <- insert(create_data, local),
-         # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
+         # Changing note count prior to enqueuing federation task in order to avoid
+         # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -320,7 +321,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "deleted_activity_id" => activity && activity.id
          },
          {:ok, activity} <- insert(data, local),
-         # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
+         # Changing note count prior to enqueuing federation task in order to avoid
+         # race conditions on updating user.info
          {:ok, _actor} <- decrease_note_count_if_public(user, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity}

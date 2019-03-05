@@ -73,7 +73,7 @@ defmodule Pleroma.Captcha do
     secret = KeyGenerator.generate(secret_key_base, token <> "_encrypt")
     sign_secret = KeyGenerator.generate(secret_key_base, token <> "_sign")
 
-    # If the time found is less than (current_time - seconds_valid), then the time has already passed.
+    # If the time found is less than (current_time-seconds_valid) then the time has already passed
     # Later we check that the time found is more than the presumed invalidatation time, that means
     # that the data is still valid and the captcha can be checked
     seconds_valid = Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid])

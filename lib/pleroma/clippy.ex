@@ -92,8 +92,8 @@ defmodule Pleroma.Clippy do
 
     # surrond one/five line clippy with blank lines around to not fuck up the layout
     #
-    # yes this fix sucks but it's good enough, have you ever seen a release of windows wihtout some butched
-    # features anyway?
+    # yes this fix sucks but it's good enough, have you ever seen a release of windows
+    # without some butched features anyway?
     lines =
       if length(lines) == 1 or length(lines) == 5 do
         [""] ++ lines ++ [""]

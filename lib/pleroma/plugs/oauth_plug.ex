@@ -38,6 +38,7 @@ defmodule Pleroma.Plugs.OAuthPlug do
         preload: [user: user]
       )
 
+    # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
     with %Token{user: %{info: %{deactivated: false} = _} = user} = token_record <- Repo.one(query) do
       {:ok, user, token_record}
     end

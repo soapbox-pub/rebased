@@ -472,6 +472,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
       # Also fetches the feed.
       # assert Activity.get_create_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")
+      # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
     end
   end
 end

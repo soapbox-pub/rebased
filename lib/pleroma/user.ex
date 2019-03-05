@@ -30,6 +30,7 @@ defmodule Pleroma.User do
 
   @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
 
+  # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
@@ -435,7 +436,8 @@ defmodule Pleroma.User do
     Repo.get_by(User, ap_id: ap_id)
   end
 
-  # This is mostly an SPC migration fix. This guesses the user nickname (by taking the last part of the ap_id and the domain) and tries to get that user
+  # This is mostly an SPC migration fix. This guesses the user nickname by taking the last part
+  # of the ap_id and the domain and tries to get that user
   def get_by_guessed_nickname(ap_id) do
     domain = URI.parse(ap_id).host
     name = List.last(String.split(ap_id, "/"))
