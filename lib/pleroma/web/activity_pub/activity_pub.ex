@@ -504,7 +504,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
        when is_list(tag_reject) and tag_reject != [] do
     from(
       activity in query,
-      where: fragment("(not (? #> '{\"object\",\"tag\"}') \\?| ?)", activity.data, ^tag_reject)
+      where: fragment(~s(\(not \(? #> '{"object","tag"}'\) \\?| ?\)), activity.data, ^tag_reject)
     )
   end
 
@@ -514,7 +514,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
        when is_list(tag_all) and tag_all != [] do
     from(
       activity in query,
-      where: fragment("(? #> '{\"object\",\"tag\"}') \\?& ?", activity.data, ^tag_all)
+      where: fragment(~s(\(? #> '{"object","tag"}'\) \\?& ?), activity.data, ^tag_all)
     )
   end
 
@@ -523,14 +523,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_tag(query, %{"tag" => tag}) when is_list(tag) do
     from(
       activity in query,
-      where: fragment("(? #> '{\"object\",\"tag\"}') \\?| ?", activity.data, ^tag)
+      where: fragment(~s(\(? #> '{"object","tag"}'\) \\?| ?), activity.data, ^tag)
     )
   end
 
   defp restrict_tag(query, %{"tag" => tag}) when is_binary(tag) do
     from(
       activity in query,
-      where: fragment("? <@ (? #> '{\"object\",\"tag\"}')", ^tag, activity.data)
+      where: fragment(~s(? <@ (? #> '{"object","tag"}'\)), ^tag, activity.data)
     )
   end
 
@@ -603,7 +603,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_favorited_by(query, %{"favorited_by" => ap_id}) do
     from(
       activity in query,
-      where: fragment("? <@ (? #> '{\"object\",\"likes\"}')", ^ap_id, activity.data)
+      where: fragment(~s(? <@ (? #> '{"object","likes"}'\)), ^ap_id, activity.data)
     )
   end
 
@@ -612,7 +612,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
     from(
       activity in query,
-      where: fragment("not (? #> '{\"object\",\"attachment\"}' = ?)", activity.data, ^[])
+      where: fragment(~s(not (? #> '{"object","attachment"}' = ?\)), activity.data, ^[])
     )
   end
 
