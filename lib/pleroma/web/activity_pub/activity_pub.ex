@@ -311,8 +311,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     user = User.get_cached_by_ap_id(actor)
 
     to =
-      object.data["to"] || [] ++ object.data["cc"] ||
-        [] ++ [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
+      case Object.get_cached_by_ap_id(id) do
+        nil ->
+          [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
+
+        object ->
+          object.data["to"] || [] ++ object.data["cc"] ||
+            [] ++ [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
+      end
 
     data = %{
       "type" => "Delete",
