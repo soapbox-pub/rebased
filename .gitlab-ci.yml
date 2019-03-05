@@ -42,4 +42,4 @@ unit-testing:
 analysis:
   stage: analysis
   script:
-    - mix credo list --only=warnings,todo,fixme,consistency,readability
+    - mix credo --strict --only=warnings,todo,fixme,consistency,readability
