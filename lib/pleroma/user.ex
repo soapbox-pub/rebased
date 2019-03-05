@@ -285,7 +285,7 @@ defmodule Pleroma.User do
   def needs_update?(%User{local: false, last_refreshed_at: nil}), do: true
 
   def needs_update?(%User{local: false} = user) do
-    NaiveDateTime.diff(NaiveDateTime.utc_now(), user.last_refreshed_at) >= 86400
+    NaiveDateTime.diff(NaiveDateTime.utc_now(), user.last_refreshed_at) >= 86_400
   end
 
   def needs_update?(_), do: true

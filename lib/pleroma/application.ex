@@ -48,7 +48,7 @@ defmodule Pleroma.Application do
           [
             :user_cache,
             [
-              default_ttl: 25000,
+              default_ttl: 25_000,
               ttl_interval: 1000,
               limit: 2500
             ]
@@ -60,7 +60,7 @@ defmodule Pleroma.Application do
           [
             :object_cache,
             [
-              default_ttl: 25000,
+              default_ttl: 25_000,
               ttl_interval: 1000,
               limit: 2500
             ]
