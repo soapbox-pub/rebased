@@ -200,8 +200,8 @@ defmodule Pleroma.Web.Websub do
          uri when not is_nil(uri) <- XML.string_from_xpath("/feed/author[1]/uri", doc),
          hub when not is_nil(hub) <- XML.string_from_xpath(~S{/feed/link[@rel="hub"]/@href}, doc) do
       name = XML.string_from_xpath("/feed/author[1]/name", doc)
-      preferredUsername = XML.string_from_xpath("/feed/author[1]/poco:preferredUsername", doc)
-      displayName = XML.string_from_xpath("/feed/author[1]/poco:displayName", doc)
+      preferred_username = XML.string_from_xpath("/feed/author[1]/poco:preferredUsername", doc)
+      display_name = XML.string_from_xpath("/feed/author[1]/poco:displayName", doc)
       avatar = OStatus.make_avatar_object(doc)
       bio = XML.string_from_xpath("/feed/author[1]/summary", doc)
 
@@ -209,8 +209,8 @@ defmodule Pleroma.Web.Websub do
        %{
          "uri" => uri,
          "hub" => hub,
-         "nickname" => preferredUsername || name,
-         "name" => displayName || name,
+         "nickname" => preferred_username || name,
+         "name" => display_name || name,
          "host" => URI.parse(uri).host,
          "avatar" => avatar,
          "bio" => bio
