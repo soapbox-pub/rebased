@@ -11,6 +11,12 @@ defmodule Pleroma.Web.RelMeTest do
 
       %{
         method: :get,
+        url: "http://example.com/rel_me/anchor_nofollow"
+      } ->
+        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rel_me_anchor_nofollow.html")}
+
+      %{
+        method: :get,
         url: "http://example.com/rel_me/link"
       } ->
         %Tesla.Env{status: 200, body: File.read!("test/fixtures/rel_me_link.html")}
@@ -33,6 +39,7 @@ defmodule Pleroma.Web.RelMeTest do
 
     assert Pleroma.Web.RelMe.parse("http://example.com/rel_me/link") == {:ok, hrefs}
     assert Pleroma.Web.RelMe.parse("http://example.com/rel_me/anchor") == {:ok, hrefs}
+    assert Pleroma.Web.RelMe.parse("http://example.com/rel_me/anchor_nofollow") == {:ok, hrefs}
   end
 
   test "maybe_put_rel_me/2" do
@@ -48,6 +55,11 @@ defmodule Pleroma.Web.RelMeTest do
 
     assert Pleroma.Web.RelMe.maybe_put_rel_me("http://example.com/rel_me/anchor", profile_urls) ==
              attr
+
+    assert Pleroma.Web.RelMe.maybe_put_rel_me(
+             "http://example.com/rel_me/anchor_nofollow",
+             profile_urls
+           ) == attr
 
     assert Pleroma.Web.RelMe.maybe_put_rel_me("http://example.com/rel_me/link", profile_urls) ==
              attr
