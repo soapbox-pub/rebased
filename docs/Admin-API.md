@@ -2,12 +2,12 @@
 
 Authentication is required and the user must be an admin.
 
-## `/api/pleroma/admin/users?query={query}&only_local={only_local}&page={page}&page_size={page_size}`
+## `/api/pleroma/admin/users`
 
 ### List users
 
 - Method `GET`
-- Params:
+- Query Params:
   - `query`: **string** *optional* search term
   - `local_only`: **bool** *optional* whether to return only local users
   - `page`: **integer** *optional* page number
