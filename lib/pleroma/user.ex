@@ -532,11 +532,26 @@ defmodule Pleroma.User do
       _e ->
         with [_nick, _domain] <- String.split(nickname, "@"),
              {:ok, user} <- fetch_by_nickname(nickname) do
+          if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
+            {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
+          end
+
           user
         else
           _e -> nil
         end
     end
+  end
+
+  @doc "Fetch some posts when the user has just been federated with"
+  def fetch_initial_posts(user) do
+    pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
+
+    Enum.each(
+      # Insert all the posts in reverse order, so they're in the right order on the timeline
+      Enum.reverse(Utils.fetch_ordered_collection(user.info.source_data["outbox"], pages)),
+      &Pleroma.Web.Federator.incoming_ap_doc/1
+    )
   end
 
   def get_followers_query(%User{id: id, follower_address: follower_address}, nil) do
@@ -1108,24 +1123,36 @@ defmodule Pleroma.User do
 
   def html_filter_policy(_), do: @default_scrubbers
 
+  def fetch_by_ap_id(ap_id) do
+    ap_try = ActivityPub.make_user_from_ap_id(ap_id)
+
+    case ap_try do
+      {:ok, user} ->
+        user
+
+      _ ->
+        case OStatus.make_user(ap_id) do
+          {:ok, user} -> user
+          _ -> {:error, "Could not fetch by AP id"}
+        end
+    end
+  end
+
   def get_or_fetch_by_ap_id(ap_id) do
     user = get_by_ap_id(ap_id)
 
     if !is_nil(user) and !User.needs_update?(user) do
       user
     else
-      ap_try = ActivityPub.make_user_from_ap_id(ap_id)
+      user = fetch_by_ap_id(ap_id)
 
-      case ap_try do
-        {:ok, user} ->
-          user
-
-        _ ->
-          case OStatus.make_user(ap_id) do
-            {:ok, user} -> user
-            _ -> {:error, "Could not fetch by AP id"}
-          end
+      if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
+        with %User{} = user do
+          {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
+        end
       end
+
+      user
     end
   end
 

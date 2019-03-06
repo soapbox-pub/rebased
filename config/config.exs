@@ -348,6 +348,10 @@ config :pleroma, Pleroma.Jobs,
   federator_outgoing: [max_jobs: 50],
   mailer: [max_jobs: 10]
 
+config :pleroma, :fetch_initial_posts,
+  enabled: false,
+  pages: 5
+
 config :auto_linker,
   opts: [
     scheme: true,
