@@ -215,6 +215,9 @@ config :pleroma, :frontend_configurations,
     scopeCopy: true,
     subjectLineBehavior: "email",
     alwaysShowSubjectInput: true
+  },
+  masto_fe: %{
+    showInstanceSpecificPanel: true
   }
 
 config :pleroma, :activitypub,
