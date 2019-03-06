@@ -304,10 +304,10 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_push)
 
-      post("/push/subscription", MastodonAPIController, :create_push_subscription)
-      get("/push/subscription", MastodonAPIController, :get_push_subscription)
-      put("/push/subscription", MastodonAPIController, :update_push_subscription)
-      delete("/push/subscription", MastodonAPIController, :delete_push_subscription)
+      post("/push/subscription", SubscriptionController, :create)
+      get("/push/subscription", SubscriptionController, :get)
+      put("/push/subscription", SubscriptionController, :update)
+      delete("/push/subscription", SubscriptionController, :delete)
     end
   end
 

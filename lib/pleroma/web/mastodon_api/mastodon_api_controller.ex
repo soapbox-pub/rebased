@@ -15,14 +15,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.Web.Push
-  alias Push.Subscription
 
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonView
-  alias Pleroma.Web.MastodonAPI.PushSubscriptionView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MastodonAPI.ReportView
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -300,7 +297,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put(:visibility, "direct")
 
     activities =
-      ActivityPub.fetch_activities_query([user.ap_id], params)
+      [user.ap_id]
+      |> ActivityPub.fetch_activities_query(params)
       |> Repo.all()
 
     conn
@@ -1419,37 +1417,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
-  def create_push_subscription(%{assigns: %{user: user, token: token}} = conn, params) do
-    true = Push.enabled()
-    Subscription.delete_if_exists(user, token)
-    {:ok, subscription} = Subscription.create(user, token, params)
-    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
-    json(conn, view)
-  end
-
-  def get_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
-    true = Push.enabled()
-    subscription = Subscription.get(user, token)
-    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
-    json(conn, view)
-  end
-
-  def update_push_subscription(
-        %{assigns: %{user: user, token: token}} = conn,
-        params
-      ) do
-    true = Push.enabled()
-    {:ok, subscription} = Subscription.update(user, token, params)
-    view = PushSubscriptionView.render("push_subscription.json", subscription: subscription)
-    json(conn, view)
-  end
-
-  def delete_push_subscription(%{assigns: %{user: user, token: token}} = conn, _params) do
-    true = Push.enabled()
-    {:ok, _response} = Subscription.delete(user, token)
-    json(conn, %{})
-  end
-
+  # fallback action
+  #
   def errors(conn, _) do
     conn
     |> put_status(500)

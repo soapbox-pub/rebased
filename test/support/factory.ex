@@ -229,15 +229,32 @@ defmodule Pleroma.Factory do
   end
 
   def oauth_token_factory do
-    user = insert(:user)
     oauth_app = insert(:oauth_app)
 
     %Pleroma.Web.OAuth.Token{
       token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
       refresh_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
-      user_id: user.id,
+      user: build(:user),
       app_id: oauth_app.id,
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
+    }
+  end
+
+  def push_subscription_factory do
+    %Pleroma.Web.Push.Subscription{
+      user: build(:user),
+      token: build(:oauth_token),
+      endpoint: "https://example.com/example/1234",
+      key_auth: "8eDyX_uCN0XRhSbY5hs7Hg==",
+      key_p256dh:
+        "BCIWgsnyXDv1VkhqL2P7YRBvdeuDnlwAPT2guNhdIoW3IP7GmHh1SMKPLxRf7x8vJy6ZFK3ol2ohgn_-0yP7QQA=",
+      data: %{}
+    }
+  end
+
+  def notification_factory do
+    %Pleroma.Notification{
+      user: build(:user)
     }
   end
 end

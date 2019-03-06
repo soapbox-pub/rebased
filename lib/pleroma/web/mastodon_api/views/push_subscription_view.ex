@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.MastodonAPI.PushSubscriptionView do
   use Pleroma.Web, :view
+  alias Pleroma.Web.Push
 
   def render("push_subscription.json", %{subscription: subscription}) do
     %{
@@ -14,7 +15,5 @@ defmodule Pleroma.Web.MastodonAPI.PushSubscriptionView do
     }
   end
 
-  defp server_key do
-    Keyword.get(Application.get_env(:web_push_encryption, :vapid_details), :public_key)
-  end
+  defp server_key, do: Keyword.get(Push.vapid_config(), :public_key)
 end

@@ -12,6 +12,8 @@ defmodule Pleroma.Web.Push.Subscription do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.Push.Subscription
 
+  @type t :: %__MODULE__{}
+
   schema "push_subscriptions" do
     belongs_to(:user, User, type: Pleroma.FlakeId)
     belongs_to(:token, Token)
@@ -50,24 +52,32 @@ defmodule Pleroma.Web.Push.Subscription do
     })
   end
 
+  @doc "Gets subsciption by user & token"
+  @spec get(User.t(), Token.t()) :: {:ok, t()} | {:error, :not_found}
   def get(%User{id: user_id}, %Token{id: token_id}) do
-    Repo.get_by(Subscription, user_id: user_id, token_id: token_id)
+    case Repo.get_by(Subscription, user_id: user_id, token_id: token_id) do
+      nil -> {:error, :not_found}
+      subscription -> {:ok, subscription}
+    end
   end
 
   def update(user, token, params) do
-    get(user, token)
-    |> change(data: alerts(params))
-    |> Repo.update()
+    with {:ok, subscription} <- get(user, token) do
+      subscription
+      |> change(data: alerts(params))
+      |> Repo.update()
+    end
   end
 
   def delete(user, token) do
-    Repo.delete(get(user, token))
+    with {:ok, subscription} <- get(user, token),
+         do: Repo.delete(subscription)
   end
 
   def delete_if_exists(user, token) do
     case get(user, token) do
-      nil -> {:ok, nil}
-      sub -> Repo.delete(sub)
+      {:error, _} -> {:ok, nil}
+      {:ok, sub} -> Repo.delete(sub)
     end
   end
 
