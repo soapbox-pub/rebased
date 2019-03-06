@@ -63,28 +63,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          do: json_response(conn, :no_content, "")
   end
 
-  def list_users(conn, params) do
-    {page, page_size} = page_params(params)
-
-    with {:ok, users, count} <- User.all_for_admin(page, page_size),
-         do:
-           conn
-           |> json(
-             AccountView.render("index.json",
-               users: users,
-               count: count,
-               page_size: page_size
-             )
-           )
-  end
-
-  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => query} = params) do
+  def list_users(%{assigns: %{user: admin}} = conn, params) do
     {page, page_size} = page_params(params)
 
     with {:ok, users, count} <-
-           User.search_for_admin(query, %{
+           User.search_for_admin(%{
+             query: params["query"],
              admin: admin,
-             local: params["local"] == "true",
+             local: params["local_only"] == "true",
              page: page,
              page_size: page_size
            }),

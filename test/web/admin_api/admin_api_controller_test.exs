@@ -374,26 +374,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "users" => []
              }
     end
-  end
 
-  test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation" do
-    admin = insert(:user, info: %{is_admin: true})
-    user = insert(:user)
-
-    conn =
-      build_conn()
-      |> assign(:user, admin)
-      |> patch("/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
-
-    assert json_response(conn, 200) ==
-             %{
-               "deactivated" => !user.info.deactivated,
-               "id" => user.id,
-               "nickname" => user.nickname
-             }
-  end
-
-  describe "GET /api/pleroma/admin/users/search" do
     test "regular search" do
       admin = insert(:user, info: %{is_admin: true})
       user = insert(:user, nickname: "bob")
@@ -401,7 +382,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users/search?query=bo")
+        |> get("/api/pleroma/admin/users?query=bo")
 
       assert json_response(conn, 200) == %{
                "count" => 1,
@@ -424,7 +405,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users/search?query=bo&page_size=1&page=1")
+        |> get("/api/pleroma/admin/users?query=bo&page_size=1&page=1")
 
       assert json_response(conn, 200) == %{
                "count" => 2,
@@ -441,7 +422,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users/search?query=bo&page_size=1&page=2")
+        |> get("/api/pleroma/admin/users?query=bo&page_size=1&page=2")
 
       assert json_response(conn, 200) == %{
                "count" => 2,
@@ -465,7 +446,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users/search?query=bo&local=true")
+        |> get("/api/pleroma/admin/users?query=bo&local_only=true")
 
       assert json_response(conn, 200) == %{
                "count" => 1,
@@ -479,5 +460,51 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                ]
              }
     end
+
+    test "only local users with no query" do
+      admin = insert(:user, info: %{is_admin: true}, nickname: "john")
+      user = insert(:user, nickname: "bob")
+
+      insert(:user, nickname: "bobb", local: false)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users?local_only=true")
+
+      assert json_response(conn, 200) == %{
+               "count" => 2,
+               "page_size" => 50,
+               "users" => [
+                 %{
+                   "deactivated" => admin.info.deactivated,
+                   "id" => admin.id,
+                   "nickname" => admin.nickname
+                 },
+                 %{
+                   "deactivated" => user.info.deactivated,
+                   "id" => user.id,
+                   "nickname" => user.nickname
+                 }
+               ]
+             }
+    end
+  end
+
+  test "PATCH /api/pleroma/admin/users/:nickname/toggle_activation" do
+    admin = insert(:user, info: %{is_admin: true})
+    user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, admin)
+      |> patch("/api/pleroma/admin/users/#{user.nickname}/toggle_activation")
+
+    assert json_response(conn, 200) ==
+             %{
+               "deactivated" => !user.info.deactivated,
+               "id" => user.id,
+               "nickname" => user.nickname
+             }
   end
 end

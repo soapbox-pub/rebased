@@ -749,13 +749,41 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  @spec search_for_admin(binary(), %{
+  @spec search_for_admin(%{
+          local: boolean(),
+          page: number(),
+          page_size: number()
+        }) :: {:ok, [Pleroma.User.t()], number()}
+  def search_for_admin(%{query: nil, local: local, page: page, page_size: page_size}) do
+    query =
+      from(u in User, order_by: u.id)
+      |> maybe_local_user_query(local)
+
+    paginated_query =
+      query
+      |> paginate(page, page_size)
+
+    count =
+      query
+      |> Repo.aggregate(:count, :id)
+
+    {:ok, Repo.all(paginated_query), count}
+  end
+
+  @spec search_for_admin(%{
+          query: binary(),
           admin: Pleroma.User.t(),
           local: boolean(),
           page: number(),
           page_size: number()
         }) :: {:ok, [Pleroma.User.t()], number()}
-  def search_for_admin(term, %{admin: admin, local: local, page: page, page_size: page_size}) do
+  def search_for_admin(%{
+        query: term,
+        admin: admin,
+        local: local,
+        page: page,
+        page_size: page_size
+      }) do
     term = String.trim_leading(term, "@")
 
     local_paginated_query =
@@ -772,21 +800,6 @@ defmodule Pleroma.User do
       |> Repo.aggregate(:count, :id)
 
     {:ok, do_search(search_query, admin), count}
-  end
-
-  @spec all_for_admin(number(), number()) :: {:ok, [Pleroma.User.t()], number()}
-  def all_for_admin(page, page_size) do
-    query = from(u in User, order_by: u.id)
-
-    paginated_query =
-      query
-      |> paginate(page, page_size)
-
-    count =
-      query
-      |> Repo.aggregate(:count, :id)
-
-    {:ok, Repo.all(paginated_query), count}
   end
 
   def search(query, resolve \\ false, for_user \\ nil) do
