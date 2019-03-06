@@ -129,7 +129,7 @@ See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_s
 
 ## :frontend_configurations
 
-This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured.
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured.
 
 Frontends can access these settings at `/api/pleroma/frontend_configurations`
 
