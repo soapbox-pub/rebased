@@ -190,6 +190,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   defp add_link_headers(conn, method, activities, param \\ nil, params \\ %{}) do
+    params =
+      conn.params
+      |> Map.drop(["since_id", "max_id"])
+      |> Map.merge(params)
+
     last = List.last(activities)
     first = List.first(activities)
 

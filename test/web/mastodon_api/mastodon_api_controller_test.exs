@@ -1955,4 +1955,36 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> json_response(400)
     end
   end
+
+  describe "link headers" do
+    test "preserves parameters in link headers", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity1} =
+        CommonAPI.post(other_user, %{
+          "status" => "hi @#{user.nickname}",
+          "visibility" => "public"
+        })
+
+      {:ok, activity2} =
+        CommonAPI.post(other_user, %{
+          "status" => "hi @#{user.nickname}",
+          "visibility" => "public"
+        })
+
+      notification1 = Repo.get_by(Notification, activity_id: activity1.id)
+      notification2 = Repo.get_by(Notification, activity_id: activity2.id)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/notifications", %{media_only: true})
+
+      assert [link_header] = get_resp_header(conn, "link")
+      assert link_header =~ ~r/media_only=true/
+      assert link_header =~ ~r/since_id=#{notification2.id}/
+      assert link_header =~ ~r/max_id=#{notification1.id}/
+    end
+  end
 end
