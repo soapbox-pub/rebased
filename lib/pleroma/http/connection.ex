@@ -31,6 +31,6 @@ defmodule Pleroma.HTTP.Connection do
   #
   defp hackney_options(opts) do
     options = Keyword.get(opts, :adapter, [])
-    @hackney_options ++ options
+    Keyword.merge(@hackney_options, options)
   end
 end
