@@ -42,7 +42,7 @@ defmodule Pleroma.HTTP do
       |> Builder.add_param(:body, :body, body)
       |> Builder.add_param(:query, :query, params)
       |> Enum.into([])
-      |> (&Tesla.request(Connection.new(), &1)).()
+      |> (&Tesla.request(Connection.new(options), &1)).()
     rescue
       e ->
         {:error, e}
