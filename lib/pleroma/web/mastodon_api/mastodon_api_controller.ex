@@ -1452,7 +1452,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
                url,
                [],
                adapter: [
-                 timeout: timeout,
                  recv_timeout: timeout,
                  pool: :default
                ]
