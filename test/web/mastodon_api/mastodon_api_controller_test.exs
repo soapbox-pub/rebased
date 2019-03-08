@@ -371,6 +371,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert Repo.get(Activity, activity.id) == activity
     end
+
+    test "when you're an admin or moderator", %{conn: conn} do
+      activity1 = insert(:note_activity)
+      activity2 = insert(:note_activity)
+      admin = insert(:user, info: %{is_admin: true})
+      moderator = insert(:user, info: %{is_moderator: true})
+
+      res_conn =
+        conn
+        |> assign(:user, admin)
+        |> delete("/api/v1/statuses/#{activity1.id}")
+
+      assert %{} = json_response(res_conn, 200)
+
+      res_conn =
+        conn
+        |> assign(:user, moderator)
+        |> delete("/api/v1/statuses/#{activity2.id}")
+
+      assert %{} = json_response(res_conn, 200)
+
+      refute Repo.get(Activity, activity1.id)
+      refute Repo.get(Activity, activity2.id)
+    end
   end
 
   describe "filters" do
