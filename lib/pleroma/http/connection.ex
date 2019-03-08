@@ -8,8 +8,8 @@ defmodule Pleroma.HTTP.Connection do
   """
 
   @hackney_options [
-    connect_timeout: 1_000,
-    recv_timeout: 10_000,
+    connect_timeout: 2_000,
+    recv_timeout: 20_000,
     follow_redirect: true,
     pool: :federation
   ]
