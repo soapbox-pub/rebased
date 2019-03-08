@@ -30,6 +30,7 @@ defmodule Pleroma.HTTP do
     options =
       process_request_options(options)
       |> process_sni_options(url)
+      |> process_adapter_options()
 
     params = Keyword.get(options, :params, [])
 
@@ -54,6 +55,12 @@ defmodule Pleroma.HTTP do
       "https" -> options ++ [ssl: [server_name_indication: host]]
       _ -> options
     end
+  end
+
+  def process_adapter_options(options) do
+    adapter_options = Pleroma.Config.get([:http, :adapter], [])
+
+    options ++ [adapter: adapter_options]
   end
 
   def process_request_options(options) do

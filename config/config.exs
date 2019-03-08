@@ -133,7 +133,14 @@ config :pleroma, :httpoison, Pleroma.HTTP
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
-config :pleroma, :http, proxy_url: nil
+config :pleroma, :http,
+  proxy_url: nil,
+  adapter: [
+    ssl_options: [
+      # We don't support TLS v1.3 yet
+      versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+    ]
+  ]
 
 config :pleroma, :instance,
   name: "Pleroma",
