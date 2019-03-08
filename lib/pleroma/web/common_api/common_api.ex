@@ -30,7 +30,7 @@ defmodule Pleroma.Web.CommonAPI do
   def delete(activity_id, user) do
     with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, activity_id),
          %Object{} = object <- Object.normalize(object_id),
-         true <- user.info.is_moderator || user.ap_id == object.data["actor"],
+         true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, _} <- unpin(activity_id, user),
          {:ok, delete} <- ActivityPub.delete(object) do
       {:ok, delete}
