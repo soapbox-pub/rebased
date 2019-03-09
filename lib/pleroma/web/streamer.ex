@@ -12,6 +12,7 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.MastodonAPI.NotificationView
+  alias Pleroma.Web.ActivityPub.ActivityPub
 
   @keepalive_interval :timer.seconds(30)
 
@@ -203,7 +204,9 @@ defmodule Pleroma.Web.Streamer do
         parent = Object.normalize(item.data["object"])
 
         unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
-                 parent.data["actor"] in blocks or parent.data["actor"] in mutes do
+                 not ActivityPub.contain_activity(item, user) or
+                 parent.data["actor"] in blocks or
+                 parent.data["actor"] in mutes do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
@@ -233,7 +236,8 @@ defmodule Pleroma.Web.Streamer do
         blocks = user.info.blocks || []
         mutes = user.info.mutes || []
 
-        unless item.actor in blocks or item.actor in mutes do
+        unless item.actor in blocks or item.actor in mutes or
+                 not ActivityPub.contain_activity(item, user) do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
