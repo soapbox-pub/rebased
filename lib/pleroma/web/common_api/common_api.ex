@@ -299,4 +299,20 @@ defmodule Pleroma.Web.CommonAPI do
       {:account, nil} -> {:error, "Account not found"}
     end
   end
+
+  def hide_reblogs(user, id) do
+    if id not in user.info.muted_reblogs do
+      info_changeset = User.Info.add_reblog_mute(user.info, id)
+      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
+      User.update_and_set_cache(changeset)
+    end
+  end
+
+  def show_reblogs(user, id) do
+    if id in user.info.muted_reblogs do
+      info_changeset = User.Info.remove_reblog_mute(user.info, id)
+      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
+      User.update_and_set_cache(changeset)
+    end
+  end
 end

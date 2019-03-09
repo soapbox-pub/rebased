@@ -951,9 +951,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     entire_thread_visible_for_user?(activity, user)
   end
 
+  # filter out muted threads
+  def contain_muted_boosts(%Activity{data: %{"type" => "Announce"}} = activity, %User{} = user) do
+    id = User.get_by_ap_id(activity.actor).id
+    id not in user.info.muted_reblogs
+  end
+
+  def contain_muted_boosts(%Activity{} = _activity, %User{} = _user), do: true
+
   # do post-processing on a specific activity
   def contain_activity(%Activity{} = activity, %User{} = user) do
-    contain_broken_threads(activity, user)
+    contain_broken_threads(activity, user) and contain_muted_boosts(activity, user)
   end
 
   # do post-processing on a timeline

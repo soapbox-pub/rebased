@@ -723,11 +723,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with %User{} = followed <- Repo.get(User, id),
+         false <- User.following?(follower, followed),
          {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: follower, target: followed})
     else
+      true ->
+        case conn.params["reblogs"] do
+          true -> CommonAPI.show_reblogs(follower, id)
+          false -> CommonAPI.hide_reblogs(follower, id)
+        end
+
+        followed = Repo.get(User, id)
+
+        conn
+        |> put_view(AccountView)
+        |> render("relationship.json", %{user: follower, target: followed})
+
       {:error, message} ->
         conn
         |> put_resp_content_type("application/json")

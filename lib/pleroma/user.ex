@@ -1385,4 +1385,8 @@ defmodule Pleroma.User do
       offset: ^((page - 1) * page_size)
     )
   end
+
+  def showing_reblogs?(%User{} = user, %User{} = target) do
+    target.id not in user.info.muted_reblogs
+  end
 end
