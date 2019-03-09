@@ -204,8 +204,7 @@ defmodule Pleroma.Web.Streamer do
         parent = Object.normalize(item.data["object"])
 
         unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
-                 not ActivityPub.contain_activity(item, user) or
-                 parent.data["actor"] in blocks or
+                 not ActivityPub.contain_activity(item, user) or parent.data["actor"] in blocks or
                  parent.data["actor"] in mutes do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
