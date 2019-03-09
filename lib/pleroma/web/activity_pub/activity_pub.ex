@@ -311,14 +311,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     user = User.get_cached_by_ap_id(actor)
     to = object.data["to"] || [] ++ object.data["cc"] || []
 
-    data = %{
-      "type" => "Delete",
-      "actor" => actor,
-      "object" => id,
-      "to" => to
-    }
-
-    with {:ok, _} <- Object.delete(object),
+    with {:ok, object, activity} <- Object.delete(object),
+         data <- %{
+           "type" => "Delete",
+           "actor" => actor,
+           "object" => id,
+           "to" => to,
+           "deleted_activity_id" => activity && activity.id
+         },
          {:ok, activity} <- insert(data, local),
          # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
          {:ok, _actor} <- decrease_note_count_if_public(user, object),

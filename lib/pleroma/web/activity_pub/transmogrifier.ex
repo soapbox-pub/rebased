@@ -736,6 +736,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def prepare_outgoing(%{"type" => _type} = data) do
     data =
       data
+      |> strip_internal_fields
       |> maybe_fix_object_url
       |> Map.merge(Utils.make_json_ld_header())
 
@@ -870,7 +871,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       "announcements",
       "announcement_count",
       "emoji",
-      "context_id"
+      "context_id",
+      "deleted_activity_id"
     ])
   end
 
