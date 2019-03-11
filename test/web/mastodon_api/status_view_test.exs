@@ -120,7 +120,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
           static_url: "corndog.png",
           visible_in_picker: false
         }
-      ]
+      ],
+      pleroma: %{
+        local: true
+      }
     }
 
     assert status == expected

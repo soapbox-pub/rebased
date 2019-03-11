@@ -13,3 +13,9 @@ Some apps operate under the assumption that no more than 4 attachments can be re
 ## Timelines
 
 Adding the parameter `with_muted=true` to the timeline queries will also return activities by muted (not by blocked!) users.
+
+## Statuses
+
+Has these additional fields under the 'pleroma' object:
+
+- `local`: true if the post was made on the local instance.
