@@ -4,8 +4,8 @@ Feel free to contact us to be added to this list!
 
 ## Desktop
 ### Roma for Desktop
-- Homepage: <http://www.pleroma.com/desktop-app/>
-- Source Code: ???
+- Homepage: <https://www.pleroma.com/#desktopApp>
+- Source Code: <https://github.com/roma-apps/roma-desktop>
 - Platforms: Windows, Mac, (Linux?)
 - Features: Streaming Ready
 
@@ -44,8 +44,8 @@ Feel free to contact us to be added to this list!
 - Features: Streaming Ready
 
 ### Roma
-- Homepage: <http://www.pleroma.com/>
-- Source Code: ???
+- Homepage: <https://www.pleroma.com/#mobileApps>
+- Source Code: [Android](https://github.com/roma-apps/roma-android), [iOS](https://github.com/roma-apps/roma-ios)
 - Platforms: iOS, Android
 - Features: No Streaming
 
