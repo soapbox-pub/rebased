@@ -39,7 +39,15 @@ defmodule Pleroma.Web.StreamerTest do
 
     task =
       Task.async(fn ->
-        assert_receive {:text, _}, 4_000
+        expected_event =
+          %{
+            "event" => "delete",
+            "payload" => activity.id
+          }
+          |> Jason.encode!()
+
+        assert_receive {:text, received_event}, 4_000
+        assert received_event == expected_event
       end)
 
     fake_socket = %{
