@@ -1064,6 +1064,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"error" => "Can't find user"} = json_response(conn, 404)
   end
 
+  test "account fetching also works nickname", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> get("/api/v1/accounts/#{user.nickname}")
+
+    assert %{"id" => id} = json_response(conn, 200)
+    assert id == user.id
+  end
+
   test "media upload", %{conn: conn} do
     file = %Plug.Upload{
       content_type: "image/jpg",
@@ -1950,7 +1961,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> json_response(200)
     end
 
-    test "accound_id is required", %{
+    test "account_id is required", %{
       conn: conn,
       reporter: reporter,
       activity: activity
