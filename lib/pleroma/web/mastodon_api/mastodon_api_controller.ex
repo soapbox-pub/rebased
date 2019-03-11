@@ -22,6 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.MastodonView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MastodonAPI.ReportView
+  alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -652,9 +653,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 
-  def followers(%{assigns: %{user: for_user}} = conn, %{"id" => id}) do
+  def followers(%{assigns: %{user: for_user}} = conn, %{"id" => id} = params) do
     with %User{} = user <- Repo.get(User, id),
-         {:ok, followers} <- User.get_followers(user) do
+         followers <- MastodonAPI.get_followers(user, params) do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
@@ -663,14 +664,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end
 
       conn
+      |> add_link_headers(:followers, followers, user)
       |> put_view(AccountView)
       |> render("accounts.json", %{users: followers, as: :user})
     end
   end
 
-  def following(%{assigns: %{user: for_user}} = conn, %{"id" => id}) do
+  def following(%{assigns: %{user: for_user}} = conn, %{"id" => id} = params) do
     with %User{} = user <- Repo.get(User, id),
-         {:ok, followers} <- User.get_friends(user) do
+         followers <- MastodonAPI.get_friends(user, params) do
       followers =
         cond do
           for_user && user.id == for_user.id -> followers
@@ -679,6 +681,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end
 
       conn
+      |> add_link_headers(:following, followers, user)
       |> put_view(AccountView)
       |> render("accounts.json", %{users: followers, as: :user})
     end
