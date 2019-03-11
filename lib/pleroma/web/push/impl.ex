@@ -20,7 +20,10 @@ defmodule Pleroma.Web.Push.Impl do
 
   @doc "Performs sending notifications for user subscriptions"
   @spec perform_send(Notification.t()) :: list(any)
-  def perform_send(%{activity: %{data: %{"type" => activity_type}, id: activity_id}, user_id: user_id} = notif)
+  def perform_send(
+        %{activity: %{data: %{"type" => activity_type}, id: activity_id}, user_id: user_id} =
+          notif
+      )
       when activity_type in @types do
     actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
 
