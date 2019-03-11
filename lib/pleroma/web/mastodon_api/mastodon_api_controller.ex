@@ -131,8 +131,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, account)
   end
 
-  def user(%{assigns: %{user: for_user}} = conn, %{"id" => id}) do
-    with %User{} = user <- Repo.get(User, id),
+  def user(%{assigns: %{user: for_user}} = conn, %{"id" => nickname_or_id}) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id),
          true <- User.auth_active?(user) || user.id == for_user.id || User.superuser?(for_user) do
       account = AccountView.render("account.json", %{user: user, for: for_user})
       json(conn, account)
