@@ -45,7 +45,7 @@ Feel free to contact us to be added to this list!
 
 ### Roma
 - Homepage: <https://www.pleroma.com/#mobileApps>
-- Source Code: [Android](https://github.com/roma-apps/roma-android), [iOS](https://github.com/roma-apps/roma-ios)
+- Source Code: [iOS](https://github.com/roma-apps/roma-ios), [Android](https://github.com/roma-apps/roma-android)
 - Platforms: iOS, Android
 - Features: No Streaming
 
