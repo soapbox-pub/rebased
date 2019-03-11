@@ -735,7 +735,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           false -> CommonAPI.hide_reblogs(follower, id)
         end
 
-        followed = Repo.get(User, id)
+        followed = User.get_cached_by_id(id)
 
         conn
         |> put_view(AccountView)

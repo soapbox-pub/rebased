@@ -679,6 +679,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_pinned(query, _), do: query
 
+  defp restrict_muted_reblogs(query, %{"muting_user" => %User{info: info}}) do
+    muted_reblogs = info.muted_reblogs || []
+
+    from(
+      activity in query,
+      where: fragment("not ?->>'type' = 'Announce'", activity.data),
+      where: fragment("not ? = ANY(?)", activity.actor, ^muted_reblogs)
+    )
+  end
+
+  defp restrict_muted_reblogs(query, _), do: query
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query =
       from(
@@ -706,6 +718,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
+    |> restrict_muted_reblogs(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
@@ -951,17 +964,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     entire_thread_visible_for_user?(activity, user)
   end
 
-  # filter out muted threads
-  def contain_muted_boosts(%Activity{data: %{"type" => "Announce"}} = activity, %User{} = user) do
-    id = User.get_by_ap_id(activity.actor).id
-    id not in user.info.muted_reblogs
-  end
-
   def contain_muted_boosts(%Activity{} = _activity, %User{} = _user), do: true
 
   # do post-processing on a specific activity
   def contain_activity(%Activity{} = activity, %User{} = user) do
-    contain_broken_threads(activity, user) and contain_muted_boosts(activity, user)
+    contain_broken_threads(activity, user)
   end
 
   # do post-processing on a timeline
