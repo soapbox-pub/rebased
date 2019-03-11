@@ -15,10 +15,21 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
 
+  plug(Ueberauth)
   plug(:fetch_session)
   plug(:fetch_flash)
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
+
+  def callback(%{assigns: %{ueberauth_failure: _failure}} = conn, _params) do
+    conn
+    |> put_flash(:error, "Failed to authenticate.")
+    |> redirect(to: "/")
+  end
+
+  def callback(%{assigns: %{ueberauth_auth: _auth}} = _conn, _params) do
+    raise "Authenticated successfully. Sign up via OAuth is not yet implemented."
+  end
 
   def authorize(conn, params) do
     app = Repo.get_by(App, client_id: params["client_id"])

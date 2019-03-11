@@ -4,7 +4,9 @@
 <%= if get_flash(@conn, :error) do %>
 <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
 <% end %>
+
 <h2>OAuth Authorization</h2>
+
 <%= form_for @conn, o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
 <div class="input">
   <%= label f, :name, "Name or email" %>
@@ -32,4 +34,9 @@
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
 <%= hidden_input f, :state, value: @state%>
 <%= submit "Authorize" %>
+<% end %>
+
+<br>
+<%= link to: "/oauth/twitter", class: "alert alert-info" do %>
+  Sign in with Twitter
 <% end %>

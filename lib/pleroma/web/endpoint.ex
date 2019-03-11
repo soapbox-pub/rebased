@@ -50,23 +50,25 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.MethodOverride)
   plug(Plug.Head)
 
+  secure_cookies = Pleroma.Config.get([__MODULE__, :secure_cookie_flag])
+
   cookie_name =
-    if Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
+    if secure_cookies,
       do: "__Host-pleroma_key",
       else: "pleroma_key"
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
+  # Note: "SameSite=Strict" would cause issues with Twitter OAuth
   plug(
     Plug.Session,
     store: :cookie,
     key: cookie_name,
     signing_salt: {Pleroma.Config, :get, [[__MODULE__, :signing_salt], "CqaoopA2"]},
     http_only: true,
-    secure:
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
-    extra: "SameSite=Strict"
+    secure: secure_cookies,
+    extra: "SameSite=Lax"
   )
 
   plug(Pleroma.Web.Router)

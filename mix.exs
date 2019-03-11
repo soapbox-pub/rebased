@@ -41,7 +41,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :ueberauth_twitter],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -69,7 +69,8 @@ defmodule Pleroma.Mixfile do
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
-      {:httpoison, "~> 1.2.0"},
+      {:httpoison, "~> 1.2.0", override: true},
+      {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.2"},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
@@ -90,6 +91,10 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.20.0"},
       {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
       {:timex, "~> 3.5"},
+      {:oauth, github: "tim/erlang-oauth"},
+      # {:oauth2, "~> 0.8", override: true},
+      {:ueberauth, "~> 0.4"},
+      {:ueberauth_twitter, "~> 0.2"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
        ref: "94193ca5f97c1f9fdf3d1469653e2d46fac34bcd"}
