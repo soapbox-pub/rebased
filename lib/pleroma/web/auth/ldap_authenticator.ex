@@ -60,22 +60,23 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     case :eldap.open([to_charlist(host)], options) do
       {:ok, connection} ->
         try do
-          uid = Keyword.get(ldap, :uid, "cn")
-          base = Keyword.get(ldap, :base)
+          if Keyword.get(ldap, :tls, false) do
+            :application.ensure_all_started(:ssl)
 
-          case :eldap.simple_bind(connection, "#{uid}=#{name},#{base}", password) do
-            :ok ->
-              case User.get_by_nickname_or_email(name) do
-                %User{} = user ->
-                  user
+            case :eldap.start_tls(
+                   connection,
+                   Keyword.get(ldap, :tlsopts, []),
+                   @connection_timeout
+                 ) do
+              :ok ->
+                :ok
 
-                _ ->
-                  register_user(connection, base, uid, name, password)
-              end
-
-            error ->
-              error
+              error ->
+                Logger.error("Could not start TLS: #{inspect(error)}")
+            end
           end
+
+          bind_user(connection, ldap, name, password)
         after
           :eldap.close(connection)
         end
@@ -86,11 +87,31 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     end
   end
 
+  defp bind_user(connection, ldap, name, password) do
+    uid = Keyword.get(ldap, :uid, "cn")
+    base = Keyword.get(ldap, :base)
+
+    case :eldap.simple_bind(connection, "#{uid}=#{name},#{base}", password) do
+      :ok ->
+        case User.get_by_nickname_or_email(name) do
+          %User{} = user ->
+            user
+
+          _ ->
+            register_user(connection, base, uid, name, password)
+        end
+
+      error ->
+        error
+    end
+  end
+
   defp register_user(connection, base, uid, name, password) do
     case :eldap.search(connection, [
            {:base, to_charlist(base)},
            {:filter, :eldap.equalityMatch(to_charlist(uid), to_charlist(name))},
            {:scope, :eldap.wholeSubtree()},
+           {:attributes, ['mail', 'email']},
            {:timeout, @search_timeout}
          ]) do
       {:ok, {:eldap_search_result, [{:eldap_entry, _, attributes}], _}} ->
@@ -110,7 +131,9 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
             error -> error
           end
         else
-          _ -> {:error, :ldap_registration_missing_attributes}
+          _ ->
+            Logger.error("Could not find LDAP attribute mail: #{inspect(attributes)}")
+            {:error, :ldap_registration_missing_attributes}
         end
 
       error ->

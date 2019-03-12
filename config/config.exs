@@ -361,6 +361,8 @@ config :pleroma, :ldap,
   port: String.to_integer(System.get_env("LDAP_PORT") || "389"),
   ssl: System.get_env("LDAP_SSL") == "true",
   sslopts: [],
+  tls: System.get_env("LDAP_TLS") == "true",
+  tlsopts: [],
   base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
   uid: System.get_env("LDAP_UID") || "cn"
 
