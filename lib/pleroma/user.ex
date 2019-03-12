@@ -1083,6 +1083,12 @@ defmodule Pleroma.User do
     friends
     |> Enum.each(fn followed -> User.unfollow(user, followed) end)
 
+    delete_user_activities(user)
+
+    {:ok, user}
+  end
+
+  def delete_user_activities(user) do
     query = from(a in Activity, where: a.actor == ^user.ap_id)
 
     Repo.all(query)
@@ -1096,8 +1102,6 @@ defmodule Pleroma.User do
           "Doing nothing"
       end
     end)
-
-    {:ok, user}
   end
 
   def html_filter_policy(%User{info: %{no_rich_text: true}}) do

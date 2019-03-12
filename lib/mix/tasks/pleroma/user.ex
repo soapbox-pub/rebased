@@ -304,6 +304,18 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
+  def run(["delete_activities", nickname]) do
+    Common.start_pleroma()
+
+    with %User{local: true} = user <- User.get_by_nickname(nickname) do
+      User.delete_user_activities(user)
+      Mix.shell().info("User #{nickname} deleted.")
+    else
+      _ ->
+        Mix.shell().error("No local user #{nickname}")
+    end
+  end
+
   defp set_moderator(user, value) do
     info_cng = User.Info.admin_api_update(user.info, %{is_moderator: value})
 
