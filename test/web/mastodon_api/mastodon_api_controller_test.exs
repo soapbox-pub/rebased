@@ -1195,6 +1195,47 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute [] == json_response(conn, 200)
   end
 
+  test "getting followers, pagination", %{conn: conn} do
+    user = insert(:user)
+    follower1 = insert(:user)
+    follower2 = insert(:user)
+    follower3 = insert(:user)
+    {:ok, _} = User.follow(follower1, user)
+    {:ok, _} = User.follow(follower2, user)
+    {:ok, _} = User.follow(follower3, user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/followers?since_id=#{follower1.id}")
+
+    assert [%{"id" => id3}, %{"id" => id2}] = json_response(res_conn, 200)
+    assert id3 == follower3.id
+    assert id2 == follower2.id
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/followers?max_id=#{follower3.id}")
+
+    assert [%{"id" => id2}, %{"id" => id1}] = json_response(res_conn, 200)
+    assert id2 == follower2.id
+    assert id1 == follower1.id
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/followers?limit=1&max_id=#{follower3.id}")
+
+    assert [%{"id" => id2}] = json_response(res_conn, 200)
+    assert id2 == follower2.id
+
+    assert [link_header] = get_resp_header(res_conn, "link")
+    assert link_header =~ ~r/since_id=#{follower2.id}/
+    assert link_header =~ ~r/max_id=#{follower2.id}/
+  end
+
   test "getting following", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
@@ -1231,6 +1272,47 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> get("/api/v1/accounts/#{user.id}/following")
 
     refute [] == json_response(conn, 200)
+  end
+
+  test "getting following, pagination", %{conn: conn} do
+    user = insert(:user)
+    following1 = insert(:user)
+    following2 = insert(:user)
+    following3 = insert(:user)
+    {:ok, _} = User.follow(user, following1)
+    {:ok, _} = User.follow(user, following2)
+    {:ok, _} = User.follow(user, following3)
+
+    conn =
+      conn
+      |> assign(:user, user)
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/following?since_id=#{following1.id}")
+
+    assert [%{"id" => id3}, %{"id" => id2}] = json_response(res_conn, 200)
+    assert id3 == following3.id
+    assert id2 == following2.id
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/following?max_id=#{following3.id}")
+
+    assert [%{"id" => id2}, %{"id" => id1}] = json_response(res_conn, 200)
+    assert id2 == following2.id
+    assert id1 == following1.id
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/following?limit=1&max_id=#{following3.id}")
+
+    assert [%{"id" => id2}] = json_response(res_conn, 200)
+    assert id2 == following2.id
+
+    assert [link_header] = get_resp_header(res_conn, "link")
+    assert link_header =~ ~r/since_id=#{following2.id}/
+    assert link_header =~ ~r/max_id=#{following2.id}/
   end
 
   test "following / unfollowing a user", %{conn: conn} do
