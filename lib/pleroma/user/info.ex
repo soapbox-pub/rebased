@@ -6,6 +6,8 @@ defmodule Pleroma.User.Info do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Pleroma.User.Info
+
   embedded_schema do
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
@@ -249,5 +251,12 @@ defmodule Pleroma.User.Info do
     params = %{pinned_activities: List.delete(info.pinned_activities, id)}
 
     cast(info, params, [:pinned_activities])
+  end
+
+  def roles(%Info{is_moderator: is_moderator, is_admin: is_admin}) do
+    %{
+      admin: is_admin,
+      moderator: is_moderator
+    }
   end
 end
