@@ -348,12 +348,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "deactivated" => admin.info.deactivated,
                    "id" => admin.id,
-                   "nickname" => admin.nickname
+                   "nickname" => admin.nickname,
+                   "roles" => %{"admin" => true, "moderator" => false}
                  },
                  %{
                    "deactivated" => user.info.deactivated,
                    "id" => user.id,
-                   "nickname" => user.nickname
+                   "nickname" => user.nickname,
+                   "roles" => %{"admin" => false, "moderator" => false}
                  }
                ]
              }
@@ -391,7 +393,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "deactivated" => user.info.deactivated,
                    "id" => user.id,
-                   "nickname" => user.nickname
+                   "nickname" => user.nickname,
+                   "roles" => %{"admin" => false, "moderator" => false}
                  }
                ]
              }
@@ -414,7 +417,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "deactivated" => user.info.deactivated,
                    "id" => user.id,
-                   "nickname" => user.nickname
+                   "nickname" => user.nickname,
+                   "roles" => %{"admin" => false, "moderator" => false}
                  }
                ]
              }
@@ -431,7 +435,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "deactivated" => user2.info.deactivated,
                    "id" => user2.id,
-                   "nickname" => user2.nickname
+                   "nickname" => user2.nickname,
+                   "roles" => %{"admin" => false, "moderator" => false}
                  }
                ]
              }
@@ -455,7 +460,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "deactivated" => user.info.deactivated,
                    "id" => user.id,
-                   "nickname" => user.nickname
+                   "nickname" => user.nickname,
+                   "roles" => %{"admin" => false, "moderator" => false}
                  }
                ]
              }
@@ -479,12 +485,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  %{
                    "deactivated" => admin.info.deactivated,
                    "id" => admin.id,
-                   "nickname" => admin.nickname
+                   "nickname" => admin.nickname,
+                   "roles" => %{"admin" => true, "moderator" => false}
                  },
                  %{
                    "deactivated" => user.info.deactivated,
                    "id" => user.id,
-                   "nickname" => user.nickname
+                   "nickname" => user.nickname,
+                   "roles" => %{"admin" => false, "moderator" => false}
                  }
                ]
              }
@@ -504,7 +512,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              %{
                "deactivated" => !user.info.deactivated,
                "id" => user.id,
-               "nickname" => user.nickname
+               "nickname" => user.nickname,
+               "roles" => %{"admin" => false, "moderator" => false}
              }
   end
 end
