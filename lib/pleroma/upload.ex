@@ -70,7 +70,7 @@ defmodule Pleroma.Upload do
            %{
              "type" => "Link",
              "mediaType" => upload.content_type,
-             "href" => url_from_spec(opts.base_url, url_spec)
+             "href" => url_from_spec(opts.base_url, url_spec, upload.name)
            }
          ],
          "name" => Map.get(opts, :description) || upload.name
@@ -219,14 +219,12 @@ defmodule Pleroma.Upload do
     tmp_path
   end
 
-  defp url_from_spec(base_url, {:file, path}) do
-    path =
-      path
-      |> URI.encode(&char_unescaped?/1)
+  defp url_from_spec(base_url, {:file, path}, name) do
+    path = URI.encode(path, &char_unescaped?/1) <> "?name=#{URI.encode(name, &char_unescaped?/1)}"
 
     [base_url, "media", path]
     |> Path.join()
   end
 
-  defp url_from_spec(_base_url, {:url, url}), do: url
+  defp url_from_spec(_base_url, {:url, url}, _name), do: url
 end
