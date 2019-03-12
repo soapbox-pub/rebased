@@ -309,7 +309,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
       User.delete_user_activities(user)
-      Mix.shell().info("User #{nickname} deleted.")
+      Mix.shell().info("User #{nickname} statuses deleted..")
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")
