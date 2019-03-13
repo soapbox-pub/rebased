@@ -2,11 +2,11 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Web.MastodonAPI.Admin.AccountView do
+defmodule Pleroma.Web.AdminAPI.AccountView do
   use Pleroma.Web, :view
 
   alias Pleroma.User.Info
-  alias Pleroma.Web.MastodonAPI.Admin.AccountView
+  alias Pleroma.Web.AdminAPI.AccountView
 
   def render("index.json", %{users: users, count: count, page_size: page_size}) do
     %{

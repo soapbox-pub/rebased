@@ -8,7 +8,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.MastodonAPI.Admin.AccountView
+  alias Pleroma.Web.AdminAPI.AccountView
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
