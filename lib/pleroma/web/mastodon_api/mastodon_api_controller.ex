@@ -1110,7 +1110,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           compose: %{
             me: "#{user.id}",
             default_privacy: user.info.default_scope,
-            default_sensitive: false
+            default_sensitive: false,
+            allow_content_types: Config.get([:instance, :allowed_post_formats])
           },
           media_attachments: %{
             accept_content_types: [
