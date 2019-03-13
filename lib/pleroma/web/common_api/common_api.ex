@@ -27,6 +27,42 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def unfollow(follower, unfollowed) do
+    with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
+         {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed) do
+      {:ok, follower}
+    end
+  end
+
+  def accept_follow_request(follower, followed) do
+    with {:ok, follower} <- User.maybe_follow(follower, followed),
+         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
+         {:ok, _activity} <-
+           ActivityPub.accept(%{
+             to: [follower.ap_id],
+             actor: followed,
+             object: follow_activity.data["id"],
+             type: "Accept"
+           }) do
+      {:ok, follower}
+    end
+  end
+
+  def reject_follow_request(follower, followed) do
+    with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
+         {:ok, _activity} <-
+           ActivityPub.reject(%{
+             to: [follower.ap_id],
+             actor: followed,
+             object: follow_activity.data["id"],
+             type: "Reject"
+           }) do
+      {:ok, follower}
+    end
+  end
+
   def delete(activity_id, user) do
     with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, activity_id),
          %Object{} = object <- Object.normalize(object_id),

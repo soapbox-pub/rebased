@@ -14,7 +14,6 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth.Token
@@ -588,16 +587,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def approve_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
          %User{} = follower <- Repo.get(User, uid),
-         {:ok, follower} <- User.maybe_follow(follower, followed),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
-         {:ok, _activity} <-
-           ActivityPub.accept(%{
-             to: [follower.ap_id],
-             actor: followed,
-             object: follow_activity.data["id"],
-             type: "Accept"
-           }) do
+         {:ok, follower} <- CommonAPI.accept_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
       |> render("show.json", %{user: follower, for: followed})
@@ -609,15 +599,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def deny_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
          %User{} = follower <- Repo.get(User, uid),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
-         {:ok, _activity} <-
-           ActivityPub.reject(%{
-             to: [follower.ap_id],
-             actor: followed,
-             object: follow_activity.data["id"],
-             type: "Reject"
-           }) do
+         {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
       |> render("show.json", %{user: follower, for: followed})
