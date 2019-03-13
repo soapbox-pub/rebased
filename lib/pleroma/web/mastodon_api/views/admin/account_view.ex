@@ -21,6 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountView do
       "id" => user.id,
       "nickname" => user.nickname,
       "deactivated" => user.info.deactivated,
+      "local" => user.local,
       "roles" => Info.roles(user.info)
     }
   end
