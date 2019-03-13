@@ -26,6 +26,7 @@ defmodule Pleroma.Web.Endpoint do
     from: :pleroma,
     only:
       ~w(index.html static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc)
+    # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
   )
 
   # Code reloading can be explicitly enabled under the

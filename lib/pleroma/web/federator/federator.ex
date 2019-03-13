@@ -4,27 +4,27 @@
 
 defmodule Pleroma.Web.Federator do
   alias Pleroma.Activity
+  alias Pleroma.Jobs
   alias Pleroma.User
-  alias Pleroma.Web.WebFinger
-  alias Pleroma.Web.Websub
-  alias Pleroma.Web.Salmon
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
-  alias Pleroma.Jobs
+  alias Pleroma.Web.Salmon
+  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.Websub
 
   require Logger
 
   @websub Application.get_env(:pleroma, :websub)
   @ostatus Application.get_env(:pleroma, :ostatus)
 
-  def init() do
+  def init do
     # 1 minute
-    Process.sleep(1000 * 60 * 1)
+    Process.sleep(1000 * 60)
     refresh_subscriptions()
   end
 
@@ -58,7 +58,7 @@ defmodule Pleroma.Web.Federator do
     Jobs.enqueue(:federator_outgoing, __MODULE__, [:request_subscription, sub])
   end
 
-  def refresh_subscriptions() do
+  def refresh_subscriptions do
     Jobs.enqueue(:federator_outgoing, __MODULE__, [:refresh_subscriptions])
   end
 

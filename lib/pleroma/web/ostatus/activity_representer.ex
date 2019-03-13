@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.OStatus.UserRepresenter
 
   require Logger

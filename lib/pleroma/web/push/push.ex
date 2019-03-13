@@ -13,15 +13,15 @@ defmodule Pleroma.Web.Push do
   # Client API #
   ##############
 
-  def start_link() do
+  def start_link do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
-  def vapid_config() do
+  def vapid_config do
     Application.get_env(:web_push_encryption, :vapid_details, [])
   end
 
-  def enabled() do
+  def enabled do
     case vapid_config() do
       [] -> false
       list when is_list(list) -> true

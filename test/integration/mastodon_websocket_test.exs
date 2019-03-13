@@ -7,9 +7,9 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
 
   import Pleroma.Factory
 
+  alias Pleroma.Integration.WebsocketClient
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OAuth
-  alias Pleroma.Integration.WebsocketClient
   alias Pleroma.Web.Streamer
 
   @path Pleroma.Web.Endpoint.url()

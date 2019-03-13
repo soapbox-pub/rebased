@@ -5,10 +5,10 @@
 defmodule Pleroma.Web.OAuth.Authorization do
   use Ecto.Schema
 
-  alias Pleroma.User
   alias Pleroma.Repo
-  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web.OAuth.Authorization
 
   import Ecto.Changeset
   import Ecto.Query

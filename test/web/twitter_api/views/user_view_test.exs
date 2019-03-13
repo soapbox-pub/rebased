@@ -6,8 +6,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.User
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
 

@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.Admin.AccountView do
   use Pleroma.Web, :view
 
-  alias Pleroma.Web.MastodonAPI.Admin.AccountView
   alias Pleroma.User.Info
+  alias Pleroma.Web.MastodonAPI.Admin.AccountView
 
   def render("index.json", %{users: users, count: count, page_size: page_size}) do
     %{

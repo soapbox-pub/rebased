@@ -2,8 +2,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   import Ecto.Query
   import Ecto.Changeset
 
-  alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.User
 
   @default_limit 20
 

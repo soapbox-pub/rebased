@@ -5,13 +5,13 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
-  alias Pleroma.Web.ActivityPub.UserView
-  alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Activity
+  alias Pleroma.Instances
   alias Pleroma.Object
   alias Pleroma.Repo
-  alias Pleroma.Activity
   alias Pleroma.User
-  alias Pleroma.Instances
+  alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Web.ActivityPub.UserView
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)

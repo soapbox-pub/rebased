@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Relay do
-  alias Pleroma.User
-  alias Pleroma.Object
   alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   require Logger
 

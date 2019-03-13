@@ -5,17 +5,17 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Repo
-  alias Pleroma.User
-  alias Pleroma.Object
+  alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Notification
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.FilterView
-  alias Ecto.Changeset
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock
@@ -1632,9 +1632,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               "I drink <a class=\"hashtag\" data-tag=\"cofe\" href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span class=\"h-card\"><a data-user=\"#{
-                 user2.id
-               }\" class=\"u-url mention\" href=\"#{user2.ap_id}\">@<span>#{user2.nickname}</span></a></span>"
+               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a data-user=") <>
+                 user2.id <>
+                 ~s(" class="u-url mention" href=") <>
+                 user2.ap_id <> ~s(">@<span>) <> user2.nickname <> ~s(</span></a></span>)
     end
 
     test "updates the user's locking status", %{conn: conn} do

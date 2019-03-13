@@ -9,7 +9,7 @@ defmodule Pleroma.HTML do
   defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
   defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
 
-  def get_scrubbers() do
+  def get_scrubbers do
     Pleroma.Config.get([:markup, :scrub_policy])
     |> get_scrubbers
   end

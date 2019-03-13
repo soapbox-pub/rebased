@@ -10,6 +10,7 @@ defmodule Pleroma.Formatter do
 
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
   @link_regex ~r{((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+}ui
+  # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
 
   @auto_linker_config hashtag: true,
                       hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,

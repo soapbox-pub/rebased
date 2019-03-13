@@ -9,13 +9,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.ActivityPub.ActivityPubController
   alias Pleroma.Web.ActivityPub.ObjectView
-  alias Pleroma.Web.OStatus.ActivityRepresenter
-  alias Pleroma.Web.OStatus.FeedRepresenter
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.OStatus.ActivityRepresenter
+  alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.XML
 
   plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])

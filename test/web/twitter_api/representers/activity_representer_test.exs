@@ -4,12 +4,12 @@
 
 defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
   use Pleroma.DataCase
-  alias Pleroma.User
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.UserView
   import Pleroma.Factory
 
@@ -101,10 +101,14 @@ defmodule Pleroma.Web.TwitterAPI.Representers.ActivityRepresenterTest do
       recipients: to
     }
 
+    corndog_emojo = ~s(<img height="32px" width="32px" alt="2hu" title="2hu" src="corndog.png" />)
+
     expected_html =
-      "<p>2hu <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" /></p>alert('YAY')Some <img height=\"32px\" width=\"32px\" alt=\"2hu\" title=\"2hu\" src=\"corndog.png\" /> content mentioning <a href=\"#{
-        mentioned_user.ap_id
-      }\">@shp</a>"
+      ~s(<p>2hu ) <>
+        corndog_emojo <>
+        ~s(</p>alert\('YAY'\)Some ) <>
+        corndog_emojo <>
+        ~s( content mentioning <a href=") <> mentioned_user.ap_id <> ~s(">@shp</a>)
 
     expected_status = %{
       "id" => activity.id,

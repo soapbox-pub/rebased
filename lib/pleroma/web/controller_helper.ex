@@ -6,7 +6,8 @@ defmodule Pleroma.Web.ControllerHelper do
   use Pleroma.Web, :controller
 
   def oauth_scopes(params, default) do
-    # Note: `scopes` is used by Mastodon — supporting it but sticking to OAuth's standard `scope` wherever we control it
+    # Note: `scopes` is used by Mastodon — supporting it but sticking to
+    # OAuth's standard `scope` wherever we control it
     Pleroma.Web.OAuth.parse_scopes(params["scope"] || params["scopes"], default)
   end
 

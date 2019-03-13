@@ -6,8 +6,8 @@ defmodule Pleroma.Plugs.OAuthPlug do
   import Plug.Conn
   import Ecto.Query
 
-  alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
 
   @realm_reg Regex.compile!("Bearer\:?\s+(.*)$", "i")
@@ -38,6 +38,7 @@ defmodule Pleroma.Plugs.OAuthPlug do
         preload: [user: user]
       )
 
+    # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
     with %Token{user: %{info: %{deactivated: false} = _} = user} = token_record <- Repo.one(query) do
       {:ok, user, token_record}
     end

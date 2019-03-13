@@ -5,11 +5,11 @@
 defmodule Pleroma.Object do
   use Ecto.Schema
 
-  alias Pleroma.Repo
-  alias Pleroma.Object
-  alias Pleroma.User
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.ObjectTombstone
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   import Ecto.Query
   import Ecto.Changeset

@@ -5,8 +5,8 @@
 defmodule Pleroma.JobsTest do
   use ExUnit.Case, async: true
 
-  alias Pleroma.Jobs
   alias Jobs.WorkerMock
+  alias Pleroma.Jobs
 
   setup do
     state = %{

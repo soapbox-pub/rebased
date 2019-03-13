@@ -5,10 +5,10 @@
 defmodule Pleroma.Web.StreamerTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.Streamer
   alias Pleroma.List
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Streamer
   import Pleroma.Factory
 
   test "it sends to public" do

@@ -102,7 +102,8 @@ defmodule Pleroma.InstancesTest do
     end
   end
 
-  # Note: implementation-specific (e.g. Instance) details of set_unreachable/1 should be tested in implementation-specific tests
+  # Note: implementation-specific (e.g. Instance) details of set_unreachable/1
+  # should be tested in implementation-specific tests
   describe "set_unreachable/1" do
     test "returns error status on non-binary input" do
       assert {:error, _} = Instances.set_unreachable(nil)

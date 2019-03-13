@@ -6,7 +6,8 @@ defmodule Pleroma.Uploaders.S3 do
   @behaviour Pleroma.Uploaders.Uploader
   require Logger
 
-  # The file name is re-encoded with S3's constraints here to comply with previous links with less strict filenames
+  # The file name is re-encoded with S3's constraints here to comply with previous
+  # links with less strict filenames
   def get_file(file) do
     config = Pleroma.Config.get([__MODULE__])
     bucket = Keyword.fetch!(config, :bucket)
