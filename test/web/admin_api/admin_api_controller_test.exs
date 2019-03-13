@@ -334,7 +334,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "GET /api/pleroma/admin/users" do
     test "renders users array for the first page" do
       admin = insert(:user, info: %{is_admin: true})
-      user = insert(:user)
+      user = insert(:user, local: false)
 
       conn =
         build_conn()
@@ -357,7 +357,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "id" => user.id,
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true
+                   "local" => false
                  }
                ]
              }
