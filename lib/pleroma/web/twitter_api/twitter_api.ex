@@ -35,11 +35,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def unfollow(%User{} = follower, params) do
     with {:ok, %User{} = unfollowed} <- get_user(params),
-         {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
-         {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed) do
+         {:ok, follower} <- CommonAPI.unfollow(follower, unfollowed) do
       {:ok, follower, unfollowed}
-    else
-      err -> err
     end
   end
 
