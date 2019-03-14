@@ -388,7 +388,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       if forward do
         Map.merge(additional, %{"to" => [], "cc" => [account.ap_id]})
       else
-        additional
+        Map.merge(additional, %{"to" => [], "cc" => []})
       end
 
     with flag_data <- make_flag_data(params, additional),
