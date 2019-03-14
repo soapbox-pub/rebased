@@ -4,11 +4,11 @@
 
 defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.User
   alias Pleroma.Notification
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
 
   describe "create_notifications" do

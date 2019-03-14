@@ -88,7 +88,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
           # TODO: Add additional properties to objects when we have the data available.
           # Also, Whatsapp only wants JPEG or PNGs. It seems that if we add a second og:image
-          # object when a Video or GIF is attached it will display that in the Whatsapp Rich Preview.
+          # object when a Video or GIF is attached it will display that in Whatsapp Rich Preview.
           case media_type do
             "audio" ->
               [

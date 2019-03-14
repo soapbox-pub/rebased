@@ -5,15 +5,15 @@
 defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Repo
-  alias Pleroma.Activity
-  alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
   import Tesla.Mock

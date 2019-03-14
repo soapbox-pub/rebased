@@ -10,7 +10,7 @@ defmodule Pleroma.Captcha do
   use GenServer
 
   @doc false
-  def start_link() do
+  def start_link do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
@@ -22,7 +22,7 @@ defmodule Pleroma.Captcha do
   @doc """
   Ask the configured captcha service for a new captcha
   """
-  def new() do
+  def new do
     GenServer.call(__MODULE__, :new)
   end
 
@@ -73,7 +73,7 @@ defmodule Pleroma.Captcha do
     secret = KeyGenerator.generate(secret_key_base, token <> "_encrypt")
     sign_secret = KeyGenerator.generate(secret_key_base, token <> "_sign")
 
-    # If the time found is less than (current_time - seconds_valid), then the time has already passed.
+    # If the time found is less than (current_time-seconds_valid) then the time has already passed
     # Later we check that the time found is more than the presumed invalidatation time, that means
     # that the data is still valid and the captcha can be checked
     seconds_valid = Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid])

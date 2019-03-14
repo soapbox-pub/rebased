@@ -85,6 +85,10 @@ defmodule Pleroma.Upload do
     end
   end
 
+  def char_unescaped?(char) do
+    URI.char_unreserved?(char) or char == ?/
+  end
+
   defp get_opts(opts) do
     {size_limit, activity_type} =
       case Keyword.get(opts, :type) do
@@ -218,9 +222,7 @@ defmodule Pleroma.Upload do
   defp url_from_spec(base_url, {:file, path}) do
     path =
       path
-      |> URI.encode()
-      |> String.replace("?", "%3F")
-      |> String.replace(":", "%3A")
+      |> URI.encode(&char_unescaped?/1)
 
     [base_url, "media", path]
     |> Path.join()

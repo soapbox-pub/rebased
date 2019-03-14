@@ -4,15 +4,15 @@
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
 
@@ -472,6 +472,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
       # Also fetches the feed.
       # assert Activity.get_create_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")
+      # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
     end
   end
 end

@@ -140,7 +140,6 @@ defmodule Pleroma.Web.Router do
     pipe_through([:admin_api, :oauth_write])
 
     get("/users", AdminAPIController, :list_users)
-    get("/users/search", AdminAPIController, :search_users)
     delete("/user", AdminAPIController, :user_delete)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     post("/user", AdminAPIController, :user_create)
@@ -304,10 +303,10 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_push)
 
-      post("/push/subscription", MastodonAPIController, :create_push_subscription)
-      get("/push/subscription", MastodonAPIController, :get_push_subscription)
-      put("/push/subscription", MastodonAPIController, :update_push_subscription)
-      delete("/push/subscription", MastodonAPIController, :delete_push_subscription)
+      post("/push/subscription", SubscriptionController, :create)
+      get("/push/subscription", SubscriptionController, :get)
+      put("/push/subscription", SubscriptionController, :update)
+      delete("/push/subscription", SubscriptionController, :delete)
     end
   end
 
@@ -632,8 +631,8 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
-  alias Pleroma.Web.Metadata
   alias Pleroma.User
+  alias Pleroma.Web.Metadata
 
   def redirector(conn, _params, code \\ 200) do
     conn

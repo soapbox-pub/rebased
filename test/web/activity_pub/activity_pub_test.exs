@@ -4,14 +4,14 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
+  alias Pleroma.Builders.ActivityBuilder
+  alias Pleroma.Instances
+  alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Activity
-  alias Pleroma.Object
-  alias Pleroma.User
-  alias Pleroma.Instances
-  alias Pleroma.Builders.ActivityBuilder
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -690,6 +690,27 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       user = Repo.get(User, user.id)
       assert user.info.note_count == 10
+    end
+
+    test "it creates a delete activity and checks that it is also sent to users mentioned by the deleted object" do
+      user = insert(:user)
+      note = insert(:note_activity)
+
+      {:ok, object} =
+        Object.get_by_ap_id(note.data["object"]["id"])
+        |> Object.change(%{
+          data: %{
+            "actor" => note.data["object"]["actor"],
+            "id" => note.data["object"]["id"],
+            "to" => [user.ap_id],
+            "type" => "Note"
+          }
+        })
+        |> Object.update_and_set_cache()
+
+      {:ok, delete} = ActivityPub.delete(object)
+
+      assert user.ap_id in delete.data["to"]
     end
   end
 

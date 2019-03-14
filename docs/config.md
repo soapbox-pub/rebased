@@ -129,7 +129,7 @@ See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_s
 
 ## :frontend_configurations
 
-This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured.
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured.
 
 Frontends can access these settings at `/api/pleroma/frontend_configurations`
 
@@ -284,6 +284,10 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 
 ## :rich_media
 * `enabled`: if enabled the instance will parse metadata from attached links to generate link previews
+
+## :fetch_initial_posts
+* `enabled`: if enabled, when a new user is federated with, fetch some of their latest posts
+* `pages`: the amount of pages to fetch
 
 ## :hackney_pools
 

@@ -7,7 +7,7 @@ defmodule Pleroma.Captcha.Kocaptcha do
   @behaviour Service
 
   @impl Service
-  def new() do
+  def new do
     endpoint = Pleroma.Config.get!([__MODULE__, :endpoint])
 
     case Tesla.get(endpoint <> "/new") do

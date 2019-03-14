@@ -4,17 +4,17 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
-  alias Pleroma.Repo
+  alias Pleroma.Instances
+  alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.Upload
   alias Pleroma.User
-  alias Pleroma.Notification
-  alias Pleroma.Instances
-  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.MRF
-  alias Pleroma.Web.WebFinger
+  alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.Federator
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.WebFinger
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
@@ -170,7 +170,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              additional
            ),
          {:ok, activity} <- insert(create_data, local),
-         # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
+         # Changing note count prior to enqueuing federation task in order to avoid
+         # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -309,17 +310,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
     user = User.get_cached_by_ap_id(actor)
+    to = object.data["to"] || [] ++ object.data["cc"] || []
 
-    data = %{
-      "type" => "Delete",
-      "actor" => actor,
-      "object" => id,
-      "to" => [user.follower_address, "https://www.w3.org/ns/activitystreams#Public"]
-    }
-
-    with {:ok, _} <- Object.delete(object),
+    with {:ok, object, activity} <- Object.delete(object),
+         data <- %{
+           "type" => "Delete",
+           "actor" => actor,
+           "object" => id,
+           "to" => to,
+           "deleted_activity_id" => activity && activity.id
+         },
          {:ok, activity} <- insert(data, local),
-         # Changing note count prior to enqueuing federation task in order to avoid race conditions on updating user.info
+         # Changing note count prior to enqueuing federation task in order to avoid
+         # race conditions on updating user.info
          {:ok, _actor} <- decrease_note_count_if_public(user, object),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
@@ -501,7 +504,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
        when is_list(tag_reject) and tag_reject != [] do
     from(
       activity in query,
-      where: fragment("(not (? #> '{\"object\",\"tag\"}') \\?| ?)", activity.data, ^tag_reject)
+      where: fragment(~s(\(not \(? #> '{"object","tag"}'\) \\?| ?\)), activity.data, ^tag_reject)
     )
   end
 
@@ -511,7 +514,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
        when is_list(tag_all) and tag_all != [] do
     from(
       activity in query,
-      where: fragment("(? #> '{\"object\",\"tag\"}') \\?& ?", activity.data, ^tag_all)
+      where: fragment(~s(\(? #> '{"object","tag"}'\) \\?& ?), activity.data, ^tag_all)
     )
   end
 
@@ -520,14 +523,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_tag(query, %{"tag" => tag}) when is_list(tag) do
     from(
       activity in query,
-      where: fragment("(? #> '{\"object\",\"tag\"}') \\?| ?", activity.data, ^tag)
+      where: fragment(~s(\(? #> '{"object","tag"}'\) \\?| ?), activity.data, ^tag)
     )
   end
 
   defp restrict_tag(query, %{"tag" => tag}) when is_binary(tag) do
     from(
       activity in query,
-      where: fragment("? <@ (? #> '{\"object\",\"tag\"}')", ^tag, activity.data)
+      where: fragment(~s(? <@ (? #> '{"object","tag"}'\)), ^tag, activity.data)
     )
   end
 
@@ -600,7 +603,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_favorited_by(query, %{"favorited_by" => ap_id}) do
     from(
       activity in query,
-      where: fragment("? <@ (? #> '{\"object\",\"likes\"}')", ^ap_id, activity.data)
+      where: fragment(~s(? <@ (? #> '{"object","likes"}'\)), ^ap_id, activity.data)
     )
   end
 
@@ -609,7 +612,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
     from(
       activity in query,
-      where: fragment("not (? #> '{\"object\",\"attachment\"}' = ?)", activity.data, ^[])
+      where: fragment(~s(not (? #> '{"object","attachment"}' = ?\)), activity.data, ^[])
     )
   end
 

@@ -8,7 +8,8 @@ defmodule Pleroma.Web.NodeInfoTest do
   import Pleroma.Factory
 
   test "nodeinfo shows staff accounts", %{conn: conn} do
-    user = insert(:user, %{local: true, info: %{is_moderator: true}})
+    moderator = insert(:user, %{local: true, info: %{is_moderator: true}})
+    admin = insert(:user, %{local: true, info: %{is_admin: true}})
 
     conn =
       conn
@@ -16,7 +17,8 @@ defmodule Pleroma.Web.NodeInfoTest do
 
     assert result = json_response(conn, 200)
 
-    assert user.ap_id in result["metadata"]["staffAccounts"]
+    assert moderator.ap_id in result["metadata"]["staffAccounts"]
+    assert admin.ap_id in result["metadata"]["staffAccounts"]
   end
 
   test "nodeinfo shows restricted nicknames", %{conn: conn} do

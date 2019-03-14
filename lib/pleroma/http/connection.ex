@@ -8,8 +8,8 @@ defmodule Pleroma.HTTP.Connection do
   """
 
   @hackney_options [
-    timeout: 10000,
-    recv_timeout: 20000,
+    connect_timeout: 2_000,
+    recv_timeout: 20_000,
     follow_redirect: true,
     pool: :federation
   ]
@@ -31,6 +31,10 @@ defmodule Pleroma.HTTP.Connection do
   #
   defp hackney_options(opts) do
     options = Keyword.get(opts, :adapter, [])
-    @hackney_options ++ options
+    adapter_options = Pleroma.Config.get([:http, :adapter], [])
+
+    @hackney_options
+    |> Keyword.merge(adapter_options)
+    |> Keyword.merge(options)
   end
 end

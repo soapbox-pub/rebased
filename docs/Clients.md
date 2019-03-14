@@ -4,8 +4,8 @@ Feel free to contact us to be added to this list!
 
 ## Desktop
 ### Roma for Desktop
-- Homepage: <http://www.pleroma.com/desktop-app/>
-- Source Code: ???
+- Homepage: <https://www.pleroma.com/#desktopApp>
+- Source Code: <https://github.com/roma-apps/roma-desktop>
 - Platforms: Windows, Mac, (Linux?)
 - Features: Streaming Ready
 
@@ -30,6 +30,12 @@ Feel free to contact us to be added to this list!
 - Platforms: iOS
 - Features: No Streaming
 
+### Fedilab
+- Source Code: <https://gitlab.com/tom79/mastalab/>
+- Contact: [@tom79@mastodon.social](https://mastodon.social/users/tom79)
+- Platforms: Android
+- Features: Streaming Ready
+
 ### Nekonium
 - Homepage: [F-Droid Repository](https://repo.gdgd.jp.net/), [Google Play](https://play.google.com/store/apps/details?id=com.apps.nekonium), [Amazon](https://www.amazon.co.jp/dp/B076FXPRBC/)
 - Source: <https://git.gdgd.jp.net/lin/nekonium/>
@@ -37,15 +43,9 @@ Feel free to contact us to be added to this list!
 - Platforms: Android
 - Features: Streaming Ready
 
-### Mastalab
-- Source Code: <https://gitlab.com/tom79/mastalab/>
-- Contact: [@tom79@mastodon.social](https://mastodon.social/users/tom79)
-- Platforms: Android
-- Features: Streaming Ready
-
 ### Roma
-- Homepage: <http://www.pleroma.com/>
-- Source Code: ???
+- Homepage: <https://www.pleroma.com/#mobileApps>
+- Source Code: [iOS](https://github.com/roma-apps/roma-ios), [Android](https://github.com/roma-apps/roma-android)
 - Platforms: iOS, Android
 - Features: No Streaming
 

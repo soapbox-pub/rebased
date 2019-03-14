@@ -1,10 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright \xc2\xa9 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Utils do
-  alias Pleroma.HTML
   alias Pleroma.Formatter
+  alias Pleroma.HTML
   alias Pleroma.Web.MediaProxy
 
   def scrub_html_and_truncate(%{data: %{"content" => content}} = object) do
@@ -17,14 +17,14 @@ defmodule Pleroma.Web.Metadata.Utils do
     |> Formatter.truncate()
   end
 
-  def scrub_html_and_truncate(content) when is_binary(content) do
+  def scrub_html_and_truncate(content, max_length \\ 200) when is_binary(content) do
     content
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
     |> HTML.strip_tags()
     |> Formatter.demojify()
-    |> Formatter.truncate()
+    |> Formatter.truncate(max_length)
   end
 
   def attachment_url(url) do

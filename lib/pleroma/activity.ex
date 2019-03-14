@@ -5,9 +5,9 @@
 defmodule Pleroma.Activity do
   use Ecto.Schema
 
-  alias Pleroma.Repo
   alias Pleroma.Activity
   alias Pleroma.Notification
+  alias Pleroma.Repo
 
   import Ecto.Query
 
@@ -106,6 +106,18 @@ defmodule Pleroma.Activity do
   end
 
   def get_in_reply_to_activity(_), do: nil
+
+  def delete_by_ap_id(id) when is_binary(id) do
+    by_object_ap_id(id)
+    |> Repo.delete_all(returning: true)
+    |> elem(1)
+    |> Enum.find(fn
+      %{data: %{"type" => "Create", "object" => %{"id" => ap_id}}} -> ap_id == id
+      _ -> nil
+    end)
+  end
+
+  def delete_by_ap_id(_), do: nil
 
   for {ap_type, type} <- @mastodon_notification_types do
     def mastodon_notification_type(%Activity{data: %{"type" => unquote(ap_type)}}),

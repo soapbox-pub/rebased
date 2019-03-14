@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Auth.PleromaAuthenticator do
-  alias Pleroma.User
   alias Comeonin.Pbkdf2
+  alias Pleroma.User
 
   @behaviour Pleroma.Web.Auth.Authenticator
 

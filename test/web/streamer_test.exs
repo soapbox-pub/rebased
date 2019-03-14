@@ -5,10 +5,10 @@
 defmodule Pleroma.Web.StreamerTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.Streamer
   alias Pleroma.List
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Streamer
   import Pleroma.Factory
 
   test "it sends to public" do
@@ -39,7 +39,15 @@ defmodule Pleroma.Web.StreamerTest do
 
     task =
       Task.async(fn ->
-        assert_receive {:text, _}, 4_000
+        expected_event =
+          %{
+            "event" => "delete",
+            "payload" => activity.id
+          }
+          |> Jason.encode!()
+
+        assert_receive {:text, received_event}, 4_000
+        assert received_event == expected_event
       end)
 
     fake_socket = %{

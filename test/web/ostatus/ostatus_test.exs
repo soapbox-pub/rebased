@@ -4,13 +4,13 @@
 
 defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.XML
+  alias Pleroma.Activity
+  alias Pleroma.Instances
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Activity
-  alias Pleroma.Instances
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
   import Pleroma.Factory
   import ExUnit.CaptureLog
 

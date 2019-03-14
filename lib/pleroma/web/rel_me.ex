@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.RelMe do
   @hackney_options [
     pool: :media,
-    timeout: 2_000,
     recv_timeout: 2_000,
     max_body: 2_000_000
   ]
@@ -28,7 +27,8 @@ defmodule Pleroma.Web.RelMe do
     {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
 
     data =
-      Floki.attribute(html, "link[rel=me]", "href") ++ Floki.attribute(html, "a[rel=me]", "href")
+      Floki.attribute(html, "link[rel~=me]", "href") ++
+        Floki.attribute(html, "a[rel~=me]", "href")
 
     {:ok, data}
   rescue

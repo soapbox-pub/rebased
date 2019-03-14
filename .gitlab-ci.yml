@@ -1,4 +1,4 @@
-image: elixir:1.7.2
+image: elixir:1.8.1
 
 services:
   - name: postgres:9.6.2
@@ -19,6 +19,7 @@ cache:
 stages:
   - lint
   - test
+  - analysis
 
 before_script:
   - mix local.hex --force
@@ -37,3 +38,8 @@ unit-testing:
   stage: test
   script:
     - mix test --trace --preload-modules
+
+analysis:
+  stage: analysis
+  script:
+    - mix credo --strict --only=warnings,todo,fixme,consistency,readability

@@ -133,7 +133,14 @@ config :pleroma, :httpoison, Pleroma.HTTP
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
-config :pleroma, :http, proxy_url: nil
+config :pleroma, :http,
+  proxy_url: nil,
+  adapter: [
+    ssl_options: [
+      # We don't support TLS v1.3 yet
+      versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+    ]
+  ]
 
 config :pleroma, :instance,
   name: "Pleroma",
@@ -215,6 +222,9 @@ config :pleroma, :frontend_configurations,
     scopeCopy: true,
     subjectLineBehavior: "email",
     alwaysShowSubjectInput: true
+  },
+  masto_fe: %{
+    showInstanceSpecificPanel: true
   }
 
 config :pleroma, :activitypub,
@@ -344,6 +354,10 @@ config :pleroma, Pleroma.Jobs,
   federator_incoming: [max_jobs: 50],
   federator_outgoing: [max_jobs: 50],
   mailer: [max_jobs: 10]
+
+config :pleroma, :fetch_initial_posts,
+  enabled: false,
+  pages: 5
 
 config :auto_linker,
   opts: [

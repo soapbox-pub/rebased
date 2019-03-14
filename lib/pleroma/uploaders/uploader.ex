@@ -29,7 +29,6 @@ defmodule Pleroma.Uploaders.Uploader do
   * `{:error, String.t}` error information if the file failed to be saved to the backend.
   * `:wait_callback` will wait for an http post request at `/api/pleroma/upload_callback/:upload_path` and call the uploader's `http_callback/3` method.
 
-
   """
   @type file_spec :: {:file | :url, String.t()}
   @callback put_file(Pleroma.Upload.t()) ::

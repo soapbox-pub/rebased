@@ -3,16 +3,16 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.UserInviteToken
-  alias Pleroma.User
   alias Pleroma.Activity
-  alias Pleroma.Repo
-  alias Pleroma.Object
-  alias Pleroma.UserEmail
   alias Pleroma.Mailer
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.UserEmail
+  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Ecto.Query
 
@@ -28,28 +28,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def follow(%User{} = follower, params) do
-    with {:ok, %User{} = followed} <- get_user(params),
-         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, activity} <- ActivityPub.follow(follower, followed),
-         {:ok, follower, followed} <-
-           User.wait_and_refresh(
-             Pleroma.Config.get([:activitypub, :follow_handshake_timeout]),
-             follower,
-             followed
-           ) do
-      {:ok, follower, followed, activity}
-    else
-      err -> err
+    with {:ok, %User{} = followed} <- get_user(params) do
+      CommonAPI.follow(follower, followed)
     end
   end
 
   def unfollow(%User{} = follower, params) do
     with {:ok, %User{} = unfollowed} <- get_user(params),
-         {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
-         {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed) do
+         {:ok, follower} <- CommonAPI.unfollow(follower, unfollowed) do
       {:ok, follower, unfollowed}
-    else
-      err -> err
     end
   end
 
@@ -143,7 +130,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def register_user(params) do
-    tokenString = params["token"]
+    token_string = params["token"]
 
     params = %{
       nickname: params["nickname"],
@@ -180,8 +167,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
       # no need to query DB if registration is open
       token =
-        unless registrations_open || is_nil(tokenString) do
-          Repo.get_by(UserInviteToken, %{token: tokenString})
+        unless registrations_open || is_nil(token_string) do
+          Repo.get_by(UserInviteToken, %{token: token_string})
         end
 
       cond do

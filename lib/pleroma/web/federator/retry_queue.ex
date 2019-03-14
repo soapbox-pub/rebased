@@ -13,7 +13,7 @@ defmodule Pleroma.Web.Federator.RetryQueue do
     {:ok, %{args | queue_table: queue_table, running_jobs: :sets.new()}}
   end
 
-  def start_link() do
+  def start_link do
     enabled =
       if Mix.env() == :test, do: true, else: Pleroma.Config.get([__MODULE__, :enabled], false)
 
@@ -39,11 +39,11 @@ defmodule Pleroma.Web.Federator.RetryQueue do
     GenServer.cast(__MODULE__, {:maybe_enqueue, data, transport, retries + 1})
   end
 
-  def get_stats() do
+  def get_stats do
     GenServer.call(__MODULE__, :get_stats)
   end
 
-  def reset_stats() do
+  def reset_stats do
     GenServer.call(__MODULE__, :reset_stats)
   end
 
@@ -55,7 +55,7 @@ defmodule Pleroma.Web.Federator.RetryQueue do
     end
   end
 
-  def get_retry_timer_interval() do
+  def get_retry_timer_interval do
     Pleroma.Config.get([:retry_queue, :interval], 1000)
   end
 
@@ -231,7 +231,7 @@ defmodule Pleroma.Web.Federator.RetryQueue do
     end
   end
 
-  defp maybe_kickoff_timer() do
+  defp maybe_kickoff_timer do
     GenServer.cast(__MODULE__, :kickoff_timer)
   end
 end

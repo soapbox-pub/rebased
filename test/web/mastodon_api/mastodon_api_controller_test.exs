@@ -5,17 +5,17 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Repo
-  alias Pleroma.User
-  alias Pleroma.Object
+  alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Notification
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.FilterView
-  alias Ecto.Changeset
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock
@@ -248,6 +248,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert status["url"] != direct.data["id"]
   end
 
+  test "doesn't include DMs from blocked users", %{conn: conn} do
+    blocker = insert(:user)
+    blocked = insert(:user)
+    user = insert(:user)
+    {:ok, blocker} = User.block(blocker, blocked)
+
+    {:ok, _blocked_direct} =
+      CommonAPI.post(blocked, %{
+        "status" => "Hi @#{blocker.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, direct} =
+      CommonAPI.post(user, %{
+        "status" => "Hi @#{blocker.nickname}!",
+        "visibility" => "direct"
+      })
+
+    res_conn =
+      conn
+      |> assign(:user, user)
+      |> get("api/v1/timelines/direct")
+
+    [status] = json_response(res_conn, 200)
+    assert status["id"] == direct.id
+  end
+
   test "replying to a status", %{conn: conn} do
     user = insert(:user)
 
@@ -343,6 +370,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert %{"error" => _} = json_response(conn, 403)
 
       assert Repo.get(Activity, activity.id) == activity
+    end
+
+    test "when you're an admin or moderator", %{conn: conn} do
+      activity1 = insert(:note_activity)
+      activity2 = insert(:note_activity)
+      admin = insert(:user, info: %{is_admin: true})
+      moderator = insert(:user, info: %{is_moderator: true})
+
+      res_conn =
+        conn
+        |> assign(:user, admin)
+        |> delete("/api/v1/statuses/#{activity1.id}")
+
+      assert %{} = json_response(res_conn, 200)
+
+      res_conn =
+        conn
+        |> assign(:user, moderator)
+        |> delete("/api/v1/statuses/#{activity2.id}")
+
+      assert %{} = json_response(res_conn, 200)
+
+      refute Repo.get(Activity, activity1.id)
+      refute Repo.get(Activity, activity2.id)
     end
   end
 
@@ -1013,6 +1064,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"error" => "Can't find user"} = json_response(conn, 404)
   end
 
+  test "account fetching also works nickname", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> get("/api/v1/accounts/#{user.nickname}")
+
+    assert %{"id" => id} = json_response(conn, 200)
+    assert id == user.id
+  end
+
   test "media upload", %{conn: conn} do
     file = %Plug.Upload{
       content_type: "image/jpg",
@@ -1133,6 +1195,47 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute [] == json_response(conn, 200)
   end
 
+  test "getting followers, pagination", %{conn: conn} do
+    user = insert(:user)
+    follower1 = insert(:user)
+    follower2 = insert(:user)
+    follower3 = insert(:user)
+    {:ok, _} = User.follow(follower1, user)
+    {:ok, _} = User.follow(follower2, user)
+    {:ok, _} = User.follow(follower3, user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/followers?since_id=#{follower1.id}")
+
+    assert [%{"id" => id3}, %{"id" => id2}] = json_response(res_conn, 200)
+    assert id3 == follower3.id
+    assert id2 == follower2.id
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/followers?max_id=#{follower3.id}")
+
+    assert [%{"id" => id2}, %{"id" => id1}] = json_response(res_conn, 200)
+    assert id2 == follower2.id
+    assert id1 == follower1.id
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/followers?limit=1&max_id=#{follower3.id}")
+
+    assert [%{"id" => id2}] = json_response(res_conn, 200)
+    assert id2 == follower2.id
+
+    assert [link_header] = get_resp_header(res_conn, "link")
+    assert link_header =~ ~r/since_id=#{follower2.id}/
+    assert link_header =~ ~r/max_id=#{follower2.id}/
+  end
+
   test "getting following", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
@@ -1169,6 +1272,47 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> get("/api/v1/accounts/#{user.id}/following")
 
     refute [] == json_response(conn, 200)
+  end
+
+  test "getting following, pagination", %{conn: conn} do
+    user = insert(:user)
+    following1 = insert(:user)
+    following2 = insert(:user)
+    following3 = insert(:user)
+    {:ok, _} = User.follow(user, following1)
+    {:ok, _} = User.follow(user, following2)
+    {:ok, _} = User.follow(user, following3)
+
+    conn =
+      conn
+      |> assign(:user, user)
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/following?since_id=#{following1.id}")
+
+    assert [%{"id" => id3}, %{"id" => id2}] = json_response(res_conn, 200)
+    assert id3 == following3.id
+    assert id2 == following2.id
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/following?max_id=#{following3.id}")
+
+    assert [%{"id" => id2}, %{"id" => id1}] = json_response(res_conn, 200)
+    assert id2 == following2.id
+    assert id1 == following1.id
+
+    res_conn =
+      conn
+      |> get("/api/v1/accounts/#{user.id}/following?limit=1&max_id=#{following3.id}")
+
+    assert [%{"id" => id2}] = json_response(res_conn, 200)
+    assert id2 == following2.id
+
+    assert [link_header] = get_resp_header(res_conn, "link")
+    assert link_header =~ ~r/since_id=#{following2.id}/
+    assert link_header =~ ~r/max_id=#{following2.id}/
   end
 
   test "following / unfollowing a user", %{conn: conn} do
@@ -1488,9 +1632,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               "I drink <a class=\"hashtag\" data-tag=\"cofe\" href=\"http://localhost:4001/tag/cofe\">#cofe</a> with <span class=\"h-card\"><a data-user=\"#{
-                 user2.id
-               }\" class=\"u-url mention\" href=\"#{user2.ap_id}\">@<span>#{user2.nickname}</span></a></span>"
+               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a data-user=") <>
+                 user2.id <>
+                 ~s(" class="u-url mention" href=") <>
+                 user2.ap_id <> ~s(">@<span>) <> user2.nickname <> ~s(</span></a></span>)
     end
 
     test "updates the user's locking status", %{conn: conn} do
@@ -1899,7 +2044,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> json_response(200)
     end
 
-    test "accound_id is required", %{
+    test "account_id is required", %{
       conn: conn,
       reporter: reporter,
       activity: activity
@@ -1926,6 +2071,38 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> assign(:user, reporter)
                |> post("/api/v1/reports", %{"account_id" => target_user.id, "comment" => comment})
                |> json_response(400)
+    end
+  end
+
+  describe "link headers" do
+    test "preserves parameters in link headers", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity1} =
+        CommonAPI.post(other_user, %{
+          "status" => "hi @#{user.nickname}",
+          "visibility" => "public"
+        })
+
+      {:ok, activity2} =
+        CommonAPI.post(other_user, %{
+          "status" => "hi @#{user.nickname}",
+          "visibility" => "public"
+        })
+
+      notification1 = Repo.get_by(Notification, activity_id: activity1.id)
+      notification2 = Repo.get_by(Notification, activity_id: activity2.id)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/notifications", %{media_only: true})
+
+      assert [link_header] = get_resp_header(conn, "link")
+      assert link_header =~ ~r/media_only=true/
+      assert link_header =~ ~r/since_id=#{notification2.id}/
+      assert link_header =~ ~r/max_id=#{notification1.id}/
     end
   end
 end

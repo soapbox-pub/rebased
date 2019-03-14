@@ -69,8 +69,8 @@
         # You can also customize the exit_status of each check.
         # If you don't want TODO comments to cause `mix credo` to fail, just
         # set this value to 0 (zero).
-        {Credo.Check.Design.TagTODO, exit_status: 2},
-        {Credo.Check.Design.TagFIXME},
+        {Credo.Check.Design.TagTODO, exit_status: 0},
+        {Credo.Check.Design.TagFIXME, exit_status: 0},
 
         {Credo.Check.Readability.FunctionNames},
         {Credo.Check.Readability.LargeNumbers},
@@ -81,7 +81,9 @@
         {Credo.Check.Readability.ParenthesesOnZeroArityDefs},
         {Credo.Check.Readability.ParenthesesInCondition},
         {Credo.Check.Readability.PredicateFunctionNames},
-        {Credo.Check.Readability.PreferImplicitTry},
+        # lanodan: I think PreferImplicitTry should be consistency, and the behaviour seems
+        # inconsistent, see: https://github.com/rrrene/credo/issues/224
+        {Credo.Check.Readability.PreferImplicitTry, false},
         {Credo.Check.Readability.RedundantBlankLines},
         {Credo.Check.Readability.StringSigils},
         {Credo.Check.Readability.TrailingBlankLine},
@@ -126,10 +128,6 @@
 
         # Deprecated checks (these will be deleted after a grace period)
         {Credo.Check.Readability.Specs, false},
-        {Credo.Check.Warning.NameRedeclarationByAssignment, false},
-        {Credo.Check.Warning.NameRedeclarationByCase, false},
-        {Credo.Check.Warning.NameRedeclarationByDef, false},
-        {Credo.Check.Warning.NameRedeclarationByFn, false},
 
         # Custom checks can be created using `mix credo.gen.check`.
         #

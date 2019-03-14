@@ -4,9 +4,9 @@
 
 defmodule Mix.Tasks.Pleroma.Uploads do
   use Mix.Task
+  alias Mix.Tasks.Pleroma.Common
   alias Pleroma.Upload
   alias Pleroma.Uploaders.Local
-  alias Mix.Tasks.Pleroma.Common
   require Logger
 
   @log_every 50
@@ -19,7 +19,6 @@ defmodule Mix.Tasks.Pleroma.Uploads do
        mix pleroma.uploads migrate_local TARGET_UPLOADER [OPTIONS...]
    Options:
    - `--delete` - delete local uploads after migrating them to the target uploader
-
 
    A list of available uploaders can be seen in config.exs
   """
