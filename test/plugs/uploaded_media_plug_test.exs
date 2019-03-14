@@ -6,7 +6,8 @@ defmodule Pleroma.Web.UploadedMediaPlugTest do
   use Pleroma.Web.ConnCase
   alias Pleroma.Upload
 
-  setup_all do
+  defp upload_file(context) do
+    Pleroma.DataCase.ensure_local_uploader(context)
     File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
 
     file = %Plug.Upload{
@@ -19,6 +20,8 @@ defmodule Pleroma.Web.UploadedMediaPlugTest do
     [%{"href" => attachment_url} | _] = data["url"]
     [attachment_url: attachment_url]
   end
+
+  setup_all :upload_file
 
   test "does not send Content-Disposition header when name param is not set", %{
     attachment_url: attachment_url
