@@ -23,7 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.Admin.AccountView do
       "deactivated" => user.info.deactivated,
       "local" => user.local,
       "roles" => Info.roles(user.info),
-      "tags" => user.tags
+      "tags" => user.tags || []
     }
   end
 end
