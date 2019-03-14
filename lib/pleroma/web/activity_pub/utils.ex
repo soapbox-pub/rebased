@@ -623,6 +623,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def make_flag_data(params, additional) do
     status_ap_ids =
       Enum.map(params.statuses || [], fn
+        %Activity{} = act -> act.data["id"]
         act when is_map(act) -> act["id"]
         act when is_binary(act) -> act
       end)
