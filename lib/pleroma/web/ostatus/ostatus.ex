@@ -9,19 +9,19 @@ defmodule Pleroma.Web.OStatus do
   import Pleroma.Web.XML
   require Logger
 
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Object
-  alias Pleroma.Activity
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.OStatus.DeleteHandler
+  alias Pleroma.Web.OStatus.FollowHandler
+  alias Pleroma.Web.OStatus.NoteHandler
+  alias Pleroma.Web.OStatus.UnfollowHandler
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Websub
-  alias Pleroma.Web.OStatus.FollowHandler
-  alias Pleroma.Web.OStatus.UnfollowHandler
-  alias Pleroma.Web.OStatus.NoteHandler
-  alias Pleroma.Web.OStatus.DeleteHandler
 
   def is_representable?(%Activity{data: data}) do
     object = Object.normalize(data["object"])

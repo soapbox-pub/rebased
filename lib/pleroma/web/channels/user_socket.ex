@@ -23,7 +23,7 @@ defmodule Pleroma.Web.UserSocket do
   # performing token verification on connect.
   def connect(%{"token" => token}, socket) do
     with true <- Pleroma.Config.get([:chat, :enabled]),
-         {:ok, user_id} <- Phoenix.Token.verify(socket, "user socket", token, max_age: 84600),
+         {:ok, user_id} <- Phoenix.Token.verify(socket, "user socket", token, max_age: 84_600),
          %User{} = user <- Pleroma.Repo.get(User, user_id) do
       {:ok, assign(socket, :user_name, user.nickname)}
     else

@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Instances.InstanceTest do
-  alias Pleroma.Repo
   alias Pleroma.Instances.Instance
+  alias Pleroma.Repo
 
   use Pleroma.DataCase
 

@@ -4,10 +4,10 @@
 
 defmodule Pleroma.Web.OAuth.TokenTest do
   use Pleroma.DataCase
+  alias Pleroma.Repo
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Repo
 
   import Pleroma.Factory
 

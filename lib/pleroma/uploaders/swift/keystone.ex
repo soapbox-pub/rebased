@@ -17,7 +17,7 @@ defmodule Pleroma.Uploaders.Swift.Keystone do
     |> Poison.decode!()
   end
 
-  def get_token() do
+  def get_token do
     settings = Pleroma.Config.get(Pleroma.Uploaders.Swift)
     username = Keyword.fetch!(settings, :username)
     password = Keyword.fetch!(settings, :password)

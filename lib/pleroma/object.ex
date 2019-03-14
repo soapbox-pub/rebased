@@ -5,11 +5,11 @@
 defmodule Pleroma.Object do
   use Ecto.Schema
 
-  alias Pleroma.Repo
-  alias Pleroma.Object
-  alias Pleroma.User
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.ObjectTombstone
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   import Ecto.Query
   import Ecto.Changeset
@@ -86,9 +86,9 @@ defmodule Pleroma.Object do
 
   def delete(%Object{data: %{"id" => id}} = object) do
     with {:ok, _obj} = swap_object_with_tombstone(object),
-         Repo.delete_all(Activity.by_object_ap_id(id)),
+         deleted_activity = Activity.delete_by_ap_id(id),
          {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
-      {:ok, object}
+      {:ok, object, deleted_activity}
     end
   end
 

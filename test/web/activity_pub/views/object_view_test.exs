@@ -2,8 +2,8 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
 
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Web.CommonAPI
 
   test "renders a note object" do
     note = insert(:note)

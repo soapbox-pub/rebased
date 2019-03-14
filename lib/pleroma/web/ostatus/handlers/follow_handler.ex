@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus.FollowHandler do
-  alias Pleroma.Web.XML
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
 
   def handle(entry, doc) do
     with {:ok, actor} <- OStatus.find_make_or_update_user(doc),

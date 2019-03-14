@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.UserTest do
-  alias Pleroma.Builders.UserBuilder
   alias Pleroma.Activity
+  alias Pleroma.Builders.UserBuilder
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI

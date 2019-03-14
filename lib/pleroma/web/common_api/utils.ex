@@ -6,14 +6,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Config
+  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
-  alias Pleroma.Web.ActivityPub.Utils
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do

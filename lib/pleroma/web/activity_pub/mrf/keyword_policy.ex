@@ -45,13 +45,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
   defp check_replace(%{"object" => %{"content" => content, "summary" => summary}} = message) do
     {content, summary} =
-      Enum.reduce(Pleroma.Config.get([:mrf_keyword, :replace]), {content, summary}, fn {pattern,
-                                                                                        replacement},
-                                                                                       {content_acc,
-                                                                                        summary_acc} ->
-        {String.replace(content_acc, pattern, replacement),
-         String.replace(summary_acc, pattern, replacement)}
-      end)
+      Enum.reduce(
+        Pleroma.Config.get([:mrf_keyword, :replace]),
+        {content, summary},
+        fn {pattern, replacement}, {content_acc, summary_acc} ->
+          {String.replace(content_acc, pattern, replacement),
+           String.replace(summary_acc, pattern, replacement)}
+        end
+      )
 
     {:ok,
      message

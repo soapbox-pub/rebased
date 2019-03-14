@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI do
-  alias Pleroma.User
-  alias Pleroma.Repo
   alias Pleroma.Activity
+  alias Pleroma.Formatter
   alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.ThreadMute
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Formatter
 
   import Pleroma.Web.CommonAPI.Utils
 
@@ -24,6 +24,42 @@ defmodule Pleroma.Web.CommonAPI do
              followed
            ) do
       {:ok, follower, followed, activity}
+    end
+  end
+
+  def unfollow(follower, unfollowed) do
+    with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
+         {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed) do
+      {:ok, follower}
+    end
+  end
+
+  def accept_follow_request(follower, followed) do
+    with {:ok, follower} <- User.maybe_follow(follower, followed),
+         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
+         {:ok, _activity} <-
+           ActivityPub.accept(%{
+             to: [follower.ap_id],
+             actor: followed,
+             object: follow_activity.data["id"],
+             type: "Accept"
+           }) do
+      {:ok, follower}
+    end
+  end
+
+  def reject_follow_request(follower, followed) do
+    with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
+         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
+         {:ok, _activity} <-
+           ActivityPub.reject(%{
+             to: [follower.ap_id],
+             actor: followed,
+             object: follow_activity.data["id"],
+             type: "Reject"
+           }) do
+      {:ok, follower}
     end
   end
 
@@ -88,8 +124,8 @@ defmodule Pleroma.Web.CommonAPI do
       nil ->
         "public"
 
-      inReplyTo ->
-        Pleroma.Web.MastodonAPI.StatusView.get_visibility(inReplyTo.data["object"])
+      in_reply_to ->
+        Pleroma.Web.MastodonAPI.StatusView.get_visibility(in_reply_to.data["object"])
     end
   end
 
@@ -101,15 +137,15 @@ defmodule Pleroma.Web.CommonAPI do
 
     with status <- String.trim(status),
          attachments <- attachments_from_ids(data),
-         inReplyTo <- get_replied_to_activity(data["in_reply_to_status_id"]),
+         in_reply_to <- get_replied_to_activity(data["in_reply_to_status_id"]),
          {content_html, mentions, tags} <-
            make_content_html(
              status,
              attachments,
              data
            ),
-         {to, cc} <- to_for_user_and_mentions(user, mentions, inReplyTo, visibility),
-         context <- make_context(inReplyTo),
+         {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
+         context <- make_context(in_reply_to),
          cw <- data["spoiler_text"],
          full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
          length when length in 1..limit <- String.length(full_payload),
@@ -120,7 +156,7 @@ defmodule Pleroma.Web.CommonAPI do
              context,
              content_html,
              attachments,
-             inReplyTo,
+             in_reply_to,
              tags,
              cw,
              cc

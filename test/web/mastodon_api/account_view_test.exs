@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
-  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.User
+  alias Pleroma.Web.MastodonAPI.AccountView
 
   test "Represent a user account" do
     source_data = %{

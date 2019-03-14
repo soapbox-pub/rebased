@@ -5,13 +5,13 @@
 defmodule Pleroma.Web.Push.Impl do
   @moduledoc "The module represents implementation push web notification"
 
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Activity
-  alias Pleroma.Object
-  alias Pleroma.Web.Push.Subscription
   alias Pleroma.Web.Metadata.Utils
-  alias Pleroma.Notification
+  alias Pleroma.Web.Push.Subscription
 
   require Logger
   import Ecto.Query
@@ -20,7 +20,10 @@ defmodule Pleroma.Web.Push.Impl do
 
   @doc "Performs sending notifications for user subscriptions"
   @spec perform_send(Notification.t()) :: list(any)
-  def perform_send(%{activity: %{data: %{"type" => activity_type}}, user_id: user_id} = notif)
+  def perform_send(
+        %{activity: %{data: %{"type" => activity_type}, id: activity_id}, user_id: user_id} =
+          notif
+      )
       when activity_type in @types do
     actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
 
@@ -37,7 +40,10 @@ defmodule Pleroma.Web.Push.Impl do
         notification_id: notif.id,
         notification_type: type,
         icon: avatar_url,
-        preferred_locale: "en"
+        preferred_locale: "en",
+        pleroma: %{
+          activity_id: activity_id
+        }
       }
       |> Jason.encode!()
       |> push_message(build_sub(subscription), gcm_api_key, subscription)

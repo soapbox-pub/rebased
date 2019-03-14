@@ -5,13 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.User
   alias Pleroma.Web.OStatus
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Activity
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -120,7 +120,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
           static_url: "corndog.png",
           visible_in_picker: false
         }
-      ]
+      ],
+      pleroma: %{
+        local: true
+      }
     }
 
     assert status == expected

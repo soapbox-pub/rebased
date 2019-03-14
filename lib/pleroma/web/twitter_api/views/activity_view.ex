@@ -14,9 +14,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
 
   import Ecto.Query
   require Logger

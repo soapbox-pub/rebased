@@ -7,13 +7,13 @@ defmodule Pleroma.Clippy do
   # No software is complete until they have a Clippy implementation.
   # A ballmer peak _may_ be required to change this module.
 
-  def tip() do
+  def tip do
     tips()
     |> Enum.random()
     |> puts()
   end
 
-  def tips() do
+  def tips do
     host = Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host])
 
     [
@@ -92,8 +92,8 @@ defmodule Pleroma.Clippy do
 
     # surrond one/five line clippy with blank lines around to not fuck up the layout
     #
-    # yes this fix sucks but it's good enough, have you ever seen a release of windows wihtout some butched
-    # features anyway?
+    # yes this fix sucks but it's good enough, have you ever seen a release of windows
+    # without some butched features anyway?
     lines =
       if length(lines) == 1 or length(lines) == 5 do
         [""] ++ lines ++ [""]

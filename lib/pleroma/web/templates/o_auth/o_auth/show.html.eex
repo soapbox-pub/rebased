@@ -6,23 +6,26 @@
 <% end %>
 <h2>OAuth Authorization</h2>
 <%= form_for @conn, o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
-<%= label f, :name, "Name or email" %>
-<%= text_input f, :name %>
-<br>
-<br>
-<%= label f, :password, "Password" %>
-<%= password_input f, :password %>
-<br>
-<br>
-
+<div class="input">
+  <%= label f, :name, "Name or email" %>
+  <%= text_input f, :name %>
+</div>
+<div class="input">
+  <%= label f, :password, "Password" %>
+  <%= password_input f, :password %>
+</div>
+<div class="scopes-input">
 <%= label f, :scope, "Permissions" %>
-<br>
-<%= for scope <- @available_scopes do %>
-  <%# Note: using hidden input with `unchecked_value` in order to distinguish user's empty selection from `scope` param being omitted %>
-  <%= checkbox f, :"scope_#{scope}", value: scope in @scopes && scope, checked_value: scope, unchecked_value: "", name: "authorization[scope][]" %>
-  <%= label f, :"scope_#{scope}", String.capitalize(scope) %>
-  <br>
-<% end %>
+  <div class="scopes">
+    <%= for scope <- @available_scopes do %>
+      <%# Note: using hidden input with `unchecked_value` in order to distinguish user's empty selection from `scope` param being omitted %>
+      <div class="scope">
+        <%= checkbox f, :"scope_#{scope}", value: scope in @scopes && scope, checked_value: scope, unchecked_value: "", name: "authorization[scope][]" %>
+        <%= label f, :"scope_#{scope}", String.capitalize(scope) %>
+      </div>
+    <% end %>
+  </div>
+</div>
 
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :response_type, value: @response_type %>

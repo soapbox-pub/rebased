@@ -1,10 +1,10 @@
 # Pleroma: A lightweight social networking server
-# Copyright \xc2\xa9 2017-2019 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Metadata.Utils do
-  alias Pleroma.HTML
   alias Pleroma.Formatter
+  alias Pleroma.HTML
   alias Pleroma.Web.MediaProxy
 
   def scrub_html_and_truncate(%{data: %{"content" => content}} = object) do
