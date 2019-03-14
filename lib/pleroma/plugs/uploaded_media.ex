@@ -30,7 +30,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
           name = String.replace(name, "\"", "\\\"")
 
           conn
-          |> put_resp_header("Content-Disposition", "filename=\"#{name}\"")
+          |> put_resp_header("content-disposition", "filename=\"#{name}\"")
 
         conn ->
           conn
