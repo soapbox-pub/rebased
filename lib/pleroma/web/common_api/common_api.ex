@@ -284,7 +284,8 @@ defmodule Pleroma.Web.CommonAPI do
              actor: user,
              account: account,
              statuses: statuses,
-             content: content_html
+             content: content_html,
+             forward: data["forward"] || false
            }) do
       Enum.each(User.all_superusers(), fn superuser ->
         superuser
