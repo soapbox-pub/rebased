@@ -355,6 +355,40 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  # Flag objects are placed ahead of the ID check because Mastodon 2.8 and earlier send them
+  # with nil ID.
+  def handle_incoming(%{"type" => "Flag", "object" => objects, "actor" => actor} = data) do
+    with context <- data["context"] || Utils.generate_context_id(),
+         content <- data["content"] || "",
+         %User{} = actor <- User.get_cached_by_ap_id(actor),
+
+         # Reduce the object list to find the reported user.
+         %User{} = account <-
+           Enum.reduce_while(objects, nil, fn ap_id, _ ->
+             with %User{} = user <- User.get_cached_by_ap_id(ap_id) do
+               {:halt, user}
+             else
+               _ -> {:cont, nil}
+             end
+           end),
+
+         # Remove the reported user from the object list.
+         statuses <- Enum.filter(objects, fn ap_id -> ap_id != account.ap_id end) do
+      params = %{
+        actor: actor,
+        context: context,
+        account: account,
+        statuses: statuses,
+        content: content,
+        additional: %{
+          "cc" => [account.ap_id]
+        }
+      }
+
+      ActivityPub.flag(params)
+    end
+  end
+
   # disallow objects with bogus IDs
   def handle_incoming(%{"id" => nil}), do: :error
   def handle_incoming(%{"id" => ""}), do: :error
