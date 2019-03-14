@@ -287,12 +287,6 @@ defmodule Pleroma.Web.CommonAPI do
              content: content_html,
              forward: data["forward"] || false
            }) do
-      Enum.each(User.all_superusers(), fn superuser ->
-        superuser
-        |> Pleroma.AdminEmail.report(user, account, statuses, content_html)
-        |> Pleroma.Mailer.deliver_async()
-      end)
-
       {:ok, activity}
     else
       {:error, err} -> {:error, err}

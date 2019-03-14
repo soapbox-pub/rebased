@@ -394,6 +394,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     with flag_data <- make_flag_data(params, additional),
          {:ok, activity} <- insert(flag_data, local),
          :ok <- maybe_federate(activity) do
+      Enum.each(User.all_superusers(), fn superuser ->
+        superuser
+        |> Pleroma.AdminEmail.report(actor, account, statuses, content)
+        |> Pleroma.Mailer.deliver_async()
+      end)
+
       {:ok, activity}
     end
   end
