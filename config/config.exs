@@ -35,6 +35,7 @@ config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
   filters: [],
+  link_name: true,
   proxy_remote: false,
   proxy_opts: [
     redirect_on_failure: false,

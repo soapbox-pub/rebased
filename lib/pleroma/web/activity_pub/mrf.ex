@@ -16,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
     end)
   end
 
-  def get_policies() do
+  def get_policies do
     Application.get_env(:pleroma, :instance, [])
     |> Keyword.get(:rewrite_policy, [])
     |> get_policies()

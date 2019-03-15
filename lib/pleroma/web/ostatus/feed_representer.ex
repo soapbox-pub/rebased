@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Web.OStatus.FeedRepresenter do
   alias Pleroma.User
-  alias Pleroma.Web.OStatus
   alias Pleroma.Web.MediaProxy
+  alias Pleroma.Web.OStatus
   alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.Web.OStatus.UserRepresenter
 

@@ -5,9 +5,9 @@
 defmodule Pleroma.Activity do
   use Ecto.Schema
 
-  alias Pleroma.Repo
   alias Pleroma.Activity
   alias Pleroma.Notification
+  alias Pleroma.Repo
 
   import Ecto.Query
 

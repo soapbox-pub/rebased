@@ -7,9 +7,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   A module to handle coding from internal to wire ActivityPub and back.
   """
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -650,10 +650,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     if object = Object.normalize(id), do: {:ok, object}, else: nil
   end
 
-  def set_reply_to_uri(%{"inReplyTo" => inReplyTo} = object) when is_binary(inReplyTo) do
-    with false <- String.starts_with?(inReplyTo, "http"),
-         {:ok, %{data: replied_to_object}} <- get_obj_helper(inReplyTo) do
-      Map.put(object, "inReplyTo", replied_to_object["external_url"] || inReplyTo)
+  def set_reply_to_uri(%{"inReplyTo" => in_reply_to} = object) when is_binary(in_reply_to) do
+    with false <- String.starts_with?(in_reply_to, "http"),
+         {:ok, %{data: replied_to_object}} <- get_obj_helper(in_reply_to) do
+      Map.put(object, "inReplyTo", replied_to_object["external_url"] || in_reply_to)
     else
       _e -> object
     end
@@ -830,10 +830,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def add_attributed_to(object) do
-    attributedTo = object["attributedTo"] || object["actor"]
+    attributed_to = object["attributedTo"] || object["actor"]
 
     object
-    |> Map.put("attributedTo", attributedTo)
+    |> Map.put("attributedTo", attributed_to)
   end
 
   def add_likes(%{"id" => id, "like_count" => likes} = object) do

@@ -150,7 +150,8 @@ defmodule Pleroma.UploadTest do
       {:ok, data} = Upload.store(file)
       [attachment_url | _] = data["url"]
 
-      assert Path.basename(attachment_url["href"]) == "an%E2%80%A6%20image.jpg"
+      assert Path.basename(attachment_url["href"]) ==
+               "an%E2%80%A6%20image.jpg"
     end
 
     test "escapes reserved uri characters" do

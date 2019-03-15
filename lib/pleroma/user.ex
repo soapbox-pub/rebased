@@ -8,21 +8,21 @@ defmodule Pleroma.User do
   import Ecto.Changeset
   import Ecto.Query
 
+  alias Comeonin.Pbkdf2
+  alias Pleroma.Activity
+  alias Pleroma.Formatter
+  alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Object
   alias Pleroma.Web
-  alias Pleroma.Activity
-  alias Pleroma.Notification
-  alias Comeonin.Pbkdf2
-  alias Pleroma.Formatter
-  alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Websub
-  alias Pleroma.Web.OAuth
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
+  alias Pleroma.Web.OAuth
+  alias Pleroma.Web.OStatus
   alias Pleroma.Web.RelMe
+  alias Pleroma.Web.Websub
 
   require Logger
 
@@ -30,6 +30,7 @@ defmodule Pleroma.User do
 
   @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
 
+  # credo:disable-for-next-line Credo.Check.Readability.MaxLineLength
   @email_regex ~r/^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
 
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
@@ -317,7 +318,7 @@ defmodule Pleroma.User do
   def needs_update?(%User{local: false, last_refreshed_at: nil}), do: true
 
   def needs_update?(%User{local: false} = user) do
-    NaiveDateTime.diff(NaiveDateTime.utc_now(), user.last_refreshed_at) >= 86400
+    NaiveDateTime.diff(NaiveDateTime.utc_now(), user.last_refreshed_at) >= 86_400
   end
 
   def needs_update?(_), do: true
@@ -467,7 +468,8 @@ defmodule Pleroma.User do
     Repo.get_by(User, ap_id: ap_id)
   end
 
-  # This is mostly an SPC migration fix. This guesses the user nickname (by taking the last part of the ap_id and the domain) and tries to get that user
+  # This is mostly an SPC migration fix. This guesses the user nickname by taking the last part
+  # of the ap_id and the domain and tries to get that user
   def get_by_guessed_nickname(ap_id) do
     domain = URI.parse(ap_id).host
     name = List.last(String.split(ap_id, "/"))
@@ -1378,7 +1380,7 @@ defmodule Pleroma.User do
     |> Enum.map(&String.downcase(&1))
   end
 
-  defp local_nickname_regex() do
+  defp local_nickname_regex do
     if Pleroma.Config.get([:instance, :extended_nickname_format]) do
       @extended_local_nickname_regex
     else

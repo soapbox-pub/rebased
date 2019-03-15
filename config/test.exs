@@ -17,6 +17,8 @@ config :pleroma, Pleroma.Captcha,
 # Print only warnings and errors during test
 config :logger, level: :warn
 
+config :pleroma, Pleroma.Upload, link_name: false
+
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Test

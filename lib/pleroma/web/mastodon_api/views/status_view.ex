@@ -257,7 +257,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       preview_url: href,
       text_url: href,
       type: type,
-      description: attachment["name"]
+      description: attachment["name"],
+      pleroma: %{mime_type: media_type}
     }
   end
 

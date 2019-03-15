@@ -19,3 +19,13 @@ Adding the parameter `with_muted=true` to the timeline queries will also return 
 Has these additional fields under the `pleroma` object:
 
 - `local`: true if the post was made on the local instance.
+
+## Attachments
+
+Has these additional fields under the `pleroma` object:
+
+- `mime_type`: mime type of the attachment.
+
+## Accounts
+
+- `/api/v1/accounts/:id`: The `id` parameter can also be the `nickname` of the user. This only works in this endpoint, not the deeper nested ones for following etc.

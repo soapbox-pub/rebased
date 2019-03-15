@@ -7,9 +7,9 @@ defmodule Pleroma.PasswordResetToken do
 
   import Ecto.Changeset
 
-  alias Pleroma.User
-  alias Pleroma.Repo
   alias Pleroma.PasswordResetToken
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   schema "password_reset_tokens" do
     belongs_to(:user, User, type: Pleroma.FlakeId)

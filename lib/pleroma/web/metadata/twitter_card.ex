@@ -97,7 +97,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
                 | acc
               ]
 
-            # TODO: Need the true width and height values here or Twitter renders an iFrame with a bad aspect ratio
+            # TODO: Need the true width and height values here or Twitter renders an iFrame with
+            # a bad aspect ratio
             "video" ->
               [
                 {:meta, [property: "twitter:card", content: "player"], []},

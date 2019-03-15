@@ -4,14 +4,14 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
+  alias Pleroma.Builders.ActivityBuilder
+  alias Pleroma.Instances
+  alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Activity
-  alias Pleroma.Object
-  alias Pleroma.User
-  alias Pleroma.Instances
-  alias Pleroma.Builders.ActivityBuilder
 
   import Pleroma.Factory
   import Tesla.Mock

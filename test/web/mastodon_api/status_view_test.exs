@@ -5,13 +5,13 @@
 defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Activity
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.User
   alias Pleroma.Web.OStatus
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Activity
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -196,7 +196,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       remote_url: "someurl",
       preview_url: "someurl",
       text_url: "someurl",
-      description: nil
+      description: nil,
+      pleroma: %{mime_type: "image/png"}
     }
 
     assert expected == StatusView.render("attachment.json", %{attachment: object})

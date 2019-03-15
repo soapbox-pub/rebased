@@ -5,13 +5,13 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Web.Auth.Authenticator
-  alias Pleroma.Web.OAuth.Authorization
-  alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.OAuth.App
+  alias Comeonin.Pbkdf2
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Comeonin.Pbkdf2
+  alias Pleroma.Web.Auth.Authenticator
+  alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
 
   import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
 

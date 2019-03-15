@@ -6,7 +6,7 @@ defmodule Pleroma.Gopher.Server do
   use GenServer
   require Logger
 
-  def start_link() do
+  def start_link do
     config = Pleroma.Config.get(:gopher, [])
     ip = Keyword.get(config, :ip, {0, 0, 0, 0})
     port = Keyword.get(config, :port, 1234)
@@ -36,12 +36,12 @@ defmodule Pleroma.Gopher.Server do
 end
 
 defmodule Pleroma.Gopher.Server.ProtocolHandler do
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Activity
   alias Pleroma.HTML
-  alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
 
   def start_link(ref, socket, transport, opts) do
     pid = spawn_link(__MODULE__, :init, [ref, socket, transport, opts])

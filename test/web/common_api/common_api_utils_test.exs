@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
+  alias Pleroma.Builders.UserBuilder
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Builders.UserBuilder
   use Pleroma.DataCase
 
   test "it adds attachment links to a given text and attachment set" do

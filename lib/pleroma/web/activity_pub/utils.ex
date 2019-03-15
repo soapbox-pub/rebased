@@ -3,17 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
-  alias Pleroma.Repo
-  alias Pleroma.Web
-  alias Pleroma.Object
-  alias Pleroma.Activity
-  alias Pleroma.Web.ActivityPub.Visibility
-  alias Pleroma.User
-  alias Pleroma.Notification
-  alias Pleroma.Web.Router.Helpers
-  alias Pleroma.Web.Endpoint
   alias Ecto.Changeset
   alias Ecto.UUID
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web
+  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.Router.Helpers
 
   import Ecto.Query
 

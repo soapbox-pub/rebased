@@ -4,8 +4,8 @@
 
 defmodule Mix.Tasks.Pleroma.Relay do
   use Mix.Task
-  alias Pleroma.Web.ActivityPub.Relay
   alias Mix.Tasks.Pleroma.Common
+  alias Pleroma.Web.ActivityPub.Relay
 
   @shortdoc "Manages remote relays"
   @moduledoc """

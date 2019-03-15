@@ -5,12 +5,13 @@
 defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
-  alias Pleroma.User
-  alias Pleroma.Notification
   alias Pleroma.Activity
+  alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.MastodonAPI.NotificationView
 
   @keepalive_interval :timer.seconds(30)
 
@@ -106,10 +107,10 @@ defmodule Pleroma.Web.Streamer do
         %{
           event: "notification",
           payload:
-            Pleroma.Web.MastodonAPI.MastodonAPIController.render_notification(
-              socket.assigns["user"],
-              item
-            )
+            NotificationView.render("show.json", %{
+              notification: item,
+              for: socket.assigns["user"]
+            })
             |> Jason.encode!()
         }
         |> Jason.encode!()

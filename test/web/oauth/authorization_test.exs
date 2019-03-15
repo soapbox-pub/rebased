@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Web.OAuth.AuthorizationTest do
   use Pleroma.DataCase
-  alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web.OAuth.Authorization
   import Pleroma.Factory
 
   setup do

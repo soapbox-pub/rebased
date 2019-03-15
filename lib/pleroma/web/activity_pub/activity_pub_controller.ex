@@ -6,15 +6,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   use Pleroma.Web, :controller
 
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.Object
-  alias Pleroma.Web.ActivityPub.ObjectView
-  alias Pleroma.Web.ActivityPub.UserView
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
 
   require Logger
