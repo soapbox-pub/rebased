@@ -730,12 +730,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> render("relationship.json", %{user: follower, target: followed})
     else
       true ->
-        case conn.params["reblogs"] do
-          true -> CommonAPI.show_reblogs(follower, id)
-          false -> CommonAPI.hide_reblogs(follower, id)
-        end
-
         followed = User.get_cached_by_id(id)
+
+        {:ok, follower} =
+          case conn.params["reblogs"] do
+            true -> CommonAPI.show_reblogs(follower, followed)
+            false -> CommonAPI.hide_reblogs(follower, followed)
+          end
 
         conn
         |> put_view(AccountView)

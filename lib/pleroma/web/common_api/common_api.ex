@@ -300,17 +300,21 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def hide_reblogs(user, id) do
-    if id not in user.info.muted_reblogs do
-      info_changeset = User.Info.add_reblog_mute(user.info, id)
+  def hide_reblogs(user, muted) do
+    ap_id = muted.ap_id
+
+    if ap_id not in user.info.muted_reblogs do
+      info_changeset = User.Info.add_reblog_mute(user.info, ap_id)
       changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
       User.update_and_set_cache(changeset)
     end
   end
 
-  def show_reblogs(user, id) do
-    if id in user.info.muted_reblogs do
-      info_changeset = User.Info.remove_reblog_mute(user.info, id)
+  def show_reblogs(user, muted) do
+    ap_id = muted.ap_id
+
+    if ap_id in user.info.muted_reblogs do
+      info_changeset = User.Info.remove_reblog_mute(user.info, ap_id)
       changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
       User.update_and_set_cache(changeset)
     end

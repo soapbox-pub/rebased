@@ -261,14 +261,14 @@ defmodule Pleroma.User.Info do
     }
   end
   
-  def add_reblog_mute(info, id) do
-    params = %{muted_reblogs: info.muted_reblogs ++ [id]}
+  def add_reblog_mute(info, ap_id) do
+    params = %{muted_reblogs: info.muted_reblogs ++ [ap_id]}
 
     cast(info, params, [:muted_reblogs])
   end
 
-  def remove_reblog_mute(info, id) do
-    params = %{muted_reblogs: List.delete(info.muted_reblogs, id)}
+  def remove_reblog_mute(info, ap_id) do
+    params = %{muted_reblogs: List.delete(info.muted_reblogs, ap_id)}
 
     cast(info, params, [:muted_reblogs])
   end

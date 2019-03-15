@@ -221,4 +221,27 @@ defmodule Pleroma.Web.CommonAPITest do
              } = flag_activity
     end
   end
+
+  describe "reblog muting" do
+    setup do
+      muter = insert(:user)
+
+      muted = insert(:user)
+
+      [muter: muter, muted: muted]
+    end
+
+    test "add a reblog mute", %{muter: muter, muted: muted} do
+      {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
+
+      assert Pleroma.User.showing_reblogs?(muter, muted) == false
+    end
+
+    test "remove a reblog mute", %{muter: muter, muted: muted} do
+      {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
+      {:ok, muter} = CommonAPI.show_reblogs(muter, muted)
+
+      assert Pleroma.User.showing_reblogs?(muter, muted) == true
+    end
+  end
 end

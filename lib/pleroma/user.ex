@@ -1387,6 +1387,6 @@ defmodule Pleroma.User do
   end
 
   def showing_reblogs?(%User{} = user, %User{} = target) do
-    target.id not in user.info.muted_reblogs
+    target.ap_id not in user.info.muted_reblogs
   end
 end

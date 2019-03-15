@@ -200,7 +200,7 @@ defmodule Pleroma.Web.Streamer do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
         blocks = user.info.blocks || []
         mutes = user.info.mutes || []
-        reblog_mutes = user.info.reblog_mutes || []
+        reblog_mutes = user.info.muted_reblogs || []
 
         parent = Object.normalize(item.data["object"])
 
