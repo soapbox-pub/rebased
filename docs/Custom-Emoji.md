@@ -1,3 +1,5 @@
+# Custom emoji
+
 To add custom emoji:
 * Add the image file(s) to `priv/static/emoji/custom`
 * In case of conflicts: add the desired shortcode with the path to `config/custom_emoji.txt`, comma-separated and one per line

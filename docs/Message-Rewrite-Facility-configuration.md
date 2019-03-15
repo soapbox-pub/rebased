@@ -1,3 +1,4 @@
+# Message Rewrite Facility configuration
 The Message Rewrite Facility (MRF) is a subsystem that is implemented as a series of hooks that allows the administrator to rewrite or discard messages.
 
 Possible uses include:
