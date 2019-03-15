@@ -260,7 +260,7 @@ defmodule Pleroma.User.Info do
       moderator: is_moderator
     }
   end
-  
+
   def add_reblog_mute(info, ap_id) do
     params = %{muted_reblogs: info.muted_reblogs ++ [ap_id]}
 
