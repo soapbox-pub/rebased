@@ -316,9 +316,9 @@ defmodule Pleroma.ReverseProxy do
           {{"content-disposition", content_disposition_string}, _} =
             List.keytake(headers, "content-disposition", 0)
 
-          [name] =
+          [name | _] =
             Regex.run(
-              ~r/filename=\"(.*)\"/u,
+              ~r/filename="((?:[^"\\]|\\.)*)"/u,
               content_disposition_string || "",
               capture: :all_but_first
             )
@@ -328,7 +328,7 @@ defmodule Pleroma.ReverseProxy do
           MatchError -> Keyword.get(opts, :attachment_name, "attachment")
         end
 
-      disposition = "attachment; filename=" <> name
+      disposition = "attachment; filename=\"#{name}\""
 
       List.keystore(headers, "content-disposition", 0, {"content-disposition", disposition})
     else
