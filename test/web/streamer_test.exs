@@ -207,7 +207,7 @@ defmodule Pleroma.Web.StreamerTest do
     user1 = insert(:user)
     user2 = insert(:user)
     user3 = insert(:user)
-    CommonAPI.hide_reblogs(user1, user2.ap_id)
+    CommonAPI.hide_reblogs(user1, user2)
 
     task =
       Task.async(fn ->
