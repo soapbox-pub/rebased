@@ -190,6 +190,12 @@ defmodule Pleroma.Web.Router do
       post("/blocks_import", UtilController, :blocks_import)
       post("/follow_import", UtilController, :follow_import)
     end
+
+    scope [] do
+      pipe_through(:oauth_read)
+
+      post("/notifications/read", UtilController, :notifications_read)
+    end
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
