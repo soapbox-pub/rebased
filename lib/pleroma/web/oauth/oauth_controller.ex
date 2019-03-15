@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
-  alias Comeonin.Pbkdf2
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.Auth.Authenticator
@@ -126,11 +125,10 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   def token_exchange(
         conn,
-        %{"grant_type" => "password", "username" => name, "password" => password} = params
+        %{"grant_type" => "password"} = params
       ) do
-    with %App{} = app <- get_app_from_request(conn, params),
-         %User{} = user <- User.get_by_nickname_or_email(name),
-         true <- Pbkdf2.checkpw(password, user.password_hash),
+    with {_, {:ok, %User{} = user}} <- {:get_user, Authenticator.get_user(conn)},
+         %App{} = app <- get_app_from_request(conn, params),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          scopes <- oauth_scopes(params, app.scopes),
          [] <- scopes -- app.scopes,

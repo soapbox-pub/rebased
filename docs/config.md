@@ -331,3 +331,26 @@ config :auto_linker,
     rel: false
   ]
 ```
+
+## :ldap
+
+Use LDAP for user authentication.  When a user logs in to the Pleroma
+instance, the name and password will be verified by trying to authenticate
+(bind) to an LDAP server.  If a user exists in the LDAP directory but there
+is no account with the same name yet on the Pleroma instance then a new
+Pleroma account will be created with the same name as the LDAP user name.
+
+* `enabled`: enables LDAP authentication
+* `host`: LDAP server hostname
+* `port`: LDAP port, e.g. 389 or 636
+* `ssl`: true to use SSL, usually implies the port 636
+* `sslopts`: additional SSL options
+* `tls`: true to start TLS, usually implies the port 389
+* `tlsopts`: additional TLS options
+* `base`: LDAP base, e.g. "dc=example,dc=com"
+* `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
+
+## Pleroma.Web.Auth.Authenticator
+
+* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
+* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
