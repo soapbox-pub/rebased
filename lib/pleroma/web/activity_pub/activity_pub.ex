@@ -964,8 +964,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     entire_thread_visible_for_user?(activity, user)
   end
 
-  def contain_muted_boosts(%Activity{} = _activity, %User{} = _user), do: true
-
   # do post-processing on a specific activity
   def contain_activity(%Activity{} = activity, %User{} = user) do
     contain_broken_threads(activity, user)
