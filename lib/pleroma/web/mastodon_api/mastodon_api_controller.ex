@@ -22,6 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
   alias Pleroma.Web.MastodonAPI.MastodonView
+  alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.ReportView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
@@ -503,19 +504,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def notifications(%{assigns: %{user: user}} = conn, params) do
     notifications = Notification.for_user(user, params)
 
-    result =
-      notifications
-      |> Enum.map(fn x -> render_notification(user, x) end)
-      |> Enum.filter(& &1)
-
     conn
     |> add_link_headers(:notifications, notifications)
-    |> json(result)
+    |> put_view(NotificationView)
+    |> render("index.json", %{notifications: notifications, for: user})
   end
 
   def get_notification(%{assigns: %{user: user}} = conn, %{"id" => id} = _params) do
     with {:ok, notification} <- Notification.get(user, id) do
-      json(conn, render_notification(user, notification))
+      conn
+      |> put_view(NotificationView)
+      |> render("show.json", %{notification: notification, for: user})
     else
       {:error, reason} ->
         conn
@@ -1307,45 +1306,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def empty_object(conn, _) do
     Logger.debug("Unimplemented, returning an empty object")
     json(conn, %{})
-  end
-
-  def render_notification(user, %{id: id, activity: activity, inserted_at: created_at} = _params) do
-    actor = User.get_cached_by_ap_id(activity.data["actor"])
-    parent_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
-    mastodon_type = Activity.mastodon_notification_type(activity)
-
-    response = %{
-      id: to_string(id),
-      type: mastodon_type,
-      created_at: CommonAPI.Utils.to_masto_date(created_at),
-      account: AccountView.render("account.json", %{user: actor, for: user})
-    }
-
-    case mastodon_type do
-      "mention" ->
-        response
-        |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: activity, for: user})
-        })
-
-      "favourite" ->
-        response
-        |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: parent_activity, for: user})
-        })
-
-      "reblog" ->
-        response
-        |> Map.merge(%{
-          status: StatusView.render("status.json", %{activity: parent_activity, for: user})
-        })
-
-      "follow" ->
-        response
-
-      _ ->
-        nil
-    end
   end
 
   def get_filters(%{assigns: %{user: user}} = conn, _) do
