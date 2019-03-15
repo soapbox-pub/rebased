@@ -15,20 +15,57 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
 
-  plug(Ueberauth)
+  if Pleroma.Config.get([:auth, :oauth_consumer_enabled]), do: plug(Ueberauth)
+
   plug(:fetch_session)
   plug(:fetch_flash)
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
-  def callback(%{assigns: %{ueberauth_failure: _failure}} = conn, _params) do
+  def request(conn, params) do
+    message =
+      if params["provider"] do
+        "Unsupported OAuth provider: #{params["provider"]}."
+      else
+        "Bad OAuth request."
+      end
+
     conn
-    |> put_flash(:error, "Failed to authenticate.")
+    |> put_flash(:error, message)
     |> redirect(to: "/")
   end
 
-  def callback(%{assigns: %{ueberauth_auth: _auth}} = _conn, _params) do
-    raise "Authenticated successfully. Sign up via OAuth is not yet implemented."
+  def callback(%{assigns: %{ueberauth_failure: failure}} = conn, %{"redirect_uri" => redirect_uri}) do
+    messages = for e <- Map.get(failure, :errors, []), do: e.message
+    message = Enum.join(messages, "; ")
+
+    conn
+    |> put_flash(:error, "Failed to authenticate: #{message}.")
+    |> redirect(external: redirect_uri(conn, redirect_uri))
+  end
+
+  def callback(
+        conn,
+        %{"client_id" => client_id, "redirect_uri" => redirect_uri} = params
+      ) do
+    with {:ok, user} <- Authenticator.get_or_create_user_by_oauth(conn, params) do
+      do_create_authorization(
+        conn,
+        %{
+          "authorization" => %{
+            "client_id" => client_id,
+            "redirect_uri" => redirect_uri,
+            "scope" => oauth_scopes(params, nil)
+          }
+        },
+        user
+      )
+    else
+      _ ->
+        conn
+        |> put_flash(:error, "Failed to set up user account.")
+        |> redirect(external: redirect_uri(conn, redirect_uri))
+    end
   end
 
   def authorize(conn, params) do
@@ -47,14 +84,21 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     })
   end
 
-  def create_authorization(conn, %{
-        "authorization" =>
-          %{
-            "client_id" => client_id,
-            "redirect_uri" => redirect_uri
-          } = auth_params
-      }) do
-    with {_, {:ok, %User{} = user}} <- {:get_user, Authenticator.get_user(conn)},
+  def create_authorization(conn, params), do: do_create_authorization(conn, params, nil)
+
+  defp do_create_authorization(
+         conn,
+         %{
+           "authorization" =>
+             %{
+               "client_id" => client_id,
+               "redirect_uri" => redirect_uri
+             } = auth_params
+         } = params,
+         user
+       ) do
+    with {_, {:ok, %User{} = user}} <-
+           {:get_user, (user && {:ok, user}) || Authenticator.get_user(conn, params)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
          scopes <- oauth_scopes(auth_params, []),
@@ -63,13 +107,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          {:missing_scopes, false} <- {:missing_scopes, scopes == []},
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
-      redirect_uri =
-        if redirect_uri == "." do
-          # Special case: Local MastodonFE
-          mastodon_api_url(conn, :login)
-        else
-          redirect_uri
-        end
+      redirect_uri = redirect_uri(conn, redirect_uri)
 
       cond do
         redirect_uri == "urn:ietf:wg:oauth:2.0:oob" ->
@@ -225,4 +263,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       nil
     end
   end
+
+  # Special case: Local MastodonFE
+  defp redirect_uri(conn, "."), do: mastodon_api_url(conn, :login)
+
+  defp redirect_uri(_conn, redirect_uri), do: redirect_uri
 end

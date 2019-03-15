@@ -12,8 +12,13 @@ defmodule Pleroma.Web.Auth.Authenticator do
     )
   end
 
-  @callback get_user(Plug.Conn.t()) :: {:ok, User.t()} | {:error, any()}
-  def get_user(plug), do: implementation().get_user(plug)
+  @callback get_user(Plug.Conn.t(), Map.t()) :: {:ok, User.t()} | {:error, any()}
+  def get_user(plug, params), do: implementation().get_user(plug, params)
+
+  @callback get_or_create_user_by_oauth(Plug.Conn.t(), Map.t()) ::
+              {:ok, User.t()} | {:error, any()}
+  def get_or_create_user_by_oauth(plug, params),
+    do: implementation().get_or_create_user_by_oauth(plug, params)
 
   @callback handle_error(Plug.Conn.t(), any()) :: any()
   def handle_error(plug, error), do: implementation().handle_error(plug, error)

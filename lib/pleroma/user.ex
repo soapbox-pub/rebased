@@ -40,6 +40,8 @@ defmodule Pleroma.User do
     field(:email, :string)
     field(:name, :string)
     field(:nickname, :string)
+    field(:auth_provider, :string)
+    field(:auth_provider_uid, :string)
     field(:password_hash, :string)
     field(:password, :string, virtual: true)
     field(:password_confirmation, :string, virtual: true)
@@ -204,6 +206,36 @@ defmodule Pleroma.User do
 
   def reset_password(user, data) do
     update_and_set_cache(password_update_changeset(user, data))
+  end
+
+  # TODO: FIXME (WIP):
+  def oauth_register_changeset(struct, params \\ %{}) do
+    info_change = User.Info.confirmation_changeset(%User.Info{}, :confirmed)
+
+    changeset =
+      struct
+      |> cast(params, [:email, :nickname, :name, :bio, :auth_provider, :auth_provider_uid])
+      |> validate_required([:auth_provider, :auth_provider_uid])
+      |> unique_constraint(:email)
+      |> unique_constraint(:nickname)
+      |> validate_exclusion(:nickname, Pleroma.Config.get([Pleroma.User, :restricted_nicknames]))
+      |> validate_format(:email, @email_regex)
+      |> validate_length(:bio, max: 1000)
+      |> put_change(:info, info_change)
+
+    if changeset.valid? do
+      nickname = changeset.changes[:nickname]
+      ap_id = (nickname && User.ap_id(%User{nickname: nickname})) || nil
+      followers = User.ap_followers(%User{nickname: ap_id})
+
+      changeset
+      |> put_change(:ap_id, ap_id)
+      |> unique_constraint(:ap_id)
+      |> put_change(:following, [followers])
+      |> put_change(:follower_address, followers)
+    else
+      changeset
+    end
   end
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
@@ -504,12 +536,18 @@ defmodule Pleroma.User do
       end
   end
 
+  def get_by_email(email), do: Repo.get_by(User, email: email)
+
   def get_by_nickname_or_email(nickname_or_email) do
-    case user = Repo.get_by(User, nickname: nickname_or_email) do
-      %User{} -> user
-      nil -> Repo.get_by(User, email: nickname_or_email)
-    end
+    get_by_nickname(nickname_or_email) || get_by_email(nickname_or_email)
   end
+
+  def get_by_auth_provider_uid(auth_provider, auth_provider_uid),
+    do:
+      Repo.get_by(User,
+        auth_provider: to_string(auth_provider),
+        auth_provider_uid: to_string(auth_provider_uid)
+      )
 
   def get_cached_user_info(user) do
     key = "user_info:#{user.id}"

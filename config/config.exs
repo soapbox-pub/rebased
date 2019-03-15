@@ -369,11 +369,15 @@ config :auto_linker,
     rel: false
   ]
 
+config :pleroma, :auth, oauth_consumer_enabled: false
+
 config :ueberauth,
        Ueberauth,
        base_path: "/oauth",
        providers: [
-         twitter: {Ueberauth.Strategy.Twitter, []}
+         twitter:
+           {Ueberauth.Strategy.Twitter,
+            [callback_params: ~w[client_id redirect_uri scope scopes]]}
        ]
 
 config :ueberauth, Ueberauth.Strategy.Twitter.OAuth,

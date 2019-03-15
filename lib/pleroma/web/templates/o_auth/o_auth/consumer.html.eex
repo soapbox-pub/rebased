@@ -1,0 +1,14 @@
+<h2>External OAuth Authorization</h2>
+<%= form_for @conn, o_auth_path(@conn, :request, :twitter), [method: "get"], fn f -> %>
+  <div class="scopes-input">
+  <%= label f, :scope, "Permissions" %>
+  <div class="scopes">
+    <%= text_input f, :scope, value: Enum.join(@available_scopes, " ") %>
+  </div>
+  </div>
+
+  <%= hidden_input f, :client_id, value: @client_id %>
+  <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
+  <%= hidden_input f, :state, value: @state%>
+  <%= submit "Sign in with Twitter" %>
+<% end %>

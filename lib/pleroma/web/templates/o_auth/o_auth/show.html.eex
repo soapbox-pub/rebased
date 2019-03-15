@@ -36,7 +36,7 @@
 <%= submit "Authorize" %>
 <% end %>
 
-<br>
-<%= link to: "/oauth/twitter", class: "alert alert-info" do %>
-  Sign in with Twitter
+<%= if Pleroma.Config.get([:auth, :oauth_consumer_enabled]) do %>
+  <br>
+  <%= render @view_module, "consumer.html", assigns %>
 <% end %>
