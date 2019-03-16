@@ -144,7 +144,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       muting_notifications: false,
       requested: false,
       domain_blocking: false,
-      showing_reblogs: false,
+      showing_reblogs: true,
       endorsed: false
     }
 
@@ -202,7 +202,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           muting_notifications: false,
           requested: false,
           domain_blocking: false,
-          showing_reblogs: false,
+          showing_reblogs: true,
           endorsed: false
         }
       }

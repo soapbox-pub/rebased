@@ -424,6 +424,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert length(activities) == 20
       assert last == last_expected
     end
+
+    test "doesn't return reblogs for users for whom reblogs have been muted" do
+      activity = insert(:note_activity)
+      user = insert(:user)
+      booster = insert(:user)
+      {:ok, user} = CommonAPI.hide_reblogs(user, booster)
+
+      {:ok, activity, _} = CommonAPI.repeat(activity.id, booster)
+
+      activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+      refute Enum.member?(activities, activity)
+    end
   end
 
   describe "like an object" do

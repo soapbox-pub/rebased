@@ -10,6 +10,7 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.MastodonAPI.NotificationView
 
@@ -199,10 +200,12 @@ defmodule Pleroma.Web.Streamer do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
         blocks = user.info.blocks || []
         mutes = user.info.mutes || []
+        reblog_mutes = user.info.muted_reblogs || []
 
         parent = Object.normalize(item.data["object"])
 
         unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
+                 item.actor in reblog_mutes or not ActivityPub.contain_activity(item, user) or
                  parent.data["actor"] in blocks or parent.data["actor"] in mutes do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
@@ -233,7 +236,8 @@ defmodule Pleroma.Web.Streamer do
         blocks = user.info.blocks || []
         mutes = user.info.mutes || []
 
-        unless item.actor in blocks or item.actor in mutes do
+        unless item.actor in blocks or item.actor in mutes or
+                 not ActivityPub.contain_activity(item, user) do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else

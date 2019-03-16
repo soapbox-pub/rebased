@@ -679,6 +679,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_pinned(query, _), do: query
 
+  defp restrict_muted_reblogs(query, %{"muting_user" => %User{info: info}}) do
+    muted_reblogs = info.muted_reblogs || []
+
+    from(
+      activity in query,
+      where: fragment("not ?->>'type' = 'Announce'", activity.data),
+      where: fragment("not ? = ANY(?)", activity.actor, ^muted_reblogs)
+    )
+  end
+
+  defp restrict_muted_reblogs(query, _), do: query
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query =
       from(
@@ -706,6 +718,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
+    |> restrict_muted_reblogs(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
