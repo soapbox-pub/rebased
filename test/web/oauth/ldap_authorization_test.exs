@@ -11,15 +11,17 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
   import Mock
 
   setup_all do
-    ldap_authenticator = Pleroma.Config.get([Pleroma.Web.Auth.Authenticator])
+    ldap_authenticator =
+      Pleroma.Config.get(Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator)
+
     ldap_enabled = Pleroma.Config.get([:ldap, :enabled])
 
     on_exit(fn ->
-      Pleroma.Config.put([Pleroma.Web.Auth.Authenticator], ldap_authenticator)
+      Pleroma.Config.put(Pleroma.Web.Auth.Authenticator, ldap_authenticator)
       Pleroma.Config.put([:ldap, :enabled], ldap_enabled)
     end)
 
-    Pleroma.Config.put([Pleroma.Web.Auth.Authenticator], Pleroma.Web.Auth.LDAPAuthenticator)
+    Pleroma.Config.put(Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.LDAPAuthenticator)
     Pleroma.Config.put([:ldap, :enabled], true)
 
     :ok
