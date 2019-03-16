@@ -105,6 +105,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          fixed_token = fix_padding(params["code"]),
          %Authorization{} = auth <-
            Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
+         %User{} = user <- Repo.get(User, auth.user_id),
          {:ok, token} <- Token.exchange_token(app, auth),
          {:ok, inserted_at} <- DateTime.from_naive(token.inserted_at, "Etc/UTC") do
       response = %{
@@ -113,7 +114,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         refresh_token: token.refresh_token,
         created_at: DateTime.to_unix(inserted_at),
         expires_in: 60 * 10,
-        scope: Enum.join(token.scopes, " ")
+        scope: Enum.join(token.scopes, " "),
+        me: user.ap_id
       }
 
       json(conn, response)
@@ -142,7 +144,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         access_token: token.token,
         refresh_token: token.refresh_token,
         expires_in: 60 * 10,
-        scope: Enum.join(token.scopes, " ")
+        scope: Enum.join(token.scopes, " "),
+        me: user.ap_id
       }
 
       json(conn, response)
