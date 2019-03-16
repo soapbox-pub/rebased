@@ -370,20 +370,38 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           content: content
         } = params
       ) do
-    additional = params[:additional] || %{}
-
     # only accept false as false value
     local = !(params[:local] == false)
+    forward = !(params[:forward] == false)
 
-    %{
+    additional = params[:additional] || %{}
+
+    params = %{
       actor: actor,
       context: context,
       account: account,
       statuses: statuses,
       content: content
     }
-    |> make_flag_data(additional)
-    |> insert(local)
+
+    additional =
+      if forward do
+        Map.merge(additional, %{"to" => [], "cc" => [account.ap_id]})
+      else
+        Map.merge(additional, %{"to" => [], "cc" => []})
+      end
+
+    with flag_data <- make_flag_data(params, additional),
+         {:ok, activity} <- insert(flag_data, local),
+         :ok <- maybe_federate(activity) do
+      Enum.each(User.all_superusers(), fn superuser ->
+        superuser
+        |> Pleroma.AdminEmail.report(actor, account, statuses, content)
+        |> Pleroma.Mailer.deliver_async()
+      end)
+
+      {:ok, activity}
+    end
   end
 
   def fetch_activities_for_context(context, opts \\ %{}) do
