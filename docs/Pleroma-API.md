@@ -108,3 +108,11 @@ See [Admin-API](Admin-API.md)
 * Response: JSON string. Returns the user flavour or the default one.
 * Example response: "glitch"
 * Note: This is intended to be used only by mastofe
+
+## `/api/pleroma/notifications/read`
+### Mark a single notification as read
+* Method `POST`
+* Authentication: required
+* Params:
+    * `id`: notifications's id
+* Response: JSON. Returns `{"status": "success"}` if the reading was successful, otherwise returns `{"error": "error_msg"}`
