@@ -773,7 +773,7 @@ defmodule Pleroma.User do
         }) :: {:ok, [Pleroma.User.t()], number()}
   def search_for_admin(%{query: nil, local: local, page: page, page_size: page_size}) do
     query =
-      from(u in User, order_by: u.id)
+      from(u in User, order_by: u.nickname)
       |> maybe_local_user_query(local)
 
     paginated_query =
