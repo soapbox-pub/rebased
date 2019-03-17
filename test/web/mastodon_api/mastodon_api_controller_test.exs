@@ -248,6 +248,57 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert status["url"] != direct.data["id"]
   end
 
+  test "Conversations", %{conn: conn} do
+    user_one = insert(:user)
+    user_two = insert(:user)
+
+    {:ok, user_two} = User.follow(user_two, user_one)
+
+    {:ok, direct} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, _follower_only} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "private"
+      })
+
+    res_conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/conversations")
+
+    assert response = json_response(res_conn, 200)
+
+    assert %{
+             "id" => res_id,
+             "accounts" => res_accounts,
+             "last_status" => res_last_status,
+             "unread" => unread
+           } = reponse
+
+    assert unread == false
+
+    # Apparently undocumented API endpoint
+    res_conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/conversations/#{res_id}/read")
+
+    assert response == json_response(res_conn, 200)
+
+    # (vanilla) Mastodon frontend behaviour
+    res_conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/statuses/#{res_last_status.id}/context")
+
+    assert %{ancestors: [], descendants: []} == json_response(res_conn, 200)
+  end
+
   test "doesn't include DMs from blocked users", %{conn: conn} do
     blocker = insert(:user)
     blocked = insert(:user)
