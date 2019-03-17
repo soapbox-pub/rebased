@@ -95,6 +95,13 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
   Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
 
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer"
+  ])
+
   # paragraphs and linebreaks
   Meta.allow_tag_with_these_attributes("br", [])
   Meta.allow_tag_with_these_attributes("p", [])
@@ -136,6 +143,13 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
   Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
+
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer"
+  ])
 
   Meta.allow_tag_with_these_attributes("abbr", ["title"])
 
