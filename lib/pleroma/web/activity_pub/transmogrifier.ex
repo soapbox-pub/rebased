@@ -613,7 +613,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
          %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
-         {:ok, %User{} = blocker = User.get_or_fetch_by_ap_id(blocker),
+         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
       User.unfollow(blocker, blocked)
       User.block(blocker, blocked)
