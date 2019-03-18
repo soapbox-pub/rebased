@@ -492,6 +492,7 @@ defmodule Pleroma.User do
 
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
+
     Cachex.fetch!(:user_cache, key, fn ->
       user_result = get_or_fetch_by_nickname(nickname)
 
