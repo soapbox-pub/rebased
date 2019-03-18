@@ -40,7 +40,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
     end
   end
 
-  def get_or_create_user_by_oauth(conn, params), do: get_user(conn, params)
+  def get_by_external_registration(conn, params), do: get_user(conn, params)
 
   def handle_error(%Plug.Conn{} = _conn, error) do
     error

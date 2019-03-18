@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.Auth.PleromaAuthenticator do
   alias Comeonin.Pbkdf2
   alias Pleroma.User
+  alias Pleroma.Registration
+  alias Pleroma.Repo
 
   @behaviour Pleroma.Web.Auth.Authenticator
 
@@ -27,20 +29,21 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
     end
   end
 
-  def get_or_create_user_by_oauth(
+  def get_by_external_registration(
         %Plug.Conn{assigns: %{ueberauth_auth: %{provider: provider, uid: uid} = auth}},
         _params
       ) do
-    user = User.get_by_auth_provider_uid(provider, uid)
+    registration = Registration.get_by_provider_uid(provider, uid)
 
-    if user do
+    if registration do
+      user = Repo.preload(registration, :user).user
       {:ok, user}
     else
       info = auth.info
       email = info.email
       nickname = info.nickname
 
-      # TODO: FIXME: connect to existing (non-oauth) account (need a UI flow for that) / generate a random nickname?
+      # Note: nullifying email in case this email is already taken
       email =
         if email && User.get_by_email(email) do
           nil
@@ -48,31 +51,39 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
           email
         end
 
+      # Note: generating a random numeric suffix to nickname in case this nickname is already taken
       nickname =
         if nickname && User.get_by_nickname(nickname) do
-          nil
+          "#{nickname}_#{:os.system_time()}"
         else
           nickname
         end
 
-      new_user =
-        User.oauth_register_changeset(
-          %User{},
-          %{
-            auth_provider: to_string(provider),
-            auth_provider_uid: to_string(uid),
-            name: info.name,
-            bio: info.description,
-            email: email,
-            nickname: nickname
-          }
-        )
-
-      Pleroma.Repo.insert(new_user)
+      with {:ok, new_user} <-
+             User.external_registration_changeset(
+               %User{},
+               %{
+                 name: info.name,
+                 bio: info.description,
+                 email: email,
+                 nickname: nickname
+               }
+             )
+             |> Repo.insert(),
+           {:ok, _} <-
+             Registration.changeset(%Registration{}, %{
+               user_id: new_user.id,
+               provider: to_string(provider),
+               uid: to_string(uid),
+               info: %{nickname: info.nickname, email: info.email}
+             })
+             |> Repo.insert() do
+        {:ok, new_user}
+      end
     end
   end
 
-  def get_or_create_user_by_oauth(%Plug.Conn{} = _conn, _params),
+  def get_by_external_registration(%Plug.Conn{} = _conn, _params),
     do: {:error, :missing_credentials}
 
   def handle_error(%Plug.Conn{} = _conn, error) do

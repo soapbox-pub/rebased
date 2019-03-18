@@ -381,7 +381,7 @@ config :pleroma, :ldap,
   base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
   uid: System.get_env("LDAP_UID") || "cn"
 
-config :pleroma, :auth, oauth_consumer_enabled: false
+config :pleroma, :auth, oauth_consumer_enabled: System.get_env("OAUTH_CONSUMER_ENABLED") == "true"
 
 config :ueberauth,
        Ueberauth,

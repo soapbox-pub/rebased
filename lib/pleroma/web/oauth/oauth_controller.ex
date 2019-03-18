@@ -47,7 +47,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         conn,
         %{"client_id" => client_id, "redirect_uri" => redirect_uri} = params
       ) do
-    with {:ok, user} <- Authenticator.get_or_create_user_by_oauth(conn, params) do
+    with {:ok, user} <- Authenticator.get_by_external_registration(conn, params) do
       do_create_authorization(
         conn,
         %{

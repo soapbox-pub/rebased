@@ -13,6 +13,7 @@ defmodule Pleroma.User do
   alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
@@ -41,8 +42,6 @@ defmodule Pleroma.User do
     field(:email, :string)
     field(:name, :string)
     field(:nickname, :string)
-    field(:auth_provider, :string)
-    field(:auth_provider_uid, :string)
     field(:password_hash, :string)
     field(:password, :string, virtual: true)
     field(:password_confirmation, :string, virtual: true)
@@ -56,6 +55,7 @@ defmodule Pleroma.User do
     field(:bookmarks, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime)
     has_many(:notifications, Notification)
+    has_many(:registrations, Registration)
     embeds_one(:info, Pleroma.User.Info)
 
     timestamps()
@@ -210,13 +210,12 @@ defmodule Pleroma.User do
   end
 
   # TODO: FIXME (WIP):
-  def oauth_register_changeset(struct, params \\ %{}) do
+  def external_registration_changeset(struct, params \\ %{}) do
     info_change = User.Info.confirmation_changeset(%User.Info{}, :confirmed)
 
     changeset =
       struct
-      |> cast(params, [:email, :nickname, :name, :bio, :auth_provider, :auth_provider_uid])
-      |> validate_required([:auth_provider, :auth_provider_uid])
+      |> cast(params, [:email, :nickname, :name, :bio])
       |> unique_constraint(:email)
       |> unique_constraint(:nickname)
       |> validate_exclusion(:nickname, Pleroma.Config.get([Pleroma.User, :restricted_nicknames]))
@@ -543,13 +542,6 @@ defmodule Pleroma.User do
   def get_by_nickname_or_email(nickname_or_email) do
     get_by_nickname(nickname_or_email) || get_by_email(nickname_or_email)
   end
-
-  def get_by_auth_provider_uid(auth_provider, auth_provider_uid),
-    do:
-      Repo.get_by(User,
-        auth_provider: to_string(auth_provider),
-        auth_provider_uid: to_string(auth_provider_uid)
-      )
 
   def get_cached_user_info(user) do
     key = "user_info:#{user.id}"
