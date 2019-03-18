@@ -23,6 +23,7 @@ defmodule Pleroma.Registration do
   def changeset(registration, params \\ %{}) do
     registration
     |> cast(params, [:user_id, :provider, :uid, :info])
+    |> validate_required([:provider, :uid])
     |> foreign_key_constraint(:user_id)
     |> unique_constraint(:uid, name: :registrations_provider_uid_index)
   end

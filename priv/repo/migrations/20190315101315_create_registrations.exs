@@ -12,5 +12,6 @@ defmodule Pleroma.Repo.Migrations.CreateRegistrations do
     end
 
     create unique_index(:registrations, [:provider, :uid])
+    create unique_index(:registrations, [:user_id, :provider])
   end
 end
