@@ -502,7 +502,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def notifications(%{assigns: %{user: user}} = conn, params) do
-    notifications = Notification.for_user(user, params)
+    notifications = MastodonAPI.get_notifications(user, params)
 
     conn
     |> add_link_headers(:notifications, notifications)

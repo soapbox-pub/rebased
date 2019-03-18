@@ -7,6 +7,7 @@ defmodule Pleroma.Notification do
 
   alias Pleroma.Activity
   alias Pleroma.Notification
+  alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -28,36 +29,17 @@ defmodule Pleroma.Notification do
     |> cast(attrs, [:seen])
   end
 
-  # TODO: Make generic and unify (see activity_pub.ex)
-  defp restrict_max(query, %{"max_id" => max_id}) do
-    from(activity in query, where: activity.id < ^max_id)
+  def for_user_query(user) do
+    Notification
+    |> where(user_id: ^user.id)
+    |> join(:inner, [n], activity in assoc(n, :activity))
+    |> preload(:activity)
   end
-
-  defp restrict_max(query, _), do: query
-
-  defp restrict_since(query, %{"since_id" => since_id}) do
-    from(activity in query, where: activity.id > ^since_id)
-  end
-
-  defp restrict_since(query, _), do: query
 
   def for_user(user, opts \\ %{}) do
-    query =
-      from(
-        n in Notification,
-        where: n.user_id == ^user.id,
-        order_by: [desc: n.id],
-        join: activity in assoc(n, :activity),
-        preload: [activity: activity],
-        limit: 20
-      )
-
-    query =
-      query
-      |> restrict_since(opts)
-      |> restrict_max(opts)
-
-    Repo.all(query)
+    user
+    |> for_user_query()
+    |> Pagination.fetch_paginated(opts)
   end
 
   def set_read_up_to(%{id: user_id} = _user, id) do
