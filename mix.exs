@@ -23,11 +23,14 @@ defmodule Pleroma.Mixfile do
         logo: "priv/static/static/logo.png",
         extras: [
           "README.md",
-          "docs/config.md",
-          "docs/Pleroma-API.md",
           "docs/Admin-API.md",
           "docs/Clients.md",
-          "docs/Differences-in-MastodonAPI-Responses.md"
+          "docs/config.md",
+          "docs/Custom-Emoji.md",
+          "docs/Differences-in-MastodonAPI-Responses.md",
+          "docs/Message-Rewrite-Facility-configuration.md",
+          "docs/Pleroma-API.md",
+          "docs/static_dir.md"
         ],
         main: "readme",
         output: "priv/static/doc"

@@ -132,11 +132,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         "client_secret" => app.client_secret
       })
 
-    assert %{"access_token" => token} = json_response(conn, 200)
+    assert %{"access_token" => token, "me" => ap_id} = json_response(conn, 200)
 
     token = Repo.get_by(Token, token: token)
     assert token
     assert token.scopes == auth.scopes
+    assert user.ap_id == ap_id
   end
 
   test "issues a token for `password` grant_type with valid credentials, with full permissions by default" do

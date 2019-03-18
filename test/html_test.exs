@@ -10,6 +10,8 @@ defmodule Pleroma.HTMLTest do
     <b>this is in bold</b>
     <p>this is a paragraph</p>
     this is a linebreak<br />
+    this is a link with allowed "rel" attribute: <a href="http://example.com/" rel="tag">example.com</a>
+    this is a link with not allowed "rel" attribute: <a href="http://example.com/" rel="tag noallowed">example.com</a>
     this is an image: <img src="http://example.com/image.jpg"><br />
     <script>alert('hacked')</script>
   """
@@ -24,6 +26,8 @@ defmodule Pleroma.HTMLTest do
       this is in bold
         this is a paragraph
         this is a linebreak
+        this is a link with allowed "rel" attribute: example.com
+        this is a link with not allowed "rel" attribute: example.com
         this is an image: 
         alert('hacked')
       """
@@ -44,6 +48,8 @@ defmodule Pleroma.HTMLTest do
       this is in bold
         <p>this is a paragraph</p>
         this is a linebreak<br />
+        this is a link with allowed "rel" attribute: <a href="http://example.com/" rel="tag">example.com</a>
+        this is a link with not allowed "rel" attribute: <a href="http://example.com/">example.com</a>
         this is an image: <img src="http://example.com/image.jpg" /><br />
         alert('hacked')
       """
@@ -66,6 +72,8 @@ defmodule Pleroma.HTMLTest do
       <b>this is in bold</b>
         <p>this is a paragraph</p>
         this is a linebreak<br />
+        this is a link with allowed "rel" attribute: <a href="http://example.com/" rel="tag">example.com</a>
+        this is a link with not allowed "rel" attribute: <a href="http://example.com/">example.com</a>
         this is an image: <img src="http://example.com/image.jpg" /><br />
         alert('hacked')
       """

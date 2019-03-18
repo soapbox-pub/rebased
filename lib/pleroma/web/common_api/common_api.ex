@@ -284,19 +284,34 @@ defmodule Pleroma.Web.CommonAPI do
              actor: user,
              account: account,
              statuses: statuses,
-             content: content_html
+             content: content_html,
+             forward: data["forward"] || false
            }) do
-      Enum.each(User.all_superusers(), fn superuser ->
-        superuser
-        |> Pleroma.AdminEmail.report(user, account, statuses, content_html)
-        |> Pleroma.Mailer.deliver_async()
-      end)
-
       {:ok, activity}
     else
       {:error, err} -> {:error, err}
       {:account_id, %{}} -> {:error, "Valid `account_id` required"}
       {:account, nil} -> {:error, "Account not found"}
+    end
+  end
+
+  def hide_reblogs(user, muted) do
+    ap_id = muted.ap_id
+
+    if ap_id not in user.info.muted_reblogs do
+      info_changeset = User.Info.add_reblog_mute(user.info, ap_id)
+      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
+      User.update_and_set_cache(changeset)
+    end
+  end
+
+  def show_reblogs(user, muted) do
+    ap_id = muted.ap_id
+
+    if ap_id in user.info.muted_reblogs do
+      info_changeset = User.Info.remove_reblog_mute(user.info, ap_id)
+      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
+      User.update_and_set_cache(changeset)
     end
   end
 end

@@ -55,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       muting_notifications: false,
       requested: requested,
       domain_blocking: false,
-      showing_reblogs: false,
+      showing_reblogs: User.showing_reblogs?(user, target),
       endorsed: false
     }
   end

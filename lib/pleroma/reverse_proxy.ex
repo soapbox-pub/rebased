@@ -311,7 +311,25 @@ defmodule Pleroma.ReverseProxy do
       end
 
     if attachment? do
-      disposition = "attachment; filename=" <> Keyword.get(opts, :attachment_name, "attachment")
+      name =
+        try do
+          {{"content-disposition", content_disposition_string}, _} =
+            List.keytake(headers, "content-disposition", 0)
+
+          [name | _] =
+            Regex.run(
+              ~r/filename="((?:[^"\\]|\\.)*)"/u,
+              content_disposition_string || "",
+              capture: :all_but_first
+            )
+
+          name
+        rescue
+          MatchError -> Keyword.get(opts, :attachment_name, "attachment")
+        end
+
+      disposition = "attachment; filename=\"#{name}\""
+
       List.keystore(headers, "content-disposition", 0, {"content-disposition", disposition})
     else
       headers

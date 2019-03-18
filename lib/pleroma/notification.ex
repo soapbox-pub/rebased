@@ -13,6 +13,7 @@ defmodule Pleroma.Notification do
   alias Pleroma.Web.CommonAPI.Utils
 
   import Ecto.Query
+  import Ecto.Changeset
 
   schema "notifications" do
     field(:seen, :boolean, default: false)
@@ -20,6 +21,11 @@ defmodule Pleroma.Notification do
     belongs_to(:activity, Activity, type: Pleroma.FlakeId)
 
     timestamps()
+  end
+
+  def changeset(%Notification{} = notification, attrs) do
+    notification
+    |> cast(attrs, [:seen])
   end
 
   # TODO: Make generic and unify (see activity_pub.ex)
@@ -66,6 +72,14 @@ defmodule Pleroma.Notification do
       )
 
     Repo.update_all(query, [])
+  end
+
+  def read_one(%User{} = user, notification_id) do
+    with {:ok, %Notification{} = notification} <- get(user, notification_id) do
+      notification
+      |> changeset(%{seen: true})
+      |> Repo.update()
+    end
   end
 
   def get(%{id: user_id} = _user, id) do
