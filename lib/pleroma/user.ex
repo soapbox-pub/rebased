@@ -411,7 +411,7 @@ defmodule Pleroma.User do
     Enum.map(
       followed_identifiers,
       fn followed_identifier ->
-        with %User{} = followed <- get_or_fetch(followed_identifier),
+        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
              {:ok, follower} <- maybe_direct_follow(follower, followed),
              {:ok, _} <- ActivityPub.follow(follower, followed) do
           followed
@@ -492,7 +492,14 @@ defmodule Pleroma.User do
 
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
-    Cachex.fetch!(:user_cache, key, fn _ -> get_or_fetch_by_nickname(nickname) end)
+    Cachex.fetch!(:user_cache, key, fn ->
+      user_result = get_or_fetch_by_nickname(nickname)
+
+      case user_result do
+        {:ok, user} -> {:commit, user}
+        {:error, error} -> {:ignore, error}
+      end
+    end)
   end
 
   def get_cached_by_nickname_or_id(nickname_or_id) do
@@ -529,7 +536,7 @@ defmodule Pleroma.User do
 
   def get_or_fetch_by_nickname(nickname) do
     with %User{} = user <- get_by_nickname(nickname) do
-      user
+      {:ok, user}
     else
       _e ->
         with [_nick, _domain] <- String.split(nickname, "@"),
@@ -538,9 +545,9 @@ defmodule Pleroma.User do
             {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
           end
 
-          user
+          {:ok, user}
         else
-          _e -> nil
+          _e -> {:error, "Error"}
         end
     end
   end
@@ -939,7 +946,7 @@ defmodule Pleroma.User do
     Enum.map(
       blocked_identifiers,
       fn blocked_identifier ->
-        with %User{} = blocked <- get_or_fetch(blocked_identifier),
+        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
              {:ok, blocker} <- block(blocker, blocked),
              {:ok, _} <- ActivityPub.block(blocker, blocked) do
           blocked
@@ -1157,17 +1164,19 @@ defmodule Pleroma.User do
     user = get_by_ap_id(ap_id)
 
     if !is_nil(user) and !User.needs_update?(user) do
-      user
+      {:ok, user}
     else
       user = fetch_by_ap_id(ap_id)
 
-      if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
-        with %User{} = user do
+      with %User{} = user do
+        if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
           {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
         end
-      end
 
-      user
+        {:ok, user}
+      else
+        _ -> {:error, "Could not fetch by AP id"}
+      end
     end
   end
 
@@ -1209,7 +1218,7 @@ defmodule Pleroma.User do
   end
 
   def get_public_key_for_ap_id(ap_id) do
-    with %User{} = user <- get_or_fetch_by_ap_id(ap_id),
+    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
          {:ok, public_key} <- public_key_from_info(user.info) do
       {:ok, public_key}
     else
