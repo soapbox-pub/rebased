@@ -30,6 +30,14 @@ Has these additional fields under the `pleroma` object:
 
 - `/api/v1/accounts/:id`: The `id` parameter can also be the `nickname` of the user. This only works in this endpoint, not the deeper nested ones for following etc.
 
+Has these additional fields under the `pleroma` object:
+
+- `tags`: Lists an array of tags for the user
+- `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/api/entities/#relationship
+- `is_moderator`: boolean, true if user is a moderator
+- `is_admin`: boolean, true if user is an admin
+- `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
+
 ## Notifications
 
 Has these additional fields under the `pleroma` object:
