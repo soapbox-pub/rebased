@@ -209,35 +209,6 @@ defmodule Pleroma.User do
     update_and_set_cache(password_update_changeset(user, data))
   end
 
-  # TODO: FIXME (WIP):
-  def external_registration_changeset(struct, params \\ %{}) do
-    info_change = User.Info.confirmation_changeset(%User.Info{}, :confirmed)
-
-    changeset =
-      struct
-      |> cast(params, [:email, :nickname, :name, :bio])
-      |> unique_constraint(:email)
-      |> unique_constraint(:nickname)
-      |> validate_exclusion(:nickname, Pleroma.Config.get([Pleroma.User, :restricted_nicknames]))
-      |> validate_format(:email, @email_regex)
-      |> validate_length(:bio, max: 1000)
-      |> put_change(:info, info_change)
-
-    if changeset.valid? do
-      nickname = changeset.changes[:nickname]
-      ap_id = (nickname && User.ap_id(%User{nickname: nickname})) || nil
-      followers = User.ap_followers(%User{nickname: ap_id})
-
-      changeset
-      |> put_change(:ap_id, ap_id)
-      |> unique_constraint(:ap_id)
-      |> put_change(:following, [followers])
-      |> put_change(:follower_address, followers)
-    else
-      changeset
-    end
-  end
-
   def register_changeset(struct, params \\ %{}, opts \\ []) do
     confirmation_status =
       if opts[:confirmed] || !Pleroma.Config.get([:instance, :account_activation_required]) do
@@ -251,7 +222,7 @@ defmodule Pleroma.User do
     changeset =
       struct
       |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
-      |> validate_required([:email, :name, :nickname, :password, :password_confirmation])
+      |> validate_required([:name, :nickname, :password, :password_confirmation])
       |> validate_confirmation(:password)
       |> unique_constraint(:email)
       |> unique_constraint(:nickname)
@@ -261,6 +232,13 @@ defmodule Pleroma.User do
       |> validate_length(:bio, max: 1000)
       |> validate_length(:name, min: 1, max: 100)
       |> put_change(:info, info_change)
+
+    changeset =
+      if opts[:external] do
+        changeset
+      else
+        validate_required(changeset, [:email])
+      end
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])

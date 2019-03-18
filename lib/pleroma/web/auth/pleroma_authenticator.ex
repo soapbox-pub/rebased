@@ -54,20 +54,26 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
       # Note: generating a random numeric suffix to nickname in case this nickname is already taken
       nickname =
         if nickname && User.get_by_nickname(nickname) do
-          "#{nickname}_#{:os.system_time()}"
+          "#{nickname}#{:os.system_time()}"
         else
           nickname
         end
 
+      random_password = :crypto.strong_rand_bytes(64) |> Base.encode64()
+
       with {:ok, new_user} <-
-             User.external_registration_changeset(
+             User.register_changeset(
                %User{},
                %{
                  name: info.name,
                  bio: info.description,
                  email: email,
-                 nickname: nickname
-               }
+                 nickname: nickname,
+                 password: random_password,
+                 password_confirmation: random_password
+               },
+               external: true,
+               confirmed: true
              )
              |> Repo.insert(),
            {:ok, _} <-
