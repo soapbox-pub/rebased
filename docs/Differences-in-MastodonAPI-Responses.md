@@ -29,3 +29,9 @@ Has these additional fields under the `pleroma` object:
 ## Accounts
 
 - `/api/v1/accounts/:id`: The `id` parameter can also be the `nickname` of the user. This only works in this endpoint, not the deeper nested ones for following etc.
+
+## Notifications
+
+Has these additional fields under the `pleroma` object:
+
+- `is_seen`: true if the notification was read by the user
