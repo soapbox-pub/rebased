@@ -547,7 +547,7 @@ defmodule Pleroma.User do
 
           {:ok, user}
         else
-          _e -> {:error, "Error"}
+          e -> {:error, e}
         end
     end
   end
