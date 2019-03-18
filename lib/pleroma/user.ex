@@ -1167,9 +1167,7 @@ defmodule Pleroma.User do
     if !is_nil(user) and !User.needs_update?(user) do
       {:ok, user}
     else
-      user = fetch_by_ap_id(ap_id)
-
-      with %User{} = user do
+      with %User{} = user <- fetch_by_ap_id(ap_id) do
         if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
           {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
         end
