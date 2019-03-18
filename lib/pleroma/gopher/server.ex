@@ -66,7 +66,8 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
   def link(name, selector, type \\ 1) do
     address = Pleroma.Web.Endpoint.host()
     port = Pleroma.Config.get([:gopher, :port], 1234)
-    "#{type}#{name}\t#{selector}\t#{address}\t#{port}\r\n"
+    dstport = Pleroma.Config.get([:gopher, :dstport], port)
+    "#{type}#{name}\t#{selector}\t#{address}\t#{dstport}\r\n"
   end
 
   def render_activities(activities) do
