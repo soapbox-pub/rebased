@@ -802,6 +802,7 @@ defmodule Pleroma.User do
 
     search_query = from(u in maybe_local_query, where: ilike(u.nickname, ^"%#{term}%"))
     count = search_query |> Repo.aggregate(:count, :id)
+
     results =
       search_query
       |> paginate(page, page_size)
