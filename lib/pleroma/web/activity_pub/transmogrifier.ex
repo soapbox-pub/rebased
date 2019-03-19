@@ -86,11 +86,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_addressing_list(map, field) do
-    if is_binary(map[field]) do
-      map
-      |> Map.put(field, [map[field]])
-    else
-      map
+    cond do
+      is_binary(map[field]) ->
+        Map.put(map, field, [map[field]])
+
+      is_nil(map[field]) ->
+        Map.put(map, field, [])
+
+      true ->
+        map
     end
   end
 
