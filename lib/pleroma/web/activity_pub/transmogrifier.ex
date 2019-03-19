@@ -128,13 +128,42 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_explicit_addressing(explicit_mentions)
   end
 
+  # if as:Public is addressed, then make sure the followers collection is also addressed
+  # so that the activities will be delivered to local users.
+  def fix_implicit_addressing(%{"to" => to, "cc" => cc} = object, followers_collection) do
+    recipients = to ++ cc
+
+    if followers_collection not in recipients do
+      cond do
+        "https://www.w3.org/ns/activitystreams#Public" in cc ->
+          to = to ++ [followers_collection]
+          Map.put(object, "to", to)
+
+        "https://www.w3.org/ns/activitystreams#Public" in to ->
+          cc = cc ++ [followers_collection]
+          Map.put(object, "cc", cc)
+
+        true ->
+          object
+      end
+    else
+      object
+    end
+  end
+
+  def fix_implicit_addressing(object, _), do: object
+
   def fix_addressing(object) do
+    %User{} = user = User.get_cached_by_ap_id(object["actor"])
+    followers_collection = User.ap_followers(user)
+
     object
     |> fix_addressing_list("to")
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
     |> fix_explicit_addressing
+    |> fix_implicit_addressing(followers_collection)
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
