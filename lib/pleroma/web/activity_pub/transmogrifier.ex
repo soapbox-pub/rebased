@@ -955,7 +955,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   defp strip_internal_tags(object), do: object
 
   defp user_upgrade_task(user) do
-    old_follower_address = User.ap_followers(user)
+    # we pass a fake user so that the followers collection is stripped away
+    old_follower_address = User.ap_followers(%User{nickname: user.nickname})
 
     q =
       from(
