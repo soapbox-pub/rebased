@@ -56,7 +56,7 @@ defmodule Pleroma.UploadTest do
 
       assert List.first(data["url"])["href"] ==
                Pleroma.Web.base_url() <>
-                 "/media/e7a6d0cf595bff76f14c9a98b6c199539559e8b844e02e51e5efcfd1f614a2df.jpg"
+                 "/media/e30397b58d226d6583ab5b8b3c5defb0c682bda5c31ef07a9f57c1c4986e3781.jpg"
     end
 
     test "copies the file to the configured folder without deduping" do
