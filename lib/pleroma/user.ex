@@ -104,9 +104,8 @@ defmodule Pleroma.User do
     "#{Web.base_url()}/users/#{nickname}"
   end
 
-  def ap_followers(%User{} = user) do
-    "#{ap_id(user)}/followers"
-  end
+  def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
+  def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
 
   def user_info(%User{} = user) do
     oneself = if user.local, do: 1, else: 0
