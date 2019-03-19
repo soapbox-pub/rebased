@@ -86,11 +86,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def fix_addressing_list(map, field) do
-    if is_binary(map[field]) do
-      map
-      |> Map.put(field, [map[field]])
-    else
-      map
+    cond do
+      is_binary(map[field]) ->
+        Map.put(map, field, [map[field]])
+
+      is_nil(map[field]) ->
+        Map.put(map, field, [])
+
+      true ->
+        map
     end
   end
 
@@ -128,13 +132,42 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_explicit_addressing(explicit_mentions)
   end
 
+  # if as:Public is addressed, then make sure the followers collection is also addressed
+  # so that the activities will be delivered to local users.
+  def fix_implicit_addressing(%{"to" => to, "cc" => cc} = object, followers_collection) do
+    recipients = to ++ cc
+
+    if followers_collection not in recipients do
+      cond do
+        "https://www.w3.org/ns/activitystreams#Public" in cc ->
+          to = to ++ [followers_collection]
+          Map.put(object, "to", to)
+
+        "https://www.w3.org/ns/activitystreams#Public" in to ->
+          cc = cc ++ [followers_collection]
+          Map.put(object, "cc", cc)
+
+        true ->
+          object
+      end
+    else
+      object
+    end
+  end
+
+  def fix_implicit_addressing(object, _), do: object
+
   def fix_addressing(object) do
+    %User{} = user = User.get_or_fetch_by_ap_id(object["actor"])
+    followers_collection = User.ap_followers(user)
+
     object
     |> fix_addressing_list("to")
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
     |> fix_explicit_addressing
+    |> fix_implicit_addressing(followers_collection)
   end
 
   def fix_actor(%{"attributedTo" => actor} = object) do
@@ -922,7 +955,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   defp strip_internal_tags(object), do: object
 
   defp user_upgrade_task(user) do
-    old_follower_address = User.ap_followers(user)
+    # we pass a fake user so that the followers collection is stripped away
+    old_follower_address = User.ap_followers(%User{nickname: user.nickname})
 
     q =
       from(
