@@ -358,6 +358,30 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["cc"] == [User.ap_followers(user)]
     end
 
+    test "it ensures that address fields become lists" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", user.ap_id)
+        |> Map.put("to", nil)
+        |> Map.put("cc", nil)
+
+      object =
+        data["object"]
+        |> Map.put("attributedTo", user.ap_id)
+        |> Map.put("to", nil)
+        |> Map.put("cc", nil)
+
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert !is_nil(data["to"])
+      assert !is_nil(data["cc"])
+    end
+
     test "it works for incoming update activities" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
