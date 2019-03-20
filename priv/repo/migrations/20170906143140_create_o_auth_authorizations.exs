@@ -6,7 +6,7 @@ defmodule Pleroma.Repo.Migrations.CreateOAuthAuthorizations do
       add :app_id, references(:apps)
       add :user_id, references(:users)
       add :token, :string
-      add :valid_until, :naive_datetime
+      add :valid_until, :naive_datetime_usec
       add :used, :boolean, default: false
 
       timestamps()
