@@ -381,20 +381,26 @@ config :pleroma, :ldap,
   base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
   uid: System.get_env("LDAP_UID") || "cn"
 
-config :pleroma, :auth, oauth_consumer_enabled: System.get_env("OAUTH_CONSUMER_ENABLED") == "true"
+oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES" || ""))
+
+ueberauth_providers =
+  for strategy <- oauth_consumer_strategies do
+    strategy_module_name =
+      System.get_env("UEBERAUTH_#{String.upcase(strategy)}_STRATEGY_MODULE") ||
+        "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
+
+    strategy_module = String.to_atom(strategy_module_name)
+    {String.to_atom(strategy), {strategy_module, [callback_params: ["state"]]}}
+  end
 
 config :ueberauth,
        Ueberauth,
        base_path: "/oauth",
-       providers: [
-         twitter:
-           {Ueberauth.Strategy.Twitter,
-            [callback_params: ~w[client_id redirect_uri scope scopes]]}
-       ]
+       providers: ueberauth_providers
 
-config :ueberauth, Ueberauth.Strategy.Twitter.OAuth,
-  consumer_key: System.get_env("TWITTER_CONSUMER_KEY"),
-  consumer_secret: System.get_env("TWITTER_CONSUMER_SECRET")
+config :pleroma, :auth,
+  oauth_consumer_strategies: oauth_consumer_strategies,
+  oauth_consumer_enabled: oauth_consumer_strategies != []
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

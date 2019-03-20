@@ -187,25 +187,25 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     |> redirect(to: "/")
   end
 
-  def callback(%{assigns: %{ueberauth_failure: failure}} = conn, %{"redirect_uri" => redirect_uri}) do
+  def callback(%{assigns: %{ueberauth_failure: failure}} = conn, params) do
+    params = callback_params(params)
     messages = for e <- Map.get(failure, :errors, []), do: e.message
     message = Enum.join(messages, "; ")
 
     conn
     |> put_flash(:error, "Failed to authenticate: #{message}.")
-    |> redirect(external: redirect_uri(conn, redirect_uri))
+    |> redirect(external: redirect_uri(conn, params["redirect_uri"]))
   end
 
-  def callback(
-        conn,
-        %{"client_id" => client_id, "redirect_uri" => redirect_uri} = params
-      ) do
+  def callback(conn, params) do
+    params = callback_params(params)
+
     with {:ok, registration} <- Authenticator.get_registration(conn, params) do
       user = Repo.preload(registration, :user).user
 
       auth_params = %{
-        "client_id" => client_id,
-        "redirect_uri" => redirect_uri,
+        "client_id" => params["client_id"],
+        "redirect_uri" => params["redirect_uri"],
         "scopes" => oauth_scopes(params, nil)
       }
 
@@ -230,8 +230,19 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       _ ->
         conn
         |> put_flash(:error, "Failed to set up user account.")
-        |> redirect(external: redirect_uri(conn, redirect_uri))
+        |> redirect(external: redirect_uri(conn, params["redirect_uri"]))
     end
+  end
+
+  defp callback_params(%{"state" => state} = params) do
+    [client_id, redirect_uri, scope, state] = String.split(state, "|")
+
+    Map.merge(params, %{
+      "client_id" => client_id,
+      "redirect_uri" => redirect_uri,
+      "scope" => scope,
+      "state" => state
+    })
   end
 
   def registration_details(conn, params) do

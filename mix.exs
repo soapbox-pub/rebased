@@ -44,7 +44,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :ueberauth_twitter],
+      extra_applications: [:logger, :runtime_tools, :comeonin],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -57,6 +57,12 @@ defmodule Pleroma.Mixfile do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
+    oauth_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+
+    oauth_deps =
+      for s <- oauth_strategies,
+          do: {String.to_atom("ueberauth_#{s}"), ">= 0.0.0"}
+
     [
       {:phoenix, "~> 1.4.1"},
       {:plug_cowboy, "~> 2.0"},
@@ -94,14 +100,11 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.20.0"},
       {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
       {:timex, "~> 3.5"},
-      {:oauth, github: "tim/erlang-oauth"},
-      # {:oauth2, "~> 0.8", override: true},
       {:ueberauth, "~> 0.4"},
-      {:ueberauth_twitter, "~> 0.2"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
        ref: "94193ca5f97c1f9fdf3d1469653e2d46fac34bcd"}
-    ]
+    ] ++ oauth_deps
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

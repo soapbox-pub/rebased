@@ -37,6 +37,5 @@
 <% end %>
 
 <%= if Pleroma.Config.get([:auth, :oauth_consumer_enabled]) do %>
-  <br>
   <%= render @view_module, "consumer.html", assigns %>
 <% end %>

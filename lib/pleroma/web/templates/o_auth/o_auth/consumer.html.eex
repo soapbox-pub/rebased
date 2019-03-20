@@ -1,14 +1,10 @@
-<h2>External OAuth Authorization</h2>
-<%= form_for @conn, o_auth_path(@conn, :request, :twitter), [method: "get"], fn f -> %>
-  <div class="scopes-input">
-  <%= label f, :scope, "Permissions" %>
-  <div class="scopes">
-    <%= text_input f, :scope, value: Enum.join(@available_scopes, " ") %>
-  </div>
-  </div>
+<br>
+<br>
+<h2>Sign in with external provider</h2>
 
-  <%= hidden_input f, :client_id, value: @client_id %>
-  <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
-  <%= hidden_input f, :state, value: @state%>
-  <%= submit "Sign in with Twitter" %>
+<%= for strategy <- Pleroma.Config.get([:auth, :oauth_consumer_strategies], []) do %>
+  <%= form_for @conn, o_auth_path(@conn, :request, strategy), [method: "get"], fn f -> %>
+    <%= hidden_input f, :state, value: Enum.join([@client_id, @redirect_uri, Enum.join(@available_scopes, " "), @state], "|") %>
+    <%= submit "Sign in with #{String.capitalize(strategy)}" %>
+  <% end %>
 <% end %>
