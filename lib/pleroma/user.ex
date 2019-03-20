@@ -52,7 +52,7 @@ defmodule Pleroma.User do
     field(:search_rank, :float, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:bookmarks, {:array, :string}, default: [])
-    field(:last_refreshed_at, :naive_datetime)
+    field(:last_refreshed_at, :naive_datetime_usec)
     has_many(:notifications, Notification)
     embeds_one(:info, Pleroma.User.Info)
 
@@ -335,10 +335,11 @@ defmodule Pleroma.User do
                 ^followed_addresses
               )
           ]
-        ]
+        ],
+        select: u
       )
 
-    {1, [follower]} = Repo.update_all(q, [], returning: true)
+    {1, [follower]} = Repo.update_all(q, [])
 
     Enum.each(followeds, fn followed ->
       update_follower_count(followed)
@@ -368,10 +369,11 @@ defmodule Pleroma.User do
         q =
           from(u in User,
             where: u.id == ^follower.id,
-            update: [push: [following: ^ap_followers]]
+            update: [push: [following: ^ap_followers]],
+            select: u
           )
 
-        {1, [follower]} = Repo.update_all(q, [], returning: true)
+        {1, [follower]} = Repo.update_all(q, [])
 
         {:ok, _} = update_follower_count(followed)
 
@@ -386,10 +388,11 @@ defmodule Pleroma.User do
       q =
         from(u in User,
           where: u.id == ^follower.id,
-          update: [pull: [following: ^ap_followers]]
+          update: [pull: [following: ^ap_followers]],
+          select: u
         )
 
-      {1, [follower]} = Repo.update_all(q, [], returning: true)
+      {1, [follower]} = Repo.update_all(q, [])
 
       {:ok, followed} = update_follower_count(followed)
 
@@ -637,7 +640,7 @@ defmodule Pleroma.User do
     users =
       user
       |> User.get_follow_requests_query()
-      |> join(:inner, [a], u in User, a.actor == u.ap_id)
+      |> join(:inner, [a], u in User, on: a.actor == u.ap_id)
       |> where([a, u], not fragment("? @> ?", u.following, ^[user.follower_address]))
       |> group_by([a, u], u.id)
       |> select([a, u], u)
@@ -659,7 +662,8 @@ defmodule Pleroma.User do
           )
       ]
     )
-    |> Repo.update_all([], returning: true)
+    |> select([u], u)
+    |> Repo.update_all([])
     |> case do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
@@ -679,7 +683,8 @@ defmodule Pleroma.User do
           )
       ]
     )
-    |> Repo.update_all([], returning: true)
+    |> select([u], u)
+    |> Repo.update_all([])
     |> case do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
@@ -725,7 +730,8 @@ defmodule Pleroma.User do
           )
       ]
     )
-    |> Repo.update_all([], returning: true)
+    |> select([u], u)
+    |> Repo.update_all([])
     |> case do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}

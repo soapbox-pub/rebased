@@ -8,8 +8,6 @@ use Mix.Config
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
-config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
-
 config :pleroma, Pleroma.Captcha,
   enabled: false,
   seconds_valid: 60,
@@ -272,8 +270,6 @@ config :pleroma, :media_proxy,
   ]
 
 config :pleroma, :chat, enabled: true
-
-config :ecto, json_library: Jason
 
 config :phoenix, :format_encoders, json: Jason
 
