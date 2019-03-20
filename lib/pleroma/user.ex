@@ -788,34 +788,27 @@ defmodule Pleroma.User do
 
   @spec search_for_admin(%{
           query: binary(),
-          admin: Pleroma.User.t(),
           local: boolean(),
           page: number(),
           page_size: number()
         }) :: {:ok, [Pleroma.User.t()], number()}
   def search_for_admin(%{
         query: term,
-        admin: admin,
         local: local,
         page: page,
         page_size: page_size
       }) do
-    term = String.trim_leading(term, "@")
+    maybe_local_query = User |> maybe_local_user_query(local)
 
-    local_paginated_query =
-      User
-      |> maybe_local_user_query(local)
+    search_query = from(u in maybe_local_query, where: ilike(u.nickname, ^"%#{term}%"))
+    count = search_query |> Repo.aggregate(:count, :id)
+
+    results =
+      search_query
       |> paginate(page, page_size)
+      |> Repo.all()
 
-    search_query = fts_search_subquery(term, local_paginated_query)
-
-    count =
-      term
-      |> fts_search_subquery()
-      |> maybe_local_user_query(local)
-      |> Repo.aggregate(:count, :id)
-
-    {:ok, do_search(search_query, admin), count}
+    {:ok, results, count}
   end
 
   def search(query, resolve \\ false, for_user \\ nil) do
