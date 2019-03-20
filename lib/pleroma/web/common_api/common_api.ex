@@ -142,7 +142,8 @@ defmodule Pleroma.Web.CommonAPI do
            make_content_html(
              status,
              attachments,
-             data
+             data,
+             visibility
            ),
          {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
          context <- make_context(in_reply_to),

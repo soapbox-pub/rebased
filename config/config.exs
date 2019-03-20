@@ -174,7 +174,8 @@ config :pleroma, :instance,
   no_attachment_links: false,
   welcome_user_nickname: nil,
   welcome_message: nil,
-  max_report_comment_size: 1000
+  max_report_comment_size: 1000,
+  safe_dm_mentions: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because

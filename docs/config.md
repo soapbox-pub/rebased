@@ -101,7 +101,8 @@ config :pleroma, Pleroma.Mailer,
 * `no_attachment_links`: Set to true to disable automatically adding attachment link text to statuses
 * `welcome_message`: A message that will be send to a newly registered users as a direct message.
 * `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
-* `max_report_size`: The maximum size of the report comment (Default: `1000`)
+* `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
+* `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
