@@ -208,12 +208,14 @@ defmodule Pleroma.Web.Router do
     post("/authorize", OAuthController, :create_authorization)
     post("/token", OAuthController, :token_exchange)
     post("/revoke", OAuthController, :token_revoke)
+    get("/registration_details", OAuthController, :registration_details)
 
     scope [] do
       pipe_through(:browser)
 
       get("/:provider", OAuthController, :request)
       get("/:provider/callback", OAuthController, :callback)
+      post("/register", OAuthController, :register)
     end
   end
 

@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.Auth.Authenticator do
   alias Pleroma.User
+  alias Pleroma.Registration
 
   def implementation do
     Pleroma.Config.get(
@@ -15,10 +16,15 @@ defmodule Pleroma.Web.Auth.Authenticator do
   @callback get_user(Plug.Conn.t(), Map.t()) :: {:ok, User.t()} | {:error, any()}
   def get_user(plug, params), do: implementation().get_user(plug, params)
 
-  @callback get_by_external_registration(Plug.Conn.t(), Map.t()) ::
+  @callback create_from_registration(Plug.Conn.t(), Map.t(), Registration.t()) ::
               {:ok, User.t()} | {:error, any()}
-  def get_by_external_registration(plug, params),
-    do: implementation().get_by_external_registration(plug, params)
+  def create_from_registration(plug, params, registration),
+    do: implementation().create_from_registration(plug, params, registration)
+
+  @callback get_registration(Plug.Conn.t(), Map.t()) ::
+              {:ok, Registration.t()} | {:error, any()}
+  def get_registration(plug, params),
+    do: implementation().get_registration(plug, params)
 
   @callback handle_error(Plug.Conn.t(), any()) :: any()
   def handle_error(plug, error), do: implementation().handle_error(plug, error)

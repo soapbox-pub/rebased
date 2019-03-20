@@ -11,6 +11,8 @@ defmodule Pleroma.Registration do
   alias Pleroma.Repo
   alias Pleroma.User
 
+  @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
+
   schema "registrations" do
     belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:provider, :string)
@@ -20,12 +22,30 @@ defmodule Pleroma.Registration do
     timestamps()
   end
 
+  def nickname(registration, default \\ nil),
+    do: Map.get(registration.info, "nickname", default)
+
+  def email(registration, default \\ nil),
+    do: Map.get(registration.info, "email", default)
+
+  def name(registration, default \\ nil),
+    do: Map.get(registration.info, "name", default)
+
+  def description(registration, default \\ nil),
+    do: Map.get(registration.info, "description", default)
+
   def changeset(registration, params \\ %{}) do
     registration
     |> cast(params, [:user_id, :provider, :uid, :info])
     |> validate_required([:provider, :uid])
     |> foreign_key_constraint(:user_id)
     |> unique_constraint(:uid, name: :registrations_provider_uid_index)
+  end
+
+  def bind_to_user(registration, user) do
+    registration
+    |> changeset(%{user_id: (user && user.id) || nil})
+    |> Repo.update()
   end
 
   def get_by_provider_uid(provider, uid) do

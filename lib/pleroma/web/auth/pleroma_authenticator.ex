@@ -29,68 +29,63 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
     end
   end
 
-  def get_by_external_registration(
+  def get_registration(
         %Plug.Conn{assigns: %{ueberauth_auth: %{provider: provider, uid: uid} = auth}},
         _params
       ) do
     registration = Registration.get_by_provider_uid(provider, uid)
 
     if registration do
-      user = Repo.preload(registration, :user).user
-      {:ok, user}
+      {:ok, registration}
     else
       info = auth.info
-      email = info.email
-      nickname = info.nickname
 
-      # Note: nullifying email in case this email is already taken
-      email =
-        if email && User.get_by_email(email) do
-          nil
-        else
-          email
-        end
-
-      # Note: generating a random numeric suffix to nickname in case this nickname is already taken
-      nickname =
-        if nickname && User.get_by_nickname(nickname) do
-          "#{nickname}#{:os.system_time()}"
-        else
-          nickname
-        end
-
-      random_password = :crypto.strong_rand_bytes(64) |> Base.encode64()
-
-      with {:ok, new_user} <-
-             User.register_changeset(
-               %User{},
-               %{
-                 name: info.name,
-                 bio: info.description,
-                 email: email,
-                 nickname: nickname,
-                 password: random_password,
-                 password_confirmation: random_password
-               },
-               external: true,
-               confirmed: true
-             )
-             |> Repo.insert(),
-           {:ok, _} <-
-             Registration.changeset(%Registration{}, %{
-               user_id: new_user.id,
-               provider: to_string(provider),
-               uid: to_string(uid),
-               info: %{nickname: info.nickname, email: info.email}
-             })
-             |> Repo.insert() do
-        {:ok, new_user}
-      end
+      Registration.changeset(%Registration{}, %{
+        provider: to_string(provider),
+        uid: to_string(uid),
+        info: %{
+          "nickname" => info.nickname,
+          "email" => info.email,
+          "name" => info.name,
+          "description" => info.description
+        }
+      })
+      |> Repo.insert()
     end
   end
 
-  def get_by_external_registration(%Plug.Conn{} = _conn, _params),
-    do: {:error, :missing_credentials}
+  def get_registration(%Plug.Conn{} = _conn, _params), do: {:error, :missing_credentials}
+
+  def create_from_registration(_conn, params, registration) do
+    nickname = value([params["nickname"], Registration.nickname(registration)])
+    email = value([params["email"], Registration.email(registration)])
+    name = value([params["name"], Registration.name(registration)]) || nickname
+    bio = value([params["bio"], Registration.description(registration)])
+
+    random_password = :crypto.strong_rand_bytes(64) |> Base.encode64()
+
+    with {:ok, new_user} <-
+           User.register_changeset(
+             %User{},
+             %{
+               email: email,
+               nickname: nickname,
+               name: name,
+               bio: bio,
+               password: random_password,
+               password_confirmation: random_password
+             },
+             external: true,
+             confirmed: true
+           )
+           |> Repo.insert(),
+         {:ok, _} <-
+           Registration.changeset(registration, %{user_id: new_user.id}) |> Repo.update() do
+      {:ok, new_user}
+    end
+  end
+
+  defp value(list), do: Enum.find(list, &(to_string(&1) != ""))
 
   def handle_error(%Plug.Conn{} = _conn, error) do
     error

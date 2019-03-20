@@ -7,6 +7,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Registration
   alias Pleroma.Web.Auth.Authenticator
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
@@ -20,52 +21,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   plug(:fetch_flash)
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
-
-  def request(conn, params) do
-    message =
-      if params["provider"] do
-        "Unsupported OAuth provider: #{params["provider"]}."
-      else
-        "Bad OAuth request."
-      end
-
-    conn
-    |> put_flash(:error, message)
-    |> redirect(to: "/")
-  end
-
-  def callback(%{assigns: %{ueberauth_failure: failure}} = conn, %{"redirect_uri" => redirect_uri}) do
-    messages = for e <- Map.get(failure, :errors, []), do: e.message
-    message = Enum.join(messages, "; ")
-
-    conn
-    |> put_flash(:error, "Failed to authenticate: #{message}.")
-    |> redirect(external: redirect_uri(conn, redirect_uri))
-  end
-
-  def callback(
-        conn,
-        %{"client_id" => client_id, "redirect_uri" => redirect_uri} = params
-      ) do
-    with {:ok, user} <- Authenticator.get_by_external_registration(conn, params) do
-      do_create_authorization(
-        conn,
-        %{
-          "authorization" => %{
-            "client_id" => client_id,
-            "redirect_uri" => redirect_uri,
-            "scope" => oauth_scopes(params, nil)
-          }
-        },
-        user
-      )
-    else
-      _ ->
-        conn
-        |> put_flash(:error, "Failed to set up user account.")
-        |> redirect(external: redirect_uri(conn, redirect_uri))
-    end
-  end
 
   def authorize(conn, params) do
     app = Repo.get_by(App, client_id: params["client_id"])
@@ -83,29 +38,16 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     })
   end
 
-  def create_authorization(conn, params), do: do_create_authorization(conn, params, nil)
-
-  defp do_create_authorization(
-         conn,
-         %{
-           "authorization" =>
-             %{
-               "client_id" => client_id,
-               "redirect_uri" => redirect_uri
-             } = auth_params
-         } = params,
-         user
-       ) do
-    with {_, {:ok, %User{} = user}} <-
-           {:get_user, (user && {:ok, user}) || Authenticator.get_user(conn, params)},
-         %App{} = app <- Repo.get_by(App, client_id: client_id),
-         true <- redirect_uri in String.split(app.redirect_uris),
-         scopes <- oauth_scopes(auth_params, []),
-         {:unsupported_scopes, []} <- {:unsupported_scopes, scopes -- app.scopes},
-         # Note: `scope` param is intentionally not optional in this context
-         {:missing_scopes, false} <- {:missing_scopes, scopes == []},
-         {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
-         {:ok, auth} <- Authorization.create_authorization(app, user, scopes) do
+  def create_authorization(
+        conn,
+        %{
+          "authorization" => %{"redirect_uri" => redirect_uri} = auth_params
+        } = params,
+        opts \\ []
+      ) do
+    with {:ok, auth} <-
+           (opts[:auth] && {:ok, opts[:auth]}) ||
+             do_create_authorization(conn, params, opts[:user]) do
       redirect_uri = redirect_uri(conn, redirect_uri)
 
       cond do
@@ -232,6 +174,166 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+  def request(conn, params) do
+    message =
+      if params["provider"] do
+        "Unsupported OAuth provider: #{params["provider"]}."
+      else
+        "Bad OAuth request."
+      end
+
+    conn
+    |> put_flash(:error, message)
+    |> redirect(to: "/")
+  end
+
+  def callback(%{assigns: %{ueberauth_failure: failure}} = conn, %{"redirect_uri" => redirect_uri}) do
+    messages = for e <- Map.get(failure, :errors, []), do: e.message
+    message = Enum.join(messages, "; ")
+
+    conn
+    |> put_flash(:error, "Failed to authenticate: #{message}.")
+    |> redirect(external: redirect_uri(conn, redirect_uri))
+  end
+
+  def callback(
+        conn,
+        %{"client_id" => client_id, "redirect_uri" => redirect_uri} = params
+      ) do
+    with {:ok, registration} <- Authenticator.get_registration(conn, params) do
+      user = Repo.preload(registration, :user).user
+
+      auth_params = %{
+        "client_id" => client_id,
+        "redirect_uri" => redirect_uri,
+        "scopes" => oauth_scopes(params, nil)
+      }
+
+      if user do
+        create_authorization(
+          conn,
+          %{"authorization" => auth_params},
+          user: user
+        )
+      else
+        registration_params =
+          Map.merge(auth_params, %{
+            "nickname" => Registration.nickname(registration),
+            "email" => Registration.email(registration)
+          })
+
+        conn
+        |> put_session(:registration_id, registration.id)
+        |> redirect(to: o_auth_path(conn, :registration_details, registration_params))
+      end
+    else
+      _ ->
+        conn
+        |> put_flash(:error, "Failed to set up user account.")
+        |> redirect(external: redirect_uri(conn, redirect_uri))
+    end
+  end
+
+  def registration_details(conn, params) do
+    render(conn, "register.html", %{
+      client_id: params["client_id"],
+      redirect_uri: params["redirect_uri"],
+      scopes: oauth_scopes(params, []),
+      nickname: params["nickname"],
+      email: params["email"]
+    })
+  end
+
+  def register(conn, %{"op" => "connect"} = params) do
+    create_authorization_params = %{
+      "authorization" => Map.merge(params, %{"name" => params["auth_name"]})
+    }
+
+    with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
+         %Registration{} = registration <- Repo.get(Registration, registration_id),
+         {:ok, auth} <- do_create_authorization(conn, create_authorization_params),
+         %User{} = user <- Repo.preload(auth, :user).user,
+         {:ok, _updated_registration} <- Registration.bind_to_user(registration, user) do
+      conn
+      |> put_session_registration_id(nil)
+      |> create_authorization(
+        create_authorization_params,
+        auth: auth
+      )
+    else
+      _ ->
+        conn
+        |> put_flash(:error, "Unknown error, please try again.")
+        |> redirect(to: o_auth_path(conn, :registration_details, params))
+    end
+  end
+
+  def register(conn, params) do
+    with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
+         %Registration{} = registration <- Repo.get(Registration, registration_id),
+         {:ok, user} <- Authenticator.create_from_registration(conn, params, registration) do
+      conn
+      |> put_session_registration_id(nil)
+      |> create_authorization(
+        %{
+          "authorization" => %{
+            "client_id" => params["client_id"],
+            "redirect_uri" => params["redirect_uri"],
+            "scopes" => oauth_scopes(params, nil)
+          }
+        },
+        user: user
+      )
+    else
+      {:error, changeset} ->
+        message =
+          Enum.map(changeset.errors, fn {field, {error, _}} ->
+            "#{field} #{error}"
+          end)
+          |> Enum.join("; ")
+
+        message =
+          String.replace(
+            message,
+            "ap_id has already been taken",
+            "nickname has already been taken"
+          )
+
+        conn
+        |> put_flash(:error, "Error: #{message}.")
+        |> redirect(to: o_auth_path(conn, :registration_details, params))
+
+      _ ->
+        conn
+        |> put_flash(:error, "Unknown error, please try again.")
+        |> redirect(to: o_auth_path(conn, :registration_details, params))
+    end
+  end
+
+  defp do_create_authorization(
+         conn,
+         %{
+           "authorization" =>
+             %{
+               "client_id" => client_id,
+               "redirect_uri" => redirect_uri
+             } = auth_params
+         } = params,
+         user \\ nil
+       ) do
+    with {_, {:ok, %User{} = user}} <-
+           {:get_user, (user && {:ok, user}) || Authenticator.get_user(conn, params)},
+         %App{} = app <- Repo.get_by(App, client_id: client_id),
+         true <- redirect_uri in String.split(app.redirect_uris),
+         scopes <- oauth_scopes(auth_params, []),
+         {:unsupported_scopes, []} <- {:unsupported_scopes, scopes -- app.scopes},
+         # Note: `scope` param is intentionally not optional in this context
+         {:missing_scopes, false} <- {:missing_scopes, scopes == []},
+         {:auth_active, true} <- {:auth_active, User.auth_active?(user)} do
+      Authorization.create_authorization(app, user, scopes)
+    end
+  end
+
   # XXX - for whatever reason our token arrives urlencoded, but Plug.Conn should be
   # decoding it.  Investigate sometime.
   defp fix_padding(token) do
@@ -269,4 +371,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   defp redirect_uri(conn, "."), do: mastodon_api_url(conn, :login)
 
   defp redirect_uri(_conn, redirect_uri), do: redirect_uri
+
+  defp get_session_registration_id(conn), do: get_session(conn, :registration_id)
+
+  defp put_session_registration_id(conn, registration_id),
+    do: put_session(conn, :registration_id, registration_id)
 end
