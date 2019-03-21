@@ -823,31 +823,53 @@ defmodule Pleroma.User do
 
     if resolve, do: get_or_fetch(query)
 
-    fts_results = do_search(fts_search_subquery(query), for_user)
-
-    {:ok, trigram_results} =
+    {:ok, results} =
       Repo.transaction(fn ->
         Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
-        do_search(trigram_search_subquery(query), for_user)
+        Repo.all(search_query(query, for_user))
       end)
 
-    Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
+    results
   end
 
-  defp do_search(subquery, for_user, options \\ []) do
-    q =
-      from(
-        s in subquery(subquery),
-        order_by: [desc: s.search_rank],
-        limit: ^(options[:limit] || 20)
-      )
+  def search_query(query, for_user) do
+    fts_subquery = fts_search_subquery(query)
+    trigram_subquery = trigram_search_subquery(query)
+    union_query = from(s in trigram_subquery, union: ^fts_subquery)
+    distinct_query = from(s in subquery(union_query), distinct: s.id)
 
-    results =
-      q
-      |> Repo.all()
-      |> Enum.filter(&(&1.search_rank > 0))
+    from(s in subquery(boost_search_rank_query(distinct_query, for_user)),
+      order_by: [desc: s.search_rank],
+      limit: 20
+    )
+  end
 
-    boost_search_results(results, for_user)
+  defp boost_search_rank_query(query, nil), do: query
+
+  defp boost_search_rank_query(query, for_user) do
+    friends_ids = get_friends_ids(for_user)
+    followers_ids = get_followers_ids(for_user)
+
+    from(u in subquery(query),
+      select_merge: %{
+        search_rank:
+          fragment(
+            """
+             CASE WHEN (?) THEN (?) * 1.3 
+             WHEN (?) THEN (?) * 1.2
+             WHEN (?) THEN (?) * 1.1
+             ELSE (?) END
+            """,
+            u.id in ^friends_ids and u.id in ^followers_ids,
+            u.search_rank,
+            u.id in ^friends_ids,
+            u.search_rank,
+            u.id in ^followers_ids,
+            u.search_rank,
+            u.search_rank
+          )
+      }
+    )
   end
 
   defp fts_search_subquery(term, query \\ User) do
@@ -904,33 +926,6 @@ defmodule Pleroma.User do
       },
       where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
     )
-  end
-
-  defp boost_search_results(results, nil), do: results
-
-  defp boost_search_results(results, for_user) do
-    friends_ids = get_friends_ids(for_user)
-    followers_ids = get_followers_ids(for_user)
-
-    Enum.map(
-      results,
-      fn u ->
-        search_rank_coef =
-          cond do
-            u.id in friends_ids ->
-              1.2
-
-            u.id in followers_ids ->
-              1.1
-
-            true ->
-              1
-          end
-
-        Map.put(u, :search_rank, u.search_rank * search_rank_coef)
-      end
-    )
-    |> Enum.sort_by(&(-&1.search_rank))
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
