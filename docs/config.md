@@ -190,6 +190,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `enabled`: Enables the gopher interface
 * `ip`: IP address to bind to
 * `port`: Port to bind to
+* `dstport`: Port advertised in urls (optional, defaults to `port`)
 
 ## :activitypub
 * ``accept_blocks``: Whether to accept incoming block activities from other instances
