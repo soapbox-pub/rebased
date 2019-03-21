@@ -19,6 +19,7 @@ Adding the parameter `with_muted=true` to the timeline queries will also return 
 Has these additional fields under the `pleroma` object:
 
 - `local`: true if the post was made on the local instance.
+- `conversation_id`: the ID of the conversation the status is associated with (if any)
 
 ## Attachments
 
