@@ -180,8 +180,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
     mocks = [
       {
-        TwitterAPI,
-        [],
+        Utils,
+        [:passthrough],
         [context_to_conversation_id: fn _ -> false end]
       },
       {

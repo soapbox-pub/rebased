@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Endpoint
   use Pleroma.DataCase
