@@ -136,4 +136,20 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert output == expected
     end
   end
+
+  describe "context_to_conversation_id" do
+    test "creates a mapping object" do
+      conversation_id = Utils.context_to_conversation_id("random context")
+      object = Object.get_by_ap_id("random context")
+
+      assert conversation_id == object.id
+    end
+
+    test "returns an existing mapping for an existing object" do
+      {:ok, object} = Object.context_mapping("random context") |> Repo.insert()
+      conversation_id = Utils.context_to_conversation_id("random context")
+
+      assert conversation_id == object.id
+    end
+  end
 end
