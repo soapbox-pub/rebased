@@ -12,7 +12,7 @@ defmodule Pleroma.Instances.Instance do
 
   schema "instances" do
     field(:host, :string)
-    field(:unreachable_since, :naive_datetime)
+    field(:unreachable_since, :naive_datetime_usec)
 
     timestamps()
   end
