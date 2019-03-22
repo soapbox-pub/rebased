@@ -48,6 +48,7 @@ analysis:
 
 docs_build:
   stage: docs_build
+  services:
   only:
   - master@pleroma/pleroma
   - develop@pleroma/pleroma
@@ -67,6 +68,7 @@ docs_build:
 docs_deploy:
   stage: docs_deploy
   image: alpine:3.9
+  services:
   only:
   - master@pleroma/pleroma
   - develop@pleroma/pleroma
