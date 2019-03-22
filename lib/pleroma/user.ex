@@ -50,6 +50,7 @@ defmodule Pleroma.User do
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
     field(:search_rank, :float, virtual: true)
+    field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:bookmarks, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
@@ -835,8 +836,8 @@ defmodule Pleroma.User do
   def search_query(query, for_user) do
     fts_subquery = fts_search_subquery(query)
     trigram_subquery = trigram_search_subquery(query)
-    union_query = from(s in trigram_subquery, union: ^fts_subquery)
-    distinct_query = from(s in subquery(union_query), distinct: s.id)
+    union_query = from(s in trigram_subquery, union_all: ^fts_subquery)
+    distinct_query = from(s in subquery(union_query), order_by: s.search_type, distinct: s.id)
 
     from(s in subquery(boost_search_rank_query(distinct_query, for_user)),
       order_by: [desc: s.search_rank],
@@ -884,6 +885,7 @@ defmodule Pleroma.User do
     from(
       u in query,
       select_merge: %{
+        search_type: ^0,
         search_rank:
           fragment(
             """
@@ -916,6 +918,8 @@ defmodule Pleroma.User do
     from(
       u in User,
       select_merge: %{
+        # ^1 gives 'Postgrex expected a binary, got 1' for some weird reason
+        search_type: fragment("?", 1),
         search_rank:
           fragment(
             "similarity(?, trim(? || ' ' || coalesce(?, '')))",
