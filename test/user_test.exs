@@ -879,7 +879,11 @@ defmodule Pleroma.UserTest do
       user = insert(:user, %{nickname: "john"})
 
       Enum.each(["john", "jo", "j"], fn query ->
-        assert user == User.search(query) |> List.first() |> Map.put(:search_rank, nil)
+        assert user ==
+                 User.search(query)
+                 |> List.first()
+                 |> Map.put(:search_rank, nil)
+                 |> Map.put(:search_type, nil)
       end)
     end
 
@@ -887,7 +891,11 @@ defmodule Pleroma.UserTest do
       user = insert(:user, %{name: "John Doe"})
 
       Enum.each(["John Doe", "JOHN", "doe", "j d", "j", "d"], fn query ->
-        assert user == User.search(query) |> List.first() |> Map.put(:search_rank, nil)
+        assert user ==
+                 User.search(query)
+                 |> List.first()
+                 |> Map.put(:search_rank, nil)
+                 |> Map.put(:search_type, nil)
       end)
     end
 
@@ -941,6 +949,7 @@ defmodule Pleroma.UserTest do
                User.search("lain@pleroma.soykaf.com")
                |> List.first()
                |> Map.put(:search_rank, nil)
+               |> Map.put(:search_type, nil)
     end
 
     test "does not yield false-positive matches" do
@@ -958,7 +967,7 @@ defmodule Pleroma.UserTest do
       user = User.get_by_ap_id("http://mastodon.example.org/users/admin")
 
       assert length(results) == 1
-      assert user == result |> Map.put(:search_rank, nil)
+      assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)
     end
   end
 
