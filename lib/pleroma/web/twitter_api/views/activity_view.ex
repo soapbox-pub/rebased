@@ -266,6 +266,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
         content
         |> String.replace(~r/<br\s?\/?>/, "\n")
         |> HTML.get_cached_stripped_html_for_object(activity, __MODULE__)
+      else
+        ""
       end
 
     reply_parent = Activity.get_in_reply_to_activity(activity)
