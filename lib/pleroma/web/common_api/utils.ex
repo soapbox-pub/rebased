@@ -101,7 +101,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_content_html(
         status,
         attachments,
-        data
+        data,
+        visibility
       ) do
     no_attachment_links =
       data
@@ -110,8 +111,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     content_type = get_content_type(data["content_type"])
 
+    options =
+      if visibility == "direct" && Config.get([:instance, :safe_dm_mentions]) do
+        [safe_mention: true]
+      else
+        []
+      end
+
     status
-    |> format_input(content_type)
+    |> format_input(content_type, options)
     |> maybe_add_attachments(attachments, no_attachment_links)
     |> maybe_add_nsfw_tag(data)
   end

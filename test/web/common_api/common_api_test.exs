@@ -10,6 +10,24 @@ defmodule Pleroma.Web.CommonAPITest do
 
   import Pleroma.Factory
 
+  test "with the safe_dm_mention option set, it does not mention people beyond the initial tags" do
+    har = insert(:user)
+    jafnhar = insert(:user)
+    tridi = insert(:user)
+    option = Pleroma.Config.get([:instance, :safe_dm_mentions])
+    Pleroma.Config.put([:instance, :safe_dm_mentions], true)
+
+    {:ok, activity} =
+      CommonAPI.post(har, %{
+        "status" => "@#{jafnhar.nickname} hey, i never want to see @#{tridi.nickname} again",
+        "visibility" => "direct"
+      })
+
+    refute tridi.ap_id in activity.recipients
+    assert jafnhar.ap_id in activity.recipients
+    Pleroma.Config.put([:instance, :safe_dm_mentions], option)
+  end
+
   test "it de-duplicates tags" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu #2HU"})
