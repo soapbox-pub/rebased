@@ -15,7 +15,6 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.UserView
 
   import Ecto.Query
@@ -78,7 +77,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   defp get_context_id(%{data: %{"context" => context}}, options) do
     cond do
       id = options[:context_ids][context] -> id
-      true -> TwitterAPI.context_to_conversation_id(context)
+      true -> Utils.context_to_conversation_id(context)
     end
   end
 

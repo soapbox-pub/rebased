@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.OStatus
@@ -72,6 +73,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     note = insert(:note_activity)
     user = User.get_cached_by_ap_id(note.data["actor"])
 
+    convo_id = Utils.context_to_conversation_id(note.data["object"]["context"])
+
     status = StatusView.render("status.json", %{activity: note})
 
     created_at =
@@ -122,7 +125,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         }
       ],
       pleroma: %{
-        local: true
+        local: true,
+        conversation_id: convo_id
       }
     }
 

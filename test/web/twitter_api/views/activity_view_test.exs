@@ -12,7 +12,6 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
@@ -129,7 +128,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
     result = ActivityView.render("activity.json", activity: activity)
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(activity.data["object"]["context"])
 
     expected = %{
       "activity_type" => "post",
@@ -177,12 +176,12 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     other_user = insert(:user, %{nickname: "shp"})
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(activity.data["object"]["context"])
 
     mocks = [
       {
-        TwitterAPI,
-        [],
+        Utils,
+        [:passthrough],
         [context_to_conversation_id: fn _ -> false end]
       },
       {
@@ -197,7 +196,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
       assert result["statusnet_conversation_id"] == convo_id
       assert result["user"]
-      refute called(TwitterAPI.context_to_conversation_id(:_))
+      refute called(Utils.context_to_conversation_id(:_))
       refute called(User.get_cached_by_ap_id(user.ap_id))
       refute called(User.get_cached_by_ap_id(other_user.ap_id))
     end
@@ -280,7 +279,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
     {:ok, announce, _object} = CommonAPI.repeat(activity.id, other_user)
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(activity.data["object"]["context"])
 
     activity = Repo.get(Activity, activity.id)
 
