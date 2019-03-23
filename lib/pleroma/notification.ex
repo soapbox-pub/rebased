@@ -35,7 +35,12 @@ defmodule Pleroma.Notification do
     |> where(user_id: ^user.id)
     |> join(:inner, [n], activity in assoc(n, :activity))
     |> join(:left, [n, a], object in Object,
-      on: fragment("(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)", object.data, a.data)
+      on:
+        fragment(
+          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+          object.data,
+          a.data
+        )
     )
     |> preload([n, a, o], activity: {a, object: o})
   end
