@@ -21,7 +21,7 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   defp validate_page_url(%URI{}), do: :ok
   defp validate_page_url(_), do: :error
 
-  def fetch_data_for_activity(%Activity{} = activity) do
+  def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
     with true <- Pleroma.Config.get([:rich_media, :enabled]),
          %Object{} = object <- Object.normalize(activity),
          {:ok, page_url} <- HTML.extract_first_external_url(object, object.data["content"]),
@@ -32,4 +32,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
       _ -> %{}
     end
   end
+
+  def fetch_data_for_activity(_), do: %{}
 end
