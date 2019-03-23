@@ -718,6 +718,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
+
+  defp maybe_preload_objects(query, _) do
+    query
+    |> Activity.with_preloaded_object()
+  end
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query =
       from(
@@ -725,9 +732,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         limit: 20,
         order_by: [fragment("? desc nulls last", activity.id)]
       )
-      |> Activity.with_preloaded_object()
 
     base_query
+    |> maybe_preload_objects(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
