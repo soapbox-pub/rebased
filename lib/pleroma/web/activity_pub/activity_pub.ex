@@ -95,7 +95,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- check_actor_is_active(map["actor"]),
          {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
-         :ok <- insert_full_object(map) do
+         {:ok, object} <- insert_full_object(map) do
       {recipients, _, _} = get_recipients(map)
 
       {:ok, activity} =
@@ -105,6 +105,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           actor: map["actor"],
           recipients: recipients
         })
+
+      # Splice in the child object if we have one.
+      activity =
+        if !is_nil(object) do
+          Map.put(activity, :object, object)
+        else
+          activity
+        end
 
       Task.start(fn ->
         Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
