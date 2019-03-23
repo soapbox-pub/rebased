@@ -83,7 +83,7 @@ defmodule Pleroma.Activity do
       from(
         activity in Activity,
         where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id)),
-        inner_join: o in Object,
+        left_join: o in Object,
         on:
           fragment(
             "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
