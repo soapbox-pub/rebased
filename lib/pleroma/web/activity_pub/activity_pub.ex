@@ -957,7 +957,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            },
            :ok <- Transmogrifier.contain_origin(id, params),
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do
-        {:ok, Object.normalize(activity.data["object"])}
+        {:ok, Object.normalize(activity)}
       else
         {:error, {:reject, nil}} ->
           {:reject, nil}
@@ -969,7 +969,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
           case OStatus.fetch_activity_from_url(id) do
-            {:ok, [activity | _]} -> {:ok, Object.normalize(activity.data["object"])}
+            {:ok, [activity | _]} -> {:ok, Object.normalize(activity)}
             e -> e
           end
       end
