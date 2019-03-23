@@ -716,6 +716,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         limit: 20,
         order_by: [fragment("? desc nulls last", activity.id)]
       )
+      |> Activity.with_preloaded_object()
 
     base_query
     |> restrict_recipients(recipients, opts["user"])
