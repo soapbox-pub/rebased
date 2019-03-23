@@ -438,6 +438,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           ),
         order_by: [desc: :id]
       )
+      |> Activity.with_preloaded_object()
 
     Repo.all(query)
   end
