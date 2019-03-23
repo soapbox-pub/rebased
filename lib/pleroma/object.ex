@@ -47,17 +47,21 @@ defmodule Pleroma.Object do
   # Catch and log Object.normalize() calls where the Activity's child object is not
   # preloaded.
   def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}) do
-    Logger.info(
+    Logger.debug(
       "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
     )
+
+    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
 
     normalize(ap_id)
   end
 
   def normalize(%Activity{data: %{"object" => ap_id}}) do
-    Logger.info(
+    Logger.debug(
       "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
     )
+
+    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
 
     normalize(ap_id)
   end
