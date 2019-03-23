@@ -44,9 +44,27 @@ defmodule Pleroma.Activity do
     #    fragment("(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)", o.data, activity.data))
     # |> preload([activity, object], [object: object])
     # ```
+    #
+    # As a convenience, Activity.with_preloaded_object() sets up an inner join and preload for the
+    # typical case.
     has_one(:object, Object, on_delete: :nothing, foreign_key: :id)
 
     timestamps()
+  end
+
+  def with_preloaded_object(query) do
+    query
+    |> join(
+      :inner,
+      [activity],
+      o in Object,
+      fragment(
+        "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+        o.data,
+        activity.data
+      )
+    )
+    |> preload([activity, object], object: object)
   end
 
   def get_by_ap_id(ap_id) do
