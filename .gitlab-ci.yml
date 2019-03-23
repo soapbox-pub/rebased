@@ -75,7 +75,6 @@ docs_deploy:
   before_script:
     - apk update && apk add openssh-client rsync
   script:
-    - echo ${CI_COMMIT_REF_NAME}
     - mkdir -p ~/.ssh
     - echo "${SSH_HOST_KEY}" > ~/.ssh/known_hosts
     - eval $(ssh-agent -s)
