@@ -140,7 +140,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity = insert(:note_activity)
       {:ok, new_activity} = ActivityPub.insert(activity.data)
 
-      assert activity == new_activity
+      assert activity.id == new_activity.id
     end
 
     test "inserts a given map into the activity database, giving it an id if it has none." do
