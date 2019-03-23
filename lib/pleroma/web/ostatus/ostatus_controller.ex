@@ -102,7 +102,8 @@ defmodule Pleroma.Web.OStatus.OStatusController do
       ActivityPubController.call(conn, :object)
     else
       with id <- o_status_url(conn, :object, uuid),
-           {_, %Activity{} = activity} <- {:activity, Activity.get_create_by_object_ap_id(id)},
+           {_, %Activity{} = activity} <-
+             {:activity, Activity.get_create_by_object_ap_id_with_object(id)},
            {_, true} <- {:public?, Visibility.is_public?(activity)},
            %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
         case get_format(conn) do
@@ -148,13 +149,13 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def notice(conn, %{"id" => id}) do
-    with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id(id)},
+    with {_, %Activity{} = activity} <- {:activity, Activity.get_by_id_with_object(id)},
          {_, true} <- {:public?, Visibility.is_public?(activity)},
          %User{} = user <- User.get_cached_by_ap_id(activity.data["actor"]) do
       case format = get_format(conn) do
         "html" ->
           if activity.data["type"] == "Create" do
-            %Object{} = object = Object.normalize(activity.data["object"])
+            %Object{} = object = Object.normalize(activity)
 
             Fallback.RedirectController.redirector_with_meta(conn, %{
               activity_id: activity.id,
@@ -191,9 +192,9 @@ defmodule Pleroma.Web.OStatus.OStatusController do
 
   # Returns an HTML embedded <audio> or <video> player suitable for embed iframes.
   def notice_player(conn, %{"id" => id}) do
-    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id(id),
+    with %Activity{data: %{"type" => "Create"}} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.is_public?(activity),
-         %Object{} = object <- Object.normalize(activity.data["object"]),
+         %Object{} = object <- Object.normalize(activity),
          %{data: %{"attachment" => [%{"url" => [url | _]} | _]}} <- object,
          true <- String.starts_with?(url["mediaType"], ["audio", "video"]) do
       conn
@@ -219,7 +220,7 @@ defmodule Pleroma.Web.OStatus.OStatusController do
          %Activity{data: %{"type" => "Create"}} = activity,
          _user
        ) do
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     conn
     |> put_resp_header("content-type", "application/activity+json")
