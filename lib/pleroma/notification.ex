@@ -7,6 +7,7 @@ defmodule Pleroma.Notification do
 
   alias Pleroma.Activity
   alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.User
@@ -33,7 +34,15 @@ defmodule Pleroma.Notification do
     Notification
     |> where(user_id: ^user.id)
     |> join(:inner, [n], activity in assoc(n, :activity))
-    |> preload(:activity)
+    |> join(:left, [n, a], object in Object,
+      on:
+        fragment(
+          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+          object.data,
+          a.data
+        )
+    )
+    |> preload([n, a, o], activity: {a, object: o})
   end
 
   def for_user(user, opts \\ %{}) do

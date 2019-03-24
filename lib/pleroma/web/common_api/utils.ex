@@ -17,13 +17,14 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_by_object_ap_id(id)
+    activity =
+      Activity.get_by_id_with_object(id) || Activity.get_create_by_object_ap_id_with_object(id)
 
     activity &&
       if activity.data["type"] == "Create" do
         activity
       else
-        Activity.get_create_by_object_ap_id(activity.data["object"])
+        Activity.get_create_by_object_ap_id_with_object(activity.data["object"])
       end
   end
 
@@ -302,10 +303,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(
         recipients,
-        %Activity{data: %{"to" => _to, "type" => type} = data} = _activity
+        %Activity{data: %{"to" => _to, "type" => type} = data} = activity
       )
       when type == "Create" do
-    object = Object.normalize(data["object"])
+    object = Object.normalize(activity)
 
     object_data =
       cond do

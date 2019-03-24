@@ -1110,13 +1110,15 @@ defmodule Pleroma.User do
     friends
     |> Enum.each(fn followed -> User.unfollow(user, followed) end)
 
-    query = from(a in Activity, where: a.actor == ^user.ap_id)
+    query =
+      from(a in Activity, where: a.actor == ^user.ap_id)
+      |> Activity.with_preloaded_object()
 
     Repo.all(query)
     |> Enum.each(fn activity ->
       case activity.data["type"] do
         "Create" ->
-          ActivityPub.delete(Object.normalize(activity.data["object"]))
+          ActivityPub.delete(Object.normalize(activity))
 
         # TODO: Do something with likes, follows, repeats.
         _ ->
