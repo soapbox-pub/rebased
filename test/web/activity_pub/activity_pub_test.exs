@@ -365,6 +365,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_one)
   end
 
+  test "does include announces on request" do
+    activity_three = insert(:note_activity)
+    user = insert(:user)
+    booster = insert(:user)
+
+    {:ok, user} = User.follow(user, booster)
+
+    {:ok, announce, _object} = CommonAPI.repeat(activity_three.id, booster)
+
+    [announce_activity] = ActivityPub.fetch_activities([user.ap_id | user.following])
+
+    assert announce_activity.id == announce.id
+  end
+
   test "excludes reblogs on request" do
     user = insert(:user)
     {:ok, expected_activity} = ActivityBuilder.insert(%{"type" => "Create"}, %{:user => user})
