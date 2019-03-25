@@ -980,12 +980,4 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def contain_activity(%Activity{} = activity, %User{} = user) do
     contain_broken_threads(activity, user)
   end
-
-  # do post-processing on a timeline
-  def contain_timeline(timeline, user) do
-    timeline
-    |> Enum.filter(fn activity ->
-      contain_activity(activity, user)
-    end)
-  end
 end
