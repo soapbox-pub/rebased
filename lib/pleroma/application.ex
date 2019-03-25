@@ -127,6 +127,24 @@ defmodule Pleroma.Application do
     Supervisor.start_link(children, opts)
   end
 
+  defp setup_instrumenters() do
+    require Prometheus.Registry
+
+    :ok =
+      :telemetry.attach(
+        "prometheus-ecto",
+        [:pleroma, :repo, :query],
+        &Pleroma.Repo.Instrumenter.handle_event/4,
+        %{}
+      )
+
+    Prometheus.Registry.register_collector(:prometheus_process_collector)
+    Pleroma.Web.Endpoint.MetricsExporter.setup()
+    Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
+    Pleroma.Web.Endpoint.Instrumenter.setup()
+    Pleroma.Repo.Instrumenter.setup()
+  end
+
   def enabled_hackney_pools do
     [:media] ++
       if Application.get_env(:tesla, :adapter) == Tesla.Adapter.Hackney do
@@ -139,13 +157,6 @@ defmodule Pleroma.Application do
       else
         []
       end
-  end
-
-  defp setup_instrumenters() do
-    Pleroma.Web.Endpoint.MetricsExporter.setup()
-    Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
-    Pleroma.Web.Endpoint.Instrumenter.setup()
-    Pleroma.Repo.Instrumenter.setup()
   end
 
   if Mix.env() == :test do

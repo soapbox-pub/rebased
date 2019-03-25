@@ -10,7 +10,7 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo,
   types: Pleroma.PostgresTypes,
-  loggers: [Pleroma.Repo.Instrumenter, Ecto.LogEntry]
+  telemetry_event: [Pleroma.Repo.Instrumenter]
 
 config :pleroma, Pleroma.Captcha,
   enabled: false,
