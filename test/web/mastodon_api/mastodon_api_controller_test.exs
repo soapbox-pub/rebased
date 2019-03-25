@@ -1371,7 +1371,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id2 == follower2.id
 
     assert [link_header] = get_resp_header(res_conn, "link")
-    assert link_header =~ ~r/since_id=#{follower2.id}/
+    assert link_header =~ ~r/min_id=#{follower2.id}/
     assert link_header =~ ~r/max_id=#{follower2.id}/
   end
 
@@ -1450,7 +1450,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id2 == following2.id
 
     assert [link_header] = get_resp_header(res_conn, "link")
-    assert link_header =~ ~r/since_id=#{following2.id}/
+    assert link_header =~ ~r/min_id=#{following2.id}/
     assert link_header =~ ~r/max_id=#{following2.id}/
   end
 
@@ -2261,7 +2261,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert [link_header] = get_resp_header(conn, "link")
       assert link_header =~ ~r/media_only=true/
-      assert link_header =~ ~r/since_id=#{notification2.id}/
+      assert link_header =~ ~r/min_id=#{notification2.id}/
       assert link_header =~ ~r/max_id=#{notification1.id}/
     end
   end
