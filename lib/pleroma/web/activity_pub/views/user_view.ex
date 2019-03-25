@@ -87,16 +87,13 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "publicKeyPem" => public_key
       },
       "endpoints" => endpoints,
-      "icon" => %{
-        "type" => "Image",
-        "url" => User.avatar_url(user)
-      },
       "image" => %{
         "type" => "Image",
         "url" => User.banner_url(user)
       },
       "tag" => user.info.source_data["tag"] || []
     }
+    |> Map.merge(Utils.maybe_make_icon(user))
     |> Map.merge(Utils.make_json_ld_header())
   end
 

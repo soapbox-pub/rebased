@@ -90,6 +90,14 @@ defmodule Pleroma.User do
     end
   end
 
+  # Do not return instance default avatar for federation
+  def avatar_url_ap(user) do
+    case user.avatar do
+      %{"url" => [%{"href" => href} | _]} -> href
+      _ -> nil
+    end
+  end
+
   def banner_url(user) do
     case user.info.banner do
       %{"url" => [%{"href" => href} | _]} -> href
