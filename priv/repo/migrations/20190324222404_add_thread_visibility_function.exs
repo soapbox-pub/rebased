@@ -25,6 +25,11 @@ defmodule Pleroma.Repo.Migrations.AddThreadVisibilityFunction do
           RETURN true;
         END IF;
 
+        --- We only care about Create activities.
+        IF activity.data->>'type' != 'Create' THEN
+          RETURN true;
+        END IF;
+
         --- Normalize the child object into child.
         SELECT * INTO child FROM objects
         INNER JOIN activities ON COALESCE(activities.data->'object'->>'id', activities.data->>'object') = objects.data->>'id'
