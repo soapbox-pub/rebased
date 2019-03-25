@@ -209,12 +209,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def insert_full_object(%{"object" => %{"type" => type} = object_data})
       when is_map(object_data) and type in @supported_object_types do
-    with {:ok, _} <- Object.create(object_data) do
-      :ok
+    with {:ok, object} <- Object.create(object_data) do
+      {:ok, object}
     end
   end
 
-  def insert_full_object(_), do: :ok
+  def insert_full_object(_), do: {:ok, nil}
 
   def update_object_in_activities(%{data: %{"id" => id}} = object) do
     # TODO

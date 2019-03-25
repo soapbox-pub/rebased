@@ -95,7 +95,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- check_actor_is_active(map["actor"]),
          {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
-         :ok <- insert_full_object(map) do
+         {:ok, object} <- insert_full_object(map) do
       {recipients, _, _} = get_recipients(map)
 
       {:ok, activity} =
@@ -105,6 +105,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           actor: map["actor"],
           recipients: recipients
         })
+
+      # Splice in the child object if we have one.
+      activity =
+        if !is_nil(object) do
+          Map.put(activity, :object, object)
+        else
+          activity
+        end
 
       Task.start(fn ->
         Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
@@ -430,6 +438,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           ),
         order_by: [desc: :id]
       )
+      |> Activity.with_preloaded_object()
 
     Repo.all(query)
   end
@@ -709,6 +718,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
+
+  defp maybe_preload_objects(query, _) do
+    query
+    |> Activity.with_preloaded_object()
+  end
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query =
       from(
@@ -718,6 +734,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       )
 
     base_query
+    |> maybe_preload_objects(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
@@ -940,7 +957,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            },
            :ok <- Transmogrifier.contain_origin(id, params),
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do
-        {:ok, Object.normalize(activity.data["object"])}
+        {:ok, Object.normalize(activity)}
       else
         {:error, {:reject, nil}} ->
           {:reject, nil}
@@ -952,7 +969,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
           case OStatus.fetch_activity_from_url(id) do
-            {:ok, [activity | _]} -> {:ok, Object.normalize(activity.data["object"])}
+            {:ok, [activity | _]} -> {:ok, Object.normalize(activity)}
             e -> e
           end
       end

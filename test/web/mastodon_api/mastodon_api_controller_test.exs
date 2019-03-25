@@ -806,6 +806,96 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert all = json_response(conn, 200)
       assert all == []
     end
+
+    test "paginates notifications using min_id, since_id, max_id, and limit", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity1} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, activity2} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, activity3} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, activity4} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+
+      notification1_id = Repo.get_by(Notification, activity_id: activity1.id).id |> to_string()
+      notification2_id = Repo.get_by(Notification, activity_id: activity2.id).id |> to_string()
+      notification3_id = Repo.get_by(Notification, activity_id: activity3.id).id |> to_string()
+      notification4_id = Repo.get_by(Notification, activity_id: activity4.id).id |> to_string()
+
+      conn =
+        conn
+        |> assign(:user, user)
+
+      # min_id
+      conn_res =
+        conn
+        |> get("/api/v1/notifications?limit=2&min_id=#{notification1_id}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
+
+      # since_id
+      conn_res =
+        conn
+        |> get("/api/v1/notifications?limit=2&since_id=#{notification1_id}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
+
+      # max_id
+      conn_res =
+        conn
+        |> get("/api/v1/notifications?limit=2&max_id=#{notification4_id}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
+    end
+
+    test "filters notifications using exclude_types", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, mention_activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
+      {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, favorite_activity, _} = CommonAPI.favorite(create_activity.id, other_user)
+      {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
+
+      mention_notification_id =
+        Repo.get_by(Notification, activity_id: mention_activity.id).id |> to_string()
+
+      favorite_notification_id =
+        Repo.get_by(Notification, activity_id: favorite_activity.id).id |> to_string()
+
+      reblog_notification_id =
+        Repo.get_by(Notification, activity_id: reblog_activity.id).id |> to_string()
+
+      follow_notification_id =
+        Repo.get_by(Notification, activity_id: follow_activity.id).id |> to_string()
+
+      conn =
+        conn
+        |> assign(:user, user)
+
+      conn_res =
+        get(conn, "/api/v1/notifications", %{exclude_types: ["mention", "favourite", "reblog"]})
+
+      assert [%{"id" => ^follow_notification_id}] = json_response(conn_res, 200)
+
+      conn_res =
+        get(conn, "/api/v1/notifications", %{exclude_types: ["favourite", "reblog", "follow"]})
+
+      assert [%{"id" => ^mention_notification_id}] = json_response(conn_res, 200)
+
+      conn_res =
+        get(conn, "/api/v1/notifications", %{exclude_types: ["reblog", "follow", "mention"]})
+
+      assert [%{"id" => ^favorite_notification_id}] = json_response(conn_res, 200)
+
+      conn_res =
+        get(conn, "/api/v1/notifications", %{exclude_types: ["follow", "mention", "favourite"]})
+
+      assert [%{"id" => ^reblog_notification_id}] = json_response(conn_res, 200)
+    end
   end
 
   describe "reblogging" do
@@ -1683,7 +1773,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a data-user=") <>
+               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe" rel="tag">#cofe</a> with <span class="h-card"><a data-user=") <>
                  user2.id <>
                  ~s(" class="u-url mention" href=") <>
                  user2.ap_id <> ~s(">@<span>) <> user2.nickname <> ~s(</span></a></span>)

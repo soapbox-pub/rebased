@@ -140,7 +140,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activity = insert(:note_activity)
       {:ok, new_activity} = ActivityPub.insert(activity.data)
 
-      assert activity == new_activity
+      assert activity.id == new_activity.id
     end
 
     test "inserts a given map into the activity database, giving it an id if it has none." do
@@ -270,7 +270,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     booster = insert(:user)
     {:ok, user} = User.block(user, %{ap_id: activity_one.data["actor"]})
 
-    activities = ActivityPub.fetch_activities([], %{"blocking_user" => user})
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -278,7 +279,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, user} = User.unblock(user, %{ap_id: activity_one.data["actor"]})
 
-    activities = ActivityPub.fetch_activities([], %{"blocking_user" => user})
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -289,14 +291,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Repo.get(Activity, activity_three.id)
 
-    activities = ActivityPub.fetch_activities([], %{"blocking_user" => user})
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
 
     assert Enum.member?(activities, activity_two)
     refute Enum.member?(activities, activity_three)
     refute Enum.member?(activities, boost_activity)
     assert Enum.member?(activities, activity_one)
 
-    activities = ActivityPub.fetch_activities([], %{"blocking_user" => nil})
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => nil, "skip_preload" => true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -312,14 +316,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     booster = insert(:user)
     {:ok, user} = User.mute(user, %User{ap_id: activity_one.data["actor"]})
 
-    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+    activities =
+      ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
     refute Enum.member?(activities, activity_one)
 
     # Calling with 'with_muted' will deliver muted activities, too.
-    activities = ActivityPub.fetch_activities([], %{"muting_user" => user, "with_muted" => true})
+    activities =
+      ActivityPub.fetch_activities([], %{
+        "muting_user" => user,
+        "with_muted" => true,
+        "skip_preload" => true
+      })
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -327,7 +337,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
     {:ok, user} = User.unmute(user, %User{ap_id: activity_one.data["actor"]})
 
-    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+    activities =
+      ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
@@ -338,19 +349,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
     activity_three = Repo.get(Activity, activity_three.id)
 
-    activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+    activities =
+      ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
 
     assert Enum.member?(activities, activity_two)
     refute Enum.member?(activities, activity_three)
     refute Enum.member?(activities, boost_activity)
     assert Enum.member?(activities, activity_one)
 
-    activities = ActivityPub.fetch_activities([], %{"muting_user" => nil})
+    activities = ActivityPub.fetch_activities([], %{"muting_user" => nil, "skip_preload" => true})
 
     assert Enum.member?(activities, activity_two)
     assert Enum.member?(activities, activity_three)
     assert Enum.member?(activities, boost_activity)
     assert Enum.member?(activities, activity_one)
+  end
+
+  test "does include announces on request" do
+    activity_three = insert(:note_activity)
+    user = insert(:user)
+    booster = insert(:user)
+
+    {:ok, user} = User.follow(user, booster)
+
+    {:ok, announce, _object} = CommonAPI.repeat(activity_three.id, booster)
+
+    [announce_activity] = ActivityPub.fetch_activities([user.ap_id | user.following])
+
+    assert announce_activity.id == announce.id
   end
 
   test "excludes reblogs on request" do
