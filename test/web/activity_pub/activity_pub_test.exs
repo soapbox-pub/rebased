@@ -968,7 +968,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert length(activities) == 3
 
-      activities = ActivityPub.contain_timeline(activities, user1)
+      activities =
+        ActivityPub.fetch_activities([user1.ap_id | user1.following], %{"user" => user1})
 
       assert [public_activity, private_activity_1] == activities
       assert length(activities) == 2
