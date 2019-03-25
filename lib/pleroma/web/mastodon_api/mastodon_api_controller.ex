@@ -10,6 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Filter
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.Stats
   alias Pleroma.User
@@ -310,7 +311,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     activities =
       [user.ap_id]
       |> ActivityPub.fetch_activities_query(params)
-      |> Repo.all()
+      |> Pagination.fetch_paginated(params)
 
     conn
     |> add_link_headers(:dm_timeline, activities)
