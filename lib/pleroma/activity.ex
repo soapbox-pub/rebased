@@ -245,4 +245,50 @@ defmodule Pleroma.Activity do
     |> where([s], s.actor == ^actor)
     |> Repo.all()
   end
+
+  def increase_replies_count(id) do
+    Activity
+    |> where(id: ^id)
+    |> update([a],
+      set: [
+        data:
+          fragment(
+            """
+            jsonb_set(?, '{object, repliesCount}',
+              (coalesce((?->'object'->>'repliesCount')::int, 0) + 1)::varchar::jsonb, true)
+            """,
+            a.data,
+            a.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [activity]} -> activity
+      _ -> {:error, "Not found"}
+    end
+  end
+
+  def decrease_replies_count(id) do
+    Activity
+    |> where(id: ^id)
+    |> update([a],
+      set: [
+        data:
+          fragment(
+            """
+            jsonb_set(?, '{object, repliesCount}',
+              (greatest(0, (?->'object'->>'repliesCount')::int - 1))::varchar::jsonb, true)
+            """,
+            a.data,
+            a.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [activity]} -> activity
+      _ -> {:error, "Not found"}
+    end
+  end
 end

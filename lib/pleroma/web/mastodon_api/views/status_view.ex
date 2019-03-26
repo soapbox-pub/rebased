@@ -174,7 +174,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       content: content,
       created_at: created_at,
       reblogs_count: announcement_count,
-      replies_count: 0,
+      replies_count: object["repliesCount"] || 0,
       favourites_count: like_count,
       reblogged: present?(repeated),
       favourited: present?(favorited),
