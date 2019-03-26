@@ -408,13 +408,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
     test "regular search with page size" do
       admin = insert(:user, info: %{is_admin: true})
-      user = insert(:user, nickname: "bob")
-      user2 = insert(:user, nickname: "bo")
+      user = insert(:user, nickname: "aalice")
+      user2 = insert(:user, nickname: "alice")
 
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users?query=bo&page_size=1&page=1")
+        |> get("/api/pleroma/admin/users?query=a&page_size=1&page=1")
 
       assert json_response(conn, 200) == %{
                "count" => 2,
@@ -434,7 +434,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users?query=bo&page_size=1&page=2")
+        |> get("/api/pleroma/admin/users?query=a&page_size=1&page=2")
 
       assert json_response(conn, 200) == %{
                "count" => 2,
@@ -461,7 +461,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users?query=bo&local_only=true")
+        |> get("/api/pleroma/admin/users?query=bo&filters=local")
 
       assert json_response(conn, 200) == %{
                "count" => 1,
@@ -488,7 +488,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/users?local_only=true")
+        |> get("/api/pleroma/admin/users?filters=local")
 
       assert json_response(conn, 200) == %{
                "count" => 2,
@@ -508,6 +508,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => admin.nickname,
                    "roles" => %{"admin" => true, "moderator" => false},
                    "local" => true,
+                   "tags" => []
+                 }
+               ]
+             }
+    end
+
+    test "it works with multiple filters" do
+      admin = insert(:user, nickname: "john", info: %{is_admin: true})
+      user = insert(:user, nickname: "bob", local: false, info: %{deactivated: true})
+
+      insert(:user, nickname: "ken", local: true, info: %{deactivated: true})
+      insert(:user, nickname: "bobb", local: false, info: %{deactivated: false})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users?filters=deactivated,external")
+
+      assert json_response(conn, 200) == %{
+               "count" => 1,
+               "page_size" => 50,
+               "users" => [
+                 %{
+                   "deactivated" => user.info.deactivated,
+                   "id" => user.id,
+                   "nickname" => user.nickname,
+                   "roles" => %{"admin" => false, "moderator" => false},
+                   "local" => user.local,
                    "tags" => []
                  }
                ]

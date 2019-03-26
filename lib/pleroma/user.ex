@@ -772,52 +772,6 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  @spec search_for_admin(%{
-          local: boolean(),
-          page: number(),
-          page_size: number()
-        }) :: {:ok, [Pleroma.User.t()], number()}
-  def search_for_admin(%{query: nil, local: local, page: page, page_size: page_size}) do
-    query =
-      from(u in User, order_by: u.nickname)
-      |> maybe_local_user_query(local)
-
-    paginated_query =
-      query
-      |> paginate(page, page_size)
-
-    count =
-      query
-      |> Repo.aggregate(:count, :id)
-
-    {:ok, Repo.all(paginated_query), count}
-  end
-
-  @spec search_for_admin(%{
-          query: binary(),
-          local: boolean(),
-          page: number(),
-          page_size: number()
-        }) :: {:ok, [Pleroma.User.t()], number()}
-  def search_for_admin(%{
-        query: term,
-        local: local,
-        page: page,
-        page_size: page_size
-      }) do
-    maybe_local_query = User |> maybe_local_user_query(local)
-
-    search_query = from(u in maybe_local_query, where: ilike(u.nickname, ^"%#{term}%"))
-    count = search_query |> Repo.aggregate(:count, :id)
-
-    results =
-      search_query
-      |> paginate(page, page_size)
-      |> Repo.all()
-
-    {:ok, results, count}
-  end
-
   def search(query, resolve \\ false, for_user \\ nil) do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
@@ -856,7 +810,7 @@ defmodule Pleroma.User do
         search_rank:
           fragment(
             """
-             CASE WHEN (?) THEN (?) * 1.3 
+             CASE WHEN (?) THEN (?) * 1.3
              WHEN (?) THEN (?) * 1.2
              WHEN (?) THEN (?) * 1.1
              ELSE (?) END
@@ -1067,6 +1021,42 @@ defmodule Pleroma.User do
     from(
       u in query,
       where: u.local == true,
+      where: not is_nil(u.nickname)
+    )
+  end
+
+  def maybe_external_user_query(query, external) do
+    if external, do: external_user_query(query), else: query
+  end
+
+  def external_user_query(query \\ User) do
+    from(
+      u in query,
+      where: u.local == false,
+      where: not is_nil(u.nickname)
+    )
+  end
+
+  def maybe_active_user_query(query, active) do
+    if active, do: active_user_query(query), else: query
+  end
+
+  def active_user_query(query \\ User) do
+    from(
+      u in query,
+      where: fragment("not (?->'deactivated' @> 'true')", u.info),
+      where: not is_nil(u.nickname)
+    )
+  end
+
+  def maybe_deactivated_user_query(query, deactivated) do
+    if deactivated, do: deactivated_user_query(query), else: query
+  end
+
+  def deactivated_user_query(query \\ User) do
+    from(
+      u in query,
+      where: fragment("(?->'deactivated' @> 'true')", u.info),
       where: not is_nil(u.nickname)
     )
   end
