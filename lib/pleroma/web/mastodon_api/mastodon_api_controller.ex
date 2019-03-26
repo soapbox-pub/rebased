@@ -161,6 +161,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       },
       stats: Stats.get_stats(),
       thumbnail: Web.base_url() <> "/instance/thumbnail.jpeg",
+      languages: ["en"],
+      registrations: Pleroma.Config.get([:instance, :registrations_open]),
+      # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit)
     }
 
