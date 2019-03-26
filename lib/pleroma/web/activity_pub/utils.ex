@@ -241,7 +241,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         }
       }
     else
-      []
+      %{}
     end
   end
 
