@@ -1813,19 +1813,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     # Note: not checking for "max_toot_chars" since it's optional
     assert %{
-      "uri" => _,
-      "title" => _,
-      "description" => _,
-      "version" => _,
-      "email" => _,
-      "urls" => %{
-        "streaming_api" => _
-      },
-      "stats" => _,
-      "thumbnail" => _,
-      "languages" => _,
-      "registrations" => _
-    } = result
+             "uri" => _,
+             "title" => _,
+             "description" => _,
+             "version" => _,
+             "email" => _,
+             "urls" => %{
+               "streaming_api" => _
+             },
+             "stats" => _,
+             "thumbnail" => _,
+             "languages" => _,
+             "registrations" => _
+           } = result
   end
 
   test "get instance stats", %{conn: conn} do
