@@ -60,14 +60,10 @@ defmodule Pleroma.User do
     timestamps()
   end
 
-  def auth_active?(%User{local: false}), do: true
-
-  def auth_active?(%User{info: %User.Info{confirmation_pending: false}}), do: true
-
   def auth_active?(%User{info: %User.Info{confirmation_pending: true}}),
     do: !Pleroma.Config.get([:instance, :account_activation_required])
 
-  def auth_active?(_), do: false
+  def auth_active?(%User{}), do: true
 
   def visible_for?(user, for_user \\ nil)
 
