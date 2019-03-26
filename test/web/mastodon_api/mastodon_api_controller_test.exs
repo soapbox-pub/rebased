@@ -1808,6 +1808,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "get instance information", %{conn: conn} do
+    conn = get(conn, "/api/v1/instance")
+    assert result = json_response(conn, 200)
+
+    # Note: not checking for "max_toot_chars" since it's optional
+    assert %{
+      "uri" => _,
+      "title" => _,
+      "description" => _,
+      "version" => _,
+      "email" => _,
+      "urls" => %{
+        "streaming_api" => _
+      },
+      "stats" => _,
+      "thumbnail" => _,
+      "languages" => _,
+      "registrations" => _
+    } = result
+  end
+
+  test "get instance stats", %{conn: conn} do
     user = insert(:user, %{local: true})
 
     user2 = insert(:user, %{local: true})
