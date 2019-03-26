@@ -87,16 +87,10 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "publicKeyPem" => public_key
       },
       "endpoints" => endpoints,
-      "icon" => %{
-        "type" => "Image",
-        "url" => User.avatar_url(user)
-      },
-      "image" => %{
-        "type" => "Image",
-        "url" => User.banner_url(user)
-      },
       "tag" => user.info.source_data["tag"] || []
     }
+    |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
+    |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -292,6 +286,19 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       Map.put(map, "next", "#{iri}?page=#{page + 1}")
     else
       map
+    end
+  end
+
+  defp maybe_make_image(func, key, user) do
+    if image = func.(user, no_default: true) do
+      %{
+        key => %{
+          "type" => "Image",
+          "url" => image
+        }
+      }
+    else
+      %{}
     end
   end
 end
