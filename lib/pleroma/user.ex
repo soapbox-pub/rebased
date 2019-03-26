@@ -83,25 +83,17 @@ defmodule Pleroma.User do
   def superuser?(%User{local: true, info: %User.Info{is_moderator: true}}), do: true
   def superuser?(_), do: false
 
-  def avatar_url(user) do
+  def avatar_url(user, options \\ []) do
     case user.avatar do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "#{Web.base_url()}/images/avi.png"
+      _ -> !options[:no_default] && "#{Web.base_url()}/images/avi.png"
     end
   end
 
-  # Do not return instance default avatar for federation
-  def avatar_url_ap(user) do
-    case user.avatar do
-      %{"url" => [%{"href" => href} | _]} -> href
-      _ -> nil
-    end
-  end
-
-  def banner_url(user) do
+  def banner_url(user, options \\ []) do
     case user.info.banner do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "#{Web.base_url()}/images/banner.png"
+      _ -> !options[:no_default] && "#{Web.base_url()}/images/banner.png"
     end
   end
 

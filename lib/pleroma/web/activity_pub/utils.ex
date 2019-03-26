@@ -230,21 +230,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     end)
   end
 
-  # Only federate user icon if not nil
-  # Prevents federating instance default avatars
-  def maybe_make_icon(user) do
-    if User.avatar_url_ap(user) do
-      %{
-        "icon" => %{
-          "type" => "Image",
-          "url" => User.avatar_url_ap(user)
-        }
-      }
-    else
-      %{}
-    end
-  end
-
   #### Like-related helpers
 
   @doc """
