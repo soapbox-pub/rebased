@@ -332,6 +332,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(user.id)
   end
 
+  test "apps/verify_credentials", %{conn: conn} do
+    token = insert(:oauth_token)
+
+    conn =
+      conn
+      |> assign(:user, token.user)
+      |> assign(:token, token)
+      |> get("/api/v1/apps/verify_credentials")
+
+    app = Repo.preload(token, :app).app
+
+    expected = %{
+      "name" => app.client_name,
+      "website" => app.website,
+      "vapid_key" => Pleroma.Web.Push.vapid_config() |> Keyword.get(:public_key)
+    }
+
+    assert expected == json_response(conn, 200)
+  end
+
   test "get a status", %{conn: conn} do
     activity = insert(:note_activity)
 

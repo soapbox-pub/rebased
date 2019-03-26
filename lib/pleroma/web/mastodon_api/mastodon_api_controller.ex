@@ -18,6 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
@@ -130,6 +131,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
     account = AccountView.render("account.json", %{user: user, for: user})
     json(conn, account)
+  end
+
+  def verify_app_credentials(%{assigns: %{user: _user, token: token}} = conn, _) do
+    with %Token{app: %App{} = app} <- Repo.preload(token, :app) do
+      conn
+      |> put_view(AppView)
+      |> render("show.json", %{app: app})
+    end
   end
 
   def user(%{assigns: %{user: for_user}} = conn, %{"id" => nickname_or_id}) do
