@@ -14,7 +14,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.FilterView
+  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Push
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
   import ExUnit.CaptureLog
@@ -346,7 +348,34 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     expected = %{
       "name" => app.client_name,
       "website" => app.website,
-      "vapid_key" => Pleroma.Web.Push.vapid_config() |> Keyword.get(:public_key)
+      "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
+    }
+
+    assert expected == json_response(conn, 200)
+  end
+
+  test "creates an oauth app", %{conn: conn} do
+    user = insert(:user)
+    app_attrs = build(:oauth_app)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/apps", %{
+        client_name: app_attrs.client_name,
+        redirect_uris: app_attrs.redirect_uris
+      })
+
+    [app] = Repo.all(App)
+
+    expected = %{
+      "name" => app.client_name,
+      "website" => app.website,
+      "client_id" => app.client_id,
+      "client_secret" => app.client_secret,
+      "id" => app.id |> to_string(),
+      "redirect_uri" => app.redirect_uris,
+      "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
     }
 
     assert expected == json_response(conn, 200)

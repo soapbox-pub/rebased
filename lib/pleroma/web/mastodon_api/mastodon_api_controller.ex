@@ -52,16 +52,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with cs <- App.register_changeset(%App{}, app_attrs),
          false <- cs.changes[:client_name] == @local_mastodon_name,
          {:ok, app} <- Repo.insert(cs) do
-      res = %{
-        id: app.id |> to_string,
-        name: app.client_name,
-        client_id: app.client_id,
-        client_secret: app.client_secret,
-        redirect_uri: app.redirect_uris,
-        website: app.website
-      }
-
-      json(conn, res)
+      conn
+      |> put_view(AppView)
+      |> render("show.json", %{app: app})
     end
   end
 
@@ -137,7 +130,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with %Token{app: %App{} = app} <- Repo.preload(token, :app) do
       conn
       |> put_view(AppView)
-      |> render("show.json", %{app: app})
+      |> render("short.json", %{app: app})
     end
   end
 
