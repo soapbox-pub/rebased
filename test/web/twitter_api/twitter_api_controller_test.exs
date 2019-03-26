@@ -958,7 +958,11 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
 
       assert json_response(response, 200) ==
-               ActivityView.render("activity.json", %{user: activity_user, for: current_user, activity: activity})
+               ActivityView.render("activity.json", %{
+                 user: activity_user,
+                 for: current_user,
+                 activity: activity
+               })
     end
   end
 
@@ -992,7 +996,11 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
 
       assert json_response(response, 200) ==
-               ActivityView.render("activity.json", %{user: activity_user, for: current_user, activity: activity})
+               ActivityView.render("activity.json", %{
+                 user: activity_user,
+                 for: current_user,
+                 activity: activity
+               })
     end
   end
 
