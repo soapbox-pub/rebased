@@ -385,10 +385,7 @@ oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGI
 
 ueberauth_providers =
   for strategy <- oauth_consumer_strategies do
-    strategy_module_name =
-      System.get_env("UEBERAUTH_#{String.upcase(strategy)}_STRATEGY_MODULE") ||
-        "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
-
+    strategy_module_name = "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
     strategy_module = String.to_atom(strategy_module_name)
     {String.to_atom(strategy), {strategy_module, [callback_params: ["state"]]}}
   end

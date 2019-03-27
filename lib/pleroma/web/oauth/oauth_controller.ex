@@ -174,6 +174,25 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+  def prepare_request(conn, %{"provider" => provider} = params) do
+    scope =
+      oauth_scopes(params, [])
+      |> Enum.join(" ")
+
+    state =
+      params
+      |> Map.delete("scopes")
+      |> Map.put("scope", scope)
+      |> Poison.encode!()
+
+    params =
+      params
+      |> Map.drop(~w(scope scopes client_id redirect_uri))
+      |> Map.put("state", state)
+
+    redirect(conn, to: o_auth_path(conn, :request, provider, params))
+  end
+
   def request(conn, params) do
     message =
       if params["provider"] do
@@ -235,14 +254,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   defp callback_params(%{"state" => state} = params) do
-    [client_id, redirect_uri, scope, state] = String.split(state, "|")
-
-    Map.merge(params, %{
-      "client_id" => client_id,
-      "redirect_uri" => redirect_uri,
-      "scope" => scope,
-      "state" => state
-    })
+    Map.merge(params, Poison.decode!(state))
   end
 
   def registration_details(conn, params) do

@@ -33,4 +33,10 @@ defmodule Pleroma.Web.Auth.Authenticator do
   def auth_template do
     implementation().auth_template() || Pleroma.Config.get(:auth_template, "show.html")
   end
+
+  @callback oauth_consumer_template() :: String.t() | nil
+  def oauth_consumer_template do
+    implementation().oauth_consumer_template() ||
+      Pleroma.Config.get(:oauth_consumer_template, "consumer.html")
+  end
 end

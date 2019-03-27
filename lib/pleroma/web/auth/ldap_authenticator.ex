@@ -51,6 +51,8 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
 
   def auth_template, do: nil
 
+  def oauth_consumer_template, do: nil
+
   defp ldap_user(name, password) do
     ldap = Pleroma.Config.get(:ldap, [])
     host = Keyword.get(ldap, :host, "localhost")

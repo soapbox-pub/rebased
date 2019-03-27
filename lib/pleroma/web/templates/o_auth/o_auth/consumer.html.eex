@@ -2,9 +2,14 @@
 <br>
 <h2>Sign in with external provider</h2>
 
-<%= for strategy <- Pleroma.Config.get([:auth, :oauth_consumer_strategies], []) do %>
-  <%= form_for @conn, o_auth_path(@conn, :request, strategy), [method: "get"], fn f -> %>
-    <%= hidden_input f, :state, value: Enum.join([@client_id, @redirect_uri, Enum.join(@available_scopes, " "), @state], "|") %>
-    <%= submit "Sign in with #{String.capitalize(strategy)}" %>
-  <% end %>
+<%= form_for @conn, o_auth_path(@conn, :prepare_request), [method: "get"], fn f -> %>
+  <%= render @view_module, "_scopes.html", Map.put(assigns, :form, f) %>
+
+  <%= hidden_input f, :client_id, value: @client_id %>
+  <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
+  <%= hidden_input f, :state, value: @state %>
+
+    <%= for strategy <- Pleroma.Config.get([:auth, :oauth_consumer_strategies], []) do %>
+      <%= submit "Sign in with #{String.capitalize(strategy)}", name: "provider", value: strategy %>
+    <% end %>
 <% end %>

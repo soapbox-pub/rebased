@@ -92,4 +92,6 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
   end
 
   def auth_template, do: nil
+
+  def oauth_consumer_template, do: nil
 end

@@ -213,6 +213,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:browser)
 
+      get("/prepare_request", OAuthController, :prepare_request)
       get("/:provider", OAuthController, :request)
       get("/:provider/callback", OAuthController, :callback)
       post("/register", OAuthController, :register)
