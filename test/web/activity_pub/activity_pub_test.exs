@@ -494,7 +494,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
 
-      refute Enum.member?(activities, activity)
+      refute Enum.any?(activities, fn %{id: id} -> id == activity.id end)
+    end
+
+    test "returns reblogs for users for whom reblogs have not been muted" do
+      activity = insert(:note_activity)
+      user = insert(:user)
+      booster = insert(:user)
+      {:ok, user} = CommonAPI.hide_reblogs(user, booster)
+      {:ok, user} = CommonAPI.show_reblogs(user, booster)
+
+      {:ok, activity, _} = CommonAPI.repeat(activity.id, booster)
+
+      activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+      assert Enum.any?(activities, fn %{id: id} -> id == activity.id end)
     end
   end
 
