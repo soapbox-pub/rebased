@@ -502,7 +502,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def notifications(%{assigns: %{user: user}} = conn, params) do
-    notifications = Notification.for_user(user, params)
+    notifications = MastodonAPI.get_notifications(user, params)
 
     conn
     |> add_link_headers(:notifications, notifications)
@@ -944,12 +944,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def favourites(%{assigns: %{user: user}} = conn, params) do
-    activities =
+    params =
       params
       |> Map.put("type", "Create")
       |> Map.put("favorited_by", user.ap_id)
       |> Map.put("blocking_user", user)
-      |> ActivityPub.fetch_public_activities()
+
+    activities =
+      ActivityPub.fetch_activities([], params)
       |> Enum.reverse()
 
     conn

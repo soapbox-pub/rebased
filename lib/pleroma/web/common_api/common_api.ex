@@ -6,7 +6,6 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.Formatter
   alias Pleroma.Object
-  alias Pleroma.Repo
   alias Pleroma.ThreadMute
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -64,8 +63,9 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def delete(activity_id, user) do
-    with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, activity_id),
-         %Object{} = object <- Object.normalize(object_id),
+    with %Activity{data: %{"object" => _}} = activity <-
+           Activity.get_by_id_with_object(activity_id),
+         %Object{} = object <- Object.normalize(activity),
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, _} <- unpin(activity_id, user),
          {:ok, delete} <- ActivityPub.delete(object) do
@@ -75,7 +75,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def repeat(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]),
+         object <- Object.normalize(activity),
          nil <- Utils.get_existing_announce(user.ap_id, object) do
       ActivityPub.announce(user, object)
     else
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unrepeat(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity) do
       ActivityPub.unannounce(user, object)
     else
       _ ->
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def favorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]),
+         object <- Object.normalize(activity),
          nil <- Utils.get_existing_like(user.ap_id, object) do
       ActivityPub.like(user, object)
     else
@@ -107,7 +107,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unfavorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity) do
       ActivityPub.unlike(user, object)
     else
       _ ->
@@ -142,7 +142,8 @@ defmodule Pleroma.Web.CommonAPI do
            make_content_html(
              status,
              attachments,
-             data
+             data,
+             visibility
            ),
          {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
          context <- make_context(in_reply_to),

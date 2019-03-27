@@ -16,7 +16,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
   schema "oauth_authorizations" do
     field(:token, :string)
     field(:scopes, {:array, :string}, default: [])
-    field(:valid_until, :naive_datetime)
+    field(:valid_until, :naive_datetime_usec)
     field(:used, :boolean, default: false)
     belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
     belongs_to(:app, App)

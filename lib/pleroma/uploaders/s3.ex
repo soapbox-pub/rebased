@@ -13,10 +13,15 @@ defmodule Pleroma.Uploaders.S3 do
     bucket = Keyword.fetch!(config, :bucket)
 
     bucket_with_namespace =
-      if namespace = Keyword.get(config, :bucket_namespace) do
-        namespace <> ":" <> bucket
-      else
-        bucket
+      cond do
+        truncated_namespace = Keyword.get(config, :truncated_namespace) ->
+          truncated_namespace
+
+        namespace = Keyword.get(config, :bucket_namespace) ->
+          namespace <> ":" <> bucket
+
+        true ->
+          bucket
       end
 
     {:ok,

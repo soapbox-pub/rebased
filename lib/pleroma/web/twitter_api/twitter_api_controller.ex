@@ -16,6 +16,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.TwitterAPI.NotificationView
@@ -278,7 +279,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def fetch_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with context when is_binary(context) <- TwitterAPI.conversation_id_to_context(id),
+    with context when is_binary(context) <- Utils.conversation_id_to_context(id),
          activities <-
            ActivityPub.fetch_activities_for_context(context, %{
              "blocking_user" => user,

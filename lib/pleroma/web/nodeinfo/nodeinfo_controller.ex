@@ -124,6 +124,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         end,
         if Keyword.get(instance, :allow_relay) do
           "relay"
+        end,
+        if Keyword.get(instance, :safe_dm_mentions) do
+          "safe_dm_mentions"
         end
       ]
       |> Enum.filter(& &1)

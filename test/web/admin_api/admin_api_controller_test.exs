@@ -495,18 +495,18 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "page_size" => 50,
                "users" => [
                  %{
-                   "deactivated" => admin.info.deactivated,
-                   "id" => admin.id,
-                   "nickname" => admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => true,
-                   "tags" => []
-                 },
-                 %{
                    "deactivated" => user.info.deactivated,
                    "id" => user.id,
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
+                   "local" => true,
+                   "tags" => []
+                 },
+                 %{
+                   "deactivated" => admin.info.deactivated,
+                   "id" => admin.id,
+                   "nickname" => admin.nickname,
+                   "roles" => %{"admin" => true, "moderator" => false},
                    "local" => true,
                    "tags" => []
                  }

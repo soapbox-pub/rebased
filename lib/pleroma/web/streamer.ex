@@ -202,7 +202,7 @@ defmodule Pleroma.Web.Streamer do
         mutes = user.info.mutes || []
         reblog_mutes = user.info.muted_reblogs || []
 
-        parent = Object.normalize(item.data["object"])
+        parent = Object.normalize(item)
 
         unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
                  item.actor in reblog_mutes or not ActivityPub.contain_activity(item, user) or

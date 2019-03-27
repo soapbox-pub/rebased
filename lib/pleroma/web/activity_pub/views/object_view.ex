@@ -17,7 +17,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
 
   def render("object.json", %{object: %Activity{data: %{"type" => "Create"}} = activity}) do
     base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     additional =
       Transmogrifier.prepare_object(activity.data)
@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
 
   def render("object.json", %{object: %Activity{} = activity}) do
     base = Pleroma.Web.ActivityPub.Utils.make_json_ld_header()
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     additional =
       Transmogrifier.prepare_object(activity.data)

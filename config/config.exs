@@ -8,8 +8,6 @@ use Mix.Config
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
-config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
-
 config :pleroma, Pleroma.Captcha,
   enabled: false,
   seconds_valid: 60,
@@ -174,7 +172,8 @@ config :pleroma, :instance,
   no_attachment_links: false,
   welcome_user_nickname: nil,
   welcome_message: nil,
-  max_report_comment_size: 1000
+  max_report_comment_size: 1000,
+  safe_dm_mentions: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -272,8 +271,6 @@ config :pleroma, :media_proxy,
   ]
 
 config :pleroma, :chat, enabled: true
-
-config :ecto, json_library: Jason
 
 config :phoenix, :format_encoders, json: Jason
 

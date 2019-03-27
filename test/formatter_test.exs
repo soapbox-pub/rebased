@@ -181,6 +181,31 @@ defmodule Pleroma.FormatterTest do
       expected_text = "@a hi"
       assert {^expected_text, [] = _mentions, [] = _tags} = Formatter.linkify(text)
     end
+
+    test "given the 'safe_mention' option, it will only mention people in the beginning" do
+      user = insert(:user)
+      _other_user = insert(:user)
+      third_user = insert(:user)
+      text = " @#{user.nickname} hey dude i hate @#{third_user.nickname}"
+      {expected_text, mentions, [] = _tags} = Formatter.linkify(text, safe_mention: true)
+
+      assert mentions == [{"@#{user.nickname}", user}]
+
+      assert expected_text ==
+               "<span class='h-card'><a data-user='#{user.id}' class='u-url mention' href='#{
+                 user.ap_id
+               }'>@<span>#{user.nickname}</span></a></span> hey dude i hate <span class='h-card'><a data-user='#{
+                 third_user.id
+               }' class='u-url mention' href='#{third_user.ap_id}'>@<span>#{third_user.nickname}</span></a></span>"
+    end
+
+    test "given the 'safe_mention' option, it will still work without any mention" do
+      text = "A post without any mention"
+      {expected_text, mentions, [] = _tags} = Formatter.linkify(text, safe_mention: true)
+
+      assert mentions == []
+      assert expected_text == text
+    end
   end
 
   describe ".parse_tags" do

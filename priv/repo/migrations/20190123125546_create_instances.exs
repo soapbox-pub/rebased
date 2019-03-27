@@ -4,7 +4,7 @@ defmodule Pleroma.Repo.Migrations.CreateInstances do
   def change do
     create table(:instances) do
       add :host, :string
-      add :unreachable_since, :naive_datetime
+      add :unreachable_since, :naive_datetime_usec
 
       timestamps()
     end
