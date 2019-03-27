@@ -737,8 +737,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(
       activity in query,
-      where: fragment("not ?->>'type' = 'Announce'", activity.data),
-      where: fragment("not ? = ANY(?)", activity.actor, ^muted_reblogs)
+      where:
+        fragment(
+          "not ( ?->>'type' = 'Announce' and ? = ANY(?))",
+          activity.data,
+          activity.actor,
+          ^muted_reblogs
+        )
     )
   end
 
