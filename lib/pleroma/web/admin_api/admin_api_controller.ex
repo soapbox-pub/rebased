@@ -45,6 +45,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(user.nickname)
   end
 
+  def user_show(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      conn
+      |> json(AccountView.render("show.json", %{user: user}))
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
   def user_toggle_activation(conn, %{"nickname" => nickname}) do
     user = User.get_by_nickname(nickname)
 
@@ -229,6 +238,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(token.token)
+  end
+
+  def errors(conn, {:error, :not_found}) do
+    conn
+    |> put_status(404)
+    |> json("Not found")
   end
 
   def errors(conn, {:param_cast, _}) do
