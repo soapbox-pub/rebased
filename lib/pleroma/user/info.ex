@@ -40,6 +40,10 @@ defmodule Pleroma.User.Info do
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
 
+    field(:notification_settings, :map,
+      default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
+    )
+
     # Found in the wild
     # ap_id -> Where is this used?
     # bio -> Where is this used?
