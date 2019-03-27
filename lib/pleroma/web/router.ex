@@ -328,6 +328,7 @@ defmodule Pleroma.Web.Router do
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)
     post("/apps", MastodonAPIController, :create_app)
+    get("/apps/verify_credentials", MastodonAPIController, :verify_app_credentials)
     get("/custom_emojis", MastodonAPIController, :custom_emojis)
 
     get("/statuses/:id/card", MastodonAPIController, :status_card)
