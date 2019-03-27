@@ -8,6 +8,7 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+
   use Pleroma.DataCase
 
   import Pleroma.Factory
@@ -1106,22 +1107,5 @@ defmodule Pleroma.UserTest do
 
     assert {:ok, user_state3} = User.bookmark(user, id2)
     assert user_state3.bookmarks == [id2]
-  end
-
-  describe "search for admin" do
-    test "it ignores case" do
-      insert(:user, nickname: "papercoach")
-      insert(:user, nickname: "CanadaPaperCoach")
-
-      {:ok, _results, count} =
-        User.search_for_admin(%{
-          query: "paper",
-          local: false,
-          page: 1,
-          page_size: 50
-        })
-
-      assert count == 2
-    end
   end
 end
