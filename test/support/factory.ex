@@ -23,6 +23,14 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def scheduled_activity_factory do
+    %Pleroma.ScheduledActivity{
+      user: build(:user),
+      scheduled_at: NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(60), :millisecond),
+      params: build(:note) |> Map.from_struct() |> Map.get(:data)
+    }
+  end
+
   def note_factory(attrs \\ %{}) do
     text = sequence(:text, &"This is :moominmamma: note #{&1}")
 

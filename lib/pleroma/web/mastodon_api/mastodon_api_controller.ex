@@ -11,6 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ScheduledActivity
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web
@@ -25,6 +26,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.MastodonView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.ReportView
+  alias Pleroma.Web.MastodonAPI.ScheduledActivityView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.OAuth.App
@@ -361,6 +363,45 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       }
 
       json(conn, result)
+    end
+  end
+
+  def scheduled_statuses(%{assigns: %{user: user}} = conn, params) do
+    with scheduled_activities <- MastodonAPI.get_scheduled_activities(user, params) do
+      conn
+      |> add_link_headers(:scheduled_statuses, scheduled_activities)
+      |> put_view(ScheduledActivityView)
+      |> render("index.json", %{scheduled_activities: scheduled_activities})
+    end
+  end
+
+  def show_scheduled_status(%{assigns: %{user: user}} = conn, %{"id" => scheduled_activity_id}) do
+    with %ScheduledActivity{} = scheduled_activity <-
+           ScheduledActivity.get(user, scheduled_activity_id) do
+      conn
+      |> put_view(ScheduledActivityView)
+      |> render("show.json", %{scheduled_activity: scheduled_activity})
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  def update_scheduled_status(
+        %{assigns: %{user: user}} = conn,
+        %{"id" => scheduled_activity_id} = params
+      ) do
+    with {:ok, scheduled_activity} <-
+           ScheduledActivity.update(user, scheduled_activity_id, params) do
+      conn
+      |> put_view(ScheduledActivityView)
+      |> render("show.json", %{scheduled_activity: scheduled_activity})
+    end
+  end
+
+  def delete_scheduled_status(%{assigns: %{user: user}} = conn, %{"id" => scheduled_activity_id}) do
+    with {:ok, %ScheduledActivity{}} <- ScheduledActivity.delete(user, scheduled_activity_id) do
+      conn
+      |> json(%{})
     end
   end
 
@@ -1406,6 +1447,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   # fallback action
   #
+  def errors(conn, {:error, :not_found}) do
+    conn
+    |> put_status(404)
+    |> json(%{error: "Record not found"})
+  end
+
   def errors(conn, _) do
     conn
     |> put_status(500)

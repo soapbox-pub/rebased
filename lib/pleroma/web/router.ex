@@ -244,6 +244,9 @@ defmodule Pleroma.Web.Router do
       get("/notifications", MastodonAPIController, :notifications)
       get("/notifications/:id", MastodonAPIController, :get_notification)
 
+      get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
+      get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)
+
       get("/lists", MastodonAPIController, :get_lists)
       get("/lists/:id", MastodonAPIController, :get_list)
       get("/lists/:id/accounts", MastodonAPIController, :list_accounts)
@@ -277,6 +280,9 @@ defmodule Pleroma.Web.Router do
       post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
       post("/statuses/:id/mute", MastodonAPIController, :mute_conversation)
       post("/statuses/:id/unmute", MastodonAPIController, :unmute_conversation)
+
+      put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
+      delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
 
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
