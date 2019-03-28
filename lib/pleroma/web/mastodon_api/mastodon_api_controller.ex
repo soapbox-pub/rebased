@@ -212,7 +212,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> Map.get("limit", "20")
         |> String.to_integer()
 
-      min_id = Enum.at(activities, limit * -1)
+      min_id =
+        if length(activities) <= limit do
+          activities
+          |> List.first()
+          |> Map.get(:id)
+        else
+          activities
+          |> Enum.at(limit * -1)
+          |> Map.get(:id)
+        end
 
       {next_url, prev_url} =
         if param do
