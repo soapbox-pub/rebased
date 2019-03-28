@@ -61,6 +61,19 @@ defmodule Pleroma.User.Info do
     |> validate_required([:deactivated])
   end
 
+  def update_notification_settings(info, settings) do
+    notification_settings =
+      info.notification_settings
+      |> Map.merge(settings)
+      |> Map.take(["remote", "local", "followers", "follows"])
+
+    params = %{notification_settings: notification_settings}
+
+    info
+    |> cast(params, [:notification_settings])
+    |> validate_required([:notification_settings])
+  end
+
   def add_to_note_count(info, number) do
     set_note_count(info, info.note_count + number)
   end

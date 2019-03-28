@@ -27,14 +27,14 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Method: `GET`
 * Authentication: not required
 * Params: none
-* Response: Provider specific JSON, the only guaranteed parameter is `type` 
+* Response: Provider specific JSON, the only guaranteed parameter is `type`
 * Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint"}`
 
 ## `/api/pleroma/delete_account`
 ### Delete an account
 * Method `POST`
 * Authentication: required
-* Params: 
+* Params:
     * `password`: user's password
 * Response: JSON. Returns `{"status": "success"}` if the deletion was successful, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
@@ -116,3 +116,13 @@ See [Admin-API](Admin-API.md)
 * Params:
     * `id`: notifications's id
 * Response: JSON. Returns `{"status": "success"}` if the reading was successful, otherwise returns `{"error": "error_msg"}`
+## `/api/pleroma/notification_settings`
+### Updates user notification settings
+* Method `PUT`
+* Authentication: required
+* Params:
+    * `followers`: BOOLEAN field, receives notifications from followers
+    * `follows`: BOOLEAN field, receives notifications from people the user follows
+    * `remote`: BOOLEAN field, receives notifications from people on remote instances
+    * `local`: BOOLEAN field, receives notifications from people on the local instance
+* Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`

@@ -1082,6 +1082,14 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
+  def update_notification_settings(%User{} = user, settings \\ %{}) do
+    info_changeset = User.Info.update_notification_settings(user.info, settings)
+
+    change(user)
+    |> put_embed(:info, info_changeset)
+    |> update_and_set_cache()
+  end
+
   def delete(%User{} = user) do
     {:ok, user} = User.deactivate(user)
 
