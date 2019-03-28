@@ -149,6 +149,17 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nickname`
   - `status` BOOLEAN field, false value means deactivation.
 
+## `/api/pleroma/admin/users/:nickname`
+
+### Retrive the details of a user
+
+- Method: `GET`
+- Params:
+  - `nickname`
+- Response:
+  - On failure: `Not found`
+  - On success: JSON of the user
+
 ## `/api/pleroma/admin/relay`
 
 ### Follow a Relay

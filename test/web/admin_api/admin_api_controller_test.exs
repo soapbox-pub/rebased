@@ -40,6 +40,41 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "/api/pleroma/admin/users/:nickname" do
+    test "Show", %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users/#{user.nickname}")
+
+      expected = %{
+        "deactivated" => false,
+        "id" => to_string(user.id),
+        "local" => true,
+        "nickname" => user.nickname,
+        "roles" => %{"admin" => false, "moderator" => false},
+        "tags" => []
+      }
+
+      assert expected == json_response(conn, 200)
+    end
+
+    test "when the user doesn't exist", %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+      user = build(:user)
+
+      conn =
+        conn
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/users/#{user.nickname}")
+
+      assert "Not found" == json_response(conn, 404)
+    end
+  end
+
   describe "PUT /api/pleroma/admin/users/tag" do
     setup do
       admin = insert(:user, info: %{is_admin: true})
