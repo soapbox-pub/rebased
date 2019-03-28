@@ -22,16 +22,12 @@ defmodule Pleroma.Mixfile do
       homepage_url: "https://pleroma.social/",
       docs: [
         logo: "priv/static/static/logo.png",
-        extras: [
-          "README.md",
-          "docs/Admin-API.md",
-          "docs/Clients.md",
-          "docs/config.md",
-          "docs/Custom-Emoji.md",
-          "docs/Differences-in-MastodonAPI-Responses.md",
-          "docs/Message-Rewrite-Facility-configuration.md",
-          "docs/Pleroma-API.md",
-          "docs/static_dir.md"
+        extras: ["README.md" | Path.wildcard("docs/**/*.md")],
+        groups_for_extras: [
+          "Installation manuals": Path.wildcard("docs/installation/*.md"),
+          Configuration: Path.wildcard("docs/config/*.md"),
+          Administration: Path.wildcard("docs/admin/*.md"),
+          "Pleroma's APIs and Mastodon API extensions": Path.wildcard("docs/api/*.md")
         ],
         main: "readme",
         output: "priv/static/doc"

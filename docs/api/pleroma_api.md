@@ -61,7 +61,10 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 	"cover_photo": "https://pleroma.soykaf.com/images/banner.png",
 	"created_at": "Tue Dec 18 16:55:56 +0000 2018",
 	"default_scope": "public",
-	"description": "blushy-crushy fediverse idol + pleroma dev\nlet's be friends \nぷれろまの生徒会長。謎の外人。日本語OK. \n公主病.",
+	"description": "blushy-crushy fediverse idol + pleroma dev
+let's be friends 
+ぷれろまの生徒会長。謎の外人。日本語OK. 
+公主病.",
 	"description_html": "blushy-crushy fediverse idol + pleroma dev.<br />let's be friends <br />ぷれろまの生徒会長。謎の外人。日本語OK. <br />公主病.",
 	"favourites_count": 0,
 	"fields": [],
