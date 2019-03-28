@@ -1,5 +1,4 @@
 # Admin API
-# Admin API
 
 Authentication is required and the user must be an admin.
 
