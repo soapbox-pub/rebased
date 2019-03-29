@@ -255,7 +255,12 @@ curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerando
 
 ## :pleroma_job_queue
 
-[Pleroma Job Queue][https://git.pleroma.social/pleroma/pleroma_job_queue] configuration: a list of queues with maximum concurrent jobs.
+[Pleroma Job Queue](https://git.pleroma.social/pleroma/pleroma_job_queue) configuration: a list of queues with maximum concurrent jobs.
+
+Pleroma has the following qeues:
+* `federator_outgoing` - Outgoing federation
+* `federator_incoming` - Incoming federation
+* `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
 
 Example:
 
