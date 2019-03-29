@@ -20,6 +20,8 @@ stages:
   - lint
   - test
   - analysis
+  - docs_build
+  - docs_deploy
 
 before_script:
   - mix local.hex --force
@@ -43,3 +45,38 @@ analysis:
   stage: analysis
   script:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
+
+docs_build:
+  stage: docs_build
+  services:
+  only:
+  - master@pleroma/pleroma
+  - develop@pleroma/pleroma
+  variables:
+    MIX_ENV: dev
+  before_script:
+    - mix local.hex --force
+    - mix local.rebar --force
+    - mix deps.get
+    - mix compile
+  script:
+    - mix docs
+  artifacts:
+    paths:
+      - priv/static/doc
+
+docs_deploy:
+  stage: docs_deploy
+  image: alpine:3.9
+  services:
+  only:
+  - master@pleroma/pleroma
+  - develop@pleroma/pleroma
+  before_script:
+    - apk update && apk add openssh-client rsync
+  script:
+    - mkdir -p ~/.ssh
+    - echo "${SSH_HOST_KEY}" > ~/.ssh/known_hosts
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - rsync -hrvz --delete -e "ssh -p ${SSH_PORT}" priv/static/doc/ "${SSH_USER_HOST_LOCATION}/${CI_COMMIT_REF_NAME}" 
