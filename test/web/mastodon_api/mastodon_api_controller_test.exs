@@ -143,6 +143,48 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert Repo.get(Activity, id)
   end
 
+  test "posting a fake status", %{conn: conn} do
+    user = insert(:user)
+
+    real_conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" =>
+          "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it"
+      })
+
+    real_status =
+      json_response(real_conn, 200)
+      |> Map.put("id", nil)
+      |> Map.put("url", nil)
+      |> Map.put("uri", nil)
+      |> Map.put("created_at", nil)
+      |> Kernel.put_in(["pleroma", "conversation_id"], nil)
+
+    assert real_status
+
+    fake_conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" =>
+          "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it",
+        "fake" => true
+      })
+
+    fake_status =
+      json_response(fake_conn, 200)
+      |> Map.put("id", nil)
+      |> Map.put("url", nil)
+      |> Map.put("uri", nil)
+      |> Map.put("created_at", nil)
+      |> Kernel.put_in(["pleroma", "conversation_id"], nil)
+
+    assert fake_status
+    assert real_status == fake_status
+  end
+
   test "posting a status with OGP link preview", %{conn: conn} do
     Pleroma.Config.put([:rich_media, :enabled], true)
     user = insert(:user)
