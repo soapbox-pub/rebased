@@ -115,7 +115,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def insert(map, local \\ true, fake \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
-         map <- lazy_put_activity_defaults(map),
+         map <- lazy_put_activity_defaults(map, fake),
          :ok <- check_actor_is_active(map["actor"]),
          {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),

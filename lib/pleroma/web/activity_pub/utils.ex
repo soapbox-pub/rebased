@@ -175,21 +175,29 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Adds an id and a published data if they aren't there,
   also adds it to an included object
   """
-  def lazy_put_activity_defaults(map) do
-    %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
+  def lazy_put_activity_defaults(map, fake \\ false) do
+    unless fake do
+      %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
 
-    map =
-      map
-      |> Map.put_new_lazy("id", &generate_activity_id/0)
-      |> Map.put_new_lazy("published", &make_date/0)
-      |> Map.put_new("context", context)
-      |> Map.put_new("context_id", context_id)
+      map =
+        map
+        |> Map.put_new_lazy("id", &generate_activity_id/0)
+        |> Map.put_new_lazy("published", &make_date/0)
+        |> Map.put_new("context", context)
+        |> Map.put_new("context_id", context_id)
 
-    if is_map(map["object"]) do
-      object = lazy_put_object_defaults(map["object"], map)
-      %{map | "object" => object}
+      if is_map(map["object"]) do
+        object = lazy_put_object_defaults(map["object"], map)
+        %{map | "object" => object}
+      else
+        map
+      end
     else
       map
+      |> Map.put_new("id", "pleroma:fakeid")
+      |> Map.put_new_lazy("published", &make_date/0)
+      |> Map.put_new("context", "pleroma:fakecontext")
+      |> Map.put_new("context_id", -1)
     end
   end
 
