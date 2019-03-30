@@ -12,6 +12,8 @@ defmodule Pleroma.ScheduledActivity do
   import Ecto.Query
   import Ecto.Changeset
 
+  @min_offset :timer.minutes(5)
+
   schema "scheduled_activities" do
     belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:scheduled_at, :naive_datetime)
@@ -28,6 +30,20 @@ defmodule Pleroma.ScheduledActivity do
   def update_changeset(%ScheduledActivity{} = scheduled_activity, attrs) do
     scheduled_activity
     |> cast(attrs, [:scheduled_at])
+  end
+
+  def far_enough?(scheduled_at) when is_binary(scheduled_at) do
+    with {:ok, scheduled_at} <- Ecto.Type.cast(:naive_datetime, scheduled_at) do
+      far_enough?(scheduled_at)
+    else
+      _ -> false
+    end
+  end
+
+  def far_enough?(scheduled_at) do
+    now = NaiveDateTime.utc_now()
+    diff = NaiveDateTime.diff(scheduled_at, now, :millisecond)
+    diff > @min_offset
   end
 
   def new(%User{} = user, attrs) do

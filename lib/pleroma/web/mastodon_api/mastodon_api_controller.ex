@@ -425,12 +425,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         _ -> Ecto.UUID.generate()
       end
 
-    {:ok, activity} =
-      Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ -> CommonAPI.post(user, params) end)
+    scheduled_at = params["scheduled_at"]
 
-    conn
-    |> put_view(StatusView)
-    |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    if scheduled_at && ScheduledActivity.far_enough?(scheduled_at) do
+      {:ok, scheduled_activity} =
+        Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
+          ScheduledActivity.create(user, %{"params" => params, "scheduled_at" => scheduled_at})
+        end)
+
+      conn
+      |> put_view(ScheduledActivityView)
+      |> render("show.json", %{scheduled_activity: scheduled_activity})
+    else
+      params = Map.drop(params, ["scheduled_at"])
+
+      {:ok, activity} =
+        Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
+          CommonAPI.post(user, params)
+        end)
+
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    end
   end
 
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do

@@ -2410,6 +2410,42 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   describe "scheduled activities" do
+    test "creates a scheduled activity", %{conn: conn} do
+      user = insert(:user)
+      scheduled_at = NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"scheduled_at" => expected_scheduled_at} = json_response(conn, 200)
+      assert expected_scheduled_at == Pleroma.Web.CommonAPI.Utils.to_masto_date(scheduled_at)
+      assert [] == Repo.all(Activity)
+    end
+
+    test "skips the scheduling and creates the activity if scheduled_at is earlier than 5 minutes from now",
+         %{conn: conn} do
+      user = insert(:user)
+
+      scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(5) - 1, :millisecond)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "not scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"content" => "not scheduled"} = json_response(conn, 200)
+      assert [] == Repo.all(ScheduledActivity)
+    end
+
     test "shows scheduled activities", %{conn: conn} do
       user = insert(:user)
       scheduled_activity_id1 = insert(:scheduled_activity, user: user).id |> to_string()
