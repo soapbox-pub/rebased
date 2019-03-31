@@ -6,6 +6,7 @@ defmodule Pleroma.BBS.Handler do
   use Sshd.ShellHandler
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Activity
 
   def on_shell(username, _pubkey, _ip, _port) do
     :ok = IO.puts("Welcome to #{Pleroma.Config.get([:instance, :name])}!")
@@ -42,7 +43,7 @@ defmodule Pleroma.BBS.Handler do
 
   def puts_activity(activity) do
     status = Pleroma.Web.MastodonAPI.StatusView.render("status.json", %{activity: activity})
-    IO.puts("#{status.id} by #{status.account.display_name} (#{status.account.acct}):")
+    IO.puts("-- #{status.id} by #{status.account.display_name} (#{status.account.acct})")
     IO.puts(HtmlSanitizeEx.strip_tags(status.content))
     IO.puts("")
   end
@@ -52,7 +53,23 @@ defmodule Pleroma.BBS.Handler do
     IO.puts("help - This help")
     IO.puts("home - Show the home timeline")
     IO.puts("p <text> - Post the given text")
+    IO.puts("r <id> <text> - Reply to the post with the given id")
     IO.puts("quit - Quit")
+
+    state
+  end
+
+  def handle_command(%{user: user} = state, "r " <> text) do
+    text = String.trim(text)
+    [activity_id, rest] = String.split(text, " ", parts: 2)
+
+    with %Activity{} <- Activity.get_by_id(activity_id),
+         {:ok, _activity} <-
+           CommonAPI.post(user, %{"status" => rest, "in_reply_to_status_id" => activity_id}) do
+      IO.puts("Replied!")
+    else
+      _e -> IO.puts("Could not reply...")
+    end
 
     state
   end
@@ -104,7 +121,7 @@ defmodule Pleroma.BBS.Handler do
       {:input, ^input, code} when is_binary(code) ->
         code = String.trim(code)
 
-        handle_command(state, code)
+        state = handle_command(state, code)
 
         loop(%{state | counter: state.counter + 1})
 
