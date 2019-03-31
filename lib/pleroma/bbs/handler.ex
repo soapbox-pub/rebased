@@ -8,34 +8,36 @@ defmodule Pleroma.BBS.Handler do
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   def on_shell(username, _pubkey, _ip, _port) do
-    :ok = IO.puts "Welcome to #{Pleroma.Config.get([:instance, :name])}!"
+    :ok = IO.puts("Welcome to #{Pleroma.Config.get([:instance, :name])}!")
     user = Pleroma.User.get_by_nickname(to_string(username))
-    Logger.debug("#{inspect user}")
-    loop(run_state([user: user]))
+    Logger.debug("#{inspect(user)}")
+    loop(run_state(user: user))
   end
 
   def on_connect(username, ip, port, method) do
-    Logger.debug fn ->
+    Logger.debug(fn ->
       """
-      Incoming SSH shell #{inspect self()} requested for #{username} from #{inspect ip}:#{inspect port} using #{inspect method}
+      Incoming SSH shell #{inspect(self())} requested for #{username} from #{inspect(ip)}:#{
+        inspect(port)
+      } using #{inspect(method)}
       """
-    end
+    end)
   end
 
   def on_disconnect(username, ip, port) do
-    Logger.debug fn ->
-      "Disconnecting SSH shell for #{username} from #{inspect ip}:#{inspect port}"
-    end
+    Logger.debug(fn ->
+      "Disconnecting SSH shell for #{username} from #{inspect(ip)}:#{inspect(port)}"
+    end)
   end
 
   defp loop(state) do
     self_pid = self()
-    counter  = state.counter
-    prefix   = state.prefix
-    user     = state.user
+    counter = state.counter
+    prefix = state.prefix
+    user = state.user
 
     input = spawn(fn -> io_get(self_pid, prefix, counter, user.nickname) end)
-    wait_input state, input
+    wait_input(state, input)
   end
 
   def puts_activity(activity) do
@@ -63,11 +65,13 @@ defmodule Pleroma.BBS.Handler do
     else
       _e -> IO.puts("Could not post...")
     end
+
     state
   end
 
   def handle_command(state, "home") do
     user = state.user
+
     params =
       %{}
       |> Map.put("type", ["Create", "Announce"])
@@ -81,7 +85,7 @@ defmodule Pleroma.BBS.Handler do
       |> ActivityPub.contain_timeline(user)
       |> Enum.reverse()
 
-    Enum.each(activities, fn (activity) ->
+    Enum.each(activities, fn activity ->
       puts_activity(activity)
     end)
 
@@ -95,7 +99,7 @@ defmodule Pleroma.BBS.Handler do
   defp wait_input(state, input) do
     receive do
       {:input, ^input, "quit\n"} ->
-        IO.puts "Exiting..."
+        IO.puts("Exiting...")
 
       {:input, ^input, code} when is_binary(code) ->
         code = String.trim(code)
@@ -105,11 +109,11 @@ defmodule Pleroma.BBS.Handler do
         loop(%{state | counter: state.counter + 1})
 
       {:error, :interrupted} ->
-        IO.puts "Caught Ctrl+C..."
+        IO.puts("Caught Ctrl+C...")
         loop(%{state | counter: state.counter + 1})
 
       {:input, ^input, msg} ->
-        :ok = Logger.warn "received unknown message: #{inspect msg}"
+        :ok = Logger.warn("received unknown message: #{inspect(msg)}")
         loop(%{state | counter: state.counter + 1})
     end
   end
@@ -120,7 +124,7 @@ defmodule Pleroma.BBS.Handler do
 
   defp io_get(pid, prefix, counter, username) do
     prompt = prompt(prefix, counter, username)
-    send pid, {:input, self(), IO.gets(:stdio, prompt)}
+    send(pid, {:input, self(), IO.gets(:stdio, prompt)})
   end
 
   defp prompt(prefix, counter, username) do
