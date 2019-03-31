@@ -91,7 +91,7 @@ defmodule Pleroma.BBS.Handler do
 
     params =
       %{}
-      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("type", ["Create"])
       |> Map.put("blocking_user", user)
       |> Map.put("muting_user", user)
       |> Map.put("user", user)
@@ -100,7 +100,6 @@ defmodule Pleroma.BBS.Handler do
       [user.ap_id | user.following]
       |> ActivityPub.fetch_activities(params)
       |> ActivityPub.contain_timeline(user)
-      |> Enum.reverse()
 
     Enum.each(activities, fn activity ->
       puts_activity(activity)
@@ -109,8 +108,9 @@ defmodule Pleroma.BBS.Handler do
     state
   end
 
-  def handle_command(_state, command) do
+  def handle_command(state, command) do
     IO.puts("Unknown command '#{command}'")
+    state
   end
 
   defp wait_input(state, input) do
