@@ -7,6 +7,7 @@ defmodule Pleroma.EmojiTest do
       emoji_list = Emoji.get_all()
       {:ok, emoji_list: emoji_list}
     end
+
     test "first emoji", %{emoji_list: emoji_list} do
       [emoji | _others] = emoji_list
       {code, path, tags} = emoji
@@ -19,7 +20,7 @@ defmodule Pleroma.EmojiTest do
 
     test "random emoji", %{emoji_list: emoji_list} do
       emoji = Enum.random(emoji_list)
-     {code, path, tags} = emoji
+      {code, path, tags} = emoji
 
       assert tuple_size(emoji) == 3
       assert is_binary(code)

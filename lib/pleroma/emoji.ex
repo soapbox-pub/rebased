@@ -152,7 +152,7 @@ defmodule Pleroma.Emoji do
     "woollysocks"
   ]
   defp load_finmoji(true) do
-    tag = Keyword.get(Application.get_env(:pleroma, :emoji), :finmoji_tag)
+    tag = Application.get_env(:pleroma, :emoji)[:finmoji_tag]
 
     Enum.map(@finmoji, fn finmoji ->
       {finmoji, "/finmoji/128px/#{finmoji}-128.png", tag}
@@ -193,14 +193,14 @@ defmodule Pleroma.Emoji do
   end
 
   @spec get_default_tag(String.t()) :: String.t()
-  defp get_default_tag(file_name) when file_name in ["emoji", "custom_emojii"] do
+  defp get_default_tag(file_name) when file_name in ["emoji", "custom_emoji"] do
     Keyword.get(
       Application.get_env(:pleroma, :emoji),
       String.to_existing_atom(file_name <> "_tag")
     )
   end
 
-  defp get_default_tag(_), do: Keyword.get(Application.get_env(:pleroma, :emoji), :custom_tag)
+  defp get_default_tag(_), do: Application.get_env(:pleroma, :emoji)[:custom_tag]
 
   defp load_from_globs(globs) do
     static_path = Path.join(:code.priv_dir(:pleroma), "static")
