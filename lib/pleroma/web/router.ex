@@ -218,6 +218,7 @@ defmodule Pleroma.Web.Router do
       get("/accounts/search", MastodonAPIController, :account_search)
 
       get("/accounts/:id/lists", MastodonAPIController, :account_lists)
+      get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
 
       get("/follow_requests", MastodonAPIController, :follow_requests)
       get("/blocks", MastodonAPIController, :blocks)
