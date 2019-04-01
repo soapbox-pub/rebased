@@ -150,10 +150,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {:ok, activity}
 
       {:fake, true, map, recipients} ->
-        map =
-          map
-          |> put_in(["object", "fake"], true)
-
         activity = %Activity{
           data: map,
           local: local,

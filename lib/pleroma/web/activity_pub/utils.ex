@@ -209,8 +209,9 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   def lazy_put_object_defaults(map, activity, true = _fake) do
     map
     |> Map.put_new_lazy("published", &make_date/0)
-    |> Map.put_new("id", "pleroma:fakeid")
+    |> Map.put_new("id", "pleroma:fake_object_id")
     |> Map.put_new("context", activity["context"])
+    |> Map.put_new("fake", true)
     |> Map.put_new("context_id", activity["context_id"])
   end
 
