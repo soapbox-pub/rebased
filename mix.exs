@@ -76,7 +76,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
-      {:httpoison, "~> 1.2.0", override: true},
+      {:httpoison, "~> 1.2.0"},
       {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.2"},
       {:jason, "~> 1.0"},

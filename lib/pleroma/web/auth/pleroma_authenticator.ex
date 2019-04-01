@@ -4,9 +4,9 @@
 
 defmodule Pleroma.Web.Auth.PleromaAuthenticator do
   alias Comeonin.Pbkdf2
-  alias Pleroma.User
   alias Pleroma.Registration
   alias Pleroma.Repo
+  alias Pleroma.User
 
   @behaviour Pleroma.Web.Auth.Authenticator
 

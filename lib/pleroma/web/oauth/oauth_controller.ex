@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Registration
   alias Pleroma.Web.Auth.Authenticator
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
