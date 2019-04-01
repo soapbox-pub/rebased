@@ -162,7 +162,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           id: "pleroma:fakeid"
         }
 
-        # Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
         {:ok, activity}
 
       error ->
