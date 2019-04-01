@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Auth.Authenticator do
-  alias Pleroma.User
   alias Pleroma.Registration
+  alias Pleroma.User
 
   def implementation do
     Pleroma.Config.get(
