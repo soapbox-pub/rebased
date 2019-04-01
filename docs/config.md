@@ -253,24 +253,24 @@ You can then do
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
 
-## Pleroma.Jobs
+## :pleroma_job_queue
 
-A list of job queues and their settings.
+[Pleroma Job Queue](https://git.pleroma.social/pleroma/pleroma_job_queue) configuration: a list of queues with maximum concurrent jobs.
 
-Job queue settings:
-
-* `max_jobs`: The maximum amount of parallel jobs running at the same time.
+Pleroma has the following queues:
+* `federator_outgoing` - Outgoing federation
+* `federator_incoming` - Incoming federation
+* `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
 
 Example:
 
-```exs
-config :pleroma, Pleroma.Jobs,
-  federator_incoming: [max_jobs: 50],
-  federator_outgoing: [max_jobs: 50]
+```elixir
+config :pleroma_job_queue, :queues,
+  federator_incoming: 50,
+  federator_outgoing: 50
 ```
 
 This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
-
 
 ## Pleroma.Web.Federator.RetryQueue
 

@@ -18,6 +18,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MastodonAPI.AppView
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
@@ -51,16 +52,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with cs <- App.register_changeset(%App{}, app_attrs),
          false <- cs.changes[:client_name] == @local_mastodon_name,
          {:ok, app} <- Repo.insert(cs) do
-      res = %{
-        id: app.id |> to_string,
-        name: app.client_name,
-        client_id: app.client_id,
-        client_secret: app.client_secret,
-        redirect_uri: app.redirect_uris,
-        website: app.website
-      }
-
-      json(conn, res)
+      conn
+      |> put_view(AppView)
+      |> render("show.json", %{app: app})
     end
   end
 
@@ -132,6 +126,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, account)
   end
 
+  def verify_app_credentials(%{assigns: %{user: _user, token: token}} = conn, _) do
+    with %Token{app: %App{} = app} <- Repo.preload(token, :app) do
+      conn
+      |> put_view(AppView)
+      |> render("short.json", %{app: app})
+    end
+  end
+
   def user(%{assigns: %{user: for_user}} = conn, %{"id" => nickname_or_id}) do
     with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id),
          true <- User.auth_active?(user) || user.id == for_user.id || User.superuser?(for_user) do
@@ -161,6 +163,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       },
       stats: Stats.get_stats(),
       thumbnail: Web.base_url() <> "/instance/thumbnail.jpeg",
+      languages: ["en"],
+      registrations: Pleroma.Config.get([:instance, :registrations_open]),
+      # Extra (not present in Mastodon):
       max_toot_chars: Keyword.get(instance, :limit)
     }
 

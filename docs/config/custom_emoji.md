@@ -1,4 +1,4 @@
-# Custom emoji
+# Custom Emoji
 
 To add custom emoji:
 * Add the image file(s) to `priv/static/emoji/custom`

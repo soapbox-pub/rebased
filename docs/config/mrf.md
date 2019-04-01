@@ -1,4 +1,4 @@
-# Message Rewrite Facility configuration
+# Message Rewrite Facility
 The Message Rewrite Facility (MRF) is a subsystem that is implemented as a series of hooks that allows the administrator to rewrite or discard messages.
 
 Possible uses include:
@@ -70,7 +70,7 @@ As discussed above, the MRF system is a modular system that supports pluggable p
 
 For example, here is a sample policy module which rewrites all messages to "new message content":
 
-```!elixir
+```elixir
 # This is a sample MRF policy which rewrites all Notes to have "new message
 # content."
 defmodule Site.RewritePolicy do
