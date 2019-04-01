@@ -10,7 +10,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Authentication: not required
 * Params: none
 * Response: JSON
-* Example response: `{"kalsarikannit_f":"/finmoji/128px/kalsarikannit_f-128.png","perkele":"/finmoji/128px/perkele-128.png","blobdab":"/emoji/blobdab.png","happiness":"/finmoji/128px/happiness-128.png"}`
+* Example response: `[{"kalsarikannit_f":{"tags":["Finmoji"],"image_url":"/finmoji/128px/kalsarikannit_f-128.png"}},{"perkele":{"tags":["Finmoji"],"image_url":"/finmoji/128px/perkele-128.png"}},{"blobdab":{"tags":["SomeTag"],"image_url":"/emoji/blobdab.png"}},"happiness":{"tags":["Finmoji"],"image_url":"/finmoji/128px/happiness-128.png"}}]`
 * Note: Same data as Mastodon API’s `/api/v1/custom_emojis` but in a different format
 
 ## `/api/pleroma/follow_import`
@@ -27,14 +27,14 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Method: `GET`
 * Authentication: not required
 * Params: none
-* Response: Provider specific JSON, the only guaranteed parameter is `type` 
+* Response: Provider specific JSON, the only guaranteed parameter is `type`
 * Example response: `{"type": "kocaptcha", "token": "whatever", "url": "https://captcha.kotobank.ch/endpoint"}`
 
 ## `/api/pleroma/delete_account`
 ### Delete an account
 * Method `POST`
 * Authentication: required
-* Params: 
+* Params:
     * `password`: user's password
 * Response: JSON. Returns `{"status": "success"}` if the deletion was successful, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`

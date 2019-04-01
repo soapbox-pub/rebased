@@ -167,7 +167,7 @@ defmodule Pleroma.Web.CommonAPI do
              object,
              "emoji",
              (Formatter.get_emoji(status) ++ Formatter.get_emoji(data["spoiler_text"]))
-             |> Enum.reduce(%{}, fn {name, file}, acc ->
+             |> Enum.reduce(%{}, fn {name, file, _}, acc ->
                Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
              end)
            ) do

@@ -8,7 +8,7 @@ defmodule Pleroma.Emoji do
 
     * the built-in Finmojis (if enabled in configuration),
     * the files: `config/emoji.txt` and `config/custom_emoji.txt`
-    * glob paths
+    * glob paths, nested folder is used as tag name for grouping e.g. priv/static/emoji/custom/nested_folder
 
   This GenServer stores in an ETS table the list of the loaded emojis, and also allows to reload the list at runtime.
   """
@@ -152,8 +152,10 @@ defmodule Pleroma.Emoji do
     "woollysocks"
   ]
   defp load_finmoji(true) do
+    tag = Keyword.get(Application.get_env(:pleroma, :emoji), :finmoji_tag)
+
     Enum.map(@finmoji, fn finmoji ->
-      {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
+      {finmoji, "/finmoji/128px/#{finmoji}-128.png", tag}
     end)
   end
 
@@ -168,31 +170,70 @@ defmodule Pleroma.Emoji do
   end
 
   defp load_from_file_stream(stream) do
+    default_tag =
+      stream.path
+      |> Path.basename(".txt")
+      |> get_default_tag()
+
     stream
     |> Stream.map(&String.trim/1)
     |> Stream.map(fn line ->
       case String.split(line, ~r/,\s*/) do
-        [name, file] -> {name, file}
-        _ -> nil
+        [name, file, tags] ->
+          {name, file, tags}
+
+        [name, file] ->
+          {name, file, default_tag}
+
+        _ ->
+          nil
       end
     end)
     |> Enum.to_list()
   end
+
+  @spec get_default_tag(String.t()) :: String.t()
+  defp get_default_tag(file_name) when file_name in ["emoji", "custom_emojii"] do
+    Keyword.get(
+      Application.get_env(:pleroma, :emoji),
+      String.to_existing_atom(file_name <> "_tag")
+    )
+  end
+
+  defp get_default_tag(_), do: Keyword.get(Application.get_env(:pleroma, :emoji), :custom_tag)
 
   defp load_from_globs(globs) do
     static_path = Path.join(:code.priv_dir(:pleroma), "static")
 
     paths =
       Enum.map(globs, fn glob ->
+        static_part =
+          Path.dirname(glob)
+          |> String.replace_trailing("**", "")
+
         Path.join(static_path, glob)
         |> Path.wildcard()
+        |> Enum.map(fn path ->
+          custom_folder =
+            path
+            |> Path.relative_to(Path.join(static_path, static_part))
+            |> Path.dirname()
+
+          [path, custom_folder]
+        end)
       end)
       |> Enum.concat()
 
-    Enum.map(paths, fn path ->
+    Enum.map(paths, fn [path, custom_folder] ->
+      tag =
+        case custom_folder do
+          "." -> Keyword.get(Application.get_env(:pleroma, :emoji), :custom_tag)
+          tag -> tag
+        end
+
       shortcode = Path.basename(path, Path.extname(path))
       external_path = Path.join("/", Path.relative_to(path, static_path))
-      {shortcode, external_path}
+      {shortcode, external_path, tag}
     end)
   end
 end

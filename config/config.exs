@@ -54,7 +54,12 @@ config :pleroma, Pleroma.Uploaders.MDII,
   cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
   files: "https://mdii.sakura.ne.jp"
 
-config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
+config :pleroma, :emoji,
+  shortcode_globs: ["/emoji/custom/**/*.png"],
+  custom_tag: "Custom",
+  finmoji_tag: "Finmoji",
+  emoji_tag: "Emoji",
+  custom_emoji_tag: "Custom"
 
 config :pleroma, :uri_schemes,
   valid_schemes: [
