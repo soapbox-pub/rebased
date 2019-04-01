@@ -11,5 +11,6 @@ defmodule Pleroma.Repo.Migrations.CreateScheduledActivities do
     end
 
     create(index(:scheduled_activities, [:scheduled_at]))
+    create(index(:scheduled_activities, [:user_id]))
   end
 end

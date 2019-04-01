@@ -2427,6 +2427,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert [] == Repo.all(Activity)
     end
 
+    test "creates a scheduled activity with a media attachment", %{conn: conn} do
+      user = insert(:user)
+      scheduled_at = NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "media_ids" => [to_string(upload.id)],
+          "status" => "scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"media_attachments" => [media_attachment]} = json_response(conn, 200)
+      assert %{"type" => "image"} = media_attachment
+    end
+
     test "skips the scheduling and creates the activity if scheduled_at is earlier than 5 minutes from now",
          %{conn: conn} do
       user = insert(:user)

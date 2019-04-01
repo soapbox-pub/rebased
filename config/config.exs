@@ -367,6 +367,10 @@ config :pleroma, :fetch_initial_posts,
   enabled: false,
   pages: 5
 
+config :pleroma, Pleroma.ScheduledActivity,
+  daily_user_limit: 25,
+  total_user_limit: 100
+
 config :auto_linker,
   opts: [
     scheme: true,

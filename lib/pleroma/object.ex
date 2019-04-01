@@ -184,4 +184,12 @@ defmodule Pleroma.Object do
       _ -> {:error, "Not found"}
     end
   end
+
+  def enforce_user_objects(user, object_ids) do
+    Object
+    |> where([o], fragment("?->>'actor' = ?", o.data, ^user.ap_id))
+    |> where([o], o.id in ^object_ids)
+    |> select([o], o.id)
+    |> Repo.all()
+  end
 end

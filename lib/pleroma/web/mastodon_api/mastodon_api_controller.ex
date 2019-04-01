@@ -390,18 +390,28 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         %{assigns: %{user: user}} = conn,
         %{"id" => scheduled_activity_id} = params
       ) do
-    with {:ok, scheduled_activity} <-
-           ScheduledActivity.update(user, scheduled_activity_id, params) do
+    with %ScheduledActivity{} = scheduled_activity <-
+           ScheduledActivity.get(user, scheduled_activity_id),
+         {:ok, scheduled_activity} <- ScheduledActivity.update(scheduled_activity, params) do
       conn
       |> put_view(ScheduledActivityView)
       |> render("show.json", %{scheduled_activity: scheduled_activity})
+    else
+      nil -> {:error, :not_found}
+      error -> error
     end
   end
 
   def delete_scheduled_status(%{assigns: %{user: user}} = conn, %{"id" => scheduled_activity_id}) do
-    with {:ok, %ScheduledActivity{}} <- ScheduledActivity.delete(user, scheduled_activity_id) do
+    with %ScheduledActivity{} = scheduled_activity <-
+           ScheduledActivity.get(user, scheduled_activity_id),
+         {:ok, scheduled_activity} <- ScheduledActivity.delete(scheduled_activity) do
       conn
-      |> json(%{})
+      |> put_view(ScheduledActivityView)
+      |> render("show.json", %{scheduled_activity: scheduled_activity})
+    else
+      nil -> {:error, :not_found}
+      error -> error
     end
   end
 
