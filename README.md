@@ -10,7 +10,7 @@ Pleroma is written in Elixir, high-performance and can run on small devices like
 
 For clients it supports both the [GNU Social API with Qvitter extensions](https://twitter-api.readthedocs.io/en/latest/index.html) and the [Mastodon client API](https://github.com/tootsuite/documentation/blob/master/Using-the-API/API.md).
 
-- [Client Applications for Pleroma](docs/clients.md)
+- [Client Applications for Pleroma](https://docs-develop.pleroma.social/clients.html)
 
 No release has been made yet, but several servers have been online for months already. If you want to run your own server, feel free to contact us at @lain@pleroma.soykaf.com or in our dev chat at #pleroma on freenode or via matrix at <https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org>.
 
