@@ -49,7 +49,7 @@ defmodule Pleroma.HTML do
   def ensure_scrubbed_html(
         content,
         scrubbers,
-        _fake = false
+        false = _fake
       ) do
     {:commit, filter_tags(content, scrubbers)}
   end
@@ -57,7 +57,7 @@ defmodule Pleroma.HTML do
   def ensure_scrubbed_html(
         content,
         scrubbers,
-        _fake = true
+        true = _fake
       ) do
     {:ignore, filter_tags(content, scrubbers)}
   end
