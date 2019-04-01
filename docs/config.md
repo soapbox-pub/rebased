@@ -205,7 +205,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
   - `path`
 
 
-**Important note: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need**
+**Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
 
 Example: 
 ```elixir
