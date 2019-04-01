@@ -153,4 +153,41 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert conversation_id == object.id
     end
   end
+
+  describe "formats date to asctime" do
+    test "when date is an integer Unix timestamp" do
+      date = DateTime.utc_now() |> DateTime.to_unix()
+
+      expected =
+        date
+        |> DateTime.from_unix!()
+        |> Calendar.Strftime.strftime!("%a %b %d %H:%M:%S %z %Y")
+
+      assert Utils.date_to_asctime(date) == expected
+    end
+
+    test "when date is a float Unix timestamp" do
+      date = 1_553_808_404.602961
+
+      expected =
+        date
+        |> trunc()
+        |> DateTime.from_unix!()
+        |> Calendar.Strftime.strftime!("%a %b %d %H:%M:%S %z %Y")
+
+      assert Utils.date_to_asctime(date) == expected
+    end
+
+    test "when date is in ISO 8601 format" do
+      date = DateTime.utc_now() |> DateTime.to_iso8601()
+
+      expected =
+        date
+        |> DateTime.from_iso8601()
+        |> elem(1)
+        |> Calendar.Strftime.strftime!("%a %b %d %H:%M:%S %z %Y")
+
+      assert Utils.date_to_asctime(date) == expected
+    end
+  end
 end
