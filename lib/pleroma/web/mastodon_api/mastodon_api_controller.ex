@@ -1249,16 +1249,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     "glitch"
   end
 
-  def login(conn, %{"code" => code}) do
+  def login(%{assigns: %{user: %User{}}} = conn, _params) do
+    redirect(conn, to: local_mastodon_root_path(conn))
+  end
+
+  @doc "Local Mastodon FE login init action"
+  def login(conn, %{"code" => auth_token}) do
     with {:ok, app} <- get_or_make_app(),
-         %Authorization{} = auth <- Repo.get_by(Authorization, token: code, app_id: app.id),
+         %Authorization{} = auth <- Repo.get_by(Authorization, token: auth_token, app_id: app.id),
          {:ok, token} <- Token.exchange_token(app, auth) do
       conn
       |> put_session(:oauth_token, token.token)
-      |> redirect(to: "/web/getting-started")
+      |> redirect(to: local_mastodon_root_path(conn))
     end
   end
 
+  @doc "Local Mastodon FE callback action"
   def login(conn, _) do
     with {:ok, app} <- get_or_make_app() do
       path =
@@ -1275,6 +1281,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> redirect(to: path)
     end
   end
+
+  defp local_mastodon_root_path(conn), do: mastodon_api_path(conn, :index, ["getting-started"])
 
   defp get_or_make_app do
     find_attrs = %{client_name: @local_mastodon_name, redirect_uris: "."}

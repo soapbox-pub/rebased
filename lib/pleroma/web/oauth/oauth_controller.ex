@@ -239,7 +239,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   # Special case: Local MastodonFE
-  defp redirect_uri(conn, "."), do: mastodon_api_url(conn, :index, [])
+  defp redirect_uri(conn, "."), do: mastodon_api_url(conn, :login)
 
   defp redirect_uri(_conn, redirect_uri), do: redirect_uri
 end
