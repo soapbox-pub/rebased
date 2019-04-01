@@ -150,14 +150,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         {:ok, activity}
 
       {:fake, true, map, recipients} ->
-        {:ok,
-         %Activity{
-           data: map,
-           local: local,
-           actor: map["actor"],
-           recipients: recipients,
-           id: "pleroma:fakeid"
-         }}
+        map =
+          map
+          |> put_in(["object", "fake"], true)
+
+        activity = %Activity{
+          data: map,
+          local: local,
+          actor: map["actor"],
+          recipients: recipients,
+          id: "pleroma:fakeid"
+        }
+
+        # Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+        {:ok, activity}
 
       error ->
         {:error, error}
