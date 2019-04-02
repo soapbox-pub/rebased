@@ -23,7 +23,7 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def note_factory do
+  def note_factory(attrs \\ %{}) do
     text = sequence(:text, &"This is :moominmamma: note #{&1}")
 
     user = insert(:user)
@@ -46,7 +46,7 @@ defmodule Pleroma.Factory do
     }
 
     %Pleroma.Object{
-      data: data
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
     }
   end
 
@@ -95,8 +95,8 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def note_activity_factory do
-    note = insert(:note)
+  def note_activity_factory(attrs \\ %{}) do
+    note = attrs[:note] || insert(:note)
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
@@ -135,9 +135,9 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def announce_activity_factory do
-    note_activity = insert(:note_activity)
-    user = insert(:user)
+  def announce_activity_factory(attrs \\ %{}) do
+    note_activity = attrs[:note_activity] || insert(:note_activity)
+    user = attrs[:user] || insert(:user)
 
     data = %{
       "type" => "Announce",
@@ -229,15 +229,32 @@ defmodule Pleroma.Factory do
   end
 
   def oauth_token_factory do
-    user = insert(:user)
     oauth_app = insert(:oauth_app)
 
     %Pleroma.Web.OAuth.Token{
       token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
       refresh_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
-      user_id: user.id,
+      user: build(:user),
       app_id: oauth_app.id,
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
+    }
+  end
+
+  def push_subscription_factory do
+    %Pleroma.Web.Push.Subscription{
+      user: build(:user),
+      token: build(:oauth_token),
+      endpoint: "https://example.com/example/1234",
+      key_auth: "8eDyX_uCN0XRhSbY5hs7Hg==",
+      key_p256dh:
+        "BCIWgsnyXDv1VkhqL2P7YRBvdeuDnlwAPT2guNhdIoW3IP7GmHh1SMKPLxRf7x8vJy6ZFK3ol2ohgn_-0yP7QQA=",
+      data: %{}
+    }
+  end
+
+  def notification_factory do
+    %Pleroma.Notification{
+      user: build(:user)
     }
   end
 end

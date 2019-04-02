@@ -4,13 +4,14 @@
 
 defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.OStatus
-  alias Pleroma.Activity
-  alias Pleroma.User
-  alias Pleroma.Repo
   alias Pleroma.Web.Websub.WebsubClientSubscription
 
   import Pleroma.Factory
@@ -332,6 +333,53 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
       assert data["to"] == ["http://mastodon.example.org/users/admin/followers"]
+    end
+
+    test "it ensures that as:Public activities make it to their followers collection" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", user.ap_id)
+        |> Map.put("to", ["https://www.w3.org/ns/activitystreams#Public"])
+        |> Map.put("cc", [])
+
+      object =
+        data["object"]
+        |> Map.put("attributedTo", user.ap_id)
+        |> Map.put("to", ["https://www.w3.org/ns/activitystreams#Public"])
+        |> Map.put("cc", [])
+
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["cc"] == [User.ap_followers(user)]
+    end
+
+    test "it ensures that address fields become lists" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+        |> Map.put("actor", user.ap_id)
+        |> Map.put("to", nil)
+        |> Map.put("cc", nil)
+
+      object =
+        data["object"]
+        |> Map.put("attributedTo", user.ap_id)
+        |> Map.put("to", nil)
+        |> Map.put("cc", nil)
+
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert !is_nil(data["to"])
+      assert !is_nil(data["cc"])
     end
 
     test "it works for incoming update activities" do
@@ -763,6 +811,30 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
 
       assert object.data["attachment"] == [attachment]
+    end
+
+    test "it accepts Flag activities" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+      object = Object.normalize(activity.data["object"])
+
+      message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "cc" => [user.ap_id],
+        "object" => [user.ap_id, object.data["id"]],
+        "type" => "Flag",
+        "content" => "blocked AND reported!!!",
+        "actor" => other_user.ap_id
+      }
+
+      assert {:ok, activity} = Transmogrifier.handle_incoming(message)
+
+      assert activity.data["object"] == [user.ap_id, object.data["id"]]
+      assert activity.data["content"] == "blocked AND reported!!!"
+      assert activity.data["actor"] == other_user.ap_id
+      assert activity.data["cc"] == [user.ap_id]
     end
   end
 

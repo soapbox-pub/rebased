@@ -6,6 +6,7 @@ If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherw
 ## Pleroma.Upload
 * `uploader`: Select which `Pleroma.Uploaders` to use
 * `filters`: List of `Pleroma.Upload.Filter` to use.
+* `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
 * `proxy_remote`: If you\'re using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
@@ -100,7 +101,8 @@ config :pleroma, Pleroma.Mailer,
 * `no_attachment_links`: Set to true to disable automatically adding attachment link text to statuses
 * `welcome_message`: A message that will be send to a newly registered users as a direct message.
 * `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
-* `max_report_size`: The maximum size of the report comment (Default: `1000`)
+* `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
+* `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
@@ -129,7 +131,7 @@ See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_s
 
 ## :frontend_configurations
 
-This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured.
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured.
 
 Frontends can access these settings at `/api/pleroma/frontend_configurations`
 
@@ -189,6 +191,45 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `enabled`: Enables the gopher interface
 * `ip`: IP address to bind to
 * `port`: Port to bind to
+* `dstport`: Port advertised in urls (optional, defaults to `port`)
+
+## Pleroma.Web.Endpoint
+`Phoenix` endpoint configuration, all configuration options can be viewed [here](https://hexdocs.pm/phoenix/Phoenix.Endpoint.html#module-dynamic-configuration), only common options are listed here
+* `http` - a list containing http protocol configuration, all configuration options can be viewed [here](https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html#module-options), only common options are listed here
+  - `ip` - a tuple consisting of 4 integers
+  - `port`
+* `url` - a list containing the configuration for generating urls, accepts
+  - `host` - the host without the scheme and a post (e.g `example.com`, not `https://example.com:2020`)
+  - `scheme` - e.g `http`, `https` 
+  - `port`
+  - `path`
+
+
+**Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
+
+Example: 
+```elixir
+config :pleroma, Pleroma.Web.Endpoint,
+  url: [host: "example.com", port: 2020, scheme: "https"],
+  http: [
+    # start copied from config.exs
+    dispatch: [
+      {:_,
+       [
+         {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+         {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
+          {Phoenix.Transports.WebSocket,
+           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
+         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+       ]}
+    # end copied from config.exs
+    ],
+    port: 8080,
+    ip: {127, 0, 0, 1}
+  ]
+```
+
+This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls starting with `https://example.com:2020`
 
 ## :activitypub
 * ``accept_blocks``: Whether to accept incoming block activities from other instances
@@ -250,24 +291,24 @@ You can then do
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
 
-## Pleroma.Jobs
+## :pleroma_job_queue
 
-A list of job queues and their settings.
+[Pleroma Job Queue](https://git.pleroma.social/pleroma/pleroma_job_queue) configuration: a list of queues with maximum concurrent jobs.
 
-Job queue settings:
-
-* `max_jobs`: The maximum amount of parallel jobs running at the same time.
+Pleroma has the following queues:
+* `federator_outgoing` - Outgoing federation
+* `federator_incoming` - Incoming federation
+* `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
 
 Example:
 
-```exs
-config :pleroma, Pleroma.Jobs,
-  federator_incoming: [max_jobs: 50],
-  federator_outgoing: [max_jobs: 50]
+```elixir
+config :pleroma_job_queue, :queues,
+  federator_incoming: 50,
+  federator_outgoing: 50
 ```
 
 This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
-
 
 ## Pleroma.Web.Federator.RetryQueue
 
@@ -284,6 +325,10 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 
 ## :rich_media
 * `enabled`: if enabled the instance will parse metadata from attached links to generate link previews
+
+## :fetch_initial_posts
+* `enabled`: if enabled, when a new user is federated with, fetch some of their latest posts
+* `pages`: the amount of pages to fetch
 
 ## :hackney_pools
 
@@ -326,3 +371,26 @@ config :auto_linker,
     rel: false
   ]
 ```
+
+## :ldap
+
+Use LDAP for user authentication.  When a user logs in to the Pleroma
+instance, the name and password will be verified by trying to authenticate
+(bind) to an LDAP server.  If a user exists in the LDAP directory but there
+is no account with the same name yet on the Pleroma instance then a new
+Pleroma account will be created with the same name as the LDAP user name.
+
+* `enabled`: enables LDAP authentication
+* `host`: LDAP server hostname
+* `port`: LDAP port, e.g. 389 or 636
+* `ssl`: true to use SSL, usually implies the port 636
+* `sslopts`: additional SSL options
+* `tls`: true to start TLS, usually implies the port 389
+* `tlsopts`: additional TLS options
+* `base`: LDAP base, e.g. "dc=example,dc=com"
+* `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
+
+## Pleroma.Web.Auth.Authenticator
+
+* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
+* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication

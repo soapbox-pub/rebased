@@ -3,13 +3,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Auth.PleromaAuthenticator do
-  alias Pleroma.User
   alias Comeonin.Pbkdf2
+  alias Pleroma.User
 
   @behaviour Pleroma.Web.Auth.Authenticator
 
   def get_user(%Plug.Conn{} = conn) do
-    %{"authorization" => %{"name" => name, "password" => password}} = conn.params
+    {name, password} =
+      case conn.params do
+        %{"authorization" => %{"name" => name, "password" => password}} ->
+          {name, password}
+
+        %{"grant_type" => "password", "username" => name, "password" => password} ->
+          {name, password}
+      end
 
     with {_, %User{} = user} <- {:user, User.get_by_nickname_or_email(name)},
          {_, true} <- {:checkpw, Pbkdf2.checkpw(password, user.password_hash)} do

@@ -7,17 +7,17 @@ defmodule Pleroma.Web.OAuth.Token do
 
   import Ecto.Query
 
-  alias Pleroma.User
   alias Pleroma.Repo
-  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
 
   schema "oauth_tokens" do
     field(:token, :string)
     field(:refresh_token, :string)
     field(:scopes, {:array, :string}, default: [])
-    field(:valid_until, :naive_datetime)
+    field(:valid_until, :naive_datetime_usec)
     belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
     belongs_to(:app, App)
 

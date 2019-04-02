@@ -8,8 +8,6 @@ use Mix.Config
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
-config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
-
 config :pleroma, Pleroma.Captcha,
   enabled: false,
   seconds_valid: 60,
@@ -34,7 +32,8 @@ config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.
 # Upload configuration
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
-  filters: [],
+  filters: [Pleroma.Upload.Filter.Dedupe],
+  link_name: true,
   proxy_remote: false,
   proxy_opts: [
     redirect_on_failure: false,
@@ -133,7 +132,14 @@ config :pleroma, :httpoison, Pleroma.HTTP
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
-config :pleroma, :http, proxy_url: nil
+config :pleroma, :http,
+  proxy_url: nil,
+  adapter: [
+    ssl_options: [
+      # We don't support TLS v1.3 yet
+      versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+    ]
+  ]
 
 config :pleroma, :instance,
   name: "Pleroma",
@@ -166,7 +172,8 @@ config :pleroma, :instance,
   no_attachment_links: false,
   welcome_user_nickname: nil,
   welcome_message: nil,
-  max_report_comment_size: 1000
+  max_report_comment_size: 1000,
+  safe_dm_mentions: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -215,6 +222,9 @@ config :pleroma, :frontend_configurations,
     scopeCopy: true,
     subjectLineBehavior: "email",
     alwaysShowSubjectInput: true
+  },
+  masto_fe: %{
+    showInstanceSpecificPanel: true
   }
 
 config :pleroma, :activitypub,
@@ -261,8 +271,6 @@ config :pleroma, :media_proxy,
   ]
 
 config :pleroma, :chat, enabled: true
-
-config :ecto, json_library: Jason
 
 config :phoenix, :format_encoders, json: Jason
 
@@ -340,10 +348,14 @@ config :pleroma, Pleroma.Web.Federator.RetryQueue,
   initial_timeout: 30,
   max_retries: 5
 
-config :pleroma, Pleroma.Jobs,
-  federator_incoming: [max_jobs: 50],
-  federator_outgoing: [max_jobs: 50],
-  mailer: [max_jobs: 10]
+config :pleroma_job_queue, :queues,
+  federator_incoming: 50,
+  federator_outgoing: 50,
+  mailer: 10
+
+config :pleroma, :fetch_initial_posts,
+  enabled: false,
+  pages: 5
 
 config :auto_linker,
   opts: [
@@ -354,6 +366,19 @@ config :auto_linker,
     new_window: false,
     rel: false
   ]
+
+config :pleroma, :ldap,
+  enabled: System.get_env("LDAP_ENABLED") == "true",
+  host: System.get_env("LDAP_HOST") || "localhost",
+  port: String.to_integer(System.get_env("LDAP_PORT") || "389"),
+  ssl: System.get_env("LDAP_SSL") == "true",
+  sslopts: [],
+  tls: System.get_env("LDAP_TLS") == "true",
+  tlsopts: [],
+  base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
+  uid: System.get_env("LDAP_UID") || "cn"
+
+config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Sendmail
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

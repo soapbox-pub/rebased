@@ -6,14 +6,14 @@ defmodule Pleroma.Web.Websub do
   alias Ecto.Changeset
   alias Pleroma.Instances
   alias Pleroma.Repo
-  alias Pleroma.Web.Websub.WebsubServerSubscription
-  alias Pleroma.Web.Websub.WebsubClientSubscription
-  alias Pleroma.Web.OStatus.FeedRepresenter
-  alias Pleroma.Web.XML
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Federator
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.OStatus.FeedRepresenter
+  alias Pleroma.Web.Router.Helpers
+  alias Pleroma.Web.Websub.WebsubClientSubscription
+  alias Pleroma.Web.Websub.WebsubServerSubscription
+  alias Pleroma.Web.XML
   require Logger
 
   import Ecto.Query
@@ -200,8 +200,8 @@ defmodule Pleroma.Web.Websub do
          uri when not is_nil(uri) <- XML.string_from_xpath("/feed/author[1]/uri", doc),
          hub when not is_nil(hub) <- XML.string_from_xpath(~S{/feed/link[@rel="hub"]/@href}, doc) do
       name = XML.string_from_xpath("/feed/author[1]/name", doc)
-      preferredUsername = XML.string_from_xpath("/feed/author[1]/poco:preferredUsername", doc)
-      displayName = XML.string_from_xpath("/feed/author[1]/poco:displayName", doc)
+      preferred_username = XML.string_from_xpath("/feed/author[1]/poco:preferredUsername", doc)
+      display_name = XML.string_from_xpath("/feed/author[1]/poco:displayName", doc)
       avatar = OStatus.make_avatar_object(doc)
       bio = XML.string_from_xpath("/feed/author[1]/summary", doc)
 
@@ -209,8 +209,8 @@ defmodule Pleroma.Web.Websub do
        %{
          "uri" => uri,
          "hub" => hub,
-         "nickname" => preferredUsername || name,
-         "name" => displayName || name,
+         "nickname" => preferred_username || name,
+         "name" => display_name || name,
          "host" => URI.parse(uri).host,
          "avatar" => avatar,
          "bio" => bio

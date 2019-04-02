@@ -6,6 +6,8 @@ defmodule Pleroma.User.Info do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Pleroma.User.Info
+
   embedded_schema do
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
@@ -19,6 +21,7 @@ defmodule Pleroma.User.Info do
     field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
     field(:mutes, {:array, :string}, default: [])
+    field(:muted_reblogs, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
@@ -249,5 +252,24 @@ defmodule Pleroma.User.Info do
     params = %{pinned_activities: List.delete(info.pinned_activities, id)}
 
     cast(info, params, [:pinned_activities])
+  end
+
+  def roles(%Info{is_moderator: is_moderator, is_admin: is_admin}) do
+    %{
+      admin: is_admin,
+      moderator: is_moderator
+    }
+  end
+
+  def add_reblog_mute(info, ap_id) do
+    params = %{muted_reblogs: info.muted_reblogs ++ [ap_id]}
+
+    cast(info, params, [:muted_reblogs])
+  end
+
+  def remove_reblog_mute(info, ap_id) do
+    params = %{muted_reblogs: List.delete(info.muted_reblogs, ap_id)}
+
+    cast(info, params, [:muted_reblogs])
   end
 end

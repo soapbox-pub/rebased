@@ -17,6 +17,8 @@ config :pleroma, Pleroma.Captcha,
 # Print only warnings and errors during test
 config :logger, level: :warn
 
+config :pleroma, Pleroma.Upload, filters: [], link_name: false
+
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Test
@@ -44,7 +46,9 @@ config :web_push_encryption, :vapid_details,
     "BLH1qVhJItRGCfxgTtONfsOKDc9VRAraXw-3NsmjMngWSh7NxOizN6bkuRA7iLTMPS82PjwJAr3UoK9EC1IFrz4",
   private_key: "_-XZ0iebPrRfZ_o0-IatTdszYa8VCH1yLN-JauK7HHA"
 
-config :pleroma, Pleroma.Jobs, testing: [max_jobs: 2]
+config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
+
+config :pleroma_job_queue, disabled: true
 
 try do
   import_config "test.secret.exs"

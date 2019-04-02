@@ -1,8 +1,8 @@
 defmodule Pleroma.Web.ActivityPub.VisibilityTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
   setup do

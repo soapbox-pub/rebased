@@ -1,6 +1,9 @@
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
 
+  alias Pleroma.Notification
+  alias Pleroma.Repo
+  alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
   describe "POST /api/pleroma/follow_import" do
@@ -52,7 +55,49 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
+  describe "POST /api/pleroma/notifications/read" do
+    test "it marks a single notification as read", %{conn: conn} do
+      user1 = insert(:user)
+      user2 = insert(:user)
+      {:ok, activity1} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
+      {:ok, activity2} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
+      {:ok, [notification1]} = Notification.create_notifications(activity1)
+      {:ok, [notification2]} = Notification.create_notifications(activity2)
+
+      conn
+      |> assign(:user, user1)
+      |> post("/api/pleroma/notifications/read", %{"id" => "#{notification1.id}"})
+      |> json_response(:ok)
+
+      assert Repo.get(Notification, notification1.id).seen
+      refute Repo.get(Notification, notification2.id).seen
+    end
+  end
+
   describe "GET /api/statusnet/config.json" do
+    test "returns the state of safe_dm_mentions flag", %{conn: conn} do
+      option = Pleroma.Config.get([:instance, :safe_dm_mentions])
+      Pleroma.Config.put([:instance, :safe_dm_mentions], true)
+
+      response =
+        conn
+        |> get("/api/statusnet/config.json")
+        |> json_response(:ok)
+
+      assert response["site"]["safeDMMentionsEnabled"] == "1"
+
+      Pleroma.Config.put([:instance, :safe_dm_mentions], false)
+
+      response =
+        conn
+        |> get("/api/statusnet/config.json")
+        |> json_response(:ok)
+
+      assert response["site"]["safeDMMentionsEnabled"] == "0"
+
+      Pleroma.Config.put([:instance, :safe_dm_mentions], option)
+    end
+
     test "it returns the managed config", %{conn: conn} do
       Pleroma.Config.put([:instance, :managed_config], false)
       Pleroma.Config.put([:fe], theme: "rei-ayanami-towel")

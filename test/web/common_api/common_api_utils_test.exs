@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
+  alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Endpoint
-  alias Pleroma.Builders.UserBuilder
   use Pleroma.DataCase
 
   test "it adds attachment links to a given text and attachment set" do
@@ -134,6 +135,22 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output == expected
+    end
+  end
+
+  describe "context_to_conversation_id" do
+    test "creates a mapping object" do
+      conversation_id = Utils.context_to_conversation_id("random context")
+      object = Object.get_by_ap_id("random context")
+
+      assert conversation_id == object.id
+    end
+
+    test "returns an existing mapping for an existing object" do
+      {:ok, object} = Object.context_mapping("random context") |> Repo.insert()
+      conversation_id = Utils.context_to_conversation_id("random context")
+
+      assert conversation_id == object.id
     end
   end
 end

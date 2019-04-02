@@ -4,15 +4,15 @@
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   use Pleroma.DataCase
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
 
@@ -445,22 +445,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     :ok
   end
 
-  describe "context_to_conversation_id" do
-    test "creates a mapping object" do
-      conversation_id = TwitterAPI.context_to_conversation_id("random context")
-      object = Object.get_by_ap_id("random context")
-
-      assert conversation_id == object.id
-    end
-
-    test "returns an existing mapping for an existing object" do
-      {:ok, object} = Object.context_mapping("random context") |> Repo.insert()
-      conversation_id = TwitterAPI.context_to_conversation_id("random context")
-
-      assert conversation_id == object.id
-    end
-  end
-
   describe "fetching a user by uri" do
     test "fetches a user by uri" do
       id = "https://mastodon.social/users/lambadalambda"
@@ -472,6 +456,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
       # Also fetches the feed.
       # assert Activity.get_create_by_object_ap_id("tag:mastodon.social,2017-04-05:objectId=1641750:objectType=Status")
+      # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
     end
   end
 end

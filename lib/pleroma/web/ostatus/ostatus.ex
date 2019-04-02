@@ -9,22 +9,22 @@ defmodule Pleroma.Web.OStatus do
   import Pleroma.Web.XML
   require Logger
 
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Object
-  alias Pleroma.Activity
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.OStatus.DeleteHandler
+  alias Pleroma.Web.OStatus.FollowHandler
+  alias Pleroma.Web.OStatus.NoteHandler
+  alias Pleroma.Web.OStatus.UnfollowHandler
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Websub
-  alias Pleroma.Web.OStatus.FollowHandler
-  alias Pleroma.Web.OStatus.UnfollowHandler
-  alias Pleroma.Web.OStatus.NoteHandler
-  alias Pleroma.Web.OStatus.DeleteHandler
 
-  def is_representable?(%Activity{data: data}) do
-    object = Object.normalize(data["object"])
+  def is_representable?(%Activity{} = activity) do
+    object = Object.normalize(activity)
 
     cond do
       is_nil(object) ->
@@ -119,7 +119,7 @@ defmodule Pleroma.Web.OStatus do
 
   def make_share(entry, doc, retweeted_activity) do
     with {:ok, actor} <- find_make_or_update_user(doc),
-         %Object{} = object <- Object.normalize(retweeted_activity.data["object"]),
+         %Object{} = object <- Object.normalize(retweeted_activity),
          id when not is_nil(id) <- string_from_xpath("/entry/id", entry),
          {:ok, activity, _object} = ActivityPub.announce(actor, object, id, false) do
       {:ok, activity}
@@ -137,7 +137,7 @@ defmodule Pleroma.Web.OStatus do
 
   def make_favorite(entry, doc, favorited_activity) do
     with {:ok, actor} <- find_make_or_update_user(doc),
-         %Object{} = object <- Object.normalize(favorited_activity.data["object"]),
+         %Object{} = object <- Object.normalize(favorited_activity),
          id when not is_nil(id) <- string_from_xpath("/entry/id", entry),
          {:ok, activity, _object} = ActivityPub.like(actor, object, id, false) do
       {:ok, activity}
@@ -159,7 +159,7 @@ defmodule Pleroma.Web.OStatus do
     Logger.debug("Trying to get entry from db")
 
     with id when not is_nil(id) <- string_from_xpath("//activity:object[1]/id", entry),
-         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id_with_object(id) do
       {:ok, activity}
     else
       _ ->

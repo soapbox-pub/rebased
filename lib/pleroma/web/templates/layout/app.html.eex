@@ -8,75 +8,145 @@
     </title>
     <style>
       body {
-        background-color: #282c37;
+        background-color: #121a24;
         font-family: sans-serif;
-        color:white;
+        color: #b9b9ba;
         text-align: center;
       }
 
       .container {
-        margin: 50px auto;
-        max-width: 320px;
-        padding: 0;
-        padding: 40px 40px 40px 40px;
-        background-color: #313543;
+        max-width: 420px;
+        padding: 20px;
+        background-color: #182230;
         border-radius: 4px;
+        margin: auto;
+        margin-top: 10vh;
+        box-shadow: 0 1px 4px 0px rgba(0, 0, 0, 0.5);
       }
 
       h1 {
         margin: 0;
+        font-size: 24px;
       }
 
       h2 {
-        color: #9baec8;
+        color: #b9b9ba;
         font-weight: normal;
-        font-size: 20px;
-        margin-bottom: 40px;
+        font-size: 18px;
+        margin-bottom: 20px;
       }
 
       form {
         width: 100%;
       }
 
+      .input {
+        text-align: left;
+        color: #89898a;
+        display: flex;
+        flex-direction: column;
+      }
+
       input {
-        box-sizing: border-box;
-        width: 100%;
+        box-sizing: content-box;
         padding: 10px;
-        margin-top: 20px;
-        background-color: rgba(0,0,0,.1);
-        color: white;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        background-color: #121a24;
+        color: #b9b9ba;
         border: 0;
-        border-bottom: 2px solid #9baec8;
+        transition-property: border-bottom;
+        transition-duration: 0.35s;
+        border-bottom: 2px solid #2a384a;
         font-size: 14px;
       }
 
-      input:focus {
-        border-bottom: 2px solid #4b8ed8;
+      .scopes-input {
+        display: flex;
+        margin-top: 1em;
+        text-align: left;
+        color: #89898a;
       }
 
-      input[type="checkbox"] {
-        width: auto;
+      .scopes-input label:first-child {
+        flex-basis: 40%;
+      }
+
+      .scopes {
+        display: flex;
+        flex-wrap: wrap;
+        text-align: left;
+        color: #b9b9ba;
+      }
+
+      .scope {
+        flex-basis: 100%;
+        display: flex;
+        height: 2em;
+        align-items: center;
+      }
+
+      [type="checkbox"] + label {
+        margin: 0.5em;
+      }
+
+      [type="checkbox"] {
+        display: none;
+      }
+
+      [type="checkbox"] + label:before {
+        display: inline-block;
+        color: white;
+        background-color: #121a24;
+        border: 4px solid #121a24;
+        box-sizing: border-box;
+        width: 1.2em;
+        height: 1.2em;
+        margin-right: 1.0em;
+        content: "";
+        transition-property: background-color;
+        transition-duration: 0.35s;
+        color: #121a24;
+        margin-bottom: -0.2em;
+        border-radius: 2px;
+      }
+
+      [type="checkbox"]:checked + label:before {
+        background-color: #d8a070;
+      }
+
+      input:focus {
+        outline: none;
+        border-bottom: 2px solid #d8a070;
       }
 
       button {
         box-sizing: border-box;
         width: 100%;
-        color: white;
-        background-color: #419bdd;
+        background-color: #1c2a3a;
+        color: #b9b9ba;
         border-radius: 4px;
         border: none;
         padding: 10px;
         margin-top: 30px;
         text-transform: uppercase;
-        font-weight: 500;
         font-size: 16px;
+        box-shadow: 0px 0px 2px 0px black,
+          0px 1px 0px 0px rgba(255, 255, 255, 0.2) inset,
+          0px -1px 0px 0px rgba(0, 0, 0, 0.2) inset;
+      }
+
+      button:hover {
+        cursor: pointer;
+        box-shadow: 0px 0px 0px 1px #d8a070,
+          0px 1px 0px 0px rgba(255, 255, 255, 0.2) inset,
+          0px -1px 0px 0px rgba(0, 0, 0, 0.2) inset;
       }
 
       .alert-danger {
         box-sizing: border-box;
         width: 100%;
-        color: #D8000C;
-        background-color: #FFD2D2;
+        background-color: #931014;
         border-radius: 4px;
         border: none;
         padding: 10px;
@@ -88,20 +158,32 @@
       .alert-info {
         box-sizing: border-box;
         width: 100%;
-        color: #00529B;
-        background-color: #BDE5F8;
         border-radius: 4px;
-        border: none;
+        border: 1px solid #7d796a;
         padding: 10px;
         margin-top: 20px;
         font-weight: 500;
         font-size: 16px;
       }
+
+      @media all and (max-width: 440px) {
+        .container {
+          margin-top: 0
+        }
+
+        .scopes-input {
+          flex-direction: column;
+        }
+
+        .scope {
+          flex-basis: 50%;
+        }
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Pleroma</h1>
+      <h1><%= Application.get_env(:pleroma, :instance)[:name] %></h1>
       <%= render @view_module, @view_template, assigns %>
     </div>
   </body>

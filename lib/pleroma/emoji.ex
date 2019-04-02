@@ -17,13 +17,13 @@ defmodule Pleroma.Emoji do
   @ets_options [:ordered_set, :protected, :named_table, {:read_concurrency, true}]
 
   @doc false
-  def start_link() do
+  def start_link do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   @doc "Reloads the emojis from disk."
   @spec reload() :: :ok
-  def reload() do
+  def reload do
     GenServer.call(__MODULE__, :reload)
   end
 
@@ -38,7 +38,7 @@ defmodule Pleroma.Emoji do
 
   @doc "Returns all the emojos!!"
   @spec get_all() :: [{String.t(), String.t()}, ...]
-  def get_all() do
+  def get_all do
     :ets.tab2list(@ets)
   end
 
@@ -72,7 +72,7 @@ defmodule Pleroma.Emoji do
     {:ok, state}
   end
 
-  defp load() do
+  defp load do
     emojis =
       (load_finmoji(Keyword.get(Application.get_env(:pleroma, :instance), :finmoji_enabled)) ++
          load_from_file("config/emoji.txt") ++

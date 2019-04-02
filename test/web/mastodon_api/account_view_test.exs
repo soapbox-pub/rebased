@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
-  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.User
+  alias Pleroma.Web.MastodonAPI.AccountView
 
   test "Represent a user account" do
     source_data = %{
@@ -144,7 +144,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       muting_notifications: false,
       requested: false,
       domain_blocking: false,
-      showing_reblogs: false,
+      showing_reblogs: true,
       endorsed: false
     }
 
@@ -202,7 +202,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           muting_notifications: false,
           requested: false,
           domain_blocking: false,
-          showing_reblogs: false,
+          showing_reblogs: true,
           endorsed: false
         }
       }

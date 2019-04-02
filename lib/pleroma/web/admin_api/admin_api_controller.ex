@@ -3,16 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
-  @users_page_size 50
-
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.MastodonAPI.Admin.AccountView
+  alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.AdminAPI.Search
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   require Logger
+
+  @users_page_size 50
 
   action_fallback(:errors)
 
@@ -44,6 +45,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(user.nickname)
   end
 
+  def user_show(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      conn
+      |> json(AccountView.render("show.json", %{user: user}))
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
   def user_toggle_activation(conn, %{"nickname" => nickname}) do
     user = User.get_by_nickname(nickname)
 
@@ -65,8 +75,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def list_users(conn, params) do
     {page, page_size} = page_params(params)
+    filters = maybe_parse_filters(params["filters"])
 
-    with {:ok, users, count} <- User.all_for_admin(page, page_size),
+    search_params = %{
+      query: params["query"],
+      page: page,
+      page_size: page_size
+    }
+
+    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
          do:
            conn
            |> json(
@@ -78,25 +95,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            )
   end
 
-  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => query} = params) do
-    {page, page_size} = page_params(params)
+  @filters ~w(local external active deactivated)
 
-    with {:ok, users, count} <-
-           User.search_for_admin(query, %{
-             admin: admin,
-             local: params["local"] == "true",
-             page: page,
-             page_size: page_size
-           }),
-         do:
-           conn
-           |> json(
-             AccountView.render("index.json",
-               users: users,
-               count: count,
-               page_size: page_size
-             )
-           )
+  defp maybe_parse_filters(filters) when is_nil(filters) or filters == "", do: %{}
+
+  @spec maybe_parse_filters(String.t()) :: %{required(String.t()) => true} | %{}
+  defp maybe_parse_filters(filters) do
+    filters
+    |> String.split(",")
+    |> Enum.filter(&Enum.member?(@filters, &1))
+    |> Enum.map(&String.to_atom(&1))
+    |> Enum.into(%{}, &{&1, true})
   end
 
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})
@@ -229,6 +238,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(token.token)
+  end
+
+  def errors(conn, {:error, :not_found}) do
+    conn
+    |> put_status(404)
+    |> json("Not found")
   end
 
   def errors(conn, {:param_cast, _}) do

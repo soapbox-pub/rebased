@@ -7,7 +7,7 @@ defmodule Pleroma.Captcha.Mock do
   @behaviour Service
 
   @impl Service
-  def new(), do: %{type: :mock}
+  def new, do: %{type: :mock}
 
   @impl Service
   def validate(_token, _captcha, _data), do: :ok

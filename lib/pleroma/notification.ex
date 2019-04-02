@@ -5,14 +5,17 @@
 defmodule Pleroma.Notification do
   use Ecto.Schema
 
-  alias Pleroma.User
   alias Pleroma.Activity
   alias Pleroma.Notification
+  alias Pleroma.Object
+  alias Pleroma.Pagination
   alias Pleroma.Repo
-  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.Utils
 
   import Ecto.Query
+  import Ecto.Changeset
 
   schema "notifications" do
     field(:seen, :boolean, default: false)
@@ -22,36 +25,30 @@ defmodule Pleroma.Notification do
     timestamps()
   end
 
-  # TODO: Make generic and unify (see activity_pub.ex)
-  defp restrict_max(query, %{"max_id" => max_id}) do
-    from(activity in query, where: activity.id < ^max_id)
+  def changeset(%Notification{} = notification, attrs) do
+    notification
+    |> cast(attrs, [:seen])
   end
 
-  defp restrict_max(query, _), do: query
-
-  defp restrict_since(query, %{"since_id" => since_id}) do
-    from(activity in query, where: activity.id > ^since_id)
+  def for_user_query(user) do
+    Notification
+    |> where(user_id: ^user.id)
+    |> join(:inner, [n], activity in assoc(n, :activity))
+    |> join(:left, [n, a], object in Object,
+      on:
+        fragment(
+          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+          object.data,
+          a.data
+        )
+    )
+    |> preload([n, a, o], activity: {a, object: o})
   end
-
-  defp restrict_since(query, _), do: query
 
   def for_user(user, opts \\ %{}) do
-    query =
-      from(
-        n in Notification,
-        where: n.user_id == ^user.id,
-        order_by: [desc: n.id],
-        join: activity in assoc(n, :activity),
-        preload: [activity: activity],
-        limit: 20
-      )
-
-    query =
-      query
-      |> restrict_since(opts)
-      |> restrict_max(opts)
-
-    Repo.all(query)
+    user
+    |> for_user_query()
+    |> Pagination.fetch_paginated(opts)
   end
 
   def set_read_up_to(%{id: user_id} = _user, id) do
@@ -66,6 +63,14 @@ defmodule Pleroma.Notification do
       )
 
     Repo.update_all(query, [])
+  end
+
+  def read_one(%User{} = user, notification_id) do
+    with {:ok, %Notification{} = notification} <- get(user, notification_id) do
+      notification
+      |> changeset(%{seen: true})
+      |> Repo.update()
+    end
   end
 
   def get(%{id: user_id} = _user, id) do

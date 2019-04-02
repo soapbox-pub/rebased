@@ -85,7 +85,7 @@ defmodule Pleroma.FlakeId do
     {:ok, FlakeId.from_string(value)}
   end
 
-  def autogenerate(), do: get()
+  def autogenerate, do: get()
 
   # -- GenServer API
   def start_link do
@@ -165,7 +165,7 @@ defmodule Pleroma.FlakeId do
     1_000_000_000 * mega_seconds + seconds * 1000 + :erlang.trunc(micro_seconds / 1000)
   end
 
-  defp worker_id() do
+  defp worker_id do
     <<worker::integer-size(48)>> = :crypto.strong_rand_bytes(6)
     worker
   end

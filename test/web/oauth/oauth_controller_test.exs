@@ -87,7 +87,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     assert result =~ app.redirect_uris
 
     # Error message
-    assert result =~ "Permissions not specified"
+    assert result =~ "This action is outside the authorized scopes"
   end
 
   test "returns 401 for scopes beyond app scopes", %{conn: conn} do
@@ -113,7 +113,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     assert result =~ app.redirect_uris
 
     # Error message
-    assert result =~ "Permissions not specified"
+    assert result =~ "This action is outside the authorized scopes"
   end
 
   test "issues a token for an all-body request" do
@@ -132,11 +132,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         "client_secret" => app.client_secret
       })
 
-    assert %{"access_token" => token} = json_response(conn, 200)
+    assert %{"access_token" => token, "me" => ap_id} = json_response(conn, 200)
 
     token = Repo.get_by(Token, token: token)
     assert token
     assert token.scopes == auth.scopes
+    assert user.ap_id == ap_id
   end
 
   test "issues a token for `password` grant_type with valid credentials, with full permissions by default" do
