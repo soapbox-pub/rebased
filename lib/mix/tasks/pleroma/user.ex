@@ -6,7 +6,6 @@ defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
   import Ecto.Changeset
   alias Mix.Tasks.Pleroma.Common
-  alias Pleroma.Repo
   alias Pleroma.User
 
   @shortdoc "Manages Pleroma users"
@@ -23,7 +22,7 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--password PASSWORD` - the user's password
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
-  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions 
+  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions
 
   ## Generate an invite link.
 
@@ -202,7 +201,7 @@ defmodule Mix.Tasks.Pleroma.User do
       {:ok, friends} = User.get_friends(user)
 
       Enum.each(friends, fn friend ->
-        user = Repo.get(User, user.id)
+        user = User.get_by_id(user.id)
 
         Mix.shell().info("Unsubscribing #{friend.nickname} from #{user.nickname}")
         User.unfollow(user, friend)
@@ -210,7 +209,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
       :timer.sleep(500)
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
 
       if Enum.empty?(user.following) do
         Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")

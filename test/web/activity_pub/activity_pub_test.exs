@@ -218,18 +218,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "1", "visibility" => "public"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "1", "visibility" => "public"})
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "2", "visibility" => "unlisted"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "2", "visibility" => "unlisted"})
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "2", "visibility" => "private"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "2", "visibility" => "private"})
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "3", "visibility" => "direct"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "3", "visibility" => "direct"})
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.note_count == 2
     end
 
@@ -758,23 +758,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user, info: %{note_count: 10})
 
       {:ok, a1} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "public"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "public"})
 
       {:ok, a2} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "unlisted"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "unlisted"})
 
       {:ok, a3} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "private"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "private"})
 
       {:ok, a4} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "direct"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "direct"})
 
       {:ok, _} = a1.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
       {:ok, _} = a2.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
       {:ok, _} = a3.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
       {:ok, _} = a4.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.note_count == 10
     end
 

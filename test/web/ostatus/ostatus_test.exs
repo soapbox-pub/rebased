@@ -344,7 +344,7 @@ defmodule Pleroma.Web.OStatusTest do
 
       {:ok, user} = OStatus.find_or_make_user(uri)
 
-      user = Repo.get(Pleroma.User, user.id)
+      user = Pleroma.User.get_by_id(user.id)
       assert user.name == "Constance Variable"
       assert user.nickname == "lambadalambda@social.heldscal.la"
       assert user.local == false
