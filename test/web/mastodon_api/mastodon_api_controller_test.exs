@@ -2265,4 +2265,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert link_header =~ ~r/max_id=#{notification1.id}/
     end
   end
+
+  test "accounts fetches correct account for nicknames beginning with numbers", %{conn: conn} do
+    # Need to set an old-style integer ID to reproduce the problem
+    # (these are no longer assigned to new accounts but were preserved
+    # for existing accounts during the migration to flakeIDs)
+    user_one = insert(:user, %{id: 1212})
+    user_two = insert(:user, %{nickname: "#{user_one.id}garbage"})
+
+    resp_one =
+      conn
+      |> get("/api/v1/accounts/#{user_one.id}")
+
+    resp_two =
+      conn
+      |> get("/api/v1/accounts/#{user_two.nickname}")
+
+    resp_three =
+      conn
+      |> get("/api/v1/accounts/#{user_two.id}")
+
+    acc_one = json_response(resp_one, 200)
+    acc_two = json_response(resp_two, 200)
+    acc_three = json_response(resp_three, 200)
+    refute acc_one == acc_two
+    assert acc_two == acc_three
+  end
 end

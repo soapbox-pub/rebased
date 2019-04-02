@@ -200,6 +200,13 @@ defmodule Pleroma.UserTest do
     refute User.following?(followed, user)
   end
 
+  test "fetches correct profile for nickname beginning with number" do
+    # Use old-style integer ID to try to reproduce the problem
+    user = insert(:user, %{id: 1080})
+    userwithnumbers = insert(:user, %{nickname: "#{user.id}garbage"})
+    assert userwithnumbers == User.get_cached_by_nickname_or_id(userwithnumbers.nickname)
+  end
+
   describe "user registration" do
     @full_user_data %{
       bio: "A guy",

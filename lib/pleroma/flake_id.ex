@@ -46,7 +46,7 @@ defmodule Pleroma.FlakeId do
 
   def from_string(string) when is_binary(string) and byte_size(string) < 18 do
     case Integer.parse(string) do
-      {id, _} -> <<0::integer-size(64), id::integer-size(64)>>
+      {id, ""} -> <<0::integer-size(64), id::integer-size(64)>>
       _ -> nil
     end
   end
