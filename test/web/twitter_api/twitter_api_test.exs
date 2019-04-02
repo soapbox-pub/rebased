@@ -445,22 +445,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     :ok
   end
 
-  describe "context_to_conversation_id" do
-    test "creates a mapping object" do
-      conversation_id = TwitterAPI.context_to_conversation_id("random context")
-      object = Object.get_by_ap_id("random context")
-
-      assert conversation_id == object.id
-    end
-
-    test "returns an existing mapping for an existing object" do
-      {:ok, object} = Object.context_mapping("random context") |> Repo.insert()
-      conversation_id = TwitterAPI.context_to_conversation_id("random context")
-
-      assert conversation_id == object.id
-    end
-  end
-
   describe "fetching a user by uri" do
     test "fetches a user by uri" do
       id = "https://mastodon.social/users/lambadalambda"

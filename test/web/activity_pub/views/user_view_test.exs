@@ -16,6 +16,29 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert String.contains?(result["publicKey"]["publicKeyPem"], "BEGIN PUBLIC KEY")
   end
 
+  test "Does not add an avatar image if the user hasn't set one" do
+    user = insert(:user)
+    {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+
+    result = UserView.render("user.json", %{user: user})
+    refute result["icon"]
+    refute result["image"]
+
+    user =
+      insert(:user,
+        avatar: %{"url" => [%{"href" => "https://someurl"}]},
+        info: %{
+          banner: %{"url" => [%{"href" => "https://somebanner"}]}
+        }
+      )
+
+    {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+
+    result = UserView.render("user.json", %{user: user})
+    assert result["icon"]["url"] == "https://someurl"
+    assert result["image"]["url"] == "https://somebanner"
+  end
+
   describe "endpoints" do
     test "local users have a usable endpoints structure" do
       user = insert(:user)

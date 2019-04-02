@@ -14,7 +14,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.FilterView
+  alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Push
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
   import ExUnit.CaptureLog
@@ -381,6 +383,53 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => id, "source" => %{"privacy" => "unlisted"}} = json_response(conn, 200)
     assert id == to_string(user.id)
+  end
+
+  test "apps/verify_credentials", %{conn: conn} do
+    token = insert(:oauth_token)
+
+    conn =
+      conn
+      |> assign(:user, token.user)
+      |> assign(:token, token)
+      |> get("/api/v1/apps/verify_credentials")
+
+    app = Repo.preload(token, :app).app
+
+    expected = %{
+      "name" => app.client_name,
+      "website" => app.website,
+      "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
+    }
+
+    assert expected == json_response(conn, 200)
+  end
+
+  test "creates an oauth app", %{conn: conn} do
+    user = insert(:user)
+    app_attrs = build(:oauth_app)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/apps", %{
+        client_name: app_attrs.client_name,
+        redirect_uris: app_attrs.redirect_uris
+      })
+
+    [app] = Repo.all(App)
+
+    expected = %{
+      "name" => app.client_name,
+      "website" => app.website,
+      "client_id" => app.client_id,
+      "client_secret" => app.client_secret,
+      "id" => app.id |> to_string(),
+      "redirect_uri" => app.redirect_uris,
+      "vapid_key" => Push.vapid_config() |> Keyword.get(:public_key)
+    }
+
+    assert expected == json_response(conn, 200)
   end
 
   test "get a status", %{conn: conn} do
@@ -805,6 +854,96 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert all = json_response(conn, 200)
       assert all == []
+    end
+
+    test "paginates notifications using min_id, since_id, max_id, and limit", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity1} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, activity2} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, activity3} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, activity4} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+
+      notification1_id = Repo.get_by(Notification, activity_id: activity1.id).id |> to_string()
+      notification2_id = Repo.get_by(Notification, activity_id: activity2.id).id |> to_string()
+      notification3_id = Repo.get_by(Notification, activity_id: activity3.id).id |> to_string()
+      notification4_id = Repo.get_by(Notification, activity_id: activity4.id).id |> to_string()
+
+      conn =
+        conn
+        |> assign(:user, user)
+
+      # min_id
+      conn_res =
+        conn
+        |> get("/api/v1/notifications?limit=2&min_id=#{notification1_id}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
+
+      # since_id
+      conn_res =
+        conn
+        |> get("/api/v1/notifications?limit=2&since_id=#{notification1_id}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
+
+      # max_id
+      conn_res =
+        conn
+        |> get("/api/v1/notifications?limit=2&max_id=#{notification4_id}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification3_id}, %{"id" => ^notification2_id}] = result
+    end
+
+    test "filters notifications using exclude_types", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, mention_activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
+      {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
+      {:ok, favorite_activity, _} = CommonAPI.favorite(create_activity.id, other_user)
+      {:ok, reblog_activity, _} = CommonAPI.repeat(create_activity.id, other_user)
+      {:ok, _, _, follow_activity} = CommonAPI.follow(other_user, user)
+
+      mention_notification_id =
+        Repo.get_by(Notification, activity_id: mention_activity.id).id |> to_string()
+
+      favorite_notification_id =
+        Repo.get_by(Notification, activity_id: favorite_activity.id).id |> to_string()
+
+      reblog_notification_id =
+        Repo.get_by(Notification, activity_id: reblog_activity.id).id |> to_string()
+
+      follow_notification_id =
+        Repo.get_by(Notification, activity_id: follow_activity.id).id |> to_string()
+
+      conn =
+        conn
+        |> assign(:user, user)
+
+      conn_res =
+        get(conn, "/api/v1/notifications", %{exclude_types: ["mention", "favourite", "reblog"]})
+
+      assert [%{"id" => ^follow_notification_id}] = json_response(conn_res, 200)
+
+      conn_res =
+        get(conn, "/api/v1/notifications", %{exclude_types: ["favourite", "reblog", "follow"]})
+
+      assert [%{"id" => ^mention_notification_id}] = json_response(conn_res, 200)
+
+      conn_res =
+        get(conn, "/api/v1/notifications", %{exclude_types: ["reblog", "follow", "mention"]})
+
+      assert [%{"id" => ^favorite_notification_id}] = json_response(conn_res, 200)
+
+      conn_res =
+        get(conn, "/api/v1/notifications", %{exclude_types: ["follow", "mention", "favourite"]})
+
+      assert [%{"id" => ^reblog_notification_id}] = json_response(conn_res, 200)
     end
   end
 
@@ -1683,7 +1822,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user = json_response(conn, 200)
 
       assert user["note"] ==
-               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe">#cofe</a> with <span class="h-card"><a data-user=") <>
+               ~s(I drink <a class="hashtag" data-tag="cofe" href="http://localhost:4001/tag/cofe" rel="tag">#cofe</a> with <span class="h-card"><a data-user=") <>
                  user2.id <>
                  ~s(" class="u-url mention" href=") <>
                  user2.ap_id <> ~s(">@<span>) <> user2.nickname <> ~s(</span></a></span>)
@@ -1769,6 +1908,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "get instance information", %{conn: conn} do
+    conn = get(conn, "/api/v1/instance")
+    assert result = json_response(conn, 200)
+
+    # Note: not checking for "max_toot_chars" since it's optional
+    assert %{
+             "uri" => _,
+             "title" => _,
+             "description" => _,
+             "version" => _,
+             "email" => _,
+             "urls" => %{
+               "streaming_api" => _
+             },
+             "stats" => _,
+             "thumbnail" => _,
+             "languages" => _,
+             "registrations" => _
+           } = result
+  end
+
+  test "get instance stats", %{conn: conn} do
     user = insert(:user, %{local: true})
 
     user2 = insert(:user, %{local: true})

@@ -75,6 +75,29 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "GET /api/statusnet/config.json" do
+    test "returns the state of safe_dm_mentions flag", %{conn: conn} do
+      option = Pleroma.Config.get([:instance, :safe_dm_mentions])
+      Pleroma.Config.put([:instance, :safe_dm_mentions], true)
+
+      response =
+        conn
+        |> get("/api/statusnet/config.json")
+        |> json_response(:ok)
+
+      assert response["site"]["safeDMMentionsEnabled"] == "1"
+
+      Pleroma.Config.put([:instance, :safe_dm_mentions], false)
+
+      response =
+        conn
+        |> get("/api/statusnet/config.json")
+        |> json_response(:ok)
+
+      assert response["site"]["safeDMMentionsEnabled"] == "0"
+
+      Pleroma.Config.put([:instance, :safe_dm_mentions], option)
+    end
+
     test "it returns the managed config", %{conn: conn} do
       Pleroma.Config.put([:instance, :managed_config], false)
       Pleroma.Config.put([:fe], theme: "rei-ayanami-towel")

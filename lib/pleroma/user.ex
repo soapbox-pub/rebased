@@ -50,23 +50,20 @@ defmodule Pleroma.User do
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
     field(:search_rank, :float, virtual: true)
+    field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:bookmarks, {:array, :string}, default: [])
-    field(:last_refreshed_at, :naive_datetime)
+    field(:last_refreshed_at, :naive_datetime_usec)
     has_many(:notifications, Notification)
     embeds_one(:info, Pleroma.User.Info)
 
     timestamps()
   end
 
-  def auth_active?(%User{local: false}), do: true
-
-  def auth_active?(%User{info: %User.Info{confirmation_pending: false}}), do: true
-
   def auth_active?(%User{info: %User.Info{confirmation_pending: true}}),
     do: !Pleroma.Config.get([:instance, :account_activation_required])
 
-  def auth_active?(_), do: false
+  def auth_active?(%User{}), do: true
 
   def visible_for?(user, for_user \\ nil)
 
@@ -82,17 +79,17 @@ defmodule Pleroma.User do
   def superuser?(%User{local: true, info: %User.Info{is_moderator: true}}), do: true
   def superuser?(_), do: false
 
-  def avatar_url(user) do
+  def avatar_url(user, options \\ []) do
     case user.avatar do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "#{Web.base_url()}/images/avi.png"
+      _ -> !options[:no_default] && "#{Web.base_url()}/images/avi.png"
     end
   end
 
-  def banner_url(user) do
+  def banner_url(user, options \\ []) do
     case user.info.banner do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "#{Web.base_url()}/images/banner.png"
+      _ -> !options[:no_default] && "#{Web.base_url()}/images/banner.png"
     end
   end
 
@@ -104,9 +101,8 @@ defmodule Pleroma.User do
     "#{Web.base_url()}/users/#{nickname}"
   end
 
-  def ap_followers(%User{} = user) do
-    "#{ap_id(user)}/followers"
-  end
+  def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
+  def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
 
   def user_info(%User{} = user) do
     oneself = if user.local, do: 1, else: 0
@@ -335,10 +331,11 @@ defmodule Pleroma.User do
                 ^followed_addresses
               )
           ]
-        ]
+        ],
+        select: u
       )
 
-    {1, [follower]} = Repo.update_all(q, [], returning: true)
+    {1, [follower]} = Repo.update_all(q, [])
 
     Enum.each(followeds, fn followed ->
       update_follower_count(followed)
@@ -368,10 +365,11 @@ defmodule Pleroma.User do
         q =
           from(u in User,
             where: u.id == ^follower.id,
-            update: [push: [following: ^ap_followers]]
+            update: [push: [following: ^ap_followers]],
+            select: u
           )
 
-        {1, [follower]} = Repo.update_all(q, [], returning: true)
+        {1, [follower]} = Repo.update_all(q, [])
 
         {:ok, _} = update_follower_count(followed)
 
@@ -386,10 +384,11 @@ defmodule Pleroma.User do
       q =
         from(u in User,
           where: u.id == ^follower.id,
-          update: [pull: [following: ^ap_followers]]
+          update: [pull: [following: ^ap_followers]],
+          select: u
         )
 
-      {1, [follower]} = Repo.update_all(q, [], returning: true)
+      {1, [follower]} = Repo.update_all(q, [])
 
       {:ok, followed} = update_follower_count(followed)
 
@@ -637,7 +636,7 @@ defmodule Pleroma.User do
     users =
       user
       |> User.get_follow_requests_query()
-      |> join(:inner, [a], u in User, a.actor == u.ap_id)
+      |> join(:inner, [a], u in User, on: a.actor == u.ap_id)
       |> where([a, u], not fragment("? @> ?", u.following, ^[user.follower_address]))
       |> group_by([a, u], u.id)
       |> select([a, u], u)
@@ -659,7 +658,8 @@ defmodule Pleroma.User do
           )
       ]
     )
-    |> Repo.update_all([], returning: true)
+    |> select([u], u)
+    |> Repo.update_all([])
     |> case do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
@@ -679,7 +679,8 @@ defmodule Pleroma.User do
           )
       ]
     )
-    |> Repo.update_all([], returning: true)
+    |> select([u], u)
+    |> Repo.update_all([])
     |> case do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
@@ -725,7 +726,8 @@ defmodule Pleroma.User do
           )
       ]
     )
-    |> Repo.update_all([], returning: true)
+    |> select([u], u)
+    |> Repo.update_all([])
     |> case do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
@@ -766,90 +768,59 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  @spec search_for_admin(%{
-          local: boolean(),
-          page: number(),
-          page_size: number()
-        }) :: {:ok, [Pleroma.User.t()], number()}
-  def search_for_admin(%{query: nil, local: local, page: page, page_size: page_size}) do
-    query =
-      from(u in User, order_by: u.id)
-      |> maybe_local_user_query(local)
-
-    paginated_query =
-      query
-      |> paginate(page, page_size)
-
-    count =
-      query
-      |> Repo.aggregate(:count, :id)
-
-    {:ok, Repo.all(paginated_query), count}
-  end
-
-  @spec search_for_admin(%{
-          query: binary(),
-          admin: Pleroma.User.t(),
-          local: boolean(),
-          page: number(),
-          page_size: number()
-        }) :: {:ok, [Pleroma.User.t()], number()}
-  def search_for_admin(%{
-        query: term,
-        admin: admin,
-        local: local,
-        page: page,
-        page_size: page_size
-      }) do
-    term = String.trim_leading(term, "@")
-
-    local_paginated_query =
-      User
-      |> maybe_local_user_query(local)
-      |> paginate(page, page_size)
-
-    search_query = fts_search_subquery(term, local_paginated_query)
-
-    count =
-      term
-      |> fts_search_subquery()
-      |> maybe_local_user_query(local)
-      |> Repo.aggregate(:count, :id)
-
-    {:ok, do_search(search_query, admin), count}
-  end
-
   def search(query, resolve \\ false, for_user \\ nil) do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
     if resolve, do: get_or_fetch(query)
 
-    fts_results = do_search(fts_search_subquery(query), for_user)
-
-    {:ok, trigram_results} =
+    {:ok, results} =
       Repo.transaction(fn ->
         Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
-        do_search(trigram_search_subquery(query), for_user)
+        Repo.all(search_query(query, for_user))
       end)
 
-    Enum.uniq_by(fts_results ++ trigram_results, & &1.id)
+    results
   end
 
-  defp do_search(subquery, for_user, options \\ []) do
-    q =
-      from(
-        s in subquery(subquery),
-        order_by: [desc: s.search_rank],
-        limit: ^(options[:limit] || 20)
-      )
+  def search_query(query, for_user) do
+    fts_subquery = fts_search_subquery(query)
+    trigram_subquery = trigram_search_subquery(query)
+    union_query = from(s in trigram_subquery, union_all: ^fts_subquery)
+    distinct_query = from(s in subquery(union_query), order_by: s.search_type, distinct: s.id)
 
-    results =
-      q
-      |> Repo.all()
-      |> Enum.filter(&(&1.search_rank > 0))
+    from(s in subquery(boost_search_rank_query(distinct_query, for_user)),
+      order_by: [desc: s.search_rank],
+      limit: 20
+    )
+  end
 
-    boost_search_results(results, for_user)
+  defp boost_search_rank_query(query, nil), do: query
+
+  defp boost_search_rank_query(query, for_user) do
+    friends_ids = get_friends_ids(for_user)
+    followers_ids = get_followers_ids(for_user)
+
+    from(u in subquery(query),
+      select_merge: %{
+        search_rank:
+          fragment(
+            """
+             CASE WHEN (?) THEN (?) * 1.3
+             WHEN (?) THEN (?) * 1.2
+             WHEN (?) THEN (?) * 1.1
+             ELSE (?) END
+            """,
+            u.id in ^friends_ids and u.id in ^followers_ids,
+            u.search_rank,
+            u.id in ^friends_ids,
+            u.search_rank,
+            u.id in ^followers_ids,
+            u.search_rank,
+            u.search_rank
+          )
+      }
+    )
   end
 
   defp fts_search_subquery(term, query \\ User) do
@@ -864,6 +835,7 @@ defmodule Pleroma.User do
     from(
       u in query,
       select_merge: %{
+        search_type: ^0,
         search_rank:
           fragment(
             """
@@ -896,6 +868,8 @@ defmodule Pleroma.User do
     from(
       u in User,
       select_merge: %{
+        # ^1 gives 'Postgrex expected a binary, got 1' for some weird reason
+        search_type: fragment("?", 1),
         search_rank:
           fragment(
             "similarity(?, trim(? || ' ' || coalesce(?, '')))",
@@ -906,33 +880,6 @@ defmodule Pleroma.User do
       },
       where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
     )
-  end
-
-  defp boost_search_results(results, nil), do: results
-
-  defp boost_search_results(results, for_user) do
-    friends_ids = get_friends_ids(for_user)
-    followers_ids = get_followers_ids(for_user)
-
-    Enum.map(
-      results,
-      fn u ->
-        search_rank_coef =
-          cond do
-            u.id in friends_ids ->
-              1.2
-
-            u.id in followers_ids ->
-              1.1
-
-            true ->
-              1
-          end
-
-        Map.put(u, :search_rank, u.search_rank * search_rank_coef)
-      end
-    )
-    |> Enum.sort_by(&(-&1.search_rank))
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
@@ -1074,6 +1021,42 @@ defmodule Pleroma.User do
     )
   end
 
+  def maybe_external_user_query(query, external) do
+    if external, do: external_user_query(query), else: query
+  end
+
+  def external_user_query(query \\ User) do
+    from(
+      u in query,
+      where: u.local == false,
+      where: not is_nil(u.nickname)
+    )
+  end
+
+  def maybe_active_user_query(query, active) do
+    if active, do: active_user_query(query), else: query
+  end
+
+  def active_user_query(query \\ User) do
+    from(
+      u in query,
+      where: fragment("not (?->'deactivated' @> 'true')", u.info),
+      where: not is_nil(u.nickname)
+    )
+  end
+
+  def maybe_deactivated_user_query(query, deactivated) do
+    if deactivated, do: deactivated_user_query(query), else: query
+  end
+
+  def deactivated_user_query(query \\ User) do
+    from(
+      u in query,
+      where: fragment("(?->'deactivated' @> 'true')", u.info),
+      where: not is_nil(u.nickname)
+    )
+  end
+
   def active_local_user_query do
     from(
       u in local_user_query(),
@@ -1113,13 +1096,15 @@ defmodule Pleroma.User do
     friends
     |> Enum.each(fn followed -> User.unfollow(user, followed) end)
 
-    query = from(a in Activity, where: a.actor == ^user.ap_id)
+    query =
+      from(a in Activity, where: a.actor == ^user.ap_id)
+      |> Activity.with_preloaded_object()
 
     Repo.all(query)
     |> Enum.each(fn activity ->
       case activity.data["type"] do
         "Create" ->
-          ActivityPub.delete(Object.normalize(activity.data["object"]))
+          ActivityPub.delete(Object.normalize(activity))
 
         # TODO: Do something with likes, follows, repeats.
         _ ->
@@ -1159,9 +1144,12 @@ defmodule Pleroma.User do
     if !is_nil(user) and !User.needs_update?(user) do
       user
     else
+      # Whether to fetch initial posts for the user (if it's a new user & the fetching is enabled)
+      should_fetch_initial = is_nil(user) and Pleroma.Config.get([:fetch_initial_posts, :enabled])
+
       user = fetch_by_ap_id(ap_id)
 
-      if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
+      if should_fetch_initial do
         with %User{} = user do
           {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
         end

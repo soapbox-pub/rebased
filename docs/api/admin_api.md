@@ -8,10 +8,15 @@ Authentication is required and the user must be an admin.
 
 - Method `GET`
 - Query Params:
-  - `query`: **string** *optional* search term
-  - `local_only`: **bool** *optional* whether to return only local users
-  - `page`: **integer** *optional* page number
-  - `page_size`: **integer** *optional* number of users per page (default is `50`)
+  - *optional* `query`: **string** search term
+  - *optional* `filters`: **string** comma-separated string of filters:
+    - `local`: only local users
+    - `external`: only external users
+    - `active`: only active users
+    - `deactivated`: only deactivated users
+  - *optional* `page`: **integer** page number
+  - *optional* `page_size`: **integer** number of users per page (default is `50`)
+- Example: `https://mypleroma.org/api/pleroma/admin/users?query=john&filters=local,active&page=1&page_size=10`
 - Response:
 
 ```JSON
@@ -22,7 +27,13 @@ Authentication is required and the user must be an admin.
     {
       "deactivated": bool,
       "id": integer,
-      "nickname": string
+      "nickname": string,
+      "roles": {
+        "admin": bool,
+        "moderator": bool
+      },
+      "local": bool,
+      "tags": array
     },
     ...
   ]
@@ -99,7 +110,7 @@ Authentication is required and the user must be an admin.
 
 Note: Available `:permission_group` is currently moderator and admin. 404 is returned when the permission group doesn’t exist.
 
-### Get user user permission groups membership
+### Get user user permission groups membership per permission group
 
 - Method: `GET`
 - Params: none
@@ -137,6 +148,17 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `nickname`
   - `status` BOOLEAN field, false value means deactivation.
+
+## `/api/pleroma/admin/users/:nickname`
+
+### Retrive the details of a user
+
+- Method: `GET`
+- Params:
+  - `nickname`
+- Response:
+  - On failure: `Not found`
+  - On success: JSON of the user
 
 ## `/api/pleroma/admin/relay`
 

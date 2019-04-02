@@ -10,6 +10,8 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
   import ExUnit.CaptureLog
   import Mock
 
+  @skip if !Code.ensure_loaded?(:eldap), do: :skip
+
   setup_all do
     ldap_authenticator =
       Pleroma.Config.get(Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator)
@@ -27,6 +29,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
     :ok
   end
 
+  @tag @skip
   test "authorizes the existing user using LDAP credentials" do
     password = "testpassword"
     user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
@@ -65,6 +68,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
     end
   end
 
+  @tag @skip
   test "creates a new user after successful LDAP authorization" do
     password = "testpassword"
     user = build(:user)
@@ -110,6 +114,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
     end
   end
 
+  @tag @skip
   test "falls back to the default authorization when LDAP is unavailable" do
     password = "testpassword"
     user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
@@ -153,6 +158,7 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
     end
   end
 
+  @tag @skip
   test "disallow authorization for wrong LDAP credentials" do
     password = "testpassword"
     user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))

@@ -140,6 +140,7 @@ defmodule Pleroma.Web.Router do
     pipe_through([:admin_api, :oauth_write])
 
     get("/users", AdminAPIController, :list_users)
+    get("/users/:nickname", AdminAPIController, :user_show)
     delete("/user", AdminAPIController, :user_delete)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     post("/user", AdminAPIController, :user_create)
@@ -217,6 +218,7 @@ defmodule Pleroma.Web.Router do
       get("/accounts/search", MastodonAPIController, :account_search)
 
       get("/accounts/:id/lists", MastodonAPIController, :account_lists)
+      get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
 
       get("/follow_requests", MastodonAPIController, :follow_requests)
       get("/blocks", MastodonAPIController, :blocks)
@@ -331,6 +333,7 @@ defmodule Pleroma.Web.Router do
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)
     post("/apps", MastodonAPIController, :create_app)
+    get("/apps/verify_credentials", MastodonAPIController, :verify_app_credentials)
     get("/custom_emojis", MastodonAPIController, :custom_emojis)
 
     get("/statuses/:id/card", MastodonAPIController, :status_card)

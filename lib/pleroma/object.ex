@@ -14,6 +14,8 @@ defmodule Pleroma.Object do
   import Ecto.Query
   import Ecto.Changeset
 
+  require Logger
+
   schema "objects" do
     field(:data, :map)
 
@@ -38,6 +40,33 @@ defmodule Pleroma.Object do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
   end
 
+  # If we pass an Activity to Object.normalize(), we can try to use the preloaded object.
+  # Use this whenever possible, especially when walking graphs in an O(N) loop!
+  def normalize(%Activity{object: %Object{} = object}), do: object
+
+  # Catch and log Object.normalize() calls where the Activity's child object is not
+  # preloaded.
+  def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}) do
+    Logger.debug(
+      "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
+    )
+
+    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
+
+    normalize(ap_id)
+  end
+
+  def normalize(%Activity{data: %{"object" => ap_id}}) do
+    Logger.debug(
+      "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
+    )
+
+    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
+
+    normalize(ap_id)
+  end
+
+  # Old way, try fetching the object through cache.
   def normalize(%{"id" => ap_id}), do: normalize(ap_id)
   def normalize(ap_id) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
   def normalize(_), do: nil
@@ -102,6 +131,52 @@ defmodule Pleroma.Object do
       set_cache(object)
     else
       e -> e
+    end
+  end
+
+  def increase_replies_count(ap_id) do
+    Object
+    |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
+    |> update([o],
+      set: [
+        data:
+          fragment(
+            """
+            jsonb_set(?, '{repliesCount}',
+              (coalesce((?->>'repliesCount')::int, 0) + 1)::varchar::jsonb, true)
+            """,
+            o.data,
+            o.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [object]} -> set_cache(object)
+      _ -> {:error, "Not found"}
+    end
+  end
+
+  def decrease_replies_count(ap_id) do
+    Object
+    |> where([o], fragment("?->>'id' = ?::text", o.data, ^to_string(ap_id)))
+    |> update([o],
+      set: [
+        data:
+          fragment(
+            """
+            jsonb_set(?, '{repliesCount}',
+              (greatest(0, (?->>'repliesCount')::int - 1))::varchar::jsonb, true)
+            """,
+            o.data,
+            o.data
+          )
+      ]
+    )
+    |> Repo.update_all([])
+    |> case do
+      {1, [object]} -> set_cache(object)
+      _ -> {:error, "Not found"}
     end
   end
 end

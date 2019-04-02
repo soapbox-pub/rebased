@@ -108,4 +108,27 @@ defmodule Pleroma.Web.NodeInfoTest do
     assert result = json_response(conn, 200)
     assert Pleroma.Application.repository() == result["software"]["repository"]
   end
+
+  test "it returns the safe_dm_mentions feature if enabled", %{conn: conn} do
+    option = Pleroma.Config.get([:instance, :safe_dm_mentions])
+    Pleroma.Config.put([:instance, :safe_dm_mentions], true)
+
+    response =
+      conn
+      |> get("/nodeinfo/2.1.json")
+      |> json_response(:ok)
+
+    assert "safe_dm_mentions" in response["metadata"]["features"]
+
+    Pleroma.Config.put([:instance, :safe_dm_mentions], false)
+
+    response =
+      conn
+      |> get("/nodeinfo/2.1.json")
+      |> json_response(:ok)
+
+    refute "safe_dm_mentions" in response["metadata"]["features"]
+
+    Pleroma.Config.put([:instance, :safe_dm_mentions], option)
+  end
 end

@@ -8,6 +8,7 @@ defmodule Pleroma.Formatter do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
+  @safe_mention_regex ~r/^(\s*(?<mentions>@.+?\s+)+)(?<rest>.*)/
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
   @link_regex ~r{((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+}ui
   # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
@@ -45,15 +46,28 @@ defmodule Pleroma.Formatter do
 
   @doc """
   Parses a text and replace plain text links with HTML. Returns a tuple with a result text, mentions, and hashtags.
+
+  If the 'safe_mention' option is given, only consecutive mentions at the start the post are actually mentioned.
   """
   @spec linkify(String.t(), keyword()) ::
           {String.t(), [{String.t(), User.t()}], [{String.t(), String.t()}]}
   def linkify(text, options \\ []) do
     options = options ++ @auto_linker_config
-    acc = %{mentions: MapSet.new(), tags: MapSet.new()}
-    {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
 
-    {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
+      %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
+      acc = %{mentions: MapSet.new(), tags: MapSet.new()}
+
+      {text_mentions, %{mentions: mentions}} = AutoLinker.link_map(mentions, acc, options)
+      {text_rest, %{tags: tags}} = AutoLinker.link_map(rest, acc, options)
+
+      {text_mentions <> text_rest, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    else
+      acc = %{mentions: MapSet.new(), tags: MapSet.new()}
+      {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
+
+      {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    end
   end
 
   def emojify(text) do
