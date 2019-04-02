@@ -23,7 +23,7 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--password PASSWORD` - the user's password
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
-  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions 
+  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions
 
   ## Generate an invite link.
 
@@ -32,6 +32,10 @@ defmodule Mix.Tasks.Pleroma.User do
   ## Delete the user's account.
 
       mix pleroma.user rm NICKNAME
+
+  ## Delete the user's activities.
+
+      mix pleroma.user delete_activities NICKNAME
 
   ## Deactivate or activate the user's account.
 
@@ -309,7 +313,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     with %User{local: true} = user <- User.get_by_nickname(nickname) do
       User.delete_user_activities(user)
-      Mix.shell().info("User #{nickname} statuses deleted..")
+      Mix.shell().info("User #{nickname} statuses deleted.")
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")
