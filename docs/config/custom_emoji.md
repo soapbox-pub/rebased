@@ -30,7 +30,7 @@ config :pleroma, :emoji,
   ]
 ```
 
-Order of the `groups` matters, so to override default tags just put your group on the top of the list. E.g:
+Order of the `groups` matters, so to override default tags just put your group on top of the list. E.g:
 ```
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
@@ -44,7 +44,7 @@ config :pleroma, :emoji,
   ]
 ```
 
-Priority of tag assign in emoji.txt and custom.txt:
+Priority of tags assigns in emoji.txt and custom.txt:
 
 `tag in file > special group setting in config.exs > default setting in config.exs`
 

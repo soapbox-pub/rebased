@@ -57,7 +57,7 @@ config :pleroma, Pleroma.Uploaders.MDII,
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   groups: [
-    # Place here groups, which have more priority on defaults. Example in `docs/config/custom_emoji.md`
+    # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Finmoji: "/finmoji/128px/*-128.png",
     Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
   ]

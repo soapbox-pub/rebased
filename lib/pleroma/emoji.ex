@@ -15,8 +15,8 @@ defmodule Pleroma.Emoji do
   use GenServer
 
   @type pattern :: Regex.t() | module() | String.t()
-  @type patterns :: pattern | [pattern]
-  @type group_patterns :: keyword(patterns)
+  @type patterns :: pattern() | [pattern()]
+  @type group_patterns :: keyword(patterns())
 
   @ets __MODULE__.Ets
   @ets_options [:ordered_set, :protected, :named_table, {:read_concurrency, true}]
@@ -80,7 +80,7 @@ defmodule Pleroma.Emoji do
 
   defp load do
     finmoji_enabled = Keyword.get(Application.get_env(:pleroma, :instance), :finmoji_enabled)
-    shortcode_globs = Keyword.get(Application.get_env(:pleroma, :emoji, []), :shortcode_globs, [])
+    shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
 
     emojis =
       (load_finmoji(finmoji_enabled) ++
