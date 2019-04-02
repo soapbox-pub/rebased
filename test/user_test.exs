@@ -122,7 +122,7 @@ defmodule Pleroma.UserTest do
 
     {:ok, user} = User.follow(user, followed)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     followed = User.get_by_ap_id(followed.ap_id)
     assert followed.info.follower_count == 1
@@ -178,7 +178,7 @@ defmodule Pleroma.UserTest do
 
     {:ok, user, _activity} = User.unfollow(user, followed)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     assert user.following == []
   end
@@ -188,7 +188,7 @@ defmodule Pleroma.UserTest do
 
     {:error, _} = User.unfollow(user, user)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
     assert user.following == [user.ap_id]
   end
 
@@ -198,6 +198,13 @@ defmodule Pleroma.UserTest do
 
     assert User.following?(user, followed)
     refute User.following?(followed, user)
+  end
+
+  test "fetches correct profile for nickname beginning with number" do
+    # Use old-style integer ID to try to reproduce the problem
+    user = insert(:user, %{id: 1080})
+    userwithnumbers = insert(:user, %{nickname: "#{user.id}garbage"})
+    assert userwithnumbers == User.get_cached_by_nickname_or_id(userwithnumbers.nickname)
   end
 
   describe "user registration" do
@@ -679,7 +686,7 @@ defmodule Pleroma.UserTest do
       assert User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = Repo.get(User, blocked.id)
+      blocked = User.get_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
@@ -697,7 +704,7 @@ defmodule Pleroma.UserTest do
       refute User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = Repo.get(User, blocked.id)
+      blocked = User.get_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
@@ -715,7 +722,7 @@ defmodule Pleroma.UserTest do
       assert User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = Repo.get(User, blocked.id)
+      blocked = User.get_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
@@ -792,6 +799,16 @@ defmodule Pleroma.UserTest do
     assert false == user.info.deactivated
   end
 
+  test ".delete_user_activities deletes all create activities" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
+    {:ok, _} = User.delete_user_activities(user)
+
+    # TODO: Remove favorites, repeats, delete activities.
+    refute Activity.get_by_id(activity.id)
+  end
+
   test ".delete deactivates a user, all follow relationships and all create activities" do
     user = insert(:user)
     followed = insert(:user)
@@ -809,9 +826,9 @@ defmodule Pleroma.UserTest do
 
     {:ok, _} = User.delete(user)
 
-    followed = Repo.get(User, followed.id)
-    follower = Repo.get(User, follower.id)
-    user = Repo.get(User, user.id)
+    followed = User.get_by_id(followed.id)
+    follower = User.get_by_id(follower.id)
+    user = User.get_by_id(user.id)
 
     assert user.info.deactivated
 
@@ -820,7 +837,7 @@ defmodule Pleroma.UserTest do
 
     # TODO: Remove favorites, repeats, delete activities.
 
-    refute Repo.get(Activity, activity.id)
+    refute Activity.get_by_id(activity.id)
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do

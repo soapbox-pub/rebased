@@ -354,7 +354,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         [state, actor, object]
       )
 
-      activity = Repo.get(Activity, activity.id)
+      activity = Activity.get_by_id(activity.id)
       {:ok, activity}
     rescue
       e ->

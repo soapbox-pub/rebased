@@ -1,9 +1,5 @@
 image: elixir:1.8.1
 
-services:
-  - name: postgres:9.6.2
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
-
 variables:
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
@@ -17,58 +13,60 @@ cache:
           - deps
           - _build
 stages:
-  - lint
+  - build
   - test
-  - analysis
-  - docs_build
-  - docs_deploy
+  - deploy
 
 before_script:
   - mix local.hex --force
   - mix local.rebar --force
+
+build:
+  stage: build
+  script:
   - mix deps.get
   - mix compile --force
-  - mix ecto.create
-  - mix ecto.migrate
 
-lint:
-  stage: lint
-  script:
-    - mix format --check-formatted
-
-unit-testing:
-  stage: test
-  script:
-    - mix test --trace --preload-modules
-
-analysis:
-  stage: analysis
-  script:
-    - mix credo --strict --only=warnings,todo,fixme,consistency,readability
-
-docs_build:
-  stage: docs_build
-  services:
+docs-build:
+  stage: build
   only:
   - master@pleroma/pleroma
   - develop@pleroma/pleroma
   variables:
     MIX_ENV: dev
-  before_script:
-    - mix local.hex --force
-    - mix local.rebar --force
+  script:
     - mix deps.get
     - mix compile
-  script:
     - mix docs
   artifacts:
     paths:
       - priv/static/doc
 
-docs_deploy:
-  stage: docs_deploy
-  image: alpine:3.9
+unit-testing:
+  stage: test
   services:
+  - name: postgres:9.6.2
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  script:
+    - mix ecto.create
+    - mix ecto.migrate
+    - mix test --trace --preload-modules
+
+lint:
+  stage: test
+  script:
+    - mix format --check-formatted
+
+analysis:
+  stage: test
+  script:
+    - mix deps.get
+    - mix credo --strict --only=warnings,todo,fixme,consistency,readability
+
+
+docs-deploy:
+  stage: deploy
+  image: alpine:3.9
   only:
   - master@pleroma/pleroma
   - develop@pleroma/pleroma

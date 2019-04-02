@@ -1088,28 +1088,27 @@ defmodule Pleroma.User do
     # Remove all relationships
     {:ok, followers} = User.get_followers(user)
 
-    followers
-    |> Enum.each(fn follower -> User.unfollow(follower, user) end)
+    Enum.each(followers, fn follower -> User.unfollow(follower, user) end)
 
     {:ok, friends} = User.get_friends(user)
 
-    friends
-    |> Enum.each(fn followed -> User.unfollow(user, followed) end)
+    Enum.each(friends, fn followed -> User.unfollow(user, followed) end)
 
-    query =
-      from(a in Activity, where: a.actor == ^user.ap_id)
-      |> Activity.with_preloaded_object()
+    delete_user_activities(user)
+  end
 
-    Repo.all(query)
-    |> Enum.each(fn activity ->
-      case activity.data["type"] do
-        "Create" ->
-          ActivityPub.delete(Object.normalize(activity))
+  def delete_user_activities(%User{ap_id: ap_id} = user) do
+    Activity
+    |> where(actor: ^ap_id)
+    |> Activity.with_preloaded_object()
+    |> Repo.all()
+    |> Enum.each(fn
+      %{data: %{"type" => "Create"}} = activity ->
+        activity |> Object.normalize() |> ActivityPub.delete()
 
-        # TODO: Do something with likes, follows, repeats.
-        _ ->
-          "Doing nothing"
-      end
+      # TODO: Do something with likes, follows, repeats.
+      _ ->
+        "Doing nothing"
     end)
 
     {:ok, user}
@@ -1231,8 +1230,8 @@ defmodule Pleroma.User do
   # this is because we have synchronous follow APIs and need to simulate them
   # with an async handshake
   def wait_and_refresh(_, %User{local: true} = a, %User{local: true} = b) do
-    with %User{} = a <- Repo.get(User, a.id),
-         %User{} = b <- Repo.get(User, b.id) do
+    with %User{} = a <- User.get_by_id(a.id),
+         %User{} = b <- User.get_by_id(b.id) do
       {:ok, a, b}
     else
       _e ->
@@ -1242,8 +1241,8 @@ defmodule Pleroma.User do
 
   def wait_and_refresh(timeout, %User{} = a, %User{} = b) do
     with :ok <- :timer.sleep(timeout),
-         %User{} = a <- Repo.get(User, a.id),
-         %User{} = b <- Repo.get(User, b.id) do
+         %User{} = a <- User.get_by_id(a.id),
+         %User{} = b <- User.get_by_id(b.id) do
       {:ok, a, b}
     else
       _e ->

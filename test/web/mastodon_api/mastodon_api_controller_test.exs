@@ -101,7 +101,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
              json_response(conn_one, 200)
 
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
 
     conn_two =
       conn
@@ -140,7 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/statuses", %{"status" => "cofe", "sensitive" => true})
 
     assert %{"content" => "cofe", "id" => id, "sensitive" => true} = json_response(conn, 200)
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
   end
 
   test "posting a status with OGP link preview", %{conn: conn} do
@@ -155,7 +155,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       })
 
     assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
     Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
@@ -170,7 +170,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
 
     assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
-    assert activity = Repo.get(Activity, id)
+    assert activity = Activity.get_by_id(id)
     assert activity.recipients == [user2.ap_id, user1.ap_id]
     assert activity.data["to"] == [user2.ap_id]
     assert activity.data["cc"] == []
@@ -289,7 +289,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
 
-    activity = Repo.get(Activity, id)
+    activity = Activity.get_by_id(id)
 
     assert activity.data["context"] == replied_to.data["context"]
     assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
@@ -305,7 +305,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
 
-    activity = Repo.get(Activity, id)
+    activity = Activity.get_by_id(id)
 
     assert activity
   end
@@ -404,7 +404,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(conn, 200)
 
-      refute Repo.get(Activity, activity.id)
+      refute Activity.get_by_id(activity.id)
     end
 
     test "when you didn't create it", %{conn: conn} do
@@ -418,7 +418,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{"error" => _} = json_response(conn, 403)
 
-      assert Repo.get(Activity, activity.id) == activity
+      assert Activity.get_by_id(activity.id) == activity
     end
 
     test "when you're an admin or moderator", %{conn: conn} do
@@ -441,8 +441,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(res_conn, 200)
 
-      refute Repo.get(Activity, activity1.id)
-      refute Repo.get(Activity, activity2.id)
+      refute Activity.get_by_id(activity1.id)
+      refute Activity.get_by_id(activity2.id)
     end
   end
 
@@ -1112,8 +1112,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1132,8 +1132,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1145,8 +1145,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert relationship = json_response(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == true
     end
@@ -1169,7 +1169,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
 
       conn =
         build_conn()
@@ -1179,8 +1179,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert relationship = json_response(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
     end
@@ -1465,7 +1465,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "following" => true} = json_response(conn, 200)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     conn =
       build_conn()
@@ -1474,7 +1474,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "following" => false} = json_response(conn, 200)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     conn =
       build_conn()
@@ -1496,7 +1496,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "muting" => true} = json_response(conn, 200)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     conn =
       build_conn()
@@ -1532,7 +1532,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "blocking" => true} = json_response(conn, 200)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     conn =
       build_conn()
@@ -1889,7 +1889,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
 
     # Stats should count users with missing or nil `info.deactivated` value
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
     info_change = Changeset.change(user.info, %{deactivated: nil})
 
     {:ok, _user} =
@@ -2264,5 +2264,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert link_header =~ ~r/since_id=#{notification2.id}/
       assert link_header =~ ~r/max_id=#{notification1.id}/
     end
+  end
+
+  test "accounts fetches correct account for nicknames beginning with numbers", %{conn: conn} do
+    # Need to set an old-style integer ID to reproduce the problem
+    # (these are no longer assigned to new accounts but were preserved
+    # for existing accounts during the migration to flakeIDs)
+    user_one = insert(:user, %{id: 1212})
+    user_two = insert(:user, %{nickname: "#{user_one.id}garbage"})
+
+    resp_one =
+      conn
+      |> get("/api/v1/accounts/#{user_one.id}")
+
+    resp_two =
+      conn
+      |> get("/api/v1/accounts/#{user_two.nickname}")
+
+    resp_three =
+      conn
+      |> get("/api/v1/accounts/#{user_two.id}")
+
+    acc_one = json_response(resp_one, 200)
+    acc_two = json_response(resp_two, 200)
+    acc_three = json_response(resp_three, 200)
+    refute acc_one == acc_two
+    assert acc_two == acc_three
   end
 end

@@ -6,6 +6,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
+  setup do
+    Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   describe "POST /api/pleroma/follow_import" do
     test "it returns HTTP 200", %{conn: conn} do
       user1 = insert(:user)
@@ -162,6 +167,28 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> json_response(:ok)
 
       assert response == Jason.encode!(config |> Enum.into(%{})) |> Jason.decode!()
+    end
+  end
+
+  describe "GET /ostatus_subscribe?acct=...." do
+    test "adds status to pleroma instance if the `acct` is a status", %{conn: conn} do
+      conn =
+        get(
+          conn,
+          "/ostatus_subscribe?acct=https://mastodon.social/users/emelie/statuses/101849165031453009"
+        )
+
+      assert redirected_to(conn) =~ "/notice/"
+    end
+
+    test "show follow account page if the `acct` is a account link", %{conn: conn} do
+      response =
+        get(
+          conn,
+          "/ostatus_subscribe?acct=https://mastodon.social/users/emelie"
+        )
+
+      assert html_response(response, 200) =~ "Log in to follow"
     end
   end
 end
