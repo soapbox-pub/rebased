@@ -21,7 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     mentioned_user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{mentioned_user.nickname}"})
     {:ok, [notification]} = Notification.create_notifications(activity)
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     expected = %{
       id: to_string(notification.id),
@@ -44,7 +44,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
     {:ok, favorite_activity, _object} = CommonAPI.favorite(create_activity.id, another_user)
     {:ok, [notification]} = Notification.create_notifications(favorite_activity)
-    create_activity = Repo.get(Activity, create_activity.id)
+    create_activity = Activity.get_by_id(create_activity.id)
 
     expected = %{
       id: to_string(notification.id),
@@ -66,7 +66,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     {:ok, create_activity} = CommonAPI.post(user, %{"status" => "hey"})
     {:ok, reblog_activity, _object} = CommonAPI.repeat(create_activity.id, another_user)
     {:ok, [notification]} = Notification.create_notifications(reblog_activity)
-    reblog_activity = Repo.get(Activity, create_activity.id)
+    reblog_activity = Activity.get_by_id(create_activity.id)
 
     expected = %{
       id: to_string(notification.id),

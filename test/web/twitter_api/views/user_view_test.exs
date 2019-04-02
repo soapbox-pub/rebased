@@ -292,7 +292,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       }
     }
 
-    blocker = Repo.get(User, blocker.id)
+    blocker = User.get_by_id(blocker.id)
     assert represented == UserView.render("show.json", %{user: user, for: blocker})
   end
 

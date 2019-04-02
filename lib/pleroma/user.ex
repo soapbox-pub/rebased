@@ -1231,8 +1231,8 @@ defmodule Pleroma.User do
   # this is because we have synchronous follow APIs and need to simulate them
   # with an async handshake
   def wait_and_refresh(_, %User{local: true} = a, %User{local: true} = b) do
-    with %User{} = a <- Repo.get(User, a.id),
-         %User{} = b <- Repo.get(User, b.id) do
+    with %User{} = a <- User.get_by_id(a.id),
+         %User{} = b <- User.get_by_id(b.id) do
       {:ok, a, b}
     else
       _e ->
@@ -1242,8 +1242,8 @@ defmodule Pleroma.User do
 
   def wait_and_refresh(timeout, %User{} = a, %User{} = b) do
     with :ok <- :timer.sleep(timeout),
-         %User{} = a <- Repo.get(User, a.id),
-         %User{} = b <- Repo.get(User, b.id) do
+         %User{} = a <- User.get_by_id(a.id),
+         %User{} = b <- User.get_by_id(b.id) do
       {:ok, a, b}
     else
       _e ->
