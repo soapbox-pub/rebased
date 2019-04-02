@@ -270,7 +270,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Repo.get(Activity, id),
+    with %Activity{} = activity <- Activity.get_by_id(id),
          true <- Visibility.visible_for_user?(activity, user) do
       conn
       |> put_view(ActivityView)
@@ -342,7 +342,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_by_object_ap_id(id)
+    activity = Activity.get_by_id(id) || Activity.get_create_by_object_ap_id(id)
 
     if activity.data["type"] == "Create" do
       activity

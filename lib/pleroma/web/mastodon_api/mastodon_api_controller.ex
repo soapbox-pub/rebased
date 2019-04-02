@@ -319,7 +319,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Repo.get(Activity, id),
+    with %Activity{} = activity <- Activity.get_by_id(id),
          true <- Visibility.visible_for_user?(activity, user) do
       conn
       |> put_view(StatusView)
@@ -328,7 +328,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_context(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Repo.get(Activity, id),
+    with %Activity{} = activity <- Activity.get_by_id(id),
          activities <-
            ActivityPub.fetch_activities_for_context(activity.data["context"], %{
              "blocking_user" => user,
@@ -460,7 +460,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def bookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Repo.get(Activity, id),
+    with %Activity{} = activity <- Activity.get_by_id(id),
          %User{} = user <- User.get_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, user} <- User.bookmark(user, activity.data["object"]["id"]) do
@@ -471,7 +471,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def unbookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Repo.get(Activity, id),
+    with %Activity{} = activity <- Activity.get_by_id(id),
          %User{} = user <- User.get_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, user} <- User.unbookmark(user, activity.data["object"]["id"]) do
@@ -593,7 +593,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def favourited_by(conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => %{"likes" => likes}}} <- Repo.get(Activity, id) do
+    with %Activity{data: %{"object" => %{"likes" => likes}}} <- Activity.get_by_id(id) do
       q = from(u in User, where: u.ap_id in ^likes)
       users = Repo.all(q)
 
@@ -606,7 +606,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def reblogged_by(conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => %{"announcements" => announces}}} <- Repo.get(Activity, id) do
+    with %Activity{data: %{"object" => %{"announcements" => announces}}} <- Activity.get_by_id(id) do
       q = from(u in User, where: u.ap_id in ^announces)
       users = Repo.all(q)
 
@@ -1454,7 +1454,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def status_card(%{assigns: %{user: user}} = conn, %{"id" => status_id}) do
-    with %Activity{} = activity <- Repo.get(Activity, status_id),
+    with %Activity{} = activity <- Activity.get_by_id(status_id),
          true <- Visibility.visible_for_user?(activity, user) do
       data =
         StatusView.render(

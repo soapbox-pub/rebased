@@ -31,7 +31,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def get_replied_to_activity(""), do: nil
 
   def get_replied_to_activity(id) when not is_nil(id) do
-    Repo.get(Activity, id)
+    Activity.get_by_id(id)
   end
 
   def get_replied_to_activity(_), do: nil
