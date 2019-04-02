@@ -271,10 +271,8 @@ defmodule Pleroma.FormatterTest do
   test "it returns the emoji used in the text" do
     text = "I love :moominmamma:"
 
-    tag = Keyword.get(Application.get_env(:pleroma, :emoji), :finmoji_tag)
-
     assert Formatter.get_emoji(text) == [
-             {"moominmamma", "/finmoji/128px/moominmamma-128.png", tag}
+             {"moominmamma", "/finmoji/128px/moominmamma-128.png", "Finmoji"}
            ]
   end
 
