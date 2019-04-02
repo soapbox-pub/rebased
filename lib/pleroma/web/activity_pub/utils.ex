@@ -404,13 +404,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
             activity.data
           ),
         where: activity.actor == ^follower_id,
+        # this is to use the index
         where:
           fragment(
-            "? @> ?",
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
             activity.data,
-            ^%{object: followed_id}
+            activity.data,
+            ^followed_id
           ),
-        order_by: [desc: :id],
+        order_by: [fragment("? desc nulls last", activity.id)],
         limit: 1
       )
 
@@ -567,13 +569,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
             activity.data
           ),
         where: activity.actor == ^blocker_id,
+        # this is to use the index
         where:
           fragment(
-            "? @> ?",
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
             activity.data,
-            ^%{object: blocked_id}
+            activity.data,
+            ^blocked_id
           ),
-        order_by: [desc: :id],
+        order_by: [fragment("? desc nulls last", activity.id)],
         limit: 1
       )
 
