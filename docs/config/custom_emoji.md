@@ -18,21 +18,36 @@ foo, /emoji/custom/foo.png
 
 The files should be PNG (APNG is okay with `.png` for `image/png` Content-type) and under 50kb for compatibility with mastodon.
 
-# Emoji tags
+# Emoji tags (groups)
 
-Changing default tags:
-
-* For `Finmoji`, `emoji.txt` and `custom_emoji.txt` are added default tags, which can be configured in the `config.exs`:
-* For emoji loaded from globs:
-    - `priv/static/emoji/custom/*.png` - `custom_tag`, can be configured in `config.exs`
-    - `priv/static/emoji/custom/TagName/*.png` - folder (`TagName`) is used as tag
-
-
+Default tags are set in `config.exs`.
 ```
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
-  custom_tag: "Custom", # Default tag for emoji in `priv/static/emoji/custom` path
-  finmoji_tag: "Finmoji", # Default tag for Finmoji
-  emoji_tag: "Emoji", # Default tag for emoji.txt
-  custom_emoji_tag: "Custom" # Default tag for custom_emoji.txt
+  groups: [
+    Finmoji: "/finmoji/128px/*-128.png",
+    Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
+  ]
 ```
+
+Order of the `groups` matters, so to override default tags just put your group on the top of the list. E.g:
+```
+config :pleroma, :emoji,
+  shortcode_globs: ["/emoji/custom/**/*.png"],
+  groups: [
+    "Finmoji special": "/finmoji/128px/a_trusted_friend-128.png", # special file
+    "Cirno": "/emoji/custom/cirno*.png", # png files in /emoji/custom/ which start with `cirno`
+    "Special group": "/emoji/custom/special_folder/*.png", # png files in /emoji/custom/special_folder/
+    "Another group": "/emoji/custom/special_folder/*/.png", # png files in /emoji/custom/special_folder/ subfolders
+    Finmoji: "/finmoji/128px/*-128.png",
+    Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
+  ]
+```
+
+Priority of tag assign in emoji.txt and custom.txt:
+
+`tag in file > special group setting in config.exs > default setting in config.exs`
+
+Priority for globs:
+
+`special group setting in config.exs > default setting in config.exs`
