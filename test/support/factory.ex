@@ -216,7 +216,7 @@ defmodule Pleroma.Factory do
       redirect_uris: "https://example.com/callback",
       scopes: ["read", "write", "follow", "push"],
       website: "https://example.com",
-      client_id: "aaabbb==",
+      client_id: Ecto.UUID.generate(),
       client_secret: "aaa;/&bbb"
     }
   end
