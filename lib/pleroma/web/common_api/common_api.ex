@@ -180,7 +180,7 @@ defmodule Pleroma.Web.CommonAPI do
             object: object,
             additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
           },
-          data["fake"] || false
+          data["preview"] || false
         )
 
       res

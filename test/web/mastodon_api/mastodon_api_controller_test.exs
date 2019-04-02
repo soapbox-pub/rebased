@@ -154,15 +154,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it"
       })
 
+    real_status = json_response(real_conn, 200)
+
+    assert real_status
+    assert Object.get_by_ap_id(real_status["uri"])
+
     real_status =
-      json_response(real_conn, 200)
+      real_status
       |> Map.put("id", nil)
       |> Map.put("url", nil)
       |> Map.put("uri", nil)
       |> Map.put("created_at", nil)
       |> Kernel.put_in(["pleroma", "conversation_id"], nil)
-
-    assert real_status
 
     fake_conn =
       conn
@@ -170,18 +173,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/statuses", %{
         "status" =>
           "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it",
-        "fake" => true
+        "preview" => true
       })
 
+    fake_status = json_response(fake_conn, 200)
+
+    assert fake_status
+    refute Object.get_by_ap_id(fake_status["uri"])
+
     fake_status =
-      json_response(fake_conn, 200)
+      fake_status
       |> Map.put("id", nil)
       |> Map.put("url", nil)
       |> Map.put("uri", nil)
       |> Map.put("created_at", nil)
       |> Kernel.put_in(["pleroma", "conversation_id"], nil)
 
-    assert fake_status
     assert real_status == fake_status
   end
 
