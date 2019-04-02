@@ -227,12 +227,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         end
 
       %{"screen_name" => nickname} ->
-        case target = Repo.get_by(User, nickname: nickname) do
-          nil ->
-            {:error, "No user with such screen_name"}
-
-          _ ->
-            {:ok, target}
+        case User.get_by_nickname(nickname) do
+          nil -> {:error, "No user with such screen_name"}
+          target -> {:ok, target}
         end
 
       _ ->
