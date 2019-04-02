@@ -61,6 +61,7 @@ lint:
 analysis:
   stage: test
   script:
+    - mix deps.get
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 
