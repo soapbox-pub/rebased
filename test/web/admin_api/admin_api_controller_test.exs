@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
-  alias Pleroma.Repo
   alias Pleroma.User
   import Pleroma.Factory
 
@@ -101,13 +100,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user2: user2
     } do
       assert json_response(conn, :no_content)
-      assert Repo.get(User, user1.id).tags == ["x", "foo", "bar"]
-      assert Repo.get(User, user2.id).tags == ["y", "foo", "bar"]
+      assert User.get_by_id(user1.id).tags == ["x", "foo", "bar"]
+      assert User.get_by_id(user2.id).tags == ["y", "foo", "bar"]
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
       assert json_response(conn, :no_content)
-      assert Repo.get(User, user3.id).tags == ["unchanged"]
+      assert User.get_by_id(user3.id).tags == ["unchanged"]
     end
   end
 
@@ -137,13 +136,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user2: user2
     } do
       assert json_response(conn, :no_content)
-      assert Repo.get(User, user1.id).tags == []
-      assert Repo.get(User, user2.id).tags == ["y"]
+      assert User.get_by_id(user1.id).tags == []
+      assert User.get_by_id(user2.id).tags == ["y"]
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
       assert json_response(conn, :no_content)
-      assert Repo.get(User, user3.id).tags == ["unchanged"]
+      assert User.get_by_id(user3.id).tags == ["unchanged"]
     end
   end
 
@@ -213,7 +212,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         conn
         |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: false})
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.deactivated == true
       assert json_response(conn, :no_content)
     end
@@ -225,7 +224,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         conn
         |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: true})
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.deactivated == false
       assert json_response(conn, :no_content)
     end

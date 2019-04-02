@@ -20,7 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def delete(%User{} = user, id) do
-    with %Activity{data: %{"type" => _type}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"type" => _type}} <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.delete(id, user) do
       {:ok, activity}
     end

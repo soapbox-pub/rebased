@@ -10,6 +10,11 @@ defmodule Pleroma.Web.Router do
     plug(:fetch_session)
   end
 
+  pipeline :oauth do
+    plug(:fetch_session)
+    plug(Pleroma.Plugs.OAuthPlug)
+  end
+
   pipeline :api do
     plug(:accepts, ["json"])
     plug(:fetch_session)
@@ -110,10 +115,6 @@ defmodule Pleroma.Web.Router do
     plug(:accepts, ["json", "xml"])
   end
 
-  pipeline :oauth do
-    plug(:accepts, ["html", "json"])
-  end
-
   pipeline :pleroma_api do
     plug(:accepts, ["html", "json"])
   end
@@ -205,7 +206,11 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
-    get("/authorize", OAuthController, :authorize)
+    scope [] do
+      pipe_through(:oauth)
+      get("/authorize", OAuthController, :authorize)
+    end
+
     post("/authorize", OAuthController, :create_authorization)
     post("/token", OAuthController, :token_exchange)
     post("/revoke", OAuthController, :token_revoke)
