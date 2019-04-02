@@ -275,7 +275,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = Repo.get_by(User, nickname: "lain")
+    fetched_user = User.get_by_nickname("lain")
 
     assert UserView.render("show.json", %{user: user}) ==
              UserView.render("show.json", %{user: fetched_user})
@@ -293,7 +293,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = Repo.get_by(User, nickname: "lain")
+    fetched_user = User.get_by_nickname("lain")
 
     assert UserView.render("show.json", %{user: user}) ==
              UserView.render("show.json", %{user: fetched_user})
@@ -369,7 +369,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = Repo.get_by(User, nickname: "vinny")
+    fetched_user = User.get_by_nickname("vinny")
     token = Repo.get_by(UserInviteToken, token: token.token)
 
     assert token.used == true
@@ -393,7 +393,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:error, msg} = TwitterAPI.register_user(data)
 
     assert msg == "Invalid token"
-    refute Repo.get_by(User, nickname: "GrimReaper")
+    refute User.get_by_nickname("GrimReaper")
   end
 
   @moduletag skip: "needs 'registrations_open: false' in config"
@@ -414,7 +414,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:error, msg} = TwitterAPI.register_user(data)
 
     assert msg == "Expired token"
-    refute Repo.get_by(User, nickname: "GrimReaper")
+    refute User.get_by_nickname("GrimReaper")
   end
 
   test "it returns the error on registration problems" do
@@ -429,7 +429,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:error, error_object} = TwitterAPI.register_user(data)
 
     assert is_binary(error_object[:error])
-    refute Repo.get_by(User, nickname: "lain")
+    refute User.get_by_nickname("lain")
   end
 
   test "it assigns an integer conversation_id" do

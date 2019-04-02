@@ -1021,7 +1021,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       user = json_response(conn, 200)
 
-      fetched_user = Repo.get_by(User, nickname: "lain")
+      fetched_user = User.get_by_nickname("lain")
       assert user == UserView.render("show.json", %{user: fetched_user})
     end
 
