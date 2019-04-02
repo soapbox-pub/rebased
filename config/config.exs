@@ -56,10 +56,11 @@ config :pleroma, Pleroma.Uploaders.MDII,
 
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
-  custom_tag: "Custom",
-  finmoji_tag: "Finmoji",
-  emoji_tag: "Emoji",
-  custom_emoji_tag: "Custom"
+  groups: [
+    # Place here groups, which have more priority on defaults. Example in `docs/config/custom_emoji.md`
+    Finmoji: "/finmoji/128px/*-128.png",
+    Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
+  ]
 
 config :pleroma, :uri_schemes,
   valid_schemes: [
