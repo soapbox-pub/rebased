@@ -74,38 +74,39 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def remote_follow(%{assigns: %{user: user}} = conn, %{"acct" => acct}) do
-    case is_status?(acct) do
-      true ->
-        {:ok, object} = ActivityPub.fetch_object_from_id(acct)
-        %Activity{id: activity_id} = Activity.get_create_by_object_ap_id(object.data["id"])
-        redirect(conn, to: "/notice/#{activity_id}")
+    if is_status?(acct) do
+      {:ok, object} = ActivityPub.fetch_object_from_id(acct)
+      %Activity{id: activity_id} = Activity.get_create_by_object_ap_id(object.data["id"])
+      redirect(conn, to: "/notice/#{activity_id}")
+    else
+      {err, followee} = OStatus.find_or_make_user(acct)
+      avatar = User.avatar_url(followee)
+      name = followee.nickname
+      id = followee.id
 
-      false ->
-        {err, followee} = OStatus.find_or_make_user(acct)
-        avatar = User.avatar_url(followee)
-        name = followee.nickname
-        id = followee.id
-
-        if !!user do
-          conn
-          |> render("follow.html", %{error: err, acct: acct, avatar: avatar, name: name, id: id})
-        else
-          conn
-          |> render("follow_login.html", %{
-            error: false,
-            acct: acct,
-            avatar: avatar,
-            name: name,
-            id: id
-          })
-        end
+      if !!user do
+        conn
+        |> render("follow.html", %{error: err, acct: acct, avatar: avatar, name: name, id: id})
+      else
+        conn
+        |> render("follow_login.html", %{
+          error: false,
+          acct: acct,
+          avatar: avatar,
+          name: name,
+          id: id
+        })
+      end
     end
   end
 
   defp is_status?(acct) do
     case ActivityPub.fetch_and_contain_remote_object_from_id(acct) do
-      {:ok, %{"type" => "Note"}} -> true
-      _ -> false
+      {:ok, %{"type" => type}} when type in ["Article", "Note", "Video", "Page", "Question"] ->
+        true
+
+      _ ->
+        false
     end
   end
 
