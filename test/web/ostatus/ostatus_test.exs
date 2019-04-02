@@ -154,7 +154,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert "https://pleroma.soykaf.com/users/lain" in activity.data["to"]
     refute activity.local
 
-    retweeted_activity = Repo.get(Activity, retweeted_activity.id)
+    retweeted_activity = Activity.get_by_id(retweeted_activity.id)
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
     refute retweeted_activity.local
@@ -181,7 +181,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert user.ap_id in activity.data["to"]
     refute activity.local
 
-    retweeted_activity = Repo.get(Activity, retweeted_activity.id)
+    retweeted_activity = Activity.get_by_id(retweeted_activity.id)
     assert note_activity.id == retweeted_activity.id
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == user.ap_id

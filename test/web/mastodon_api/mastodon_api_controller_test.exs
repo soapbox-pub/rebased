@@ -101,7 +101,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
              json_response(conn_one, 200)
 
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
 
     conn_two =
       conn
@@ -140,7 +140,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/statuses", %{"status" => "cofe", "sensitive" => true})
 
     assert %{"content" => "cofe", "id" => id, "sensitive" => true} = json_response(conn, 200)
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
   end
 
   test "posting a status with OGP link preview", %{conn: conn} do
@@ -155,7 +155,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       })
 
     assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
     Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
@@ -170,7 +170,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
 
     assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
-    assert activity = Repo.get(Activity, id)
+    assert activity = Activity.get_by_id(id)
     assert activity.recipients == [user2.ap_id, user1.ap_id]
     assert activity.data["to"] == [user2.ap_id]
     assert activity.data["cc"] == []
@@ -289,7 +289,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
 
-    activity = Repo.get(Activity, id)
+    activity = Activity.get_by_id(id)
 
     assert activity.data["context"] == replied_to.data["context"]
     assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
@@ -305,7 +305,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
 
-    activity = Repo.get(Activity, id)
+    activity = Activity.get_by_id(id)
 
     assert activity
   end
@@ -404,7 +404,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(conn, 200)
 
-      refute Repo.get(Activity, activity.id)
+      refute Activity.get_by_id(activity.id)
     end
 
     test "when you didn't create it", %{conn: conn} do
@@ -418,7 +418,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{"error" => _} = json_response(conn, 403)
 
-      assert Repo.get(Activity, activity.id) == activity
+      assert Activity.get_by_id(activity.id) == activity
     end
 
     test "when you're an admin or moderator", %{conn: conn} do
@@ -441,8 +441,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(res_conn, 200)
 
-      refute Repo.get(Activity, activity1.id)
-      refute Repo.get(Activity, activity2.id)
+      refute Activity.get_by_id(activity1.id)
+      refute Activity.get_by_id(activity2.id)
     end
   end
 

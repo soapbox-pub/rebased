@@ -322,7 +322,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, user} = User.block(user, %{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
-    activity_three = Repo.get(Activity, activity_three.id)
+    activity_three = Activity.get_by_id(activity_three.id)
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
@@ -380,7 +380,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, user} = User.mute(user, %User{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
-    activity_three = Repo.get(Activity, activity_three.id)
+    activity_three = Activity.get_by_id(activity_three.id)
 
     activities =
       ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
@@ -559,7 +559,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, _, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
-      assert Repo.get(Activity, like_activity.id) == nil
+      assert Activity.get_by_id(like_activity.id) == nil
     end
   end
 
@@ -610,7 +610,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert unannounce_activity.data["actor"] == user.ap_id
       assert unannounce_activity.data["context"] == announce_activity.data["context"]
 
-      assert Repo.get(Activity, announce_activity.id) == nil
+      assert Activity.get_by_id(announce_activity.id) == nil
     end
   end
 
@@ -749,7 +749,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert delete.data["actor"] == note.data["actor"]
       assert delete.data["object"] == note.data["object"]["id"]
 
-      assert Repo.get(Activity, delete.id) != nil
+      assert Activity.get_by_id(delete.id) != nil
 
       assert Repo.get(Object, object.id).data["type"] == "Tombstone"
     end

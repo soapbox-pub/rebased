@@ -461,7 +461,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
 
-      refute Repo.get(Activity, activity.id)
+      refute Activity.get_by_id(activity.id)
     end
 
     test "it fails for incoming deletes with spoofed origin" do
@@ -481,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       :error = Transmogrifier.handle_incoming(data)
 
-      assert Repo.get(Activity, activity.id)
+      assert Activity.get_by_id(activity.id)
     end
 
     test "it works for incoming unannounces with an existing notice" do
@@ -1034,7 +1034,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       user = User.get_by_id(user.id)
       assert user.info.note_count == 1
 
-      activity = Repo.get(Activity, activity.id)
+      activity = Activity.get_by_id(activity.id)
       assert user.follower_address in activity.recipients
 
       assert %{
@@ -1057,7 +1057,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       refute "..." in activity.recipients
 
-      unrelated_activity = Repo.get(Activity, unrelated_activity.id)
+      unrelated_activity = Activity.get_by_id(unrelated_activity.id)
       refute user.follower_address in unrelated_activity.recipients
 
       user_two = User.get_by_id(user_two.id)

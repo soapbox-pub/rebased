@@ -954,7 +954,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post(request_path)
 
-      activity = Repo.get(Activity, note_activity.id)
+      activity = Activity.get_by_id(note_activity.id)
       activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
 
       assert json_response(response, 200) ==
@@ -992,7 +992,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post(request_path)
 
-      activity = Repo.get(Activity, note_activity.id)
+      activity = Activity.get_by_id(note_activity.id)
       activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
 
       assert json_response(response, 200) ==
