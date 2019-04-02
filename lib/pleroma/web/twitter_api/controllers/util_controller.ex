@@ -103,8 +103,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   defp is_status?(acct) do
-    %URI{path: path} = URI.parse(acct)
-    Regex.match?(~r/\/users\/[^\/]+\/statuses\/([0-9]+)$/, path)
+    case ActivityPub.fetch_and_contain_remote_object_from_id(acct) do
+      {:ok, %{"type" => "Note"}} -> true
+      _ -> false
+    end
   end
 
   def do_remote_follow(conn, %{

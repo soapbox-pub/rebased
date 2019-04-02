@@ -53,6 +53,27 @@ defmodule HttpRequestMock do
   end
 
   def get(
+        "https://mastodon.social/.well-known/webfinger?resource=https://mastodon.social/users/emelie",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/webfinger_emelie.json")
+     }}
+  end
+
+  def get("https://mastodon.social/users/emelie.atom", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/emelie.atom")
+     }}
+  end
+
+  def get(
         "https://osada.macgirvin.com/.well-known/webfinger?resource=acct:mike@osada.macgirvin.com",
         _,
         _,

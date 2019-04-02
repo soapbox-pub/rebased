@@ -180,5 +180,15 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert redirected_to(conn) =~ "/notice/"
     end
+
+    test "show follow account page if the `acct` is a account link", %{conn: conn} do
+      response =
+        get(
+          conn,
+          "/ostatus_subscribe?acct=https://mastodon.social/users/emelie"
+        )
+
+      assert html_response(response, 200) =~ "Log in to follow"
+    end
   end
 end
