@@ -21,7 +21,7 @@ The files should be PNG (APNG is okay with `.png` for `image/png` Content-type) 
 # Emoji tags (groups)
 
 Default tags are set in `config.exs`.
-```
+```elixir
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   groups: [
@@ -31,7 +31,7 @@ config :pleroma, :emoji,
 ```
 
 Order of the `groups` matters, so to override default tags just put your group on top of the list. E.g:
-```
+```elixir
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   groups: [
