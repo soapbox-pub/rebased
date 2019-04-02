@@ -1,9 +1,33 @@
 defmodule Pleroma.Web.ActivityPub.UtilsTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  describe "fetch the latest Follow" do
+    test "fetches the latest Follow activity" do
+      %Activity{data: %{"type" => "Follow"}} = activity = insert(:follow_activity)
+      follower = Repo.get_by(User, ap_id: activity.data["actor"])
+      followed = Repo.get_by(User, ap_id: activity.data["object"])
+
+      assert activity == Utils.fetch_latest_follow(follower, followed)
+    end
+  end
+
+  describe "fetch the latest Block" do
+    test "fetches the latest Block activity" do
+      blocker = insert(:user)
+      blocked = insert(:user)
+      {:ok, activity} = ActivityPub.block(blocker, blocked)
+
+      assert activity == Utils.fetch_latest_block(blocker, blocked)
+    end
+  end
 
   describe "determine_explicit_mentions()" do
     test "works with an object that has mentions" do
