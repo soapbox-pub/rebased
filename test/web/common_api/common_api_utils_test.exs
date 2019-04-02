@@ -155,29 +155,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   end
 
   describe "formats date to asctime" do
-    test "when date is an integer Unix timestamp" do
-      date = DateTime.utc_now() |> DateTime.to_unix()
-
-      expected =
-        date
-        |> DateTime.from_unix!()
-        |> Calendar.Strftime.strftime!("%a %b %d %H:%M:%S %z %Y")
-
-      assert Utils.date_to_asctime(date) == expected
-    end
-
-    test "when date is a float Unix timestamp" do
-      date = 1_553_808_404.602961
-
-      expected =
-        date
-        |> trunc()
-        |> DateTime.from_unix!()
-        |> Calendar.Strftime.strftime!("%a %b %d %H:%M:%S %z %Y")
-
-      assert Utils.date_to_asctime(date) == expected
-    end
-
     test "when date is in ISO 8601 format" do
       date = DateTime.utc_now() |> DateTime.to_iso8601()
 
@@ -188,6 +165,28 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
         |> Calendar.Strftime.strftime!("%a %b %d %H:%M:%S %z %Y")
 
       assert Utils.date_to_asctime(date) == expected
+    end
+
+    test "when date is a binary in wrong format" do
+      date = DateTime.utc_now()
+
+      expected = ""
+
+      assert Utils.date_to_asctime(date) == expected
+    end
+
+    test "when date is a Unix timestamp" do
+      date = DateTime.utc_now() |> DateTime.to_unix()
+
+      expected = ""
+
+      assert Utils.date_to_asctime(date) == expected
+    end
+
+    test "when date is nil" do
+      expected = ""
+
+      assert Utils.date_to_asctime(nil) == expected
     end
   end
 end
