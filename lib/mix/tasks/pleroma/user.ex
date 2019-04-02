@@ -32,6 +32,10 @@ defmodule Mix.Tasks.Pleroma.User do
 
       mix pleroma.user rm NICKNAME
 
+  ## Delete the user's activities.
+
+      mix pleroma.user delete_activities NICKNAME
+
   ## Deactivate or activate the user's account.
 
       mix pleroma.user toggle_activated NICKNAME
@@ -300,6 +304,18 @@ defmodule Mix.Tasks.Pleroma.User do
     else
       _ ->
         Mix.shell().error("Could not create invite token.")
+    end
+  end
+
+  def run(["delete_activities", nickname]) do
+    Common.start_pleroma()
+
+    with %User{local: true} = user <- User.get_by_nickname(nickname) do
+      User.delete_user_activities(user)
+      Mix.shell().info("User #{nickname} statuses deleted.")
+    else
+      _ ->
+        Mix.shell().error("No local user #{nickname}")
     end
   end
 

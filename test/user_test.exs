@@ -799,6 +799,16 @@ defmodule Pleroma.UserTest do
     assert false == user.info.deactivated
   end
 
+  test ".delete_user_activities deletes all create activities" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
+    {:ok, _} = User.delete_user_activities(user)
+
+    # TODO: Remove favorites, repeats, delete activities.
+    refute Activity.get_by_id(activity.id)
+  end
+
   test ".delete deactivates a user, all follow relationships and all create activities" do
     user = insert(:user)
     followed = insert(:user)
