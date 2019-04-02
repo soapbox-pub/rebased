@@ -18,7 +18,7 @@ foo, /emoji/custom/foo.png
 
 The files should be PNG (APNG is okay with `.png` for `image/png` Content-type) and under 50kb for compatibility with mastodon.
 
-# Emoji tags (groups)
+## Emoji tags (groups)
 
 Default tags are set in `config.exs`.
 ```elixir

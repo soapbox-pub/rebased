@@ -214,7 +214,7 @@ defmodule Pleroma.Emoji do
   end
 
   @doc """
-  Finds a matching group for the given extra filename
+  Finds a matching group for the given emoji filename
   """
   @spec match_extra(group_patterns(), String.t()) :: atom() | nil
   def match_extra(group_patterns, filename) do
