@@ -31,7 +31,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def get_replied_to_activity(""), do: nil
 
   def get_replied_to_activity(id) when not is_nil(id) do
-    Repo.get(Activity, id)
+    Activity.get_by_id(id)
   end
 
   def get_replied_to_activity(_), do: nil
@@ -275,7 +275,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def confirm_current_password(user, password) do
-    with %User{local: true} = db_user <- Repo.get(User, user.id),
+    with %User{local: true} = db_user <- User.get_by_id(user.id),
          true <- Pbkdf2.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else

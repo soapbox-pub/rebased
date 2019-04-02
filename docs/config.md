@@ -193,6 +193,44 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `port`: Port to bind to
 * `dstport`: Port advertised in urls (optional, defaults to `port`)
 
+## Pleroma.Web.Endpoint
+`Phoenix` endpoint configuration, all configuration options can be viewed [here](https://hexdocs.pm/phoenix/Phoenix.Endpoint.html#module-dynamic-configuration), only common options are listed here
+* `http` - a list containing http protocol configuration, all configuration options can be viewed [here](https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html#module-options), only common options are listed here
+  - `ip` - a tuple consisting of 4 integers
+  - `port`
+* `url` - a list containing the configuration for generating urls, accepts
+  - `host` - the host without the scheme and a post (e.g `example.com`, not `https://example.com:2020`)
+  - `scheme` - e.g `http`, `https` 
+  - `port`
+  - `path`
+
+
+**Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
+
+Example: 
+```elixir
+config :pleroma, Pleroma.Web.Endpoint,
+  url: [host: "example.com", port: 2020, scheme: "https"],
+  http: [
+    # start copied from config.exs
+    dispatch: [
+      {:_,
+       [
+         {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+         {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
+          {Phoenix.Transports.WebSocket,
+           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
+         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+       ]}
+    # end copied from config.exs
+    ],
+    port: 8080,
+    ip: {127, 0, 0, 1}
+  ]
+```
+
+This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls starting with `https://example.com:2020`
+
 ## :activitypub
 * ``accept_blocks``: Whether to accept incoming block activities from other instances
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed

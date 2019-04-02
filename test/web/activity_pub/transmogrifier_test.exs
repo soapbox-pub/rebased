@@ -461,7 +461,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
 
-      refute Repo.get(Activity, activity.id)
+      refute Activity.get_by_id(activity.id)
     end
 
     test "it fails for incoming deletes with spoofed origin" do
@@ -481,7 +481,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       :error = Transmogrifier.handle_incoming(data)
 
-      assert Repo.get(Activity, activity.id)
+      assert Activity.get_by_id(activity.id)
     end
 
     test "it works for incoming unannounces with an existing notice" do
@@ -639,7 +639,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert activity.data["object"] == follow_activity.data["id"]
 
-      follower = Repo.get(User, follower.id)
+      follower = User.get_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
     end
@@ -661,7 +661,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
       assert activity.data["object"] == follow_activity.data["id"]
 
-      follower = Repo.get(User, follower.id)
+      follower = User.get_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
     end
@@ -681,7 +681,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
       assert activity.data["object"] == follow_activity.data["id"]
 
-      follower = Repo.get(User, follower.id)
+      follower = User.get_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
     end
@@ -700,7 +700,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       :error = Transmogrifier.handle_incoming(accept_data)
 
-      follower = Repo.get(User, follower.id)
+      follower = User.get_by_id(follower.id)
 
       refute User.following?(follower, followed) == true
     end
@@ -719,7 +719,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       :error = Transmogrifier.handle_incoming(accept_data)
 
-      follower = Repo.get(User, follower.id)
+      follower = User.get_by_id(follower.id)
 
       refute User.following?(follower, followed) == true
     end
@@ -744,7 +744,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = Transmogrifier.handle_incoming(reject_data)
       refute activity.local
 
-      follower = Repo.get(User, follower.id)
+      follower = User.get_by_id(follower.id)
 
       assert User.following?(follower, followed) == false
     end
@@ -766,7 +766,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, %Activity{data: _}} = Transmogrifier.handle_incoming(reject_data)
 
-      follower = Repo.get(User, follower.id)
+      follower = User.get_by_id(follower.id)
 
       assert User.following?(follower, followed) == false
     end
@@ -1020,7 +1020,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})
       assert "http://localhost:4001/users/rye@niu.moe/followers" in activity.recipients
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.note_count == 1
 
       {:ok, user} = Transmogrifier.upgrade_user_from_ap_id("https://niu.moe/users/rye")
@@ -1031,10 +1031,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       # Wait for the background task
       :timer.sleep(1000)
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.note_count == 1
 
-      activity = Repo.get(Activity, activity.id)
+      activity = Activity.get_by_id(activity.id)
       assert user.follower_address in activity.recipients
 
       assert %{
@@ -1057,10 +1057,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       refute "..." in activity.recipients
 
-      unrelated_activity = Repo.get(Activity, unrelated_activity.id)
+      unrelated_activity = Activity.get_by_id(unrelated_activity.id)
       refute user.follower_address in unrelated_activity.recipients
 
-      user_two = Repo.get(User, user_two.id)
+      user_two = User.get_by_id(user_two.id)
       assert user.follower_address in user_two.following
       refute "..." in user_two.following
     end
