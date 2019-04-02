@@ -1,6 +1,5 @@
 image: elixir:1.8.1
 
-
 variables:
   POSTGRES_DB: pleroma_test
   POSTGRES_USER: postgres
@@ -28,7 +27,7 @@ build:
   - mix deps.get
   - mix compile --force
 
-docs_build:
+docs-build:
   stage: build
   only:
   - master@pleroma/pleroma
@@ -65,10 +64,9 @@ analysis:
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
 
 
-docs_deploy:
+docs-deploy:
   stage: deploy
   image: alpine:3.9
-  services:
   only:
   - master@pleroma/pleroma
   - develop@pleroma/pleroma
