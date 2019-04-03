@@ -16,16 +16,20 @@ defmodule Pleroma.Web.MastodonAPI.ScheduledActivityView do
 
   def render("show.json", %{scheduled_activity: %ScheduledActivity{} = scheduled_activity}) do
     %{
-      id: scheduled_activity.id |> to_string,
-      scheduled_at: scheduled_activity.scheduled_at |> CommonAPI.Utils.to_masto_date(),
+      id: to_string(scheduled_activity.id),
+      scheduled_at: CommonAPI.Utils.to_masto_date(scheduled_activity.scheduled_at),
       params: status_params(scheduled_activity.params)
     }
     |> with_media_attachments(scheduled_activity)
   end
 
   defp with_media_attachments(data, %{params: %{"media_attachments" => media_attachments}}) do
-    attachments = render_many(media_attachments, StatusView, "attachment.json", as: :attachment)
-    Map.put(data, :media_attachments, attachments)
+    try do
+      attachments = render_many(media_attachments, StatusView, "attachment.json", as: :attachment)
+      Map.put(data, :media_attachments, attachments)
+    rescue
+      _ -> data
+    end
   end
 
   defp with_media_attachments(data, _), do: data

@@ -317,6 +317,7 @@ Pleroma has the following queues:
 * `federator_outgoing` - Outgoing federation
 * `federator_incoming` - Incoming federation
 * `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
+* `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
 
 Example:
 
@@ -413,7 +414,8 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
 * `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
 
-##  Pleroma.ScheduledActivity
+## Pleroma.ScheduledActivity
 
-* `daily_user_limit`: the number of scheduled activities a user is allowed to create in a single day
-* `total_user_limit`: the number of scheduled activities a user is allowed to create in total
+* `daily_user_limit`: the number of scheduled activities a user is allowed to create in a single day (Default: `25`)
+* `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
+* `enabled`: whether scheduled activities are sent to the job queue to be executed

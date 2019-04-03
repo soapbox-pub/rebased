@@ -6,7 +6,6 @@ defmodule Pleroma.ScheduledActivity do
   use Ecto.Schema
 
   alias Pleroma.Config
-  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
@@ -37,8 +36,6 @@ defmodule Pleroma.ScheduledActivity do
          %{changes: %{params: %{"media_ids" => media_ids} = params}} = changeset
        )
        when is_list(media_ids) do
-    user = User.get_cached_by_id(changeset.data.user_id)
-    media_ids = Object.enforce_user_objects(user, media_ids) |> Enum.map(&to_string(&1))
     media_attachments = Utils.attachments_from_ids(%{"media_ids" => media_ids})
 
     params =
@@ -79,8 +76,8 @@ defmodule Pleroma.ScheduledActivity do
   def exceeds_daily_user_limit?(user_id, scheduled_at) do
     ScheduledActivity
     |> where(user_id: ^user_id)
-    |> where([s], type(s.scheduled_at, :date) == type(^scheduled_at, :date))
-    |> select([u], count(u.id))
+    |> where([sa], type(sa.scheduled_at, :date) == type(^scheduled_at, :date))
+    |> select([sa], count(sa.id))
     |> Repo.one()
     |> Kernel.>=(Config.get([ScheduledActivity, :daily_user_limit]))
   end
@@ -88,7 +85,7 @@ defmodule Pleroma.ScheduledActivity do
   def exceeds_total_user_limit?(user_id) do
     ScheduledActivity
     |> where(user_id: ^user_id)
-    |> select([u], count(u.id))
+    |> select([sa], count(sa.id))
     |> Repo.one()
     |> Kernel.>=(Config.get([ScheduledActivity, :total_user_limit]))
   end
@@ -125,19 +122,40 @@ defmodule Pleroma.ScheduledActivity do
     |> Repo.one()
   end
 
-  def update(scheduled_activity, attrs) do
+  def update(%ScheduledActivity{} = scheduled_activity, attrs) do
     scheduled_activity
     |> update_changeset(attrs)
     |> Repo.update()
   end
 
-  def delete(scheduled_activity) do
+  def delete(%ScheduledActivity{} = scheduled_activity) do
     scheduled_activity
     |> Repo.delete()
+  end
+
+  def delete(id) when is_binary(id) or is_integer(id) do
+    ScheduledActivity
+    |> where(id: ^id)
+    |> select([sa], sa)
+    |> Repo.delete_all()
+    |> case do
+      {1, [scheduled_activity]} -> {:ok, scheduled_activity}
+      _ -> :error
+    end
   end
 
   def for_user_query(%User{} = user) do
     ScheduledActivity
     |> where(user_id: ^user.id)
+  end
+
+  def due_activities(offset \\ 0) do
+    naive_datetime =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(offset, :millisecond)
+
+    ScheduledActivity
+    |> where([sa], sa.scheduled_at < ^naive_datetime)
+    |> Repo.all()
   end
 end

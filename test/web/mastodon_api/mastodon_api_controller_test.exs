@@ -2471,6 +2471,52 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert [] == Repo.all(ScheduledActivity)
     end
 
+    test "returns error when daily user limit is exceeded", %{conn: conn} do
+      user = insert(:user)
+
+      today =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      attrs = %{params: %{}, scheduled_at: today}
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{"status" => "scheduled", "scheduled_at" => today})
+
+      assert %{"error" => "daily limit exceeded"} == json_response(conn, 422)
+    end
+
+    test "returns error when total user limit is exceeded", %{conn: conn} do
+      user = insert(:user)
+
+      today =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      tomorrow =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.hours(36), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      attrs = %{params: %{}, scheduled_at: today}
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, %{params: %{}, scheduled_at: tomorrow})
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{"status" => "scheduled", "scheduled_at" => tomorrow})
+
+      assert %{"error" => "total limit exceeded"} == json_response(conn, 422)
+    end
+
     test "shows scheduled activities", %{conn: conn} do
       user = insert(:user)
       scheduled_activity_id1 = insert(:scheduled_activity, user: user).id |> to_string()

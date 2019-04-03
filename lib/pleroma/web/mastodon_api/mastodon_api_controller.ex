@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
 
+  alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Filter
@@ -438,14 +439,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     scheduled_at = params["scheduled_at"]
 
     if scheduled_at && ScheduledActivity.far_enough?(scheduled_at) do
-      {:ok, scheduled_activity} =
-        Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
-          ScheduledActivity.create(user, %{"params" => params, "scheduled_at" => scheduled_at})
-        end)
-
-      conn
-      |> put_view(ScheduledActivityView)
-      |> render("show.json", %{scheduled_activity: scheduled_activity})
+      with {:ok, scheduled_activity} <-
+             ScheduledActivity.create(user, %{"params" => params, "scheduled_at" => scheduled_at}) do
+        conn
+        |> put_view(ScheduledActivityView)
+        |> render("show.json", %{scheduled_activity: scheduled_activity})
+      end
     else
       params = Map.drop(params, ["scheduled_at"])
 
@@ -1474,6 +1473,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   # fallback action
   #
+  def errors(conn, {:error, %Changeset{} = changeset}) do
+    error_message =
+      changeset
+      |> Changeset.traverse_errors(fn {message, _opt} -> message end)
+      |> Enum.map_join(", ", fn {_k, v} -> v end)
+
+    conn
+    |> put_status(422)
+    |> json(%{error: error_message})
+  end
+
   def errors(conn, {:error, :not_found}) do
     conn
     |> put_status(404)
