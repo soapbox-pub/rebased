@@ -44,5 +44,6 @@ please provide the details below.</p>
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
 <%= hidden_input f, :scope, value: Enum.join(@scopes, " ") %>
+<%= hidden_input f, :state, value: @state %>
 
 <% end %>

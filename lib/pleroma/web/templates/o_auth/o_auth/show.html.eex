@@ -22,7 +22,7 @@
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :response_type, value: @response_type %>
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
-<%= hidden_input f, :state, value: @state%>
+<%= hidden_input f, :state, value: @state %>
 <%= submit "Authorize" %>
 <% end %>
 

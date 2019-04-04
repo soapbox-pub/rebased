@@ -5,24 +5,339 @@
 defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
+  import Mock
 
+  alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
 
+  @session_opts [
+    store: :cookie,
+    key: "_test",
+    signing_salt: "cooldude"
+  ]
+
+  describe "in OAuth consumer mode, " do
+    setup do
+      oauth_consumer_enabled_path = [:auth, :oauth_consumer_enabled]
+      oauth_consumer_strategies_path = [:auth, :oauth_consumer_strategies]
+      oauth_consumer_enabled = Pleroma.Config.get(oauth_consumer_enabled_path)
+      oauth_consumer_strategies = Pleroma.Config.get(oauth_consumer_strategies_path)
+
+      Pleroma.Config.put(oauth_consumer_enabled_path, true)
+      Pleroma.Config.put(oauth_consumer_strategies_path, ~w(twitter facebook))
+
+      on_exit(fn ->
+        Pleroma.Config.put(oauth_consumer_enabled_path, oauth_consumer_enabled)
+        Pleroma.Config.put(oauth_consumer_strategies_path, oauth_consumer_strategies)
+      end)
+
+      [
+        app: insert(:oauth_app),
+        conn:
+          build_conn()
+          |> Plug.Session.call(Plug.Session.init(@session_opts))
+          |> fetch_session()
+      ]
+    end
+
+    test "GET /oauth/authorize also renders OAuth consumer form", %{
+      app: app,
+      conn: conn
+    } do
+      conn =
+        get(
+          conn,
+          "/oauth/authorize",
+          %{
+            "response_type" => "code",
+            "client_id" => app.client_id,
+            "redirect_uri" => app.redirect_uris,
+            "scope" => "read"
+          }
+        )
+
+      assert response = html_response(conn, 200)
+      assert response =~ "Sign in with Twitter"
+      assert response =~ o_auth_path(conn, :prepare_request)
+    end
+
+    test "GET /oauth/prepare_request encodes parameters as `state` and redirects", %{
+      app: app,
+      conn: conn
+    } do
+      conn =
+        get(
+          conn,
+          "/oauth/prepare_request",
+          %{
+            "provider" => "twitter",
+            "scope" => app.scopes,
+            "client_id" => app.client_id,
+            "redirect_uri" => app.redirect_uris,
+            "state" => "a_state"
+          }
+        )
+
+      assert response = html_response(conn, 302)
+      redirected_to = redirected_to(conn)
+      [state] = Regex.run(~r/(?<=state=).*?(?=\Z|&)/, redirected_to)
+      state = URI.decode(state)
+      assert {:ok, state_params} = Poison.decode(state)
+
+      expected_scope_param = Enum.join(app.scopes, "+")
+      expected_client_id_param = app.client_id
+      expected_redirect_uri_param = app.redirect_uris
+
+      assert %{
+               "scope" => ^expected_scope_param,
+               "client_id" => ^expected_client_id_param,
+               "redirect_uri" => ^expected_redirect_uri_param,
+               "state" => "a_state"
+             } = state_params
+    end
+
+    test "on authentication error, redirects to `redirect_uri`", %{app: app, conn: conn} do
+      state_params = %{
+        "scope" => Enum.join(app.scopes, " "),
+        "client_id" => app.client_id,
+        "redirect_uri" => app.redirect_uris,
+        "state" => ""
+      }
+
+      conn =
+        conn
+        |> assign(:ueberauth_failure, %{errors: [%{message: "unknown error"}]})
+        |> get(
+          "/oauth/twitter/callback",
+          %{
+            "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
+            "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
+            "provider" => "twitter",
+            "state" => Poison.encode!(state_params)
+          }
+        )
+
+      assert response = html_response(conn, 302)
+      assert redirected_to(conn) == app.redirect_uris
+    end
+
+    test "with user-bound registration, GET /oauth/<provider>/callback redirects to `redirect_uri` with `code`",
+         %{app: app, conn: conn} do
+      registration = insert(:registration)
+
+      state_params = %{
+        "scope" => Enum.join(app.scopes, " "),
+        "client_id" => app.client_id,
+        "redirect_uri" => app.redirect_uris,
+        "state" => ""
+      }
+
+      with_mock Pleroma.Web.Auth.Authenticator,
+        get_registration: fn _, _ -> {:ok, registration} end do
+        conn =
+          get(
+            conn,
+            "/oauth/twitter/callback",
+            %{
+              "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
+              "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
+              "provider" => "twitter",
+              "state" => Poison.encode!(state_params)
+            }
+          )
+
+        assert response = html_response(conn, 302)
+        assert redirected_to(conn) =~ ~r/#{app.redirect_uris}\?code=.+/
+      end
+    end
+
+    test "with user-unbound registration, GET /oauth/<provider>/callback redirects to registration_details page",
+         %{app: app, conn: conn} do
+      registration = insert(:registration, user: nil)
+
+      state_params = %{
+        "scope" => "read",
+        "client_id" => app.client_id,
+        "redirect_uri" => app.redirect_uris,
+        "state" => "a_state"
+      }
+
+      with_mock Pleroma.Web.Auth.Authenticator,
+        get_registration: fn _, _ -> {:ok, registration} end do
+        conn =
+          get(
+            conn,
+            "/oauth/twitter/callback",
+            %{
+              "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
+              "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
+              "provider" => "twitter",
+              "state" => Poison.encode!(state_params)
+            }
+          )
+
+        expected_redirect_params =
+          state_params
+          |> Map.delete("scope")
+          |> Map.merge(%{
+            "scopes" => ["read"],
+            "email" => Registration.email(registration),
+            "nickname" => Registration.nickname(registration)
+          })
+
+        assert response = html_response(conn, 302)
+
+        assert redirected_to(conn) ==
+                 o_auth_path(conn, :registration_details, expected_redirect_params)
+      end
+    end
+
+    test "GET /oauth/registration_details renders registration details form", %{
+      app: app,
+      conn: conn
+    } do
+      conn =
+        get(
+          conn,
+          "/oauth/registration_details",
+          %{
+            "scopes" => app.scopes,
+            "client_id" => app.client_id,
+            "redirect_uri" => app.redirect_uris,
+            "state" => "a_state",
+            "nickname" => nil,
+            "email" => "john@doe.com"
+          }
+        )
+
+      assert response = html_response(conn, 200)
+      assert response =~ ~r/name="op" type="submit" value="register"/
+      assert response =~ ~r/name="op" type="submit" value="connect"/
+    end
+
+    test "with valid params, POST /oauth/register?op=register redirects to `redirect_uri` with `code`",
+         %{
+           app: app,
+           conn: conn
+         } do
+      registration = insert(:registration, user: nil, info: %{"nickname" => nil, "email" => nil})
+
+      conn =
+        conn
+        |> put_session(:registration_id, registration.id)
+        |> post(
+          "/oauth/register",
+          %{
+            "op" => "register",
+            "scopes" => app.scopes,
+            "client_id" => app.client_id,
+            "redirect_uri" => app.redirect_uris,
+            "state" => "a_state",
+            "nickname" => "availablenick",
+            "email" => "available@email.com"
+          }
+        )
+
+      assert response = html_response(conn, 302)
+      assert redirected_to(conn) =~ ~r/#{app.redirect_uris}\?code=.+/
+    end
+
+    test "with invalid params, POST /oauth/register?op=register redirects to registration_details page",
+         %{
+           app: app,
+           conn: conn
+         } do
+      another_user = insert(:user)
+      registration = insert(:registration, user: nil, info: %{"nickname" => nil, "email" => nil})
+
+      params = %{
+        "op" => "register",
+        "scopes" => app.scopes,
+        "client_id" => app.client_id,
+        "redirect_uri" => app.redirect_uris,
+        "state" => "a_state",
+        "nickname" => another_user.nickname,
+        "email" => another_user.email
+      }
+
+      conn =
+        conn
+        |> put_session(:registration_id, registration.id)
+        |> post("/oauth/register", params)
+
+      assert response = html_response(conn, 302)
+
+      assert redirected_to(conn) ==
+               o_auth_path(conn, :registration_details, params)
+    end
+
+    test "with valid params, POST /oauth/register?op=connect redirects to `redirect_uri` with `code`",
+         %{
+           app: app,
+           conn: conn
+         } do
+      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt("testpassword"))
+      registration = insert(:registration, user: nil)
+
+      conn =
+        conn
+        |> put_session(:registration_id, registration.id)
+        |> post(
+          "/oauth/register",
+          %{
+            "op" => "connect",
+            "scopes" => app.scopes,
+            "client_id" => app.client_id,
+            "redirect_uri" => app.redirect_uris,
+            "state" => "a_state",
+            "auth_name" => user.nickname,
+            "password" => "testpassword"
+          }
+        )
+
+      assert response = html_response(conn, 302)
+      assert redirected_to(conn) =~ ~r/#{app.redirect_uris}\?code=.+/
+    end
+
+    test "with invalid params, POST /oauth/register?op=connect redirects to registration_details page",
+         %{
+           app: app,
+           conn: conn
+         } do
+      user = insert(:user)
+      registration = insert(:registration, user: nil)
+
+      params = %{
+        "op" => "connect",
+        "scopes" => app.scopes,
+        "client_id" => app.client_id,
+        "redirect_uri" => app.redirect_uris,
+        "state" => "a_state",
+        "auth_name" => user.nickname,
+        "password" => "wrong password"
+      }
+
+      conn =
+        conn
+        |> put_session(:registration_id, registration.id)
+        |> post("/oauth/register", params)
+
+      assert response = html_response(conn, 302)
+
+      assert redirected_to(conn) ==
+               o_auth_path(conn, :registration_details, Map.delete(params, "password"))
+    end
+  end
+
   describe "GET /oauth/authorize" do
     setup do
-      session_opts = [
-        store: :cookie,
-        key: "_test",
-        signing_salt: "cooldude"
-      ]
-
       [
         app: insert(:oauth_app, redirect_uris: "https://redirect.url"),
         conn:
           build_conn()
-          |> Plug.Session.call(Plug.Session.init(session_opts))
+          |> Plug.Session.call(Plug.Session.init(@session_opts))
           |> fetch_session()
       ]
     end

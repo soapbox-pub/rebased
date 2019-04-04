@@ -253,6 +253,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       auth_params = %{
         "client_id" => params["client_id"],
         "redirect_uri" => params["redirect_uri"],
+        "state" => params["state"],
         "scopes" => oauth_scopes(params, nil)
       }
 
@@ -289,6 +290,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     render(conn, "register.html", %{
       client_id: params["client_id"],
       redirect_uri: params["redirect_uri"],
+      state: params["state"],
       scopes: oauth_scopes(params, []),
       nickname: params["nickname"],
       email: params["email"]
@@ -313,6 +315,8 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       )
     else
       _ ->
+        params = Map.delete(params, "password")
+
         conn
         |> put_flash(:error, "Unknown error, please try again.")
         |> redirect(to: o_auth_path(conn, :registration_details, params))
