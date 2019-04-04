@@ -113,15 +113,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def decrease_replies_count_if_reply(_object), do: :noop
 
-  def insert(map, local \\ true) when is_map(map) do
+  def insert(map, local \\ true, fake \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
-         map <- lazy_put_activity_defaults(map),
+         map <- lazy_put_activity_defaults(map, fake),
          :ok <- check_actor_is_active(map["actor"]),
          {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
+         {recipients, _, _} = get_recipients(map),
+         {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
          {:ok, object} <- insert_full_object(map) do
-      {recipients, _, _} = get_recipients(map)
-
       {:ok, activity} =
         Repo.insert(%Activity{
           data: map,
@@ -146,8 +146,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       stream_out(activity)
       {:ok, activity}
     else
-      %Activity{} = activity -> {:ok, activity}
-      error -> {:error, error}
+      %Activity{} = activity ->
+        {:ok, activity}
+
+      {:fake, true, map, recipients} ->
+        activity = %Activity{
+          data: map,
+          local: local,
+          actor: map["actor"],
+          recipients: recipients,
+          id: "pleroma:fakeid"
+        }
+
+        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+        {:ok, activity}
+
+      error ->
+        {:error, error}
     end
   end
 
@@ -190,7 +205,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def create(%{to: to, actor: actor, context: context, object: object} = params) do
+  def create(%{to: to, actor: actor, context: context, object: object} = params, fake \\ false) do
     additional = params[:additional] || %{}
     # only accept false as false value
     local = !(params[:local] == false)
@@ -201,13 +216,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
              %{to: to, actor: actor, published: published, context: context, object: object},
              additional
            ),
-         {:ok, activity} <- insert(create_data, local),
+         {:ok, activity} <- insert(create_data, local, fake),
+         {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
          :ok <- maybe_federate(activity) do
       {:ok, activity}
+    else
+      {:fake, true, activity} ->
+        {:ok, activity}
     end
   end
 

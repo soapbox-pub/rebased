@@ -248,4 +248,14 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ "Generated"
     end
   end
+
+  describe "running delete_activities" do
+    test "activities are deleted" do
+      %{nickname: nickname} = insert(:user)
+
+      assert :ok == Mix.Tasks.Pleroma.User.run(["delete_activities", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "User #{nickname} statuses deleted."
+    end
+  end
 end

@@ -755,7 +755,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def follow(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
-    with %User{} = followed <- Repo.get_by(User, nickname: uri),
+    with %User{} = followed <- User.get_by_nickname(uri),
          {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
       conn
       |> put_view(AccountView)
@@ -1121,7 +1121,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             auto_play_gif: false,
             display_sensitive_media: false,
             reduce_motion: false,
-            max_toot_chars: limit
+            max_toot_chars: limit,
+            mascot: "/images/pleroma-fox-tan-smol.png"
           },
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),

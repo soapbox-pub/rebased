@@ -1096,28 +1096,27 @@ defmodule Pleroma.User do
     # Remove all relationships
     {:ok, followers} = User.get_followers(user)
 
-    followers
-    |> Enum.each(fn follower -> User.unfollow(follower, user) end)
+    Enum.each(followers, fn follower -> User.unfollow(follower, user) end)
 
     {:ok, friends} = User.get_friends(user)
 
-    friends
-    |> Enum.each(fn followed -> User.unfollow(user, followed) end)
+    Enum.each(friends, fn followed -> User.unfollow(user, followed) end)
 
-    query =
-      from(a in Activity, where: a.actor == ^user.ap_id)
-      |> Activity.with_preloaded_object()
+    delete_user_activities(user)
+  end
 
-    Repo.all(query)
-    |> Enum.each(fn activity ->
-      case activity.data["type"] do
-        "Create" ->
-          ActivityPub.delete(Object.normalize(activity))
+  def delete_user_activities(%User{ap_id: ap_id} = user) do
+    Activity
+    |> where(actor: ^ap_id)
+    |> Activity.with_preloaded_object()
+    |> Repo.all()
+    |> Enum.each(fn
+      %{data: %{"type" => "Create"}} = activity ->
+        activity |> Object.normalize() |> ActivityPub.delete()
 
-        # TODO: Do something with likes, follows, repeats.
-        _ ->
-          "Doing nothing"
-      end
+      # TODO: Do something with likes, follows, repeats.
+      _ ->
+        "Doing nothing"
     end)
 
     {:ok, user}

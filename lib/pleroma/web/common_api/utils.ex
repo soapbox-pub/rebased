@@ -15,6 +15,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
+  require Logger
+
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
     activity =
@@ -240,13 +242,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Strftime.strftime!(date, "%a %b %d %H:%M:%S %z %Y")
   end
 
-  def date_to_asctime(date) do
-    with {:ok, date, _offset} <- date |> DateTime.from_iso8601() do
+  def date_to_asctime(date) when is_binary(date) do
+    with {:ok, date, _offset} <- DateTime.from_iso8601(date) do
       format_asctime(date)
     else
       _e ->
+        Logger.warn("Date #{date} in wrong format, must be ISO 8601")
         ""
     end
+  end
+
+  def date_to_asctime(date) do
+    Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+    ""
   end
 
   def to_masto_date(%NaiveDateTime{} = date) do
