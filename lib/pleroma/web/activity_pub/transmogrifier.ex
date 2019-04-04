@@ -954,7 +954,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp strip_internal_tags(object), do: object
 
-  defp user_upgrade_task(user) do
+  def perform(:user_upgrade, user) do
     # we pass a fake user so that the followers collection is stripped away
     old_follower_address = User.ap_followers(%User{nickname: user.nickname})
 
@@ -999,28 +999,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Repo.update_all(q, [])
   end
 
-  def upgrade_user_from_ap_id(ap_id, async \\ true) do
+  def upgrade_user_from_ap_id(ap_id) do
     with %User{local: false} = user <- User.get_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id) do
-      already_ap = User.ap_enabled?(user)
-
-      {:ok, user} =
-        User.upgrade_changeset(user, data)
-        |> Repo.update()
-
-      if !already_ap do
-        # This could potentially take a long time, do it in the background
-        if async do
-          Task.start(fn ->
-            user_upgrade_task(user)
-          end)
-        else
-          user_upgrade_task(user)
-        end
+         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
+         already_ap <- User.ap_enabled?(user),
+         {:ok, user} <- user |> User.upgrade_changeset(data) |> User.update_and_set_cache() do
+      unless already_ap do
+        PleromaJobQueue.enqueue(:transmogrifier, __MODULE__, [:user_upgrade, user])
       end
 
       {:ok, user}
     else
+      %User{} = user -> {:ok, user}
       e -> e
     end
   end

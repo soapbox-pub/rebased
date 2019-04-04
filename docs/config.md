@@ -200,14 +200,14 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
   - `port`
 * `url` - a list containing the configuration for generating urls, accepts
   - `host` - the host without the scheme and a post (e.g `example.com`, not `https://example.com:2020`)
-  - `scheme` - e.g `http`, `https` 
+  - `scheme` - e.g `http`, `https`
   - `port`
   - `path`
 
 
 **Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
 
-Example: 
+Example:
 ```elixir
 config :pleroma, Pleroma.Web.Endpoint,
   url: [host: "example.com", port: 2020, scheme: "https"],
@@ -296,9 +296,11 @@ curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerando
 [Pleroma Job Queue](https://git.pleroma.social/pleroma/pleroma_job_queue) configuration: a list of queues with maximum concurrent jobs.
 
 Pleroma has the following queues:
+
 * `federator_outgoing` - Outgoing federation
 * `federator_incoming` - Incoming federation
 * `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
+* `transmogrifier` - Transmogrifier
 
 Example:
 
