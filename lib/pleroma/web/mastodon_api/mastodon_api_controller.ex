@@ -1121,7 +1121,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             auto_play_gif: false,
             display_sensitive_media: false,
             reduce_motion: false,
-            max_toot_chars: limit
+            max_toot_chars: limit,
+            mascot: "/images/pleroma-fox-tan-smol.png"
           },
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),
