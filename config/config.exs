@@ -118,6 +118,11 @@ config :logger, :ex_syslogger,
   format: "$metadata[$level] $message",
   metadata: [:request_id]
 
+config :quack,
+  level: :warn,
+  meta: [:all],
+  webhook_url: "https://hooks.slack.com/services/YOUR-KEY-HERE"
+
 config :mime, :types, %{
   "application/xml" => ["xml"],
   "application/xrd+xml" => ["xrd+xml"],
