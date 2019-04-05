@@ -33,8 +33,9 @@ defmodule Pleroma.NotificationTest do
     test "it creates a notification for subscribed users" do
       user = insert(:user)
       subscriber = insert(:user)
+  
+      User.subscribe(subscriber, user)
 
-      {:ok, _, _} = TwitterAPI.subscribe(subscriber, %{"user_id" => user.id})
       {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
       {:ok, [notification]} = Notification.create_notifications(status)
 
@@ -101,7 +102,7 @@ defmodule Pleroma.NotificationTest do
       subscriber = insert(:user)
 
       {:ok, _, _, _} = TwitterAPI.follow(subscriber, %{"user_id" => user.id})
-      {:ok, _, _} = TwitterAPI.subscribe(subscriber, %{"user_id" => user.id})
+      User.subscribe(subscriber, user)
       {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
       {:ok, [_notif]} = Notification.create_notifications(status)
     end
