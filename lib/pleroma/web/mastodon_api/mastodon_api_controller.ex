@@ -1091,9 +1091,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def index(%{assigns: %{user: user}} = conn, _params) do
-    token =
-      conn
-      |> get_session(:oauth_token)
+    token = get_session(conn, :oauth_token)
 
     if user && token do
       mastodon_emoji = mastodonized_emoji()
@@ -1194,6 +1192,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> render("index.html", %{initial_state: initial_state, flavour: flavour})
     else
       conn
+      |> put_session(:return_to, conn.request_path)
       |> redirect(to: "/web/login")
     end
   end
@@ -1278,12 +1277,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           scope: Enum.join(app.scopes, " ")
         )
 
-      conn
-      |> redirect(to: path)
+      redirect(conn, to: path)
     end
   end
 
-  defp local_mastodon_root_path(conn), do: mastodon_api_path(conn, :index, ["getting-started"])
+  defp local_mastodon_root_path(conn) do
+    case get_session(conn, :return_to) do
+      nil ->
+        mastodon_api_path(conn, :index, ["getting-started"])
+
+      return_to ->
+        delete_session(conn, :return_to)
+        return_to
+    end
+  end
 
   defp get_or_make_app do
     find_attrs = %{client_name: @local_mastodon_name, redirect_uris: "."}

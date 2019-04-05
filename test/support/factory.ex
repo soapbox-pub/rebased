@@ -240,6 +240,16 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def oauth_authorization_factory do
+    %Pleroma.Web.OAuth.Authorization{
+      token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false),
+      scopes: ["read", "write", "follow", "push"],
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10),
+      user: build(:user),
+      app: build(:oauth_app)
+    }
+  end
+
   def push_subscription_factory do
     %Pleroma.Web.Push.Subscription{
       user: build(:user),
