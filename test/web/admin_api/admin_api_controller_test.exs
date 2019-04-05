@@ -89,8 +89,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           "followed" => user.nickname
         })
 
-      user = Repo.get(User, user.id)
-      follower = Repo.get(User, follower.id)
+      user = User.get_by_nickname(user.id)
+      follower = User.get_by_nickname(follower.id)
 
       assert User.following?(follower, user)
     end
@@ -113,8 +113,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           "followed" => user.nickname
         })
 
-      user = Repo.get(User, user.id)
-      follower = Repo.get(User, follower.id)
+      user = User.get_by_nickname(user.id)
+      follower = User.get_by_nickname(follower.id)
 
       refute User.following?(follower, user)
     end
