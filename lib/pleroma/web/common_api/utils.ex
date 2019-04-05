@@ -336,10 +336,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
 
   def maybe_notify_subscribers(
-    recipients,
-    %Activity{data: %{"actor" => actor, "type" => type}}
-  ) when type == "Create" do
-    with %User{} = user <- User.get_by_ap_id(actor) do  
+        recipients,
+        %Activity{data: %{"actor" => actor, "type" => type}}
+      )
+      when type == "Create" do
+    with %User{} = user <- User.get_by_ap_id(actor) do
       subscriber_ids =
         user
         |> User.subscribed_users()

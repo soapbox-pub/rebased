@@ -279,7 +279,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       {:error, msg} ->
         forbidden_json_reply(conn, msg)
     end
-  end        
+  end
 
   def unsubscribe(%{assigns: %{user: user}} = conn, params) do
     case TwitterAPI.unsubscribe(user, params) do
@@ -287,7 +287,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
         conn
         |> put_view(UserView)
         |> render("show.json", %{user: unsubscribed, for: user})
- 
+
       {:error, msg} ->
         forbidden_json_reply(conn, msg)
     end

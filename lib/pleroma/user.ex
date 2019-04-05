@@ -1006,7 +1006,12 @@ defmodule Pleroma.User do
     do: Repo.all(from(u in User, where: u.ap_id in ^user.info.blocks))
 
   def subscribed_users(user),
-    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.subscriptions))
+    do:
+      Repo.all(
+        from(u in User,
+          where: fragment("?->'subscriptions' @> ?", u.info, ^user.ap_id)
+        )
+      )
 
   def block_domain(user, domain) do
     info_cng =
