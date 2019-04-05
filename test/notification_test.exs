@@ -30,7 +30,6 @@ defmodule Pleroma.NotificationTest do
       assert other_notification.activity_id == activity.id
     end
 
-
     test "it creates a notification for subscribed users" do
       user = insert(:user)
       subscriber = insert(:user)
@@ -38,7 +37,7 @@ defmodule Pleroma.NotificationTest do
       {:ok, _, _} = TwitterAPI.subscribe(subscriber, %{"user_id" => user.id})
       {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
       {:ok, [notification]} = Notification.create_notifications(status)
-      
+
       assert notification.user_id == subscriber.id
     end
   end
