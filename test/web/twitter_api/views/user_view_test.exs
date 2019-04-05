@@ -105,7 +105,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "subscribed" => false
       }
     }
 
@@ -153,7 +154,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "subscribed" => false,
       }
     }
 
@@ -202,11 +204,20 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "subscribed" => false
       }
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
+  end
+
+  test "a user that you are subscribed to" do
+    user = insert(:user)
+    subscriber = insert(:user)
+    {:ok, subscriber} = User.subscribe(subscriber, user)
+    represented = UserView.render("show.json", %{user: user, for: subscriber})
+    assert represented["pleroma"]["subscribed"] == true
   end
 
   test "a user that is a moderator" do

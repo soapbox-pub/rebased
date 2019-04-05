@@ -999,6 +999,11 @@ defmodule Pleroma.User do
       end)
   end
 
+  def subscribed_to?(user, %{ap_id: ap_id}) do
+    subs = user.info.subscriptions
+    Enum.member?(subs, ap_id)
+  end
+
   def muted_users(user),
     do: Repo.all(from(u in User, where: u.ap_id in ^user.info.mutes))
 
