@@ -269,6 +269,30 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def subscribe(%{assigns: %{user: user}} = conn, params) do
+    case TwitterAPI.subscribe(user, params) do
+      {:ok, user, subscribed} ->
+        conn
+        |> put_view(UserView)
+        |> render("show.json", %{user: subscribed, for: user})
+
+      {:error, msg} ->
+        forbidden_json_reply(conn, msg)
+    end
+  end        
+
+  def unsubscribe(%{assigns: %{user: user}} = conn, params) do
+    case TwitterAPI.unsubscribe(user, params) do
+      {:ok, user, unsubscribed} ->
+        conn
+        |> put_view(UserView)
+        |> render("show.json", %{user: unsubscribed, for: user})
+ 
+      {:error, msg} ->
+        forbidden_json_reply(conn, msg)
+    end
+  end
+
   def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id(id),
          true <- Visibility.visible_for_user?(activity, user) do

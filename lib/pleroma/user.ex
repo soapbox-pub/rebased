@@ -923,6 +923,26 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
+  def subscribe(subscriber, %{ap_id: ap_id}) do
+    info_cng =
+      subscriber.info
+      |> User.Info.add_to_subscriptions(ap_id)
+
+    change(subscriber)
+    |> put_embed(:info, info_cng)
+    |> update_and_set_cache()
+  end
+
+  def unsubscribe(unsubscriber, %{ap_id: ap_id}) do
+    info_cng =
+      subscriber.info
+      |> User.Info.remove_from_subscriptions(ap_id)
+
+    change(subscriber)
+    |> put_embed(:info, info_cng)
+    |> update_and_set_cache()
+  end
+
   def block(blocker, %User{ap_id: ap_id} = blocked) do
     # sever any follow relationships to prevent leaks per activitypub (Pleroma issue #213)
     blocker =

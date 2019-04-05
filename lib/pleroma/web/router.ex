@@ -500,6 +500,9 @@ defmodule Pleroma.Web.Router do
 
       post("/blocks/create", TwitterAPI.Controller, :block)
       post("/blocks/destroy", TwitterAPI.Controller, :unblock)
+
+      post("/subscriptions/create", TwitterAPI.Controller, :subscribe)
+      post("/subscriptions/destroy", TwitterAPI.Controller, :unsubscribe)
     end
   end
 
