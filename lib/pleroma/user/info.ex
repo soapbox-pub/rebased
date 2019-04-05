@@ -22,7 +22,7 @@ defmodule Pleroma.User.Info do
     field(:domain_blocks, {:array, :string}, default: [])
     field(:mutes, {:array, :string}, default: [])
     field(:muted_reblogs, {:array, :string}, default: [])
-    field(:subscribed_to, {:array, :string}, default: [])
+    field(:subscriptions, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
@@ -98,8 +98,8 @@ defmodule Pleroma.User.Info do
     params = %{subscriptions: subscriptions}
 
     info
-    |> cast(params, [:subscribed_to])
-    |> validate_required([:subscribed_to])
+    |> cast(params, [:subscriptions])
+    |> validate_required([:subscriptions])
   end
 
   def add_to_mutes(info, muted) do
@@ -119,11 +119,11 @@ defmodule Pleroma.User.Info do
   end
 
   def add_to_subscriptions(info, subscribed) do
-    set_subscriptions(info, Enum.uniq([subscribed | info.subscribed_to]))
+    set_subscriptions(info, Enum.uniq([subscribed | info.subscriptions]))
   end
 
   def remove_from_subscriptions(info, subscribed) do
-    set_subscriptions(info, List.delete(info.subscribed_to, subscribed))
+    set_subscriptions(info, List.delete(info.subscriptions, subscribed))
   end
 
   def set_domain_blocks(info, domain_blocks) do

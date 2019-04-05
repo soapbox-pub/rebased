@@ -935,10 +935,10 @@ defmodule Pleroma.User do
 
   def unsubscribe(unsubscriber, %{ap_id: ap_id}) do
     info_cng =
-      subscriber.info
+      unsubscriber.info
       |> User.Info.remove_from_subscriptions(ap_id)
 
-    change(subscriber)
+    change(unsubscriber)
     |> put_embed(:info, info_cng)
     |> update_and_set_cache()
   end
@@ -1004,6 +1004,9 @@ defmodule Pleroma.User do
 
   def blocked_users(user),
     do: Repo.all(from(u in User, where: u.ap_id in ^user.info.blocks))
+
+  def subscribed_users(user),
+    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.subscriptions))
 
   def block_domain(user, domain) do
     info_cng =

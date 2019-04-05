@@ -62,6 +62,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   def subscribe(%User{} = subscriber, params) do
     with {:ok, %User{} = subscribed} <- get_user(params) do
       User.subscribe(subscriber, subscribed)
+      |> IO.inspect
     end
   end
 

@@ -335,6 +335,22 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
 
+  def maybe_notify_subscribers(
+    recipients,
+    %Activity{data: %{"actor" => actor, "type" => type}}
+  ) when type == "Create" do
+    with %User{} = user <- User.get_by_ap_id(actor) do  
+      subscriber_ids =
+        user
+        |> User.subscribed_users()
+        |> Enum.map(& &1.ap_id)
+
+      recipients ++ subscriber_ids
+    end
+  end
+
+  def maybe_notify_subscribers(recipients, _), do: recipients
+
   def maybe_extract_mentions(%{"tag" => tag}) do
     tag
     |> Enum.filter(fn x -> is_map(x) end)
