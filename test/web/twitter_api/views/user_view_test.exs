@@ -299,7 +299,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "subscribed" => false
       }
     }
 
