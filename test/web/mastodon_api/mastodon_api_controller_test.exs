@@ -2340,4 +2340,71 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute acc_one == acc_two
     assert acc_two == acc_three
   end
+
+  describe "index/2 redirections" do
+    setup %{conn: conn} do
+      session_opts = [
+        store: :cookie,
+        key: "_test",
+        signing_salt: "cooldude"
+      ]
+
+      conn =
+        conn
+        |> Plug.Session.call(Plug.Session.init(session_opts))
+        |> fetch_session()
+
+      test_path = "/web/statuses/test"
+      %{conn: conn, path: test_path}
+    end
+
+    test "redirects not logged-in users to the login page", %{conn: conn, path: path} do
+      conn = get(conn, path)
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/web/login"
+    end
+
+    test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
+      token = insert(:oauth_token)
+
+      conn =
+        conn
+        |> assign(:user, token.user)
+        |> put_session(:oauth_token, token.token)
+        |> get(path)
+
+      assert conn.status == 200
+    end
+
+    test "saves referer path to session", %{conn: conn, path: path} do
+      conn = get(conn, path)
+      return_to = Plug.Conn.get_session(conn, :return_to)
+
+      assert return_to == path
+    end
+
+    test "redirects to the saved path after log in", %{conn: conn, path: path} do
+      app = insert(:oauth_app, client_name: "Mastodon-Local", redirect_uris: ".")
+      auth = insert(:oauth_authorization, app: app)
+
+      conn =
+        conn
+        |> put_session(:return_to, path)
+        |> get("/web/login", %{code: auth.token})
+
+      assert conn.status == 302
+      assert redirected_to(conn) == path
+    end
+
+    test "redirects to the getting-started page when referer is not present", %{conn: conn} do
+      app = insert(:oauth_app, client_name: "Mastodon-Local", redirect_uris: ".")
+      auth = insert(:oauth_authorization, app: app)
+
+      conn = get(conn, "/web/login", %{code: auth.token})
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/web/getting-started"
+    end
+  end
 end
