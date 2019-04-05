@@ -50,7 +50,7 @@ unit-testing:
   script:
     - mix ecto.create
     - mix ecto.migrate
-    - mix test --trace --preload-modules
+    - mix test --trace --preload-modules --cover
 
 lint:
   stage: test
