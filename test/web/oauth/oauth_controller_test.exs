@@ -20,16 +20,11 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
   describe "in OAuth consumer mode, " do
     setup do
-      oauth_consumer_enabled_path = [:auth, :oauth_consumer_enabled]
       oauth_consumer_strategies_path = [:auth, :oauth_consumer_strategies]
-      oauth_consumer_enabled = Pleroma.Config.get(oauth_consumer_enabled_path)
       oauth_consumer_strategies = Pleroma.Config.get(oauth_consumer_strategies_path)
-
-      Pleroma.Config.put(oauth_consumer_enabled_path, true)
       Pleroma.Config.put(oauth_consumer_strategies_path, ~w(twitter facebook))
 
       on_exit(fn ->
-        Pleroma.Config.put(oauth_consumer_enabled_path, oauth_consumer_enabled)
         Pleroma.Config.put(oauth_consumer_strategies_path, oauth_consumer_strategies)
       end)
 
@@ -42,7 +37,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       ]
     end
 
-    test "GET /oauth/authorize also renders OAuth consumer form", %{
+    test "GET /oauth/authorize renders auth forms, including OAuth consumer form", %{
       app: app,
       conn: conn
     } do
@@ -97,31 +92,6 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
              } = state_components
     end
 
-    test "on authentication error, redirects to `redirect_uri`", %{app: app, conn: conn} do
-      state_params = %{
-        "scope" => Enum.join(app.scopes, " "),
-        "client_id" => app.client_id,
-        "redirect_uri" => app.redirect_uris,
-        "state" => ""
-      }
-
-      conn =
-        conn
-        |> assign(:ueberauth_failure, %{errors: [%{message: "unknown error"}]})
-        |> get(
-          "/oauth/twitter/callback",
-          %{
-            "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
-            "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
-            "provider" => "twitter",
-            "state" => Poison.encode!(state_params)
-          }
-        )
-
-      assert response = html_response(conn, 302)
-      assert redirected_to(conn) == app.redirect_uris
-    end
-
     test "with user-bound registration, GET /oauth/<provider>/callback redirects to `redirect_uri` with `code`",
          %{app: app, conn: conn} do
       registration = insert(:registration)
@@ -152,7 +122,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       end
     end
 
-    test "with user-unbound registration, GET /oauth/<provider>/callback redirects to registration_details page",
+    test "with user-unbound registration, GET /oauth/<provider>/callback renders registration_details page",
          %{app: app, conn: conn} do
       registration = insert(:registration, user: nil)
 
@@ -177,20 +147,41 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             }
           )
 
-        expected_redirect_params =
-          state_params
-          |> Map.delete("scope")
-          |> Map.merge(%{
-            "scope" => "read write",
-            "email" => Registration.email(registration),
-            "nickname" => Registration.nickname(registration)
-          })
-
-        assert response = html_response(conn, 302)
-
-        assert redirected_to(conn) ==
-                 o_auth_path(conn, :registration_details, expected_redirect_params)
+        assert response = html_response(conn, 200)
+        assert response =~ ~r/name="op" type="submit" value="register"/
+        assert response =~ ~r/name="op" type="submit" value="connect"/
+        assert response =~ Registration.email(registration)
+        assert response =~ Registration.nickname(registration)
       end
+    end
+
+    test "on authentication error, GET /oauth/<provider>/callback redirects to `redirect_uri`", %{
+      app: app,
+      conn: conn
+    } do
+      state_params = %{
+        "scope" => Enum.join(app.scopes, " "),
+        "client_id" => app.client_id,
+        "redirect_uri" => app.redirect_uris,
+        "state" => ""
+      }
+
+      conn =
+        conn
+        |> assign(:ueberauth_failure, %{errors: [%{message: "(error description)"}]})
+        |> get(
+          "/oauth/twitter/callback",
+          %{
+            "oauth_token" => "G-5a3AAAAAAAwMH9AAABaektfSM",
+            "oauth_verifier" => "QZl8vUqNvXMTKpdmUnGejJxuHG75WWWs",
+            "provider" => "twitter",
+            "state" => Poison.encode!(state_params)
+          }
+        )
+
+      assert response = html_response(conn, 302)
+      assert redirected_to(conn) == app.redirect_uris
+      assert get_flash(conn, :error) == "Failed to authenticate: (error description)."
     end
 
     test "GET /oauth/registration_details renders registration details form", %{
@@ -243,7 +234,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert redirected_to(conn) =~ ~r/#{app.redirect_uris}\?code=.+/
     end
 
-    test "with invalid params, POST /oauth/register?op=register redirects to registration_details page",
+    test "with invalid params, POST /oauth/register?op=register renders registration_details page",
          %{
            app: app,
            conn: conn
@@ -257,19 +248,22 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         "client_id" => app.client_id,
         "redirect_uri" => app.redirect_uris,
         "state" => "a_state",
-        "nickname" => another_user.nickname,
-        "email" => another_user.email
+        "nickname" => "availablenickname",
+        "email" => "available@email.com"
       }
 
-      conn =
-        conn
-        |> put_session(:registration_id, registration.id)
-        |> post("/oauth/register", params)
+      for {bad_param, bad_param_value} <-
+            [{"nickname", another_user.nickname}, {"email", another_user.email}] do
+        bad_params = Map.put(params, bad_param, bad_param_value)
 
-      assert response = html_response(conn, 302)
+        conn =
+          conn
+          |> put_session(:registration_id, registration.id)
+          |> post("/oauth/register", bad_params)
 
-      assert redirected_to(conn) ==
-               o_auth_path(conn, :registration_details, params)
+        assert html_response(conn, 403) =~ ~r/name="op" type="submit" value="register"/
+        assert get_flash(conn, :error) == "Error: #{bad_param} has already been taken."
+      end
     end
 
     test "with valid params, POST /oauth/register?op=connect redirects to `redirect_uri` with `code`",
@@ -300,7 +294,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert redirected_to(conn) =~ ~r/#{app.redirect_uris}\?code=.+/
     end
 
-    test "with invalid params, POST /oauth/register?op=connect redirects to registration_details page",
+    test "with invalid params, POST /oauth/register?op=connect renders registration_details page",
          %{
            app: app,
            conn: conn
@@ -323,10 +317,8 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         |> put_session(:registration_id, registration.id)
         |> post("/oauth/register", params)
 
-      assert response = html_response(conn, 302)
-
-      assert redirected_to(conn) ==
-               o_auth_path(conn, :registration_details, Map.delete(params, "password"))
+      assert html_response(conn, 401) =~ ~r/name="op" type="submit" value="connect"/
+      assert get_flash(conn, :error) == "Invalid Username/Password"
     end
   end
 

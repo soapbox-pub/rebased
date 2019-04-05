@@ -59,7 +59,7 @@ defmodule Pleroma.Web.Endpoint do
       else: "pleroma_key"
 
   same_site =
-    if Pleroma.Config.get([:auth, :oauth_consumer_enabled]) do
+    if Pleroma.Config.oauth_consumer_enabled?() do
       # Note: "SameSite=Strict" prevents sign in with external OAuth provider
       #   (there would be no cookies during callback request from OAuth provider)
       "SameSite=Lax"

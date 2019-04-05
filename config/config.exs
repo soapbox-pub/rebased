@@ -397,9 +397,7 @@ config :ueberauth,
        base_path: "/oauth",
        providers: ueberauth_providers
 
-config :pleroma, :auth,
-  oauth_consumer_strategies: oauth_consumer_strategies,
-  oauth_consumer_enabled: oauth_consumer_strategies != []
+config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Sendmail
 

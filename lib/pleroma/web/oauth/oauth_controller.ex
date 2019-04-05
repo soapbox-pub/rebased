@@ -16,7 +16,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
 
-  if Pleroma.Config.get([:auth, :oauth_consumer_enabled]), do: plug(Ueberauth)
+  if Pleroma.Config.oauth_consumer_enabled?(), do: plug(Ueberauth)
 
   plug(:fetch_session)
   plug(:fetch_flash)
@@ -62,58 +62,63 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   def create_authorization(
         conn,
-        %{
-          "authorization" => %{"redirect_uri" => redirect_uri} = auth_params
-        } = params,
+        %{"authorization" => auth_params} = params,
         opts \\ []
       ) do
-    with {:ok, auth} <-
-           (opts[:auth] && {:ok, opts[:auth]}) ||
-             do_create_authorization(conn, params, opts[:user]) do
-      redirect_uri = redirect_uri(conn, redirect_uri)
-
-      cond do
-        redirect_uri == "urn:ietf:wg:oauth:2.0:oob" ->
-          render(conn, "results.html", %{
-            auth: auth
-          })
-
-        true ->
-          connector = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
-          url = "#{redirect_uri}#{connector}"
-          url_params = %{:code => auth.token}
-
-          url_params =
-            if auth_params["state"] do
-              Map.put(url_params, :state, auth_params["state"])
-            else
-              url_params
-            end
-
-          url = "#{url}#{Plug.Conn.Query.encode(url_params)}"
-
-          redirect(conn, external: url)
-      end
+    with {:ok, auth} <- do_create_authorization(conn, params, opts[:user]) do
+      after_create_authorization(conn, auth, auth_params)
     else
-      {scopes_issue, _} when scopes_issue in [:unsupported_scopes, :missing_scopes] ->
-        # Per https://github.com/tootsuite/mastodon/blob/
-        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L39
-        conn
-        |> put_flash(:error, "This action is outside the authorized scopes")
-        |> put_status(:unauthorized)
-        |> authorize(auth_params)
-
-      {:auth_active, false} ->
-        # Per https://github.com/tootsuite/mastodon/blob/
-        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L76
-        conn
-        |> put_flash(:error, "Your login is missing a confirmed e-mail address")
-        |> put_status(:forbidden)
-        |> authorize(auth_params)
-
       error ->
-        Authenticator.handle_error(conn, error)
+        handle_create_authorization_error(conn, error, auth_params)
     end
+  end
+
+  def after_create_authorization(conn, auth, %{"redirect_uri" => redirect_uri} = auth_params) do
+    redirect_uri = redirect_uri(conn, redirect_uri)
+
+    if redirect_uri == "urn:ietf:wg:oauth:2.0:oob" do
+      render(conn, "results.html", %{
+        auth: auth
+      })
+    else
+      connector = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
+      url = "#{redirect_uri}#{connector}"
+      url_params = %{:code => auth.token}
+
+      url_params =
+        if auth_params["state"] do
+          Map.put(url_params, :state, auth_params["state"])
+        else
+          url_params
+        end
+
+      url = "#{url}#{Plug.Conn.Query.encode(url_params)}"
+
+      redirect(conn, external: url)
+    end
+  end
+
+  defp handle_create_authorization_error(conn, {scopes_issue, _}, auth_params)
+       when scopes_issue in [:unsupported_scopes, :missing_scopes] do
+    # Per https://github.com/tootsuite/mastodon/blob/
+    #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L39
+    conn
+    |> put_flash(:error, "This action is outside the authorized scopes")
+    |> put_status(:unauthorized)
+    |> authorize(auth_params)
+  end
+
+  defp handle_create_authorization_error(conn, {:auth_active, false}, auth_params) do
+    # Per https://github.com/tootsuite/mastodon/blob/
+    #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L76
+    conn
+    |> put_flash(:error, "Your login is missing a confirmed e-mail address")
+    |> put_status(:forbidden)
+    |> authorize(auth_params)
+  end
+
+  defp handle_create_authorization_error(conn, error, _auth_params) do
+    Authenticator.handle_error(conn, error)
   end
 
   def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
@@ -202,6 +207,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+  @doc "Prepares OAuth request to provider for Ueberauth"
   def prepare_request(conn, %{"provider" => provider} = params) do
     scope =
       oauth_scopes(params, [])
@@ -218,6 +224,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       |> Map.drop(~w(scope scopes client_id redirect_uri))
       |> Map.put("state", state)
 
+    # Handing the request to Ueberauth
     redirect(conn, to: o_auth_path(conn, :request, provider, params))
   end
 
@@ -266,7 +273,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
         conn
         |> put_session(:registration_id, registration.id)
-        |> redirect(to: o_auth_path(conn, :registration_details, registration_params))
+        |> registration_details(registration_params)
       end
     else
       _ ->
@@ -292,32 +299,28 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def register(conn, %{"op" => "connect"} = params) do
-    create_authorization_params = %{
-      "authorization" => Map.merge(params, %{"name" => params["auth_name"]})
-    }
+    authorization_params = Map.put(params, "name", params["auth_name"])
+    create_authorization_params = %{"authorization" => authorization_params}
 
     with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
          %Registration{} = registration <- Repo.get(Registration, registration_id),
-         {:ok, auth} <- do_create_authorization(conn, create_authorization_params),
+         {_, {:ok, auth}} <-
+           {:create_authorization, do_create_authorization(conn, create_authorization_params)},
          %User{} = user <- Repo.preload(auth, :user).user,
          {:ok, _updated_registration} <- Registration.bind_to_user(registration, user) do
       conn
       |> put_session_registration_id(nil)
-      |> create_authorization(
-        create_authorization_params,
-        auth: auth
-      )
+      |> after_create_authorization(auth, authorization_params)
     else
-      _ ->
-        params = Map.delete(params, "password")
+      {:create_authorization, error} ->
+        {:register, handle_create_authorization_error(conn, error, create_authorization_params)}
 
-        conn
-        |> put_flash(:error, "Unknown error, please try again.")
-        |> redirect(to: o_auth_path(conn, :registration_details, params))
+      _ ->
+        {:register, :generic_error}
     end
   end
 
-  def register(conn, params) do
+  def register(conn, %{"op" => "register"} = params) do
     with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
          %Registration{} = registration <- Repo.get(Registration, registration_id),
          {:ok, user} <- Authenticator.create_from_registration(conn, params, registration) do
@@ -349,13 +352,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
           )
 
         conn
+        |> put_status(:forbidden)
         |> put_flash(:error, "Error: #{message}.")
-        |> redirect(to: o_auth_path(conn, :registration_details, params))
+        |> registration_details(params)
 
       _ ->
-        conn
-        |> put_flash(:error, "Unknown error, please try again.")
-        |> redirect(to: o_auth_path(conn, :registration_details, params))
+        {:register, :generic_error}
     end
   end
 

@@ -412,3 +412,58 @@ Pleroma account will be created with the same name as the LDAP user name.
 
 * `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
 * `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
+
+## :auth
+
+Authentication / authorization settings.
+
+* `oauth_consumer_strategies`: lists enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
+
+OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
+Implementation is based on Ueberauth; see the list of [available strategies](https://github.com/ueberauth/ueberauth/wiki/List-of-Strategies).
+
+Note: each strategy is shipped as a separate dependency; in order to get the strategies, run `OAUTH_CONSUMER_STRATEGIES="..." mix deps.get`,
+e.g. `OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft" mix deps.get`.
+The server should also be started with `OAUTH_CONSUMER_STRATEGIES="..." mix phx.server` in case you enable any strategies.
+
+Note: each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.  
+
+* For Twitter, [register an app](https://developer.twitter.com/en/apps), configure callback URL to https://<your_host>/oauth/twitter/callback
+
+* For Facebook, [register an app](https://developers.facebook.com/apps), configure callback URL to https://<your_host>/oauth/facebook/callback, enable Facebook Login service at https://developers.facebook.com/apps/<app_id>/fb-login/settings/
+
+* For Google, [register an app](https://console.developers.google.com), configure callback URL to https://<your_host>/oauth/google/callback
+
+* For Microsoft, [register an app](https://portal.azure.com), configure callback URL to https://<your_host>/oauth/microsoft/callback
+
+Once the app is configured on external OAuth provider side, add app's credentials and strategy-specific settings (if any — e.g. see Microsoft below) to `config/prod.secret.exs`,
+per strategy's documentation (e.g. [ueberauth_twitter](https://github.com/ueberauth/ueberauth_twitter)). Example config basing on environment variables:
+
+```
+# Twitter
+config :ueberauth, Ueberauth.Strategy.Twitter.OAuth,
+  consumer_key: System.get_env("TWITTER_CONSUMER_KEY"),
+  consumer_secret: System.get_env("TWITTER_CONSUMER_SECRET")
+
+# Facebook
+config :ueberauth, Ueberauth.Strategy.Facebook.OAuth,
+  client_id: System.get_env("FACEBOOK_APP_ID"),
+  client_secret: System.get_env("FACEBOOK_APP_SECRET"),
+  redirect_uri: System.get_env("FACEBOOK_REDIRECT_URI")
+
+# Google
+config :ueberauth, Ueberauth.Strategy.Google.OAuth,
+  client_id: System.get_env("GOOGLE_CLIENT_ID"),
+  client_secret: System.get_env("GOOGLE_CLIENT_SECRET"),
+  redirect_uri: System.get_env("GOOGLE_REDIRECT_URI")
+
+# Microsoft
+config :ueberauth, Ueberauth.Strategy.Microsoft.OAuth,
+  client_id: System.get_env("MICROSOFT_CLIENT_ID"),
+  client_secret: System.get_env("MICROSOFT_CLIENT_SECRET")
+  
+config :ueberauth, Ueberauth,
+  providers: [
+    microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
+  ]
+```

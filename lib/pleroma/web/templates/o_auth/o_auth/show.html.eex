@@ -26,6 +26,6 @@
 <%= submit "Authorize" %>
 <% end %>
 
-<%= if Pleroma.Config.get([:auth, :oauth_consumer_enabled]) do %>
+<%= if Pleroma.Config.oauth_consumer_enabled?() do %>
   <%= render @view_module, Pleroma.Web.Auth.Authenticator.oauth_consumer_template(), assigns %>
 <% end %>

@@ -9,7 +9,7 @@
   <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
   <%= hidden_input f, :state, value: @state %>
 
-    <%= for strategy <- Pleroma.Config.get([:auth, :oauth_consumer_strategies], []) do %>
+    <%= for strategy <- Pleroma.Config.oauth_consumer_strategies() do %>
       <%= submit "Sign in with #{String.capitalize(strategy)}", name: "provider", value: strategy %>
     <% end %>
 <% end %>
