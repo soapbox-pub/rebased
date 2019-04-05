@@ -60,15 +60,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def subscribe(%User{} = subscriber, params) do
-    with {:ok, %User{} = subscribed} <- get_user(params) do
-      User.subscribe(subscriber, subscribed)
-      |> IO.inspect
+    with {:ok, %User{} = subscribed} <- get_user(params),
+         {:ok, subscriber} <- User.subscribe(subscriber, subscribed) do
+      {:ok, subscriber, subscribed}
     end
   end
 
   def unsubscribe(%User{} = unsubscriber, params) do
-    with {:ok, %User{} = unsubscribed} <- get_user(params) do
-      User.unsubscribe(unsubscriber, unsubscribed)
+    with {:ok, %User{} = unsubscribed} <- get_user(params),
+         {:ok, unsubscriber} <- User.unsubscribe(unsubscriber, unsubscribed) do
+      {:ok, unsubscriber, unsubscribed}
     end
   end
 
