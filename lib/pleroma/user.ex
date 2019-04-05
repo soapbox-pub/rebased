@@ -924,23 +924,27 @@ defmodule Pleroma.User do
   end
 
   def subscribe(subscriber, %{ap_id: ap_id}) do
-    info_cng =
-      subscriber.info
-      |> User.Info.add_to_subscriptions(ap_id)
+    with %User{} = user <- get_or_fetch_by_ap_id(ap_id) do
+      info_cng =
+        user.info
+        |> User.Info.add_to_subscribers(subscriber.ap_id)
 
-    change(subscriber)
-    |> put_embed(:info, info_cng)
-    |> update_and_set_cache()
+      change(user)
+      |> put_embed(:info, info_cng)
+      |> update_and_set_cache()
+    end
   end
 
   def unsubscribe(unsubscriber, %{ap_id: ap_id}) do
-    info_cng =
-      unsubscriber.info
-      |> User.Info.remove_from_subscriptions(ap_id)
+    with %User{} = user <- get_or_fetch_by_ap_id(ap_id) do
+      info_cng =
+        user.info
+        |> User.Info.remove_from_subscribers(unsubscriber.ap_id)
 
-    change(unsubscriber)
-    |> put_embed(:info, info_cng)
-    |> update_and_set_cache()
+      change(user)
+      |> put_embed(:info, info_cng)
+      |> update_and_set_cache()
+    end
   end
 
   def block(blocker, %User{ap_id: ap_id} = blocked) do
@@ -1000,8 +1004,9 @@ defmodule Pleroma.User do
   end
 
   def subscribed_to?(user, %{ap_id: ap_id}) do
-    subs = user.info.subscriptions
-    Enum.member?(subs, ap_id)
+    with %User{} = target <- User.get_by_ap_id(ap_id) do
+      Enum.member?(target.info.subscribers, user.ap_id)
+    end
   end
 
   def muted_users(user),
@@ -1010,13 +1015,8 @@ defmodule Pleroma.User do
   def blocked_users(user),
     do: Repo.all(from(u in User, where: u.ap_id in ^user.info.blocks))
 
-  def subscribed_users(user),
-    do:
-      Repo.all(
-        from(u in User,
-          where: fragment("?->'subscriptions' @> ?", u.info, ^user.ap_id)
-        )
-      )
+  def subscribers(user),
+    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.subscribers))
 
   def block_domain(user, domain) do
     info_cng =

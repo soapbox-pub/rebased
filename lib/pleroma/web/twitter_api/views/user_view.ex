@@ -47,16 +47,15 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     for_user = assigns[:for]
     image = User.avatar_url(user) |> MediaProxy.url()
 
-    {following, follows_you, statusnet_blocking, subscribed} =
+    {following, follows_you, statusnet_blocking} =
       if for_user do
         {
           User.following?(for_user, user),
           User.following?(user, for_user),
-          User.blocks?(for_user, user),
-          User.subscribed_to?(for_user, user)
+          User.blocks?(for_user, user)
         }
       else
-        {false, false, false, false}
+        {false, false, false}
       end
 
     user_info = User.get_cached_user_info(user)
@@ -117,8 +116,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       "pleroma" =>
         %{
           "confirmation_pending" => user_info.confirmation_pending,
-          "tags" => user.tags,
-          "subscribed" => subscribed
+          "tags" => user.tags
         }
         |> maybe_with_activation_status(user, for_user)
     }

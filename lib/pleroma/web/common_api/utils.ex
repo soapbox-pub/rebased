@@ -343,7 +343,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     with %User{} = user <- User.get_by_ap_id(actor) do
       subscriber_ids =
         user
-        |> User.subscribed_users()
+        |> User.subscribers()
         |> Enum.map(& &1.ap_id)
 
       recipients ++ subscriber_ids

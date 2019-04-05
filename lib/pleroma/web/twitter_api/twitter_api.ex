@@ -59,20 +59,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def subscribe(%User{} = subscriber, params) do
-    with {:ok, %User{} = subscribed} <- get_user(params),
-         {:ok, subscriber} <- User.subscribe(subscriber, subscribed) do
-      {:ok, subscriber, subscribed}
-    end
-  end
-
-  def unsubscribe(%User{} = unsubscriber, params) do
-    with {:ok, %User{} = unsubscribed} <- get_user(params),
-         {:ok, unsubscriber} <- User.unsubscribe(unsubscriber, unsubscribed) do
-      {:ok, unsubscriber, unsubscribed}
-    end
-  end
-
   def repeat(%User{} = user, ap_id_or_id) do
     with {:ok, _announce, %{data: %{"id" => id}}} <- CommonAPI.repeat(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do

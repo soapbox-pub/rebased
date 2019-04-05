@@ -863,6 +863,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     json(conn, %{})
   end
 
+  def subscribe(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %User{} = subscription_target <- User.get_by_id(id) do
+      {:ok, subscription_target} = User.subscribe(user, subscription_target)
+
+      conn
+      |> put_view(AccountView)
+      |> render("relationship.json", %{user: user, target: subscription_target})
+    end
+  end
+
+  def unsubscribe(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %User{} = subscription_target <- User.get_by_id(id) do
+      {:ok, subscription_target} = User.unsubscribe(user, subscription_target)
+
+      conn
+      |> put_view(AccountView)
+      |> render("relationship.json", %{user: user, target: subscription_target})
+    end
+  end
+
   def status_search(user, query) do
     fetched =
       if Regex.match?(~r/https?:/, query) do

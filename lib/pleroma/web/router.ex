@@ -311,6 +311,9 @@ defmodule Pleroma.Web.Router do
 
       post("/domain_blocks", MastodonAPIController, :block_domain)
       delete("/domain_blocks", MastodonAPIController, :unblock_domain)
+
+      post("/pleroma/accounts/:id/subscribe", MastodonAPIController, :subscribe)
+      post("/pleroma/accounts/:id/unsubscribe", MastodonAPIController, :unsubscribe)
     end
 
     scope [] do
@@ -494,9 +497,6 @@ defmodule Pleroma.Web.Router do
 
       post("/pleroma/friendships/approve", TwitterAPI.Controller, :approve_friend_request)
       post("/pleroma/friendships/deny", TwitterAPI.Controller, :deny_friend_request)
-
-      post("/pleroma/subscriptions/create", TwitterAPI.Controller, :subscribe)
-      post("/pleroma/subscriptions/destroy", TwitterAPI.Controller, :unsubscribe)
 
       post("/friendships/create", TwitterAPI.Controller, :follow)
       post("/friendships/destroy", TwitterAPI.Controller, :unfollow)
