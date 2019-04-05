@@ -249,13 +249,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
     with {:ok, registration} <- Authenticator.get_registration(conn, params) do
       user = Repo.preload(registration, :user).user
-
-      auth_params = %{
-        "client_id" => params["client_id"],
-        "redirect_uri" => params["redirect_uri"],
-        "state" => params["state"],
-        "scopes" => oauth_scopes(params, nil)
-      }
+      auth_params = Map.take(params, ~w(client_id redirect_uri scope scopes state))
 
       if user do
         create_authorization(

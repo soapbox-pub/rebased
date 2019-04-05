@@ -73,7 +73,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "/oauth/prepare_request",
           %{
             "provider" => "twitter",
-            "scope" => app.scopes,
+            "scope" => "read follow",
             "client_id" => app.client_id,
             "redirect_uri" => app.redirect_uris,
             "state" => "a_state"
@@ -81,21 +81,20 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         )
 
       assert response = html_response(conn, 302)
-      redirected_to = redirected_to(conn)
-      [state] = Regex.run(~r/(?<=state=).*?(?=\Z|&)/, redirected_to)
-      state = URI.decode(state)
-      assert {:ok, state_params} = Poison.decode(state)
 
-      expected_scope_param = Enum.join(app.scopes, "+")
-      expected_client_id_param = app.client_id
-      expected_redirect_uri_param = app.redirect_uris
+      redirect_query = URI.parse(redirected_to(conn)).query
+      assert %{"state" => state_param} = URI.decode_query(redirect_query)
+      assert {:ok, state_components} = Poison.decode(state_param)
+
+      expected_client_id = app.client_id
+      expected_redirect_uri = app.redirect_uris
 
       assert %{
-               "scope" => ^expected_scope_param,
-               "client_id" => ^expected_client_id_param,
-               "redirect_uri" => ^expected_redirect_uri_param,
+               "scope" => "read follow",
+               "client_id" => ^expected_client_id,
+               "redirect_uri" => ^expected_redirect_uri,
                "state" => "a_state"
-             } = state_params
+             } = state_components
     end
 
     test "on authentication error, redirects to `redirect_uri`", %{app: app, conn: conn} do
@@ -158,7 +157,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       registration = insert(:registration, user: nil)
 
       state_params = %{
-        "scope" => "read",
+        "scope" => "read write",
         "client_id" => app.client_id,
         "redirect_uri" => app.redirect_uris,
         "state" => "a_state"
@@ -182,7 +181,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           state_params
           |> Map.delete("scope")
           |> Map.merge(%{
-            "scopes" => ["read"],
+            "scope" => "read write",
             "email" => Registration.email(registration),
             "nickname" => Registration.nickname(registration)
           })
