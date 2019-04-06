@@ -30,16 +30,16 @@ defmodule Mix.Tasks.Pleroma.User do
       mix pleroma.user invite [OPTION...]
 
     Options:
-    - `--expire_date DATE` - last day on which token is active (e.g. "2019-04-05")
-    - `--max_use NUMBER` - maximum numbers of token use
+    - `--expire_at DATE` - last day on which token is active (e.g. "2019-04-05")
+    - `--max_use NUMBER` - maximum numbers of token uses
 
-  ## Generated invites list
+  ## List generated invites
 
-      mix pleroma.user invites_list
+      mix pleroma.user invites
 
   ## Revoke invite
 
-      mix pleroma.user invite_revoke TOKEN OR TOKEN_ID
+      mix pleroma.user revoke_invite TOKEN OR TOKEN_ID
 
   ## Delete the user's account.
 
@@ -304,21 +304,24 @@ defmodule Mix.Tasks.Pleroma.User do
     {options, [], []} =
       OptionParser.parse(rest,
         strict: [
-          expire_date: :string,
+          expire_at: :string,
           max_use: :integer
         ]
       )
 
-    expire_at =
-      with expire_date when expire_date != nil <- Keyword.get(options, :expire_date) do
-        Date.from_iso8601!(expire_date)
-      end
+    options =
+      options
+      |> Keyword.update(:expire_at, {:ok, nil}, fn
+        nil -> {:ok, nil}
+        val -> Date.from_iso8601(val)
+      end)
+      |> Enum.into(%{})
 
-    options = Keyword.put(options, :expire_at, expire_at)
-    options = Enum.into(options, %{})
     Common.start_pleroma()
 
-    with {:ok, invite} <- UserInviteToken.create_invite(options) do
+    with {:ok, val} <- options[:expire_at],
+         options = Map.put(options, :expire_at, val),
+         {:ok, invite} <- UserInviteToken.create_invite(options) do
       Mix.shell().info(
         "Generated user invite token " <> String.replace(invite.invite_type, "_", " ")
       )
@@ -332,44 +335,41 @@ defmodule Mix.Tasks.Pleroma.User do
 
       IO.puts(url)
     else
-      _ ->
-        Mix.shell().error("Could not create invite token.")
+      error ->
+        Mix.shell().error("Could not create invite token: #{inspect(error)}")
     end
   end
 
-  def run(["invites_list"]) do
+  def run(["invites"]) do
     Common.start_pleroma()
 
     Mix.shell().info("Invites list:")
 
     UserInviteToken.list_invites()
     |> Enum.each(fn invite ->
-      expire_date =
-        case invite.expire_at do
-          nil -> nil
-          date -> " | Expire date: #{Date.to_string(date)}"
+      expire_info =
+        with expire_at when not is_nil(expire_at) <- invite.expire_at do
+          " | Expire at: #{Date.to_string(expire_at)}"
         end
 
       using_info =
-        case invite.max_use do
-          nil -> nil
-          max_use -> " | Max use: #{max_use}    Left use: #{max_use - invite.uses}"
+        with max_use when not is_nil(max_use) <- invite.max_use do
+          " | Max use: #{max_use}    Left use: #{max_use - invite.uses}"
         end
 
       Mix.shell().info(
-        "ID: #{invite.id} | Token: #{invite.token} | Token type: #{invite.token_type} | Used: #{
+        "ID: #{invite.id} | Token: #{invite.token} | Token type: #{invite.invite_type} | Used: #{
           invite.used
-        }#{expire_date}#{using_info}"
+        }#{expire_info}#{using_info}"
       )
     end)
   end
 
-  def run(["invite_revoke", token]) do
+  def run(["revoke_invite", token]) do
     Common.start_pleroma()
 
-    invite = UserInviteToken.find_by_token!(token)
-
-    with {:ok, _} <- UserInviteToken.update_invite(invite, %{used: true}) do
+    with {:ok, invite} <- UserInviteToken.find_by_token(token),
+         {:ok, _} <- UserInviteToken.update_invite(invite, %{used: true}) do
       Mix.shell().info("Invite for token #{token} was revoked.")
     else
       _ -> Mix.shell().error("No invite found with token #{token}")

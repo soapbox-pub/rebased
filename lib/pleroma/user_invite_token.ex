@@ -71,6 +71,13 @@ defmodule Pleroma.UserInviteToken do
   @spec find_by_token!(token()) :: UserInviteToken.t() | no_return()
   def find_by_token!(token), do: Repo.get_by!(UserInviteToken, token: token)
 
+  @spec find_by_token(token()) :: {:ok, UserInviteToken.t()} | nil
+  def find_by_token(token) do
+    with invite <- Repo.get_by(UserInviteToken, token: token) do
+      {:ok, invite}
+    end
+  end
+
   @spec valid_invite?(UserInviteToken.t()) :: boolean()
   def valid_invite?(%{invite_type: "one_time"} = invite) do
     not invite.used
