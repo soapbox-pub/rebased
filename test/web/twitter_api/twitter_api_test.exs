@@ -370,7 +370,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns user on success" do
-      {:ok, token} = UserInviteToken.create_token()
+      {:ok, invite} = UserInviteToken.create_invite()
 
       data = %{
         "nickname" => "vinny",
@@ -379,15 +379,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "streamer",
         "password" => "hiptofbees",
         "confirm" => "hiptofbees",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
 
       fetched_user = User.get_by_nickname("vinny")
-      token = Repo.get_by(UserInviteToken, token: token.token)
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
 
-      assert token.used == true
+      assert invite.used == true
 
       assert UserView.render("show.json", %{user: user}) ==
                UserView.render("show.json", %{user: fetched_user})
@@ -411,8 +411,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns error on expired token" do
-      {:ok, token} = UserInviteToken.create_token()
-      UserInviteToken.mark_as_used(token.token)
+      {:ok, invite} = UserInviteToken.create_invite()
+      UserInviteToken.update_invite!(invite, used: true)
 
       data = %{
         "nickname" => "GrimReaper",
@@ -421,7 +421,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "Your time has come",
         "password" => "scythe",
         "confirm" => "scythe",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -449,8 +449,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "confirm" => "hiptofbees"
       }
 
-      check_fn = fn token ->
-        data = Map.put(data, "token", token.token)
+      check_fn = fn invite ->
+        data = Map.put(data, "token", invite.token)
         {:ok, user} = TwitterAPI.register_user(data)
         fetched_user = User.get_by_nickname("vinny")
 
@@ -462,37 +462,37 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns user on success", %{check_fn: check_fn} do
-      {:ok, token} = UserInviteToken.create_token(expire_at: Date.utc_today())
+      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.utc_today()})
 
-      check_fn.(token)
+      check_fn.(invite)
 
-      token = Repo.get_by(UserInviteToken, token: token.token)
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
 
-      refute token.used
+      refute invite.used
     end
 
     test "returns user on token which expired tomorrow", %{check_fn: check_fn} do
-      {:ok, token} = UserInviteToken.create_token(expire_at: Date.add(Date.utc_today(), 1))
+      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.add(Date.utc_today(), 1)})
 
-      check_fn.(token)
+      check_fn.(invite)
 
-      token = Repo.get_by(UserInviteToken, token: token.token)
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
 
-      refute token.used
+      refute invite.used
     end
 
     test "returns an error on overdue date", %{data: data} do
-      {:ok, token} = UserInviteToken.create_token(expire_at: Date.add(Date.utc_today(), -1))
+      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.add(Date.utc_today(), -1)})
 
-      data = Map.put(data, "token", token.token)
+      data = Map.put(data, "token", invite.token)
 
       {:error, msg} = TwitterAPI.register_user(data)
 
       assert msg == "Expired token"
       refute User.get_by_nickname("vinny")
-      token = Repo.get_by(UserInviteToken, token: token.token)
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
 
-      assert token.used == true
+      assert invite.used == true
     end
   end
 
@@ -509,9 +509,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns user on success, after him registration fails" do
-      {:ok, token} = UserInviteToken.create_token(max_use: 100)
+      {:ok, invite} = UserInviteToken.create_invite(%{max_use: 100})
 
-      Ecto.Changeset.change(token, uses: 99) |> Repo.update!()
+      UserInviteToken.update_invite!(invite, uses: 99)
 
       data = %{
         "nickname" => "vinny",
@@ -520,14 +520,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "streamer",
         "password" => "hiptofbees",
         "confirm" => "hiptofbees",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
       fetched_user = User.get_by_nickname("vinny")
-      token = Repo.get_by(UserInviteToken, token: token.token)
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
 
-      assert token.used == true
+      assert invite.used == true
 
       assert UserView.render("show.json", %{user: user}) ==
                UserView.render("show.json", %{user: fetched_user})
@@ -539,7 +539,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "Your time has come",
         "password" => "scythe",
         "confirm" => "scythe",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -562,11 +562,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns user on success" do
-      {:ok, token} =
-        UserInviteToken.create_token(
-          expire_at: Date.utc_today(),
-          max_use: 100
-        )
+      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.utc_today(), max_use: 100})
 
       data = %{
         "nickname" => "vinny",
@@ -575,27 +571,23 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "streamer",
         "password" => "hiptofbees",
         "confirm" => "hiptofbees",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
       fetched_user = User.get_by_nickname("vinny")
-      token = Repo.get_by(UserInviteToken, token: token.token)
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
 
-      refute token.used
+      refute invite.used
 
       assert UserView.render("show.json", %{user: user}) ==
                UserView.render("show.json", %{user: fetched_user})
     end
 
     test "error after max uses" do
-      {:ok, token} =
-        UserInviteToken.create_token(
-          expire_at: Date.utc_today(),
-          max_use: 100
-        )
+      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.utc_today(), max_use: 100})
 
-      Ecto.Changeset.change(token, uses: 99) |> Repo.update!()
+      UserInviteToken.update_invite!(invite, uses: 99)
 
       data = %{
         "nickname" => "vinny",
@@ -604,13 +596,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "streamer",
         "password" => "hiptofbees",
         "confirm" => "hiptofbees",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
       fetched_user = User.get_by_nickname("vinny")
-      token = Repo.get_by(UserInviteToken, token: token.token)
-      assert token.used == true
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
+      assert invite.used == true
 
       assert UserView.render("show.json", %{user: user}) ==
                UserView.render("show.json", %{user: fetched_user})
@@ -622,7 +614,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "Your time has come",
         "password" => "scythe",
         "confirm" => "scythe",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -632,11 +624,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns error on overdue date" do
-      {:ok, token} =
-        UserInviteToken.create_token(
-          expire_at: Date.add(Date.utc_today(), -1),
-          max_use: 100
-        )
+      {:ok, invite} =
+        UserInviteToken.create_invite(%{expire_at: Date.add(Date.utc_today(), -1), max_use: 100})
 
       data = %{
         "nickname" => "GrimReaper",
@@ -645,7 +634,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "Your time has come",
         "password" => "scythe",
         "confirm" => "scythe",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)
@@ -655,13 +644,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns error on with overdue date and after max" do
-      {:ok, token} =
-        UserInviteToken.create_token(
-          expire_at: Date.add(Date.utc_today(), -1),
-          max_use: 100
-        )
+      {:ok, invite} =
+        UserInviteToken.create_invite(%{expire_at: Date.add(Date.utc_today(), -1), max_use: 100})
 
-      Ecto.Changeset.change(token, uses: 100) |> Repo.update!()
+      UserInviteToken.update_invite!(invite, uses: 100)
 
       data = %{
         "nickname" => "GrimReaper",
@@ -670,7 +656,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
         "bio" => "Your time has come",
         "password" => "scythe",
         "confirm" => "scythe",
-        "token" => token.token
+        "token" => invite.token
       }
 
       {:error, msg} = TwitterAPI.register_user(data)

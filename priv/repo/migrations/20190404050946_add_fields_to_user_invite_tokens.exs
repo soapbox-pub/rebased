@@ -6,7 +6,7 @@ defmodule Pleroma.Repo.Migrations.AddFieldsToUserInviteTokens do
       add(:expire_at, :date)
       add(:uses, :integer, default: 0)
       add(:max_use, :integer)
-      add(:token_type, :string, default: "one_time")
+      add(:invite_type, :string, default: "one_time")
     end
   end
 end

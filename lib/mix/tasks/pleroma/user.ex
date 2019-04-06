@@ -315,19 +315,19 @@ defmodule Mix.Tasks.Pleroma.User do
       end
 
     options = Keyword.put(options, :expire_at, expire_at)
-
+    options = Enum.into(options, %{})
     Common.start_pleroma()
 
-    with {:ok, token} <- UserInviteToken.create_token(options) do
+    with {:ok, invite} <- UserInviteToken.create_invite(options) do
       Mix.shell().info(
-        "Generated user invite token " <> String.replace(token.token_type, "_", " ")
+        "Generated user invite token " <> String.replace(invite.invite_type, "_", " ")
       )
 
       url =
         Pleroma.Web.Router.Helpers.redirect_url(
           Pleroma.Web.Endpoint,
           :registration_page,
-          token.token
+          invite.token
         )
 
       IO.puts(url)
@@ -367,7 +367,9 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["invite_revoke", token]) do
     Common.start_pleroma()
 
-    with {:ok, _} <- UserInviteToken.mark_as_used(token) do
+    invite = UserInviteToken.find_by_token!(token)
+
+    with {:ok, _} <- UserInviteToken.update_invite(invite, %{used: true}) do
       Mix.shell().info("Invite for token #{token} was revoked.")
     else
       _ -> Mix.shell().error("No invite found with token #{token}")

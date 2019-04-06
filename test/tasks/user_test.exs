@@ -292,10 +292,10 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
   describe "running invites_list" do
     test "invites are listed" do
-      {:ok, invite} = Pleroma.UserInviteToken.create_token()
+      {:ok, invite} = Pleroma.UserInviteToken.create_invite()
 
       {:ok, invite2} =
-        Pleroma.UserInviteToken.create_token(expire_at: Date.utc_today(), max_use: 15)
+        Pleroma.UserInviteToken.create_invite(%{expire_at: Date.utc_today(), max_use: 15})
 
       assert capture_io(fn ->
                Mix.Tasks.Pleroma.User.run([
@@ -314,7 +314,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
   describe "running invite revoke" do
     test "invite is revoked" do
-      {:ok, invite} = Pleroma.UserInviteToken.create_token(expire_at: Date.utc_today())
+      {:ok, invite} = Pleroma.UserInviteToken.create_invite(%{expire_at: Date.utc_today()})
 
       assert capture_io(fn ->
                Mix.Tasks.Pleroma.User.run([

@@ -129,7 +129,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def register_user(params) do
-    token_string = params["token"]
+    token = params["token"]
 
     params = %{
       nickname: params["nickname"],
@@ -163,29 +163,29 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       {:error, %{error: Jason.encode!(%{captcha: [error]})}}
     else
       registrations_open = Pleroma.Config.get([:instance, :registrations_open])
-      registration_process(registrations_open, params, token_string)
+      registration_process(registrations_open, params, token)
     end
   end
 
-  defp registration_process(_registration_open = true, params, _token_string) do
+  defp registration_process(_registration_open = true, params, _token) do
     create_user(params)
   end
 
-  defp registration_process(registration_open, params, token_string)
+  defp registration_process(registration_open, params, token)
        when registration_open == false or is_nil(registration_open) do
-    token =
-      unless is_nil(token_string) do
-        Repo.get_by(UserInviteToken, %{token: token_string})
+    invite =
+      unless is_nil(token) do
+        Repo.get_by(UserInviteToken, %{token: token})
       end
 
-    valid_token? = token && UserInviteToken.valid_token?(token)
+    valid_invite? = invite && UserInviteToken.valid_invite?(invite)
 
-    case token do
+    case invite do
       nil ->
         {:error, "Invalid token"}
 
-      token when valid_token? ->
-        UserInviteToken.update_usage(token)
+      invite when valid_invite? ->
+        UserInviteToken.update_usage!(invite)
         create_user(params)
 
       _ ->
