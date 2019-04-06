@@ -245,7 +245,86 @@ defmodule Mix.Tasks.Pleroma.UserTest do
              end) =~ "http"
 
       assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Generated"
+      assert message =~ "Generated user invite token one time"
+    end
+
+    test "token is generated with expire_at" do
+      assert capture_io(fn ->
+               Mix.Tasks.Pleroma.User.run([
+                 "invite",
+                 "--expire-date",
+                 Date.to_string(Date.utc_today())
+               ])
+             end)
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ "Generated user invite token date limited"
+    end
+
+    test "token is generated with max use" do
+      assert capture_io(fn ->
+               Mix.Tasks.Pleroma.User.run([
+                 "invite",
+                 "--max-use",
+                 "5"
+               ])
+             end)
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ "Generated user invite token reusable"
+    end
+
+    test "token is generated with max use and expire date" do
+      assert capture_io(fn ->
+               Mix.Tasks.Pleroma.User.run([
+                 "invite",
+                 "--max-use",
+                 "5",
+                 "--expire-date",
+                 Date.to_string(Date.utc_today())
+               ])
+             end)
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ "Generated user invite token reusable date limited"
+    end
+  end
+
+  describe "running invites_list" do
+    test "invites are listed" do
+      {:ok, invite} = Pleroma.UserInviteToken.create_token()
+
+      {:ok, invite2} =
+        Pleroma.UserInviteToken.create_token(expire_at: Date.utc_today(), max_use: 15)
+
+      assert capture_io(fn ->
+               Mix.Tasks.Pleroma.User.run([
+                 "invites_list"
+               ])
+             end)
+
+      assert_received {:mix_shell, :info, [message]}
+      assert_received {:mix_shell, :info, [message2]}
+      assert_received {:mix_shell, :info, [message3]}
+      assert message =~ "Invites list:"
+      assert message2 =~ invite.token_type
+      assert message3 =~ invite2.token_type
+    end
+  end
+
+  describe "running invite revoke" do
+    test "invite is revoked" do
+      {:ok, invite} = Pleroma.UserInviteToken.create_token(expire_at: Date.utc_today())
+
+      assert capture_io(fn ->
+               Mix.Tasks.Pleroma.User.run([
+                 "invite_revoke",
+                 invite.token
+               ])
+             end)
+
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ "Invite for token #{invite.token} was revoked."
     end
   end
 

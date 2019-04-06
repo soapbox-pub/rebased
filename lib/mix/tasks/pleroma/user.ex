@@ -7,6 +7,7 @@ defmodule Mix.Tasks.Pleroma.User do
   import Ecto.Changeset
   alias Mix.Tasks.Pleroma.Common
   alias Pleroma.User
+  alias Pleroma.UserInviteToken
 
   @shortdoc "Manages Pleroma users"
   @moduledoc """
@@ -26,7 +27,19 @@ defmodule Mix.Tasks.Pleroma.User do
 
   ## Generate an invite link.
 
-      mix pleroma.user invite
+      mix pleroma.user invite [OPTION...]
+
+    Options:
+    - `--expire_date DATE` - last day on which token is active (e.g. "2019-04-05")
+    - `--max_use NUMBER` - maximum numbers of token use
+
+  ## Generated invites list
+
+      mix pleroma.user invites_list
+
+  ## Revoke invite
+
+      mix pleroma.user invite_revoke TOKEN OR TOKEN_ID
 
   ## Delete the user's account.
 
@@ -287,11 +300,28 @@ defmodule Mix.Tasks.Pleroma.User do
     end
   end
 
-  def run(["invite"]) do
+  def run(["invite" | rest]) do
+    {options, [], []} =
+      OptionParser.parse(rest,
+        strict: [
+          expire_date: :string,
+          max_use: :integer
+        ]
+      )
+
+    expire_at =
+      with expire_date when expire_date != nil <- Keyword.get(options, :expire_date) do
+        Date.from_iso8601!(expire_date)
+      end
+
+    options = Keyword.put(options, :expire_at, expire_at)
+
     Common.start_pleroma()
 
-    with {:ok, token} <- Pleroma.UserInviteToken.create_token() do
-      Mix.shell().info("Generated user invite token")
+    with {:ok, token} <- UserInviteToken.create_token(options) do
+      Mix.shell().info(
+        "Generated user invite token " <> String.replace(token.token_type, "_", " ")
+      )
 
       url =
         Pleroma.Web.Router.Helpers.redirect_url(
@@ -304,6 +334,43 @@ defmodule Mix.Tasks.Pleroma.User do
     else
       _ ->
         Mix.shell().error("Could not create invite token.")
+    end
+  end
+
+  def run(["invites_list"]) do
+    Common.start_pleroma()
+
+    Mix.shell().info("Invites list:")
+
+    UserInviteToken.list_invites()
+    |> Enum.each(fn invite ->
+      expire_date =
+        case invite.expire_at do
+          nil -> nil
+          date -> " | Expire date: #{Date.to_string(date)}"
+        end
+
+      using_info =
+        case invite.max_use do
+          nil -> nil
+          max_use -> " | Max use: #{max_use}    Left use: #{max_use - invite.uses}"
+        end
+
+      Mix.shell().info(
+        "ID: #{invite.id} | Token: #{invite.token} | Token type: #{invite.token_type} | Used: #{
+          invite.used
+        }#{expire_date}#{using_info}"
+      )
+    end)
+  end
+
+  def run(["invite_revoke", token]) do
+    Common.start_pleroma()
+
+    with {:ok, _} <- UserInviteToken.mark_as_used(token) do
+      Mix.shell().info("Invite for token #{token} was revoked.")
+    else
+      _ -> Mix.shell().error("No invite found with token #{token}")
     end
   end
 
