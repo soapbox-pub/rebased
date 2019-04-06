@@ -163,36 +163,49 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       {:error, %{error: Jason.encode!(%{captcha: [error]})}}
     else
       registrations_open = Pleroma.Config.get([:instance, :registrations_open])
+      registration_process(registrations_open, params, token_string)
+    end
+  end
 
-      # no need to query DB if registration is open
-      token =
-        unless registrations_open || is_nil(token_string) do
-          Repo.get_by(UserInviteToken, %{token: token_string})
-        end
+  defp registration_process(_registration_open = true, params, _token_string) do
+    create_user(params)
+  end
 
-      cond do
-        registrations_open || (!is_nil(token) && !token.used) ->
-          changeset = User.register_changeset(%User{}, params)
-
-          with {:ok, user} <- User.register(changeset) do
-            !registrations_open && UserInviteToken.mark_as_used(token.token)
-
-            {:ok, user}
-          else
-            {:error, changeset} ->
-              errors =
-                Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-                |> Jason.encode!()
-
-              {:error, %{error: errors}}
-          end
-
-        !registrations_open && is_nil(token) ->
-          {:error, "Invalid token"}
-
-        !registrations_open && token.used ->
-          {:error, "Expired token"}
+  defp registration_process(registration_open, params, token_string)
+       when registration_open == false or is_nil(registration_open) do
+    token =
+      unless is_nil(token_string) do
+        Repo.get_by(UserInviteToken, %{token: token_string})
       end
+
+    valid_token? = token && UserInviteToken.valid_token?(token)
+
+    case token do
+      nil ->
+        {:error, "Invalid token"}
+
+      token when valid_token? ->
+        UserInviteToken.update_usage(token)
+        create_user(params)
+
+      _ ->
+        {:error, "Expired token"}
+    end
+  end
+
+  defp create_user(params) do
+    changeset = User.register_changeset(%User{}, params)
+
+    case User.register(changeset) do
+      {:ok, user} ->
+        {:ok, user}
+
+      {:error, changeset} ->
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+          |> Jason.encode!()
+
+        {:error, %{error: errors}}
     end
   end
 
