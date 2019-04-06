@@ -307,8 +307,8 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message2]}
       assert_received {:mix_shell, :info, [message3]}
       assert message =~ "Invites list:"
-      assert message2 =~ invite.token_type
-      assert message3 =~ invite2.token_type
+      assert message2 =~ invite.invite_type
+      assert message3 =~ invite2.invite_type
     end
   end
 
