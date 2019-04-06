@@ -864,22 +864,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def subscribe(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %User{} = subscription_target <- User.get_by_id(id) do
-      {:ok, subscription_target} = User.subscribe(user, subscription_target)
-
+    with %User{} = subscription_target <- User.get_by_id(id),
+         {:ok, subscription_target} = User.subscribe(user, subscription_target) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: user, target: subscription_target})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
   def unsubscribe(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %User{} = subscription_target <- User.get_by_id(id) do
-      {:ok, subscription_target} = User.unsubscribe(user, subscription_target)
-
+    with %User{} = subscription_target <- User.get_by_id(id),
+         {:ok, subscription_target} = User.unsubscribe(user, subscription_target) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: user, target: subscription_target})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 

@@ -52,7 +52,7 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
     * `confirm`
     * `captcha_solution`: optional, contains provider-specific captcha solution,
     * `captcha_token`: optional, contains provider-specific captcha token
-    * `token`: invite token required when the registerations aren't public.
+    * `token`: invite token required when the registrations aren't public.
 * Response: JSON. Returns a user object on success, otherwise returns `{"error": "error_msg"}`
 * Example response:
 ```
@@ -114,5 +114,53 @@ See [Admin-API](Admin-API.md)
 * Method `POST`
 * Authentication: required
 * Params:
-    * `id`: notifications's id
+    * `id`: notification's id
 * Response: JSON. Returns `{"status": "success"}` if the reading was successful, otherwise returns `{"error": "error_msg"}`
+
+## `/api/v1/pleroma/accounts/:id/subscribe`
+### Subscribe to receive notifications for all statuses posted by a user
+* Method `POST`
+* Authentication: required
+* Params:
+    * `id`: account id to subscribe to
+* Response: JSON, returns a mastodon relationship object on success, otherwise returns `{"error": "error_msg"}`
+* Example response:
+```json
+{
+  id: "abcdefg",
+  following: true,
+  followed_by: false,
+  blocking: false,
+  muting: false,
+  muting_notifications: false,
+  subscribing: true,
+  requested: false,
+  domain_blocking: false,
+  showing_reblogs: true,
+  endorsed: false
+}
+```
+
+## `/api/v1/pleroma/accounts/:id/unsubscribe`
+### Unsubscribe to stop receiving notifications from user statuses
+* Method `POST`
+* Authentication: required
+* Params:
+    * `id`: account id to unsubscribe from
+* Response: JSON, returns a mastodon relationship object on success, otherwise returns `{"error": "error_msg"}`
+* Example response:
+```json
+{
+  id: "abcdefg",
+  following: true,
+  followed_by: false,
+  blocking: false,
+  muting: false,
+  muting_notifications: false,
+  subscribing: false,
+  requested: false,
+  domain_blocking: false,
+  showing_reblogs: true,
+  endorsed: false
+}
+```
