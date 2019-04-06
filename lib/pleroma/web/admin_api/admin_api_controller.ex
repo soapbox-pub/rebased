@@ -9,6 +9,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.AdminAPI.Search
 
+  alias Pleroma.UserInviteToken
+
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   require Logger
@@ -235,7 +237,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with true <-
            Pleroma.Config.get([:instance, :invites_enabled]) &&
              !Pleroma.Config.get([:instance, :registrations_open]),
-         {:ok, invite_token} <- Pleroma.UserInviteToken.create_token(),
+         {:ok, invite_token} <- UserInviteToken.create_invite(),
          email <-
            Pleroma.UserEmail.user_invitation_email(user, invite_token, email, params["name"]),
          {:ok, _} <- Pleroma.Mailer.deliver(email) do
@@ -244,11 +246,29 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   @doc "Get a account registeration invite token (base64 string)"
-  def get_invite_token(conn, _params) do
-    {:ok, token} = Pleroma.UserInviteToken.create_token()
+  def get_invite_token(conn, params) do
+    options = params["invite"] || %{}
+    {:ok, invite} = UserInviteToken.create_invite(options)
 
     conn
-    |> json(token.token)
+    |> json(invite.token)
+  end
+
+  @doc "Get list of created invites"
+  def invites_list(conn, _params) do
+    invites = UserInviteToken.list_invites()
+
+    conn
+    |> json(AccountView.render("invites.json", %{invites: invites}))
+  end
+
+  @doc "Revokes invite by token"
+  def invite_revoke(conn, %{"token" => token}) do
+    invite = UserInviteToken.find_by_token!(token)
+    {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true})
+
+    conn
+    |> json(AccountView.render("invite.json", %{invite: updated_invite}))
   end
 
   @doc "Get a password reset token (base64 string) for given nickname"
