@@ -25,6 +25,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(nickname)
   end
 
+  def user_follow(conn, %{"follower" => follower_nick, "followed" => followed_nick}) do
+    with %User{} = follower <- User.get_by_nickname(follower_nick),
+         %User{} = followed <- User.get_by_nickname(followed_nick) do
+      User.follow(follower, followed)
+    end
+
+    conn
+    |> json("ok")
+  end
+
+  def user_unfollow(conn, %{"follower" => follower_nick, "followed" => followed_nick}) do
+    with %User{} = follower <- User.get_by_nickname(follower_nick),
+         %User{} = followed <- User.get_by_nickname(followed_nick) do
+      User.unfollow(follower, followed)
+    end
+
+    conn
+    |> json("ok")
+  end
+
   def user_create(
         conn,
         %{"nickname" => nickname, "email" => email, "password" => password}

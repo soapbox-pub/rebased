@@ -44,6 +44,11 @@ defmodule Pleroma.Object do
   # Use this whenever possible, especially when walking graphs in an O(N) loop!
   def normalize(%Activity{object: %Object{} = object}), do: object
 
+  # A hack for fake activities
+  def normalize(%Activity{data: %{"object" => %{"fake" => true} = data}}) do
+    %Object{id: "pleroma:fake_object_id", data: data}
+  end
+
   # Catch and log Object.normalize() calls where the Activity's child object is not
   # preloaded.
   def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}) do

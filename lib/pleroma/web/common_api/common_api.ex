@@ -172,13 +172,16 @@ defmodule Pleroma.Web.CommonAPI do
              end)
            ) do
       res =
-        ActivityPub.create(%{
-          to: to,
-          actor: user,
-          context: context,
-          object: object,
-          additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
-        })
+        ActivityPub.create(
+          %{
+            to: to,
+            actor: user,
+            context: context,
+            object: object,
+            additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
+          },
+          Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
+        )
 
       res
     end

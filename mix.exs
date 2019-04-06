@@ -41,7 +41,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -93,8 +93,9 @@ defmodule Pleroma.Mixfile do
       {:timex, "~> 3.5"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
-       ref: "94193ca5f97c1f9fdf3d1469653e2d46fac34bcd"},
-      {:pleroma_job_queue, "~> 0.2.0"}
+       ref: "479dd343f4e563ff91215c8275f3b5c67e032850"},
+      {:pleroma_job_queue, "~> 0.2.0"},
+      {:quack, "~> 0.1.1"}
     ]
   end
 

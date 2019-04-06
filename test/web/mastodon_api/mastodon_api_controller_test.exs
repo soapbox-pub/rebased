@@ -143,6 +143,55 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert Activity.get_by_id(id)
   end
 
+  test "posting a fake status", %{conn: conn} do
+    user = insert(:user)
+
+    real_conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" =>
+          "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it"
+      })
+
+    real_status = json_response(real_conn, 200)
+
+    assert real_status
+    assert Object.get_by_ap_id(real_status["uri"])
+
+    real_status =
+      real_status
+      |> Map.put("id", nil)
+      |> Map.put("url", nil)
+      |> Map.put("uri", nil)
+      |> Map.put("created_at", nil)
+      |> Kernel.put_in(["pleroma", "conversation_id"], nil)
+
+    fake_conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" =>
+          "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it",
+        "preview" => true
+      })
+
+    fake_status = json_response(fake_conn, 200)
+
+    assert fake_status
+    refute Object.get_by_ap_id(fake_status["uri"])
+
+    fake_status =
+      fake_status
+      |> Map.put("id", nil)
+      |> Map.put("url", nil)
+      |> Map.put("uri", nil)
+      |> Map.put("created_at", nil)
+      |> Kernel.put_in(["pleroma", "conversation_id"], nil)
+
+    assert real_status == fake_status
+  end
+
   test "posting a status with OGP link preview", %{conn: conn} do
     Pleroma.Config.put([:rich_media, :enabled], true)
     user = insert(:user)
@@ -2305,6 +2354,73 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert is_list(emoji["tags"])
       assert Map.has_key?(emoji, "url")
       assert Map.has_key?(emoji, "visible_in_picker")
+    end
+  end
+
+  describe "index/2 redirections" do
+    setup %{conn: conn} do
+      session_opts = [
+        store: :cookie,
+        key: "_test",
+        signing_salt: "cooldude"
+      ]
+
+      conn =
+        conn
+        |> Plug.Session.call(Plug.Session.init(session_opts))
+        |> fetch_session()
+
+      test_path = "/web/statuses/test"
+      %{conn: conn, path: test_path}
+    end
+
+    test "redirects not logged-in users to the login page", %{conn: conn, path: path} do
+      conn = get(conn, path)
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/web/login"
+    end
+
+    test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
+      token = insert(:oauth_token)
+
+      conn =
+        conn
+        |> assign(:user, token.user)
+        |> put_session(:oauth_token, token.token)
+        |> get(path)
+
+      assert conn.status == 200
+    end
+
+    test "saves referer path to session", %{conn: conn, path: path} do
+      conn = get(conn, path)
+      return_to = Plug.Conn.get_session(conn, :return_to)
+
+      assert return_to == path
+    end
+
+    test "redirects to the saved path after log in", %{conn: conn, path: path} do
+      app = insert(:oauth_app, client_name: "Mastodon-Local", redirect_uris: ".")
+      auth = insert(:oauth_authorization, app: app)
+
+      conn =
+        conn
+        |> put_session(:return_to, path)
+        |> get("/web/login", %{code: auth.token})
+
+      assert conn.status == 302
+      assert redirected_to(conn) == path
+    end
+
+    test "redirects to the getting-started page when referer is not present", %{conn: conn} do
+      app = insert(:oauth_app, client_name: "Mastodon-Local", redirect_uris: ".")
+      auth = insert(:oauth_authorization, app: app)
+
+      conn = get(conn, "/web/login", %{code: auth.token})
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/web/getting-started"
     end
   end
 end

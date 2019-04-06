@@ -44,3 +44,9 @@ Has these additional fields under the `pleroma` object:
 Has these additional fields under the `pleroma` object:
 
 - `is_seen`: true if the notification was read by the user
+
+## POST `/api/v1/statuses`
+
+Additional parameters can be added to the JSON body/Form data:
+
+- `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.

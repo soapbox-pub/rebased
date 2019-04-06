@@ -105,7 +105,7 @@ config :pleroma, Pleroma.Mailer,
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 
 ## :logger
-* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
+* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```
@@ -128,6 +128,24 @@ config :logger, :ex_syslogger,
 
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
+An example of logging info to local syslog, but warn to a Slack channel:
+```
+config :logger,
+  backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
+  level: :info
+
+config :logger, :ex_syslogger,
+  level: :info,
+  ident: "pleroma",
+  format: "$metadata[$level] $message"
+
+config :quack,
+  level: :warn,
+  meta: [:all],
+  webhook_url: "https://hooks.slack.com/services/YOUR-API-KEY-HERE"
+```
+
+See the [Quack Github](https://github.com/azohra/quack) for more details
 
 ## :frontend_configurations
 

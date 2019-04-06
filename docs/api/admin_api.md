@@ -58,6 +58,26 @@ Authentication is required and the user must be an admin.
   - `password`
 - Response: User’s nickname
 
+## `/api/pleroma/admin/user/follow`
+### Make a user follow another user
+
+- Methods: `POST`
+- Params:
+ - `follower`: The nickname of the follower
+ - `followed`: The nickname of the followed
+- Response:
+ - "ok"
+
+## `/api/pleroma/admin/user/unfollow`
+### Make a user unfollow another user
+
+- Methods: `POST`
+- Params:
+ - `follower`: The nickname of the follower
+ - `followed`: The nickname of the followed
+- Response:
+ - "ok"
+
 ## `/api/pleroma/admin/users/:nickname/toggle_activation`
 
 ### Toggle user activation
