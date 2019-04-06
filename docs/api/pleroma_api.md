@@ -127,17 +127,17 @@ See [Admin-API](Admin-API.md)
 * Example response:
 ```json
 {
-  id: "abcdefg",
-  following: true,
-  followed_by: false,
-  blocking: false,
-  muting: false,
-  muting_notifications: false,
-  subscribing: true,
-  requested: false,
-  domain_blocking: false,
-  showing_reblogs: true,
-  endorsed: false
+  "id": "abcdefg",
+  "following": true,
+  "followed_by": false,
+  "blocking": false,
+  "muting": false,
+  "muting_notifications": false,
+  "subscribing": true,
+  "requested": false,
+  "domain_blocking": false,
+  "showing_reblogs": true,
+  "endorsed": false
 }
 ```
 
@@ -151,16 +151,16 @@ See [Admin-API](Admin-API.md)
 * Example response:
 ```json
 {
-  id: "abcdefg",
-  following: true,
-  followed_by: false,
-  blocking: false,
-  muting: false,
-  muting_notifications: false,
-  subscribing: false,
-  requested: false,
-  domain_blocking: false,
-  showing_reblogs: true,
-  endorsed: false
+  "id": "abcdefg",
+  "following": true,
+  "followed_by": false,
+  "blocking": false,
+  "muting": false,
+  "muting_notifications": false,
+  "subscribing": false,
+  "requested": false,
+  "domain_blocking": false,
+  "showing_reblogs": true,
+  "endorsed": false
 }
 ```
