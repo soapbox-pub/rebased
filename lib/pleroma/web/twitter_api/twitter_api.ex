@@ -167,10 +167,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  defp registration_process(_registration_open = true, params, _token) do
-    create_user(params)
-  end
-
   defp registration_process(registration_open, params, token)
        when registration_open == false or is_nil(registration_open) do
     invite =
@@ -191,6 +187,10 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       _ ->
         {:error, "Expired token"}
     end
+  end
+
+  defp registration_process(true, params, _token) do
+    create_user(params)
   end
 
   defp create_user(params) do
