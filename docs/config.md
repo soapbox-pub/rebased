@@ -390,6 +390,11 @@ config :auto_linker,
   ]
 ```
 
+## Pleroma.Web.Auth.Authenticator
+
+* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
+* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
+
 ## :ldap
 
 Use LDAP for user authentication.  When a user logs in to the Pleroma
@@ -408,16 +413,15 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
 
-## Pleroma.Web.Auth.Authenticator
-
-* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
-* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
-
 ## :auth
 
 Authentication / authorization settings.
 
-* `oauth_consumer_strategies`: lists enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
+* `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`. 
+* `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
+* `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
+
+# OAuth consumer mode
 
 OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
 Implementation is based on Ueberauth; see the list of [available strategies](https://github.com/ueberauth/ueberauth/wiki/List-of-Strategies).

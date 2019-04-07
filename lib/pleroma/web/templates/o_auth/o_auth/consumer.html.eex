@@ -1,5 +1,3 @@
-<br>
-<br>
 <h2>Sign in with external provider</h2>
 
 <%= form_for @conn, o_auth_path(@conn, :prepare_request), [method: "get"], fn f -> %>

@@ -31,12 +31,15 @@ defmodule Pleroma.Web.Auth.Authenticator do
 
   @callback auth_template() :: String.t() | nil
   def auth_template do
-    implementation().auth_template() || Pleroma.Config.get(:auth_template, "show.html")
+    # Note: `config :pleroma, :auth_template, "..."` support is deprecated
+    implementation().auth_template() ||
+      Pleroma.Config.get([:auth, :auth_template], Pleroma.Config.get(:auth_template)) ||
+      "show.html"
   end
 
   @callback oauth_consumer_template() :: String.t() | nil
   def oauth_consumer_template do
     implementation().oauth_consumer_template() ||
-      Pleroma.Config.get(:oauth_consumer_template, "consumer.html")
+      Pleroma.Config.get([:auth, :oauth_consumer_template], "consumer.html")
   end
 end

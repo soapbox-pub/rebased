@@ -7,10 +7,7 @@
 
 <h2>Registration Details</h2>
 
-<p>If you'd like to register a new account,
-<br>
-please provide the details below.</p>
-<br>
+<p>If you'd like to register a new account, please provide the details below.</p>
 
 <%= form_for @conn, o_auth_path(@conn, :register), [], fn f -> %>
 
@@ -25,9 +22,6 @@ please provide the details below.</p>
 
 <%= submit "Proceed as new user", name: "op", value: "register" %>
 
-<br>
-<br>
-<br>
 <p>Alternatively, sign in to connect to existing account.</p>
 
 <div class="input">
