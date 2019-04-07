@@ -106,6 +106,18 @@ defmodule Pleroma.NotificationTest do
       {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
       {:ok, [_notif]} = Notification.create_notifications(status)
     end
+
+    test "it doesn't create subscription notifications if the recipient cannot see the status" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+
+      {:ok, status} =
+        TwitterAPI.create_status(user, %{"status" => "inwisible", "visibility" => "direct"})
+
+      assert {:ok, []} == Notification.create_notifications(status)
+    end
   end
 
   describe "get notification" do
