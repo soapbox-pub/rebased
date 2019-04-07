@@ -715,14 +715,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "GET /api/pleroma/admin/invites_list" do
+  describe "GET /api/pleroma/admin/invites" do
     test "no invites" do
       admin = insert(:user, info: %{is_admin: true})
 
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/invites_list")
+        |> get("/api/pleroma/admin/invites")
 
       assert json_response(conn, 200) == %{"invites" => []}
     end
@@ -734,7 +734,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> get("/api/pleroma/admin/invites_list")
+        |> get("/api/pleroma/admin/invites")
 
       assert json_response(conn, 200) == %{
                "invites" => [
@@ -752,7 +752,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  describe "POST /api/pleroma/admin/invite_revoke" do
+  describe "POST /api/pleroma/admin/revoke_invite" do
     test "with token" do
       admin = insert(:user, info: %{is_admin: true})
       {:ok, invite} = UserInviteToken.create_invite()
@@ -760,7 +760,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn =
         build_conn()
         |> assign(:user, admin)
-        |> post("/api/pleroma/admin/invite_revoke", %{"token" => invite.token})
+        |> post("/api/pleroma/admin/revoke_invite", %{"token" => invite.token})
 
       assert json_response(conn, 200) == %{
                "expire_at" => nil,

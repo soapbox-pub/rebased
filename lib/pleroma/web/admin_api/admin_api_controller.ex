@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.AdminAPI.Search
-
   alias Pleroma.UserInviteToken
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
@@ -255,7 +254,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   @doc "Get list of created invites"
-  def invites_list(conn, _params) do
+  def invites(conn, _params) do
     invites = UserInviteToken.list_invites()
 
     conn
@@ -263,7 +262,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   @doc "Revokes invite by token"
-  def invite_revoke(conn, %{"token" => token}) do
+  def revoke_invite(conn, %{"token" => token}) do
     invite = UserInviteToken.find_by_token!(token)
     {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true})
 
