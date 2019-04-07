@@ -5,10 +5,10 @@
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
   alias Pleroma.User
+  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.AdminAPI.AccountView
   alias Pleroma.Web.AdminAPI.Search
-  alias Pleroma.UserInviteToken
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
