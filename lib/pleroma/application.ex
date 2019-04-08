@@ -104,7 +104,8 @@ defmodule Pleroma.Application do
           ],
           id: :cachex_idem
         ),
-        worker(Pleroma.FlakeId, [])
+        worker(Pleroma.FlakeId, []),
+        worker(Pleroma.ScheduledActivityWorker, [])
       ] ++
         hackney_pool_children() ++
         [

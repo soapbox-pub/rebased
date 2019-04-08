@@ -31,7 +31,7 @@ defmodule Pleroma.Activity do
     field(:data, :map)
     field(:local, :boolean, default: true)
     field(:actor, :string)
-    field(:recipients, {:array, :string})
+    field(:recipients, {:array, :string}, default: [])
     has_many(:notifications, Notification, on_delete: :delete_all)
 
     # Attention: this is a fake relation, don't try to preload it blindly and expect it to work!
