@@ -15,6 +15,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
+  require Logger
+
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
     activity =
@@ -31,7 +33,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def get_replied_to_activity(""), do: nil
 
   def get_replied_to_activity(id) when not is_nil(id) do
-    Repo.get(Activity, id)
+    Activity.get_by_id(id)
   end
 
   def get_replied_to_activity(_), do: nil
@@ -240,13 +242,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Strftime.strftime!(date, "%a %b %d %H:%M:%S %z %Y")
   end
 
-  def date_to_asctime(date) do
-    with {:ok, date, _offset} <- date |> DateTime.from_iso8601() do
+  def date_to_asctime(date) when is_binary(date) do
+    with {:ok, date, _offset} <- DateTime.from_iso8601(date) do
       format_asctime(date)
     else
       _e ->
+        Logger.warn("Date #{date} in wrong format, must be ISO 8601")
         ""
     end
+  end
+
+  def date_to_asctime(date) do
+    Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+    ""
   end
 
   def to_masto_date(%NaiveDateTime{} = date) do
@@ -275,7 +283,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def confirm_current_password(user, password) do
-    with %User{local: true} = db_user <- Repo.get(User, user.id),
+    with %User{local: true} = db_user <- User.get_by_id(user.id),
          true <- Pbkdf2.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else
@@ -285,7 +293,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def emoji_from_profile(%{info: _info} = user) do
     (Formatter.get_emoji(user.bio) ++ Formatter.get_emoji(user.name))
-    |> Enum.map(fn {shortcode, url} ->
+    |> Enum.map(fn {shortcode, url, _} ->
       %{
         "type" => "Emoji",
         "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},

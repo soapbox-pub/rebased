@@ -3,18 +3,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Push do
-  use GenServer
-
   alias Pleroma.Web.Push.Impl
 
   require Logger
 
-  ##############
-  # Client API #
-  ##############
+  def init do
+    unless enabled() do
+      Logger.warn("""
+      VAPID key pair is not found. If you wish to enabled web push, please run
 
-  def start_link do
-    GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
+          mix web_push.gen.keypair
+
+      and add the resulting output to your configuration file.
+      """)
+    end
   end
 
   def vapid_config do
@@ -30,35 +32,5 @@ defmodule Pleroma.Web.Push do
   end
 
   def send(notification),
-    do: GenServer.cast(__MODULE__, {:send, notification})
-
-  ####################
-  # Server Callbacks #
-  ####################
-
-  @impl true
-  def init(:ok) do
-    if enabled() do
-      {:ok, nil}
-    else
-      Logger.warn("""
-      VAPID key pair is not found. If you wish to enabled web push, please run
-
-          mix web_push.gen.keypair
-
-      and add the resulting output to your configuration file.
-      """)
-
-      :ignore
-    end
-  end
-
-  @impl true
-  def handle_cast({:send, notification}, state) do
-    if enabled() do
-      Impl.perform_send(notification)
-    end
-
-    {:noreply, state}
-  end
+    do: PleromaJobQueue.enqueue(:web_push, Impl, [notification])
 end

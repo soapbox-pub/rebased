@@ -218,18 +218,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "1", "visibility" => "public"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "1", "visibility" => "public"})
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "2", "visibility" => "unlisted"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "2", "visibility" => "unlisted"})
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "2", "visibility" => "private"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "2", "visibility" => "private"})
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "3", "visibility" => "direct"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "3", "visibility" => "direct"})
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.note_count == 2
     end
 
@@ -322,7 +322,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, user} = User.block(user, %{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
-    activity_three = Repo.get(Activity, activity_three.id)
+    activity_three = Activity.get_by_id(activity_three.id)
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
@@ -380,7 +380,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, user} = User.mute(user, %User{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
-    activity_three = Repo.get(Activity, activity_three.id)
+    activity_three = Activity.get_by_id(activity_three.id)
 
     activities =
       ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
@@ -559,7 +559,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, _, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
-      assert Repo.get(Activity, like_activity.id) == nil
+      assert Activity.get_by_id(like_activity.id) == nil
     end
   end
 
@@ -610,7 +610,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert unannounce_activity.data["actor"] == user.ap_id
       assert unannounce_activity.data["context"] == announce_activity.data["context"]
 
-      assert Repo.get(Activity, announce_activity.id) == nil
+      assert Activity.get_by_id(announce_activity.id) == nil
     end
   end
 
@@ -632,16 +632,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Object{}} = ActivityPub.upload(file)
-    end
-  end
-
-  describe "fetch the latest Follow" do
-    test "fetches the latest Follow activity" do
-      %Activity{data: %{"type" => "Follow"}} = activity = insert(:follow_activity)
-      follower = Repo.get_by(User, ap_id: activity.data["actor"])
-      followed = Repo.get_by(User, ap_id: activity.data["object"])
-
-      assert activity == Utils.fetch_latest_follow(follower, followed)
     end
   end
 
@@ -749,7 +739,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert delete.data["actor"] == note.data["actor"]
       assert delete.data["object"] == note.data["object"]["id"]
 
-      assert Repo.get(Activity, delete.id) != nil
+      assert Activity.get_by_id(delete.id) != nil
 
       assert Repo.get(Object, object.id).data["type"] == "Tombstone"
     end
@@ -758,23 +748,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user, info: %{note_count: 10})
 
       {:ok, a1} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "public"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "public"})
 
       {:ok, a2} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "unlisted"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "unlisted"})
 
       {:ok, a3} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "private"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "private"})
 
       {:ok, a4} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "direct"})
+        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "direct"})
 
       {:ok, _} = a1.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
       {:ok, _} = a2.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
       {:ok, _} = a3.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
       {:ok, _} = a4.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
       assert user.info.note_count == 10
     end
 

@@ -6,7 +6,6 @@ defmodule Mix.Tasks.Pleroma.User do
   use Mix.Task
   import Ecto.Changeset
   alias Mix.Tasks.Pleroma.Common
-  alias Pleroma.Repo
   alias Pleroma.User
 
   @shortdoc "Manages Pleroma users"
@@ -23,7 +22,7 @@ defmodule Mix.Tasks.Pleroma.User do
   - `--password PASSWORD` - the user's password
   - `--moderator`/`--no-moderator` - whether the user is a moderator
   - `--admin`/`--no-admin` - whether the user is an admin
-  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions 
+  - `-y`, `--assume-yes`/`--no-assume-yes` - whether to assume yes to all questions
 
   ## Generate an invite link.
 
@@ -32,6 +31,10 @@ defmodule Mix.Tasks.Pleroma.User do
   ## Delete the user's account.
 
       mix pleroma.user rm NICKNAME
+
+  ## Delete the user's activities.
+
+      mix pleroma.user delete_activities NICKNAME
 
   ## Deactivate or activate the user's account.
 
@@ -202,7 +205,7 @@ defmodule Mix.Tasks.Pleroma.User do
       {:ok, friends} = User.get_friends(user)
 
       Enum.each(friends, fn friend ->
-        user = Repo.get(User, user.id)
+        user = User.get_by_id(user.id)
 
         Mix.shell().info("Unsubscribing #{friend.nickname} from #{user.nickname}")
         User.unfollow(user, friend)
@@ -210,7 +213,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
       :timer.sleep(500)
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
 
       if Enum.empty?(user.following) do
         Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")
@@ -301,6 +304,18 @@ defmodule Mix.Tasks.Pleroma.User do
     else
       _ ->
         Mix.shell().error("Could not create invite token.")
+    end
+  end
+
+  def run(["delete_activities", nickname]) do
+    Common.start_pleroma()
+
+    with %User{local: true} = user <- User.get_by_nickname(nickname) do
+      User.delete_user_activities(user)
+      Mix.shell().info("User #{nickname} statuses deleted.")
+    else
+      _ ->
+        Mix.shell().error("No local user #{nickname}")
     end
   end
 

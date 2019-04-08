@@ -10,6 +10,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ScheduledActivity
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -101,7 +102,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
              json_response(conn_one, 200)
 
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
 
     conn_two =
       conn
@@ -140,7 +141,56 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/statuses", %{"status" => "cofe", "sensitive" => true})
 
     assert %{"content" => "cofe", "id" => id, "sensitive" => true} = json_response(conn, 200)
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
+  end
+
+  test "posting a fake status", %{conn: conn} do
+    user = insert(:user)
+
+    real_conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" =>
+          "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it"
+      })
+
+    real_status = json_response(real_conn, 200)
+
+    assert real_status
+    assert Object.get_by_ap_id(real_status["uri"])
+
+    real_status =
+      real_status
+      |> Map.put("id", nil)
+      |> Map.put("url", nil)
+      |> Map.put("uri", nil)
+      |> Map.put("created_at", nil)
+      |> Kernel.put_in(["pleroma", "conversation_id"], nil)
+
+    fake_conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" =>
+          "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it",
+        "preview" => true
+      })
+
+    fake_status = json_response(fake_conn, 200)
+
+    assert fake_status
+    refute Object.get_by_ap_id(fake_status["uri"])
+
+    fake_status =
+      fake_status
+      |> Map.put("id", nil)
+      |> Map.put("url", nil)
+      |> Map.put("uri", nil)
+      |> Map.put("created_at", nil)
+      |> Kernel.put_in(["pleroma", "conversation_id"], nil)
+
+    assert real_status == fake_status
   end
 
   test "posting a status with OGP link preview", %{conn: conn} do
@@ -155,7 +205,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       })
 
     assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
-    assert Repo.get(Activity, id)
+    assert Activity.get_by_id(id)
     Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
@@ -170,7 +220,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
 
     assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
-    assert activity = Repo.get(Activity, id)
+    assert activity = Activity.get_by_id(id)
     assert activity.recipients == [user2.ap_id, user1.ap_id]
     assert activity.data["to"] == [user2.ap_id]
     assert activity.data["cc"] == []
@@ -340,7 +390,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
 
-    activity = Repo.get(Activity, id)
+    activity = Activity.get_by_id(id)
 
     assert activity.data["context"] == replied_to.data["context"]
     assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
@@ -356,7 +406,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
 
-    activity = Repo.get(Activity, id)
+    activity = Activity.get_by_id(id)
 
     assert activity
   end
@@ -455,7 +505,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(conn, 200)
 
-      refute Repo.get(Activity, activity.id)
+      refute Activity.get_by_id(activity.id)
     end
 
     test "when you didn't create it", %{conn: conn} do
@@ -469,7 +519,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{"error" => _} = json_response(conn, 403)
 
-      assert Repo.get(Activity, activity.id) == activity
+      assert Activity.get_by_id(activity.id) == activity
     end
 
     test "when you're an admin or moderator", %{conn: conn} do
@@ -492,8 +542,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{} = json_response(res_conn, 200)
 
-      refute Repo.get(Activity, activity1.id)
-      refute Repo.get(Activity, activity2.id)
+      refute Activity.get_by_id(activity1.id)
+      refute Activity.get_by_id(activity2.id)
     end
   end
 
@@ -1163,8 +1213,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1183,8 +1233,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1196,8 +1246,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert relationship = json_response(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == true
     end
@@ -1220,7 +1270,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
 
       conn =
         build_conn()
@@ -1230,8 +1280,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert relationship = json_response(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
     end
@@ -1516,7 +1566,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "following" => true} = json_response(conn, 200)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     conn =
       build_conn()
@@ -1525,7 +1575,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "following" => false} = json_response(conn, 200)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     conn =
       build_conn()
@@ -1547,7 +1597,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "muting" => true} = json_response(conn, 200)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     conn =
       build_conn()
@@ -1583,7 +1633,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "blocking" => true} = json_response(conn, 200)
 
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
 
     conn =
       build_conn()
@@ -1940,7 +1990,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
 
     # Stats should count users with missing or nil `info.deactivated` value
-    user = Repo.get(User, user.id)
+    user = User.get_by_id(user.id)
     info_change = Changeset.change(user.info, %{deactivated: nil})
 
     {:ok, _user} =
@@ -2314,6 +2364,325 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert link_header =~ ~r/media_only=true/
       assert link_header =~ ~r/since_id=#{notification2.id}/
       assert link_header =~ ~r/max_id=#{notification1.id}/
+    end
+  end
+
+  test "accounts fetches correct account for nicknames beginning with numbers", %{conn: conn} do
+    # Need to set an old-style integer ID to reproduce the problem
+    # (these are no longer assigned to new accounts but were preserved
+    # for existing accounts during the migration to flakeIDs)
+    user_one = insert(:user, %{id: 1212})
+    user_two = insert(:user, %{nickname: "#{user_one.id}garbage"})
+
+    resp_one =
+      conn
+      |> get("/api/v1/accounts/#{user_one.id}")
+
+    resp_two =
+      conn
+      |> get("/api/v1/accounts/#{user_two.nickname}")
+
+    resp_three =
+      conn
+      |> get("/api/v1/accounts/#{user_two.id}")
+
+    acc_one = json_response(resp_one, 200)
+    acc_two = json_response(resp_two, 200)
+    acc_three = json_response(resp_three, 200)
+    refute acc_one == acc_two
+    assert acc_two == acc_three
+  end
+
+  describe "custom emoji" do
+    test "with tags", %{conn: conn} do
+      [emoji | _body] =
+        conn
+        |> get("/api/v1/custom_emojis")
+        |> json_response(200)
+
+      assert Map.has_key?(emoji, "shortcode")
+      assert Map.has_key?(emoji, "static_url")
+      assert Map.has_key?(emoji, "tags")
+      assert is_list(emoji["tags"])
+      assert Map.has_key?(emoji, "url")
+      assert Map.has_key?(emoji, "visible_in_picker")
+    end
+  end
+
+  describe "index/2 redirections" do
+    setup %{conn: conn} do
+      session_opts = [
+        store: :cookie,
+        key: "_test",
+        signing_salt: "cooldude"
+      ]
+
+      conn =
+        conn
+        |> Plug.Session.call(Plug.Session.init(session_opts))
+        |> fetch_session()
+
+      test_path = "/web/statuses/test"
+      %{conn: conn, path: test_path}
+    end
+
+    test "redirects not logged-in users to the login page", %{conn: conn, path: path} do
+      conn = get(conn, path)
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/web/login"
+    end
+
+    test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
+      token = insert(:oauth_token)
+
+      conn =
+        conn
+        |> assign(:user, token.user)
+        |> put_session(:oauth_token, token.token)
+        |> get(path)
+
+      assert conn.status == 200
+    end
+
+    test "saves referer path to session", %{conn: conn, path: path} do
+      conn = get(conn, path)
+      return_to = Plug.Conn.get_session(conn, :return_to)
+
+      assert return_to == path
+    end
+
+    test "redirects to the saved path after log in", %{conn: conn, path: path} do
+      app = insert(:oauth_app, client_name: "Mastodon-Local", redirect_uris: ".")
+      auth = insert(:oauth_authorization, app: app)
+
+      conn =
+        conn
+        |> put_session(:return_to, path)
+        |> get("/web/login", %{code: auth.token})
+
+      assert conn.status == 302
+      assert redirected_to(conn) == path
+    end
+
+    test "redirects to the getting-started page when referer is not present", %{conn: conn} do
+      app = insert(:oauth_app, client_name: "Mastodon-Local", redirect_uris: ".")
+      auth = insert(:oauth_authorization, app: app)
+
+      conn = get(conn, "/web/login", %{code: auth.token})
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/web/getting-started"
+    end
+  end
+
+  describe "scheduled activities" do
+    test "creates a scheduled activity", %{conn: conn} do
+      user = insert(:user)
+      scheduled_at = NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"scheduled_at" => expected_scheduled_at} = json_response(conn, 200)
+      assert expected_scheduled_at == Pleroma.Web.CommonAPI.Utils.to_masto_date(scheduled_at)
+      assert [] == Repo.all(Activity)
+    end
+
+    test "creates a scheduled activity with a media attachment", %{conn: conn} do
+      user = insert(:user)
+      scheduled_at = NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
+
+      file = %Plug.Upload{
+        content_type: "image/jpg",
+        path: Path.absname("test/fixtures/image.jpg"),
+        filename: "an_image.jpg"
+      }
+
+      {:ok, upload} = ActivityPub.upload(file, actor: user.ap_id)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "media_ids" => [to_string(upload.id)],
+          "status" => "scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"media_attachments" => [media_attachment]} = json_response(conn, 200)
+      assert %{"type" => "image"} = media_attachment
+    end
+
+    test "skips the scheduling and creates the activity if scheduled_at is earlier than 5 minutes from now",
+         %{conn: conn} do
+      user = insert(:user)
+
+      scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(5) - 1, :millisecond)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "not scheduled",
+          "scheduled_at" => scheduled_at
+        })
+
+      assert %{"content" => "not scheduled"} = json_response(conn, 200)
+      assert [] == Repo.all(ScheduledActivity)
+    end
+
+    test "returns error when daily user limit is exceeded", %{conn: conn} do
+      user = insert(:user)
+
+      today =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      attrs = %{params: %{}, scheduled_at: today}
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{"status" => "scheduled", "scheduled_at" => today})
+
+      assert %{"error" => "daily limit exceeded"} == json_response(conn, 422)
+    end
+
+    test "returns error when total user limit is exceeded", %{conn: conn} do
+      user = insert(:user)
+
+      today =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(6), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      tomorrow =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.hours(36), :millisecond)
+        |> NaiveDateTime.to_iso8601()
+
+      attrs = %{params: %{}, scheduled_at: today}
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, attrs)
+      {:ok, _} = ScheduledActivity.create(user, %{params: %{}, scheduled_at: tomorrow})
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{"status" => "scheduled", "scheduled_at" => tomorrow})
+
+      assert %{"error" => "total limit exceeded"} == json_response(conn, 422)
+    end
+
+    test "shows scheduled activities", %{conn: conn} do
+      user = insert(:user)
+      scheduled_activity_id1 = insert(:scheduled_activity, user: user).id |> to_string()
+      scheduled_activity_id2 = insert(:scheduled_activity, user: user).id |> to_string()
+      scheduled_activity_id3 = insert(:scheduled_activity, user: user).id |> to_string()
+      scheduled_activity_id4 = insert(:scheduled_activity, user: user).id |> to_string()
+
+      conn =
+        conn
+        |> assign(:user, user)
+
+      # min_id
+      conn_res =
+        conn
+        |> get("/api/v1/scheduled_statuses?limit=2&min_id=#{scheduled_activity_id1}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^scheduled_activity_id3}, %{"id" => ^scheduled_activity_id2}] = result
+
+      # since_id
+      conn_res =
+        conn
+        |> get("/api/v1/scheduled_statuses?limit=2&since_id=#{scheduled_activity_id1}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^scheduled_activity_id4}, %{"id" => ^scheduled_activity_id3}] = result
+
+      # max_id
+      conn_res =
+        conn
+        |> get("/api/v1/scheduled_statuses?limit=2&max_id=#{scheduled_activity_id4}")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^scheduled_activity_id3}, %{"id" => ^scheduled_activity_id2}] = result
+    end
+
+    test "shows a scheduled activity", %{conn: conn} do
+      user = insert(:user)
+      scheduled_activity = insert(:scheduled_activity, user: user)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/scheduled_statuses/#{scheduled_activity.id}")
+
+      assert %{"id" => scheduled_activity_id} = json_response(res_conn, 200)
+      assert scheduled_activity_id == scheduled_activity.id |> to_string()
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/scheduled_statuses/404")
+
+      assert %{"error" => "Record not found"} = json_response(res_conn, 404)
+    end
+
+    test "updates a scheduled activity", %{conn: conn} do
+      user = insert(:user)
+      scheduled_activity = insert(:scheduled_activity, user: user)
+
+      new_scheduled_at =
+        NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(120), :millisecond)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> put("/api/v1/scheduled_statuses/#{scheduled_activity.id}", %{
+          scheduled_at: new_scheduled_at
+        })
+
+      assert %{"scheduled_at" => expected_scheduled_at} = json_response(res_conn, 200)
+      assert expected_scheduled_at == Pleroma.Web.CommonAPI.Utils.to_masto_date(new_scheduled_at)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> put("/api/v1/scheduled_statuses/404", %{scheduled_at: new_scheduled_at})
+
+      assert %{"error" => "Record not found"} = json_response(res_conn, 404)
+    end
+
+    test "deletes a scheduled activity", %{conn: conn} do
+      user = insert(:user)
+      scheduled_activity = insert(:scheduled_activity, user: user)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> delete("/api/v1/scheduled_statuses/#{scheduled_activity.id}")
+
+      assert %{} = json_response(res_conn, 200)
+      assert nil == Repo.get(ScheduledActivity, scheduled_activity.id)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> delete("/api/v1/scheduled_statuses/#{scheduled_activity.id}")
+
+      assert %{"error" => "Record not found"} = json_response(res_conn, 404)
     end
   end
 end

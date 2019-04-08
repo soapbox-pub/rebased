@@ -281,7 +281,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
     convo_id = Utils.context_to_conversation_id(activity.data["object"]["context"])
 
-    activity = Repo.get(Activity, activity.id)
+    activity = Activity.get_by_id(activity.id)
 
     result = ActivityView.render("activity.json", activity: announce)
 

@@ -19,8 +19,8 @@ defmodule Pleroma.Web.Push.Impl do
   @types ["Create", "Follow", "Announce", "Like"]
 
   @doc "Performs sending notifications for user subscriptions"
-  @spec perform_send(Notification.t()) :: list(any)
-  def perform_send(
+  @spec perform(Notification.t()) :: list(any) | :error
+  def perform(
         %{activity: %{data: %{"type" => activity_type}, id: activity_id}, user_id: user_id} =
           notif
       )
@@ -50,7 +50,7 @@ defmodule Pleroma.Web.Push.Impl do
     end
   end
 
-  def perform_send(_) do
+  def perform(_) do
     Logger.warn("Unknown notification type")
     :error
   end
