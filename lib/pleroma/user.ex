@@ -60,14 +60,10 @@ defmodule Pleroma.User do
     timestamps()
   end
 
-  def auth_active?(%User{local: false}), do: true
-
-  def auth_active?(%User{info: %User.Info{confirmation_pending: false}}), do: true
-
   def auth_active?(%User{info: %User.Info{confirmation_pending: true}}),
     do: !Pleroma.Config.get([:instance, :account_activation_required])
 
-  def auth_active?(_), do: false
+  def auth_active?(%User{}), do: true
 
   def visible_for?(user, for_user \\ nil)
 
@@ -83,17 +79,17 @@ defmodule Pleroma.User do
   def superuser?(%User{local: true, info: %User.Info{is_moderator: true}}), do: true
   def superuser?(_), do: false
 
-  def avatar_url(user) do
+  def avatar_url(user, options \\ []) do
     case user.avatar do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "#{Web.base_url()}/images/avi.png"
+      _ -> !options[:no_default] && "#{Web.base_url()}/images/avi.png"
     end
   end
 
-  def banner_url(user) do
+  def banner_url(user, options \\ []) do
     case user.info.banner do
       %{"url" => [%{"href" => href} | _]} -> href
-      _ -> "#{Web.base_url()}/images/banner.png"
+      _ -> !options[:no_default] && "#{Web.base_url()}/images/banner.png"
     end
   end
 
@@ -772,52 +768,6 @@ defmodule Pleroma.User do
     Repo.all(query)
   end
 
-  @spec search_for_admin(%{
-          local: boolean(),
-          page: number(),
-          page_size: number()
-        }) :: {:ok, [Pleroma.User.t()], number()}
-  def search_for_admin(%{query: nil, local: local, page: page, page_size: page_size}) do
-    query =
-      from(u in User, order_by: u.nickname)
-      |> maybe_local_user_query(local)
-
-    paginated_query =
-      query
-      |> paginate(page, page_size)
-
-    count =
-      query
-      |> Repo.aggregate(:count, :id)
-
-    {:ok, Repo.all(paginated_query), count}
-  end
-
-  @spec search_for_admin(%{
-          query: binary(),
-          local: boolean(),
-          page: number(),
-          page_size: number()
-        }) :: {:ok, [Pleroma.User.t()], number()}
-  def search_for_admin(%{
-        query: term,
-        local: local,
-        page: page,
-        page_size: page_size
-      }) do
-    maybe_local_query = User |> maybe_local_user_query(local)
-
-    search_query = from(u in maybe_local_query, where: ilike(u.nickname, ^"%#{term}%"))
-    count = search_query |> Repo.aggregate(:count, :id)
-
-    results =
-      search_query
-      |> paginate(page, page_size)
-      |> Repo.all()
-
-    {:ok, results, count}
-  end
-
   def search(query, resolve \\ false, for_user \\ nil) do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
@@ -856,7 +806,7 @@ defmodule Pleroma.User do
         search_rank:
           fragment(
             """
-             CASE WHEN (?) THEN (?) * 1.3 
+             CASE WHEN (?) THEN (?) * 1.3
              WHEN (?) THEN (?) * 1.2
              WHEN (?) THEN (?) * 1.1
              ELSE (?) END
@@ -1067,6 +1017,42 @@ defmodule Pleroma.User do
     from(
       u in query,
       where: u.local == true,
+      where: not is_nil(u.nickname)
+    )
+  end
+
+  def maybe_external_user_query(query, external) do
+    if external, do: external_user_query(query), else: query
+  end
+
+  def external_user_query(query \\ User) do
+    from(
+      u in query,
+      where: u.local == false,
+      where: not is_nil(u.nickname)
+    )
+  end
+
+  def maybe_active_user_query(query, active) do
+    if active, do: active_user_query(query), else: query
+  end
+
+  def active_user_query(query \\ User) do
+    from(
+      u in query,
+      where: fragment("not (?->'deactivated' @> 'true')", u.info),
+      where: not is_nil(u.nickname)
+    )
+  end
+
+  def maybe_deactivated_user_query(query, deactivated) do
+    if deactivated, do: deactivated_user_query(query), else: query
+  end
+
+  def deactivated_user_query(query \\ User) do
+    from(
+      u in query,
+      where: fragment("(?->'deactivated' @> 'true')", u.info),
       where: not is_nil(u.nickname)
     )
   end

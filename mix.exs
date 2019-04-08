@@ -22,16 +22,12 @@ defmodule Pleroma.Mixfile do
       homepage_url: "https://pleroma.social/",
       docs: [
         logo: "priv/static/static/logo.png",
-        extras: [
-          "README.md",
-          "docs/Admin-API.md",
-          "docs/Clients.md",
-          "docs/config.md",
-          "docs/Custom-Emoji.md",
-          "docs/Differences-in-MastodonAPI-Responses.md",
-          "docs/Message-Rewrite-Facility-configuration.md",
-          "docs/Pleroma-API.md",
-          "docs/static_dir.md"
+        extras: ["README.md" | Path.wildcard("docs/**/*.md")],
+        groups_for_extras: [
+          "Installation manuals": Path.wildcard("docs/installation/*.md"),
+          Configuration: Path.wildcard("docs/config/*.md"),
+          Administration: Path.wildcard("docs/admin/*.md"),
+          "Pleroma's APIs and Mastodon API extensions": Path.wildcard("docs/api/*.md")
         ],
         main: "readme",
         output: "priv/static/doc"
@@ -97,7 +93,8 @@ defmodule Pleroma.Mixfile do
       {:timex, "~> 3.5"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
-       ref: "94193ca5f97c1f9fdf3d1469653e2d46fac34bcd"}
+       ref: "94193ca5f97c1f9fdf3d1469653e2d46fac34bcd"},
+      {:pleroma_job_queue, "~> 0.2.0"}
     ]
   end
 

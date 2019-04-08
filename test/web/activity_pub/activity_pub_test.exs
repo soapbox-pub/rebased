@@ -232,6 +232,39 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = Repo.get(User, user.id)
       assert user.info.note_count == 2
     end
+
+    test "increases replies count" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "1", "visibility" => "public"})
+      ap_id = activity.data["id"]
+      reply_data = %{"status" => "1", "in_reply_to_status_id" => activity.id}
+
+      # public
+      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "public"))
+      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert data["object"]["repliesCount"] == 1
+      assert object.data["repliesCount"] == 1
+
+      # unlisted
+      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "unlisted"))
+      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert data["object"]["repliesCount"] == 2
+      assert object.data["repliesCount"] == 2
+
+      # private
+      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "private"))
+      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert data["object"]["repliesCount"] == 2
+      assert object.data["repliesCount"] == 2
+
+      # direct
+      {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "direct"))
+      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert data["object"]["repliesCount"] == 2
+      assert object.data["repliesCount"] == 2
+    end
   end
 
   describe "fetch activities for recipients" do
@@ -461,7 +494,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
 
-      refute Enum.member?(activities, activity)
+      refute Enum.any?(activities, fn %{id: id} -> id == activity.id end)
+    end
+
+    test "returns reblogs for users for whom reblogs have not been muted" do
+      activity = insert(:note_activity)
+      user = insert(:user)
+      booster = insert(:user)
+      {:ok, user} = CommonAPI.hide_reblogs(user, booster)
+      {:ok, user} = CommonAPI.show_reblogs(user, booster)
+
+      {:ok, activity, _} = CommonAPI.repeat(activity.id, booster)
+
+      activities = ActivityPub.fetch_activities([], %{"muting_user" => user})
+
+      assert Enum.any?(activities, fn %{id: id} -> id == activity.id end)
     end
   end
 
@@ -751,6 +798,40 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert user.ap_id in delete.data["to"]
     end
+
+    test "decreases reply count" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "1", "visibility" => "public"})
+      reply_data = %{"status" => "1", "in_reply_to_status_id" => activity.id}
+      ap_id = activity.data["id"]
+
+      {:ok, public_reply} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "public"))
+      {:ok, unlisted_reply} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "unlisted"))
+      {:ok, private_reply} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "private"))
+      {:ok, direct_reply} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "direct"))
+
+      _ = CommonAPI.delete(direct_reply.id, user2)
+      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert data["object"]["repliesCount"] == 2
+      assert object.data["repliesCount"] == 2
+
+      _ = CommonAPI.delete(private_reply.id, user2)
+      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert data["object"]["repliesCount"] == 2
+      assert object.data["repliesCount"] == 2
+
+      _ = CommonAPI.delete(public_reply.id, user2)
+      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert data["object"]["repliesCount"] == 1
+      assert object.data["repliesCount"] == 1
+
+      _ = CommonAPI.delete(unlisted_reply.id, user2)
+      assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
+      assert data["object"]["repliesCount"] == 0
+      assert object.data["repliesCount"] == 0
+    end
   end
 
   describe "timeline post-processing" do
@@ -789,6 +870,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
 
+      private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
       assert [public_activity, private_activity_1, private_activity_3] == activities
       assert length(activities) == 3
 

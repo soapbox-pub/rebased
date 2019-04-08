@@ -83,14 +83,18 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       end
     else
       {scopes_issue, _} when scopes_issue in [:unsupported_scopes, :missing_scopes] ->
+        # Per https://github.com/tootsuite/mastodon/blob/
+        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L39
         conn
-        |> put_flash(:error, "Permissions not specified.")
+        |> put_flash(:error, "This action is outside the authorized scopes")
         |> put_status(:unauthorized)
         |> authorize(auth_params)
 
       {:auth_active, false} ->
+        # Per https://github.com/tootsuite/mastodon/blob/
+        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L76
         conn
-        |> put_flash(:error, "Account confirmation pending.")
+        |> put_flash(:error, "Your login is missing a confirmed e-mail address")
         |> put_status(:forbidden)
         |> authorize(auth_params)
 
@@ -149,9 +153,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       json(conn, response)
     else
       {:auth_active, false} ->
+        # Per https://github.com/tootsuite/mastodon/blob/
+        #   51e154f5e87968d6bb115e053689767ab33e80cd/app/controllers/api/base_controller.rb#L76
         conn
         |> put_status(:forbidden)
-        |> json(%{error: "Account confirmation pending"})
+        |> json(%{error: "Your login is missing a confirmed e-mail address"})
 
       _error ->
         put_status(conn, 400)
