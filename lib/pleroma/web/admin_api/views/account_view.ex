@@ -32,7 +32,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
       "id" => invite.id,
       "token" => invite.token,
       "used" => invite.used,
-      "expire_at" => invite.expire_at,
+      "expires_at" => invite.expires_at,
       "uses" => invite.uses,
       "max_use" => invite.max_use,
       "invite_type" => invite.invite_type

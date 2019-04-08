@@ -16,7 +16,7 @@ defmodule Pleroma.UserInviteToken do
     field(:token, :string)
     field(:used, :boolean, default: false)
     field(:max_use, :integer)
-    field(:expire_at, :date)
+    field(:expires_at, :date)
     field(:uses, :integer, default: 0)
     field(:invite_type, :string)
 
@@ -26,7 +26,7 @@ defmodule Pleroma.UserInviteToken do
   @spec create_invite(map()) :: UserInviteToken.t()
   def create_invite(params \\ %{}) do
     %UserInviteToken{}
-    |> cast(params, ~w(max_use expire_at)a)
+    |> cast(params, [:max_use, :expires_at])
     |> add_token()
     |> assign_type()
     |> Repo.insert()
@@ -37,11 +37,11 @@ defmodule Pleroma.UserInviteToken do
     put_change(changeset, :token, token)
   end
 
-  defp assign_type(%{changes: %{max_use: _max_use, expire_at: _expire_at}} = changeset) do
+  defp assign_type(%{changes: %{max_use: _max_use, expires_at: _expires_at}} = changeset) do
     put_change(changeset, :invite_type, "reusable_date_limited")
   end
 
-  defp assign_type(%{changes: %{expire_at: _expire_at}} = changeset) do
+  defp assign_type(%{changes: %{expires_at: _expires_at}} = changeset) do
     put_change(changeset, :invite_type, "date_limited")
   end
 
@@ -95,8 +95,8 @@ defmodule Pleroma.UserInviteToken do
     not_overdue_date?(invite) and invite.uses < invite.max_use and not invite.used
   end
 
-  defp not_overdue_date?(%{expire_at: expire_at} = invite) do
-    Date.compare(Date.utc_today(), expire_at) in [:lt, :eq] ||
+  defp not_overdue_date?(%{expires_at: expires_at} = invite) do
+    Date.compare(Date.utc_today(), expires_at) in [:lt, :eq] ||
       (update_invite!(invite, %{used: true}) && false)
   end
 

@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Pleroma.User do
       mix pleroma.user invite [OPTION...]
 
     Options:
-    - `--expire_at DATE` - last day on which token is active (e.g. "2019-04-05")
+    - `--expires_at DATE` - last day on which token is active (e.g. "2019-04-05")
     - `--max_use NUMBER` - maximum numbers of token uses
 
   ## List generated invites
@@ -304,14 +304,14 @@ defmodule Mix.Tasks.Pleroma.User do
     {options, [], []} =
       OptionParser.parse(rest,
         strict: [
-          expire_at: :string,
+          expires_at: :string,
           max_use: :integer
         ]
       )
 
     options =
       options
-      |> Keyword.update(:expire_at, {:ok, nil}, fn
+      |> Keyword.update(:expires_at, {:ok, nil}, fn
         nil -> {:ok, nil}
         val -> Date.from_iso8601(val)
       end)
@@ -319,8 +319,8 @@ defmodule Mix.Tasks.Pleroma.User do
 
     Common.start_pleroma()
 
-    with {:ok, val} <- options[:expire_at],
-         options = Map.put(options, :expire_at, val),
+    with {:ok, val} <- options[:expires_at],
+         options = Map.put(options, :expires_at, val),
          {:ok, invite} <- UserInviteToken.create_invite(options) do
       Mix.shell().info(
         "Generated user invite token " <> String.replace(invite.invite_type, "_", " ")
@@ -348,8 +348,8 @@ defmodule Mix.Tasks.Pleroma.User do
     UserInviteToken.list_invites()
     |> Enum.each(fn invite ->
       expire_info =
-        with expire_at when not is_nil(expire_at) <- invite.expire_at do
-          " | Expire at: #{Date.to_string(expire_at)}"
+        with expires_at when not is_nil(expires_at) <- invite.expires_at do
+          " | Expires at: #{Date.to_string(expires_at)}"
         end
 
       using_info =

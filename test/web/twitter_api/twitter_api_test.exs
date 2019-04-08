@@ -462,7 +462,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns user on success", %{check_fn: check_fn} do
-      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.utc_today()})
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.utc_today()})
 
       check_fn.(invite)
 
@@ -472,7 +472,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns user on token which expired tomorrow", %{check_fn: check_fn} do
-      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.add(Date.utc_today(), 1)})
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), 1)})
 
       check_fn.(invite)
 
@@ -482,7 +482,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns an error on overdue date", %{data: data} do
-      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.add(Date.utc_today(), -1)})
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), -1)})
 
       data = Map.put(data, "token", invite.token)
 
@@ -562,7 +562,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "returns user on success" do
-      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.utc_today(), max_use: 100})
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.utc_today(), max_use: 100})
 
       data = %{
         "nickname" => "vinny",
@@ -585,7 +585,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     end
 
     test "error after max uses" do
-      {:ok, invite} = UserInviteToken.create_invite(%{expire_at: Date.utc_today(), max_use: 100})
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.utc_today(), max_use: 100})
 
       UserInviteToken.update_invite!(invite, uses: 99)
 
@@ -625,7 +625,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     test "returns error on overdue date" do
       {:ok, invite} =
-        UserInviteToken.create_invite(%{expire_at: Date.add(Date.utc_today(), -1), max_use: 100})
+        UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), -1), max_use: 100})
 
       data = %{
         "nickname" => "GrimReaper",
@@ -645,7 +645,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     test "returns error on with overdue date and after max" do
       {:ok, invite} =
-        UserInviteToken.create_invite(%{expire_at: Date.add(Date.utc_today(), -1), max_use: 100})
+        UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), -1), max_use: 100})
 
       UserInviteToken.update_invite!(invite, uses: 100)
 

@@ -248,11 +248,11 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ "Generated user invite token one time"
     end
 
-    test "token is generated with expire_at" do
+    test "token is generated with expires_at" do
       assert capture_io(fn ->
                Mix.Tasks.Pleroma.User.run([
                  "invite",
-                 "--expire-at",
+                 "--expires-at",
                  Date.to_string(Date.utc_today())
                ])
              end)
@@ -274,13 +274,13 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert message =~ "Generated user invite token reusable"
     end
 
-    test "token is generated with max use and expire date" do
+    test "token is generated with max use and expires date" do
       assert capture_io(fn ->
                Mix.Tasks.Pleroma.User.run([
                  "invite",
                  "--max-use",
                  "5",
-                 "--expire-at",
+                 "--expires-at",
                  Date.to_string(Date.utc_today())
                ])
              end)
@@ -295,7 +295,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       {:ok, invite} = Pleroma.UserInviteToken.create_invite()
 
       {:ok, invite2} =
-        Pleroma.UserInviteToken.create_invite(%{expire_at: Date.utc_today(), max_use: 15})
+        Pleroma.UserInviteToken.create_invite(%{expires_at: Date.utc_today(), max_use: 15})
 
       # assert capture_io(fn ->
       Mix.Tasks.Pleroma.User.run([
@@ -315,7 +315,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
   describe "running revoke_invite" do
     test "invite is revoked" do
-      {:ok, invite} = Pleroma.UserInviteToken.create_invite(%{expire_at: Date.utc_today()})
+      {:ok, invite} = Pleroma.UserInviteToken.create_invite(%{expires_at: Date.utc_today()})
 
       assert capture_io(fn ->
                Mix.Tasks.Pleroma.User.run([

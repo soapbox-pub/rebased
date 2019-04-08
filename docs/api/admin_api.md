@@ -206,7 +206,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - *optional* `invite` => [
     - *optional* `max_use` (integer)
-    - *optional* `expire_at` (date string e.g. "2019-04-07")
+    - *optional* `expires_at` (date string e.g. "2019-04-07")
   ]
 - Response: invite token (base64 string)
 
@@ -226,7 +226,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
       "id": integer,
       "token": string,
       "used": boolean,
-      "expire_at": date,
+      "expires_at": date,
       "uses": integer,
       "max_use": integer,
       "invite_type": string (possible values: `one_time`, `reusable`, `date_limited`, `reusable_date_limited`)
@@ -250,7 +250,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   "id": integer,
   "token": string,
   "used": boolean,
-  "expire_at": date,
+  "expires_at": date,
   "uses": integer,
   "max_use": integer,
   "invite_type": string (possible values: `one_time`, `reusable`, `date_limited`, `reusable_date_limited`)

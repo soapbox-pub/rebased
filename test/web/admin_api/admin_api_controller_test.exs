@@ -654,26 +654,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       token = json_response(conn, 200)
       invite = UserInviteToken.find_by_token!(token)
       refute invite.used
-      refute invite.expire_at
+      refute invite.expires_at
       refute invite.max_use
       assert invite.invite_type == "one_time"
     end
 
-    test "with expire_at" do
+    test "with expires_at" do
       admin = insert(:user, info: %{is_admin: true})
 
       conn =
         build_conn()
         |> assign(:user, admin)
         |> get("/api/pleroma/admin/invite_token", %{
-          "invite" => %{"expire_at" => Date.to_string(Date.utc_today())}
+          "invite" => %{"expires_at" => Date.to_string(Date.utc_today())}
         })
 
       token = json_response(conn, 200)
       invite = UserInviteToken.find_by_token!(token)
 
       refute invite.used
-      assert invite.expire_at == Date.utc_today()
+      assert invite.expires_at == Date.utc_today()
       refute invite.max_use
       assert invite.invite_type == "date_limited"
     end
@@ -691,25 +691,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       token = json_response(conn, 200)
       invite = UserInviteToken.find_by_token!(token)
       refute invite.used
-      refute invite.expire_at
+      refute invite.expires_at
       assert invite.max_use == 150
       assert invite.invite_type == "reusable"
     end
 
-    test "with max use and expire_at" do
+    test "with max use and expires_at" do
       admin = insert(:user, info: %{is_admin: true})
 
       conn =
         build_conn()
         |> assign(:user, admin)
         |> get("/api/pleroma/admin/invite_token", %{
-          "invite" => %{"max_use" => 150, "expire_at" => Date.to_string(Date.utc_today())}
+          "invite" => %{"max_use" => 150, "expires_at" => Date.to_string(Date.utc_today())}
         })
 
       token = json_response(conn, 200)
       invite = UserInviteToken.find_by_token!(token)
       refute invite.used
-      assert invite.expire_at == Date.utc_today()
+      assert invite.expires_at == Date.utc_today()
       assert invite.max_use == 150
       assert invite.invite_type == "reusable_date_limited"
     end
@@ -739,7 +739,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert json_response(conn, 200) == %{
                "invites" => [
                  %{
-                   "expire_at" => nil,
+                   "expires_at" => nil,
                    "id" => invite.id,
                    "invite_type" => "one_time",
                    "max_use" => nil,
@@ -763,7 +763,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> post("/api/pleroma/admin/revoke_invite", %{"token" => invite.token})
 
       assert json_response(conn, 200) == %{
-               "expire_at" => nil,
+               "expires_at" => nil,
                "id" => invite.id,
                "invite_type" => "one_time",
                "max_use" => nil,
