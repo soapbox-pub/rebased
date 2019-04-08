@@ -924,14 +924,23 @@ defmodule Pleroma.User do
   end
 
   def subscribe(subscriber, %{ap_id: ap_id}) do
-    with %User{} = user <- get_or_fetch_by_ap_id(ap_id) do
-      info_cng =
-        user.info
-        |> User.Info.add_to_subscribers(subscriber.ap_id)
+    user_config = Application.get_env(:pleroma, :user)
+    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
 
-      change(user)
-      |> put_embed(:info, info_cng)
-      |> update_and_set_cache()
+    with %User{} = subscribed <- get_or_fetch_by_ap_id(ap_id) do
+      blocked = blocks?(subscribed, subscriber) and deny_follow_blocked
+
+      if blocked do
+        {:error, "Could not subscribe: #{subscribed.nickname} is blocking you"}
+      else
+        info_cng =
+          subscribed.info
+          |> User.Info.add_to_subscribers(subscriber.ap_id)
+
+        change(subscribed)
+        |> put_embed(:info, info_cng)
+        |> update_and_set_cache()
+      end
     end
   end
 
@@ -952,6 +961,14 @@ defmodule Pleroma.User do
     blocker =
       if following?(blocker, blocked) do
         {:ok, blocker, _} = unfollow(blocker, blocked)
+        blocker
+      else
+        blocker
+      end
+
+    blocker =
+      if subscribed_to?(blocked, blocker) do
+        {:ok, blocker} = unsubscribe(blocked, blocker)
         blocker
       else
         blocker
