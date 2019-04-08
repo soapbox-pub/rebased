@@ -341,7 +341,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         %Activity{data: %{"actor" => actor, "type" => type}} = activity
       )
       when type == "Create" do
-    with %User{} = user <- User.get_by_ap_id(actor) do
+    with %User{} = user <- User.get_cached_by_ap_id(actor) do
       subscriber_ids =
         user
         |> User.subscribers()

@@ -864,7 +864,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def subscribe(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %User{} = subscription_target <- User.get_by_id(id),
+    with %User{} = subscription_target <- User.get_cached_by_id(id),
          {:ok, subscription_target} = User.subscribe(user, subscription_target) do
       conn
       |> put_view(AccountView)
@@ -878,7 +878,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def unsubscribe(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %User{} = subscription_target <- User.get_by_id(id),
+    with %User{} = subscription_target <- User.get_cached_by_id(id),
          {:ok, subscription_target} = User.unsubscribe(user, subscription_target) do
       conn
       |> put_view(AccountView)

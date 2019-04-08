@@ -926,7 +926,7 @@ defmodule Pleroma.User do
   def subscribe(subscriber, %{ap_id: ap_id}) do
     deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
 
-    with %User{} = subscribed <- get_or_fetch_by_ap_id(ap_id) do
+    with %User{} = subscribed <- get_cached_by_ap_id(ap_id) do
       blocked = blocks?(subscribed, subscriber) and deny_follow_blocked
 
       if blocked do
@@ -944,7 +944,7 @@ defmodule Pleroma.User do
   end
 
   def unsubscribe(unsubscriber, %{ap_id: ap_id}) do
-    with %User{} = user <- get_or_fetch_by_ap_id(ap_id) do
+    with %User{} = user <- get_cached_by_ap_id(ap_id) do
       info_cng =
         user.info
         |> User.Info.remove_from_subscribers(unsubscriber.ap_id)
