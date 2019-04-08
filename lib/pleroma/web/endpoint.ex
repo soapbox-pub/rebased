@@ -51,10 +51,21 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.MethodOverride)
   plug(Plug.Head)
 
+  secure_cookies = Pleroma.Config.get([__MODULE__, :secure_cookie_flag])
+
   cookie_name =
-    if Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
+    if secure_cookies,
       do: "__Host-pleroma_key",
       else: "pleroma_key"
+
+  same_site =
+    if Pleroma.Config.oauth_consumer_enabled?() do
+      # Note: "SameSite=Strict" prevents sign in with external OAuth provider
+      #   (there would be no cookies during callback request from OAuth provider)
+      "SameSite=Lax"
+    else
+      "SameSite=Strict"
+    end
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
@@ -65,9 +76,8 @@ defmodule Pleroma.Web.Endpoint do
     key: cookie_name,
     signing_salt: {Pleroma.Config, :get, [[__MODULE__, :signing_salt], "CqaoopA2"]},
     http_only: true,
-    secure:
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
-    extra: "SameSite=Strict"
+    secure: secure_cookies,
+    extra: same_site
   )
 
   # Note: the plug and its configuration is compile-time this can't be upstreamed yet

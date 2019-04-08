@@ -12,7 +12,6 @@ config :pleroma, Pleroma.Web.Endpoint,
     protocol_options: [max_request_line_length: 8192, max_header_value_length: 8192]
   ],
   protocol: "http",
-  secure_cookie_flag: false,
   debug_errors: true,
   code_reloader: true,
   check_origin: false,

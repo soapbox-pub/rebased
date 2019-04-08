@@ -8,14 +8,19 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
   require Logger
 
   @behaviour Pleroma.Web.Auth.Authenticator
+  @base Pleroma.Web.Auth.PleromaAuthenticator
 
   @connection_timeout 10_000
   @search_timeout 10_000
 
-  def get_user(%Plug.Conn{} = conn) do
+  defdelegate get_registration(conn, params), to: @base
+
+  defdelegate create_from_registration(conn, params, registration), to: @base
+
+  def get_user(%Plug.Conn{} = conn, params) do
     if Pleroma.Config.get([:ldap, :enabled]) do
       {name, password} =
-        case conn.params do
+        case params do
           %{"authorization" => %{"name" => name, "password" => password}} ->
             {name, password}
 
@@ -29,14 +34,14 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
 
         {:error, {:ldap_connection_error, _}} ->
           # When LDAP is unavailable, try default authenticator
-          Pleroma.Web.Auth.PleromaAuthenticator.get_user(conn)
+          @base.get_user(conn, params)
 
         error ->
           error
       end
     else
       # Fall back to default authenticator
-      Pleroma.Web.Auth.PleromaAuthenticator.get_user(conn)
+      @base.get_user(conn, params)
     end
   end
 
@@ -45,6 +50,8 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
   end
 
   def auth_template, do: nil
+
+  def oauth_consumer_template, do: nil
 
   defp ldap_user(name, password) do
     ldap = Pleroma.Config.get(:ldap, [])

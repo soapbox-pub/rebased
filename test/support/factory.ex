@@ -275,4 +275,20 @@ defmodule Pleroma.Factory do
       params: build(:note) |> Map.from_struct() |> Map.get(:data)
     }
   end
+
+  def registration_factory do
+    user = insert(:user)
+
+    %Pleroma.Registration{
+      user: user,
+      provider: "twitter",
+      uid: "171799000",
+      info: %{
+        "name" => "John Doe",
+        "email" => "john@doe.com",
+        "nickname" => "johndoe",
+        "description" => "My bio"
+      }
+    }
+  end
 end
