@@ -924,8 +924,7 @@ defmodule Pleroma.User do
   end
 
   def subscribe(subscriber, %{ap_id: ap_id}) do
-    user_config = Application.get_env(:pleroma, :user)
-    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
+    deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
 
     with %User{} = subscribed <- get_or_fetch_by_ap_id(ap_id) do
       blocked = blocks?(subscribed, subscriber) and deny_follow_blocked
