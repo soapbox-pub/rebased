@@ -361,7 +361,8 @@ config :pleroma, Pleroma.Web.Federator.RetryQueue,
 config :pleroma_job_queue, :queues,
   federator_incoming: 50,
   federator_outgoing: 50,
-  mailer: 10
+  mailer: 10,
+  scheduled_activities: 10
 
 config :pleroma, :fetch_initial_posts,
   enabled: false,
@@ -391,6 +392,11 @@ config :pleroma, :ldap,
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Sendmail
 
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
+
+config :pleroma, Pleroma.ScheduledActivity,
+  daily_user_limit: 25,
+  total_user_limit: 300,
+  enabled: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
