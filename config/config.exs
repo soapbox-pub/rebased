@@ -8,6 +8,10 @@ use Mix.Config
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
+config :pleroma, Pleroma.Repo,
+  types: Pleroma.PostgresTypes,
+  telemetry_event: [Pleroma.Repo.Instrumenter]
+
 config :pleroma, Pleroma.Captcha,
   enabled: false,
   seconds_valid: 60,
@@ -87,6 +91,7 @@ websocket_config = [
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
+  instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
     dispatch: [
@@ -117,6 +122,11 @@ config :logger, :ex_syslogger,
   ident: "Pleroma",
   format: "$metadata[$level] $message",
   metadata: [:request_id]
+
+config :quack,
+  level: :warn,
+  meta: [:all],
+  webhook_url: "https://hooks.slack.com/services/YOUR-KEY-HERE"
 
 config :mime, :types, %{
   "application/xml" => ["xml"],
@@ -352,7 +362,8 @@ config :pleroma_job_queue, :queues,
   federator_incoming: 50,
   federator_outgoing: 50,
   mailer: 10,
-  transmogrifier: 20
+  transmogrifier: 20,
+  scheduled_activities: 10
 
 config :pleroma, :fetch_initial_posts,
   enabled: false,
@@ -380,6 +391,13 @@ config :pleroma, :ldap,
   uid: System.get_env("LDAP_UID") || "cn"
 
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Sendmail
+
+config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
+
+config :pleroma, Pleroma.ScheduledActivity,
+  daily_user_limit: 25,
+  total_user_limit: 300,
+  enabled: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

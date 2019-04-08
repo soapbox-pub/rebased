@@ -105,7 +105,7 @@ config :pleroma, Pleroma.Mailer,
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 
 ## :logger
-* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
+* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```
@@ -128,6 +128,24 @@ config :logger, :ex_syslogger,
 
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
+An example of logging info to local syslog, but warn to a Slack channel:
+```
+config :logger,
+  backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
+  level: :info
+
+config :logger, :ex_syslogger,
+  level: :info,
+  ident: "pleroma",
+  format: "$metadata[$level] $message"
+
+config :quack,
+  level: :warn,
+  meta: [:all],
+  webhook_url: "https://hooks.slack.com/services/YOUR-API-KEY-HERE"
+```
+
+See the [Quack Github](https://github.com/azohra/quack) for more details
 
 ## :frontend_configurations
 
@@ -301,6 +319,7 @@ Pleroma has the following queues:
 * `federator_incoming` - Incoming federation
 * `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
 * `transmogrifier` - Transmogrifier
+* `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
 
 Example:
 
@@ -396,3 +415,9 @@ Pleroma account will be created with the same name as the LDAP user name.
 
 * `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
 * `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
+
+## Pleroma.ScheduledActivity
+
+* `daily_user_limit`: the number of scheduled activities a user is allowed to create in a single day (Default: `25`)
+* `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
+* `enabled`: whether scheduled activities are sent to the job queue to be executed
