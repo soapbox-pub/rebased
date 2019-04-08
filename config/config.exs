@@ -368,6 +368,7 @@ config :pleroma_job_queue, :queues,
   federator_incoming: 50,
   federator_outgoing: 50,
   mailer: 10,
+  transmogrifier: 20,
   scheduled_activities: 10
 
 config :pleroma, :fetch_initial_posts,
