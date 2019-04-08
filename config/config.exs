@@ -58,7 +58,13 @@ config :pleroma, Pleroma.Uploaders.MDII,
   cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
   files: "https://mdii.sakura.ne.jp"
 
-config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
+config :pleroma, :emoji,
+  shortcode_globs: ["/emoji/custom/**/*.png"],
+  groups: [
+    # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
+    Finmoji: "/finmoji/128px/*-128.png",
+    Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
+  ]
 
 config :pleroma, :uri_schemes,
   valid_schemes: [

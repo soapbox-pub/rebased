@@ -283,7 +283,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def emoji(conn, _params) do
-    json(conn, Enum.into(Emoji.get_all(), %{}))
+    emoji =
+      Emoji.get_all()
+      |> Enum.map(fn {short_code, path, tags} ->
+        %{short_code => %{image_url: path, tags: String.split(tags, ",")}}
+      end)
+
+    json(conn, emoji)
   end
 
   def follow_import(conn, %{"list" => %Plug.Upload{} = listfile}) do

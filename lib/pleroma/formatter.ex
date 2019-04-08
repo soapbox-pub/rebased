@@ -77,9 +77,9 @@ defmodule Pleroma.Formatter do
   def emojify(text, nil), do: text
 
   def emojify(text, emoji, strip \\ false) do
-    Enum.reduce(emoji, text, fn {emoji, file}, text ->
-      emoji = HTML.strip_tags(emoji)
-      file = HTML.strip_tags(file)
+    Enum.reduce(emoji, text, fn emoji_data, text ->
+      emoji = HTML.strip_tags(elem(emoji_data, 0))
+      file = HTML.strip_tags(elem(emoji_data, 1))
 
       html =
         if not strip do
@@ -101,7 +101,7 @@ defmodule Pleroma.Formatter do
   def demojify(text, nil), do: text
 
   def get_emoji(text) when is_binary(text) do
-    Enum.filter(Emoji.get_all(), fn {emoji, _} -> String.contains?(text, ":#{emoji}:") end)
+    Enum.filter(Emoji.get_all(), fn {emoji, _, _} -> String.contains?(text, ":#{emoji}:") end)
   end
 
   def get_emoji(_), do: []
