@@ -80,6 +80,26 @@ defmodule Pleroma.Web.Endpoint do
     extra: same_site
   )
 
+  # Note: the plug and its configuration is compile-time this can't be upstreamed yet
+  if proxies = Pleroma.Config.get([__MODULE__, :reverse_proxies]) do
+    plug(RemoteIp, proxies: proxies)
+  end
+
+  defmodule Instrumenter do
+    use Prometheus.PhoenixInstrumenter
+  end
+
+  defmodule PipelineInstrumenter do
+    use Prometheus.PlugPipelineInstrumenter
+  end
+
+  defmodule MetricsExporter do
+    use Prometheus.PlugExporter
+  end
+
+  plug(PipelineInstrumenter)
+  plug(MetricsExporter)
+
   plug(Pleroma.Web.Router)
 
   @doc """

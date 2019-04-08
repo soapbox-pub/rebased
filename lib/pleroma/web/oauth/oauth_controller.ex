@@ -154,6 +154,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     with {_, {:ok, %User{} = user}} <- {:get_user, Authenticator.get_user(conn, params)},
          %App{} = app <- get_app_from_request(conn, params),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
+         {:user_active, true} <- {:user_active, !user.info.deactivated},
          scopes <- oauth_scopes(params, app.scopes),
          [] <- scopes -- app.scopes,
          true <- Enum.any?(scopes),
@@ -176,6 +177,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         conn
         |> put_status(:forbidden)
         |> json(%{error: "Your login is missing a confirmed e-mail address"})
+
+      {:user_active, false} ->
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Your account is currently disabled"})
 
       _error ->
         put_status(conn, 400)

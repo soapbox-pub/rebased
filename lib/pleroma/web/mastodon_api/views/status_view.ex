@@ -147,10 +147,18 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     content =
       object
       |> render_content()
-      |> HTML.get_cached_scrubbed_html_for_object(
+      |> HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
-        __MODULE__
+        "mastoapi:content"
+      )
+
+    summary =
+      (object["summary"] || "")
+      |> HTML.get_cached_scrubbed_html_for_activity(
+        User.html_filter_policy(opts[:for]),
+        activity,
+        "mastoapi:summary"
       )
 
     card = render("card.json", Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity))
@@ -182,7 +190,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
-      spoiler_text: object["summary"] || "",
+      spoiler_text: summary,
       visibility: get_visibility(object),
       media_attachments: attachments,
       mentions: mentions,

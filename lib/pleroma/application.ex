@@ -25,6 +25,7 @@ defmodule Pleroma.Application do
     import Cachex.Spec
 
     Pleroma.Config.DeprecationWarnings.warn()
+    setup_instrumenters()
 
     # Define workers and child supervisors to be supervised
     children =
@@ -103,7 +104,8 @@ defmodule Pleroma.Application do
           ],
           id: :cachex_idem
         ),
-        worker(Pleroma.FlakeId, [])
+        worker(Pleroma.FlakeId, []),
+        worker(Pleroma.ScheduledActivityWorker, [])
       ] ++
         hackney_pool_children() ++
         [
@@ -124,6 +126,24 @@ defmodule Pleroma.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp setup_instrumenters do
+    require Prometheus.Registry
+
+    :ok =
+      :telemetry.attach(
+        "prometheus-ecto",
+        [:pleroma, :repo, :query],
+        &Pleroma.Repo.Instrumenter.handle_event/4,
+        %{}
+      )
+
+    Prometheus.Registry.register_collector(:prometheus_process_collector)
+    Pleroma.Web.Endpoint.MetricsExporter.setup()
+    Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
+    Pleroma.Web.Endpoint.Instrumenter.setup()
+    Pleroma.Repo.Instrumenter.setup()
   end
 
   def enabled_hackney_pools do
