@@ -10,6 +10,7 @@ defmodule Pleroma.UserInviteToken do
   alias Pleroma.Repo
   alias Pleroma.UserInviteToken
 
+  @type t :: %__MODULE__{}
   @type token :: String.t()
 
   schema "user_invite_tokens" do
