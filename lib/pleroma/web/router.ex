@@ -5,6 +5,11 @@
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
 
+  pipeline :browser do
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+  end
+
   pipeline :oauth do
     plug(:fetch_session)
     plug(Pleroma.Plugs.OAuthPlug)
@@ -213,6 +218,16 @@ defmodule Pleroma.Web.Router do
     post("/authorize", OAuthController, :create_authorization)
     post("/token", OAuthController, :token_exchange)
     post("/revoke", OAuthController, :token_revoke)
+    get("/registration_details", OAuthController, :registration_details)
+
+    scope [] do
+      pipe_through(:browser)
+
+      get("/prepare_request", OAuthController, :prepare_request)
+      get("/:provider", OAuthController, :request)
+      get("/:provider/callback", OAuthController, :callback)
+      post("/register", OAuthController, :register)
+    end
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do

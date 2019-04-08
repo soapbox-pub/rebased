@@ -395,6 +395,22 @@ config :pleroma, :ldap,
   base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
   uid: System.get_env("LDAP_UID") || "cn"
 
+oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+
+ueberauth_providers =
+  for strategy <- oauth_consumer_strategies do
+    strategy_module_name = "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
+    strategy_module = String.to_atom(strategy_module_name)
+    {String.to_atom(strategy), {strategy_module, [callback_params: ["state"]]}}
+  end
+
+config :ueberauth,
+       Ueberauth,
+       base_path: "/oauth",
+       providers: ueberauth_providers
+
+config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
+
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Sendmail
 
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
