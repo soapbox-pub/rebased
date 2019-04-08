@@ -319,6 +319,7 @@ Pleroma has the following queues:
 * `federator_incoming` - Incoming federation
 * `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
 * `transmogrifier` - Transmogrifier
+* `web_push` - Web push notifications
 * `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
 
 Example:
