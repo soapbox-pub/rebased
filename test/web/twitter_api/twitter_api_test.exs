@@ -492,7 +492,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       refute User.get_by_nickname("vinny")
       invite = Repo.get_by(UserInviteToken, token: invite.token)
 
-      assert invite.used == true
+      refute invite.used
     end
   end
 

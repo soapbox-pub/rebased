@@ -96,9 +96,8 @@ defmodule Pleroma.UserInviteToken do
     not_overdue_date?(invite) and invite.uses < invite.max_use and not invite.used
   end
 
-  defp not_overdue_date?(%{expires_at: expires_at} = invite) do
-    Date.compare(Date.utc_today(), expires_at) in [:lt, :eq] ||
-      (update_invite!(invite, %{used: true}) && false)
+  defp not_overdue_date?(%{expires_at: expires_at}) do
+    Date.compare(Date.utc_today(), expires_at) in [:lt, :eq]
   end
 
   @spec update_usage!(UserInviteToken.t()) :: nil | UserInviteToken.t() | no_return()
