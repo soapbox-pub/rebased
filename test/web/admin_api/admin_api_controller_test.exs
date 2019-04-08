@@ -74,6 +74,52 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "/api/pleroma/admin/user/follow" do
+    test "allows to force-follow another user" do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+      follower = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> post("/api/pleroma/admin/user/follow", %{
+          "follower" => follower.nickname,
+          "followed" => user.nickname
+        })
+
+      user = User.get_by_id(user.id)
+      follower = User.get_by_id(follower.id)
+
+      assert User.following?(follower, user)
+    end
+  end
+
+  describe "/api/pleroma/admin/user/unfollow" do
+    test "allows to force-unfollow another user" do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+      follower = insert(:user)
+
+      User.follow(follower, user)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> post("/api/pleroma/admin/user/unfollow", %{
+          "follower" => follower.nickname,
+          "followed" => user.nickname
+        })
+
+      user = User.get_by_id(user.id)
+      follower = User.get_by_id(follower.id)
+
+      refute User.following?(follower, user)
+    end
+  end
+
   describe "PUT /api/pleroma/admin/users/tag" do
     setup do
       admin = insert(:user, info: %{is_admin: true})

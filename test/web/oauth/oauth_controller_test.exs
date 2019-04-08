@@ -327,6 +327,32 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       refute Map.has_key?(resp, "access_token")
     end
 
+    test "rejects token exchange for valid credentials belonging to deactivated user" do
+      password = "testpassword"
+
+      user =
+        insert(:user,
+          password_hash: Comeonin.Pbkdf2.hashpwsalt(password),
+          info: %{deactivated: true}
+        )
+
+      app = insert(:oauth_app)
+
+      conn =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "password",
+          "username" => user.nickname,
+          "password" => password,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+
+      assert resp = json_response(conn, 403)
+      assert %{"error" => _} = resp
+      refute Map.has_key?(resp, "access_token")
+    end
+
     test "rejects an invalid authorization code" do
       app = insert(:oauth_app)
 

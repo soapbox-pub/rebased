@@ -8,6 +8,10 @@ use Mix.Config
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
+config :pleroma, Pleroma.Repo,
+  types: Pleroma.PostgresTypes,
+  telemetry_event: [Pleroma.Repo.Instrumenter]
+
 config :pleroma, Pleroma.Captcha,
   enabled: false,
   seconds_valid: 60,
@@ -87,6 +91,7 @@ websocket_config = [
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
+  instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
     dispatch: [
@@ -385,6 +390,8 @@ config :pleroma, :ldap,
   uid: System.get_env("LDAP_UID") || "cn"
 
 config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Sendmail
+
+config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
