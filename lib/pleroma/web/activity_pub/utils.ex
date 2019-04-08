@@ -99,7 +99,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
-        "#{Web.base_url()}/schemas/litepub-0.1.jsonld"
+        "#{Web.base_url()}/schemas/litepub-0.1.jsonld",
+        %{
+          "@language" => "und"
+        }
       ]
     }
   end
