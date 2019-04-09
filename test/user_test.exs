@@ -1125,4 +1125,21 @@ defmodule Pleroma.UserTest do
     assert {:ok, user_state3} = User.bookmark(user, id2)
     assert user_state3.bookmarks == [id2]
   end
+
+  test "follower count is updated when a follower is blocked" do
+    user = insert(:user)
+    follower = insert(:user)
+    follower2 = insert(:user)
+    follower3 = insert(:user)
+
+    {:ok, follower} = Pleroma.User.follow(follower, user)
+    {:ok, _follower2} = Pleroma.User.follow(follower2, user)
+    {:ok, _follower3} = Pleroma.User.follow(follower3, user)
+
+    {:ok, _} = Pleroma.User.block(user, follower)
+
+    user_show = Pleroma.Web.TwitterAPI.UserView.render("show.json", %{user: user})
+
+    assert Map.get(user_show, "followers_count") == 2
+  end
 end

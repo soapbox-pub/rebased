@@ -945,6 +945,8 @@ defmodule Pleroma.User do
       unfollow(blocked, blocker)
     end
 
+    {:ok, blocker} = update_follower_count(blocker)
+
     info_cng =
       blocker.info
       |> User.Info.add_to_block(ap_id)
