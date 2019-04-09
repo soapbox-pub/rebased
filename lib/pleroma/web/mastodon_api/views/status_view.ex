@@ -147,16 +147,35 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     content =
       object
       |> render_content()
+
+    content_html =
+      content
       |> HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
         "mastoapi:content"
       )
 
-    summary =
-      (object["summary"] || "")
+    content_plaintext =
+      content
+      |> HTML.get_cached_stripped_html_for_activity(
+        activity,
+        "mastoapi:content"
+      )
+
+    summary = object["summary"] || ""
+
+    summary_html =
+      summary
       |> HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
+        activity,
+        "mastoapi:summary"
+      )
+
+    summary_plaintext =
+      summary
+      |> HTML.get_cached_stripped_html_for_activity(
         activity,
         "mastoapi:summary"
       )
@@ -179,7 +198,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
       card: card,
-      content: content,
+      content: content_html,
       created_at: created_at,
       reblogs_count: announcement_count,
       replies_count: object["repliesCount"] || 0,
@@ -190,7 +209,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
-      spoiler_text: summary,
+      spoiler_text: summary_html,
       visibility: get_visibility(object),
       media_attachments: attachments,
       mentions: mentions,
@@ -203,7 +222,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       emojis: build_emojis(activity.data["object"]["emoji"]),
       pleroma: %{
         local: activity.local,
-        conversation_id: get_context_id(activity)
+        conversation_id: get_context_id(activity),
+        content: %{"text/plain" => content_plaintext},
+        spoiler_text: %{"text/plain" => summary_plaintext}
       }
     }
   end
