@@ -10,7 +10,29 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Authentication: not required
 * Params: none
 * Response: JSON
-* Example response: `[{"kalsarikannit_f":{"tags":["Finmoji"],"image_url":"/finmoji/128px/kalsarikannit_f-128.png"}},{"perkele":{"tags":["Finmoji"],"image_url":"/finmoji/128px/perkele-128.png"}},{"blobdab":{"tags":["SomeTag"],"image_url":"/emoji/blobdab.png"}},"happiness":{"tags":["Finmoji"],"image_url":"/finmoji/128px/happiness-128.png"}}]`
+* Example response:
+```json
+{
+  "girlpower": {
+    "tags": [
+      "Finmoji"
+    ],
+    "image_url": "/finmoji/128px/girlpower-128.png"
+  },
+  "education": {
+    "tags": [
+      "Finmoji"
+    ],
+    "image_url": "/finmoji/128px/education-128.png"
+  },
+  "finnishlove": {
+    "tags": [
+      "Finmoji"
+    ],
+    "image_url": "/finmoji/128px/finnishlove-128.png"
+  }
+}
+```
 * Note: Same data as Mastodon API’s `/api/v1/custom_emojis` but in a different format
 
 ## `/api/pleroma/follow_import`
