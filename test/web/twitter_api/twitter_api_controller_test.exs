@@ -1064,7 +1064,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
 
       Swoosh.TestAssertions.assert_email_sent(
-        Pleroma.UserEmail.password_reset_email(user, token_record.token)
+        Pleroma.Emails.UserEmail.password_reset_email(user, token_record.token)
       )
     end
   end
@@ -1163,7 +1163,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> assign(:user, user)
       |> post("/api/account/resend_confirmation_email?email=#{user.email}")
 
-      Swoosh.TestAssertions.assert_email_sent(Pleroma.UserEmail.account_confirmation_email(user))
+      Swoosh.TestAssertions.assert_email_sent(
+        Pleroma.Emails.UserEmail.account_confirmation_email(user)
+      )
     end
   end
 
