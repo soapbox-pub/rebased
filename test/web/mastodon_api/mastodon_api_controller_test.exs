@@ -325,14 +325,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert response = json_response(res_conn, 200)
 
-    assert %{
-             "id" => res_id,
-             "accounts" => res_accounts,
-             "last_status" => res_last_status,
-             "unread" => unread
-           } = response
+    assert [
+             %{
+               "id" => res_id,
+               "accounts" => res_accounts,
+               "last_status" => res_last_status,
+               "unread" => unread
+             }
+           ] = response
 
-    assert unread == false
+    assert unread == true
+    assert res_last_status == direct.id
 
     # Apparently undocumented API endpoint
     res_conn =
@@ -340,15 +343,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user_one)
       |> post("/api/v1/conversations/#{res_id}/read")
 
-    assert response == json_response(res_conn, 200)
+    assert response = json_response(res_conn, 200)
+    assert response["unread"] == false
 
     # (vanilla) Mastodon frontend behaviour
     res_conn =
       conn
       |> assign(:user, user_one)
-      |> get("/api/v1/statuses/#{res_last_status.id}/context")
+      |> get("/api/v1/statuses/#{res_last_status}/context")
 
-    assert %{ancestors: [], descendants: []} == json_response(res_conn, 200)
+    assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
   end
 
   test "doesn't include DMs from blocked users", %{conn: conn} do

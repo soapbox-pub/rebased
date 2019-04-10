@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Filter
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -1581,6 +1582,41 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         conn
         |> put_status(:bad_request)
         |> json(%{error: err})
+    end
+  end
+
+  def conversations(%{assigns: %{user: user}} = conn, params) do
+    participations = Participation.for_user_with_last_activity_id(user, params)
+
+    conversations =
+      Enum.map(participations, fn participation ->
+        %{
+          id: participation.id,
+          # TODO: Add this.
+          accounts: [],
+          unread: !participation.read,
+          last_status: participation.last_activity_id
+        }
+      end)
+
+    conn
+    |> add_link_headers(:conversations, participations)
+    |> json(conversations)
+  end
+
+  def conversation_read(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
+    with %Participation{} = participation <-
+           Repo.get_by(Participation, id: participation_id, user_id: user.id),
+         {:ok, participation} <- Participation.mark_as_read(participation) do
+      conn
+      |> json(%{
+        id: participation.id,
+        # TODO: Add this.
+        accounts: [],
+        unread: !participation.read,
+        # TODO: Add this.
+        last_status: nil
+      })
     end
   end
 
