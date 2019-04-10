@@ -19,4 +19,18 @@ defmodule Pleroma.Conversation.ParticipationTest do
     assert participation.user_id == user.id
     assert participation.conversation_id == conversation.id
   end
+
+  test "it marks a participation as read" do
+    participation = insert(:participation, %{read: false})
+    {:ok, participation} = Participation.mark_as_read(participation)
+
+    assert participation.read
+  end
+
+  test "it marks a participation as unread" do
+    participation = insert(:participation, %{read: true})
+    {:ok, participation} = Participation.mark_as_unread(participation)
+
+    refute participation.read
+  end
 end

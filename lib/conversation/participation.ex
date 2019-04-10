@@ -28,4 +28,22 @@ defmodule Pleroma.Conversation.Participation do
     |> creation_cng(%{user_id: user.id, conversation_id: conversation.id})
     |> Repo.insert()
   end
+
+  def read_cng(struct, params) do
+    struct
+    |> cast(params, [:read])
+    |> validate_required([:read])
+  end
+
+  def mark_as_read(participation) do
+    participation
+    |> read_cng(%{read: true})
+    |> Repo.update()
+  end
+
+  def mark_as_unread(participation) do
+    participation
+    |> read_cng(%{read: false})
+    |> Repo.update()
+  end
 end
