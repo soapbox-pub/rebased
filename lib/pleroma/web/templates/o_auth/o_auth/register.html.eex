@@ -8,8 +8,7 @@
 <h2>Registration Details</h2>
 
 <p>If you'd like to register a new account, please provide the details below.</p>
-
-<%= form_for @conn, o_auth_path(@conn, :register), [], fn f -> %>
+<%= form_for @conn, o_auth_path(@conn, :register), [as: "authorization"], fn f -> %>
 
 <div class="input">
   <%= label f, :nickname, "Nickname" %>
@@ -25,8 +24,8 @@
 <p>Alternatively, sign in to connect to existing account.</p>
 
 <div class="input">
-  <%= label f, :auth_name, "Name or email" %>
-  <%= text_input f, :auth_name %>
+  <%= label f, :name, "Name or email" %>
+  <%= text_input f, :name %>
 </div>
 <div class="input">
   <%= label f, :password, "Password" %>
