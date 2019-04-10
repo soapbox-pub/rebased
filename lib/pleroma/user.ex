@@ -13,6 +13,7 @@ defmodule Pleroma.User do
   alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
@@ -55,6 +56,7 @@ defmodule Pleroma.User do
     field(:bookmarks, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
     has_many(:notifications, Notification)
+    has_many(:registrations, Registration)
     embeds_one(:info, Pleroma.User.Info)
 
     timestamps()
@@ -216,7 +218,7 @@ defmodule Pleroma.User do
     changeset =
       struct
       |> cast(params, [:bio, :email, :name, :nickname, :password, :password_confirmation])
-      |> validate_required([:email, :name, :nickname, :password, :password_confirmation])
+      |> validate_required([:name, :nickname, :password, :password_confirmation])
       |> validate_confirmation(:password)
       |> unique_constraint(:email)
       |> unique_constraint(:nickname)
@@ -226,6 +228,13 @@ defmodule Pleroma.User do
       |> validate_length(:bio, max: 1000)
       |> validate_length(:name, min: 1, max: 100)
       |> put_change(:info, info_change)
+
+    changeset =
+      if opts[:external] do
+        changeset
+      else
+        validate_required(changeset, [:email])
+      end
 
     if changeset.valid? do
       hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
@@ -505,11 +514,10 @@ defmodule Pleroma.User do
       end
   end
 
+  def get_by_email(email), do: Repo.get_by(User, email: email)
+
   def get_by_nickname_or_email(nickname_or_email) do
-    case user = Repo.get_by(User, nickname: nickname_or_email) do
-      %User{} -> user
-      nil -> Repo.get_by(User, email: nickname_or_email)
-    end
+    get_by_nickname(nickname_or_email) || get_by_email(nickname_or_email)
   end
 
   def get_cached_user_info(user) do
@@ -977,6 +985,8 @@ defmodule Pleroma.User do
       unfollow(blocked, blocker)
     end
 
+    {:ok, blocker} = update_follower_count(blocker)
+
     info_cng =
       blocker.info
       |> User.Info.add_to_block(ap_id)
@@ -1129,6 +1139,14 @@ defmodule Pleroma.User do
       |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
+  end
+
+  def update_notification_settings(%User{} = user, settings \\ %{}) do
+    info_changeset = User.Info.update_notification_settings(user.info, settings)
+
+    change(user)
+    |> put_embed(:info, info_changeset)
+    |> update_and_set_cache()
   end
 
   def delete(%User{} = user) do

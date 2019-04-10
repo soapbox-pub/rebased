@@ -193,4 +193,16 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       assert Utils.fetch_ordered_collection("http://example.com/outbox", 5) == [0, 1]
     end
   end
+
+  test "make_json_ld_header/0" do
+    assert Utils.make_json_ld_header() == %{
+             "@context" => [
+               "https://www.w3.org/ns/activitystreams",
+               "http://localhost:4001/schemas/litepub-0.1.jsonld",
+               %{
+                 "@language" => "und"
+               }
+             ]
+           }
+  end
 end

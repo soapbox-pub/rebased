@@ -5,12 +5,14 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
 
+  alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Filter
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ScheduledActivity
   alias Pleroma.Stats
   alias Pleroma.User
   alias Pleroma.Web
@@ -25,6 +27,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MastodonAPI.MastodonView
   alias Pleroma.Web.MastodonAPI.NotificationView
   alias Pleroma.Web.MastodonAPI.ReportView
+  alias Pleroma.Web.MastodonAPI.ScheduledActivityView
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.OAuth.App
@@ -178,14 +181,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   defp mastodonized_emoji do
     Pleroma.Emoji.get_all()
-    |> Enum.map(fn {shortcode, relative_url} ->
+    |> Enum.map(fn {shortcode, relative_url, tags} ->
       url = to_string(URI.merge(Web.base_url(), relative_url))
 
       %{
         "shortcode" => shortcode,
         "static_url" => url,
         "visible_in_picker" => true,
-        "url" => url
+        "url" => url,
+        "tags" => String.split(tags, ",")
       }
     end)
   end
@@ -364,6 +368,55 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def scheduled_statuses(%{assigns: %{user: user}} = conn, params) do
+    with scheduled_activities <- MastodonAPI.get_scheduled_activities(user, params) do
+      conn
+      |> add_link_headers(:scheduled_statuses, scheduled_activities)
+      |> put_view(ScheduledActivityView)
+      |> render("index.json", %{scheduled_activities: scheduled_activities})
+    end
+  end
+
+  def show_scheduled_status(%{assigns: %{user: user}} = conn, %{"id" => scheduled_activity_id}) do
+    with %ScheduledActivity{} = scheduled_activity <-
+           ScheduledActivity.get(user, scheduled_activity_id) do
+      conn
+      |> put_view(ScheduledActivityView)
+      |> render("show.json", %{scheduled_activity: scheduled_activity})
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  def update_scheduled_status(
+        %{assigns: %{user: user}} = conn,
+        %{"id" => scheduled_activity_id} = params
+      ) do
+    with %ScheduledActivity{} = scheduled_activity <-
+           ScheduledActivity.get(user, scheduled_activity_id),
+         {:ok, scheduled_activity} <- ScheduledActivity.update(scheduled_activity, params) do
+      conn
+      |> put_view(ScheduledActivityView)
+      |> render("show.json", %{scheduled_activity: scheduled_activity})
+    else
+      nil -> {:error, :not_found}
+      error -> error
+    end
+  end
+
+  def delete_scheduled_status(%{assigns: %{user: user}} = conn, %{"id" => scheduled_activity_id}) do
+    with %ScheduledActivity{} = scheduled_activity <-
+           ScheduledActivity.get(user, scheduled_activity_id),
+         {:ok, scheduled_activity} <- ScheduledActivity.delete(scheduled_activity) do
+      conn
+      |> put_view(ScheduledActivityView)
+      |> render("show.json", %{scheduled_activity: scheduled_activity})
+    else
+      nil -> {:error, :not_found}
+      error -> error
+    end
+  end
+
   def post_status(conn, %{"status" => "", "media_ids" => media_ids} = params)
       when length(media_ids) > 0 do
     params =
@@ -384,12 +437,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         _ -> Ecto.UUID.generate()
       end
 
-    {:ok, activity} =
-      Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ -> CommonAPI.post(user, params) end)
+    scheduled_at = params["scheduled_at"]
 
-    conn
-    |> put_view(StatusView)
-    |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    if scheduled_at && ScheduledActivity.far_enough?(scheduled_at) do
+      with {:ok, scheduled_activity} <-
+             ScheduledActivity.create(user, %{"params" => params, "scheduled_at" => scheduled_at}) do
+        conn
+        |> put_view(ScheduledActivityView)
+        |> render("show.json", %{scheduled_activity: scheduled_activity})
+      end
+    else
+      params = Map.drop(params, ["scheduled_at"])
+
+      {:ok, activity} =
+        Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
+          CommonAPI.post(user, params)
+        end)
+
+      conn
+      |> put_view(StatusView)
+      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+    end
   end
 
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
@@ -1119,9 +1187,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def index(%{assigns: %{user: user}} = conn, _params) do
-    token =
-      conn
-      |> get_session(:oauth_token)
+    token = get_session(conn, :oauth_token)
 
     if user && token do
       mastodon_emoji = mastodonized_emoji()
@@ -1222,6 +1288,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> render("index.html", %{initial_state: initial_state, flavour: flavour})
     else
       conn
+      |> put_session(:return_to, conn.request_path)
       |> redirect(to: "/web/login")
     end
   end
@@ -1306,12 +1373,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           scope: Enum.join(app.scopes, " ")
         )
 
-      conn
-      |> redirect(to: path)
+      redirect(conn, to: path)
     end
   end
 
-  defp local_mastodon_root_path(conn), do: mastodon_api_path(conn, :index, ["getting-started"])
+  defp local_mastodon_root_path(conn) do
+    case get_session(conn, :return_to) do
+      nil ->
+        mastodon_api_path(conn, :index, ["getting-started"])
+
+      return_to ->
+        delete_session(conn, :return_to)
+        return_to
+    end
+  end
 
   defp get_or_make_app do
     find_attrs = %{client_name: @local_mastodon_name, redirect_uris: "."}
@@ -1427,6 +1502,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   # fallback action
   #
+  def errors(conn, {:error, %Changeset{} = changeset}) do
+    error_message =
+      changeset
+      |> Changeset.traverse_errors(fn {message, _opt} -> message end)
+      |> Enum.map_join(", ", fn {_k, v} -> v end)
+
+    conn
+    |> put_status(422)
+    |> json(%{error: error_message})
+  end
+
+  def errors(conn, {:error, :not_found}) do
+    conn
+    |> put_status(404)
+    |> json(%{error: "Record not found"})
+  end
+
   def errors(conn, _) do
     conn
     |> put_status(500)

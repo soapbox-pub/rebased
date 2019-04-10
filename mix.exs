@@ -54,6 +54,12 @@ defmodule Pleroma.Mixfile do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
+    oauth_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+
+    oauth_deps =
+      for s <- oauth_strategies,
+          do: {String.to_atom("ueberauth_#{s}"), ">= 0.0.0"}
+
     [
       {:phoenix, "~> 1.4.1"},
       {:plug_cowboy, "~> 2.0"},
@@ -71,6 +77,7 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
       {:httpoison, "~> 1.2.0"},
+      {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.2"},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
@@ -91,12 +98,20 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.20.0"},
       {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
       {:timex, "~> 3.5"},
+      {:ueberauth, "~> 0.4"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
        ref: "479dd343f4e563ff91215c8275f3b5c67e032850"},
       {:pleroma_job_queue, "~> 0.2.0"},
+      {:telemetry, "~> 0.3"},
+      {:prometheus_ex, "~> 3.0"},
+      {:prometheus_plugs, "~> 1.1"},
+      {:prometheus_phoenix, "~> 1.2"},
+      {:prometheus_ecto, "~> 1.4"},
+      {:prometheus_process_collector, "~> 1.4"},
+      {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"}
-    ]
+    ] ++ oauth_deps
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

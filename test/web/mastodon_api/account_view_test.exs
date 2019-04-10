@@ -71,6 +71,20 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("account.json", %{user: user})
   end
 
+  test "Represent the user account for the account owner" do
+    user = insert(:user)
+
+    notification_settings = %{
+      "remote" => true,
+      "local" => true,
+      "followers" => true,
+      "follows" => true
+    }
+
+    assert %{pleroma: %{notification_settings: ^notification_settings}} =
+             AccountView.render("account.json", %{user: user, for: user})
+  end
+
   test "Represent a Service(bot) account" do
     user =
       insert(:user, %{

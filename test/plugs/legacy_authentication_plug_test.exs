@@ -47,16 +47,18 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
       |> assign(:auth_user, user)
 
     conn =
-      with_mock User,
-        reset_password: fn user, %{password: password, password_confirmation: password} ->
-          send(self(), :reset_password)
-          {:ok, user}
-        end do
-        conn
-        |> LegacyAuthenticationPlug.call(%{})
+      with_mocks([
+        {:crypt, [], [crypt: fn _password, password_hash -> password_hash end]},
+        {User, [],
+         [
+           reset_password: fn user, %{password: password, password_confirmation: password} ->
+             {:ok, user}
+           end
+         ]}
+      ]) do
+        LegacyAuthenticationPlug.call(conn, %{})
       end
 
-    assert_received :reset_password
     assert conn.assigns.user == user
   end
 

@@ -240,6 +240,16 @@ defmodule Pleroma.Factory do
     }
   end
 
+  def oauth_authorization_factory do
+    %Pleroma.Web.OAuth.Authorization{
+      token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false),
+      scopes: ["read", "write", "follow", "push"],
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10),
+      user: build(:user),
+      app: build(:oauth_app)
+    }
+  end
+
   def push_subscription_factory do
     %Pleroma.Web.Push.Subscription{
       user: build(:user),
@@ -255,6 +265,30 @@ defmodule Pleroma.Factory do
   def notification_factory do
     %Pleroma.Notification{
       user: build(:user)
+    }
+  end
+
+  def scheduled_activity_factory do
+    %Pleroma.ScheduledActivity{
+      user: build(:user),
+      scheduled_at: NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(60), :millisecond),
+      params: build(:note) |> Map.from_struct() |> Map.get(:data)
+    }
+  end
+
+  def registration_factory do
+    user = insert(:user)
+
+    %Pleroma.Registration{
+      user: user,
+      provider: "twitter",
+      uid: "171799000",
+      info: %{
+        "name" => "John Doe",
+        "email" => "john@doe.com",
+        "nickname" => "johndoe",
+        "description" => "My bio"
+      }
     }
   end
 end

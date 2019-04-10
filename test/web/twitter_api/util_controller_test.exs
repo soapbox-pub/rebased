@@ -3,6 +3,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   alias Pleroma.Notification
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
 
@@ -76,6 +77,26 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert Repo.get(Notification, notification1.id).seen
       refute Repo.get(Notification, notification2.id).seen
+    end
+  end
+
+  describe "PUT /api/pleroma/notification_settings" do
+    test "it updates notification settings", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> put("/api/pleroma/notification_settings", %{
+        "remote" => false,
+        "followers" => false,
+        "bar" => 1
+      })
+      |> json_response(:ok)
+
+      user = Repo.get(User, user.id)
+
+      assert %{"remote" => false, "local" => true, "followers" => false, "follows" => true} ==
+               user.info.notification_settings
     end
   end
 
@@ -167,6 +188,24 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> json_response(:ok)
 
       assert response == Jason.encode!(config |> Enum.into(%{})) |> Jason.decode!()
+    end
+  end
+
+  describe "/api/pleroma/emoji" do
+    test "returns json with custom emoji with tags", %{conn: conn} do
+      emoji =
+        conn
+        |> get("/api/pleroma/emoji")
+        |> json_response(200)
+
+      assert Enum.all?(emoji, fn
+               {_key,
+                %{
+                  "image_url" => url,
+                  "tags" => tags
+                }} ->
+                 is_binary(url) and is_list(tags)
+             end)
     end
   end
 

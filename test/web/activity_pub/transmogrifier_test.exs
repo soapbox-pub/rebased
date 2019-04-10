@@ -1028,9 +1028,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.info.note_count == 1
       assert user.follower_address == "https://niu.moe/users/rye/followers"
 
-      # Wait for the background task
-      :timer.sleep(1000)
-
       user = User.get_by_id(user.id)
       assert user.info.note_count == 1
 
