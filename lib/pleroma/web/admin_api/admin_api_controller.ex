@@ -238,7 +238,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
          {:ok, invite_token} <- Pleroma.UserInviteToken.create_token(),
          email <-
            Pleroma.UserEmail.user_invitation_email(user, invite_token, email, params["name"]),
-         {:ok, _} <- Pleroma.Mailer.deliver(email) do
+         {:ok, _} <- Pleroma.Emails.Mailer.deliver(email) do
       json_response(conn, :no_content, "")
     end
   end

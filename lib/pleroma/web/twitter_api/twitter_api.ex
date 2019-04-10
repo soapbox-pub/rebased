@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Activity
-  alias Pleroma.Mailer
+  alias Pleroma.Emails.Mailer
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserEmail

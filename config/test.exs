@@ -21,7 +21,7 @@ config :pleroma, Pleroma.Upload, filters: [], link_name: false
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
-config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Test
+config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test
 
 # Configure your database
 config :pleroma, Pleroma.Repo,

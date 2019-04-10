@@ -280,7 +280,7 @@ defmodule Pleroma.User do
          Pleroma.Config.get([:instance, :account_activation_required]) do
       user
       |> Pleroma.UserEmail.account_confirmation_email()
-      |> Pleroma.Mailer.deliver_async()
+      |> Pleroma.Emails.Mailer.deliver_async()
     else
       {:ok, :noop}
     end
