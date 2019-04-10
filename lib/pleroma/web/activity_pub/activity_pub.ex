@@ -449,7 +449,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          :ok <- maybe_federate(activity) do
       Enum.each(User.all_superusers(), fn superuser ->
         superuser
-        |> Pleroma.AdminEmail.report(actor, account, statuses, content)
+        |> Pleroma.Emails.AdminEmail.report(actor, account, statuses, content)
         |> Pleroma.Emails.Mailer.deliver_async()
       end)
 
