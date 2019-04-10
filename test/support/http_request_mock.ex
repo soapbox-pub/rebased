@@ -716,6 +716,10 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/lambadalambda.atom")}}
   end
 
+  def get("https://mastodon.social/users/lambadalambda", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/lambadalambda.json")}}
+  end
+
   def get("https://social.heldscal.la/user/23211", _, _, Accept: "application/activity+json") do
     {:ok, Tesla.Mock.json(%{"id" => "https://social.heldscal.la/user/23211"}, status: 200)}
   end
