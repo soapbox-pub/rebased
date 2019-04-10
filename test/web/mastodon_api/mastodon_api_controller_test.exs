@@ -320,7 +320,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     res_conn =
       conn
-      |> assign(:user, user)
+      |> assign(:user, user_one)
       |> get("/api/v1/conversations")
 
     assert response = json_response(res_conn, 200)
@@ -330,22 +330,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
              "accounts" => res_accounts,
              "last_status" => res_last_status,
              "unread" => unread
-           } = reponse
+           } = response
 
     assert unread == false
 
     # Apparently undocumented API endpoint
     res_conn =
       conn
-      |> assign(:user, user)
-      |> get("/api/v1/conversations/#{res_id}/read")
+      |> assign(:user, user_one)
+      |> post("/api/v1/conversations/#{res_id}/read")
 
     assert response == json_response(res_conn, 200)
 
     # (vanilla) Mastodon frontend behaviour
     res_conn =
       conn
-      |> assign(:user, user)
+      |> assign(:user, user_one)
       |> get("/api/v1/statuses/#{res_last_status.id}/context")
 
     assert %{ancestors: [], descendants: []} == json_response(res_conn, 200)
