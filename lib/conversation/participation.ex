@@ -7,6 +7,7 @@ defmodule Pleroma.Conversation.Participation do
   alias Pleroma.User
   alias Pleroma.Conversation
   alias Pleroma.Repo
+  alias Pleroma.Web.ActivityPub.ActivityPub
   import Ecto.Changeset
   import Ecto.Query
 
@@ -14,6 +15,7 @@ defmodule Pleroma.Conversation.Participation do
     belongs_to(:user, User, type: Pleroma.FlakeId)
     belongs_to(:conversation, Conversation)
     field(:read, :boolean, default: false)
+    field(:last_activity_id, Pleroma.FlakeId, virtual: true)
 
     timestamps()
   end
@@ -58,5 +60,30 @@ defmodule Pleroma.Conversation.Participation do
       order_by: [desc: p.updated_at]
     )
     |> Pleroma.Pagination.fetch_paginated(params)
+  end
+
+  def for_user_with_last_activity_id(user, params \\ %{}) do
+    for_user(user, params)
+    |> Repo.preload(:conversation)
+    |> Enum.map(fn participation ->
+      # TODO: Don't load all those activities, just get the most recent
+      # Involves splitting up the query.
+      activities =
+        ActivityPub.fetch_activities_for_context(participation.conversation.ap_id, %{
+          "user" => user,
+          "blocking_user" => user
+        })
+
+      activity_id =
+        case activities do
+          [activity | _] -> activity.id
+          _ -> nil
+        end
+
+      %{
+        participation
+        | last_activity_id: activity_id
+      }
+    end)
   end
 end

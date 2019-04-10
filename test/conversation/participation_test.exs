@@ -80,5 +80,12 @@ defmodule Pleroma.Conversation.ParticipationTest do
              |> Repo.preload(:conversation)
 
     assert participation_one.conversation.ap_id == activity_three.data["object"]["context"]
+
+    # With last_activity_id
+    assert [participation_one] =
+             Participation.for_user_with_last_activity_id(user, %{limit: 1})
+             |> Repo.preload(:conversation)
+
+    assert participation_one.last_activity_id == activity_three.id
   end
 end
