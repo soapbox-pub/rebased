@@ -337,6 +337,9 @@ defmodule Pleroma.Web.Router do
 
       post("/domain_blocks", MastodonAPIController, :block_domain)
       delete("/domain_blocks", MastodonAPIController, :unblock_domain)
+
+      post("/pleroma/accounts/:id/subscribe", MastodonAPIController, :subscribe)
+      post("/pleroma/accounts/:id/unsubscribe", MastodonAPIController, :unsubscribe)
     end
 
     scope [] do

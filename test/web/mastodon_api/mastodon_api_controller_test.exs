@@ -1556,6 +1556,25 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"id" => _id, "muting" => false} = json_response(conn, 200)
   end
 
+  test "subscribing / unsubscribing to a user", %{conn: conn} do
+    user = insert(:user)
+    subscription_target = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/subscribe")
+
+    assert %{"id" => _id, "subscribing" => true} = json_response(conn, 200)
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/accounts/#{subscription_target.id}/unsubscribe")
+
+    assert %{"id" => _id, "subscribing" => false} = json_response(conn, 200)
+  end
+
   test "getting a list of mutes", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)

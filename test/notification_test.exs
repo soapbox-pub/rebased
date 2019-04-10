@@ -29,6 +29,18 @@ defmodule Pleroma.NotificationTest do
       assert notification.activity_id == activity.id
       assert other_notification.activity_id == activity.id
     end
+
+    test "it creates a notification for subscribed users" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+
+      {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
+      {:ok, [notification]} = Notification.create_notifications(status)
+
+      assert notification.user_id == subscriber.id
+    end
   end
 
   describe "create_notification" do
@@ -152,6 +164,28 @@ defmodule Pleroma.NotificationTest do
       TwitterAPI.unrepeat(user, status.id)
       {:ok, dupe} = TwitterAPI.repeat(user, status.id)
       assert nil == Notification.create_notification(dupe, retweeted_user)
+    end
+
+    test "it doesn't create duplicate notifications for follow+subscribed users" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      {:ok, _, _, _} = TwitterAPI.follow(subscriber, %{"user_id" => user.id})
+      User.subscribe(subscriber, user)
+      {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
+      {:ok, [_notif]} = Notification.create_notifications(status)
+    end
+
+    test "it doesn't create subscription notifications if the recipient cannot see the status" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+
+      {:ok, status} =
+        TwitterAPI.create_status(user, %{"status" => "inwisible", "visibility" => "direct"})
+
+      assert {:ok, []} == Notification.create_notifications(status)
     end
   end
 
