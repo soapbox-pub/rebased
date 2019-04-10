@@ -117,13 +117,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       },
 
       # Pleroma extension
-      pleroma: %{
-        confirmation_pending: user_info.confirmation_pending,
-        tags: user.tags,
-        is_moderator: user.info.is_moderator,
-        is_admin: user.info.is_admin,
-        relationship: relationship
-      }
+      pleroma:
+        %{
+          confirmation_pending: user_info.confirmation_pending,
+          tags: user.tags,
+          is_moderator: user.info.is_moderator,
+          is_admin: user.info.is_admin,
+          relationship: relationship
+        }
+        |> with_notification_settings(user, opts[:for])
     }
   end
 
@@ -132,4 +134,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp username_from_nickname(_), do: nil
+
+  defp with_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
+    Map.put(data, :notification_settings, user.info.notification_settings)
+  end
+
+  defp with_notification_settings(data, _, _), do: data
 end

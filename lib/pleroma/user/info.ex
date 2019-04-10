@@ -40,6 +40,10 @@ defmodule Pleroma.User.Info do
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
 
+    field(:notification_settings, :map,
+      default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
+    )
+
     # Found in the wild
     # ap_id -> Where is this used?
     # bio -> Where is this used?
@@ -55,6 +59,19 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:deactivated])
     |> validate_required([:deactivated])
+  end
+
+  def update_notification_settings(info, settings) do
+    notification_settings =
+      info.notification_settings
+      |> Map.merge(settings)
+      |> Map.take(["remote", "local", "followers", "follows"])
+
+    params = %{notification_settings: notification_settings}
+
+    info
+    |> cast(params, [:notification_settings])
+    |> validate_required([:notification_settings])
   end
 
   def add_to_note_count(info, number) do

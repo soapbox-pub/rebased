@@ -116,3 +116,13 @@ See [Admin-API](Admin-API.md)
 * Params:
     * `id`: notifications's id
 * Response: JSON. Returns `{"status": "success"}` if the reading was successful, otherwise returns `{"error": "error_msg"}`
+## `/api/pleroma/notification_settings`
+### Updates user notification settings
+* Method `PUT`
+* Authentication: required
+* Params:
+    * `followers`: BOOLEAN field, receives notifications from followers
+    * `follows`: BOOLEAN field, receives notifications from people the user follows
+    * `remote`: BOOLEAN field, receives notifications from people on remote instances
+    * `local`: BOOLEAN field, receives notifications from people on the local instance
+* Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`

@@ -292,6 +292,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     json(conn, emoji)
   end
 
+  def update_notificaton_settings(%{assigns: %{user: user}} = conn, params) do
+    with {:ok, _} <- User.update_notification_settings(user, params) do
+      json(conn, %{status: "success"})
+    end
+  end
+
   def follow_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
     follow_import(conn, %{"list" => File.read!(listfile.path)})
   end

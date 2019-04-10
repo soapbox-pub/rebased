@@ -193,6 +193,7 @@ defmodule Pleroma.Web.Router do
 
       post("/change_password", UtilController, :change_password)
       post("/delete_account", UtilController, :delete_account)
+      put("/notification_settings", UtilController, :update_notificaton_settings)
     end
 
     scope [] do
