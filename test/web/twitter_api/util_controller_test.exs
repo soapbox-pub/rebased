@@ -193,22 +193,19 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   describe "/api/pleroma/emoji" do
     test "returns json with custom emoji with tags", %{conn: conn} do
-      [emoji | _body] =
+      emoji =
         conn
         |> get("/api/pleroma/emoji")
         |> json_response(200)
 
-      [key] = Map.keys(emoji)
-
-      %{
-        ^key => %{
-          "image_url" => url,
-          "tags" => tags
-        }
-      } = emoji
-
-      assert is_binary(url)
-      assert is_list(tags)
+      assert Enum.all?(emoji, fn
+               {_key,
+                %{
+                  "image_url" => url,
+                  "tags" => tags
+                }} ->
+                 is_binary(url) and is_list(tags)
+             end)
     end
   end
 
