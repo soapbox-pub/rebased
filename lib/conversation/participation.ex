@@ -8,6 +8,7 @@ defmodule Pleroma.Conversation.Participation do
   alias Pleroma.Conversation
   alias Pleroma.Repo
   import Ecto.Changeset
+  import Ecto.Query
 
   schema "conversation_participations" do
     belongs_to(:user, User, type: Pleroma.FlakeId)
@@ -49,5 +50,13 @@ defmodule Pleroma.Conversation.Participation do
     participation
     |> read_cng(%{read: false})
     |> Repo.update()
+  end
+
+  def for_user(user, params \\ %{}) do
+    from(p in __MODULE__,
+      where: p.user_id == ^user.id,
+      order_by: [desc: p.updated_at]
+    )
+    |> Pleroma.Pagination.fetch_paginated(params)
   end
 end

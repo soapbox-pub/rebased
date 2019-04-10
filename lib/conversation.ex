@@ -51,10 +51,10 @@ defmodule Pleroma.Conversation do
          ap_id when is_binary(ap_id) <- activity.data["object"]["context"] do
       {:ok, conversation} = create_for_ap_id(ap_id)
 
-      local_users = User.get_users_from_set(activity.recipients, true)
+      users = User.get_users_from_set(activity.recipients)
 
       participations =
-        Enum.map(local_users, fn user ->
+        Enum.map(users, fn user ->
           {:ok, participation} =
             Participation.create_for_user_and_conversation(user, conversation)
 
