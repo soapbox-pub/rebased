@@ -1,0 +1,31 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
+defmodule Pleroma.Conversation.Participation do
+  use Ecto.Schema
+  alias Pleroma.User
+  alias Pleroma.Conversation
+  alias Pleroma.Repo
+  import Ecto.Changeset
+
+  schema "conversation_participations" do
+    belongs_to(:user, User, type: Pleroma.FlakeId)
+    belongs_to(:conversation, Conversation)
+    field(:read, :boolean, default: false)
+
+    timestamps()
+  end
+
+  def creation_cng(struct, params) do
+    struct
+    |> cast(params, [:user_id, :conversation_id])
+    |> validate_required([:user_id, :conversation_id])
+  end
+
+  def create_for_user_and_conversation(user, conversation) do
+    %__MODULE__{}
+    |> creation_cng(%{user_id: user.id, conversation_id: conversation.id})
+    |> Repo.insert()
+  end
+end
