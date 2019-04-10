@@ -83,6 +83,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_content_map
     |> fix_likes
     |> fix_addressing
+    |> fix_summary
+  end
+
+  def fix_summary(%{"summary" => nil} = object) do
+    object
+    |> Map.put("summary", "")
+  end
+
+  def fix_summary(%{"summary" => _} = object) do
+    # summary is present, nothing to do
+    object
+  end
+
+  def fix_summary(object) do
+    object
+    |> Map.put("summary", "")
   end
 
   def fix_addressing_list(map, field) do
