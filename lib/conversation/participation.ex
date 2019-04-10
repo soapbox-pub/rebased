@@ -26,7 +26,11 @@ defmodule Pleroma.Conversation.Participation do
   def create_for_user_and_conversation(user, conversation) do
     %__MODULE__{}
     |> creation_cng(%{user_id: user.id, conversation_id: conversation.id})
-    |> Repo.insert()
+    |> Repo.insert(
+      on_conflict: [set: [read: false, updated_at: NaiveDateTime.utc_now()]],
+      returning: true,
+      conflict_target: [:user_id, :conversation_id]
+    )
   end
 
   def read_cng(struct, params) do

@@ -19,8 +19,8 @@ defmodule Pleroma.Repo.Migrations.CreateConversations do
       timestamps()
     end
 
-    create index(:conversation_participations, [:user_id])
     create index(:conversation_participations, [:conversation_id])
+    create unique_index(:conversation_participations, [:user_id, :conversation_id])
     create unique_index(:conversations, [:ap_id])
   end
 end

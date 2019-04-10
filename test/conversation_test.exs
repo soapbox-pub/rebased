@@ -5,8 +5,90 @@
 defmodule Pleroma.ConversationTest do
   use Pleroma.DataCase
   alias Pleroma.Conversation
+  alias Pleroma.Web.CommonAPI
+
+  import Pleroma.Factory
 
   test "it creates a conversation for given ap_id" do
-    assert {:ok, %Conversation{}} = Conversation.create_for_ap_id("https://some_ap_id")
+    assert {:ok, %Conversation{} = conversation} =
+             Conversation.create_for_ap_id("https://some_ap_id")
+
+    # Inserting again returns the same
+    assert {:ok, conversation_two} = Conversation.create_for_ap_id("https://some_ap_id")
+    assert conversation_two.id == conversation.id
+  end
+
+  test "public posts don't create conversations" do
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey"})
+
+    context = activity.data["object"]["context"]
+
+    conversation = Conversation.get_for_ap_id(context)
+
+    refute conversation
+  end
+
+  test "it creates or updates a conversation and participations for a given DM" do
+    har = insert(:user)
+    jafnhar = insert(:user)
+    tridi = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "direct"})
+
+    context = activity.data["object"]["context"]
+
+    conversation =
+      Conversation.get_for_ap_id(context)
+      |> Repo.preload(:participations)
+
+    assert conversation
+    [har_participation, jafnhar_participation] = conversation.participations
+
+    assert har_participation.user_id == har.id
+    assert jafnhar_participation.user_id == jafnhar.id
+
+    {:ok, activity} =
+      CommonAPI.post(jafnhar, %{
+        "status" => "Hey @#{har.nickname}",
+        "visibility" => "direct",
+        "in_reply_to_status_id" => activity.id
+      })
+
+    context = activity.data["object"]["context"]
+
+    conversation_two =
+      Conversation.get_for_ap_id(context)
+      |> Repo.preload(:participations)
+
+    assert conversation_two.id == conversation.id
+
+    [har_participation_two, jafnhar_participation_two] = conversation_two.participations
+
+    assert har_participation_two.user_id == har.id
+    assert jafnhar_participation_two.user_id == jafnhar.id
+
+    {:ok, activity} =
+      CommonAPI.post(tridi, %{
+        "status" => "Hey @#{har.nickname}",
+        "visibility" => "direct",
+        "in_reply_to_status_id" => activity.id
+      })
+
+    context = activity.data["object"]["context"]
+
+    conversation_three =
+      Conversation.get_for_ap_id(context)
+      |> Repo.preload(:participations)
+
+    assert conversation_three.id == conversation.id
+
+    [har_participation_three, jafnhar_participation_three, tridi_participation] =
+      conversation_three.participations
+
+    assert har_participation_three.user_id == har.id
+    assert jafnhar_participation_three.user_id == jafnhar.id
+    assert tridi_participation.user_id == tridi.id
   end
 end

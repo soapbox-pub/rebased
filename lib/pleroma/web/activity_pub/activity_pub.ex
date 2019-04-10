@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
+  alias Pleroma.Conversation
   alias Pleroma.Instances
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -143,6 +144,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
       Notification.create_notifications(activity)
+      Conversation.create_or_bump_for(activity)
       stream_out(activity)
       {:ok, activity}
     else

@@ -4,9 +4,7 @@
 
 defmodule Pleroma.Conversation.ParticipationTest do
   use Pleroma.DataCase
-
   import Pleroma.Factory
-
   alias Pleroma.Conversation.Participation
 
   test "it creates a participation for a conversation and a user" do
@@ -18,6 +16,26 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     assert participation.user_id == user.id
     assert participation.conversation_id == conversation.id
+
+    :timer.sleep(1000)
+    # Creating again returns the same participation
+    {:ok, %Participation{} = participation_two} =
+      Participation.create_for_user_and_conversation(user, conversation)
+
+    assert participation.id == participation_two.id
+    refute participation.updated_at == participation_two.updated_at
+  end
+
+  test "recreating an existing participations sets it to unread" do
+    participation = insert(:participation, %{read: true})
+
+    {:ok, participation} =
+      Participation.create_for_user_and_conversation(
+        participation.user,
+        participation.conversation
+      )
+
+    refute participation.read
   end
 
   test "it marks a participation as read" do
