@@ -6,6 +6,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User
+  alias Pleroma.UserInviteToken
   import Pleroma.Factory
 
   describe "/api/pleroma/admin/user" do
@@ -639,5 +640,137 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "local" => true,
                "tags" => []
              }
+  end
+
+  describe "GET /api/pleroma/admin/invite_token" do
+    test "without options" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invite_token")
+
+      token = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(token)
+      refute invite.used
+      refute invite.expires_at
+      refute invite.max_use
+      assert invite.invite_type == "one_time"
+    end
+
+    test "with expires_at" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invite_token", %{
+          "invite" => %{"expires_at" => Date.to_string(Date.utc_today())}
+        })
+
+      token = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(token)
+
+      refute invite.used
+      assert invite.expires_at == Date.utc_today()
+      refute invite.max_use
+      assert invite.invite_type == "date_limited"
+    end
+
+    test "with max_use" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invite_token", %{
+          "invite" => %{"max_use" => 150}
+        })
+
+      token = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(token)
+      refute invite.used
+      refute invite.expires_at
+      assert invite.max_use == 150
+      assert invite.invite_type == "reusable"
+    end
+
+    test "with max use and expires_at" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invite_token", %{
+          "invite" => %{"max_use" => 150, "expires_at" => Date.to_string(Date.utc_today())}
+        })
+
+      token = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(token)
+      refute invite.used
+      assert invite.expires_at == Date.utc_today()
+      assert invite.max_use == 150
+      assert invite.invite_type == "reusable_date_limited"
+    end
+  end
+
+  describe "GET /api/pleroma/admin/invites" do
+    test "no invites" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invites")
+
+      assert json_response(conn, 200) == %{"invites" => []}
+    end
+
+    test "with invite" do
+      admin = insert(:user, info: %{is_admin: true})
+      {:ok, invite} = UserInviteToken.create_invite()
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invites")
+
+      assert json_response(conn, 200) == %{
+               "invites" => [
+                 %{
+                   "expires_at" => nil,
+                   "id" => invite.id,
+                   "invite_type" => "one_time",
+                   "max_use" => nil,
+                   "token" => invite.token,
+                   "used" => false,
+                   "uses" => 0
+                 }
+               ]
+             }
+    end
+  end
+
+  describe "POST /api/pleroma/admin/revoke_invite" do
+    test "with token" do
+      admin = insert(:user, info: %{is_admin: true})
+      {:ok, invite} = UserInviteToken.create_invite()
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> post("/api/pleroma/admin/revoke_invite", %{"token" => invite.token})
+
+      assert json_response(conn, 200) == %{
+               "expires_at" => nil,
+               "id" => invite.id,
+               "invite_type" => "one_time",
+               "max_use" => nil,
+               "token" => invite.token,
+               "used" => true,
+               "uses" => 0
+             }
+    end
   end
 end
