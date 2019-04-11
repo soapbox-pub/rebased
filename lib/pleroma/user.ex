@@ -1150,7 +1150,6 @@ defmodule Pleroma.User do
     )
   end
 
-
   def deactivate_async(user, status \\ true) do
     PleromaJobQueue.enqueue(:user, __MODULE__, [:deactivate_async, user, status])
   end
@@ -1160,11 +1159,12 @@ defmodule Pleroma.User do
   def deactivate(%User{} = user, status \\ true) do
     info_cng = User.Info.set_activation_status(user.info, status)
 
-    with {:ok, user} <- user
-    |> change()
-    |> put_embed(:info, info_cng)
-    |> update_and_set_cache(),
-    {:ok, friends} <- User.get_friends(user) do
+    with {:ok, user} <-
+           user
+           |> change()
+           |> put_embed(:info, info_cng)
+           |> update_and_set_cache(),
+         {:ok, friends} <- User.get_friends(user) do
       Enum.each(friends, &update_follower_count(&1))
       {:ok, user}
     end
