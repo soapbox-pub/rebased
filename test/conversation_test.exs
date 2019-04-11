@@ -44,10 +44,12 @@ defmodule Pleroma.ConversationTest do
       |> Repo.preload(:participations)
 
     assert conversation
-    [har_participation, jafnhar_participation] = conversation.participations
 
-    assert har_participation.user_id == har.id
-    assert jafnhar_participation.user_id == jafnhar.id
+    assert Enum.find(conversation.participations, fn %{user_id: user_id} -> har.id == user_id end)
+
+    assert Enum.find(conversation.participations, fn %{user_id: user_id} ->
+             jafnhar.id == user_id
+           end)
 
     {:ok, activity} =
       CommonAPI.post(jafnhar, %{
@@ -64,10 +66,13 @@ defmodule Pleroma.ConversationTest do
 
     assert conversation_two.id == conversation.id
 
-    [har_participation_two, jafnhar_participation_two] = conversation_two.participations
+    assert Enum.find(conversation_two.participations, fn %{user_id: user_id} ->
+             har.id == user_id
+           end)
 
-    assert har_participation_two.user_id == har.id
-    assert jafnhar_participation_two.user_id == jafnhar.id
+    assert Enum.find(conversation_two.participations, fn %{user_id: user_id} ->
+             jafnhar.id == user_id
+           end)
 
     {:ok, activity} =
       CommonAPI.post(tridi, %{
@@ -84,11 +89,16 @@ defmodule Pleroma.ConversationTest do
 
     assert conversation_three.id == conversation.id
 
-    [har_participation_three, jafnhar_participation_three, tridi_participation] =
-      conversation_three.participations
+    assert Enum.find(conversation_three.participations, fn %{user_id: user_id} ->
+             har.id == user_id
+           end)
 
-    assert har_participation_three.user_id == har.id
-    assert jafnhar_participation_three.user_id == jafnhar.id
-    assert tridi_participation.user_id == tridi.id
+    assert Enum.find(conversation_three.participations, fn %{user_id: user_id} ->
+             jafnhar.id == user_id
+           end)
+
+    assert Enum.find(conversation_three.participations, fn %{user_id: user_id} ->
+             tridi.id == user_id
+           end)
   end
 end
