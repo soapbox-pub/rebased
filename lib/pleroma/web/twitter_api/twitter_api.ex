@@ -235,7 +235,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
           nil ->
             {:error, "No user with such user_id"}
 
-          %User{info: %{disabled: true}} ->
+          %User{info: %{deactivated: true}} ->
             {:error, "User has been disabled"}
 
           user ->

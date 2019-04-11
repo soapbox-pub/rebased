@@ -75,16 +75,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
-  def user_toggle_disabled(conn, %{"nickname" => nickname}) do
-    user = User.get_by_nickname(nickname)
-
-    {:ok, updated_user} = User.disable(user, !user.info.disabled)
-
-    conn
-    |> put_view(AccountView)
-    |> render("show.json", %{user: updated_user})
-  end
-
   def user_toggle_activation(conn, %{"nickname" => nickname}) do
     user = User.get_by_nickname(nickname)
 

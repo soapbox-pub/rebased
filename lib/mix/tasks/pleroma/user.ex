@@ -53,10 +53,6 @@ defmodule Mix.Tasks.Pleroma.User do
 
       mix pleroma.user toggle_activated NICKNAME
 
-  ## Disable or enable the user's account.
-
-      mix pleroma.user toggle_disabled NICKNAME
-
   ## Unsubscribe local users from user's account and deactivate it
 
       mix pleroma.user unsubscribe NICKNAME
@@ -185,20 +181,6 @@ defmodule Mix.Tasks.Pleroma.User do
         "Activation status of #{nickname}: #{if(user.info.deactivated, do: "de", else: "")}activated"
       )
     else
-      _ ->
-        Mix.shell().error("No user #{nickname}")
-    end
-  end
-
-  def run(["toggle_disabled", nickname]) do
-    Common.start_pleroma()
-
-    case User.get_by_nickname(nickname) do
-      %User{} = user ->
-        {:ok, user} = User.disable(user, !user.info.disabled)
-        status = if(user.info.disabled, do: "ON", else: "OFF")
-        Mix.shell().info("Disabled status of #{nickname}: #{status}")
-
       _ ->
         Mix.shell().error("No user #{nickname}")
     end

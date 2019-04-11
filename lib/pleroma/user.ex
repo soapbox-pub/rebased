@@ -117,9 +117,9 @@ defmodule Pleroma.User do
     }
   end
 
-  defp restrict_disabled(query) do
+  defp restrict_deactivated(query) do
     from(u in query,
-      where: not fragment("? \\? 'disabled' AND ?->'disabled' @> 'true'", u.info, u.info)
+      where: not fragment("? \\? 'deactivated' AND ?->'deactivated' @> 'true'", u.info, u.info)
     )
   end
 
@@ -130,7 +130,7 @@ defmodule Pleroma.User do
       where: u.follower_address in ^following,
       where: u.id != ^id
     )
-    |> restrict_disabled()
+    |> restrict_deactivated()
     |> Repo.aggregate(:count, :id)
   end
 
@@ -584,7 +584,7 @@ defmodule Pleroma.User do
       where: fragment("? <@ ?", ^[follower_address], u.following),
       where: u.id != ^id
     )
-    |> restrict_disabled()
+    |> restrict_deactivated()
   end
 
   def get_followers_query(user, page) do
@@ -612,7 +612,7 @@ defmodule Pleroma.User do
       where: u.follower_address in ^following,
       where: u.id != ^id
     )
-    |> restrict_disabled()
+    |> restrict_deactivated()
   end
 
   def get_friends_query(user, page) do
@@ -736,7 +736,7 @@ defmodule Pleroma.User do
       |> where([u], ^user.follower_address in u.following)
       |> where([u], u.id != ^user.id)
       |> select([u], %{count: count(u.id)})
-      |> restrict_disabled()
+      |> restrict_deactivated()
 
     User
     |> where(id: ^user.id)
@@ -887,7 +887,7 @@ defmodule Pleroma.User do
           ^processed_query
         )
     )
-    |> restrict_disabled()
+    |> restrict_deactivated()
   end
 
   defp trigram_search_subquery(term) do
@@ -906,7 +906,7 @@ defmodule Pleroma.User do
       },
       where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
     )
-    |> restrict_disabled()
+    |> restrict_deactivated()
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
@@ -1150,13 +1150,24 @@ defmodule Pleroma.User do
     )
   end
 
+
+  def deactivate_async(user, status \\ true) do
+    PleromaJobQueue.enqueue(:user, __MODULE__, [:deactivate_async, user, status])
+  end
+
+  def perform(:deactivate_async, user, status), do: deactivate(user, status)
+
   def deactivate(%User{} = user, status \\ true) do
     info_cng = User.Info.set_activation_status(user.info, status)
 
-    user
+    with {:ok, user} <- user
     |> change()
     |> put_embed(:info, info_cng)
-    |> update_and_set_cache()
+    |> update_and_set_cache(),
+    {:ok, friends} <- User.get_friends(user) do
+      Enum.each(friends, &update_follower_count(&1))
+      {:ok, user}
+    end
   end
 
   def update_notification_settings(%User{} = user, settings \\ %{}) do
@@ -1198,26 +1209,6 @@ defmodule Pleroma.User do
 
     {:ok, user}
   end
-
-  def disable_async(user, status \\ true) do
-    PleromaJobQueue.enqueue(:user, __MODULE__, [:disable_async, user, status])
-  end
-
-  def disable(%User{} = user, status \\ true) do
-    with {:ok, user} <- User.deactivate(user, status),
-         info_cng <- User.Info.set_disabled_status(user.info, status),
-         {:ok, user} <-
-           user
-           |> change()
-           |> put_embed(:info, info_cng)
-           |> update_and_set_cache(),
-         {:ok, friends} <- User.get_friends(user) do
-      Enum.each(friends, &update_follower_count(&1))
-      {:ok, user}
-    end
-  end
-
-  def perform(:disable_async, user, status), do: disable(user, status)
 
   def html_filter_policy(%User{info: %{no_rich_text: true}}) do
     Pleroma.HTML.Scrubber.TwitterText

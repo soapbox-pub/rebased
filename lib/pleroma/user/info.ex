@@ -40,7 +40,6 @@ defmodule Pleroma.User.Info do
     field(:hide_follows, :boolean, default: false)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
-    field(:disabled, :boolean, default: false)
 
     field(:notification_settings, :map,
       default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
@@ -74,14 +73,6 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:notification_settings])
     |> validate_required([:notification_settings])
-  end
-
-  def set_disabled_status(info, disabled) do
-    params = %{disabled: disabled}
-
-    info
-    |> cast(params, [:disabled])
-    |> validate_required([:disabled])
   end
 
   def add_to_note_count(info, number) do
