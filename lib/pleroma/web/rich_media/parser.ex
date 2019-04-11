@@ -12,7 +12,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
   @hackney_options [
     pool: :media,
     recv_timeout: 2_000,
-    max_body: 2_000_000
+    max_body: 2_000_000,
+    with_body: true
   ]
 
   def parse(nil), do: {:error, "No URL provided"}
