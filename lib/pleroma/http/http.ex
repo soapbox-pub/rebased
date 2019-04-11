@@ -27,21 +27,29 @@ defmodule Pleroma.HTTP do
 
   """
   def request(method, url, body \\ "", headers \\ [], options \\ []) do
-    options =
-      process_request_options(options)
-      |> process_sni_options(url)
+    try do
+      options =
+        process_request_options(options)
+        |> process_sni_options(url)
 
-    params = Keyword.get(options, :params, [])
+      params = Keyword.get(options, :params, [])
 
-    %{}
-    |> Builder.method(method)
-    |> Builder.headers(headers)
-    |> Builder.opts(options)
-    |> Builder.url(url)
-    |> Builder.add_param(:body, :body, body)
-    |> Builder.add_param(:query, :query, params)
-    |> Enum.into([])
-    |> (&Tesla.request(Connection.new(), &1)).()
+      %{}
+      |> Builder.method(method)
+      |> Builder.headers(headers)
+      |> Builder.opts(options)
+      |> Builder.url(url)
+      |> Builder.add_param(:body, :body, body)
+      |> Builder.add_param(:query, :query, params)
+      |> Enum.into([])
+      |> (&Tesla.request(Connection.new(options), &1)).()
+    rescue
+      e ->
+        {:error, e}
+    catch
+      :exit, e ->
+        {:error, e}
+    end
   end
 
   defp process_sni_options(options, nil), do: options

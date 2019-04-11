@@ -21,7 +21,8 @@ defmodule Pleroma.Plugs.InstanceStatic do
     end
   end
 
-  @only ~w(index.html static emoji packs sounds images instance favicon.png sw.js sw-pleroma.js)
+  @only ~w(index.html robots.txt static emoji packs sounds images instance favicon.png sw.js
+  sw-pleroma.js)
 
   def init(opts) do
     opts

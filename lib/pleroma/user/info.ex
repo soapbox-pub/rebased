@@ -6,6 +6,8 @@ defmodule Pleroma.User.Info do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Pleroma.User.Info
+
   embedded_schema do
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
@@ -19,6 +21,8 @@ defmodule Pleroma.User.Info do
     field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
     field(:mutes, {:array, :string}, default: [])
+    field(:muted_reblogs, {:array, :string}, default: [])
+    field(:subscribers, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
@@ -38,6 +42,10 @@ defmodule Pleroma.User.Info do
     field(:flavour, :string, default: nil)
     field(:disabled, :boolean, default: false)
 
+    field(:notification_settings, :map,
+      default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
+    )
+
     # Found in the wild
     # ap_id -> Where is this used?
     # bio -> Where is this used?
@@ -53,6 +61,19 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:deactivated])
     |> validate_required([:deactivated])
+  end
+
+  def update_notification_settings(info, settings) do
+    notification_settings =
+      info.notification_settings
+      |> Map.merge(settings)
+      |> Map.take(["remote", "local", "followers", "follows"])
+
+    params = %{notification_settings: notification_settings}
+
+    info
+    |> cast(params, [:notification_settings])
+    |> validate_required([:notification_settings])
   end
 
   def set_disabled_status(info, disabled) do
@@ -99,6 +120,14 @@ defmodule Pleroma.User.Info do
     |> validate_required([:blocks])
   end
 
+  def set_subscribers(info, subscribers) do
+    params = %{subscribers: subscribers}
+
+    info
+    |> cast(params, [:subscribers])
+    |> validate_required([:subscribers])
+  end
+
   def add_to_mutes(info, muted) do
     set_mutes(info, Enum.uniq([muted | info.mutes]))
   end
@@ -113,6 +142,14 @@ defmodule Pleroma.User.Info do
 
   def remove_from_block(info, blocked) do
     set_blocks(info, List.delete(info.blocks, blocked))
+  end
+
+  def add_to_subscribers(info, subscribed) do
+    set_subscribers(info, Enum.uniq([subscribed | info.subscribers]))
+  end
+
+  def remove_from_subscribers(info, subscribed) do
+    set_subscribers(info, List.delete(info.subscribers, subscribed))
   end
 
   def set_domain_blocks(info, domain_blocks) do
@@ -258,5 +295,24 @@ defmodule Pleroma.User.Info do
     params = %{pinned_activities: List.delete(info.pinned_activities, id)}
 
     cast(info, params, [:pinned_activities])
+  end
+
+  def roles(%Info{is_moderator: is_moderator, is_admin: is_admin}) do
+    %{
+      admin: is_admin,
+      moderator: is_moderator
+    }
+  end
+
+  def add_reblog_mute(info, ap_id) do
+    params = %{muted_reblogs: info.muted_reblogs ++ [ap_id]}
+
+    cast(info, params, [:muted_reblogs])
+  end
+
+  def remove_reblog_mute(info, ap_id) do
+    params = %{muted_reblogs: List.delete(info.muted_reblogs, ap_id)}
+
+    cast(info, params, [:muted_reblogs])
   end
 end

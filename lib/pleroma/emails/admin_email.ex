@@ -29,9 +29,13 @@ defmodule Pleroma.AdminEmail do
       if length(statuses) > 0 do
         statuses_list_html =
           statuses
-          |> Enum.map(fn %{id: id} ->
-            status_url = Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, id)
-            "<li><a href=\"#{status_url}\">#{status_url}</li>"
+          |> Enum.map(fn
+            %{id: id} ->
+              status_url = Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, id)
+              "<li><a href=\"#{status_url}\">#{status_url}</li>"
+
+            id when is_binary(id) ->
+              "<li><a href=\"#{id}\">#{id}</li>"
           end)
           |> Enum.join("\n")
 

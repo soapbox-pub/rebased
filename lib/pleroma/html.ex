@@ -9,7 +9,7 @@ defmodule Pleroma.HTML do
   defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
   defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
 
-  def get_scrubbers() do
+  def get_scrubbers do
     Pleroma.Config.get([:markup, :scrub_policy])
     |> get_scrubbers
   end
@@ -28,25 +28,37 @@ defmodule Pleroma.HTML do
   def filter_tags(html), do: filter_tags(html, nil)
   def strip_tags(html), do: Scrubber.scrub(html, Scrubber.StripTags)
 
-  def get_cached_scrubbed_html_for_object(content, scrubbers, object, module) do
-    key = "#{module}#{generate_scrubber_signature(scrubbers)}|#{object.id}"
-    Cachex.fetch!(:scrubber_cache, key, fn _key -> ensure_scrubbed_html(content, scrubbers) end)
+  def get_cached_scrubbed_html_for_activity(content, scrubbers, activity, key \\ "") do
+    key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
+
+    Cachex.fetch!(:scrubber_cache, key, fn _key ->
+      ensure_scrubbed_html(content, scrubbers, activity.data["object"]["fake"] || false)
+    end)
   end
 
-  def get_cached_stripped_html_for_object(content, object, module) do
-    get_cached_scrubbed_html_for_object(
+  def get_cached_stripped_html_for_activity(content, activity, key) do
+    get_cached_scrubbed_html_for_activity(
       content,
       HtmlSanitizeEx.Scrubber.StripTags,
-      object,
-      module
+      activity,
+      key
     )
   end
 
   def ensure_scrubbed_html(
         content,
-        scrubbers
+        scrubbers,
+        false = _fake
       ) do
     {:commit, filter_tags(content, scrubbers)}
+  end
+
+  def ensure_scrubbed_html(
+        content,
+        scrubbers,
+        true = _fake
+      ) do
+    {:ignore, filter_tags(content, scrubbers)}
   end
 
   defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
@@ -95,6 +107,13 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
   Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
 
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer"
+  ])
+
   # paragraphs and linebreaks
   Meta.allow_tag_with_these_attributes("br", [])
   Meta.allow_tag_with_these_attributes("p", [])
@@ -136,6 +155,13 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
   Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
+
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer"
+  ])
 
   Meta.allow_tag_with_these_attributes("abbr", ["title"])
 

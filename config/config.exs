@@ -8,7 +8,9 @@ use Mix.Config
 # General application configuration
 config :pleroma, ecto_repos: [Pleroma.Repo]
 
-config :pleroma, Pleroma.Repo, types: Pleroma.PostgresTypes
+config :pleroma, Pleroma.Repo,
+  types: Pleroma.PostgresTypes,
+  telemetry_event: [Pleroma.Repo.Instrumenter]
 
 config :pleroma, Pleroma.Captcha,
   enabled: false,
@@ -34,7 +36,8 @@ config :pleroma, Pleroma.Captcha.Kocaptcha, endpoint: "https://captcha.kotobank.
 # Upload configuration
 config :pleroma, Pleroma.Upload,
   uploader: Pleroma.Uploaders.Local,
-  filters: [],
+  filters: [Pleroma.Upload.Filter.Dedupe],
+  link_name: true,
   proxy_remote: false,
   proxy_opts: [
     redirect_on_failure: false,
@@ -55,7 +58,13 @@ config :pleroma, Pleroma.Uploaders.MDII,
   cgi: "https://mdii.sakura.ne.jp/mdii-post.cgi",
   files: "https://mdii.sakura.ne.jp"
 
-config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png"]
+config :pleroma, :emoji,
+  shortcode_globs: ["/emoji/custom/**/*.png"],
+  groups: [
+    # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
+    Finmoji: "/finmoji/128px/*-128.png",
+    Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
+  ]
 
 config :pleroma, :uri_schemes,
   valid_schemes: [
@@ -88,6 +97,7 @@ websocket_config = [
 
 # Configures the endpoint
 config :pleroma, Pleroma.Web.Endpoint,
+  instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
     dispatch: [
@@ -119,6 +129,11 @@ config :logger, :ex_syslogger,
   format: "$metadata[$level] $message",
   metadata: [:request_id]
 
+config :quack,
+  level: :warn,
+  meta: [:all],
+  webhook_url: "https://hooks.slack.com/services/YOUR-KEY-HERE"
+
 config :mime, :types, %{
   "application/xml" => ["xml"],
   "application/xrd+xml" => ["xrd+xml"],
@@ -133,7 +148,14 @@ config :pleroma, :httpoison, Pleroma.HTTP
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
-config :pleroma, :http, proxy_url: nil
+config :pleroma, :http,
+  proxy_url: nil,
+  adapter: [
+    ssl_options: [
+      # We don't support TLS v1.3 yet
+      versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
+    ]
+  ]
 
 config :pleroma, :instance,
   name: "Pleroma",
@@ -166,7 +188,8 @@ config :pleroma, :instance,
   no_attachment_links: false,
   welcome_user_nickname: nil,
   welcome_message: nil,
-  max_report_comment_size: 1000
+  max_report_comment_size: 1000,
+  safe_dm_mentions: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -215,6 +238,9 @@ config :pleroma, :frontend_configurations,
     scopeCopy: true,
     subjectLineBehavior: "email",
     alwaysShowSubjectInput: true
+  },
+  masto_fe: %{
+    showInstanceSpecificPanel: true
   }
 
 config :pleroma, :activitypub,
@@ -261,8 +287,6 @@ config :pleroma, :media_proxy,
   ]
 
 config :pleroma, :chat, enabled: true
-
-config :ecto, json_library: Jason
 
 config :phoenix, :format_encoders, json: Jason
 
@@ -340,11 +364,18 @@ config :pleroma, Pleroma.Web.Federator.RetryQueue,
   initial_timeout: 30,
   max_retries: 5
 
-config :pleroma, Pleroma.Jobs,
-  federator_incoming: [max_jobs: 50],
-  federator_outgoing: [max_jobs: 50],
-  mailer: [max_jobs: 10],
-  user: [max_jobs: 10]
+config :pleroma_job_queue, :queues,
+  federator_incoming: 50,
+  federator_outgoing: 50,
+  web_push: 50,
+  mailer: 10,
+  transmogrifier: 20,
+  scheduled_activities: 10,
+  user: 10
+
+config :pleroma, :fetch_initial_posts,
+  enabled: false,
+  pages: 5
 
 config :auto_linker,
   opts: [
@@ -355,6 +386,42 @@ config :auto_linker,
     new_window: false,
     rel: false
   ]
+
+config :pleroma, :ldap,
+  enabled: System.get_env("LDAP_ENABLED") == "true",
+  host: System.get_env("LDAP_HOST") || "localhost",
+  port: String.to_integer(System.get_env("LDAP_PORT") || "389"),
+  ssl: System.get_env("LDAP_SSL") == "true",
+  sslopts: [],
+  tls: System.get_env("LDAP_TLS") == "true",
+  tlsopts: [],
+  base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
+  uid: System.get_env("LDAP_UID") || "cn"
+
+oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+
+ueberauth_providers =
+  for strategy <- oauth_consumer_strategies do
+    strategy_module_name = "Elixir.Ueberauth.Strategy.#{String.capitalize(strategy)}"
+    strategy_module = String.to_atom(strategy_module_name)
+    {String.to_atom(strategy), {strategy_module, [callback_params: ["state"]]}}
+  end
+
+config :ueberauth,
+       Ueberauth,
+       base_path: "/oauth",
+       providers: ueberauth_providers
+
+config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
+
+config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Sendmail
+
+config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
+
+config :pleroma, Pleroma.ScheduledActivity,
+  daily_user_limit: 25,
+  total_user_limit: 300,
+  enabled: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

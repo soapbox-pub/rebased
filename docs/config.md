@@ -6,6 +6,7 @@ If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherw
 ## Pleroma.Upload
 * `uploader`: Select which `Pleroma.Uploaders` to use
 * `filters`: List of `Pleroma.Upload.Filter` to use.
+* `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
 * `proxy_remote`: If you\'re using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
@@ -100,10 +101,11 @@ config :pleroma, Pleroma.Mailer,
 * `no_attachment_links`: Set to true to disable automatically adding attachment link text to statuses
 * `welcome_message`: A message that will be send to a newly registered users as a direct message.
 * `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
-* `max_report_size`: The maximum size of the report comment (Default: `1000`)
+* `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
+* `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 
 ## :logger
-* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog
+* `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
 ```
@@ -126,10 +128,28 @@ config :logger, :ex_syslogger,
 
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
+An example of logging info to local syslog, but warn to a Slack channel:
+```
+config :logger,
+  backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
+  level: :info
+
+config :logger, :ex_syslogger,
+  level: :info,
+  ident: "pleroma",
+  format: "$metadata[$level] $message"
+
+config :quack,
+  level: :warn,
+  meta: [:all],
+  webhook_url: "https://hooks.slack.com/services/YOUR-API-KEY-HERE"
+```
+
+See the [Quack Github](https://github.com/azohra/quack) for more details
 
 ## :frontend_configurations
 
-This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` are configured.
+This can be used to configure a keyword list that keeps the configuration data for any kind of frontend. By default, settings for `pleroma_fe` and `masto_fe` are configured.
 
 Frontends can access these settings at `/api/pleroma/frontend_configurations`
 
@@ -189,6 +209,45 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `enabled`: Enables the gopher interface
 * `ip`: IP address to bind to
 * `port`: Port to bind to
+* `dstport`: Port advertised in urls (optional, defaults to `port`)
+
+## Pleroma.Web.Endpoint
+`Phoenix` endpoint configuration, all configuration options can be viewed [here](https://hexdocs.pm/phoenix/Phoenix.Endpoint.html#module-dynamic-configuration), only common options are listed here
+* `http` - a list containing http protocol configuration, all configuration options can be viewed [here](https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html#module-options), only common options are listed here
+  - `ip` - a tuple consisting of 4 integers
+  - `port`
+* `url` - a list containing the configuration for generating urls, accepts
+  - `host` - the host without the scheme and a post (e.g `example.com`, not `https://example.com:2020`)
+  - `scheme` - e.g `http`, `https`
+  - `port`
+  - `path`
+
+
+**Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
+
+Example:
+```elixir
+config :pleroma, Pleroma.Web.Endpoint,
+  url: [host: "example.com", port: 2020, scheme: "https"],
+  http: [
+    # start copied from config.exs
+    dispatch: [
+      {:_,
+       [
+         {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+         {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
+          {Phoenix.Transports.WebSocket,
+           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, websocket_config}}},
+         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+       ]}
+    # end copied from config.exs
+    ],
+    port: 8080,
+    ip: {127, 0, 0, 1}
+  ]
+```
+
+This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls starting with `https://example.com:2020`
 
 ## :activitypub
 * ``accept_blocks``: Whether to accept incoming block activities from other instances
@@ -250,24 +309,28 @@ You can then do
 curl "http://localhost:4000/api/pleroma/admin/invite_token?admin_token=somerandomtoken"
 ```
 
-## Pleroma.Jobs
+## :pleroma_job_queue
 
-A list of job queues and their settings.
+[Pleroma Job Queue](https://git.pleroma.social/pleroma/pleroma_job_queue) configuration: a list of queues with maximum concurrent jobs.
 
-Job queue settings:
+Pleroma has the following queues:
 
-* `max_jobs`: The maximum amount of parallel jobs running at the same time.
+* `federator_outgoing` - Outgoing federation
+* `federator_incoming` - Incoming federation
+* `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
+* `transmogrifier` - Transmogrifier
+* `web_push` - Web push notifications
+* `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
 
 Example:
 
-```exs
-config :pleroma, Pleroma.Jobs,
-  federator_incoming: [max_jobs: 50],
-  federator_outgoing: [max_jobs: 50]
+```elixir
+config :pleroma_job_queue, :queues,
+  federator_incoming: 50,
+  federator_outgoing: 50
 ```
 
 This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
-
 
 ## Pleroma.Web.Federator.RetryQueue
 
@@ -284,6 +347,10 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 
 ## :rich_media
 * `enabled`: if enabled the instance will parse metadata from attached links to generate link previews
+
+## :fetch_initial_posts
+* `enabled`: if enabled, when a new user is federated with, fetch some of their latest posts
+* `pages`: the amount of pages to fetch
 
 ## :hackney_pools
 
@@ -324,5 +391,93 @@ config :auto_linker,
     strip_prefix: false,
     new_window: false,
     rel: false
+  ]
+```
+
+## Pleroma.ScheduledActivity
+
+* `daily_user_limit`: the number of scheduled activities a user is allowed to create in a single day (Default: `25`)
+* `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
+* `enabled`: whether scheduled activities are sent to the job queue to be executed
+
+## Pleroma.Web.Auth.Authenticator
+
+* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
+* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
+
+## :ldap
+
+Use LDAP for user authentication.  When a user logs in to the Pleroma
+instance, the name and password will be verified by trying to authenticate
+(bind) to an LDAP server.  If a user exists in the LDAP directory but there
+is no account with the same name yet on the Pleroma instance then a new
+Pleroma account will be created with the same name as the LDAP user name.
+
+* `enabled`: enables LDAP authentication
+* `host`: LDAP server hostname
+* `port`: LDAP port, e.g. 389 or 636
+* `ssl`: true to use SSL, usually implies the port 636
+* `sslopts`: additional SSL options
+* `tls`: true to start TLS, usually implies the port 389
+* `tlsopts`: additional TLS options
+* `base`: LDAP base, e.g. "dc=example,dc=com"
+* `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
+
+## :auth
+
+Authentication / authorization settings.
+
+* `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`. 
+* `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
+* `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
+
+# OAuth consumer mode
+
+OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
+Implementation is based on Ueberauth; see the list of [available strategies](https://github.com/ueberauth/ueberauth/wiki/List-of-Strategies).
+
+Note: each strategy is shipped as a separate dependency; in order to get the strategies, run `OAUTH_CONSUMER_STRATEGIES="..." mix deps.get`,
+e.g. `OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft" mix deps.get`.
+The server should also be started with `OAUTH_CONSUMER_STRATEGIES="..." mix phx.server` in case you enable any strategies.
+
+Note: each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.  
+
+* For Twitter, [register an app](https://developer.twitter.com/en/apps), configure callback URL to https://<your_host>/oauth/twitter/callback
+
+* For Facebook, [register an app](https://developers.facebook.com/apps), configure callback URL to https://<your_host>/oauth/facebook/callback, enable Facebook Login service at https://developers.facebook.com/apps/<app_id>/fb-login/settings/
+
+* For Google, [register an app](https://console.developers.google.com), configure callback URL to https://<your_host>/oauth/google/callback
+
+* For Microsoft, [register an app](https://portal.azure.com), configure callback URL to https://<your_host>/oauth/microsoft/callback
+
+Once the app is configured on external OAuth provider side, add app's credentials and strategy-specific settings (if any — e.g. see Microsoft below) to `config/prod.secret.exs`,
+per strategy's documentation (e.g. [ueberauth_twitter](https://github.com/ueberauth/ueberauth_twitter)). Example config basing on environment variables:
+
+```
+# Twitter
+config :ueberauth, Ueberauth.Strategy.Twitter.OAuth,
+  consumer_key: System.get_env("TWITTER_CONSUMER_KEY"),
+  consumer_secret: System.get_env("TWITTER_CONSUMER_SECRET")
+
+# Facebook
+config :ueberauth, Ueberauth.Strategy.Facebook.OAuth,
+  client_id: System.get_env("FACEBOOK_APP_ID"),
+  client_secret: System.get_env("FACEBOOK_APP_SECRET"),
+  redirect_uri: System.get_env("FACEBOOK_REDIRECT_URI")
+
+# Google
+config :ueberauth, Ueberauth.Strategy.Google.OAuth,
+  client_id: System.get_env("GOOGLE_CLIENT_ID"),
+  client_secret: System.get_env("GOOGLE_CLIENT_SECRET"),
+  redirect_uri: System.get_env("GOOGLE_REDIRECT_URI")
+
+# Microsoft
+config :ueberauth, Ueberauth.Strategy.Microsoft.OAuth,
+  client_id: System.get_env("MICROSOFT_CLIENT_ID"),
+  client_secret: System.get_env("MICROSOFT_CLIENT_SECRET")
+  
+config :ueberauth, Ueberauth,
+  providers: [
+    microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
   ]
 ```

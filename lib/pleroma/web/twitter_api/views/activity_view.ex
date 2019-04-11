@@ -14,9 +14,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.Representers.ObjectRepresenter
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Ecto.Query
   require Logger
@@ -78,7 +77,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
   defp get_context_id(%{data: %{"context" => context}}, options) do
     cond do
       id = options[:context_ids][context] -> id
-      true -> TwitterAPI.context_to_conversation_id(context)
+      true -> Utils.context_to_conversation_id(context)
     end
   end
 
@@ -255,10 +254,10 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     html =
       content
-      |> HTML.get_cached_scrubbed_html_for_object(
+      |> HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
-        __MODULE__
+        "twitterapi:content"
       )
       |> Formatter.emojify(object["emoji"])
 
@@ -266,7 +265,9 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       if content do
         content
         |> String.replace(~r/<br\s?\/?>/, "\n")
-        |> HTML.get_cached_stripped_html_for_object(activity, __MODULE__)
+        |> HTML.get_cached_stripped_html_for_activity(activity, "twitterapi:content")
+      else
+        ""
       end
 
     reply_parent = Activity.get_in_reply_to_activity(activity)

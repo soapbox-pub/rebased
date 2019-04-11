@@ -19,7 +19,8 @@ defmodule Pleroma.Web.MediaProxy do
     else
       secret = Application.get_env(:pleroma, Pleroma.Web.Endpoint)[:secret_key_base]
 
-      # Must preserve `%2F` for compatibility with S3 (https://git.pleroma.social/pleroma/pleroma/issues/580)
+      # Must preserve `%2F` for compatibility with S3
+      # https://git.pleroma.social/pleroma/pleroma/issues/580
       replacement = get_replacement(url, ":2F:")
 
       # The URL is url-decoded and encoded again to ensure it is correctly encoded and not twice.

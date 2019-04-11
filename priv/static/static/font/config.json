@@ -233,6 +233,12 @@
       "css": "play-circled",
       "code": 61764,
       "src": "fontawesome"
+    },
+    {
+      "uid": "d35a1d35efeb784d1dc9ac18b9b6c2b6",
+      "css": "pencil",
+      "code": 59416,
+      "src": "fontawesome"
     }
   ]
 }

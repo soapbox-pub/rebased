@@ -9,6 +9,7 @@ defmodule Pleroma.Mixfile do
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       elixirc_options: [warnings_as_errors: true],
+      xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -21,13 +22,12 @@ defmodule Pleroma.Mixfile do
       homepage_url: "https://pleroma.social/",
       docs: [
         logo: "priv/static/static/logo.png",
-        extras: [
-          "README.md",
-          "docs/config.md",
-          "docs/Pleroma-API.md",
-          "docs/Admin-API.md",
-          "docs/Clients.md",
-          "docs/Differences-in-MastodonAPI-Responses.md"
+        extras: ["README.md" | Path.wildcard("docs/**/*.md")],
+        groups_for_extras: [
+          "Installation manuals": Path.wildcard("docs/installation/*.md"),
+          Configuration: Path.wildcard("docs/config/*.md"),
+          Administration: Path.wildcard("docs/admin/*.md"),
+          "Pleroma's APIs and Mastodon API extensions": Path.wildcard("docs/api/*.md")
         ],
         main: "readme",
         output: "priv/static/doc"
@@ -41,7 +41,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -54,11 +54,18 @@ defmodule Pleroma.Mixfile do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
+    oauth_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+
+    oauth_deps =
+      for s <- oauth_strategies,
+          do: {String.to_atom("ueberauth_#{s}"), ">= 0.0.0"}
+
     [
       {:phoenix, "~> 1.4.1"},
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
-      {:phoenix_ecto, "~> 3.3"},
+      {:phoenix_ecto, "~> 4.0"},
+      {:ecto_sql, "~>3.0.5"},
       {:postgrex, ">= 0.13.5"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
@@ -70,13 +77,14 @@ defmodule Pleroma.Mixfile do
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
       {:httpoison, "~> 1.2.0"},
+      {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.2"},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.0"},
       {:ex_aws_s3, "~> 2.0"},
       {:earmark, "~> 1.3"},
-      {:ex_machina, "~> 2.2", only: :test},
+      {:ex_machina, "~> 2.3", only: :test},
       {:credo, "~> 0.9.3", only: [:dev, :test]},
       {:mock, "~> 0.3.1", only: :test},
       {:crypt,
@@ -90,10 +98,20 @@ defmodule Pleroma.Mixfile do
       {:floki, "~> 0.20.0"},
       {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
       {:timex, "~> 3.5"},
+      {:ueberauth, "~> 0.4"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
-       ref: "94193ca5f97c1f9fdf3d1469653e2d46fac34bcd"}
-    ]
+       ref: "479dd343f4e563ff91215c8275f3b5c67e032850"},
+      {:pleroma_job_queue, "~> 0.2.0"},
+      {:telemetry, "~> 0.3"},
+      {:prometheus_ex, "~> 3.0"},
+      {:prometheus_plugs, "~> 1.1"},
+      {:prometheus_phoenix, "~> 1.2"},
+      {:prometheus_ecto, "~> 1.4"},
+      {:prometheus_process_collector, "~> 1.4"},
+      {:recon, github: "ferd/recon", tag: "2.4.0"},
+      {:quack, "~> 0.1.1"}
+    ] ++ oauth_deps
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

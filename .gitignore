@@ -35,3 +35,6 @@ erl_crash.dump
 
 # Editor config
 /.vscode/
+
+# Prevent committing docs files
+/priv/static/doc/*

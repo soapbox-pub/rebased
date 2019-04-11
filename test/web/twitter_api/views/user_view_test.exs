@@ -6,8 +6,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.User
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
 
@@ -292,7 +292,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       }
     }
 
-    blocker = Repo.get(User, blocker.id)
+    blocker = User.get_by_id(blocker.id)
     assert represented == UserView.render("show.json", %{user: user, for: blocker})
   end
 

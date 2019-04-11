@@ -46,6 +46,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
+  defp get_context_id(%{data: %{"context_id" => context_id}}) when not is_nil(context_id),
+    do: context_id
+
+  defp get_context_id(%{data: %{"context" => context}}) when is_binary(context),
+    do: Utils.context_to_conversation_id(context)
+
+  defp get_context_id(_), do: nil
+
   def render("index.json", opts) do
     replied_to_activities = get_replied_to_activities(opts.activities)
 
@@ -102,7 +110,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         website: nil
       },
       language: nil,
-      emojis: []
+      emojis: [],
+      pleroma: %{
+        local: activity.local
+      }
     }
   end
 
@@ -136,10 +147,37 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     content =
       object
       |> render_content()
-      |> HTML.get_cached_scrubbed_html_for_object(
+
+    content_html =
+      content
+      |> HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
-        __MODULE__
+        "mastoapi:content"
+      )
+
+    content_plaintext =
+      content
+      |> HTML.get_cached_stripped_html_for_activity(
+        activity,
+        "mastoapi:content"
+      )
+
+    summary = object["summary"] || ""
+
+    summary_html =
+      summary
+      |> HTML.get_cached_scrubbed_html_for_activity(
+        User.html_filter_policy(opts[:for]),
+        activity,
+        "mastoapi:summary"
+      )
+
+    summary_plaintext =
+      summary
+      |> HTML.get_cached_stripped_html_for_activity(
+        activity,
+        "mastoapi:summary"
       )
 
     card = render("card.json", Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity))
@@ -160,10 +198,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
       card: card,
-      content: content,
+      content: content_html,
       created_at: created_at,
       reblogs_count: announcement_count,
-      replies_count: 0,
+      replies_count: object["repliesCount"] || 0,
       favourites_count: like_count,
       reblogged: present?(repeated),
       favourited: present?(favorited),
@@ -171,7 +209,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
-      spoiler_text: object["summary"] || "",
+      spoiler_text: summary_html,
       visibility: get_visibility(object),
       media_attachments: attachments,
       mentions: mentions,
@@ -181,7 +219,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         website: nil
       },
       language: nil,
-      emojis: build_emojis(activity.data["object"]["emoji"])
+      emojis: build_emojis(activity.data["object"]["emoji"]),
+      pleroma: %{
+        local: activity.local,
+        conversation_id: get_context_id(activity),
+        content: %{"text/plain" => content_plaintext},
+        spoiler_text: %{"text/plain" => summary_plaintext}
+      }
     }
   end
 
@@ -251,7 +295,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       preview_url: href,
       text_url: href,
       type: type,
-      description: attachment["name"]
+      description: attachment["name"],
+      pleroma: %{mime_type: media_type}
     }
   end
 

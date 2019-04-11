@@ -54,4 +54,19 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicyTest do
 
     {:ok, _} = AntiFollowbotPolicy.filter(message)
   end
+
+  test "it gracefully handles nil display names" do
+    actor = insert(:user, %{name: nil})
+    target = insert(:user)
+
+    message = %{
+      "@context" => "https://www.w3.org/ns/activitystreams",
+      "type" => "Follow",
+      "actor" => actor.ap_id,
+      "object" => target.ap_id,
+      "id" => "https://example.com/activities/1234"
+    }
+
+    {:ok, _} = AntiFollowbotPolicy.filter(message)
+  end
 end

@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   require Logger
 
-  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.OAuth.Token
 
   @behaviour :cowboy_websocket
 
@@ -90,7 +90,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   # Authenticated streams.
   defp allow_request(stream, {"access_token", access_token}) when stream in @streams do
     with %Token{user_id: user_id} <- Repo.get_by(Token, token: access_token),
-         user = %User{} <- Repo.get(User, user_id) do
+         user = %User{} <- User.get_by_id(user_id) do
       {:ok, user}
     else
       _ -> {:error, 403}

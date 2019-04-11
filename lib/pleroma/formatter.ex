@@ -8,8 +8,10 @@ defmodule Pleroma.Formatter do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
+  @safe_mention_regex ~r/^(\s*(?<mentions>@.+?\s+)+)(?<rest>.*)/
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
   @link_regex ~r{((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+}ui
+  # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
 
   @auto_linker_config hashtag: true,
                       hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
@@ -44,15 +46,28 @@ defmodule Pleroma.Formatter do
 
   @doc """
   Parses a text and replace plain text links with HTML. Returns a tuple with a result text, mentions, and hashtags.
+
+  If the 'safe_mention' option is given, only consecutive mentions at the start the post are actually mentioned.
   """
   @spec linkify(String.t(), keyword()) ::
           {String.t(), [{String.t(), User.t()}], [{String.t(), String.t()}]}
   def linkify(text, options \\ []) do
     options = options ++ @auto_linker_config
-    acc = %{mentions: MapSet.new(), tags: MapSet.new()}
-    {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
 
-    {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
+      %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
+      acc = %{mentions: MapSet.new(), tags: MapSet.new()}
+
+      {text_mentions, %{mentions: mentions}} = AutoLinker.link_map(mentions, acc, options)
+      {text_rest, %{tags: tags}} = AutoLinker.link_map(rest, acc, options)
+
+      {text_mentions <> text_rest, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    else
+      acc = %{mentions: MapSet.new(), tags: MapSet.new()}
+      {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
+
+      {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    end
   end
 
   def emojify(text) do
@@ -62,9 +77,9 @@ defmodule Pleroma.Formatter do
   def emojify(text, nil), do: text
 
   def emojify(text, emoji, strip \\ false) do
-    Enum.reduce(emoji, text, fn {emoji, file}, text ->
-      emoji = HTML.strip_tags(emoji)
-      file = HTML.strip_tags(file)
+    Enum.reduce(emoji, text, fn emoji_data, text ->
+      emoji = HTML.strip_tags(elem(emoji_data, 0))
+      file = HTML.strip_tags(elem(emoji_data, 1))
 
       html =
         if not strip do
@@ -86,7 +101,7 @@ defmodule Pleroma.Formatter do
   def demojify(text, nil), do: text
 
   def get_emoji(text) when is_binary(text) do
-    Enum.filter(Emoji.get_all(), fn {emoji, _} -> String.contains?(text, ":#{emoji}:") end)
+    Enum.filter(Emoji.get_all(), fn {emoji, _, _} -> String.contains?(text, ":#{emoji}:") end)
   end
 
   def get_emoji(_), do: []

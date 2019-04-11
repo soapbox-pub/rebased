@@ -3,16 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
-  @users_page_size 50
-
   use Pleroma.Web, :controller
   alias Pleroma.User
+  alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.Relay
-  alias Pleroma.Web.MastodonAPI.Admin.AccountView
+  alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.AdminAPI.Search
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   require Logger
+
+  @users_page_size 50
 
   action_fallback(:errors)
 
@@ -22,6 +24,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(nickname)
+  end
+
+  def user_follow(conn, %{"follower" => follower_nick, "followed" => followed_nick}) do
+    with %User{} = follower <- User.get_by_nickname(follower_nick),
+         %User{} = followed <- User.get_by_nickname(followed_nick) do
+      User.follow(follower, followed)
+    end
+
+    conn
+    |> json("ok")
+  end
+
+  def user_unfollow(conn, %{"follower" => follower_nick, "followed" => followed_nick}) do
+    with %User{} = follower <- User.get_by_nickname(follower_nick),
+         %User{} = followed <- User.get_by_nickname(followed_nick) do
+      User.unfollow(follower, followed)
+    end
+
+    conn
+    |> json("ok")
   end
 
   def user_create(
@@ -42,6 +64,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(user.nickname)
+  end
+
+  def user_show(conn, %{"nickname" => nickname}) do
+    with %User{} = user <- User.get_by_nickname(nickname) do
+      conn
+      |> json(AccountView.render("show.json", %{user: user}))
+    else
+      _ -> {:error, :not_found}
+    end
   end
 
   def user_toggle_disabled(conn, %{"nickname" => nickname}) do
@@ -75,8 +106,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def list_users(conn, params) do
     {page, page_size} = page_params(params)
+    filters = maybe_parse_filters(params["filters"])
 
-    with {:ok, users, count} <- User.all_for_admin(page, page_size),
+    search_params = %{
+      query: params["query"],
+      page: page,
+      page_size: page_size
+    }
+
+    with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
          do:
            conn
            |> json(
@@ -88,25 +126,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            )
   end
 
-  def search_users(%{assigns: %{user: admin}} = conn, %{"query" => query} = params) do
-    {page, page_size} = page_params(params)
+  @filters ~w(local external active deactivated)
 
-    with {:ok, users, count} <-
-           User.search_for_admin(query, %{
-             admin: admin,
-             local: params["local"] == "true",
-             page: page,
-             page_size: page_size
-           }),
-         do:
-           conn
-           |> json(
-             AccountView.render("index.json",
-               users: users,
-               count: count,
-               page_size: page_size
-             )
-           )
+  defp maybe_parse_filters(filters) when is_nil(filters) or filters == "", do: %{}
+
+  @spec maybe_parse_filters(String.t()) :: %{required(String.t()) => true} | %{}
+  defp maybe_parse_filters(filters) do
+    filters
+    |> String.split(",")
+    |> Enum.filter(&Enum.member?(@filters, &1))
+    |> Enum.map(&String.to_atom(&1))
+    |> Enum.into(%{}, &{&1, true})
   end
 
   def right_add(conn, %{"permission_group" => permission_group, "nickname" => nickname})
@@ -216,7 +246,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with true <-
            Pleroma.Config.get([:instance, :invites_enabled]) &&
              !Pleroma.Config.get([:instance, :registrations_open]),
-         {:ok, invite_token} <- Pleroma.UserInviteToken.create_token(),
+         {:ok, invite_token} <- UserInviteToken.create_invite(),
          email <-
            Pleroma.UserEmail.user_invitation_email(user, invite_token, email, params["name"]),
          {:ok, _} <- Pleroma.Mailer.deliver(email) do
@@ -225,11 +255,29 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   @doc "Get a account registeration invite token (base64 string)"
-  def get_invite_token(conn, _params) do
-    {:ok, token} = Pleroma.UserInviteToken.create_token()
+  def get_invite_token(conn, params) do
+    options = params["invite"] || %{}
+    {:ok, invite} = UserInviteToken.create_invite(options)
 
     conn
-    |> json(token.token)
+    |> json(invite.token)
+  end
+
+  @doc "Get list of created invites"
+  def invites(conn, _params) do
+    invites = UserInviteToken.list_invites()
+
+    conn
+    |> json(AccountView.render("invites.json", %{invites: invites}))
+  end
+
+  @doc "Revokes invite by token"
+  def revoke_invite(conn, %{"token" => token}) do
+    invite = UserInviteToken.find_by_token!(token)
+    {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true})
+
+    conn
+    |> json(AccountView.render("invite.json", %{invite: updated_invite}))
   end
 
   @doc "Get a password reset token (base64 string) for given nickname"
@@ -239,6 +287,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
     conn
     |> json(token.token)
+  end
+
+  def errors(conn, {:error, :not_found}) do
+    conn
+    |> put_status(404)
+    |> json("Not found")
   end
 
   def errors(conn, {:param_cast, _}) do

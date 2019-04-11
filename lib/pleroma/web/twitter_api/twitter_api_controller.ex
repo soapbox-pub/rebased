@@ -8,23 +8,21 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
   alias Ecto.Changeset
-  alias Pleroma.Web.TwitterAPI.{TwitterAPI, UserView, ActivityView, NotificationView, TokenView}
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.{Repo, Activity, Object, User, Notification}
-  alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Visibility
-  alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.TwitterAPI.NotificationView
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Activity
-  alias Pleroma.Object
   alias Pleroma.Notification
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.NotificationView
+  alias Pleroma.Web.TwitterAPI.TokenView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   require Logger
 
@@ -281,7 +279,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def fetch_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with context when is_binary(context) <- TwitterAPI.conversation_id_to_context(id),
+    with context when is_binary(context) <- Utils.conversation_id_to_context(id),
          activities <-
            ActivityPub.fetch_activities_for_context(context, %{
              "blocking_user" => user,
@@ -436,7 +434,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
-    with %User{} = user <- Repo.get(User, uid),
+    with %User{} = user <- User.get_by_id(uid),
          true <- user.local,
          true <- user.info.confirmation_pending,
          true <- user.info.confirmation_token == token,
@@ -589,17 +587,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def approve_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
-         %User{} = follower <- Repo.get(User, uid),
-         {:ok, follower} <- User.maybe_follow(follower, followed),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
-         {:ok, _activity} <-
-           ActivityPub.accept(%{
-             to: [follower.ap_id],
-             actor: followed,
-             object: follow_activity.data["id"],
-             type: "Accept"
-           }) do
+         %User{} = follower <- User.get_by_id(uid),
+         {:ok, follower} <- CommonAPI.accept_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
       |> render("show.json", %{user: follower, for: followed})
@@ -610,16 +599,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def deny_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
-         %User{} = follower <- Repo.get(User, uid),
-         %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
-         {:ok, _activity} <-
-           ActivityPub.reject(%{
-             to: [follower.ap_id],
-             actor: followed,
-             object: follow_activity.data["id"],
-             type: "Reject"
-           }) do
+         %User{} = follower <- User.get_by_id(uid),
+         {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
       |> render("show.json", %{user: follower, for: followed})

@@ -6,7 +6,7 @@ defmodule Pleroma.Mailer do
   use Swoosh.Mailer, otp_app: :pleroma
 
   def deliver_async(email, config \\ []) do
-    Pleroma.Jobs.enqueue(:mailer, __MODULE__, [:deliver_async, email, config])
+    PleromaJobQueue.enqueue(:mailer, __MODULE__, [:deliver_async, email, config])
   end
 
   def perform(:deliver_async, email, config), do: deliver(email, config)

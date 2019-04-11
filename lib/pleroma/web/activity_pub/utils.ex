@@ -3,16 +3,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.Utils do
-  alias Pleroma.Repo
-  alias Pleroma.Web
-  alias Pleroma.Object
-  alias Pleroma.Activity
-  alias Pleroma.User
-  alias Pleroma.Notification
-  alias Pleroma.Web.Router.Helpers
-  alias Pleroma.Web.Endpoint
   alias Ecto.Changeset
   alias Ecto.UUID
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web
+  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Endpoint
+  alias Pleroma.Web.Router.Helpers
 
   import Ecto.Query
 
@@ -98,7 +99,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
-        "#{Web.base_url()}/schemas/litepub-0.1.jsonld"
+        "#{Web.base_url()}/schemas/litepub-0.1.jsonld",
+        %{
+          "@language" => "und"
+        }
       ]
     }
   end
@@ -174,18 +178,26 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Adds an id and a published data if they aren't there,
   also adds it to an included object
   """
-  def lazy_put_activity_defaults(map) do
-    %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
-
+  def lazy_put_activity_defaults(map, fake \\ false) do
     map =
-      map
-      |> Map.put_new_lazy("id", &generate_activity_id/0)
-      |> Map.put_new_lazy("published", &make_date/0)
-      |> Map.put_new("context", context)
-      |> Map.put_new("context_id", context_id)
+      unless fake do
+        %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
+
+        map
+        |> Map.put_new_lazy("id", &generate_activity_id/0)
+        |> Map.put_new_lazy("published", &make_date/0)
+        |> Map.put_new("context", context)
+        |> Map.put_new("context_id", context_id)
+      else
+        map
+        |> Map.put_new("id", "pleroma:fakeid")
+        |> Map.put_new_lazy("published", &make_date/0)
+        |> Map.put_new("context", "pleroma:fakecontext")
+        |> Map.put_new("context_id", -1)
+      end
 
     if is_map(map["object"]) do
-      object = lazy_put_object_defaults(map["object"], map)
+      object = lazy_put_object_defaults(map["object"], map, fake)
       %{map | "object" => object}
     else
       map
@@ -195,7 +207,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Adds an id and published date if they aren't there.
   """
-  def lazy_put_object_defaults(map, activity \\ %{}) do
+  def lazy_put_object_defaults(map, activity \\ %{}, fake)
+
+  def lazy_put_object_defaults(map, activity, true = _fake) do
+    map
+    |> Map.put_new_lazy("published", &make_date/0)
+    |> Map.put_new("id", "pleroma:fake_object_id")
+    |> Map.put_new("context", activity["context"])
+    |> Map.put_new("fake", true)
+    |> Map.put_new("context_id", activity["context_id"])
+  end
+
+  def lazy_put_object_defaults(map, activity, _fake) do
     map
     |> Map.put_new_lazy("id", &generate_object_id/0)
     |> Map.put_new_lazy("published", &make_date/0)
@@ -208,12 +231,12 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def insert_full_object(%{"object" => %{"type" => type} = object_data})
       when is_map(object_data) and type in @supported_object_types do
-    with {:ok, _} <- Object.create(object_data) do
-      :ok
+    with {:ok, object} <- Object.create(object_data) do
+      {:ok, object}
     end
   end
 
-  def insert_full_object(_), do: :ok
+  def insert_full_object(_), do: {:ok, nil}
 
   def update_object_in_activities(%{data: %{"id" => id}} = object) do
     # TODO
@@ -274,13 +297,31 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Repo.all(query)
   end
 
-  def make_like_data(%User{ap_id: ap_id} = actor, %{data: %{"id" => id}} = object, activity_id) do
+  def make_like_data(
+        %User{ap_id: ap_id} = actor,
+        %{data: %{"actor" => object_actor_id, "id" => id}} = object,
+        activity_id
+      ) do
+    object_actor = User.get_cached_by_ap_id(object_actor_id)
+
+    to =
+      if Visibility.is_public?(object) do
+        [actor.follower_address, object.data["actor"]]
+      else
+        [object.data["actor"]]
+      end
+
+    cc =
+      (object.data["to"] ++ (object.data["cc"] || []))
+      |> List.delete(actor.ap_id)
+      |> List.delete(object_actor.follower_address)
+
     data = %{
       "type" => "Like",
       "actor" => ap_id,
       "object" => id,
-      "to" => [actor.follower_address, object.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "to" => to,
+      "cc" => cc,
       "context" => object.data["context"]
     }
 
@@ -335,7 +376,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         [state, actor, object]
       )
 
-      activity = Repo.get(Activity, activity.id)
+      activity = Activity.get_by_id(activity.id)
       {:ok, activity}
     rescue
       e ->
@@ -385,13 +426,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
             activity.data
           ),
         where: activity.actor == ^follower_id,
+        # this is to use the index
         where:
           fragment(
-            "? @> ?",
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
             activity.data,
-            ^%{object: followed_id}
+            activity.data,
+            ^followed_id
           ),
-        order_by: [desc: :id],
+        order_by: [fragment("? desc nulls last", activity.id)],
         limit: 1
       )
 
@@ -548,13 +591,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
             activity.data
           ),
         where: activity.actor == ^blocker_id,
+        # this is to use the index
         where:
           fragment(
-            "? @> ?",
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
             activity.data,
-            ^%{object: blocked_id}
+            activity.data,
+            ^blocked_id
           ),
-        order_by: [desc: :id],
+        order_by: [fragment("? desc nulls last", activity.id)],
         limit: 1
       )
 
@@ -602,7 +647,13 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Flag-related helpers
 
   def make_flag_data(params, additional) do
-    status_ap_ids = Enum.map(params.statuses || [], & &1.data["id"])
+    status_ap_ids =
+      Enum.map(params.statuses || [], fn
+        %Activity{} = act -> act.data["id"]
+        act when is_map(act) -> act["id"]
+        act when is_binary(act) -> act
+      end)
+
     object = [params.account.ap_id] ++ status_ap_ids
 
     %{
@@ -613,5 +664,44 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "context" => params.context
     }
     |> Map.merge(additional)
+  end
+
+  @doc """
+  Fetches the OrderedCollection/OrderedCollectionPage from `from`, limiting the amount of pages fetched after
+  the first one to `pages_left` pages.
+  If the amount of pages is higher than the collection has, it returns whatever was there.
+  """
+  def fetch_ordered_collection(from, pages_left, acc \\ []) do
+    with {:ok, response} <- Tesla.get(from),
+         {:ok, collection} <- Poison.decode(response.body) do
+      case collection["type"] do
+        "OrderedCollection" ->
+          # If we've encountered the OrderedCollection and not the page,
+          # just call the same function on the page address
+          fetch_ordered_collection(collection["first"], pages_left)
+
+        "OrderedCollectionPage" ->
+          if pages_left > 0 do
+            # There are still more pages
+            if Map.has_key?(collection, "next") do
+              # There are still more pages, go deeper saving what we have into the accumulator
+              fetch_ordered_collection(
+                collection["next"],
+                pages_left - 1,
+                acc ++ collection["orderedItems"]
+              )
+            else
+              # No more pages left, just return whatever we already have
+              acc ++ collection["orderedItems"]
+            end
+          else
+            # Got the amount of pages needed, add them all to the accumulator
+            acc ++ collection["orderedItems"]
+          end
+
+        _ ->
+          {:error, "Not an OrderedCollection or OrderedCollectionPage"}
+      end
+    end
   end
 end

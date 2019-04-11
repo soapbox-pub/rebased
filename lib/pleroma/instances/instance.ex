@@ -2,8 +2,8 @@ defmodule Pleroma.Instances.Instance do
   @moduledoc "Instance."
 
   alias Pleroma.Instances
-  alias Pleroma.Repo
   alias Pleroma.Instances.Instance
+  alias Pleroma.Repo
 
   use Ecto.Schema
 
@@ -12,7 +12,7 @@ defmodule Pleroma.Instances.Instance do
 
   schema "instances" do
     field(:host, :string)
-    field(:unreachable_since, :naive_datetime)
+    field(:unreachable_since, :naive_datetime_usec)
 
     timestamps()
   end

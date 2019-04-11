@@ -4,23 +4,23 @@
 
 defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   use Pleroma.Web.ConnCase
-  alias Pleroma.Web.TwitterAPI.Representers.ActivityRepresenter
-  alias Pleroma.Builders.ActivityBuilder
-  alias Pleroma.Builders.UserBuilder
-  alias Pleroma.Repo
-  alias Pleroma.Activity
-  alias Pleroma.User
-  alias Pleroma.Object
-  alias Pleroma.Notification
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.OAuth.Token
-  alias Pleroma.Web.TwitterAPI.Controller
-  alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.TwitterAPI.NotificationView
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Comeonin.Pbkdf2
   alias Ecto.Changeset
+  alias Pleroma.Activity
+  alias Pleroma.Builders.ActivityBuilder
+  alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Notification
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.Controller
+  alias Pleroma.Web.TwitterAPI.NotificationView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
   import Mock
@@ -116,7 +116,11 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> post(request_path, %{status: "Nice meme.", visibility: "private"})
 
       assert json_response(conn, 200) ==
-               ActivityRepresenter.to_map(Repo.one(Activity), %{user: user, for: user})
+               ActivityView.render("activity.json", %{
+                 activity: Repo.one(Activity),
+                 user: user,
+                 for: user
+               })
     end
   end
 
@@ -273,7 +277,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       response = json_response(conn, 200)
 
-      assert response == ActivityRepresenter.to_map(activity, %{user: actor})
+      assert response == ActivityView.render("activity.json", %{activity: activity, user: actor})
     end
   end
 
@@ -372,7 +376,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       assert response ==
                Enum.map(returned_activities, fn activity ->
-                 ActivityRepresenter.to_map(activity, %{
+                 ActivityView.render("activity.json", %{
+                   activity: activity,
                    user: User.get_cached_by_ap_id(activity.data["actor"]),
                    for: current_user
                  })
@@ -469,10 +474,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert length(response) == 1
 
       assert Enum.at(response, 0) ==
-               ActivityRepresenter.to_map(activity, %{
+               ActivityView.render("activity.json", %{
                  user: current_user,
                  for: current_user,
-                 mentioned: [current_user]
+                 activity: activity
                })
     end
 
@@ -490,7 +495,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       response = json_response(conn, 200)
 
-      assert length(response) == 0
+      assert Enum.empty?(response)
     end
   end
 
@@ -594,7 +599,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn = get(conn, "/api/statuses/user_timeline.json", %{"user_id" => user.id})
       response = json_response(conn, 200)
       assert length(response) == 1
-      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+
+      assert Enum.at(response, 0) ==
+               ActivityView.render("activity.json", %{user: user, activity: activity})
     end
 
     test "with screen_name", %{conn: conn} do
@@ -604,7 +611,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn = get(conn, "/api/statuses/user_timeline.json", %{"screen_name" => user.nickname})
       response = json_response(conn, 200)
       assert length(response) == 1
-      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+
+      assert Enum.at(response, 0) ==
+               ActivityView.render("activity.json", %{user: user, activity: activity})
     end
 
     test "with credentials", %{conn: conn, user: current_user} do
@@ -620,7 +629,11 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert length(response) == 1
 
       assert Enum.at(response, 0) ==
-               ActivityRepresenter.to_map(activity, %{user: current_user, for: current_user})
+               ActivityView.render("activity.json", %{
+                 user: current_user,
+                 for: current_user,
+                 activity: activity
+               })
     end
 
     test "with credentials with user_id", %{conn: conn, user: current_user} do
@@ -635,7 +648,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert length(response) == 1
-      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+
+      assert Enum.at(response, 0) ==
+               ActivityView.render("activity.json", %{user: user, activity: activity})
     end
 
     test "with credentials screen_name", %{conn: conn, user: current_user} do
@@ -650,7 +665,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert length(response) == 1
-      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+
+      assert Enum.at(response, 0) ==
+               ActivityView.render("activity.json", %{user: user, activity: activity})
     end
 
     test "with credentials with user_id, excluding RTs", %{conn: conn, user: current_user} do
@@ -669,7 +686,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert length(response) == 1
-      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+
+      assert Enum.at(response, 0) ==
+               ActivityView.render("activity.json", %{user: user, activity: activity})
 
       conn =
         conn
@@ -678,7 +697,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       response = json_response(conn, 200)
 
       assert length(response) == 1
-      assert Enum.at(response, 0) == ActivityRepresenter.to_map(activity, %{user: user})
+
+      assert Enum.at(response, 0) ==
+               ActivityView.render("activity.json", %{user: user, activity: activity})
     end
   end
 
@@ -698,7 +719,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post("/api/friendships/create.json", %{user_id: followed.id})
 
-      current_user = Repo.get(User, current_user.id)
+      current_user = User.get_by_id(current_user.id)
       assert User.ap_followers(followed) in current_user.following
 
       assert json_response(conn, 200) ==
@@ -713,8 +734,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post("/api/friendships/create.json", %{user_id: followed.id})
 
-      current_user = Repo.get(User, current_user.id)
-      followed = Repo.get(User, followed.id)
+      current_user = User.get_by_id(current_user.id)
+      followed = User.get_by_id(followed.id)
 
       refute User.ap_followers(followed) in current_user.following
 
@@ -743,7 +764,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post("/api/friendships/destroy.json", %{user_id: followed.id})
 
-      current_user = Repo.get(User, current_user.id)
+      current_user = User.get_by_id(current_user.id)
       assert current_user.following == [current_user.ap_id]
 
       assert json_response(conn, 200) ==
@@ -767,7 +788,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post("/api/blocks/create.json", %{user_id: blocked.id})
 
-      current_user = Repo.get(User, current_user.id)
+      current_user = User.get_by_id(current_user.id)
       assert User.blocks?(current_user, blocked)
 
       assert json_response(conn, 200) ==
@@ -794,7 +815,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post("/api/blocks/destroy.json", %{user_id: blocked.id})
 
-      current_user = Repo.get(User, current_user.id)
+      current_user = User.get_by_id(current_user.id)
       assert current_user.info.blocks == []
 
       assert json_response(conn, 200) ==
@@ -825,7 +846,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post("/api/qvitter/update_avatar.json", %{img: avatar_image})
 
-      current_user = Repo.get(User, current_user.id)
+      current_user = User.get_by_id(current_user.id)
       assert is_map(current_user.avatar)
 
       assert json_response(conn, 200) ==
@@ -933,11 +954,15 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post(request_path)
 
-      activity = Repo.get(Activity, note_activity.id)
-      activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
+      activity = Activity.get_by_id(note_activity.id)
+      activity_user = User.get_by_ap_id(note_activity.data["actor"])
 
       assert json_response(response, 200) ==
-               ActivityRepresenter.to_map(activity, %{user: activity_user, for: current_user})
+               ActivityView.render("activity.json", %{
+                 user: activity_user,
+                 for: current_user,
+                 activity: activity
+               })
     end
   end
 
@@ -967,11 +992,15 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         |> with_credentials(current_user.nickname, "test")
         |> post(request_path)
 
-      activity = Repo.get(Activity, note_activity.id)
-      activity_user = Repo.get_by(User, ap_id: note_activity.data["actor"])
+      activity = Activity.get_by_id(note_activity.id)
+      activity_user = User.get_by_ap_id(note_activity.data["actor"])
 
       assert json_response(response, 200) ==
-               ActivityRepresenter.to_map(activity, %{user: activity_user, for: current_user})
+               ActivityView.render("activity.json", %{
+                 user: activity_user,
+                 for: current_user,
+                 activity: activity
+               })
     end
   end
 
@@ -992,7 +1021,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       user = json_response(conn, 200)
 
-      fetched_user = Repo.get_by(User, nickname: "lain")
+      fetched_user = User.get_by_nickname("lain")
       assert user == UserView.render("show.json", %{user: fetched_user})
     end
 
@@ -1080,7 +1109,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "it confirms the user account", %{conn: conn, user: user} do
       get(conn, "/api/account/confirm_email/#{user.id}/#{user.info.confirmation_token}")
 
-      user = Repo.get(User, user.id)
+      user = User.get_by_id(user.id)
 
       refute user.info.confirmation_pending
       refute user.info.confirmation_token
@@ -1698,7 +1727,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
         })
 
       assert json_response(conn, 200) == %{"status" => "success"}
-      fetched_user = Repo.get(User, current_user.id)
+      fetched_user = User.get_by_id(current_user.id)
       assert Pbkdf2.checkpw("newpass", fetched_user.password_hash) == true
     end
   end
@@ -1739,8 +1768,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1779,8 +1808,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1802,8 +1831,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = Repo.get(User, user.id)
-      other_user = Repo.get(User, other_user.id)
+      user = User.get_by_id(user.id)
+      other_user = User.get_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1955,7 +1984,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = refresh_record(user)
 
       assert json_response(response, 200) ==
-               ActivityRepresenter.to_map(activity, %{user: user, for: user})
+               ActivityView.render("activity.json", %{user: user, for: user, activity: activity})
     end
   end
 
@@ -1985,7 +2014,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = refresh_record(user)
 
       assert json_response(response, 200) ==
-               ActivityRepresenter.to_map(activity, %{user: user, for: user})
+               ActivityView.render("activity.json", %{user: user, for: user, activity: activity})
     end
   end
 

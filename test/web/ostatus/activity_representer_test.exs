@@ -5,12 +5,12 @@
 defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.Object
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.OStatus.ActivityRepresenter
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -116,10 +116,10 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
     {:ok, announce, _object} = ActivityPub.announce(user, object)
 
-    announce = Repo.get(Activity, announce.id)
+    announce = Activity.get_by_id(announce.id)
 
     note_user = User.get_cached_by_ap_id(note.data["actor"])
-    note = Repo.get(Activity, note.id)
+    note = Activity.get_by_id(note.id)
 
     note_xml =
       ActivityRepresenter.to_simple_form(note, note_user, true)
