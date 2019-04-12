@@ -2653,4 +2653,49 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert %{"error" => "Record not found"} = json_response(res_conn, 404)
     end
   end
+
+  test "Repeated posts that are replies incorrectly have in_reply_to_id null", %{conn: conn} do
+    user1 = insert(:user)
+    user2 = insert(:user)
+    user3 = insert(:user)
+
+    {:ok, replied_to} = TwitterAPI.create_status(user1, %{"status" => "cofe"})
+
+    # Reply to status from another user
+    conn1 =
+      conn
+      |> assign(:user, user2)
+      |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => replied_to.id})
+
+    assert %{"content" => "xD", "id" => id} = json_response(conn1, 200)
+
+    activity = Activity.get_by_id(id)
+
+    assert activity.data["object"]["inReplyTo"] == replied_to.data["object"]["id"]
+    assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
+
+    # Reblog from the third user
+    conn2 =
+      conn
+      |> assign(:user, user3)
+      |> post("/api/v1/statuses/#{activity.id}/reblog")
+
+    assert %{"reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 1}} =
+             json_response(conn2, 200)
+
+    assert to_string(activity.id) == id
+
+    # Getting third user status
+    conn3 =
+      conn
+      |> assign(:user, user3)
+      |> get("api/v1/timelines/home")
+
+    [reblogged_activity] = json_response(conn3, 200)
+
+    assert reblogged_activity["reblog"]["in_reply_to_id"] == replied_to.id
+
+    replied_to_user = User.get_by_ap_id(replied_to.data["actor"])
+    assert reblogged_activity["reblog"]["in_reply_to_account_id"] == replied_to_user.id
+  end
 end
