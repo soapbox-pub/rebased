@@ -101,7 +101,7 @@ defmodule Pleroma.Mixfile do
       {:ueberauth, "~> 0.4"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
-       ref: "479dd343f4e563ff91215c8275f3b5c67e032850"},
+       ref: "90613b4bae875a3610c275b7056b61ffdd53210d"},
       {:pleroma_job_queue, "~> 0.2.0"},
       {:telemetry, "~> 0.3"},
       {:prometheus_ex, "~> 3.0"},

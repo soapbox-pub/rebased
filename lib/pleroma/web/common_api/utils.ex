@@ -195,11 +195,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   Formatting text to markdown.
   """
   def format_input(text, "text/markdown", options) do
-    options = Keyword.put(options, :mentions_escape, true)
-
     text
+    |> Formatter.mentions_escape(options)
+    |> Earmark.as_html!()
     |> Formatter.linkify(options)
-    |> (fn {text, mentions, tags} -> {Earmark.as_html!(text), mentions, tags} end).()
     |> Formatter.html_escape("text/html")
   end
 

@@ -1,6 +1,6 @@
 %{
   "accept": {:hex, :accept, "0.3.5", "b33b127abca7cc948bbe6caa4c263369abf1347cfa9d8e699c6d214660f10cd1", [:rebar3], [], "hexpm"},
-  "auto_linker": {:git, "https://git.pleroma.social/pleroma/auto_linker.git", "479dd343f4e563ff91215c8275f3b5c67e032850", [ref: "479dd343f4e563ff91215c8275f3b5c67e032850"]},
+  "auto_linker": {:git, "https://git.pleroma.social/pleroma/auto_linker.git", "90613b4bae875a3610c275b7056b61ffdd53210d", [ref: "90613b4bae875a3610c275b7056b61ffdd53210d"]},
   "base64url": {:hex, :base64url, "0.0.1", "36a90125f5948e3afd7be97662a1504b934dd5dac78451ca6e9abf85a10286be", [:rebar], [], "hexpm"},
   "bunt": {:hex, :bunt, "0.2.0", "951c6e801e8b1d2cbe58ebbd3e616a869061ddadcc4863d0a2182541acae9a38", [:mix], [], "hexpm"},
   "cachex": {:hex, :cachex, "3.0.2", "1351caa4e26e29f7d7ec1d29b53d6013f0447630bbf382b4fb5d5bad0209f203", [:mix], [{:eternal, "~> 1.2", [hex: :eternal, repo: "hexpm", optional: false]}, {:unsafe, "~> 1.0", [hex: :unsafe, repo: "hexpm", optional: false]}], "hexpm"},
