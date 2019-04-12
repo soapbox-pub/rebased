@@ -612,6 +612,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def destroy_multiple(%{assigns: %{user: user}} = conn, %{"ids" => ids} = _params) do
+    Notification.destroy_multiple(user, ids)
+    json(conn, %{})
+  end
+
   def relationships(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     id = List.wrap(id)
     q = from(u in User, where: u.id in ^id)

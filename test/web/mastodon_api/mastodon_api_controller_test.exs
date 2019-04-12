@@ -944,6 +944,58 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert [%{"id" => ^reblog_notification_id}] = json_response(conn_res, 200)
     end
+
+    test "destroy multiple", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity1} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, activity2} = CommonAPI.post(other_user, %{"status" => "hi @#{user.nickname}"})
+      {:ok, activity3} = CommonAPI.post(user, %{"status" => "hi @#{other_user.nickname}"})
+      {:ok, activity4} = CommonAPI.post(user, %{"status" => "hi @#{other_user.nickname}"})
+
+      notification1_id = Repo.get_by(Notification, activity_id: activity1.id).id |> to_string()
+      notification2_id = Repo.get_by(Notification, activity_id: activity2.id).id |> to_string()
+      notification3_id = Repo.get_by(Notification, activity_id: activity3.id).id |> to_string()
+      notification4_id = Repo.get_by(Notification, activity_id: activity4.id).id |> to_string()
+
+      conn =
+        conn
+        |> assign(:user, user)
+
+      conn_res =
+        conn
+        |> get("/api/v1/notifications")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification2_id}, %{"id" => ^notification1_id}] = result
+
+      conn2 =
+        conn
+        |> assign(:user, other_user)
+
+      conn_res =
+        conn2
+        |> get("/api/v1/notifications")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
+
+      conn_destroy =
+        conn
+        |> delete("/api/v1/notifications/destroy_multiple", %{
+          "ids" => [notification1_id, notification2_id]
+        })
+
+      assert json_response(conn_destroy, 200) == %{}
+
+      conn_res =
+        conn2
+        |> get("/api/v1/notifications")
+
+      result = json_response(conn_res, 200)
+      assert [%{"id" => ^notification4_id}, %{"id" => ^notification3_id}] = result
+    end
   end
 
   describe "reblogging" do
