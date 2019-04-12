@@ -9,20 +9,31 @@ defmodule Pleroma.Formatter do
   alias Pleroma.Web.MediaProxy
 
   @safe_mention_regex ~r/^(\s*(?<mentions>@.+?\s+)+)(?<rest>.*)/
+  @link_regex ~r"((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+"ui
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
-  @link_regex ~r{((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+}ui
-  # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
 
   @auto_linker_config hashtag: true,
                       hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
                       mention: true,
                       mention_handler: &Pleroma.Formatter.mention_handler/4
 
+  def escape_mention_handler("@" <> nickname = mention, buffer, _, _) do
+    case User.get_cached_by_nickname(nickname) do
+      %User{} ->
+        # escape markdown characters with `\\`
+        # (we don't want something like @user__name to be parsed by markdown)
+        String.replace(mention, @markdown_characters_regex, "\\\\\\1")
+
+      _ ->
+        buffer
+    end
+  end
+
   def mention_handler("@" <> nickname, buffer, opts, acc) do
     case User.get_cached_by_nickname(nickname) do
       %User{id: id} = user ->
         ap_id = get_ap_id(user)
-        nickname_text = get_nickname_text(nickname, opts) |> maybe_escape(opts)
+        nickname_text = get_nickname_text(nickname, opts)
 
         link =
           "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>@<span>#{
@@ -67,6 +78,25 @@ defmodule Pleroma.Formatter do
       {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
 
       {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    end
+  end
+
+  @doc """
+  Escapes a special characters in mention names.
+  """
+  def mentions_escape(text, options \\ []) do
+    options =
+      Keyword.merge(options,
+        mention: true,
+        url: false,
+        mention_handler: &Pleroma.Formatter.escape_mention_handler/4
+      )
+
+    if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
+      %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
+      AutoLinker.link(mentions, options) <> AutoLinker.link(rest, options)
+    else
+      AutoLinker.link(text, options)
     end
   end
 
@@ -140,10 +170,4 @@ defmodule Pleroma.Formatter do
 
   defp get_nickname_text(nickname, %{mentions_format: :full}), do: User.full_nickname(nickname)
   defp get_nickname_text(nickname, _), do: User.local_nickname(nickname)
-
-  defp maybe_escape(str, %{mentions_escape: true}) do
-    String.replace(str, @markdown_characters_regex, "\\\\\\1")
-  end
-
-  defp maybe_escape(str, _), do: str
 end
