@@ -11,6 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Filter
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.Stats
@@ -202,15 +203,29 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   defp add_link_headers(conn, method, activities, param \\ nil, params \\ %{}) do
     params =
       conn.params
-      |> Map.drop(["since_id", "max_id"])
+      |> Map.drop(["since_id", "max_id", "min_id"])
       |> Map.merge(params)
 
     last = List.last(activities)
-    first = List.first(activities)
 
     if last do
-      min = last.id
-      max = first.id
+      max_id = last.id
+
+      limit =
+        params
+        |> Map.get("limit", "20")
+        |> String.to_integer()
+
+      min_id =
+        if length(activities) <= limit do
+          activities
+          |> List.first()
+          |> Map.get(:id)
+        else
+          activities
+          |> Enum.at(limit * -1)
+          |> Map.get(:id)
+        end
 
       {next_url, prev_url} =
         if param do
@@ -219,13 +234,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
               Pleroma.Web.Endpoint,
               method,
               param,
-              Map.merge(params, %{max_id: min})
+              Map.merge(params, %{max_id: max_id})
             ),
             mastodon_api_url(
               Pleroma.Web.Endpoint,
               method,
               param,
-              Map.merge(params, %{since_id: max})
+              Map.merge(params, %{min_id: min_id})
             )
           }
         else
@@ -233,12 +248,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             mastodon_api_url(
               Pleroma.Web.Endpoint,
               method,
-              Map.merge(params, %{max_id: min})
+              Map.merge(params, %{max_id: max_id})
             ),
             mastodon_api_url(
               Pleroma.Web.Endpoint,
               method,
-              Map.merge(params, %{since_id: max})
+              Map.merge(params, %{min_id: min_id})
             )
           }
         end
@@ -314,7 +329,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     activities =
       [user.ap_id]
       |> ActivityPub.fetch_activities_query(params)
-      |> Repo.all()
+      |> Pagination.fetch_paginated(params)
 
     conn
     |> add_link_headers(:dm_timeline, activities)
