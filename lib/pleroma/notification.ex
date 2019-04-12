@@ -98,6 +98,14 @@ defmodule Pleroma.Notification do
     |> Repo.delete_all()
   end
 
+  def destroy_multiple(%{id: user_id} = _user, ids) do
+    from(n in Notification,
+      where: n.id in ^ids,
+      where: n.user_id == ^user_id
+    )
+    |> Repo.delete_all()
+  end
+
   def dismiss(%{id: user_id} = _user, id) do
     notification = Repo.get(Notification, id)
 
@@ -173,8 +181,7 @@ defmodule Pleroma.Notification do
   def skip?(:muted, activity, user) do
     actor = activity.data["actor"]
 
-    User.mutes?(user, %{ap_id: actor}) or
-      CommonAPI.thread_muted?(user, activity)
+    User.mutes?(user, %{ap_id: actor}) or CommonAPI.thread_muted?(user, activity)
   end
 
   def skip?(
