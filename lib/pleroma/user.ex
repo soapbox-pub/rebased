@@ -1159,13 +1159,16 @@ defmodule Pleroma.User do
   def deactivate(%User{} = user, status \\ true) do
     info_cng = User.Info.set_activation_status(user.info, status)
 
-    with {:ok, user} <-
+    with {:ok, friends} <- User.get_friends(user),
+         {:ok, followers} <- User.get_followers(user),
+         {:ok, user} <-
            user
            |> change()
            |> put_embed(:info, info_cng)
-           |> update_and_set_cache(),
-         {:ok, friends} <- User.get_friends(user) do
+           |> update_and_set_cache() do
+      Enum.each(followers, &invalidate_cache(&1))
       Enum.each(friends, &update_follower_count(&1))
+
       {:ok, user}
     end
   end
