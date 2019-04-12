@@ -325,7 +325,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert user.info.confirmation_pending
 
-    Swoosh.TestAssertions.assert_email_sent(Pleroma.UserEmail.account_confirmation_email(user))
+    Swoosh.TestAssertions.assert_email_sent(
+      Pleroma.Emails.UserEmail.account_confirmation_email(user)
+    )
   end
 
   test "it registers a new user and parses mentions in the bio" do

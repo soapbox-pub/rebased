@@ -318,7 +318,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       refute token_record.used
 
       Swoosh.TestAssertions.assert_email_sent(
-        Pleroma.UserEmail.user_invitation_email(
+        Pleroma.Emails.UserEmail.user_invitation_email(
           user,
           token_record,
           recipient_email,
