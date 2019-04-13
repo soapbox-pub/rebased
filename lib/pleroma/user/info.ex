@@ -8,6 +8,8 @@ defmodule Pleroma.User.Info do
 
   alias Pleroma.User.Info
 
+  @type t :: %__MODULE__{}
+
   embedded_schema do
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
@@ -40,6 +42,7 @@ defmodule Pleroma.User.Info do
     field(:hide_follows, :boolean, default: false)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
+    field(:email_notifications, :map, default: %{"digest" => true})
 
     field(:notification_settings, :map,
       default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
@@ -73,6 +76,30 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:notification_settings])
     |> validate_required([:notification_settings])
+  end
+
+  @doc """
+  Update email notifications in the given User.Info struct.
+
+  Examples:
+
+      iex> update_email_notifications(%Pleroma.User.Info{email_notifications: %{"digest" => false}}, %{"digest" => true})
+      %Pleroma.User.Info{email_notifications: %{"digest" => true}}
+
+  """
+  @spec update_email_notifications(t(), map()) :: Ecto.Changeset.t()
+  def update_email_notifications(info, settings) do
+    email_notifications =
+      info.email_notifications
+      |> Map.merge(settings)
+      |> Map.take(["digest"])
+
+    params = %{email_notifications: email_notifications}
+    fields = [:email_notifications]
+
+    info
+    |> cast(params, fields)
+    |> validate_required(fields)
   end
 
   def add_to_note_count(info, number) do
