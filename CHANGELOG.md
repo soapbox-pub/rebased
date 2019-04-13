@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub C2S: OAuth endpoints
 
 ### Changed
+- **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
 - Enforcement of OAuth scopes
 - Add multiple use/time expiring invite token
 - Restyled OAuth pages to fit with Pleroma's default theme
@@ -30,7 +31,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - NodeInfo: Return `safe_dm_mentions` feature flag
 - Federation: Expand the audience of delete activities to all recipients of the deleted object
 - Configuration: Dedupe enabled by default
-- Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
 - Pleroma API: Support for emoji tags in `/api/pleroma/emoji` resulting in a breaking API change
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`
@@ -69,7 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [0.9.9999] - 2019-04-05
 ### Security
-- Various fixes
+- Mastodon API: Fix content warnings skipping HTML sanitization
 
 ## [0.9.999] - 2019-03-13
 Frontend changes only.
