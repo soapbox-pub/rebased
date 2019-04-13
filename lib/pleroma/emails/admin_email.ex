@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.AdminEmail do
+defmodule Pleroma.Emails.AdminEmail do
   @moduledoc "Admin emails"
 
   import Swoosh.Email

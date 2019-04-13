@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.UserEmail do
+defmodule Pleroma.Emails.UserEmail do
   @moduledoc "User emails"
 
   import Swoosh.Email

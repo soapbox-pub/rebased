@@ -261,6 +261,7 @@ defmodule Pleroma.Web.Router do
       post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
       get("/notifications", MastodonAPIController, :notifications)
       get("/notifications/:id", MastodonAPIController, :get_notification)
+      delete("/notifications/destroy_multiple", MastodonAPIController, :destroy_multiple)
 
       get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
       get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)

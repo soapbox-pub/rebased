@@ -301,8 +301,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
-    _id = activity.data["object"]["inReplyTo"]
-    replied_to_activities[activity.data["object"]["inReplyTo"]]
+    with nil <- replied_to_activities[activity.data["object"]["inReplyTo"]] do
+      # If user didn't participate in the thread
+      Activity.get_in_reply_to_activity(activity)
+    end
   end
 
   def get_reply_to(%{data: %{"object" => object}}, _) do

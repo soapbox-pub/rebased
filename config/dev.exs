@@ -18,7 +18,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   watchers: [],
   secure_cookie_flag: false
 
-config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Local
+config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Local
 
 # ## SSL Support
 #
