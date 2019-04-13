@@ -321,7 +321,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       instance_name = Pleroma.Config.get([:instance, :name])
 
       email =
-        Pleroma.UserEmail.user_invitation_email(
+        Pleroma.Emails.UserEmail.user_invitation_email(
           user,
           token_record,
           recipient_email,

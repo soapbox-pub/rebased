@@ -325,7 +325,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert user.info.confirmation_pending
 
-    email = Pleroma.UserEmail.account_confirmation_email(user)
+    email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
 
     notify_email = Pleroma.Config.get([:instance, :notify_email])
     instance_name = Pleroma.Config.get([:instance, :name])
