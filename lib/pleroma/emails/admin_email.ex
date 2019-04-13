@@ -11,7 +11,10 @@ defmodule Pleroma.AdminEmail do
 
   defp instance_config, do: Pleroma.Config.get(:instance)
   defp instance_name, do: instance_config()[:name]
-  defp instance_notify_email, do: instance_config()[:notify_email]
+
+  defp instance_notify_email do
+    Keyword.get(instance_config(), :notify_email, instance_config()[:email])
+  end
 
   defp user_url(user) do
     Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname)
