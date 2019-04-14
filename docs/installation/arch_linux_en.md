@@ -7,7 +7,6 @@ This guide will assume that you have administrative rights, either as root or a 
 
 * `postgresql`
 * `elixir`
-* `erlang-unixodbc`
 * `git`
 * `base-devel`
 
@@ -27,7 +26,7 @@ sudo pacman -Syu
 * Install some of the above mentioned programs:
 
 ```shell
-sudo pacman -S git base-devel elixir erlang-unixodbc
+sudo pacman -S git base-devel elixir
 ```
 
 ### Install PostgreSQL
