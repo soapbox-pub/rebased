@@ -55,6 +55,8 @@ defmodule Pleroma.User do
     field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
+    # TODO: add migration to delete `bookmarks` field from DB
+    field(:old_bookmarks, {:array, :string}, default: [], source: :bookmarks)
     has_many(:bookmarks, Bookmark)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
