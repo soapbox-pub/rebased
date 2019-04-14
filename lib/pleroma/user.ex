@@ -281,6 +281,8 @@ defmodule Pleroma.User do
       user
       |> Pleroma.Emails.UserEmail.account_confirmation_email()
       |> Pleroma.Emails.Mailer.deliver_async()
+
+      {:ok, :enqueued}
     else
       {:ok, :noop}
     end
