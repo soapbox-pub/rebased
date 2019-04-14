@@ -1093,6 +1093,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       ActivityPub.fetch_activities([], params)
       |> Enum.reverse()
 
+    user = Repo.preload(user, :bookmarks)
+
     conn
     |> add_link_headers(:favourites, activities)
     |> put_view(StatusView)
