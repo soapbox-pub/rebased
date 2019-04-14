@@ -10,6 +10,7 @@ defmodule Pleroma.User do
 
   alias Comeonin.Pbkdf2
   alias Pleroma.Activity
+  alias Pleroma.Bookmark
   alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -53,8 +54,8 @@ defmodule Pleroma.User do
     field(:search_rank, :float, virtual: true)
     field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
-    field(:bookmarks, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
+    has_many(:bookmarks, Bookmark)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
     embeds_one(:info, Pleroma.User.Info)
@@ -1377,22 +1378,6 @@ defmodule Pleroma.User do
       |> update_and_set_cache()
 
     updated_user
-  end
-
-  def bookmark(%User{} = user, status_id) do
-    bookmarks = Enum.uniq(user.bookmarks ++ [status_id])
-    update_bookmarks(user, bookmarks)
-  end
-
-  def unbookmark(%User{} = user, status_id) do
-    bookmarks = Enum.uniq(user.bookmarks -- [status_id])
-    update_bookmarks(user, bookmarks)
-  end
-
-  def update_bookmarks(%User{} = user, bookmarks) do
-    user
-    |> change(%{bookmarks: bookmarks})
-    |> update_and_set_cache
   end
 
   defp normalize_tags(tags) do
