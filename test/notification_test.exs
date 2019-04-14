@@ -300,6 +300,29 @@ defmodule Pleroma.NotificationTest do
       assert n2.seen == true
       assert n3.seen == false
     end
+
+    test "Updates `updated_at` field" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      Enum.each(0..10, fn i ->
+        {:ok, _activity} =
+          TwitterAPI.create_status(user1, %{
+            "status" => "#{i} hi @#{user2.nickname}"
+          })
+      end)
+
+      Process.sleep(1000)
+
+      [notification | _] = Notification.for_user(user2)
+
+      Notification.set_read_up_to(user2, notification.id)
+
+      Notification.for_user(user2)
+      |> Enum.each(fn notification ->
+        assert notification.updated_at > notification.inserted_at
+      end)
+    end
   end
 
   describe "notification target determination" do

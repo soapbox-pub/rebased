@@ -58,7 +58,10 @@ defmodule Pleroma.Notification do
         where: n.user_id == ^user_id,
         where: n.id <= ^id,
         update: [
-          set: [seen: true]
+          set: [
+            seen: true,
+            updated_at: ^NaiveDateTime.utc_now()
+          ]
         ]
       )
 
