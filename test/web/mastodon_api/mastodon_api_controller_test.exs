@@ -1008,8 +1008,41 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> assign(:user, user)
         |> post("/api/v1/statuses/#{activity.id}/reblog")
 
-      assert %{"reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 1}} =
-               json_response(conn, 200)
+      assert %{
+               "reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 1},
+               "reblogged" => true
+             } = json_response(conn, 200)
+
+      assert to_string(activity.id) == id
+    end
+
+    test "reblogged status for another user", %{conn: conn} do
+      activity = insert(:note_activity)
+      user1 = insert(:user)
+      user2 = insert(:user)
+      user3 = insert(:user)
+      {:ok, reblog_activity1, _object} = CommonAPI.repeat(activity.id, user1)
+      {:ok, _, _object} = CommonAPI.repeat(activity.id, user2)
+
+      conn_res =
+        conn
+        |> assign(:user, user3)
+        |> get("/api/v1/statuses/#{reblog_activity1.id}")
+
+      assert %{
+               "reblog" => %{"id" => id, "reblogged" => false, "reblogs_count" => 2},
+               "reblogged" => false
+             } = json_response(conn_res, 200)
+
+      conn_res =
+        conn
+        |> assign(:user, user2)
+        |> get("/api/v1/statuses/#{reblog_activity1.id}")
+
+      assert %{
+               "reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 2},
+               "reblogged" => true
+             } = json_response(conn_res, 200)
 
       assert to_string(activity.id) == id
     end
