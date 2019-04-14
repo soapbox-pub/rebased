@@ -31,14 +31,14 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 * `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used.
 
-## Pleroma.Mailer
+## Pleroma.Emails.Mailer
 * `adapter`: one of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters), or `Swoosh.Adapters.Local` for in-memory mailbox.
 * `api_key` / `password` and / or other adapter-specific settings, per the above documentation.
 
 An example for Sendgrid adapter:
 
 ```exs
-config :pleroma, Pleroma.Mailer,
+config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
 ```
@@ -46,7 +46,7 @@ config :pleroma, Pleroma.Mailer,
 An example for SMTP adapter:
 
 ```exs
-config :pleroma, Pleroma.Mailer,
+config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
   username: "YOUR_USERNAME@gmail.com",
@@ -317,7 +317,7 @@ Pleroma has the following queues:
 
 * `federator_outgoing` - Outgoing federation
 * `federator_incoming` - Incoming federation
-* `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
+* `mailer` - Email sender, see [`Pleroma.Emails.Mailer`](#pleroma-emails-mailer)
 * `transmogrifier` - Transmogrifier
 * `web_push` - Web push notifications
 * `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
