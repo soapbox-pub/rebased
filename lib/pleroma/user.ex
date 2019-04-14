@@ -270,7 +270,7 @@ defmodule Pleroma.User do
     with {:ok, user} <- Repo.insert(changeset),
          {:ok, user} <- autofollow_users(user),
          {:ok, _} <- Pleroma.User.WelcomeMessage.post_welcome_message_to_user(user),
-         {:ok, _} <- try_send_confirmation_email(user) do
+         :ok <- try_send_confirmation_email(user) do
       {:ok, user}
     end
   end
