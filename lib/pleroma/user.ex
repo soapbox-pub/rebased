@@ -278,9 +278,10 @@ defmodule Pleroma.User do
   def try_send_confirmation_email(%User{} = user) do
     if user.info.confirmation_pending &&
          Pleroma.Config.get([:instance, :account_activation_required]) do
-      user
-      |> Pleroma.Emails.UserEmail.account_confirmation_email()
-      |> Pleroma.Emails.Mailer.deliver_async()
+      :ok =
+        user
+        |> Pleroma.Emails.UserEmail.account_confirmation_email()
+        |> Pleroma.Emails.Mailer.deliver_async()
 
       {:ok, :enqueued}
     else
