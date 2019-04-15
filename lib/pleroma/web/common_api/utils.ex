@@ -228,7 +228,6 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     if inReplyTo do
       object
       |> Map.put("inReplyTo", inReplyTo.data["object"]["id"])
-      |> Map.put("inReplyToStatusId", inReplyTo.id)
     else
       object
     end

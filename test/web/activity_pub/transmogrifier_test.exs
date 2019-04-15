@@ -58,8 +58,6 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert returned_activity.data["object"]["inReplyToAtomUri"] ==
                "https://shitposter.club/notice/2827873"
-
-      assert returned_activity.data["object"]["inReplyToStatusId"] == activity.id
     end
 
     test "it works for incoming notices" do

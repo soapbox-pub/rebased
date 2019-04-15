@@ -342,7 +342,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     activity = Activity.get_by_id(id)
 
     assert activity.data["context"] == replied_to.data["context"]
-    assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
+    assert Activity.get_in_reply_to_activity(activity).id == replied_to.id
   end
 
   test "posting a status with an invalid in_reply_to_id", %{conn: conn} do
@@ -2724,7 +2724,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     activity = Activity.get_by_id(id)
 
     assert activity.data["object"]["inReplyTo"] == replied_to.data["object"]["id"]
-    assert activity.data["object"]["inReplyToStatusId"] == replied_to.id
+    assert Activity.get_in_reply_to_activity(activity).id == replied_to.id
 
     # Reblog from the third user
     conn2 =
