@@ -1599,12 +1599,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"error" => "Record not found"} = json_response(conn_res, 404)
 
     # self unfollow
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
     conn_res = post(conn, "/api/v1/accounts/#{user.id}/unfollow")
     assert %{"error" => "Record not found"} = json_response(conn_res, 404)
 
     # self follow via uri
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
     conn_res = post(conn, "/api/v1/follows", %{"uri" => user.nickname})
     assert %{"error" => "Record not found"} = json_response(conn_res, 404)
 

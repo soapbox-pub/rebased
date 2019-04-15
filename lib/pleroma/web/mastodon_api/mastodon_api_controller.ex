@@ -815,7 +815,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
-    with {_, %User{} = followed} <- {:followed, User.get_by_id(id)},
+    with {_, %User{} = followed} <- {:followed, User.get_cached_by_id(id)},
          {_, true} <- {:followed, follower.id != followed.id},
          false <- User.following?(follower, followed),
          {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
@@ -847,7 +847,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def follow(%{assigns: %{user: follower}} = conn, %{"uri" => uri}) do
-    with {_, %User{} = followed} <- {:followed, User.get_by_nickname(uri)},
+    with {_, %User{} = followed} <- {:followed, User.get_cached_by_nickname(uri)},
          {_, true} <- {:followed, follower.id != followed.id},
          {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
       conn
@@ -865,7 +865,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def unfollow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
-    with {_, %User{} = followed} <- {:followed, User.get_by_id(id)},
+    with {_, %User{} = followed} <- {:followed, User.get_cached_by_id(id)},
          {_, true} <- {:followed, follower.id != followed.id},
          {:ok, follower} <- CommonAPI.unfollow(follower, followed) do
       conn
