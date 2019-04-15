@@ -20,7 +20,7 @@ The files should be PNG (APNG is okay with `.png` for `image/png` Content-type) 
 
 ## Emoji tags (groups)
 
-Default tags are set in `config.exs`.
+Default tags are set in `config.exs`. To set your own tags, copy the structure to your secrets file (`prod.secret.exs` or `dev.secret.exs`) and edit it.
 ```elixir
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
