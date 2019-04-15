@@ -1021,6 +1021,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       user1 = insert(:user)
       user2 = insert(:user)
       user3 = insert(:user)
+      CommonAPI.favorite(activity.id, user2)
+      {:ok, user2} = User.bookmark(user2, activity.data["object"]["id"])
       {:ok, reblog_activity1, _object} = CommonAPI.repeat(activity.id, user1)
       {:ok, _, _object} = CommonAPI.repeat(activity.id, user2)
 
@@ -1031,7 +1033,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{
                "reblog" => %{"id" => id, "reblogged" => false, "reblogs_count" => 2},
-               "reblogged" => false
+               "reblogged" => false,
+               "favourited" => false,
+               "bookmarked" => false
              } = json_response(conn_res, 200)
 
       conn_res =
@@ -1041,7 +1045,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{
                "reblog" => %{"id" => id, "reblogged" => true, "reblogs_count" => 2},
-               "reblogged" => true
+               "reblogged" => true,
+               "favourited" => true,
+               "bookmarked" => true
              } = json_response(conn_res, 200)
 
       assert to_string(activity.id) == id
