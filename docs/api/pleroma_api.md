@@ -61,6 +61,15 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 * Response: JSON. Returns `{"status": "success"}` if the deletion was successful, `{"error": "[error message]"}` otherwise
 * Example response: `{"error": "Invalid password."}`
 
+## `/api/pleroma/disable_account`
+### Disable an account
+* Method `POST`
+* Authentication: required
+* Params:
+    * `password`: user's password
+* Response: JSON. Returns `{"status": "success"}` if the account was successfully disabled, `{"error": "[error message]"}` otherwise
+* Example response: `{"error": "Invalid password."}`
+
 ## `/api/account/register`
 ### Register a new user
 * Method `POST`
