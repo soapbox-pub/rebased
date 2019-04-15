@@ -54,7 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Deps: Updated Cowboy to 2.6
 - Deps: Updated Ecto to 3.0.7
 - Don't ship finmoji by default, they can be installed as an emoji pack
-- `User.bookmarks` in separate table, added support max_id & since_id for bookmark timeline endpoints.
+- Mastodon API: Added support max_id & since_id for bookmark timeline endpoints.
 
 ### Fixed
 - Followers counter not being updated when a follower is blocked
