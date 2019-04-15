@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Link/mention/hashtag detection is now handled by [auto_linker](https://git.pleroma.social/pleroma/auto_linker)
 - NodeInfo: Return `safe_dm_mentions` feature flag
 - Federation: Expand the audience of delete activities to all recipients of the deleted object
+- Federation: Removed `inReplyToStatusId` from objects
 - Configuration: Dedupe enabled by default
 - Pleroma API: Support for emoji tags in `/api/pleroma/emoji` resulting in a breaking API change
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`

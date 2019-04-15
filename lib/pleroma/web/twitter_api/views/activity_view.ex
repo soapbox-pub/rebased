@@ -291,7 +291,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,
-      "in_reply_to_status_id" => object["inReplyToStatusId"],
+      "in_reply_to_status_id" => reply_parent && reply_parent.id,
       "in_reply_to_screen_name" => reply_user && reply_user.nickname,
       "in_reply_to_profileurl" => User.profile_url(reply_user),
       "in_reply_to_ostatus_uri" => reply_user && reply_user.ap_id,

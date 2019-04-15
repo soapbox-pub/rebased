@@ -91,12 +91,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def increase_replies_count_if_reply(%{
-        "object" =>
-          %{"inReplyTo" => reply_ap_id, "inReplyToStatusId" => reply_status_id} = object,
+        "object" => %{"inReplyTo" => reply_ap_id} = object,
         "type" => "Create"
       }) do
     if is_public?(object) do
-      Activity.increase_replies_count(reply_status_id)
+      Activity.increase_replies_count(reply_ap_id)
       Object.increase_replies_count(reply_ap_id)
     end
   end
@@ -104,10 +103,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def increase_replies_count_if_reply(_create_data), do: :noop
 
   def decrease_replies_count_if_reply(%Object{
-        data: %{"inReplyTo" => reply_ap_id, "inReplyToStatusId" => reply_status_id} = object
+        data: %{"inReplyTo" => reply_ap_id} = object
       }) do
     if is_public?(object) do
-      Activity.decrease_replies_count(reply_status_id)
+      Activity.decrease_replies_count(reply_ap_id)
       Object.decrease_replies_count(reply_ap_id)
     end
   end
