@@ -31,7 +31,7 @@ defmodule Pleroma.ConversationTest do
 
   test "it creates or updates a conversation and participations for a given DM" do
     har = insert(:user)
-    jafnhar = insert(:user)
+    jafnhar = insert(:user, local: false)
     tridi = insert(:user)
 
     {:ok, activity} =
