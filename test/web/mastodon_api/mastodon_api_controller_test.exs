@@ -334,6 +334,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
              }
            ] = response
 
+    assert length(res_accounts) == 2
     assert is_binary(res_id)
     assert unread == true
     assert res_last_status["id"] == direct.id

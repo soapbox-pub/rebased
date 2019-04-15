@@ -60,6 +60,7 @@ defmodule Pleroma.Conversation.Participation do
       order_by: [desc: p.updated_at]
     )
     |> Pleroma.Pagination.fetch_paginated(params)
+    |> Repo.preload(conversation: [:users])
   end
 
   def for_user_with_last_activity_id(user, params \\ %{}) do

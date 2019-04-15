@@ -1594,10 +1594,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
         last_status = StatusView.render("status.json", %{activity: activity, for: user})
 
+        accounts =
+          AccountView.render("accounts.json", %{
+            users: participation.conversation.users,
+            as: :user
+          })
+
         %{
           id: participation.id |> to_string(),
-          # TODO: Add this.
-          accounts: [],
+          accounts: accounts,
           unread: !participation.read,
           last_status: last_status
         }
