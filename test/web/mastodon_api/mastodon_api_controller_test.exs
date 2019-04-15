@@ -1587,6 +1587,40 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(other_user.id)
   end
 
+  test "following / unfollowing errors" do
+    user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+
+    # self follow
+    conn_res = post(conn, "/api/v1/accounts/#{user.id}/follow")
+    assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+
+    # self unfollow
+    user = User.get_by_id(user.id)
+    conn_res = post(conn, "/api/v1/accounts/#{user.id}/unfollow")
+    assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+
+    # self follow via uri
+    user = User.get_by_id(user.id)
+    conn_res = post(conn, "/api/v1/follows", %{"uri" => user.nickname})
+    assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+
+    # follow non existing user
+    conn_res = post(conn, "/api/v1/accounts/doesntexist/follow")
+    assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+
+    # follow non existing user via uri
+    conn_res = post(conn, "/api/v1/follows", %{"uri" => "doesntexist"})
+    assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+
+    # unfollow non existing user
+    conn_res = post(conn, "/api/v1/accounts/doesntexist/unfollow")
+    assert %{"error" => "Record not found"} = json_response(conn_res, 404)
+  end
+
   test "muting / unmuting a user", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
