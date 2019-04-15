@@ -1590,12 +1590,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     conversations =
       Enum.map(participations, fn participation ->
+        activity = Activity.get_by_id_with_object(participation.last_activity_id)
+
+        last_status = StatusView.render("status.json", %{activity: activity, for: user})
+
         %{
-          id: participation.id,
+          id: participation.id |> to_string(),
           # TODO: Add this.
           accounts: [],
           unread: !participation.read,
-          last_status: participation.last_activity_id
+          last_status: last_status
         }
       end)
 

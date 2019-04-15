@@ -334,8 +334,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
              }
            ] = response
 
+    assert is_binary(res_id)
     assert unread == true
-    assert res_last_status == direct.id
+    assert res_last_status["id"] == direct.id
 
     # Apparently undocumented API endpoint
     res_conn =
@@ -350,7 +351,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     res_conn =
       conn
       |> assign(:user, user_one)
-      |> get("/api/v1/statuses/#{res_last_status}/context")
+      |> get("/api/v1/statuses/#{res_last_status["id"]}/context")
 
     assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
   end
