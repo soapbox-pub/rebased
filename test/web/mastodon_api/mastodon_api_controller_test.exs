@@ -2048,13 +2048,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     conn = get(conn, "/api/v1/instance")
     assert result = json_response(conn, 200)
 
+    email = Pleroma.Config.get([:instance, :email])
     # Note: not checking for "max_toot_chars" since it's optional
     assert %{
              "uri" => _,
              "title" => _,
              "description" => _,
              "version" => _,
-             "email" => _,
+             "email" => from_config_email,
              "urls" => %{
                "streaming_api" => _
              },
@@ -2063,6 +2064,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
              "languages" => _,
              "registrations" => _
            } = result
+
+    assert email == from_config_email
   end
 
   test "get instance stats", %{conn: conn} do

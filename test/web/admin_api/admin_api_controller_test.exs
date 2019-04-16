@@ -317,13 +317,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert token_record
       refute token_record.used
 
-      Swoosh.TestAssertions.assert_email_sent(
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      email =
         Pleroma.Emails.UserEmail.user_invitation_email(
           user,
           token_record,
           recipient_email,
           recipient_name
         )
+
+      Swoosh.TestAssertions.assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {recipient_name, recipient_email},
+        html_body: email.html_body
       )
     end
 

@@ -23,6 +23,10 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test
 
+config :pleroma, :instance,
+  email: "admin@example.com",
+  notify_email: "noreply@example.com"
+
 # Configure your database
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,

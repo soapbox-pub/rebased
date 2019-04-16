@@ -15,7 +15,8 @@ defmodule Pleroma.Emails.UserEmail do
   defp instance_name, do: instance_config()[:name]
 
   defp sender do
-    {instance_name(), instance_config()[:email]}
+    email = Keyword.get(instance_config(), :notify_email, instance_config()[:email])
+    {instance_name(), email}
   end
 
   defp recipient(email, nil), do: email
