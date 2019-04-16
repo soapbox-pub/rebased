@@ -52,7 +52,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
   defp recipient_in_collection(_, _), do: false
 
-  def recipient_in_message(ap_id, params) do
+  def recipient_in_message(%User{ap_id: ap_id} = recipient, %User{} = actor, params) do
     cond do
       recipient_in_collection(ap_id, params["to"]) ->
         true
@@ -69,6 +69,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       # if the message is unaddressed at all, then assume it is directly addressed
       # to the recipient
       !params["to"] && !params["cc"] && !params["bto"] && !params["bcc"] ->
+        true
+
+      # if the message is sent from somebody the user is following, then assume it
+      # is addressed to the recipient
+      User.following?(recipient, actor) ->
         true
 
       true ->
