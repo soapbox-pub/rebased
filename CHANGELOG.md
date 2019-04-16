@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Federation: Expand the audience of delete activities to all recipients of the deleted object
 - Federation: Removed `inReplyToStatusId` from objects
 - Configuration: Dedupe enabled by default
+- Configuration: Added `extra_cookie_attrs` for setting non-standard cookie attributes. Defaults to ["SameSite=Lax"] so that remote follows work.
 - Pleroma API: Support for emoji tags in `/api/pleroma/emoji` resulting in a breaking API change
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`

@@ -154,7 +154,10 @@ config :pleroma, Pleroma.Web.Endpoint,
   signing_salt: "CqaoopA2",
   render_errors: [view: Pleroma.Web.ErrorView, accepts: ~w(json)],
   pubsub: [name: Pleroma.PubSub, adapter: Phoenix.PubSub.PG2],
-  secure_cookie_flag: true
+  secure_cookie_flag: true,
+  extra_cookie_attrs: [
+    "SameSite=Lax"
+  ]
 
 # Configures Elixir's Logger
 config :logger, :console,
