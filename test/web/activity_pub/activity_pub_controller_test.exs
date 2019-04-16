@@ -253,6 +253,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
+    test "it accepts messages from actors that are followed by the user", %{conn: conn} do
+      recipient = insert(:user)
+      actor = insert(:user, %{ap_id: "http://mastodon.example.org/users/actor"})
+
+      {:ok, recipient} = User.follow(recipient, actor)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      object =
+        data["object"]
+        |> Map.put("attributedTo", actor.ap_id)
+
+      data =
+        data
+        |> Map.put("actor", actor.ap_id)
+        |> Map.put("object", object)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{recipient.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      :timer.sleep(500)
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
     test "it rejects reads from other users", %{conn: conn} do
       user = insert(:user)
       otheruser = insert(:user)
