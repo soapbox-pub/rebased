@@ -1879,7 +1879,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     capture_log(fn ->
       conn =
         conn
-        |> get("/api/v1/search", %{"q" => activity.data["object"]["id"]})
+        |> get("/api/v1/search", %{"q" => Object.normalize(activity).id})
 
       assert results = json_response(conn, 200)
 

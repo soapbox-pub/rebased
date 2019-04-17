@@ -125,8 +125,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
-    object = Object.normalize(object)
+  def render("status.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
+    object = Object.normalize(activity)
 
     user = get_user(activity.data["actor"])
 
@@ -320,8 +320,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def get_reply_to(%{data: %{"object" => object}}, _) do
-    object = Object.normalize(object)
+  def get_reply_to(%{data: %{"object" => _object}} = activity, _) do
+    object = Object.normalize(activity)
 
     if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
