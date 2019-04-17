@@ -4,12 +4,15 @@
 
 defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
+
+  import Pleroma.Factory
+  import Mock
+
   alias Pleroma.Notification
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  import Pleroma.Factory
 
   describe "create_notifications" do
     test "notifies someone when they are directly addressed" do
@@ -312,16 +315,19 @@ defmodule Pleroma.NotificationTest do
           })
       end)
 
-      Process.sleep(1000)
-
       [notification | _] = Notification.for_user(user2)
 
-      Notification.set_read_up_to(user2, notification.id)
+      utc_now = NaiveDateTime.utc_now()
+      future = NaiveDateTime.add(utc_now, 5, :second)
 
-      Notification.for_user(user2)
-      |> Enum.each(fn notification ->
-        assert notification.updated_at > notification.inserted_at
-      end)
+      with_mock NaiveDateTime, utc_now: fn -> future end do
+        Notification.set_read_up_to(user2, notification.id)
+
+        Notification.for_user(user2)
+        |> Enum.each(fn notification ->
+          assert notification.updated_at > notification.inserted_at
+        end)
+      end
     end
   end
 

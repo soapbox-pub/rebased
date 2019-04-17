@@ -55,6 +55,8 @@ defmodule Pleroma.User do
     field(:tags, {:array, :string}, default: [])
     field(:bookmarks, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
+    field(:current_sign_in_at, :naive_datetime)
+    field(:last_digest_emailed_at, :naive_datetime)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
     embeds_one(:info, Pleroma.User.Info)

@@ -464,6 +464,16 @@ config :pleroma, Pleroma.ScheduledActivity,
   total_user_limit: 300,
   enabled: true
 
+config :pleroma, :email_notifications,
+  digest: %{
+    # When to send digest email, in crontab format (https://en.wikipedia.org/wiki/Cron)
+    schedule: "0 0 * * 0",
+    # Minimum interval between digest emails to one user
+    interval: 7,
+    # Minimum user inactivity threshold
+    inactivity_threshold: 7
+  }
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env()}.exs"
