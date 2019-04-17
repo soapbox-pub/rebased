@@ -555,10 +555,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def unbookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Activity.get_by_id(id),
+    with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         %Object{} = object <- Object.normalize(activity),
          %User{} = user <- User.get_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
-         {:ok, user} <- User.unbookmark(user, activity.data["object"]["id"]) do
+         {:ok, user} <- User.unbookmark(user, object.data["id"]) do
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
