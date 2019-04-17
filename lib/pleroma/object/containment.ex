@@ -9,9 +9,6 @@ defmodule Pleroma.Object.Containment do
   Object containment is an important step in validating remote objects to prevent
   spoofing, therefore removal of object containment functions is NOT recommended.
   """
-
-  require Logger
-
   def get_actor(%{"actor" => actor}) when is_binary(actor) do
     actor
   end

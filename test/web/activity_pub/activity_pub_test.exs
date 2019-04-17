@@ -832,7 +832,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
 
       private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
-      assert [public_activity, private_activity_1, private_activity_3] == activities
+      assert [public_activity, private_activity_1, private_activity_3] ==
+               activities
+
       assert length(activities) == 3
 
       activities = ActivityPub.contain_timeline(activities, user1)
