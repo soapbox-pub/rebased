@@ -1,10 +1,9 @@
 defmodule Pleroma.Object.FetcherTest do
   use Pleroma.DataCase
 
-  alias Pleroma.{Activity, Object}
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Object.Fetcher
-
-  import Pleroma.Factory
 
   describe "actor origin containment" do
     test "it rejects objects with a bogus origin" do

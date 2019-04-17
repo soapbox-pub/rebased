@@ -3,7 +3,6 @@ defmodule Pleroma.Object.ContainmentTest do
 
   alias Pleroma.User
   alias Pleroma.Object.Containment
-  alias Pleroma.Web.ActivityPub.ActivityPub
 
   import Pleroma.Factory
 
@@ -45,7 +44,7 @@ defmodule Pleroma.Object.ContainmentTest do
     end
 
     test "users cannot be collided through fake direction spoofing attempts" do
-      user =
+      _user =
         insert(:user, %{
           nickname: "rye@niu.moe",
           local: false,
