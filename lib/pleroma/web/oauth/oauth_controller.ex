@@ -44,7 +44,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   def authorize(conn, params), do: do_authorize(conn, params)
 
-  defp do_authorize(conn, %{"authorization" => auth_attrs}) do
+  defp do_authorize(conn, %{"authorization" => auth_attrs}), do: do_authorize(conn, auth_attrs)
+
+  defp do_authorize(conn, auth_attrs) do
     app = Repo.get_by(App, client_id: auth_attrs["client_id"])
     available_scopes = (app && app.scopes) || []
     scopes = oauth_scopes(auth_attrs, nil) || available_scopes
@@ -59,8 +61,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       params: auth_attrs
     })
   end
-
-  defp do_authorize(conn, auth_attrs), do: do_authorize(conn, %{"authorization" => auth_attrs})
 
   def create_authorization(
         conn,
