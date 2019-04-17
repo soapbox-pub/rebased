@@ -360,7 +360,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
   test "a peertube video" do
     {:ok, object} =
-      ActivityPub.fetch_object_from_id(
+      Pleroma.Object.Fetcher.fetch_object_from_id(
         "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
       )
 

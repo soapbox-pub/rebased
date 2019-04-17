@@ -27,7 +27,7 @@ defmodule Pleroma.Object.Fetcher do
            },
            :ok <- Containment.contain_origin(id, params),
            {:ok, activity} <- Transmogrifier.handle_incoming(params) do
-        {:ok, Object.normalize(activity.data["object"], false)}
+        {:ok, Object.normalize(activity, false)}
       else
         {:error, {:reject, nil}} ->
           {:reject, nil}
@@ -56,16 +56,13 @@ defmodule Pleroma.Object.Fetcher do
   end
 
   def fetch_and_contain_remote_object_from_id(id) do
-    Logger.info("Fetching #{id} via AP")
+    Logger.info("Fetching object #{id} via AP")
 
     with true <- String.starts_with?(id, "http"),
-         {:ok, %{body: body, status_code: code}} when code in 200..299 <-
+         {:ok, %{body: body, status: code}} when code in 200..299 <-
            @httpoison.get(
              id,
-             [Accept: "application/activity+json"],
-             follow_redirect: true,
-             timeout: 10000,
-             recv_timeout: 20000
+             [{:Accept, "application/activity+json"}]
            ),
          {:ok, data} <- Jason.decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do

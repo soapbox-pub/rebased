@@ -4,6 +4,12 @@ defmodule Pleroma.Object.FetcherTest do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   describe "actor origin containment" do
     test "it rejects objects with a bogus origin" do
@@ -24,7 +30,7 @@ defmodule Pleroma.Object.FetcherTest do
       {:ok, object} =
         Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
 
-      assert activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
       assert activity.data["id"]
 
       {:ok, object_again} =
@@ -38,7 +44,7 @@ defmodule Pleroma.Object.FetcherTest do
 
     test "it works with objects only available via Ostatus" do
       {:ok, object} = Fetcher.fetch_object_from_id("https://shitposter.club/notice/2827873")
-      assert activity = Activity.get_create_activity_by_object_ap_id(object.data["id"])
+      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
       assert activity.data["id"]
 
       {:ok, object_again} = Fetcher.fetch_object_from_id("https://shitposter.club/notice/2827873")
