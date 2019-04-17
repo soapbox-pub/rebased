@@ -44,6 +44,7 @@ defmodule Pleroma.Object do
   def normalize(_, fetch_remote \\ true)
   # If we pass an Activity to Object.normalize(), we can try to use the preloaded object.
   # Use this whenever possible, especially when walking graphs in an O(N) loop!
+  def normalize(%Object{} = object, _), do: object
   def normalize(%Activity{object: %Object{} = object}, _), do: object
 
   # A hack for fake activities
