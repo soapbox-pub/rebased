@@ -95,7 +95,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         "type" => "Create"
       }) do
     if is_public?(object) do
-      Activity.increase_replies_count(reply_ap_id)
       Object.increase_replies_count(reply_ap_id)
     end
   end
@@ -106,7 +105,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         data: %{"inReplyTo" => reply_ap_id} = object
       }) do
     if is_public?(object) do
-      Activity.decrease_replies_count(reply_ap_id)
       Object.decrease_replies_count(reply_ap_id)
     end
   end

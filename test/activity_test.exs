@@ -28,18 +28,4 @@ defmodule Pleroma.ActivityTest do
 
     assert activity == found_activity
   end
-
-  test "reply count" do
-    %{id: id, data: %{"object" => %{"id" => object_ap_id}}} = activity = insert(:note_activity)
-
-    replies_count = activity.data["object"]["repliesCount"] || 0
-    expected_increase = replies_count + 1
-    Activity.increase_replies_count(object_ap_id)
-    %{data: %{"object" => %{"repliesCount" => actual_increase}}} = Activity.get_by_id(id)
-    assert expected_increase == actual_increase
-    expected_decrease = expected_increase - 1
-    Activity.decrease_replies_count(object_ap_id)
-    %{data: %{"object" => %{"repliesCount" => actual_decrease}}} = Activity.get_by_id(id)
-    assert expected_decrease == actual_decrease
-  end
 end
