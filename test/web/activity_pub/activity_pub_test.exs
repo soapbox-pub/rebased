@@ -84,17 +84,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, status_two} = CommonAPI.post(user, %{"status" => ". #essais"})
       {:ok, status_three} = CommonAPI.post(user, %{"status" => ". #test #reject"})
 
-      fetch_one = ActivityPub.fetch_activities([], %{"tag" => "test"})
-      fetch_two = ActivityPub.fetch_activities([], %{"tag" => ["test", "essais"]})
+      fetch_one = ActivityPub.fetch_activities([], %{"type" => "Create", "tag" => "test"})
+
+      fetch_two =
+        ActivityPub.fetch_activities([], %{"type" => "Create", "tag" => ["test", "essais"]})
 
       fetch_three =
         ActivityPub.fetch_activities([], %{
+          "type" => "Create",
           "tag" => ["test", "essais"],
           "tag_reject" => ["reject"]
         })
 
       fetch_four =
         ActivityPub.fetch_activities([], %{
+          "type" => "Create",
           "tag" => ["test"],
           "tag_all" => ["test", "reject"]
         })
@@ -832,6 +836,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
 
       private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
+
       assert [public_activity, private_activity_1, private_activity_3] ==
                activities
 
