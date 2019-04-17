@@ -775,10 +775,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, a4} =
         CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "direct"})
 
-      {:ok, _} = a1.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
-      {:ok, _} = a2.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
-      {:ok, _} = a3.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
-      {:ok, _} = a4.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
+      {:ok, _} = Object.normalize(a1) |> ActivityPub.delete()
+      {:ok, _} = Object.normalize(a2) |> ActivityPub.delete()
+      {:ok, _} = Object.normalize(a3) |> ActivityPub.delete()
+      {:ok, _} = Object.normalize(a4) |> ActivityPub.delete()
 
       user = User.get_by_id(user.id)
       assert user.info.note_count == 10
