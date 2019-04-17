@@ -217,8 +217,10 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{
            actor: ^user_ap_id,
            data: %{
-             "type" => "Create",
-             "object" => %{
+             "type" => "Create"
+           },
+           object: %Object{
+             data: %{
                "to" => object_to,
                "type" => "Note"
              }
