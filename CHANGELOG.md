@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `safe_dm_mentions` option
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
+- Configuration: `notify_email` option
 - Pleroma API: User subscribtions
 - Admin API: Endpoints for listing/revoking invite tokens
 - Admin API: Endpoints for making users follow/unfollow each other
