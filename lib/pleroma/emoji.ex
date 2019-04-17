@@ -14,6 +14,8 @@ defmodule Pleroma.Emoji do
   """
   use GenServer
 
+  require Logger
+
   @type pattern :: Regex.t() | module() | String.t()
   @type patterns :: pattern() | [pattern()]
   @type group_patterns :: keyword(patterns())
@@ -79,95 +81,49 @@ defmodule Pleroma.Emoji do
   end
 
   defp load do
-    finmoji_enabled = Keyword.get(Application.get_env(:pleroma, :instance), :finmoji_enabled)
-    shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
+    static_path = Path.join(:code.priv_dir(:pleroma), "static")
 
-    emojis =
-      (load_finmoji(finmoji_enabled) ++
-         load_from_file("config/emoji.txt") ++
-         load_from_file("config/custom_emoji.txt") ++
-         load_from_globs(shortcode_globs))
-      |> Enum.reject(fn value -> value == nil end)
+    emoji_dir_path =
+      Path.join([
+        static_path,
+        Pleroma.Config.get!([:instance, :static_dir]),
+        "emoji"
+      ])
 
-    true = :ets.insert(@ets, emojis)
+    case File.ls(emoji_dir_path) do
+      {:error, :enoent} ->
+        # The custom emoji directory doesn't exist,
+        # don't do anything
+        nil
+
+      {:error, e} ->
+        # There was some other error
+        Logger.error("Could not access the custom emoji directory #{emoji_dir_path}: #{e}")
+
+      {:ok, packs} ->
+        # Print the packs we've found
+        Logger.info("Found emoji packs: #{Enum.join(packs, ", ")}")
+
+        # compat thing for old custom emoji handling
+        shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
+
+        emojis =
+          # Add the things fro
+          # Deprecated?
+          (Enum.flat_map(
+             packs,
+             fn pack -> load_from_file(Path.join([emoji_dir_path, pack, "emoji.txt"])) end
+           ) ++
+             load_from_file("config/emoji.txt") ++
+             load_from_file("config/custom_emoji.txt") ++
+             load_from_globs(shortcode_globs))
+          |> Enum.reject(fn value -> value == nil end)
+
+        true = :ets.insert(@ets, emojis)
+    end
+
     :ok
   end
-
-  @finmoji [
-    "a_trusted_friend",
-    "alandislands",
-    "association",
-    "auroraborealis",
-    "baby_in_a_box",
-    "bear",
-    "black_gold",
-    "christmasparty",
-    "crosscountryskiing",
-    "cupofcoffee",
-    "education",
-    "fashionista_finns",
-    "finnishlove",
-    "flag",
-    "forest",
-    "four_seasons_of_bbq",
-    "girlpower",
-    "handshake",
-    "happiness",
-    "headbanger",
-    "icebreaker",
-    "iceman",
-    "joulutorttu",
-    "kaamos",
-    "kalsarikannit_f",
-    "kalsarikannit_m",
-    "karjalanpiirakka",
-    "kicksled",
-    "kokko",
-    "lavatanssit",
-    "losthopes_f",
-    "losthopes_m",
-    "mattinykanen",
-    "meanwhileinfinland",
-    "moominmamma",
-    "nordicfamily",
-    "out_of_office",
-    "peacemaker",
-    "perkele",
-    "pesapallo",
-    "polarbear",
-    "pusa_hispida_saimensis",
-    "reindeer",
-    "sami",
-    "sauna_f",
-    "sauna_m",
-    "sauna_whisk",
-    "sisu",
-    "stuck",
-    "suomimainittu",
-    "superfood",
-    "swan",
-    "the_cap",
-    "the_conductor",
-    "the_king",
-    "the_voice",
-    "theoriginalsanta",
-    "tomoffinland",
-    "torillatavataan",
-    "unbreakable",
-    "waiting",
-    "white_nights",
-    "woollysocks"
-  ]
-
-  defp load_finmoji(true) do
-    Enum.map(@finmoji, fn finmoji ->
-      file_name = "/finmoji/128px/#{finmoji}-128.png"
-      group = match_extra(@groups, file_name)
-      {finmoji, file_name, to_string(group)}
-    end)
-  end
-
-  defp load_finmoji(_), do: []
 
   defp load_from_file(file) do
     if File.exists?(file) do
