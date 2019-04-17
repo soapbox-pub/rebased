@@ -246,20 +246,22 @@ defmodule Pleroma.Activity do
     |> Repo.all()
   end
 
-  def increase_replies_count(id) do
-    Activity
-    |> where(id: ^id)
-    |> update([a],
-      set: [
-        data:
-          fragment(
-            """
-            jsonb_set(?, '{object, repliesCount}',
-              (coalesce((?->'object'->>'repliesCount')::int, 0) + 1)::varchar::jsonb, true)
-            """,
-            a.data,
-            a.data
-          )
+  def increase_replies_count(nil), do: nil
+
+  def increase_replies_count(object_ap_id) do
+    from(a in create_by_object_ap_id(object_ap_id),
+      update: [
+        set: [
+          data:
+            fragment(
+              """
+              jsonb_set(?, '{object, repliesCount}',
+                (coalesce((?->'object'->>'repliesCount')::int, 0) + 1)::varchar::jsonb, true)
+              """,
+              a.data,
+              a.data
+            )
+        ]
       ]
     )
     |> Repo.update_all([])
@@ -269,20 +271,22 @@ defmodule Pleroma.Activity do
     end
   end
 
-  def decrease_replies_count(id) do
-    Activity
-    |> where(id: ^id)
-    |> update([a],
-      set: [
-        data:
-          fragment(
-            """
-            jsonb_set(?, '{object, repliesCount}',
-              (greatest(0, (?->'object'->>'repliesCount')::int - 1))::varchar::jsonb, true)
-            """,
-            a.data,
-            a.data
-          )
+  def decrease_replies_count(nil), do: nil
+
+  def decrease_replies_count(object_ap_id) do
+    from(a in create_by_object_ap_id(object_ap_id),
+      update: [
+        set: [
+          data:
+            fragment(
+              """
+              jsonb_set(?, '{object, repliesCount}',
+                (greatest(0, (?->'object'->>'repliesCount')::int - 1))::varchar::jsonb, true)
+              """,
+              a.data,
+              a.data
+            )
+        ]
       ]
     )
     |> Repo.update_all([])

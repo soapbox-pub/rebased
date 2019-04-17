@@ -105,7 +105,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
              get_in(activity.data, ["object", "context"])
 
     assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
-    assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
+    assert Activity.get_in_reply_to_activity(reply).id == activity.id
   end
 
   test "Follow another user using user_id" do
@@ -325,8 +325,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert user.info.confirmation_pending
 
+    email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
+
+    notify_email = Pleroma.Config.get([:instance, :notify_email])
+    instance_name = Pleroma.Config.get([:instance, :name])
+
     Swoosh.TestAssertions.assert_email_sent(
-      Pleroma.Emails.UserEmail.account_confirmation_email(user)
+      from: {instance_name, notify_email},
+      to: {user.name, user.email},
+      html_body: email.html_body
     )
   end
 

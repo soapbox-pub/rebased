@@ -54,6 +54,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp get_context_id(_), do: nil
 
+  defp reblogged?(activity, user) do
+    object = activity.data["object"] || %{}
+    present?(user && user.ap_id in (object["announcements"] || []))
+  end
+
   def render("index.json", opts) do
     replied_to_activities = get_replied_to_activities(opts.activities)
 
@@ -72,8 +77,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     user = get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
 
-    reblogged = Activity.get_create_by_object_ap_id(object)
-    reblogged = render("status.json", Map.put(opts, :activity, reblogged))
+    reblogged_activity = Activity.get_create_by_object_ap_id(object)
+    reblogged = render("status.json", Map.put(opts, :activity, reblogged_activity))
 
     mentions =
       activity.recipients
@@ -94,7 +99,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogs_count: 0,
       replies_count: 0,
       favourites_count: 0,
-      reblogged: false,
+      reblogged: reblogged?(reblogged_activity, opts[:for]),
       favourited: false,
       bookmarked: false,
       muted: false,
@@ -132,7 +137,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
 
-    repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
     favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
     bookmarked = opts[:for] && object["id"] in opts[:for].bookmarks
 
@@ -203,7 +207,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogs_count: announcement_count,
       replies_count: object["repliesCount"] || 0,
       favourites_count: like_count,
-      reblogged: present?(repeated),
+      reblogged: reblogged?(activity, opts[:for]),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
       muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),

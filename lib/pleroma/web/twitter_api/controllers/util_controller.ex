@@ -304,7 +304,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def follow_import(%{assigns: %{user: follower}} = conn, %{"list" => list}) do
-    with followed_identifiers <- String.split(list),
+    with lines <- String.split(list, "\n"),
+         followed_identifiers <-
+           Enum.map(lines, fn line ->
+             String.split(line, ",") |> List.first()
+           end)
+           |> List.delete("Account address"),
          {:ok, _} = Task.start(fn -> User.follow_import(follower, followed_identifiers) end) do
       json(conn, "job started")
     end
