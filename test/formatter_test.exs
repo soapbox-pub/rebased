@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.FormatterTest do
   alias Pleroma.Formatter
   alias Pleroma.User
@@ -5,17 +9,28 @@ defmodule Pleroma.FormatterTest do
 
   import Pleroma.Factory
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   describe ".add_hashtag_links" do
     test "turns hashtags into links" do
       text = "I love #cofe and #2hu"
 
       expected_text =
-        "I love <a href='http://localhost:4001/tag/cofe' rel='tag'>#cofe</a> and <a href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a>"
+        "I love <a class='hashtag' data-tag='cofe' href='http://localhost:4001/tag/cofe' rel='tag'>#cofe</a> and <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a>"
 
-      tags = Formatter.parse_tags(text)
+      assert {^expected_text, [], _tags} = Formatter.linkify(text)
+    end
 
-      assert expected_text ==
-               Formatter.add_hashtag_links({[], text}, tags) |> Formatter.finalize()
+    test "does not turn html characters to tags" do
+      text = "#fact_3: pleroma does what mastodon't"
+
+      expected_text =
+        "<a class='hashtag' data-tag='fact_3' href='http://localhost:4001/tag/fact_3' rel='tag'>#fact_3</a>: pleroma does what mastodon't"
+
+      assert {^expected_text, [], _tags} = Formatter.linkify(text)
     end
   end
 
@@ -26,110 +41,109 @@ defmodule Pleroma.FormatterTest do
       expected =
         "Hey, check out <a href=\"https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla\">https://www.youtube.com/watch?v=8Zg1-TufF%20zY?x=1&y=2#blabla</a> ."
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "https://mastodon.social/@lambadalambda"
 
       expected =
         "<a href=\"https://mastodon.social/@lambadalambda\">https://mastodon.social/@lambadalambda</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "https://mastodon.social:4000/@lambadalambda"
 
       expected =
         "<a href=\"https://mastodon.social:4000/@lambadalambda\">https://mastodon.social:4000/@lambadalambda</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "@lambadalambda"
       expected = "@lambadalambda"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "http://www.cs.vu.nl/~ast/intel/"
       expected = "<a href=\"http://www.cs.vu.nl/~ast/intel/\">http://www.cs.vu.nl/~ast/intel/</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "https://forum.zdoom.org/viewtopic.php?f=44&t=57087"
 
       expected =
         "<a href=\"https://forum.zdoom.org/viewtopic.php?f=44&t=57087\">https://forum.zdoom.org/viewtopic.php?f=44&t=57087</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul"
 
       expected =
         "<a href=\"https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul\">https://en.wikipedia.org/wiki/Sophia_(Gnosticism)#Mythos_of_the_soul</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "https://www.google.co.jp/search?q=Nasim+Aghdam"
 
       expected =
         "<a href=\"https://www.google.co.jp/search?q=Nasim+Aghdam\">https://www.google.co.jp/search?q=Nasim+Aghdam</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "https://en.wikipedia.org/wiki/Duff's_device"
 
       expected =
         "<a href=\"https://en.wikipedia.org/wiki/Duff's_device\">https://en.wikipedia.org/wiki/Duff's_device</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "https://pleroma.com https://pleroma.com/sucks"
 
       expected =
         "<a href=\"https://pleroma.com\">https://pleroma.com</a> <a href=\"https://pleroma.com/sucks\">https://pleroma.com/sucks</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text = "xmpp:contact@hacktivis.me"
 
       expected = "<a href=\"xmpp:contact@hacktivis.me\">xmpp:contact@hacktivis.me</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
 
       text =
         "magnet:?xt=urn:btih:7ec9d298e91d6e4394d1379caf073c77ff3e3136&tr=udp%3A%2F%2Fopentor.org%3A2710&tr=udp%3A%2F%2Ftracker.blackunicorn.xyz%3A6969&tr=udp%3A%2F%2Ftracker.ccc.de%3A80&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=wss%3A%2F%2Ftracker.btorrent.xyz&tr=wss%3A%2F%2Ftracker.fastcast.nz&tr=wss%3A%2F%2Ftracker.openwebtorrent.com"
 
       expected = "<a href=\"#{text}\">#{text}</a>"
 
-      assert Formatter.add_links({[], text}) |> Formatter.finalize() == expected
+      assert {^expected, [], []} = Formatter.linkify(text)
     end
   end
 
   describe "add_user_links" do
-    test "gives a replacement for user links" do
-      text = "@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me"
+    test "gives a replacement for user links, using local nicknames in user links text" do
+      text = "@gsimg According to @archa_eme_, that is @daggsy. Also hello @archaeme@archae.me"
       gsimg = insert(:user, %{nickname: "gsimg"})
 
       archaeme =
         insert(:user, %{
-          nickname: "archaeme",
-          info: %Pleroma.User.Info{source_data: %{"url" => "https://archeme/@archaeme"}}
+          nickname: "archa_eme_",
+          info: %Pleroma.User.Info{source_data: %{"url" => "https://archeme/@archa_eme_"}}
         })
 
       archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
 
-      mentions = Pleroma.Formatter.parse_mentions(text)
+      {text, mentions, []} = Formatter.linkify(text)
 
-      {subs, text} = Formatter.add_user_links({[], text}, mentions)
-
-      assert length(subs) == 3
-      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+      assert length(mentions) == 3
 
       expected_text =
-        "<span><a class='mention' href='#{gsimg.ap_id}'>@<span>gsimg</span></a></span> According to <span><a class='mention' href='#{
-          "https://archeme/@archaeme"
-        }'>@<span>archaeme</span></a></span>, that is @daggsy. Also hello <span><a class='mention' href='#{
-          archaeme_remote.ap_id
-        }'>@<span>archaeme</span></a></span>"
+        "<span class='h-card'><a data-user='#{gsimg.id}' class='u-url mention' href='#{
+          gsimg.ap_id
+        }'>@<span>gsimg</span></a></span> According to <span class='h-card'><a data-user='#{
+          archaeme.id
+        }' class='u-url mention' href='#{"https://archeme/@archa_eme_"}'>@<span>archa_eme_</span></a></span>, that is @daggsy. Also hello <span class='h-card'><a data-user='#{
+          archaeme_remote.id
+        }' class='u-url mention' href='#{archaeme_remote.ap_id}'>@<span>archaeme</span></a></span>"
 
-      assert expected_text == Formatter.finalize({subs, text})
+      assert expected_text == text
     end
 
     test "gives a replacement for user links when the user is using Osada" do
@@ -137,46 +151,60 @@ defmodule Pleroma.FormatterTest do
 
       text = "@mike@osada.macgirvin.com test"
 
-      mentions = Formatter.parse_mentions(text)
+      {text, mentions, []} = Formatter.linkify(text)
 
-      {subs, text} = Formatter.add_user_links({[], text}, mentions)
-
-      assert length(subs) == 1
-      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+      assert length(mentions) == 1
 
       expected_text =
-        "<span><a class='mention' href='#{mike.ap_id}'>@<span>mike</span></a></span> test"
+        "<span class='h-card'><a data-user='#{mike.id}' class='u-url mention' href='#{mike.ap_id}'>@<span>mike</span></a></span> test"
 
-      assert expected_text == Formatter.finalize({subs, text})
+      assert expected_text == text
     end
 
     test "gives a replacement for single-character local nicknames" do
       text = "@o hi"
       o = insert(:user, %{nickname: "o"})
 
-      mentions = Formatter.parse_mentions(text)
+      {text, mentions, []} = Formatter.linkify(text)
 
-      {subs, text} = Formatter.add_user_links({[], text}, mentions)
+      assert length(mentions) == 1
 
-      assert length(subs) == 1
-      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
+      expected_text =
+        "<span class='h-card'><a data-user='#{o.id}' class='u-url mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"
 
-      expected_text = "<span><a class='mention' href='#{o.ap_id}'>@<span>o</span></a></span> hi"
-      assert expected_text == Formatter.finalize({subs, text})
+      assert expected_text == text
     end
 
     test "does not give a replacement for single-character local nicknames who don't exist" do
       text = "@a hi"
 
-      mentions = Formatter.parse_mentions(text)
-
-      {subs, text} = Formatter.add_user_links({[], text}, mentions)
-
-      assert length(subs) == 0
-      Enum.each(subs, fn {uuid, _} -> assert String.contains?(text, uuid) end)
-
       expected_text = "@a hi"
-      assert expected_text == Formatter.finalize({subs, text})
+      assert {^expected_text, [] = _mentions, [] = _tags} = Formatter.linkify(text)
+    end
+
+    test "given the 'safe_mention' option, it will only mention people in the beginning" do
+      user = insert(:user)
+      _other_user = insert(:user)
+      third_user = insert(:user)
+      text = " @#{user.nickname} hey dude i hate @#{third_user.nickname}"
+      {expected_text, mentions, [] = _tags} = Formatter.linkify(text, safe_mention: true)
+
+      assert mentions == [{"@#{user.nickname}", user}]
+
+      assert expected_text ==
+               "<span class='h-card'><a data-user='#{user.id}' class='u-url mention' href='#{
+                 user.ap_id
+               }'>@<span>#{user.nickname}</span></a></span> hey dude i hate <span class='h-card'><a data-user='#{
+                 third_user.id
+               }' class='u-url mention' href='#{third_user.ap_id}'>@<span>#{third_user.nickname}</span></a></span>"
+    end
+
+    test "given the 'safe_mention' option, it will still work without any mention" do
+      text = "A post without any mention"
+      {expected_text, mentions, [] = _tags} = Formatter.linkify(text, safe_mention: true)
+
+      assert mentions == []
+      assert expected_text == text
     end
   end
 
@@ -184,31 +212,36 @@ defmodule Pleroma.FormatterTest do
     test "parses tags in the text" do
       text = "Here's a #Test. Maybe these are #working or not. What about #漢字? And #は｡"
 
-      expected = [
+      expected_tags = [
         {"#Test", "test"},
         {"#working", "working"},
-        {"#漢字", "漢字"},
-        {"#は", "は"}
+        {"#は", "は"},
+        {"#漢字", "漢字"}
       ]
 
-      assert Formatter.parse_tags(text) == expected
+      assert {_text, [], ^expected_tags} = Formatter.linkify(text)
     end
   end
 
   test "it can parse mentions and return the relevant users" do
-    text = "@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me"
+    text =
+      "@@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me and @o and @@@jimm"
 
+    o = insert(:user, %{nickname: "o"})
+    jimm = insert(:user, %{nickname: "jimm"})
     gsimg = insert(:user, %{nickname: "gsimg"})
     archaeme = insert(:user, %{nickname: "archaeme"})
     archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
 
-    expected_result = [
-      {"@gsimg", gsimg},
+    expected_mentions = [
       {"@archaeme", archaeme},
-      {"@archaeme@archae.me", archaeme_remote}
+      {"@archaeme@archae.me", archaeme_remote},
+      {"@gsimg", gsimg},
+      {"@jimm", jimm},
+      {"@o", o}
     ]
 
-    assert Formatter.parse_mentions(text) == expected_result
+    assert {_text, ^expected_mentions, []} = Formatter.linkify(text)
   end
 
   test "it adds cool emoji" do
@@ -238,7 +271,9 @@ defmodule Pleroma.FormatterTest do
   test "it returns the emoji used in the text" do
     text = "I love :moominmamma:"
 
-    assert Formatter.get_emoji(text) == [{"moominmamma", "/finmoji/128px/moominmamma-128.png"}]
+    assert Formatter.get_emoji(text) == [
+             {"moominmamma", "/finmoji/128px/moominmamma-128.png", "Finmoji"}
+           ]
   end
 
   test "it returns a nice empty result when no emojis are present" do
@@ -249,5 +284,12 @@ defmodule Pleroma.FormatterTest do
   test "it doesn't die when text is absent" do
     text = nil
     assert Formatter.get_emoji(text) == []
+  end
+
+  test "it escapes HTML in plain text" do
+    text = "hello & world google.com/?a=b&c=d \n http://test.com/?a=b&c=d 1"
+    expected = "hello &amp; world google.com/?a=b&c=d \n http://test.com/?a=b&c=d 1"
+
+    assert Formatter.html_escape(text, "text/plain") == expected
   end
 end

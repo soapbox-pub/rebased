@@ -1,9 +1,14 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.CommonAPI
-  alias Pleroma.{User, Notification}
+  alias Pleroma.Notification
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
 
   describe "create_notifications" do
@@ -24,6 +29,18 @@ defmodule Pleroma.NotificationTest do
       assert notification.activity_id == activity.id
       assert other_notification.activity_id == activity.id
     end
+
+    test "it creates a notification for subscribed users" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+
+      {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
+      {:ok, [notification]} = Notification.create_notifications(status)
+
+      assert notification.user_id == subscriber.id
+    end
   end
 
   describe "create_notification" do
@@ -36,11 +53,139 @@ defmodule Pleroma.NotificationTest do
       assert nil == Notification.create_notification(activity, user)
     end
 
+    test "it doesn't create a notificatin for the user if the user mutes the activity author" do
+      muter = insert(:user)
+      muted = insert(:user)
+      {:ok, _} = User.mute(muter, muted)
+      muter = Repo.get(User, muter.id)
+      {:ok, activity} = CommonAPI.post(muted, %{"status" => "Hi @#{muter.nickname}"})
+
+      assert nil == Notification.create_notification(activity, muter)
+    end
+
+    test "it doesn't create a notification for an activity from a muted thread" do
+      muter = insert(:user)
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(muter, %{"status" => "hey"})
+      CommonAPI.add_mute(muter, activity)
+
+      {:ok, activity} =
+        CommonAPI.post(other_user, %{
+          "status" => "Hi @#{muter.nickname}",
+          "in_reply_to_status_id" => activity.id
+        })
+
+      assert nil == Notification.create_notification(activity, muter)
+    end
+
+    test "it disables notifications from people on remote instances" do
+      user = insert(:user, info: %{notification_settings: %{"remote" => false}})
+      other_user = insert(:user)
+
+      create_activity = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
+        "actor" => other_user.ap_id,
+        "object" => %{
+          "type" => "Note",
+          "content" => "Hi @#{user.nickname}",
+          "attributedTo" => other_user.ap_id
+        }
+      }
+
+      {:ok, %{local: false} = activity} = Transmogrifier.handle_incoming(create_activity)
+      assert nil == Notification.create_notification(activity, user)
+    end
+
+    test "it disables notifications from people on the local instance" do
+      user = insert(:user, info: %{notification_settings: %{"local" => false}})
+      other_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
+      assert nil == Notification.create_notification(activity, user)
+    end
+
+    test "it disables notifications from followers" do
+      follower = insert(:user)
+      followed = insert(:user, info: %{notification_settings: %{"followers" => false}})
+      User.follow(follower, followed)
+      {:ok, activity} = CommonAPI.post(follower, %{"status" => "hey @#{followed.nickname}"})
+      assert nil == Notification.create_notification(activity, followed)
+    end
+
+    test "it disables notifications from people the user follows" do
+      follower = insert(:user, info: %{notification_settings: %{"follows" => false}})
+      followed = insert(:user)
+      User.follow(follower, followed)
+      follower = Repo.get(User, follower.id)
+      {:ok, activity} = CommonAPI.post(followed, %{"status" => "hey @#{follower.nickname}"})
+      assert nil == Notification.create_notification(activity, follower)
+    end
+
     test "it doesn't create a notification for user if he is the activity author" do
       activity = insert(:note_activity)
       author = User.get_by_ap_id(activity.data["actor"])
 
       assert nil == Notification.create_notification(activity, author)
+    end
+
+    test "it doesn't create a notification for follow-unfollow-follow chains" do
+      user = insert(:user)
+      followed_user = insert(:user)
+      {:ok, _, _, activity} = TwitterAPI.follow(user, %{"user_id" => followed_user.id})
+      Notification.create_notification(activity, followed_user)
+      TwitterAPI.unfollow(user, %{"user_id" => followed_user.id})
+      {:ok, _, _, activity_dupe} = TwitterAPI.follow(user, %{"user_id" => followed_user.id})
+      assert nil == Notification.create_notification(activity_dupe, followed_user)
+    end
+
+    test "it doesn't create a notification for like-unlike-like chains" do
+      user = insert(:user)
+      liked_user = insert(:user)
+      {:ok, status} = TwitterAPI.create_status(liked_user, %{"status" => "Yui is best yuru"})
+      {:ok, fav_status} = TwitterAPI.fav(user, status.id)
+      Notification.create_notification(fav_status, liked_user)
+      TwitterAPI.unfav(user, status.id)
+      {:ok, dupe} = TwitterAPI.fav(user, status.id)
+      assert nil == Notification.create_notification(dupe, liked_user)
+    end
+
+    test "it doesn't create a notification for repeat-unrepeat-repeat chains" do
+      user = insert(:user)
+      retweeted_user = insert(:user)
+
+      {:ok, status} =
+        TwitterAPI.create_status(retweeted_user, %{
+          "status" => "Send dupe notifications to the shadow realm"
+        })
+
+      {:ok, retweeted_activity} = TwitterAPI.repeat(user, status.id)
+      Notification.create_notification(retweeted_activity, retweeted_user)
+      TwitterAPI.unrepeat(user, status.id)
+      {:ok, dupe} = TwitterAPI.repeat(user, status.id)
+      assert nil == Notification.create_notification(dupe, retweeted_user)
+    end
+
+    test "it doesn't create duplicate notifications for follow+subscribed users" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      {:ok, _, _, _} = TwitterAPI.follow(subscriber, %{"user_id" => user.id})
+      User.subscribe(subscriber, user)
+      {:ok, status} = TwitterAPI.create_status(user, %{"status" => "Akariiiin"})
+      {:ok, [_notif]} = Notification.create_notifications(status)
+    end
+
+    test "it doesn't create subscription notifications if the recipient cannot see the status" do
+      user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, user)
+
+      {:ok, status} =
+        TwitterAPI.create_status(user, %{"status" => "inwisible", "visibility" => "direct"})
+
+      assert {:ok, []} == Notification.create_notifications(status)
     end
   end
 
@@ -127,12 +272,12 @@ defmodule Pleroma.NotificationTest do
       user = insert(:user)
       other_user = insert(:user)
 
-      {:ok, activity} =
+      {:ok, _activity} =
         TwitterAPI.create_status(user, %{
           "status" => "hey @#{other_user.nickname}!"
         })
 
-      {:ok, activity} =
+      {:ok, _activity} =
         TwitterAPI.create_status(user, %{
           "status" => "hey again @#{other_user.nickname}!"
         })
@@ -142,14 +287,14 @@ defmodule Pleroma.NotificationTest do
 
       assert n2.id > n1.id
 
-      {:ok, activity} =
+      {:ok, _activity} =
         TwitterAPI.create_status(user, %{
           "status" => "hey yet again @#{other_user.nickname}!"
         })
 
       Notification.set_read_up_to(other_user, n2.id)
 
-      [n3, n2, n1] = notifs = Notification.for_user(other_user)
+      [n3, n2, n1] = Notification.for_user(other_user)
 
       assert n1.seen == true
       assert n2.seen == true
@@ -258,7 +403,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
@@ -266,7 +411,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "liking an activity results in 1 notification, then 0 if the activity is unliked" do
@@ -275,7 +420,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
@@ -283,7 +428,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _, _, _} = CommonAPI.unfavorite(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity results in 1 notification, then 0 if the activity is deleted" do
@@ -292,7 +437,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
 
@@ -300,7 +445,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity results in 1 notification, then 0 if the activity is unrepeated" do
@@ -309,7 +454,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
 
@@ -317,7 +462,7 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, _, _} = CommonAPI.unrepeat(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "liking an activity which is already deleted does not generate a notification" do
@@ -326,15 +471,15 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:error, _} = CommonAPI.favorite(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "repeating an activity which is already deleted does not generate a notification" do
@@ -343,15 +488,15 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:ok, _deletion_activity} = CommonAPI.delete(activity.id, user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
 
       {:error, _} = CommonAPI.repeat(activity.id, other_user)
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
 
     test "replying to a deleted post without tagging does not generate a notification" do
@@ -367,7 +512,7 @@ defmodule Pleroma.NotificationTest do
           "in_reply_to_status_id" => activity.id
         })
 
-      assert length(Notification.for_user(user)) == 0
+      assert Enum.empty?(Notification.for_user(user))
     end
   end
 end

@@ -1,9 +1,12 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.ListTest do
-  alias Pleroma.{User, Repo}
+  alias Pleroma.Repo
   use Pleroma.DataCase
 
   import Pleroma.Factory
-  import Ecto.Query
 
   test "creating a list" do
     user = insert(:user)
@@ -32,7 +35,7 @@ defmodule Pleroma.ListTest do
     user = insert(:user)
     other_user = insert(:user)
     {:ok, list} = Pleroma.List.create("title", user)
-    {:ok, %{following: following}} = Pleroma.List.follow(list, other_user)
+    {:ok, %{following: _following}} = Pleroma.List.follow(list, other_user)
     {:ok, %{following: following}} = Pleroma.List.unfollow(list, other_user)
     assert [] == following
   end

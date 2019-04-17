@@ -8,7 +8,9 @@
 /.elixir_ls
 /test/fixtures/test_tmp.txt
 /test/fixtures/image_tmp.jpg
+/test/tmp/
 /doc
+/instance
 
 # Prevent committing custom emojis
 /priv/static/emoji/custom/*
@@ -23,6 +25,7 @@ erl_crash.dump
 # secrets files as long as you replace their contents by environment
 # variables.
 /config/*.secret.exs
+/config/generated_config.exs
 
 # Database setup file, some may forget to delete it
 /config/setup_db.psql
@@ -31,4 +34,7 @@ erl_crash.dump
 .env
 
 # Editor config
-/.vscode
+/.vscode/
+
+# Prevent committing docs files
+/priv/static/doc/*

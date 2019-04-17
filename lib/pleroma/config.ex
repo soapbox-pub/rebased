@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Config do
   defmodule Error do
     defexception [:message]
@@ -53,4 +57,8 @@ defmodule Pleroma.Config do
   def delete(key) do
     Application.delete_env(:pleroma, key)
   end
+
+  def oauth_consumer_strategies, do: get([:auth, :oauth_consumer_strategies], [])
+
+  def oauth_consumer_enabled?, do: oauth_consumer_strategies() != []
 end

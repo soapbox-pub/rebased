@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Uploaders.MDII do
   alias Pleroma.Config
 
@@ -12,15 +16,16 @@ defmodule Pleroma.Uploaders.MDII do
   end
 
   def put_file(upload) do
-    cgi = Pleroma.Config.get([Pleroma.Uploaders.MDII, :cgi])
-    files = Pleroma.Config.get([Pleroma.Uploaders.MDII, :files])
+    cgi = Config.get([Pleroma.Uploaders.MDII, :cgi])
+    files = Config.get([Pleroma.Uploaders.MDII, :files])
 
     {:ok, file_data} = File.read(upload.tempfile)
 
     extension = String.split(upload.name, ".") |> List.last()
     query = "#{cgi}?#{extension}"
 
-    with {:ok, %{status_code: 200, body: body}} <- @httpoison.post(query, file_data) do
+    with {:ok, %{status: 200, body: body}} <-
+           @httpoison.post(query, file_data, [], adapter: [pool: :default]) do
       remote_file_name = String.split(body) |> List.first()
       public_url = "#{files}/#{remote_file_name}.#{extension}"
       {:ok, {:url, public_url}}

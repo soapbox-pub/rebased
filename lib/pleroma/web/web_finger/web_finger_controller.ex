@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.WebFinger.WebFingerController do
   use Pleroma.Web, :controller
 
@@ -34,5 +38,9 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
       _ ->
         send_resp(conn, 404, "Unsupported format")
     end
+  end
+
+  def webfinger(conn, _params) do
+    send_resp(conn, 400, "Bad Request")
   end
 end

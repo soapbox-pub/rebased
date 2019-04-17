@@ -1,12 +1,18 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.PasswordResetToken do
   use Ecto.Schema
 
   import Ecto.Changeset
 
-  alias Pleroma.{User, PasswordResetToken, Repo}
+  alias Pleroma.PasswordResetToken
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   schema "password_reset_tokens" do
-    belongs_to(:user, User)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:token, :string)
     field(:used, :boolean, default: false)
 
@@ -33,7 +39,7 @@ defmodule Pleroma.PasswordResetToken do
 
   def reset_password(token, data) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
-         %User{} = user <- Repo.get(User, token.user_id),
+         %User{} = user <- User.get_by_id(token.user_id),
          {:ok, _user} <- User.reset_password(user, data),
          {:ok, token} <- Repo.update(used_changeset(token)) do
       {:ok, token}

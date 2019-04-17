@@ -1,7 +1,12 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.OStatus.UnfollowHandler do
-  alias Pleroma.Web.{XML, OStatus}
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
 
   def handle(entry, doc) do
     with {:ok, actor} <- OStatus.find_make_or_update_user(doc),

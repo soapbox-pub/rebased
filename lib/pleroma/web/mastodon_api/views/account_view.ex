@@ -1,16 +1,71 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.MastodonAPI.AccountView do
   use Pleroma.Web, :view
-  alias Pleroma.User
-  alias Pleroma.Web.MastodonAPI.AccountView
-  alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MediaProxy
+
   alias Pleroma.HTML
+  alias Pleroma.User
+  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.MediaProxy
 
   def render("accounts.json", %{users: users} = opts) do
-    render_many(users, AccountView, "account.json", opts)
+    users
+    |> render_many(AccountView, "account.json", opts)
+    |> Enum.filter(&Enum.any?/1)
   end
 
   def render("account.json", %{user: user} = opts) do
+    if User.visible_for?(user, opts[:for]),
+      do: do_render("account.json", opts),
+      else: %{}
+  end
+
+  def render("mention.json", %{user: user}) do
+    %{
+      id: to_string(user.id),
+      acct: user.nickname,
+      username: username_from_nickname(user.nickname),
+      url: user.ap_id
+    }
+  end
+
+  def render("relationship.json", %{user: nil, target: _target}) do
+    %{}
+  end
+
+  def render("relationship.json", %{user: %User{} = user, target: %User{} = target}) do
+    follow_activity = Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, target)
+
+    requested =
+      if follow_activity do
+        follow_activity.data["state"] == "pending"
+      else
+        false
+      end
+
+    %{
+      id: to_string(target.id),
+      following: User.following?(user, target),
+      followed_by: User.following?(target, user),
+      blocking: User.blocks?(user, target),
+      muting: User.mutes?(user, target),
+      muting_notifications: false,
+      subscribing: User.subscribed_to?(user, target),
+      requested: requested,
+      domain_blocking: false,
+      showing_reblogs: User.showing_reblogs?(user, target),
+      endorsed: false
+    }
+  end
+
+  def render("relationships.json", %{user: user, targets: targets}) do
+    render_many(targets, AccountView, "relationship.json", user: user, as: :target)
+  end
+
+  defp do_render("account.json", %{user: user} = opts) do
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
     user_info = User.user_info(user)
@@ -35,6 +90,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
     bio = HTML.filter_tags(user.bio, User.html_filter_policy(opts[:for]))
 
+    relationship = render("relationship.json", %{user: opts[:for], target: user})
+
     %{
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
@@ -58,45 +115,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         note: "",
         privacy: user_info.default_scope,
         sensitive: false
-      }
+      },
+
+      # Pleroma extension
+      pleroma:
+        %{
+          confirmation_pending: user_info.confirmation_pending,
+          tags: user.tags,
+          is_moderator: user.info.is_moderator,
+          is_admin: user.info.is_admin,
+          relationship: relationship
+        }
+        |> with_notification_settings(user, opts[:for])
     }
-  end
-
-  def render("mention.json", %{user: user}) do
-    %{
-      id: to_string(user.id),
-      acct: user.nickname,
-      username: username_from_nickname(user.nickname),
-      url: user.ap_id
-    }
-  end
-
-  def render("relationship.json", %{user: user, target: target}) do
-    follow_activity = Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, target)
-
-    requested =
-      if follow_activity do
-        follow_activity.data["state"] == "pending"
-      else
-        false
-      end
-
-    %{
-      id: to_string(target.id),
-      following: User.following?(user, target),
-      followed_by: User.following?(target, user),
-      blocking: User.blocks?(user, target),
-      muting: false,
-      muting_notifications: false,
-      requested: requested,
-      domain_blocking: false,
-      showing_reblogs: false,
-      endorsed: false
-    }
-  end
-
-  def render("relationships.json", %{user: user, targets: targets}) do
-    render_many(targets, AccountView, "relationship.json", user: user, as: :target)
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -104,4 +135,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp username_from_nickname(_), do: nil
+
+  defp with_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
+    Map.put(data, :notification_settings, user.info.notification_settings)
+  end
+
+  defp with_notification_settings(data, _, _), do: data
 end

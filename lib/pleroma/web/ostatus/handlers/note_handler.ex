@@ -1,10 +1,17 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.OStatus.NoteHandler do
   require Logger
-  alias Pleroma.Web.{XML, OStatus}
-  alias Pleroma.{Object, Activity}
+
+  alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.XML
 
   @doc """
   Get the context for this note. Uses this:
@@ -12,13 +19,13 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   2. The conversation reference in the ostatus xml
   3. A newly generated context id.
   """
-  def get_context(entry, inReplyTo) do
+  def get_context(entry, in_reply_to) do
     context =
       (XML.string_from_xpath("//ostatus:conversation[1]", entry) ||
          XML.string_from_xpath("//ostatus:conversation[1]/@ref", entry) || "")
       |> String.trim()
 
-    with %{data: %{"context" => context}} <- Object.get_cached_by_ap_id(inReplyTo) do
+    with %{data: %{"context" => context}} <- Object.get_cached_by_ap_id(in_reply_to) do
       context
     else
       _e ->
@@ -81,14 +88,14 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     Map.put(note, "external_url", url)
   end
 
-  def fetch_replied_to_activity(entry, inReplyTo) do
-    with %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(inReplyTo) do
+  def fetch_replied_to_activity(entry, in_reply_to) do
+    with %Activity{} = activity <- Activity.get_create_by_object_ap_id(in_reply_to) do
       activity
     else
       _e ->
-        with inReplyToHref when not is_nil(inReplyToHref) <-
+        with in_reply_to_href when not is_nil(in_reply_to_href) <-
                XML.string_from_xpath("//thr:in-reply-to[1]/@href", entry),
-             {:ok, [activity | _]} <- OStatus.fetch_activity_from_url(inReplyToHref) do
+             {:ok, [activity | _]} <- OStatus.fetch_activity_from_url(in_reply_to_href) do
           activity
         else
           _e -> nil
@@ -99,18 +106,18 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   # TODO: Clean this up a bit.
   def handle_note(entry, doc \\ nil) do
     with id <- XML.string_from_xpath("//id", entry),
-         activity when is_nil(activity) <- Activity.get_create_activity_by_object_ap_id(id),
+         activity when is_nil(activity) <- Activity.get_create_by_object_ap_id_with_object(id),
          [author] <- :xmerl_xpath.string('//author[1]', doc),
          {:ok, actor} <- OStatus.find_make_or_update_user(author),
          content_html <- OStatus.get_content(entry),
          cw <- OStatus.get_cw(entry),
-         inReplyTo <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
-         inReplyToActivity <- fetch_replied_to_activity(entry, inReplyTo),
-         inReplyToObject <-
-           (inReplyToActivity && Object.normalize(inReplyToActivity.data["object"])) || nil,
-         inReplyTo <- (inReplyToObject && inReplyToObject.data["id"]) || inReplyTo,
+         in_reply_to <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
+         in_reply_to_activity <- fetch_replied_to_activity(entry, in_reply_to),
+         in_reply_to_object <-
+           (in_reply_to_activity && Object.normalize(in_reply_to_activity)) || nil,
+         in_reply_to <- (in_reply_to_object && in_reply_to_object.data["id"]) || in_reply_to,
          attachments <- OStatus.get_attachments(entry),
-         context <- get_context(entry, inReplyTo),
+         context <- get_context(entry, in_reply_to),
          tags <- OStatus.get_tags(entry),
          mentions <- get_mentions(entry),
          to <- make_to_list(actor, mentions),
@@ -124,7 +131,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
              context,
              content_html,
              attachments,
-             inReplyToActivity,
+             in_reply_to_activity,
              [],
              cw
            ),
@@ -136,8 +143,8 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          # TODO: Handle this case in make_note_data
          note <-
            if(
-             inReplyTo && !inReplyToActivity,
-             do: note |> Map.put("inReplyTo", inReplyTo),
+             in_reply_to && !in_reply_to_activity,
+             do: note |> Map.put("inReplyTo", in_reply_to),
              else: note
            ) do
       ActivityPub.create(%{

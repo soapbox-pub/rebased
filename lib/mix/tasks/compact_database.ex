@@ -6,9 +6,9 @@ defmodule Mix.Tasks.CompactDatabase do
   require Logger
 
   use Mix.Task
-  import Mix.Ecto
   import Ecto.Query
-  alias Pleroma.{Repo, Object, Activity}
+  alias Pleroma.Activity
+  alias Pleroma.Repo
 
   defp maybe_compact(%Activity{data: %{"object" => %{"id" => object_id}}} = activity) do
     data =
@@ -33,7 +33,7 @@ defmodule Mix.Tasks.CompactDatabase do
     )
   end
 
-  def run(args) do
+  def run(_args) do
     Application.ensure_all_started(:pleroma)
 
     max = Repo.aggregate(Activity, :max, :id)

@@ -1,9 +1,14 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.StreamerTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.Streamer
-  alias Pleroma.{List, User}
+  alias Pleroma.List
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Streamer
   import Pleroma.Factory
 
   test "it sends to public" do
@@ -23,6 +28,36 @@ defmodule Pleroma.Web.StreamerTest do
     }
 
     {:ok, activity} = CommonAPI.post(other_user, %{"status" => "Test"})
+
+    topics = %{
+      "public" => [fake_socket]
+    }
+
+    Streamer.push_to_socket(topics, "public", activity)
+
+    Task.await(task)
+
+    task =
+      Task.async(fn ->
+        expected_event =
+          %{
+            "event" => "delete",
+            "payload" => activity.id
+          }
+          |> Jason.encode!()
+
+        assert_receive {:text, received_event}, 4_000
+        assert received_event == expected_event
+      end)
+
+    fake_socket = %{
+      transport_pid: task.pid,
+      assigns: %{
+        user: user
+      }
+    }
+
+    {:ok, activity} = CommonAPI.delete(activity.id, other_user)
 
     topics = %{
       "public" => [fake_socket]
@@ -164,6 +199,36 @@ defmodule Pleroma.Web.StreamerTest do
     }
 
     Streamer.handle_cast(%{action: :stream, topic: "list", item: activity}, topics)
+
+    Task.await(task)
+  end
+
+  test "it doesn't send muted reblogs" do
+    user1 = insert(:user)
+    user2 = insert(:user)
+    user3 = insert(:user)
+    CommonAPI.hide_reblogs(user1, user2)
+
+    task =
+      Task.async(fn ->
+        refute_receive {:text, _}, 1_000
+      end)
+
+    fake_socket = %{
+      transport_pid: task.pid,
+      assigns: %{
+        user: user1
+      }
+    }
+
+    {:ok, create_activity} = CommonAPI.post(user3, %{"status" => "I'm kawen"})
+    {:ok, announce_activity, _} = CommonAPI.repeat(create_activity.id, user2)
+
+    topics = %{
+      "public" => [fake_socket]
+    }
+
+    Streamer.push_to_socket(topics, "public", announce_activity)
 
     Task.await(task)
   end

@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Uploaders.Swift.Client do
   use HTTPoison.Base
 
@@ -9,14 +13,13 @@ defmodule Pleroma.Uploaders.Swift.Client do
   end
 
   def upload_file(filename, body, content_type) do
-    object_url = Pleroma.Config.get!([Pleroma.Uploaders.Swift, :object_url])
     token = Pleroma.Uploaders.Swift.Keystone.get_token()
 
     case put("#{filename}", body, "X-Auth-Token": token, "Content-Type": content_type) do
-      {:ok, %HTTPoison.Response{status_code: 201}} ->
+      {:ok, %Tesla.Env{status: 201}} ->
         {:ok, {:file, filename}}
 
-      {:ok, %HTTPoison.Response{status_code: 401}} ->
+      {:ok, %Tesla.Env{status: 401}} ->
         {:error, "Unauthorized, Bad Token"}
 
       {:error, _} ->

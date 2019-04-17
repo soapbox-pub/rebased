@@ -1,8 +1,11 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.MastodonAPI.ListViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.Web.MastodonAPI.ListView
-  alias Pleroma.List
 
   test "Represent a list" do
     user = insert(:user)

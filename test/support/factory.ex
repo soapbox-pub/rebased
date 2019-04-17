@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Factory do
   use ExMachina.Ecto, repo: Pleroma.Repo
 
@@ -19,7 +23,7 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def note_factory do
+  def note_factory(attrs \\ %{}) do
     text = sequence(:text, &"This is :moominmamma: note #{&1}")
 
     user = insert(:user)
@@ -42,7 +46,7 @@ defmodule Pleroma.Factory do
     }
 
     %Pleroma.Object{
-      data: data
+      data: merge_attributes(data, Map.get(attrs, :data, %{}))
     }
   end
 
@@ -51,6 +55,24 @@ defmodule Pleroma.Factory do
 
     %Pleroma.Object{data: data} = note_factory()
     %Pleroma.Object{data: Map.merge(data, %{"to" => [user2.ap_id]})}
+  end
+
+  def article_factory do
+    note_factory()
+    |> Map.put("type", "Article")
+  end
+
+  def tombstone_factory do
+    data = %{
+      "type" => "Tombstone",
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_object_id(),
+      "formerType" => "Note",
+      "deleted" => DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+
+    %Pleroma.Object{
+      data: data
+    }
   end
 
   def direct_note_activity_factory do
@@ -73,8 +95,8 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def note_activity_factory do
-    note = insert(:note)
+  def note_activity_factory(attrs \\ %{}) do
+    note = attrs[:note] || insert(:note)
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
@@ -93,9 +115,29 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def announce_activity_factory do
-    note_activity = insert(:note_activity)
-    user = insert(:user)
+  def article_activity_factory do
+    article = insert(:article)
+
+    data = %{
+      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+      "type" => "Create",
+      "actor" => article.data["actor"],
+      "to" => article.data["to"],
+      "object" => article.data,
+      "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
+      "context" => article.data["context"]
+    }
+
+    %Pleroma.Activity{
+      data: data,
+      actor: data["actor"],
+      recipients: data["to"]
+    }
+  end
+
+  def announce_activity_factory(attrs \\ %{}) do
+    note_activity = attrs[:note_activity] || insert(:note_activity)
+    user = attrs[:user] || insert(:user)
 
     data = %{
       "type" => "Announce",
@@ -151,7 +193,7 @@ defmodule Pleroma.Factory do
   def websub_subscription_factory do
     %Pleroma.Web.Websub.WebsubServerSubscription{
       topic: "http://example.org",
-      callback: "http://example/org/callback",
+      callback: "http://example.org/callback",
       secret: "here's a secret",
       valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 100),
       state: "requested"
@@ -172,10 +214,81 @@ defmodule Pleroma.Factory do
     %Pleroma.Web.OAuth.App{
       client_name: "Some client",
       redirect_uris: "https://example.com/callback",
-      scopes: "read",
+      scopes: ["read", "write", "follow", "push"],
       website: "https://example.com",
-      client_id: "aaabbb==",
+      client_id: Ecto.UUID.generate(),
       client_secret: "aaa;/&bbb"
+    }
+  end
+
+  def instance_factory do
+    %Pleroma.Instances.Instance{
+      host: "domain.com",
+      unreachable_since: nil
+    }
+  end
+
+  def oauth_token_factory do
+    oauth_app = insert(:oauth_app)
+
+    %Pleroma.Web.OAuth.Token{
+      token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
+      refresh_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(),
+      user: build(:user),
+      app_id: oauth_app.id,
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
+    }
+  end
+
+  def oauth_authorization_factory do
+    %Pleroma.Web.OAuth.Authorization{
+      token: :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false),
+      scopes: ["read", "write", "follow", "push"],
+      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10),
+      user: build(:user),
+      app: build(:oauth_app)
+    }
+  end
+
+  def push_subscription_factory do
+    %Pleroma.Web.Push.Subscription{
+      user: build(:user),
+      token: build(:oauth_token),
+      endpoint: "https://example.com/example/1234",
+      key_auth: "8eDyX_uCN0XRhSbY5hs7Hg==",
+      key_p256dh:
+        "BCIWgsnyXDv1VkhqL2P7YRBvdeuDnlwAPT2guNhdIoW3IP7GmHh1SMKPLxRf7x8vJy6ZFK3ol2ohgn_-0yP7QQA=",
+      data: %{}
+    }
+  end
+
+  def notification_factory do
+    %Pleroma.Notification{
+      user: build(:user)
+    }
+  end
+
+  def scheduled_activity_factory do
+    %Pleroma.ScheduledActivity{
+      user: build(:user),
+      scheduled_at: NaiveDateTime.add(NaiveDateTime.utc_now(), :timer.minutes(60), :millisecond),
+      params: build(:note) |> Map.from_struct() |> Map.get(:data)
+    }
+  end
+
+  def registration_factory do
+    user = insert(:user)
+
+    %Pleroma.Registration{
+      user: user,
+      provider: "twitter",
+      uid: "171799000",
+      info: %{
+        "name" => "John Doe",
+        "email" => "john@doe.com",
+        "nickname" => "johndoe",
+        "description" => "My bio"
+      }
     }
   end
 end

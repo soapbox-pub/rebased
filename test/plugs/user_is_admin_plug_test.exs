@@ -1,10 +1,14 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Plugs.UserIsAdminPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
   alias Pleroma.Plugs.UserIsAdminPlug
   import Pleroma.Factory
 
-  test "accepts a user that is admin", %{conn: conn} do
+  test "accepts a user that is admin" do
     user = insert(:user, info: %{is_admin: true})
 
     conn =
@@ -18,7 +22,7 @@ defmodule Pleroma.Plugs.UserIsAdminPlugTest do
     assert conn == ret_conn
   end
 
-  test "denies a user that isn't admin", %{conn: conn} do
+  test "denies a user that isn't admin" do
     user = insert(:user)
 
     conn =
@@ -29,7 +33,7 @@ defmodule Pleroma.Plugs.UserIsAdminPlugTest do
     assert conn.status == 403
   end
 
-  test "denies when a user isn't set", %{conn: conn} do
+  test "denies when a user isn't set" do
     conn =
       build_conn()
       |> UserIsAdminPlug.call(%{})

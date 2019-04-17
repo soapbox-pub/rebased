@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.DataCase do
   @moduledoc """
   This module defines the setup for tests requiring
@@ -22,15 +26,34 @@ defmodule Pleroma.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import Pleroma.DataCase
+      use Pleroma.Tests.Helpers
     end
   end
 
   setup tags do
     Cachex.clear(:user_cache)
+    Cachex.clear(:object_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
     unless tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Pleroma.Repo, {:shared, self()})
+    end
+
+    :ok
+  end
+
+  def ensure_local_uploader(_context) do
+    uploader = Pleroma.Config.get([Pleroma.Upload, :uploader])
+    filters = Pleroma.Config.get([Pleroma.Upload, :filters])
+
+    unless uploader == Pleroma.Uploaders.Local || filters != [] do
+      Pleroma.Config.put([Pleroma.Upload, :uploader], Pleroma.Uploaders.Local)
+      Pleroma.Config.put([Pleroma.Upload, :filters], [])
+
+      on_exit(fn ->
+        Pleroma.Config.put([Pleroma.Upload, :uploader], uploader)
+        Pleroma.Config.put([Pleroma.Upload, :filters], filters)
+      end)
     end
 
     :ok

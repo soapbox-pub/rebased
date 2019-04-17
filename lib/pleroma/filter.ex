@@ -1,10 +1,18 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Filter do
   use Ecto.Schema
-  import Ecto.{Changeset, Query}
-  alias Pleroma.{User, Repo, Activity}
+
+  import Ecto.Changeset
+  import Ecto.Query
+
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   schema "filters" do
-    belongs_to(:user, Pleroma.User)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:filter_id, :integer)
     field(:hide, :boolean, default: false)
     field(:whole_word, :boolean, default: true)
@@ -26,7 +34,7 @@ defmodule Pleroma.Filter do
     Repo.one(query)
   end
 
-  def get_filters(%Pleroma.User{id: user_id} = user) do
+  def get_filters(%User{id: user_id} = _user) do
     query =
       from(
         f in Pleroma.Filter,
@@ -38,9 +46,9 @@ defmodule Pleroma.Filter do
 
   def create(%Pleroma.Filter{user_id: user_id, filter_id: nil} = filter) do
     # If filter_id wasn't given, use the max filter_id for this user plus 1.
-    # XXX This could result in a race condition if a user tries to add two 
-    # different filters for their account from two different clients at the 
-    # same time, but that should be unlikely. 
+    # XXX This could result in a race condition if a user tries to add two
+    # different filters for their account from two different clients at the
+    # same time, but that should be unlikely.
 
     max_id_query =
       from(

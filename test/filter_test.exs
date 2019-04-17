@@ -1,9 +1,12 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.FilterTest do
-  alias Pleroma.{User, Repo}
+  alias Pleroma.Repo
   use Pleroma.DataCase
 
   import Pleroma.Factory
-  import Ecto.Query
 
   describe "creating filters" do
     test "creating one filter" do
@@ -99,7 +102,7 @@ defmodule Pleroma.FilterTest do
       context: ["home"]
     }
 
-    {:ok, filter} = Pleroma.Filter.create(query)
+    {:ok, _filter} = Pleroma.Filter.create(query)
     {:ok, filter} = Pleroma.Filter.delete(query)
     assert is_nil(Repo.get(Pleroma.Filter, filter.filter_id))
   end

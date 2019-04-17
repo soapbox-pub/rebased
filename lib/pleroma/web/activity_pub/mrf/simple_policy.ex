@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   alias Pleroma.User
   @behaviour Pleroma.Web.ActivityPub.MRF
@@ -23,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_media_removal(
          %{host: actor_host} = _actor_info,
-         %{"type" => "Create", "object" => %{"attachement" => child_attachment}} = object
+         %{"type" => "Create", "object" => %{"attachment" => child_attachment}} = object
        )
        when length(child_attachment) > 0 do
     object =

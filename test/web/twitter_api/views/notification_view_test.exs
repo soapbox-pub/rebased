@@ -1,14 +1,18 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.{User, Notification}
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
-  alias Pleroma.Web.TwitterAPI.NotificationView
-  alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Notification
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.NotificationView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
 
@@ -67,7 +71,7 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
     repeater = insert(:user)
 
-    {:ok, activity} = TwitterAPI.repeat(repeater, note_activity.id)
+    {:ok, _activity} = TwitterAPI.repeat(repeater, note_activity.id)
     [notification] = Notification.for_user(user)
 
     represented = %{
@@ -89,7 +93,7 @@ defmodule Pleroma.Web.TwitterAPI.NotificationViewTest do
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
     liker = insert(:user)
 
-    {:ok, activity} = TwitterAPI.fav(liker, note_activity.id)
+    {:ok, _activity} = TwitterAPI.fav(liker, note_activity.id)
     [notification] = Notification.for_user(user)
 
     represented = %{

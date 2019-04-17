@@ -1,11 +1,15 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.OAuth.App do
   use Ecto.Schema
-  import Ecto.{Changeset}
+  import Ecto.Changeset
 
   schema "apps" do
     field(:client_name, :string)
     field(:redirect_uris, :string)
-    field(:scopes, :string)
+    field(:scopes, {:array, :string}, default: [])
     field(:website, :string)
     field(:client_id, :string)
     field(:client_secret, :string)
@@ -21,8 +25,14 @@ defmodule Pleroma.Web.OAuth.App do
 
     if changeset.valid? do
       changeset
-      |> put_change(:client_id, :crypto.strong_rand_bytes(32) |> Base.url_encode64())
-      |> put_change(:client_secret, :crypto.strong_rand_bytes(32) |> Base.url_encode64())
+      |> put_change(
+        :client_id,
+        :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+      )
+      |> put_change(
+        :client_secret,
+        :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+      )
     else
       changeset
     end

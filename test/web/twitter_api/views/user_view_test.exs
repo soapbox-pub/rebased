@@ -1,10 +1,13 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.TwitterAPI.UserViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.User
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
 
@@ -27,7 +30,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     assert represented["profile_image_url"] == image
   end
 
-  test "A user with emoji in username", %{user: user} do
+  test "A user with emoji in username" do
     expected =
       "<img height=\"32px\" width=\"32px\" alt=\"karjalanpiirakka\" title=\"karjalanpiirakka\" src=\"/file.png\" /> man"
 
@@ -87,7 +90,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "follows_you" => false,
       "statusnet_blocking" => false,
       "rights" => %{
-        "delete_others_notice" => false
+        "delete_others_notice" => false,
+        "admin" => false
       },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
@@ -96,7 +100,13 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "fields" => []
+      "hide_follows" => false,
+      "hide_followers" => false,
+      "fields" => [],
+      "pleroma" => %{
+        "confirmation_pending" => false,
+        "tags" => []
+      }
     }
 
     assert represented == UserView.render("show.json", %{user: user})
@@ -128,7 +138,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "follows_you" => false,
       "statusnet_blocking" => false,
       "rights" => %{
-        "delete_others_notice" => false
+        "delete_others_notice" => false,
+        "admin" => false
       },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
@@ -137,7 +148,13 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "fields" => []
+      "hide_follows" => false,
+      "hide_followers" => false,
+      "fields" => [],
+      "pleroma" => %{
+        "confirmation_pending" => false,
+        "tags" => []
+      }
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
@@ -170,7 +187,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "follows_you" => true,
       "statusnet_blocking" => false,
       "rights" => %{
-        "delete_others_notice" => false
+        "delete_others_notice" => false,
+        "admin" => false
       },
       "statusnet_profile_url" => follower.ap_id,
       "cover_photo" => banner,
@@ -179,7 +197,13 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "fields" => []
+      "hide_follows" => false,
+      "hide_followers" => false,
+      "fields" => [],
+      "pleroma" => %{
+        "confirmation_pending" => false,
+        "tags" => []
+      }
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
@@ -190,6 +214,36 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     represented = UserView.render("show.json", %{user: user, for: user})
 
     assert represented["rights"]["delete_others_notice"]
+    assert represented["role"] == "moderator"
+  end
+
+  test "a user that is a admin" do
+    user = insert(:user, %{info: %{is_admin: true}})
+    represented = UserView.render("show.json", %{user: user, for: user})
+
+    assert represented["rights"]["admin"]
+    assert represented["role"] == "admin"
+  end
+
+  test "A moderator with hidden role for another user", %{user: user} do
+    admin = insert(:user, %{info: %{is_moderator: true, show_role: false}})
+    represented = UserView.render("show.json", %{user: admin, for: user})
+
+    assert represented["role"] == nil
+  end
+
+  test "An admin with hidden role for another user", %{user: user} do
+    admin = insert(:user, %{info: %{is_admin: true, show_role: false}})
+    represented = UserView.render("show.json", %{user: admin, for: user})
+
+    assert represented["role"] == nil
+  end
+
+  test "A regular user for the admin", %{user: user} do
+    admin = insert(:user, %{info: %{is_admin: true}})
+    represented = UserView.render("show.json", %{user: user, for: admin})
+
+    assert represented["pleroma"]["deactivated"] == false
   end
 
   test "A blocked user for the blocker" do
@@ -219,7 +273,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "follows_you" => false,
       "statusnet_blocking" => true,
       "rights" => %{
-        "delete_others_notice" => false
+        "delete_others_notice" => false,
+        "admin" => false
       },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
@@ -228,10 +283,16 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "locked" => false,
       "default_scope" => "public",
       "no_rich_text" => false,
-      "fields" => []
+      "hide_follows" => false,
+      "hide_followers" => false,
+      "fields" => [],
+      "pleroma" => %{
+        "confirmation_pending" => false,
+        "tags" => []
+      }
     }
 
-    blocker = Repo.get(User, blocker.id)
+    blocker = User.get_by_id(blocker.id)
     assert represented == UserView.render("show.json", %{user: user, for: blocker})
   end
 

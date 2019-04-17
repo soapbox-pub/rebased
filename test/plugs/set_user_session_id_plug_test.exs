@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Plugs.SetUserSessionIdPlugTest do
   use Pleroma.Web.ConnCase, async: true
 
@@ -28,6 +32,8 @@ defmodule Pleroma.Plugs.SetUserSessionIdPlugTest do
   end
 
   test "sets the user_id in the session to the user id of the user assign", %{conn: conn} do
+    Code.ensure_compiled(Pleroma.User)
+
     conn =
       conn
       |> assign(:user, %User{id: 1})

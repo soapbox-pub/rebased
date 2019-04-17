@@ -1,8 +1,13 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 # https://tools.ietf.org/html/draft-cavage-http-signatures-08
 defmodule Pleroma.Web.HTTPSignatures do
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Utils
+
   require Logger
 
   def split_signature(sig) do

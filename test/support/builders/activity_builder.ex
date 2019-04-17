@@ -1,5 +1,4 @@
 defmodule Pleroma.Builders.ActivityBuilder do
-  alias Pleroma.Builders.UserBuilder
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   def build(data \\ %{}, opts \\ %{}) do

@@ -1,47 +1,41 @@
-defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
-  alias Pleroma.{UserInviteToken, User, Activity, Repo, Object}
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.TwitterAPI.UserView
-  alias Pleroma.Web.{OStatus, CommonAPI}
-  alias Pleroma.Web.MediaProxy
-  import Ecto.Query
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
 
-  @httpoison Application.get_env(:pleroma, :httpoison)
+defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
+  alias Pleroma.Activity
+  alias Pleroma.Emails.Mailer
+  alias Pleroma.Emails.UserEmail
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.UserInviteToken
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.TwitterAPI.UserView
+
+  import Ecto.Query
 
   def create_status(%User{} = user, %{"status" => _} = data) do
     CommonAPI.post(user, data)
   end
 
   def delete(%User{} = user, id) do
-    with %Activity{data: %{"type" => type}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"type" => _type}} <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.delete(id, user) do
       {:ok, activity}
     end
   end
 
   def follow(%User{} = follower, params) do
-    with {:ok, %User{} = followed} <- get_user(params),
-         {:ok, follower} <- User.maybe_direct_follow(follower, followed),
-         {:ok, activity} <- ActivityPub.follow(follower, followed),
-         {:ok, follower, followed} <-
-           User.wait_and_refresh(
-             Pleroma.Config.get([:activitypub, :follow_handshake_timeout]),
-             follower,
-             followed
-           ) do
-      {:ok, follower, followed, activity}
-    else
-      err -> err
+    with {:ok, %User{} = followed} <- get_user(params) do
+      CommonAPI.follow(follower, followed)
     end
   end
 
   def unfollow(%User{} = follower, params) do
     with {:ok, %User{} = unfollowed} <- get_user(params),
-         {:ok, follower, follow_activity} <- User.unfollow(follower, unfollowed),
-         {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed) do
+         {:ok, follower} <- CommonAPI.unfollow(follower, unfollowed) do
       {:ok, follower, unfollowed}
-    else
-      err -> err
     end
   end
 
@@ -67,34 +61,42 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   def repeat(%User{} = user, ap_id_or_id) do
     with {:ok, _announce, %{data: %{"id" => id}}} <- CommonAPI.repeat(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     end
   end
 
   def unrepeat(%User{} = user, ap_id_or_id) do
     with {:ok, _unannounce, %{data: %{"id" => id}}} <- CommonAPI.unrepeat(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     end
   end
 
+  def pin(%User{} = user, ap_id_or_id) do
+    CommonAPI.pin(ap_id_or_id, user)
+  end
+
+  def unpin(%User{} = user, ap_id_or_id) do
+    CommonAPI.unpin(ap_id_or_id, user)
+  end
+
   def fav(%User{} = user, ap_id_or_id) do
     with {:ok, _fav, %{data: %{"id" => id}}} <- CommonAPI.favorite(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     end
   end
 
   def unfav(%User{} = user, ap_id_or_id) do
     with {:ok, _unfav, _fav, %{data: %{"id" => id}}} <- CommonAPI.unfavorite(ap_id_or_id, user),
-         %Activity{} = activity <- Activity.get_create_activity_by_object_ap_id(id) do
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(id) do
       {:ok, activity}
     end
   end
 
-  def upload(%Plug.Upload{} = file, format \\ "xml") do
-    {:ok, object} = ActivityPub.upload(file)
+  def upload(%Plug.Upload{} = file, %User{} = user, format \\ "xml") do
+    {:ok, object} = ActivityPub.upload(file, actor: User.ap_id(user))
 
     url = List.first(object.data["url"])
     href = url["href"]
@@ -127,7 +129,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def register_user(params) do
-    tokenString = params["token"]
+    token = params["token"]
 
     params = %{
       nickname: params["nickname"],
@@ -135,53 +137,101 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       bio: User.parse_bio(params["bio"]),
       email: params["email"],
       password: params["password"],
-      password_confirmation: params["confirm"]
+      password_confirmation: params["confirm"],
+      captcha_solution: params["captcha_solution"],
+      captcha_token: params["captcha_token"],
+      captcha_answer_data: params["captcha_answer_data"]
     }
 
-    registrations_open = Pleroma.Config.get([:instance, :registrations_open])
-
-    # no need to query DB if registration is open
-    token =
-      unless registrations_open || is_nil(tokenString) do
-        Repo.get_by(UserInviteToken, %{token: tokenString})
+    captcha_enabled = Pleroma.Config.get([Pleroma.Captcha, :enabled])
+    # true if captcha is disabled or enabled and valid, false otherwise
+    captcha_ok =
+      if !captcha_enabled do
+        :ok
+      else
+        Pleroma.Captcha.validate(
+          params[:captcha_token],
+          params[:captcha_solution],
+          params[:captcha_answer_data]
+        )
       end
 
-    cond do
-      registrations_open || (!is_nil(token) && !token.used) ->
-        changeset = User.register_changeset(%User{info: %{}}, params)
+    # Captcha invalid
+    if captcha_ok != :ok do
+      {:error, error} = captcha_ok
+      # I have no idea how this error handling works
+      {:error, %{error: Jason.encode!(%{captcha: [error]})}}
+    else
+      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
+      registration_process(registrations_open, params, token)
+    end
+  end
 
-        with {:ok, user} <- Repo.insert(changeset) do
-          !registrations_open && UserInviteToken.mark_as_used(token.token)
-          {:ok, user}
-        else
-          {:error, changeset} ->
-            errors =
-              Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-              |> Jason.encode!()
+  defp registration_process(registration_open, params, token)
+       when registration_open == false or is_nil(registration_open) do
+    invite =
+      unless is_nil(token) do
+        Repo.get_by(UserInviteToken, %{token: token})
+      end
 
-            {:error, %{error: errors}}
-        end
+    valid_invite? = invite && UserInviteToken.valid_invite?(invite)
 
-      !registrations_open && is_nil(token) ->
+    case invite do
+      nil ->
         {:error, "Invalid token"}
 
-      !registrations_open && token.used ->
+      invite when valid_invite? ->
+        UserInviteToken.update_usage!(invite)
+        create_user(params)
+
+      _ ->
         {:error, "Expired token"}
     end
   end
 
-  def get_by_id_or_nickname(id_or_nickname) do
-    if !is_integer(id_or_nickname) && :error == Integer.parse(id_or_nickname) do
-      Repo.get_by(User, nickname: id_or_nickname)
+  defp registration_process(true, params, _token) do
+    create_user(params)
+  end
+
+  defp create_user(params) do
+    changeset = User.register_changeset(%User{}, params)
+
+    case User.register(changeset) do
+      {:ok, user} ->
+        {:ok, user}
+
+      {:error, changeset} ->
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+          |> Jason.encode!()
+
+        {:error, %{error: errors}}
+    end
+  end
+
+  def password_reset(nickname_or_email) do
+    with true <- is_binary(nickname_or_email),
+         %User{local: true} = user <- User.get_by_nickname_or_email(nickname_or_email),
+         {:ok, token_record} <- Pleroma.PasswordResetToken.create_token(user) do
+      user
+      |> UserEmail.password_reset_email(token_record.token)
+      |> Mailer.deliver_async()
     else
-      Repo.get(User, id_or_nickname)
+      false ->
+        {:error, "bad user identifier"}
+
+      %User{local: false} ->
+        {:error, "remote user"}
+
+      nil ->
+        {:error, "unknown user"}
     end
   end
 
   def get_user(user \\ nil, params) do
     case params do
       %{"user_id" => user_id} ->
-        case target = get_by_id_or_nickname(user_id) do
+        case target = User.get_cached_by_nickname_or_id(user_id) do
           nil ->
             {:error, "No user with such user_id"}
 
@@ -190,12 +240,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         end
 
       %{"screen_name" => nickname} ->
-        case target = Repo.get_by(User, nickname: nickname) do
-          nil ->
-            {:error, "No user with such screen_name"}
-
-          _ ->
-            {:ok, target}
+        case User.get_by_nickname(nickname) do
+          nil -> {:error, "No user with such screen_name"}
+          target -> {:ok, target}
         end
 
       _ ->
@@ -242,39 +289,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       )
 
     _activities = Repo.all(q)
-  end
-
-  defp make_date do
-    DateTime.utc_now() |> DateTime.to_iso8601()
-  end
-
-  # DEPRECATED mostly, context objects are now created at insertion time.
-  def context_to_conversation_id(context) do
-    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
-      id
-    else
-      _e ->
-        changeset = Object.context_mapping(context)
-
-        case Repo.insert(changeset) do
-          {:ok, %{id: id}} ->
-            id
-
-          # This should be solved by an upsert, but it seems ecto
-          # has problems accessing the constraint inside the jsonb.
-          {:error, _} ->
-            Object.get_cached_by_ap_id(context).id
-        end
-    end
-  end
-
-  def conversation_id_to_context(id) do
-    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
-      context
-    else
-      _e ->
-        {:error, "No such conversation"}
-    end
   end
 
   def get_external_profile(for_user, uri) do

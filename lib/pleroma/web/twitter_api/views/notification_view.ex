@@ -1,9 +1,14 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.TwitterAPI.NotificationView do
   use Pleroma.Web, :view
-  alias Pleroma.{Notification, User}
+  alias Pleroma.Notification
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.TwitterAPI.UserView
   alias Pleroma.Web.TwitterAPI.ActivityView
+  alias Pleroma.Web.TwitterAPI.UserView
 
   defp get_user(ap_id, opts) do
     cond do

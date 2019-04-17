@@ -1,10 +1,19 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.List do
   use Ecto.Schema
-  import Ecto.{Changeset, Query}
-  alias Pleroma.{User, Repo, Activity}
+
+  import Ecto.Query
+  import Ecto.Changeset
+
+  alias Pleroma.Activity
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   schema "lists" do
-    belongs_to(:user, Pleroma.User)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:title, :string)
     field(:following, {:array, :string}, default: [])
 
@@ -23,7 +32,7 @@ defmodule Pleroma.List do
     |> validate_required([:following])
   end
 
-  def for_user(user, opts) do
+  def for_user(user, _opts) do
     query =
       from(
         l in Pleroma.List,
@@ -46,7 +55,7 @@ defmodule Pleroma.List do
     Repo.one(query)
   end
 
-  def get_following(%Pleroma.List{following: following} = list) do
+  def get_following(%Pleroma.List{following: following} = _list) do
     q =
       from(
         u in User,
@@ -71,7 +80,7 @@ defmodule Pleroma.List do
 
   # Get lists to which the account belongs.
   def get_lists_account_belongs(%User{} = owner, account_id) do
-    user = Repo.get(User, account_id)
+    user = User.get_by_id(account_id)
 
     query =
       from(

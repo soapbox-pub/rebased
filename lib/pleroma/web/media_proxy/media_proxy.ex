@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.MediaProxy do
   @base64_opts [padding: false]
 
@@ -5,7 +9,7 @@ defmodule Pleroma.Web.MediaProxy do
 
   def url(""), do: nil
 
-  def url(url = "/" <> _), do: url
+  def url("/" <> _ = url), do: url
 
   def url(url) do
     config = Application.get_env(:pleroma, :media_proxy, [])
@@ -14,7 +18,20 @@ defmodule Pleroma.Web.MediaProxy do
       url
     else
       secret = Application.get_env(:pleroma, Pleroma.Web.Endpoint)[:secret_key_base]
-      base64 = Base.url_encode64(url, @base64_opts)
+
+      # Must preserve `%2F` for compatibility with S3
+      # https://git.pleroma.social/pleroma/pleroma/issues/580
+      replacement = get_replacement(url, ":2F:")
+
+      # The URL is url-decoded and encoded again to ensure it is correctly encoded and not twice.
+      base64 =
+        url
+        |> String.replace("%2F", replacement)
+        |> URI.decode()
+        |> URI.encode()
+        |> String.replace(replacement, "%2F")
+        |> Base.url_encode64(@base64_opts)
+
       sig = :crypto.hmac(:sha, secret, base64)
       sig64 = sig |> Base.url_encode64(@base64_opts)
 
@@ -48,5 +65,13 @@ defmodule Pleroma.Web.MediaProxy do
     ]
     |> Enum.filter(fn value -> value end)
     |> Path.join()
+  end
+
+  defp get_replacement(url, replacement) do
+    if String.contains?(url, replacement) do
+      get_replacement(url, replacement <> replacement)
+    else
+      replacement
+    end
   end
 end

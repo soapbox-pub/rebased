@@ -1,9 +1,15 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.OStatus.FeedRepresenterTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.User
-  alias Pleroma.Web.OStatus.{FeedRepresenter, UserRepresenter, ActivityRepresenter}
   alias Pleroma.Web.OStatus
+  alias Pleroma.Web.OStatus.ActivityRepresenter
+  alias Pleroma.Web.OStatus.FeedRepresenter
+  alias Pleroma.Web.OStatus.UserRepresenter
 
   test "returns a feed of the last 20 items of the user" do
     note_activity = insert(:note_activity)

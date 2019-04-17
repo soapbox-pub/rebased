@@ -1,9 +1,16 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.WebFinger do
   @httpoison Application.get_env(:pleroma, :httpoison)
 
-  alias Pleroma.{User, XmlBuilder}
+  alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.{XML, Salmon, OStatus}
+  alias Pleroma.Web.OStatus
+  alias Pleroma.Web.Salmon
+  alias Pleroma.Web.XML
+  alias Pleroma.XmlBuilder
   require Jason
   require Logger
 
@@ -220,8 +227,8 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def find_lrdd_template(domain) do
-    with {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <-
-           @httpoison.get("http://#{domain}/.well-known/host-meta", [], follow_redirect: true) do
+    with {:ok, %{status: status, body: body}} when status in 200..299 <-
+           @httpoison.get("http://#{domain}/.well-known/host-meta", []) do
       get_template_from_xml(body)
     else
       _ ->
@@ -256,10 +263,9 @@ defmodule Pleroma.Web.WebFinger do
     with response <-
            @httpoison.get(
              address,
-             [Accept: "application/xrd+xml,application/jrd+json"],
-             follow_redirect: true
+             Accept: "application/xrd+xml,application/jrd+json"
            ),
-         {:ok, %{status_code: status_code, body: body}} when status_code in 200..299 <- response do
+         {:ok, %{status: status, body: body}} when status in 200..299 <- response do
       doc = XML.parse_document(body)
 
       if doc != :error do

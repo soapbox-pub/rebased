@@ -1,18 +1,28 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.TwitterAPI.UtilController do
   use Pleroma.Web, :controller
+
   require Logger
+
+  alias Comeonin.Pbkdf2
+  alias Pleroma.Activity
+  alias Pleroma.Emoji
+  alias Pleroma.Notification
+  alias Pleroma.PasswordResetToken
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.WebFinger
-  alias Pleroma.Web.CommonAPI
-  alias Comeonin.Pbkdf2
-  alias Pleroma.{Formatter, Emoji}
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.{Repo, PasswordResetToken, User}
 
   def show_password_reset(conn, %{"token" => token}) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
-         %User{} = user <- Repo.get(User, token.user_id) do
+         %User{} = user <- User.get_by_id(token.user_id) do
       render(conn, "password_reset.html", %{
         token: token,
         user: user
@@ -64,36 +74,52 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def remote_follow(%{assigns: %{user: user}} = conn, %{"acct" => acct}) do
-    {err, followee} = OStatus.find_or_make_user(acct)
-    avatar = User.avatar_url(followee)
-    name = followee.nickname
-    id = followee.id
-
-    if !!user do
-      conn
-      |> render("follow.html", %{error: err, acct: acct, avatar: avatar, name: name, id: id})
+    if is_status?(acct) do
+      {:ok, object} = Pleroma.Object.Fetcher.fetch_object_from_id(acct)
+      %Activity{id: activity_id} = Activity.get_create_by_object_ap_id(object.data["id"])
+      redirect(conn, to: "/notice/#{activity_id}")
     else
-      conn
-      |> render("follow_login.html", %{
-        error: false,
-        acct: acct,
-        avatar: avatar,
-        name: name,
-        id: id
-      })
+      {err, followee} = OStatus.find_or_make_user(acct)
+      avatar = User.avatar_url(followee)
+      name = followee.nickname
+      id = followee.id
+
+      if !!user do
+        conn
+        |> render("follow.html", %{error: err, acct: acct, avatar: avatar, name: name, id: id})
+      else
+        conn
+        |> render("follow_login.html", %{
+          error: false,
+          acct: acct,
+          avatar: avatar,
+          name: name,
+          id: id
+        })
+      end
+    end
+  end
+
+  defp is_status?(acct) do
+    case Pleroma.Object.Fetcher.fetch_and_contain_remote_object_from_id(acct) do
+      {:ok, %{"type" => type}} when type in ["Article", "Note", "Video", "Page", "Question"] ->
+        true
+
+      _ ->
+        false
     end
   end
 
   def do_remote_follow(conn, %{
         "authorization" => %{"name" => username, "password" => password, "id" => id}
       }) do
-    followee = Repo.get(User, id)
+    followee = User.get_by_id(id)
     avatar = User.avatar_url(followee)
     name = followee.nickname
 
     with %User{} = user <- User.get_cached_by_nickname(username),
          true <- Pbkdf2.checkpw(password, user.password_hash),
-         %User{} = _followed <- Repo.get(User, id),
+         %User{} = _followed <- User.get_by_id(id),
          {:ok, follower} <- User.follow(user, followee),
          {:ok, _activity} <- ActivityPub.follow(follower, followee) do
       conn
@@ -115,7 +141,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
-    with %User{} = followee <- Repo.get(User, id),
+    with %User{} = followee <- User.get_by_id(id),
          {:ok, follower} <- User.follow(user, followee),
          {:ok, _activity} <- ActivityPub.follow(follower, followee) do
       conn
@@ -131,6 +157,17 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
         conn
         |> render("followed.html", %{error: inspect(e)})
+    end
+  end
+
+  def notifications_read(%{assigns: %{user: user}} = conn, %{"id" => notification_id}) do
+    with {:ok, _} <- Notification.read_one(user, notification_id) do
+      json(conn, %{status: "success"})
+    else
+      {:error, message} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
   end
 
@@ -157,31 +194,56 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
         |> send_resp(200, response)
 
       _ ->
+        vapid_public_key = Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+
+        uploadlimit = %{
+          uploadlimit: to_string(Keyword.get(instance, :upload_limit)),
+          avatarlimit: to_string(Keyword.get(instance, :avatar_upload_limit)),
+          backgroundlimit: to_string(Keyword.get(instance, :background_upload_limit)),
+          bannerlimit: to_string(Keyword.get(instance, :banner_upload_limit))
+        }
+
         data = %{
           name: Keyword.get(instance, :name),
           description: Keyword.get(instance, :description),
           server: Web.base_url(),
           textlimit: to_string(Keyword.get(instance, :limit)),
+          uploadlimit: uploadlimit,
           closed: if(Keyword.get(instance, :registrations_open), do: "0", else: "1"),
-          private: if(Keyword.get(instance, :public, true), do: "0", else: "1")
+          private: if(Keyword.get(instance, :public, true), do: "0", else: "1"),
+          vapidPublicKey: vapid_public_key,
+          accountActivationRequired:
+            if(Keyword.get(instance, :account_activation_required, false), do: "1", else: "0"),
+          invitesEnabled: if(Keyword.get(instance, :invites_enabled, false), do: "1", else: "0"),
+          safeDMMentionsEnabled:
+            if(Pleroma.Config.get([:instance, :safe_dm_mentions]), do: "1", else: "0")
         }
 
-        pleroma_fe = %{
-          theme: Keyword.get(instance_fe, :theme),
-          background: Keyword.get(instance_fe, :background),
-          logo: Keyword.get(instance_fe, :logo),
-          logoMask: Keyword.get(instance_fe, :logo_mask),
-          logoMargin: Keyword.get(instance_fe, :logo_margin),
-          redirectRootNoLogin: Keyword.get(instance_fe, :redirect_root_no_login),
-          redirectRootLogin: Keyword.get(instance_fe, :redirect_root_login),
-          chatDisabled: !Keyword.get(instance_chat, :enabled),
-          showInstanceSpecificPanel: Keyword.get(instance_fe, :show_instance_panel),
-          scopeOptionsEnabled: Keyword.get(instance_fe, :scope_options_enabled),
-          formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
-          collapseMessageWithSubject: Keyword.get(instance_fe, :collapse_message_with_subject),
-          hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
-          hideUserStats: Keyword.get(instance_fe, :hide_user_stats)
-        }
+        pleroma_fe =
+          if instance_fe do
+            %{
+              theme: Keyword.get(instance_fe, :theme),
+              background: Keyword.get(instance_fe, :background),
+              logo: Keyword.get(instance_fe, :logo),
+              logoMask: Keyword.get(instance_fe, :logo_mask),
+              logoMargin: Keyword.get(instance_fe, :logo_margin),
+              redirectRootNoLogin: Keyword.get(instance_fe, :redirect_root_no_login),
+              redirectRootLogin: Keyword.get(instance_fe, :redirect_root_login),
+              chatDisabled: !Keyword.get(instance_chat, :enabled),
+              showInstanceSpecificPanel: Keyword.get(instance_fe, :show_instance_panel),
+              scopeOptionsEnabled: Keyword.get(instance_fe, :scope_options_enabled),
+              formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
+              collapseMessageWithSubject:
+                Keyword.get(instance_fe, :collapse_message_with_subject),
+              hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
+              hideUserStats: Keyword.get(instance_fe, :hide_user_stats),
+              scopeCopy: Keyword.get(instance_fe, :scope_copy),
+              subjectLineBehavior: Keyword.get(instance_fe, :subject_line_behavior),
+              alwaysShowSubjectInput: Keyword.get(instance_fe, :always_show_subject_input)
+            }
+          else
+            Pleroma.Config.get([:frontend_configurations, :pleroma_fe])
+          end
 
         managed_config = Keyword.get(instance, :managed_config)
 
@@ -194,6 +256,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
         json(conn, %{site: data})
     end
+  end
+
+  def frontend_configurations(conn, _params) do
+    config =
+      Pleroma.Config.get(:frontend_configurations, %{})
+      |> Enum.into(%{})
+
+    json(conn, config)
   end
 
   def version(conn, _params) do
@@ -213,28 +283,47 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def emoji(conn, _params) do
-    json(conn, Enum.into(Emoji.get_all(), %{}))
+    emoji =
+      Emoji.get_all()
+      |> Enum.map(fn {short_code, path, tags} ->
+        {short_code, %{image_url: path, tags: String.split(tags, ",")}}
+      end)
+      |> Enum.into(%{})
+
+    json(conn, emoji)
+  end
+
+  def update_notificaton_settings(%{assigns: %{user: user}} = conn, params) do
+    with {:ok, _} <- User.update_notification_settings(user, params) do
+      json(conn, %{status: "success"})
+    end
   end
 
   def follow_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
     follow_import(conn, %{"list" => File.read!(listfile.path)})
   end
 
-  def follow_import(%{assigns: %{user: user}} = conn, %{"list" => list}) do
-    Task.start(fn ->
-      String.split(list)
-      |> Enum.map(fn account ->
-        with %User{} = follower <- User.get_cached_by_ap_id(user.ap_id),
-             %User{} = followed <- User.get_or_fetch(account),
-             {:ok, follower} <- User.maybe_direct_follow(follower, followed) do
-          ActivityPub.follow(follower, followed)
-        else
-          err -> Logger.debug("follow_import: following #{account} failed with #{inspect(err)}")
-        end
-      end)
-    end)
+  def follow_import(%{assigns: %{user: follower}} = conn, %{"list" => list}) do
+    with lines <- String.split(list, "\n"),
+         followed_identifiers <-
+           Enum.map(lines, fn line ->
+             String.split(line, ",") |> List.first()
+           end)
+           |> List.delete("Account address"),
+         {:ok, _} = Task.start(fn -> User.follow_import(follower, followed_identifiers) end) do
+      json(conn, "job started")
+    end
+  end
 
-    json(conn, "job started")
+  def blocks_import(conn, %{"list" => %Plug.Upload{} = listfile}) do
+    blocks_import(conn, %{"list" => File.read!(listfile.path)})
+  end
+
+  def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
+    with blocked_identifiers <- String.split(list),
+         {:ok, _} = Task.start(fn -> User.blocks_import(blocker, blocked_identifiers) end) do
+      json(conn, "job started")
+    end
   end
 
   def change_password(%{assigns: %{user: user}} = conn, params) do
@@ -269,5 +358,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       {:error, msg} ->
         json(conn, %{error: msg})
     end
+  end
+
+  def captcha(conn, _params) do
+    json(conn, Pleroma.Captcha.new())
   end
 end

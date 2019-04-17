@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Uploaders.Swift.Keystone do
   use HTTPoison.Base
 
@@ -13,7 +17,7 @@ defmodule Pleroma.Uploaders.Swift.Keystone do
     |> Poison.decode!()
   end
 
-  def get_token() do
+  def get_token do
     settings = Pleroma.Config.get(Pleroma.Uploaders.Swift)
     username = Keyword.fetch!(settings, :username)
     password = Keyword.fetch!(settings, :password)
@@ -25,10 +29,10 @@ defmodule Pleroma.Uploaders.Swift.Keystone do
            ["Content-Type": "application/json"],
            hackney: [:insecure]
          ) do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
         body["access"]["token"]["id"]
 
-      {:ok, %HTTPoison.Response{status_code: _}} ->
+      {:ok, %Tesla.Env{status: _}} ->
         ""
     end
   end

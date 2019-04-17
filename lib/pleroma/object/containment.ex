@@ -36,9 +36,9 @@ defmodule Pleroma.Object.Containment do
   @doc """
   Checks that an imported AP object's actor matches the domain it came from.
   """
-  def contain_origin(id, %{"actor" => nil}), do: :error
+  def contain_origin(_id, %{"actor" => nil}), do: :error
 
-  def contain_origin(id, %{"actor" => actor} = params) do
+  def contain_origin(id, %{"actor" => _actor} = params) do
     id_uri = URI.parse(id)
     actor_uri = URI.parse(get_actor(params))
 
@@ -49,9 +49,9 @@ defmodule Pleroma.Object.Containment do
     end
   end
 
-  def contain_origin_from_id(id, %{"id" => nil}), do: :error
+  def contain_origin_from_id(_id, %{"id" => nil}), do: :error
 
-  def contain_origin_from_id(id, %{"id" => other_id} = params) do
+  def contain_origin_from_id(id, %{"id" => other_id} = _params) do
     id_uri = URI.parse(id)
     other_uri = URI.parse(other_id)
 

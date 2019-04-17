@@ -1,7 +1,11 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.MastodonAPI.FilterView do
   use Pleroma.Web, :view
-  alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.MastodonAPI.FilterView
 
   def render("filters.json", %{filters: filters} = opts) do
     render_many(filters, FilterView, "filter.json", opts)

@@ -1,10 +1,23 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.OStatusTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
+  alias Pleroma.Instances
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
-  alias Pleroma.{Object, Repo, User, Activity}
   import Pleroma.Factory
   import ExUnit.CaptureLog
+
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "don't insert create notes twice" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
@@ -150,9 +163,8 @@ defmodule Pleroma.Web.OStatusTest do
     assert "https://pleroma.soykaf.com/users/lain" in activity.data["to"]
     refute activity.local
 
-    retweeted_activity = Repo.get(Activity, retweeted_activity.id)
+    retweeted_activity = Activity.get_by_id(retweeted_activity.id)
     retweeted_object = Object.normalize(retweeted_activity.data["object"])
-
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
     refute retweeted_activity.local
@@ -179,7 +191,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert user.ap_id in activity.data["to"]
     refute activity.local
 
-    retweeted_activity = Repo.get(Activity, retweeted_activity.id)
+    retweeted_activity = Activity.get_by_id(retweeted_activity.id)
     assert note_activity.id == retweeted_activity.id
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == user.ap_id
@@ -314,6 +326,22 @@ defmodule Pleroma.Web.OStatusTest do
     refute User.following?(follower, followed)
   end
 
+  test "it clears `unreachable` federation status of the sender" do
+    incoming_reaction_xml = File.read!("test/fixtures/share-gs.xml")
+    doc = XML.parse_document(incoming_reaction_xml)
+    actor_uri = XML.string_from_xpath("//author/uri[1]", doc)
+    reacted_to_author_uri = XML.string_from_xpath("//author/uri[2]", doc)
+
+    Instances.set_consistently_unreachable(actor_uri)
+    Instances.set_consistently_unreachable(reacted_to_author_uri)
+    refute Instances.reachable?(actor_uri)
+    refute Instances.reachable?(reacted_to_author_uri)
+
+    {:ok, _} = OStatus.handle_incoming(incoming_reaction_xml)
+    assert Instances.reachable?(actor_uri)
+    refute Instances.reachable?(reacted_to_author_uri)
+  end
+
   describe "new remote user creation" do
     test "returns local users" do
       local_user = insert(:user)
@@ -327,7 +355,7 @@ defmodule Pleroma.Web.OStatusTest do
 
       {:ok, user} = OStatus.find_or_make_user(uri)
 
-      user = Repo.get(Pleroma.User, user.id)
+      user = Pleroma.User.get_by_id(user.id)
       assert user.name == "Constance Variable"
       assert user.nickname == "lambadalambda@social.heldscal.la"
       assert user.local == false
@@ -517,8 +545,10 @@ defmodule Pleroma.Web.OStatusTest do
         note_object.data
         |> Map.put("type", "Article")
 
+      Cachex.clear(:object_cache)
+
       cs = Object.change(note_object, %{data: note_data})
-      {:ok, article_object} = Repo.update(cs)
+      {:ok, _article_object} = Repo.update(cs)
 
       # the underlying object is now an Article instead of a note, so this should fail
       refute OStatus.is_representable?(note_activity)

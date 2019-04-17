@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.HTML do
   alias HtmlSanitizeEx.Scrubber
 
@@ -5,26 +9,83 @@ defmodule Pleroma.HTML do
   defp get_scrubbers(scrubbers) when is_list(scrubbers), do: scrubbers
   defp get_scrubbers(_), do: [Pleroma.HTML.Scrubber.Default]
 
-  def get_scrubbers() do
+  def get_scrubbers do
     Pleroma.Config.get([:markup, :scrub_policy])
     |> get_scrubbers
   end
 
   def filter_tags(html, nil) do
-    get_scrubbers()
-    |> Enum.reduce(html, fn scrubber, html ->
+    filter_tags(html, get_scrubbers())
+  end
+
+  def filter_tags(html, scrubbers) when is_list(scrubbers) do
+    Enum.reduce(scrubbers, html, fn scrubber, html ->
       filter_tags(html, scrubber)
     end)
   end
 
-  def filter_tags(html, scrubber) do
-    html |> Scrubber.scrub(scrubber)
+  def filter_tags(html, scrubber), do: Scrubber.scrub(html, scrubber)
+  def filter_tags(html), do: filter_tags(html, nil)
+  def strip_tags(html), do: Scrubber.scrub(html, Scrubber.StripTags)
+
+  def get_cached_scrubbed_html_for_activity(content, scrubbers, activity, key \\ "") do
+    key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
+
+    Cachex.fetch!(:scrubber_cache, key, fn _key ->
+      object = Pleroma.Object.normalize(activity)
+      ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false)
+    end)
   end
 
-  def filter_tags(html), do: filter_tags(html, nil)
+  def get_cached_stripped_html_for_activity(content, activity, key) do
+    get_cached_scrubbed_html_for_activity(
+      content,
+      HtmlSanitizeEx.Scrubber.StripTags,
+      activity,
+      key
+    )
+  end
 
-  def strip_tags(html) do
-    html |> Scrubber.scrub(Scrubber.StripTags)
+  def ensure_scrubbed_html(
+        content,
+        scrubbers,
+        false = _fake
+      ) do
+    {:commit, filter_tags(content, scrubbers)}
+  end
+
+  def ensure_scrubbed_html(
+        content,
+        scrubbers,
+        true = _fake
+      ) do
+    {:ignore, filter_tags(content, scrubbers)}
+  end
+
+  defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
+    generate_scrubber_signature([scrubber])
+  end
+
+  defp generate_scrubber_signature(scrubbers) do
+    Enum.reduce(scrubbers, "", fn scrubber, signature ->
+      "#{signature}#{to_string(scrubber)}"
+    end)
+  end
+
+  def extract_first_external_url(_, nil), do: {:error, "No content"}
+
+  def extract_first_external_url(object, content) do
+    key = "URL|#{object.id}"
+
+    Cachex.fetch!(:scrubber_cache, key, fn _key ->
+      result =
+        content
+        |> Floki.filter_out("a.mention")
+        |> Floki.attribute("a", "href")
+        |> Enum.at(0)
+
+      {:commit, {:ok, result}}
+    end)
   end
 end
 
@@ -35,8 +96,7 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   """
 
   @markup Application.get_env(:pleroma, :markup)
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
@@ -45,15 +105,22 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   Meta.strip_comments()
 
   # links
-  Meta.allow_tag_with_uri_attributes("a", ["href"], @valid_schemes)
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
+  Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
+
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer"
+  ])
 
   # paragraphs and linebreaks
   Meta.allow_tag_with_these_attributes("br", [])
   Meta.allow_tag_with_these_attributes("p", [])
 
   # microformats
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_these_attributes("span", ["class"])
 
   # allow inline images for custom emoji
   @allow_inline_images Keyword.get(@markup, :allow_inline_images)
@@ -78,16 +145,24 @@ defmodule Pleroma.HTML.Scrubber.Default do
 
   require HtmlSanitizeEx.Scrubber.Meta
   alias HtmlSanitizeEx.Scrubber.Meta
+  # credo:disable-for-previous-line
+  # No idea how to fix this one…
 
   @markup Application.get_env(:pleroma, :markup)
-  @uri_schemes Application.get_env(:pleroma, :uri_schemes, [])
-  @valid_schemes Keyword.get(@uri_schemes, :valid_schemes, [])
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   Meta.remove_cdata_sections_before_scrub()
   Meta.strip_comments()
 
-  Meta.allow_tag_with_uri_attributes("a", ["href"], @valid_schemes)
-  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
+  Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
+
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer"
+  ])
 
   Meta.allow_tag_with_these_attributes("abbr", ["title"])
 
@@ -102,7 +177,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes("ol", [])
   Meta.allow_tag_with_these_attributes("p", [])
   Meta.allow_tag_with_these_attributes("pre", [])
-  Meta.allow_tag_with_these_attributes("span", [])
+  Meta.allow_tag_with_these_attributes("span", ["class"])
   Meta.allow_tag_with_these_attributes("strong", [])
   Meta.allow_tag_with_these_attributes("u", [])
   Meta.allow_tag_with_these_attributes("ul", [])
@@ -166,7 +241,7 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
     {"src", media_url}
   end
 
-  def scrub_attribute(tag, attribute), do: attribute
+  def scrub_attribute(_tag, attribute), do: attribute
 
   def scrub({"img", attributes, children}) do
     attributes =
@@ -177,9 +252,9 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
     {"img", attributes, children}
   end
 
-  def scrub({:comment, children}), do: ""
+  def scrub({:comment, _children}), do: ""
 
   def scrub({tag, attributes, children}), do: {tag, attributes, children}
-  def scrub({tag, children}), do: children
+  def scrub({_tag, children}), do: children
   def scrub(text), do: text
 end

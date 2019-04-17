@@ -1,10 +1,14 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.Stats
-  alias Pleroma.Web
-  alias Pleroma.{User, Repo}
   alias Pleroma.Config
+  alias Pleroma.Stats
+  alias Pleroma.User
+  alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.MRF
 
   plug(Pleroma.Web.FederatingPlug)
@@ -15,6 +19,10 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         %{
           rel: "http://nodeinfo.diaspora.software/ns/schema/2.0",
           href: Web.base_url() <> "/nodeinfo/2.0.json"
+        },
+        %{
+          rel: "http://nodeinfo.diaspora.software/ns/schema/2.1",
+          href: Web.base_url() <> "/nodeinfo/2.1.json"
         }
       ]
     }
@@ -22,8 +30,9 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
     json(conn, response)
   end
 
-  # Schema definition: https://github.com/jhass/nodeinfo/blob/master/schemas/2.0/schema.json
-  def nodeinfo(conn, %{"version" => "2.0"}) do
+  # returns a nodeinfo 2.0 map, since 2.1 just adds a repository field
+  # under software.
+  def raw_nodeinfo do
     instance = Application.get_env(:pleroma, :instance)
     media_proxy = Application.get_env(:pleroma, :media_proxy)
     suggestions = Application.get_env(:pleroma, :suggestions)
@@ -33,6 +42,33 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
 
     mrf_simple =
       Application.get_env(:pleroma, :mrf_simple)
+      |> Enum.into(%{})
+
+    # This horror is needed to convert regex sigils to strings
+    mrf_keyword =
+      Application.get_env(:pleroma, :mrf_keyword, [])
+      |> Enum.map(fn {key, value} ->
+        {key,
+         Enum.map(value, fn
+           {pattern, replacement} ->
+             %{
+               "pattern" =>
+                 if not is_binary(pattern) do
+                   inspect(pattern)
+                 else
+                   pattern
+                 end,
+               "replacement" => replacement
+             }
+
+           pattern ->
+             if not is_binary(pattern) do
+               inspect(pattern)
+             else
+               pattern
+             end
+         end)}
+      end)
       |> Enum.into(%{})
 
     mrf_policies =
@@ -49,21 +85,19 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       end
 
     staff_accounts =
-      User.moderator_user_query()
-      |> Repo.all()
+      User.all_superusers()
       |> Enum.map(fn u -> u.ap_id end)
 
     mrf_user_allowlist =
       Config.get([:mrf_user_allowlist], [])
       |> Enum.into(%{}, fn {k, v} -> {k, length(v)} end)
 
-    mrf_transparency = Keyword.get(instance, :mrf_transparency)
-
     federation_response =
-      if mrf_transparency do
+      if Keyword.get(instance, :mrf_transparency) do
         %{
           mrf_policies: mrf_policies,
           mrf_simple: mrf_simple,
+          mrf_keyword: mrf_keyword,
           mrf_user_allowlist: mrf_user_allowlist,
           quarantined_instances: quarantined
         }
@@ -71,28 +105,36 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         %{}
       end
 
-    features = [
-      "pleroma_api",
-      "mastodon_api",
-      "mastodon_api_streaming",
-      if Keyword.get(media_proxy, :enabled) do
-        "media_proxy"
-      end,
-      if Keyword.get(gopher, :enabled) do
-        "gopher"
-      end,
-      if Keyword.get(chat, :enabled) do
-        "chat"
-      end,
-      if Keyword.get(suggestions, :enabled) do
-        "suggestions"
-      end
-    ]
+    features =
+      [
+        "pleroma_api",
+        "mastodon_api",
+        "mastodon_api_streaming",
+        if Keyword.get(media_proxy, :enabled) do
+          "media_proxy"
+        end,
+        if Keyword.get(gopher, :enabled) do
+          "gopher"
+        end,
+        if Keyword.get(chat, :enabled) do
+          "chat"
+        end,
+        if Keyword.get(suggestions, :enabled) do
+          "suggestions"
+        end,
+        if Keyword.get(instance, :allow_relay) do
+          "relay"
+        end,
+        if Keyword.get(instance, :safe_dm_mentions) do
+          "safe_dm_mentions"
+        end
+      ]
+      |> Enum.filter(& &1)
 
-    response = %{
+    %{
       version: "2.0",
       software: %{
-        name: Pleroma.Application.name(),
+        name: Pleroma.Application.name() |> String.downcase(),
         version: Pleroma.Application.version()
       },
       protocols: ["ostatus", "activitypub"],
@@ -127,14 +169,42 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           banner: Keyword.get(instance, :banner_upload_limit),
           background: Keyword.get(instance, :background_upload_limit)
         },
-        features: features
+        accountActivationRequired: Keyword.get(instance, :account_activation_required, false),
+        invitesEnabled: Keyword.get(instance, :invites_enabled, false),
+        features: features,
+        restrictedNicknames: Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
       }
     }
+  end
 
+  # Schema definition: https://github.com/jhass/nodeinfo/blob/master/schemas/2.0/schema.json
+  # and https://github.com/jhass/nodeinfo/blob/master/schemas/2.1/schema.json
+  def nodeinfo(conn, %{"version" => "2.0"}) do
     conn
     |> put_resp_header(
       "content-type",
       "application/json; profile=http://nodeinfo.diaspora.software/ns/schema/2.0#; charset=utf-8"
+    )
+    |> json(raw_nodeinfo())
+  end
+
+  def nodeinfo(conn, %{"version" => "2.1"}) do
+    raw_response = raw_nodeinfo()
+
+    updated_software =
+      raw_response
+      |> Map.get(:software)
+      |> Map.put(:repository, Pleroma.Application.repository())
+
+    response =
+      raw_response
+      |> Map.put(:software, updated_software)
+      |> Map.put(:version, "2.1")
+
+    conn
+    |> put_resp_header(
+      "content-type",
+      "application/json; profile=http://nodeinfo.diaspora.software/ns/schema/2.1#; charset=utf-8"
     )
     |> json(response)
   end

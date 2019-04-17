@@ -1,8 +1,16 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Websub.WebsubController do
   use Pleroma.Web, :controller
-  alias Pleroma.{Repo, User}
-  alias Pleroma.Web.{Websub, Federator}
+
+  alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.Federator
+  alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubClientSubscription
+
   require Logger
 
   plug(
@@ -63,13 +71,20 @@ defmodule Pleroma.Web.Websub.WebsubController do
     end
   end
 
+  def websub_subscription_confirmation(conn, params) do
+    Logger.info("Invalid WebSub confirmation request: #{inspect(params)}")
+
+    conn
+    |> send_resp(500, "Invalid parameters")
+  end
+
   def websub_incoming(conn, %{"id" => id}) do
     with "sha1=" <> signature <- hd(get_req_header(conn, "x-hub-signature")),
          signature <- String.downcase(signature),
          %WebsubClientSubscription{} = websub <- Repo.get(WebsubClientSubscription, id),
          {:ok, body, _conn} = read_body(conn),
          ^signature <- Websub.sign(websub.secret, body) do
-      Federator.enqueue(:incoming_doc, body)
+      Federator.incoming_doc(body)
 
       conn
       |> send_resp(200, "OK")

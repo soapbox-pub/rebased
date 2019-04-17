@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.MRF do
   @callback filter(Map.t()) :: {:ok | :reject, Map.t()}
 
@@ -12,7 +16,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
     end)
   end
 
-  def get_policies() do
+  def get_policies do
     Application.get_env(:pleroma, :instance, [])
     |> Keyword.get(:rewrite_policy, [])
     |> get_policies()

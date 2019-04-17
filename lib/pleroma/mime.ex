@@ -1,9 +1,13 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.MIME do
   @moduledoc """
   Returns the mime-type of a binary and optionally a normalized file-name.
   """
   @default "application/octet-stream"
-  @read_bytes 31
+  @read_bytes 35
 
   @spec file_mime_type(String.t()) ::
           {:ok, content_type :: String.t(), filename :: String.t()} | {:error, any()} | :error
@@ -33,9 +37,9 @@ defmodule Pleroma.MIME do
     {:ok, check_mime_type(head)}
   end
 
-  def mime_type(<<_::binary>>), do: {:ok, @default}
-
   def bin_mime_type(_), do: :error
+
+  def mime_type(<<_::binary>>), do: {:ok, @default}
 
   defp fix_extension(filename, content_type) do
     parts = String.split(filename, ".")
@@ -98,8 +102,16 @@ defmodule Pleroma.MIME do
     "audio/ogg"
   end
 
-  defp check_mime_type(<<0x52, 0x49, 0x46, 0x46, _::binary>>) do
+  defp check_mime_type(<<"RIFF", _::binary-size(4), "WAVE", _::binary>>) do
     "audio/wav"
+  end
+
+  defp check_mime_type(<<"RIFF", _::binary-size(4), "WEBP", _::binary>>) do
+    "image/webp"
+  end
+
+  defp check_mime_type(<<"RIFF", _::binary-size(4), "AVI.", _::binary>>) do
+    "video/avi"
   end
 
   defp check_mime_type(_) do

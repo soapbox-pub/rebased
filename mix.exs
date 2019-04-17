@@ -5,9 +5,11 @@ defmodule Pleroma.Mixfile do
     [
       app: :pleroma,
       version: version("0.9.0"),
-      elixir: "~> 1.4",
+      elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+      elixirc_options: [warnings_as_errors: true],
+      xref: [exclude: [:eldap]],
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -20,8 +22,15 @@ defmodule Pleroma.Mixfile do
       homepage_url: "https://pleroma.social/",
       docs: [
         logo: "priv/static/static/logo.png",
-        extras: ["README.md", "config/config.md"],
-        main: "readme"
+        extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
+        groups_for_extras: [
+          "Installation manuals": Path.wildcard("docs/installation/*.md"),
+          Configuration: Path.wildcard("docs/config/*.md"),
+          Administration: Path.wildcard("docs/admin/*.md"),
+          "Pleroma's APIs and Mastodon API extensions": Path.wildcard("docs/api/*.md")
+        ],
+        main: "readme",
+        output: "priv/static/doc"
       ]
     ]
   end
@@ -30,7 +39,11 @@ defmodule Pleroma.Mixfile do
   #
   # Type `mix help compile.app` for more information.
   def application do
-    [mod: {Pleroma.Application, []}, extra_applications: [:logger, :runtime_tools, :comeonin]]
+    [
+      mod: {Pleroma.Application, []},
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
+      included_applications: [:ex_syslogger]
+    ]
   end
 
   # Specifies which paths to compile per environment.
@@ -41,34 +54,64 @@ defmodule Pleroma.Mixfile do
   #
   # Type `mix help deps` for examples and options.
   defp deps do
+    oauth_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+
+    oauth_deps =
+      for s <- oauth_strategies,
+          do: {String.to_atom("ueberauth_#{s}"), ">= 0.0.0"}
+
     [
-      {:phoenix, "~> 1.3.3"},
-      {:phoenix_pubsub, "~> 1.0.2"},
-      {:phoenix_ecto, "~> 3.3"},
+      {:phoenix, "~> 1.4.1"},
+      {:plug_cowboy, "~> 2.0"},
+      {:phoenix_pubsub, "~> 1.1"},
+      {:phoenix_ecto, "~> 4.0"},
+      {:ecto_sql, "~>3.0.5"},
       {:postgrex, ">= 0.13.5"},
       {:gettext, "~> 0.15"},
-      {:cowboy, "~> 1.1.2", override: true},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},
       {:trailing_format_plug, "~> 0.0.7"},
       {:html_sanitize_ex, "~> 1.3.0"},
+      {:html_entities, "~> 0.4"},
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
       {:httpoison, "~> 1.2.0"},
+      {:poison, "~> 3.0", override: true},
+      {:tesla, "~> 1.2"},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
       {:ex_aws, "~> 2.0"},
       {:ex_aws_s3, "~> 2.0"},
-      {:earmark, "~> 1.2"},
-      {:ex_machina, "~> 2.2", only: :test},
+      {:earmark, "~> 1.3"},
+      {:ex_machina, "~> 2.3", only: :test},
       {:credo, "~> 0.9.3", only: [:dev, :test]},
       {:mock, "~> 0.3.1", only: :test},
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
       {:cors_plug, "~> 1.5"},
-      {:ex_doc, "> 0.18.3 and < 0.20.0", only: :dev, runtime: false}
-    ]
+      {:ex_doc, "~> 0.20.2", only: :dev, runtime: false},
+      {:web_push_encryption, "~> 0.2.1"},
+      {:swoosh, "~> 0.20"},
+      {:gen_smtp, "~> 0.13"},
+      {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
+      {:floki, "~> 0.20.0"},
+      {:ex_syslogger, github: "slashmili/ex_syslogger", tag: "1.4.0"},
+      {:timex, "~> 3.5"},
+      {:ueberauth, "~> 0.4"},
+      {:auto_linker,
+       git: "https://git.pleroma.social/pleroma/auto_linker.git",
+       ref: "90613b4bae875a3610c275b7056b61ffdd53210d"},
+      {:pleroma_job_queue, "~> 0.2.0"},
+      {:telemetry, "~> 0.3"},
+      {:prometheus_ex, "~> 3.0"},
+      {:prometheus_plugs, "~> 1.1"},
+      {:prometheus_phoenix, "~> 1.2"},
+      {:prometheus_ecto, "~> 1.4"},
+      {:prometheus_process_collector, "~> 1.4"},
+      {:recon, github: "ferd/recon", tag: "2.4.0"},
+      {:quack, "~> 0.1.1"}
+    ] ++ oauth_deps
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

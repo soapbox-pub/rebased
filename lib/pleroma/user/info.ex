@@ -1,6 +1,12 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.User.Info do
   use Ecto.Schema
   import Ecto.Changeset
+
+  alias Pleroma.User.Info
 
   embedded_schema do
     field(:banner, :map, default: %{})
@@ -9,14 +15,20 @@ defmodule Pleroma.User.Info do
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
     field(:locked, :boolean, default: false)
+    field(:confirmation_pending, :boolean, default: false)
+    field(:confirmation_token, :string, default: nil)
     field(:default_scope, :string, default: "public")
     field(:blocks, {:array, :string}, default: [])
     field(:domain_blocks, {:array, :string}, default: [])
+    field(:mutes, {:array, :string}, default: [])
+    field(:muted_reblogs, {:array, :string}, default: [])
+    field(:subscribers, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
     field(:ap_enabled, :boolean, default: false)
     field(:is_moderator, :boolean, default: false)
     field(:is_admin, :boolean, default: false)
+    field(:show_role, :boolean, default: true)
     field(:keys, :string, default: nil)
     field(:settings, :map, default: nil)
     field(:magic_key, :string, default: nil)
@@ -24,6 +36,14 @@ defmodule Pleroma.User.Info do
     field(:topic, :string, default: nil)
     field(:hub, :string, default: nil)
     field(:salmon, :string, default: nil)
+    field(:hide_followers, :boolean, default: false)
+    field(:hide_follows, :boolean, default: false)
+    field(:pinned_activities, {:array, :string}, default: [])
+    field(:flavour, :string, default: nil)
+
+    field(:notification_settings, :map,
+      default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
+    )
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -40,6 +60,19 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:deactivated])
     |> validate_required([:deactivated])
+  end
+
+  def update_notification_settings(info, settings) do
+    notification_settings =
+      info.notification_settings
+      |> Map.merge(settings)
+      |> Map.take(["remote", "local", "followers", "follows"])
+
+    params = %{notification_settings: notification_settings}
+
+    info
+    |> cast(params, [:notification_settings])
+    |> validate_required([:notification_settings])
   end
 
   def add_to_note_count(info, number) do
@@ -62,6 +95,14 @@ defmodule Pleroma.User.Info do
     |> validate_required([:follower_count])
   end
 
+  def set_mutes(info, mutes) do
+    params = %{mutes: mutes}
+
+    info
+    |> cast(params, [:mutes])
+    |> validate_required([:mutes])
+  end
+
   def set_blocks(info, blocks) do
     params = %{blocks: blocks}
 
@@ -70,12 +111,36 @@ defmodule Pleroma.User.Info do
     |> validate_required([:blocks])
   end
 
+  def set_subscribers(info, subscribers) do
+    params = %{subscribers: subscribers}
+
+    info
+    |> cast(params, [:subscribers])
+    |> validate_required([:subscribers])
+  end
+
+  def add_to_mutes(info, muted) do
+    set_mutes(info, Enum.uniq([muted | info.mutes]))
+  end
+
+  def remove_from_mutes(info, muted) do
+    set_mutes(info, List.delete(info.mutes, muted))
+  end
+
   def add_to_block(info, blocked) do
     set_blocks(info, Enum.uniq([blocked | info.blocks]))
   end
 
   def remove_from_block(info, blocked) do
     set_blocks(info, List.delete(info.blocks, blocked))
+  end
+
+  def add_to_subscribers(info, subscribed) do
+    set_subscribers(info, Enum.uniq([subscribed | info.subscribers]))
+  end
+
+  def remove_from_subscribers(info, subscribed) do
+    set_subscribers(info, List.delete(info.subscribers, subscribed))
   end
 
   def set_domain_blocks(info, domain_blocks) do
@@ -135,8 +200,29 @@ defmodule Pleroma.User.Info do
       :no_rich_text,
       :default_scope,
       :banner,
-      :background
+      :hide_follows,
+      :hide_followers,
+      :background,
+      :show_role
     ])
+  end
+
+  def confirmation_changeset(info, :confirmed) do
+    confirmation_changeset(info, %{
+      confirmation_pending: false,
+      confirmation_token: nil
+    })
+  end
+
+  def confirmation_changeset(info, :unconfirmed) do
+    confirmation_changeset(info, %{
+      confirmation_pending: true,
+      confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+    })
+  end
+
+  def confirmation_changeset(info, params) do
+    cast(info, params, [:confirmation_pending, :confirmation_token])
   end
 
   def mastodon_profile_update(info, params) do
@@ -145,6 +231,22 @@ defmodule Pleroma.User.Info do
       :locked,
       :banner
     ])
+  end
+
+  def mastodon_settings_update(info, settings) do
+    params = %{settings: settings}
+
+    info
+    |> cast(params, [:settings])
+    |> validate_required([:settings])
+  end
+
+  def mastodon_flavour_update(info, flavour) do
+    params = %{flavour: flavour}
+
+    info
+    |> cast(params, [:flavour])
+    |> validate_required([:flavour])
   end
 
   def set_source_data(info, source_data) do
@@ -159,7 +261,49 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [
       :is_moderator,
-      :is_admin
+      :is_admin,
+      :show_role
     ])
+  end
+
+  def add_pinnned_activity(info, %Pleroma.Activity{id: id}) do
+    if id not in info.pinned_activities do
+      max_pinned_statuses = Pleroma.Config.get([:instance, :max_pinned_statuses], 0)
+      params = %{pinned_activities: info.pinned_activities ++ [id]}
+
+      info
+      |> cast(params, [:pinned_activities])
+      |> validate_length(:pinned_activities,
+        max: max_pinned_statuses,
+        message: "You have already pinned the maximum number of statuses"
+      )
+    else
+      change(info)
+    end
+  end
+
+  def remove_pinnned_activity(info, %Pleroma.Activity{id: id}) do
+    params = %{pinned_activities: List.delete(info.pinned_activities, id)}
+
+    cast(info, params, [:pinned_activities])
+  end
+
+  def roles(%Info{is_moderator: is_moderator, is_admin: is_admin}) do
+    %{
+      admin: is_admin,
+      moderator: is_moderator
+    }
+  end
+
+  def add_reblog_mute(info, ap_id) do
+    params = %{muted_reblogs: info.muted_reblogs ++ [ap_id]}
+
+    cast(info, params, [:muted_reblogs])
+  end
+
+  def remove_reblog_mute(info, ap_id) do
+    params = %{muted_reblogs: List.delete(info.muted_reblogs, ap_id)}
+
+    cast(info, params, [:muted_reblogs])
   end
 end

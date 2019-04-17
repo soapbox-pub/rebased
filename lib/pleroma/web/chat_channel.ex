@@ -1,7 +1,11 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ChatChannel do
   use Phoenix.Channel
-  alias Pleroma.Web.ChatChannel.ChatChannelState
   alias Pleroma.User
+  alias Pleroma.Web.ChatChannel.ChatChannelState
 
   def join("chat:public", _message, socket) do
     send(self(), :after_join)
@@ -44,7 +48,7 @@ defmodule Pleroma.Web.ChatChannel.ChatChannelState do
     end)
   end
 
-  def messages() do
+  def messages do
     Agent.get(__MODULE__, fn state -> state[:messages] |> Enum.reverse() end)
   end
 end

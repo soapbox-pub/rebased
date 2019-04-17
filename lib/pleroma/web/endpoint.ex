@@ -1,9 +1,11 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :pleroma
 
   socket("/socket", Pleroma.Web.UserSocket)
-
-  socket("/api/v1", Pleroma.Web.MastodonAPI.MastodonSocket)
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -14,12 +16,17 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Pleroma.Plugs.UploadedMedia)
 
+  # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
+  # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
+  plug(Pleroma.Plugs.InstanceStatic, at: "/")
+
   plug(
     Plug.Static,
     at: "/",
     from: :pleroma,
     only:
-      ~w(index.html static finmoji emoji packs sounds images instance sw.js favicon.png schemas)
+      ~w(index.html robots.txt static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc)
+    # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
   )
 
   # Code reloading can be explicitly enabled under the
@@ -44,10 +51,16 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.MethodOverride)
   plug(Plug.Head)
 
+  secure_cookies = Pleroma.Config.get([__MODULE__, :secure_cookie_flag])
+
   cookie_name =
-    if Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
+    if secure_cookies,
       do: "__Host-pleroma_key",
       else: "pleroma_key"
+
+  extra =
+    Pleroma.Config.get([__MODULE__, :extra_cookie_attrs])
+    |> Enum.join(";")
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
@@ -58,10 +71,29 @@ defmodule Pleroma.Web.Endpoint do
     key: cookie_name,
     signing_salt: {Pleroma.Config, :get, [[__MODULE__, :signing_salt], "CqaoopA2"]},
     http_only: true,
-    secure:
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
-    extra: "SameSite=Strict"
+    secure: secure_cookies,
+    extra: extra
   )
+
+  # Note: the plug and its configuration is compile-time this can't be upstreamed yet
+  if proxies = Pleroma.Config.get([__MODULE__, :reverse_proxies]) do
+    plug(RemoteIp, proxies: proxies)
+  end
+
+  defmodule Instrumenter do
+    use Prometheus.PhoenixInstrumenter
+  end
+
+  defmodule PipelineInstrumenter do
+    use Prometheus.PlugPipelineInstrumenter
+  end
+
+  defmodule MetricsExporter do
+    use Prometheus.PlugExporter
+  end
+
+  plug(PipelineInstrumenter)
+  plug(MetricsExporter)
 
   plug(Pleroma.Web.Router)
 
@@ -75,5 +107,9 @@ defmodule Pleroma.Web.Endpoint do
   def load_from_system_env(config) do
     port = System.get_env("PORT") || raise "expected the PORT environment variable to be set"
     {:ok, Keyword.put(config, :http, [:inet6, port: port])}
+  end
+
+  def websocket_url do
+    String.replace_leading(url(), "http", "ws")
   end
 end

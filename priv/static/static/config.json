@@ -11,9 +11,15 @@
   "scopeOptionsEnabled": false,
   "formattingOptionsEnabled": false,
   "collapseMessageWithSubject": false,
-  "scopeCopy": false,
+  "scopeCopy": true,
   "subjectLineBehavior": "email",
+  "postContentType": "text/plain",
+  "alwaysShowSubjectInput": true,
   "hidePostStats": false,
   "hideUserStats": false,
-  "loginMethod": "password"
+  "loginMethod": "password",
+  "webPushNotifications": false,
+  "noAttachmentLinks": false,
+  "nsfwCensorImage": "",
+  "showFeaturesPanel": true
 }

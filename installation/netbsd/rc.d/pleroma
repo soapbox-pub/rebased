@@ -1,0 +1,57 @@
+#!/bin/sh
+# PROVIDE: pleroma
+# REQUIRE: DAEMON pgsql
+
+if [ -f /etc/rc.subr ]; then
+	. /etc/rc.subr
+fi
+
+name="pleroma"
+rcvar=${name}
+command="/usr/pkg/bin/elixir"
+command_args="--detached -S /usr/pkg/bin/mix phx.server"
+start_precmd="ulimit -n unlimited"
+pidfile="/dev/null"
+
+pleroma_chdir="${pleroma_home}/pleroma"
+pleroma_env="HOME=${pleroma_home} MIX_ENV=prod"
+
+check_pidfile()
+{
+	pid=$(pgrep -U "${pleroma_user}" /bin/beam.smp$)
+	echo -n "${pid}"
+}
+
+if [ -f /etc/rc.subr -a -d /etc/rc.d -a -f /etc/rc.d/DAEMON ]; then
+	# newer NetBSD
+	load_rc_config ${name}
+	run_rc_command "$1"
+else
+	# ancient NetBSD, Solaris and illumos, Linux, etc...
+	cmd=${1:-start}
+
+	case ${cmd} in
+		start)
+			echo "Starting ${name}."
+			${start_cmd}
+			;;
+
+		stop)
+			echo "Stopping ${name}."
+			check_pidfile
+			! [ -n ${pid} ] && kill ${pid}
+			;;
+
+		restart)
+			( $0 stop )
+			sleep 5
+			$0 start
+			;;
+
+		*)
+			echo 1>&2 "Usage: $0 [start|stop|restart]"
+			exit 1
+			;;
+	esac
+	exit 0
+fi

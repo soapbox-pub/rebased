@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ErrorViewTest do
   use Pleroma.Web.ConnCase, async: true
 
@@ -10,11 +14,16 @@ defmodule Pleroma.Web.ErrorViewTest do
 
   test "render 500.json" do
     assert render(Pleroma.Web.ErrorView, "500.json", []) ==
-             %{errors: %{detail: "Internal server error"}}
+             %{errors: %{detail: "Internal server error", reason: "nil"}}
   end
 
   test "render any other" do
     assert render(Pleroma.Web.ErrorView, "505.json", []) ==
-             %{errors: %{detail: "Internal server error"}}
+             %{errors: %{detail: "Internal server error", reason: "nil"}}
+  end
+
+  test "render 500.json with reason" do
+    assert render(Pleroma.Web.ErrorView, "500.json", reason: "test reason") ==
+             %{errors: %{detail: "Internal server error", reason: "\"test reason\""}}
   end
 end

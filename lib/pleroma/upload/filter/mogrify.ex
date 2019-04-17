@@ -1,5 +1,9 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Upload.Filter.Mogrify do
-  @behaviour Pleroma.Uploader.Filter
+  @behaviour Pleroma.Upload.Filter
 
   @type conversion :: action :: String.t() | {action :: String.t(), opts :: String.t()}
   @type conversions :: conversion() | [conversion()]

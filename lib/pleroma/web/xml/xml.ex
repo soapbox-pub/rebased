@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.XML do
   require Logger
 
@@ -25,15 +29,15 @@ defmodule Pleroma.Web.XML do
       {doc, _rest} =
         text
         |> :binary.bin_to_list()
-        |> :xmerl_scan.string()
+        |> :xmerl_scan.string(quiet: true)
 
       doc
-    catch
-      :exit, _error ->
+    rescue
+      _e ->
         Logger.debug("Couldn't parse XML: #{inspect(text)}")
         :error
-    rescue
-      e ->
+    catch
+      :exit, _error ->
         Logger.debug("Couldn't parse XML: #{inspect(text)}")
         :error
     end

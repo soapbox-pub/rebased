@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Plugs.AuthenticationPlug do
   alias Comeonin.Pbkdf2
   import Plug.Conn
@@ -26,14 +30,7 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     end
   end
 
-  def call(
-        %{
-          assigns: %{
-            auth_credentials: %{password: password}
-          }
-        } = conn,
-        _
-      ) do
+  def call(%{assigns: %{auth_credentials: %{password: _}}} = conn, _) do
     Pbkdf2.dummy_checkpw()
     conn
   end

@@ -1,6 +1,11 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.MediaProxyTest do
   use ExUnit.Case
   import Pleroma.Web.MediaProxy
+  alias Pleroma.Web.MediaProxy.MediaProxyController
 
   describe "when enabled" do
     setup do
@@ -65,6 +70,14 @@ defmodule Pleroma.MediaProxyTest do
       assert decode_result(encoded) == url
     end
 
+    test "ensures urls are url-encoded" do
+      assert decode_result(url("https://pleroma.social/Hello world.jpg")) ==
+               "https://pleroma.social/Hello%20world.jpg"
+
+      assert decode_result(url("https://pleroma.social/Hello%20world.jpg")) ==
+               "https://pleroma.social/Hello%20world.jpg"
+    end
+
     test "validates signature" do
       secret_key_base = Pleroma.Config.get([Pleroma.Web.Endpoint, :secret_key_base])
 
@@ -83,6 +96,34 @@ defmodule Pleroma.MediaProxyTest do
       assert decode_url(sig, base64) == {:error, :invalid_signature}
     end
 
+    test "filename_matches matches url encoded paths" do
+      assert MediaProxyController.filename_matches(
+               true,
+               "/Hello%20world.jpg",
+               "http://pleroma.social/Hello world.jpg"
+             ) == :ok
+
+      assert MediaProxyController.filename_matches(
+               true,
+               "/Hello%20world.jpg",
+               "http://pleroma.social/Hello%20world.jpg"
+             ) == :ok
+    end
+
+    test "filename_matches matches non-url encoded paths" do
+      assert MediaProxyController.filename_matches(
+               true,
+               "/Hello world.jpg",
+               "http://pleroma.social/Hello%20world.jpg"
+             ) == :ok
+
+      assert MediaProxyController.filename_matches(
+               true,
+               "/Hello world.jpg",
+               "http://pleroma.social/Hello world.jpg"
+             ) == :ok
+    end
+
     test "uses the configured base_url" do
       base_url = Pleroma.Config.get([:media_proxy, :base_url])
 
@@ -98,6 +139,15 @@ defmodule Pleroma.MediaProxyTest do
       encoded = url(url)
 
       assert String.starts_with?(encoded, Pleroma.Config.get([:media_proxy, :base_url]))
+    end
+
+    # https://git.pleroma.social/pleroma/pleroma/issues/580
+    test "encoding S3 links (must preserve `%2F`)" do
+      url =
+        "https://s3.amazonaws.com/example/test.png?X-Amz-Credential=your-access-key-id%2F20130721%2Fus-east-1%2Fs3%2Faws4_request"
+
+      encoded = url(url)
+      assert decode_result(encoded) == url
     end
   end
 

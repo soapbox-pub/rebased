@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ConnCase do
   @moduledoc """
   This module defines the test case to be used by
@@ -19,6 +23,7 @@ defmodule Pleroma.Web.ConnCase do
     quote do
       # Import conveniences for testing with connections
       use Phoenix.ConnTest
+      use Pleroma.Tests.Helpers
       import Pleroma.Web.Router.Helpers
 
       # The default endpoint for testing
@@ -28,6 +33,7 @@ defmodule Pleroma.Web.ConnCase do
 
   setup tags do
     Cachex.clear(:user_cache)
+    Cachex.clear(:object_cache)
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
     unless tags[:async] do

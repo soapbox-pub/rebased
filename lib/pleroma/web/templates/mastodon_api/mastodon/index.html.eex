@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang='en'>
 <head>
+<meta charset='utf-8'>
+<meta content='width=device-width, initial-scale=1' name='viewport'>
 <title>
 <%= Application.get_env(:pleroma, :instance)[:name] %>
 </title>
-<meta charset='utf-8'>
-<meta content='width=device-width, initial-scale=1' name='viewport'>
 <link rel="icon" type="image/png" href="/favicon.png"/>
-<link rel="stylesheet" media="all" href="/packs/common.css" />
-<link rel="stylesheet" media="all" href="/packs/default.css" />
+<script crossorigin='anonymous' src="/packs/locales.js"></script>
+<script crossorigin='anonymous' src="/packs/locales/<%= @flavour %>/en.js"></script>
 
-<script src="/packs/common.js"></script>
-<script src="/packs/locale_en.js"></script>
-<link as='script' crossorigin='anonymous' href='/packs/features/getting_started.js' rel='preload'>
-<link as='script' crossorigin='anonymous' href='/packs/features/compose.js' rel='preload'>
-<link as='script' crossorigin='anonymous' href='/packs/features/home_timeline.js' rel='preload'>
-<link as='script' crossorigin='anonymous' href='/packs/features/notifications.js' rel='preload'>
+<link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/getting_started.js'>
+<link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/compose.js'>
+<link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/home_timeline.js'>
+<link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/notifications.js'>
 <script id='initial-state' type='application/json'><%= raw @initial_state %></script>
-<script src="/packs/application.js"></script>
+
+<script src="/packs/core/common.js"></script>
+<link rel="stylesheet" media="all" href="/packs/core/common.css" />
+
+<script src="/packs/flavours/<%= @flavour %>/common.js"></script>
+<link rel="stylesheet" media="all" href="/packs/flavours/<%= @flavour %>/common.css" />
+
+<script src="/packs/flavours/<%= @flavour %>/home.js"></script>
 </head>
 <body class='app-body no-reduce-motion system-font'>
   <div class='app-holder' data-props='{&quot;locale&quot;:&quot;en&quot;}' id='mastodon'>

@@ -1,8 +1,14 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.ReverseProxy do
-  @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since if-unmodified-since if-none-match if-range range)
+  @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since) ++
+                      ~w(if-unmodified-since if-none-match if-range range)
   @resp_cache_headers ~w(etag date last-modified cache-control)
   @keep_resp_headers @resp_cache_headers ++
-                       ~w(content-type content-disposition content-encoding content-range accept-ranges vary)
+                       ~w(content-type content-disposition content-encoding content-range) ++
+                       ~w(accept-ranges vary)
   @default_cache_control_header "public, max-age=1209600"
   @valid_resp_codes [200, 206, 304]
   @max_read_duration :timer.seconds(30)
@@ -56,7 +62,7 @@ defmodule Pleroma.ReverseProxy do
   @hackney Application.get_env(:pleroma, :hackney, :hackney)
   @httpoison Application.get_env(:pleroma, :httpoison, HTTPoison)
 
-  @default_hackney_options [{:follow_redirect, true}]
+  @default_hackney_options []
 
   @inline_content_types [
     "image/gif",
@@ -85,7 +91,9 @@ defmodule Pleroma.ReverseProxy do
           | {:redirect_on_failure, boolean()}
 
   @spec call(Plug.Conn.t(), url :: String.t(), [option()]) :: Plug.Conn.t()
-  def call(conn = %{method: method}, url, opts \\ []) when method in @methods do
+  def call(_conn, _url, _opts \\ [])
+
+  def call(conn = %{method: method}, url, opts) when method in @methods do
     hackney_opts =
       @default_hackney_options
       |> Keyword.merge(Keyword.get(opts, :http, []))
@@ -240,24 +248,23 @@ defmodule Pleroma.ReverseProxy do
   end
 
   defp build_req_headers(headers, opts) do
-    headers =
-      headers
-      |> downcase_headers()
-      |> Enum.filter(fn {k, _} -> k in @keep_req_headers end)
-      |> (fn headers ->
-            headers = headers ++ Keyword.get(opts, :req_headers, [])
+    headers
+    |> downcase_headers()
+    |> Enum.filter(fn {k, _} -> k in @keep_req_headers end)
+    |> (fn headers ->
+          headers = headers ++ Keyword.get(opts, :req_headers, [])
 
-            if Keyword.get(opts, :keep_user_agent, false) do
-              List.keystore(
-                headers,
-                "user-agent",
-                0,
-                {"user-agent", Pleroma.Application.user_agent()}
-              )
-            else
-              headers
-            end
-          end).()
+          if Keyword.get(opts, :keep_user_agent, false) do
+            List.keystore(
+              headers,
+              "user-agent",
+              0,
+              {"user-agent", Pleroma.Application.user_agent()}
+            )
+          else
+            headers
+          end
+        end).()
   end
 
   defp build_resp_headers(headers, opts) do
@@ -268,13 +275,26 @@ defmodule Pleroma.ReverseProxy do
     |> (fn headers -> headers ++ Keyword.get(opts, :resp_headers, []) end).()
   end
 
-  defp build_resp_cache_headers(headers, opts) do
+  defp build_resp_cache_headers(headers, _opts) do
     has_cache? = Enum.any?(headers, fn {k, _} -> k in @resp_cache_headers end)
+    has_cache_control? = List.keymember?(headers, "cache-control", 0)
 
-    if has_cache? do
-      headers
-    else
-      List.keystore(headers, "cache-control", 0, {"cache-control", @default_cache_control_header})
+    cond do
+      has_cache? && has_cache_control? ->
+        headers
+
+      has_cache? ->
+        # There's caching header present but no cache-control -- we need to explicitely override it
+        # to public as Plug defaults to "max-age=0, private, must-revalidate"
+        List.keystore(headers, "cache-control", 0, {"cache-control", "public"})
+
+      true ->
+        List.keystore(
+          headers,
+          "cache-control",
+          0,
+          {"cache-control", @default_cache_control_header}
+        )
     end
   end
 
@@ -291,7 +311,25 @@ defmodule Pleroma.ReverseProxy do
       end
 
     if attachment? do
-      disposition = "attachment; filename=" <> Keyword.get(opts, :attachment_name, "attachment")
+      name =
+        try do
+          {{"content-disposition", content_disposition_string}, _} =
+            List.keytake(headers, "content-disposition", 0)
+
+          [name | _] =
+            Regex.run(
+              ~r/filename="((?:[^"\\]|\\.)*)"/u,
+              content_disposition_string || "",
+              capture: :all_but_first
+            )
+
+          name
+        rescue
+          MatchError -> Keyword.get(opts, :attachment_name, "attachment")
+        end
+
+      disposition = "attachment; filename=\"#{name}\""
+
       List.keystore(headers, "content-disposition", 0, {"content-disposition", disposition})
     else
       headers

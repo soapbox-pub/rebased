@@ -1,5 +1,5 @@
 defmodule Pleroma.Object.Fetcher do
-  alias Pleroma.{Object, Repo}
+  alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.OStatus
