@@ -230,6 +230,7 @@ defmodule Pleroma.Activity do
     |> Repo.delete_all()
     |> elem(1)
     |> Enum.find(fn
+      %{data: %{"type" => "Create", "object" => ap_id}} when is_binary(ap_id) -> ap_id == id
       %{data: %{"type" => "Create", "object" => %{"id" => ap_id}}} -> ap_id == id
       _ -> nil
     end)
