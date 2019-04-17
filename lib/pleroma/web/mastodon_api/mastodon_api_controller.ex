@@ -4,13 +4,13 @@
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
-  alias Pleroma.Object.Fetcher
   alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Filter
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity

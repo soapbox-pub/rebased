@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.Federator do
   alias Pleroma.Activity
+  alias Pleroma.Object.Containment
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
@@ -12,7 +13,6 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
-  alias Pleroma.Object.Containment
   alias Pleroma.Web.Salmon
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Websub

@@ -5,8 +5,14 @@
 defmodule Pleroma.ObjectTest do
   use Pleroma.DataCase
   import Pleroma.Factory
+  import Tesla.Mock
   alias Pleroma.Object
   alias Pleroma.Repo
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   test "returns an object by it's AP id" do
     object = insert(:note)

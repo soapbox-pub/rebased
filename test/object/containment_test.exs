@@ -1,8 +1,8 @@
 defmodule Pleroma.Object.ContainmentTest do
   use Pleroma.DataCase
 
-  alias Pleroma.User
   alias Pleroma.Object.Containment
+  alias Pleroma.User
 
   import Pleroma.Factory
 
