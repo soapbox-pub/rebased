@@ -61,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       |> Map.put("content", nil)
 
     Object.change(note_object, %{data: data})
-    |> Repo.update()
+    |> Object.update_and_set_cache()
 
     User.get_cached_by_ap_id(note.data["actor"])
 

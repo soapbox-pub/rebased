@@ -14,6 +14,6 @@ defmodule Pleroma.ScheduledActivityWorkerTest do
 
     refute Repo.get(ScheduledActivity, scheduled_activity.id)
     activity = Repo.all(Pleroma.Activity) |> Enum.find(&(&1.actor == user.ap_id))
-    assert activity.data["object"]["content"] == "hi"
+    assert Pleroma.Object.normalize(activity).data["content"] == "hi"
   end
 end

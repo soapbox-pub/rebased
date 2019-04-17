@@ -2791,9 +2791,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"content" => "xD", "id" => id} = json_response(conn1, 200)
 
-    activity = Activity.get_by_id(id)
+    activity = Activity.get_by_id_with_object(id)
 
-    assert activity.data["object"]["inReplyTo"] == replied_to.data["object"]["id"]
+    assert Object.normalize(activity).data["inReplyTo"] == Object.normalize(replied_to).data["id"]
     assert Activity.get_in_reply_to_activity(activity).id == replied_to.id
 
     # Reblog from the third user

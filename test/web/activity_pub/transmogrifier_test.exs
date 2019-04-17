@@ -187,15 +187,15 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       data = Map.put(data, "object", object)
 
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
 
       assert data["to"] == []
       assert data["cc"] == to
 
-      object = data["object"]
+      object_data = Object.normalize(activity).data
 
-      assert object["to"] == []
-      assert object["cc"] == to
+      assert object_data["to"] == []
+      assert object_data["cc"] == to
     end
 
     test "it works for incoming follow requests" do
@@ -331,7 +331,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       data =
         File.read!("test/fixtures/mastodon-announce.json")
         |> Poison.decode!()
-        |> Map.put("object", activity.data["object"]["id"])
+        |> Map.put("object", Object.normalize(activity).data["id"])
         |> Map.put("to", ["http://mastodon.example.org/users/admin/followers"])
         |> Map.put("cc", [])
 
