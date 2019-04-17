@@ -14,13 +14,11 @@ defmodule Pleroma.Repo.Migrations.MigrateOldBookmarks do
         select: %{id: u.id, old_bookmarks: u.old_bookmarks}
       )
 
-    Repo.transaction(fn ->
-      Repo.stream(query)
-      |> Enum.each(fn user ->
-        Enum.each(user.old_bookmarks, fn id ->
-          activity = Activity.get_create_by_object_ap_id(id)
-          {:ok, _} = Bookmark.create(user.id, activity.id)
-        end)
+    Repo.stream(query)
+    |> Enum.each(fn user ->
+      Enum.each(user.old_bookmarks, fn id ->
+        activity = Activity.get_create_by_object_ap_id(id)
+        {:ok, _} = Bookmark.create(user.id, activity.id)
       end)
     end)
   end
