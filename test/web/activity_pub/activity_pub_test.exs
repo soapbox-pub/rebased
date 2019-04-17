@@ -647,43 +647,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
-  describe "fetching an object" do
-    test "it fetches an object" do
-      {:ok, object} =
-        ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
-
-      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      assert activity.data["id"]
-
-      {:ok, object_again} =
-        ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
-
-      assert [attachment] = object.data["attachment"]
-      assert is_list(attachment["url"])
-
-      assert object == object_again
-    end
-
-    test "it works with objects only available via Ostatus" do
-      {:ok, object} = ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
-      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      assert activity.data["id"]
-
-      {:ok, object_again} =
-        ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
-
-      assert object == object_again
-    end
-
-    test "it correctly stitches up conversations between ostatus and ap" do
-      last = "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
-      {:ok, object} = ActivityPub.fetch_object_from_id(last)
-
-      object = Object.get_by_ap_id(object.data["inReplyTo"])
-      assert object
-    end
-  end
-
   describe "following / unfollowing" do
     test "creates a follow activity" do
       follower = insert(:user)
@@ -898,15 +861,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert update.data["object"]["id"] == user_data["id"]
       assert update.data["object"]["type"] == user_data["type"]
     end
-  end
-
-  test "it can fetch peertube videos" do
-    {:ok, object} =
-      ActivityPub.fetch_object_from_id(
-        "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
-      )
-
-    assert object
   end
 
   test "returned pinned statuses" do

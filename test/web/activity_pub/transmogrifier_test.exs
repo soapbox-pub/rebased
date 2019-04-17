@@ -6,6 +6,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.Object.Fetcher
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -790,7 +791,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "it remaps video URLs as attachments if necessary" do
       {:ok, object} =
-        ActivityPub.fetch_object_from_id(
+        Fetcher.fetch_object_from_id(
           "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
         )
 
@@ -1185,7 +1186,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
     test "all objects with fake directions are rejected by the object fetcher" do
       {:error, _} =
-        ActivityPub.fetch_and_contain_remote_object_from_id(
+        Fetcher.fetch_and_contain_remote_object_from_id(
           "https://info.pleroma.site/activity4.json"
         )
     end
