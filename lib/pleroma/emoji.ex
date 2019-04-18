@@ -108,13 +108,13 @@ defmodule Pleroma.Emoji do
         shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
 
         emojis =
-        (Enum.flat_map(
-              packs,
-              fn pack -> load_pack(Path.join(emoji_dir_path, pack)) end
-            ) ++
-          load_from_file("config/emoji.txt") ++
-          load_from_file("config/custom_emoji.txt") ++
-          load_from_globs(shortcode_globs))
+          (Enum.flat_map(
+             packs,
+             fn pack -> load_pack(Path.join(emoji_dir_path, pack)) end
+           ) ++
+             load_from_file("config/emoji.txt") ++
+             load_from_file("config/custom_emoji.txt") ++
+             load_from_globs(shortcode_globs))
           |> Enum.reject(fn value -> value == nil end)
 
         true = :ets.insert(@ets, emojis)
@@ -127,29 +127,37 @@ defmodule Pleroma.Emoji do
     pack_name = Path.basename(pack_dir)
 
     emoji_txt = Path.join(pack_dir, "emoji.txt")
+
     if File.exists?(emoji_txt) do
       load_from_file(emoji_txt)
     else
-      Logger.info("No emoji.txt found for pack \"#{pack_name}\", assuming all .png files are emoji")
+      Logger.info(
+        "No emoji.txt found for pack \"#{pack_name}\", assuming all .png files are emoji"
+      )
 
-      common_pack_path = Path.join([
-        "/", Pleroma.Config.get!([:instance, :static_dir]), "emoji", pack_name
-      ])
-      make_shortcode_to_file_map(pack_dir, [".png"]) |>
-        Enum.map(fn {shortcode, rel_file} ->
-          filename = Path.join(common_pack_path, rel_file)
+      common_pack_path =
+        Path.join([
+          "/",
+          Pleroma.Config.get!([:instance, :static_dir]),
+          "emoji",
+          pack_name
+        ])
 
-          # If no tag matches, use the pack name as a tag
-          {shortcode, filename, to_string(match_extra(@groups, filename))}
-        end)
+      make_shortcode_to_file_map(pack_dir, [".png"])
+      |> Enum.map(fn {shortcode, rel_file} ->
+        filename = Path.join(common_pack_path, rel_file)
+
+        # If no tag matches, use the pack name as a tag
+        {shortcode, filename, to_string(match_extra(@groups, filename))}
+      end)
     end
   end
 
   def make_shortcode_to_file_map(pack_dir, exts) do
-    find_all_emoji(pack_dir, exts) |>
-      Enum.map(&Path.relative_to(&1, pack_dir)) |>
-      Enum.map(fn f -> {f |> Path.basename() |> Path.rootname(), f} end) |>
-      Enum.into(%{})
+    find_all_emoji(pack_dir, exts)
+    |> Enum.map(&Path.relative_to(&1, pack_dir))
+    |> Enum.map(fn f -> {f |> Path.basename() |> Path.rootname(), f} end)
+    |> Enum.into(%{})
   end
 
   def find_all_emoji(dir, exts) do
@@ -158,13 +166,15 @@ defmodule Pleroma.Emoji do
       [],
       fn f, acc ->
         filepath = Path.join(dir, f)
+
         if File.dir?(filepath) do
           acc ++ find_all_emoji(filepath, exts)
         else
           acc ++ [filepath]
         end
       end
-    ) |> Enum.filter(fn f -> Path.extname(f) in exts end)
+    )
+    |> Enum.filter(fn f -> Path.extname(f) in exts end)
   end
 
   defp load_from_file(file) do

@@ -64,6 +64,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         archive_md5 = :crypto.hash(:md5, binary_archive) |> Base.encode16()
 
         md5_status_text = ["MD5 of ", :bright, pack_name, :normal, " source file is ", :bright]
+
         if archive_md5 == String.upcase(pack["src_md5"]) do
           IO.puts(IO.ANSI.format(md5_status_text ++ [:green, "OK"]))
         else
@@ -115,9 +116,14 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
         IO.puts(IO.ANSI.format(["Writing emoji.txt for ", :bright, pack_name]))
 
-        common_pack_path = Path.join([
-          "/", Pleroma.Config.get!([:instance, :static_dir]), "emoji", pack_name
-        ])
+        common_pack_path =
+          Path.join([
+            "/",
+            Pleroma.Config.get!([:instance, :static_dir]),
+            "emoji",
+            pack_name
+          ])
+
         emoji_txt_str =
           Enum.map(
             files,
@@ -152,20 +158,26 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     default_exts = [".png", ".gif"]
     default_exts_str = Enum.join(default_exts, " ")
-    exts =
-      String.trim(IO.gets("Emoji file extensions (separated with spaces) [#{default_exts_str}]: "))
-    exts = if String.length(exts) > 0 do
-      String.split(exts, " ") |> Enum.filter(fn e -> (e |> String.trim() |> String.length()) > 0 end)
-    else
-      default_exts
-    end
 
-    IO.puts "Downloading the pack and generating MD5"
+    exts =
+      String.trim(
+        IO.gets("Emoji file extensions (separated with spaces) [#{default_exts_str}]: ")
+      )
+
+    exts =
+      if String.length(exts) > 0 do
+        String.split(exts, " ")
+        |> Enum.filter(fn e -> e |> String.trim() |> String.length() > 0 end)
+      else
+        default_exts
+      end
+
+    IO.puts("Downloading the pack and generating MD5")
 
     binary_archive = Tesla.get!(src).body
     archive_md5 = :crypto.hash(:md5, binary_archive) |> Base.encode16()
 
-    IO.puts "MD5 is #{archive_md5}"
+    IO.puts("MD5 is #{archive_md5}")
 
     pack_json = %{
       name => %{
@@ -179,6 +191,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
     }
 
     tmp_pack_dir = Path.join(System.tmp_dir!(), "emoji-pack-#{name}")
+
     {:ok, _} =
       :zip.unzip(
         binary_archive,
@@ -187,14 +200,13 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     emoji_map = Pleroma.Emoji.make_shortcode_to_file_map(tmp_pack_dir, exts)
 
-
     File.write!(files_name, Poison.encode!(emoji_map, pretty: true))
 
-    IO.puts """
+    IO.puts("""
 
     #{files_name} has been created and contains the list of all found emojis in the pack.
     Please review the files in the remove those not needed.
-    """
+    """)
 
     if File.exists?("index.json") do
       existing_data = File.read!("index.json") |> Poison.decode!()
@@ -210,13 +222,12 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         )
       )
 
-      IO.puts "index.json file has been update with the #{name} pack"
+      IO.puts("index.json file has been update with the #{name} pack")
     else
       File.write!("index.json", Poison.encode!(pack_json, pretty: true))
 
-      IO.puts "index.json has been created with the #{name} pack"
+      IO.puts("index.json has been created with the #{name} pack")
     end
-
   end
 
   defp fetch_manifest(from) do
