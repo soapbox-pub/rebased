@@ -41,7 +41,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     input = %{
       "status" =>
-        "Hello again, @shp.<script></script>\nThis is on another :moominmamma: line. #2hu #epic #phantasmagoric",
+        "Hello again, @shp.<script></script>\nThis is on another :firefox: line. #2hu #epic #phantasmagoric",
       "media_ids" => [object.id]
     }
 
@@ -49,7 +49,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     object = Object.normalize(activity.data["object"])
 
     expected_text =
-      "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+      "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :firefox: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
 
     assert get_in(object.data, ["content"]) == expected_text
     assert get_in(object.data, ["type"]) == "Note"
@@ -65,8 +65,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.member?(get_in(activity.data, ["to"]), "shp")
     assert activity.local == true
 
-    assert %{"moominmamma" => "http://localhost:4001/finmoji/128px/moominmamma-128.png"} =
-             object.data["emoji"]
+    assert %{"firefox" => "http://localhost:4001/emoji/Firefox.gif"} = object.data["emoji"]
 
     # hashtags
     assert object.data["tag"] == ["2hu", "epic", "phantasmagoric"]

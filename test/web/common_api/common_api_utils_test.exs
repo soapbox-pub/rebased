@@ -37,21 +37,21 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   end
 
   test "parses emoji from name and bio" do
-    {:ok, user} = UserBuilder.insert(%{name: ":karjalanpiirakka:", bio: ":perkele:"})
+    {:ok, user} = UserBuilder.insert(%{name: ":blank:", bio: ":firefox:"})
 
     expected = [
       %{
         "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/finmoji/128px/perkele-128.png"},
-        "name" => ":perkele:"
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/emoji/Firefox.gif"},
+        "name" => ":firefox:"
       },
       %{
         "type" => "Emoji",
         "icon" => %{
           "type" => "Image",
-          "url" => "#{Endpoint.url()}/finmoji/128px/karjalanpiirakka-128.png"
+          "url" => "#{Endpoint.url()}/emoji/blank.png"
         },
-        "name" => ":karjalanpiirakka:"
+        "name" => ":blank:"
       }
     ]
 

@@ -107,7 +107,7 @@ defmodule Pleroma.Web.Push.ImplTest do
                    "type" => "Create",
                    "object" => %{
                      "content" =>
-                       "<span>Lorem ipsum dolor sit amet</span>, consectetur :bear: adipiscing elit. Fusce sagittis finibus turpis."
+                       "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
                    }
                  }
                }
@@ -129,7 +129,7 @@ defmodule Pleroma.Web.Push.ImplTest do
       insert(:note, %{
         data: %{
           "content" =>
-            "<span>Lorem ipsum dolor sit amet</span>, consectetur :bear: adipiscing elit. Fusce sagittis finibus turpis."
+            "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
         }
       })
 
