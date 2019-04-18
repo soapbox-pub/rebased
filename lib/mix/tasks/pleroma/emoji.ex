@@ -231,7 +231,13 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   end
 
   defp fetch_manifest(from) do
-    Tesla.get!(from).body |> Poison.decode!()
+    Poison.decode!(
+      if String.starts_with?(from, "http") do
+        Tesla.get!(from).body
+      else
+        File.read!(from)
+      end
+    )
   end
 
   defp parse_global_opts(args) do
