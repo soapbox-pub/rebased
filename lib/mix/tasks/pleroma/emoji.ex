@@ -77,6 +77,16 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         )
 
         binary_archive = Tesla.get!(src_url).body
+        archive_md5 = :crypto.hash(:md5, binary_archive) |> Base.encode16()
+
+        md5_status_text = ["MD5 of ", :bright, pack_name, :normal, " source file is ", :bright]
+        if archive_md5 == String.upcase(pack["src_md5"]) do
+          IO.puts(IO.ANSI.format(md5_status_text ++ [:green, "OK"]))
+        else
+          IO.puts(IO.ANSI.format(md5_status_text ++ [:red, "BAD"]))
+
+          raise "Bad MD5 for #{pack_name}"
+        end
 
         # The url specified in files should be in the same directory
         files_url = Path.join(Path.dirname(manifest_url), pack["files"])
