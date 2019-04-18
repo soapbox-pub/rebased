@@ -102,7 +102,8 @@ config :pleroma, :emoji,
     # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Finmoji: ["/finmoji/128px/*-128.png"],
     Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
-  ]
+  ],
+  default_manifest: "https://git.pleroma.social/vaartis/emoji-index/raw/master/index.json"
 
 config :pleroma, :uri_schemes,
   valid_schemes: [

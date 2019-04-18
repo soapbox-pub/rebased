@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   @moduledoc """
   """
 
-  @default_manifest "https://git.pleroma.social/vaartis/emoji-index/raw/master/index.json"
+  @default_manifest Pleroma.Config.get!([:emoji, :default_manifest])
 
   def run(["ls-packs" | args]) do
     Application.ensure_all_started(:hackney)
