@@ -55,8 +55,9 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     {options, pack_names, []} = parse_global_opts(args)
 
-    manifest =
-      fetch_manifest(if options[:manifest], do: options[:manifest], else: @default_manifest)
+    manifest_url = if options[:manifest], do: options[:manifest], else: @default_manifest
+
+    manifest = fetch_manifest(manifest_url)
 
     for pack_name <- pack_names do
       if Map.has_key?(manifest, pack_name) do
@@ -77,6 +78,23 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
         binary_archive = Tesla.get!(src_url).body
 
+        # The url specified in files should be in the same directory
+        files_url = Path.join(Path.dirname(manifest_url), pack["files"])
+
+        IO.puts(
+          IO.ANSI.format([
+            "Fetching the file list for ",
+            :bright,
+            pack_name,
+            :normal,
+            " from ",
+            :underline,
+            files_url
+          ])
+        )
+
+        files = Tesla.get!(files_url).body |> Poison.decode!()
+
         IO.puts(IO.ANSI.format(["Unpacking ", :bright, pack_name]))
 
         static_path = Path.join(:code.priv_dir(:pleroma), "static")
@@ -91,7 +109,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
         files_to_unzip =
           Enum.map(
-            pack["files"],
+            files,
             fn {_, f} -> to_charlist(f) end
           )
 
@@ -105,7 +123,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
         emoji_txt_str =
           Enum.map(
-            pack["files"],
+            files,
             fn {shortcode, path} ->
               "#{shortcode}, /instance/static/emoji/#{pack_name}/#{path}"
             end
