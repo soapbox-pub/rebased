@@ -131,6 +131,109 @@ defmodule Mix.Tasks.Pleroma.Emoji do
     end
   end
 
+  def run(["gen-pack", src]) do
+    Application.ensure_all_started(:hackney)
+
+    proposed_name = Path.basename(src) |> Path.rootname()
+    name = String.trim(IO.gets("Pack name [#{proposed_name}]: "))
+    # If there's no name, use the default one
+    name = if String.length(name) > 0, do: name, else: proposed_name
+
+    license = String.trim(IO.gets("License: "))
+    homepage = String.trim(IO.gets("Homepage: "))
+    description = String.trim(IO.gets("Description: "))
+
+    proposed_files_name = "#{name}.json"
+    files_name = String.trim(IO.gets("Save file list to [#{proposed_files_name}]: "))
+    files_name = if String.length(files_name) > 0, do: files_name, else: proposed_files_name
+
+    default_exts = [".png", ".gif"]
+    default_exts_str = Enum.join(default_exts, " ")
+    exts =
+      String.trim(IO.gets("Emoji file extensions (separated with spaces) [#{default_exts_str}]: "))
+    exts = if String.length(exts) > 0 do
+      String.split(exts, " ") |> Enum.filter(fn e -> (e |> String.trim() |> String.length()) > 0 end)
+    else
+      default_exts
+    end
+
+    IO.puts "Downloading the pack and generating MD5"
+
+    binary_archive = Tesla.get!(src).body
+    archive_md5 = :crypto.hash(:md5, binary_archive) |> Base.encode16()
+
+    IO.puts "MD5 is #{archive_md5}"
+
+    pack_json = %{
+      name => %{
+        license: license,
+        homepage: homepage,
+        description: description,
+        src: src,
+        src_md5: archive_md5,
+        files: files_name
+      }
+    }
+
+    tmp_pack_dir = Path.join(System.tmp_dir!(), "emoji-pack-#{name}")
+    {:ok, _} =
+      :zip.unzip(
+        binary_archive,
+        cwd: tmp_pack_dir
+      )
+
+    emoji_map =
+      find_all_emoji(tmp_pack_dir, exts) |>
+      Enum.map(&Path.relative_to(&1, tmp_pack_dir)) |>
+      Enum.map(fn f -> {f |> Path.basename() |> Path.rootname(), f} end) |>
+      Enum.into(%{})
+
+    File.write!(files_name, Poison.encode!(emoji_map, pretty: true))
+
+    IO.puts """
+
+    #{files_name} has been created and contains the list of all found emojis in the pack.
+    Please review the files in the remove those not needed.
+    """
+
+    if File.exists?("index.json") do
+      existing_data = File.read!("index.json") |> Poison.decode!()
+
+      File.write!(
+        "index.json",
+        Poison.encode!(
+          Map.merge(
+            existing_data,
+            pack_json
+          ),
+          pretty: true
+        )
+      )
+
+      IO.puts "index.json file has been update with the #{name} pack"
+    else
+      File.write!("index.json", Poison.encode!(pack_json, pretty: true))
+
+      IO.puts "index.json has been created with the #{name} pack"
+    end
+
+  end
+
+  defp find_all_emoji(dir, exts) do
+    Enum.reduce(
+      File.ls!(dir),
+      [],
+      fn f, acc ->
+        filepath = Path.join(dir, f)
+        if File.dir?(filepath) do
+          acc ++ find_all_emoji(filepath, exts)
+        else
+          acc ++ [filepath]
+        end
+      end
+    ) |> Enum.filter(fn f -> Path.extname(f) in exts end)
+  end
+
   defp fetch_manifest(from) do
     Tesla.get!(from).body |> Poison.decode!()
   end
