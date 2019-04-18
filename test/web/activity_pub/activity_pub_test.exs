@@ -364,6 +364,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute Enum.member?(activities, activity_four)
   end
 
+  test "doesn't return announce activities concerning blocked users" do
+    blocker = insert(:user)
+    blockee = insert(:user)
+    friend = insert(:user)
+
+    {:ok, blocker} = User.block(blocker, blockee)
+
+    {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
+
+    {:ok, activity_two} = CommonAPI.post(blockee, %{"status" => "hey! @#{friend.nickname}"})
+
+    {:ok, activity_three, _} = CommonAPI.repeat(activity_two.id, friend)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
+      |> Enum.map(fn act -> act.id end)
+
+    assert Enum.member?(activities, activity_one.id)
+    refute Enum.member?(activities, activity_two.id)
+    refute Enum.member?(activities, activity_three.id)
+  end
+
   test "doesn't return muted activities" do
     activity_one = insert(:note_activity)
     activity_two = insert(:note_activity)
