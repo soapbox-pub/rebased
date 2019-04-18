@@ -4,6 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.Database do
   alias Mix.Tasks.Pleroma.Common
+  require Logger
   use Mix.Task
 
   @shortdoc "A collection of database related tasks"
@@ -29,6 +30,7 @@ defmodule Mix.Tasks.Pleroma.Database do
       )
 
     Common.start_pleroma()
+    Logger.info("Removing embedded objects")
 
     Pleroma.Repo.query!(
       "update activities set data = jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;",
@@ -37,6 +39,8 @@ defmodule Mix.Tasks.Pleroma.Database do
     )
 
     if Keyword.get(options, :vacuum) do
+      Logger.info("Runnning VACUUM FULL")
+
       Pleroma.Repo.query!(
         "vacuum full;",
         [],
