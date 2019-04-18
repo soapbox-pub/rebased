@@ -190,7 +190,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         "static_url" => url,
         "visible_in_picker" => true,
         "url" => url,
-        "tags" => String.split(tags, ",")
+        "tags" => tags
       }
     end)
   end

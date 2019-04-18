@@ -147,8 +147,7 @@ defmodule Pleroma.Emoji do
       |> Enum.map(fn {shortcode, rel_file} ->
         filename = Path.join(common_pack_path, rel_file)
 
-        # If no tag matches, use the pack name as a tag
-        {shortcode, filename, to_string(match_extra(@groups, filename))}
+        {shortcode, filename, [to_string(match_extra(@groups, filename))]}
       end)
     end
   end
@@ -190,11 +189,11 @@ defmodule Pleroma.Emoji do
     |> Stream.map(&String.trim/1)
     |> Stream.map(fn line ->
       case String.split(line, ~r/,\s*/) do
-        [name, file, tags] ->
-          {name, file, tags}
-
         [name, file] ->
-          {name, file, to_string(match_extra(@groups, file))}
+          {name, file, [to_string(match_extra(@groups, file))]}
+
+        [name, file | tags] ->
+          {name, file, tags}
 
         _ ->
           nil
@@ -217,7 +216,7 @@ defmodule Pleroma.Emoji do
       tag = match_extra(@groups, Path.join("/", Path.relative_to(path, static_path)))
       shortcode = Path.basename(path, Path.extname(path))
       external_path = Path.join("/", Path.relative_to(path, static_path))
-      {shortcode, external_path, to_string(tag)}
+      {shortcode, external_path, [to_string(tag)]}
     end)
   end
 

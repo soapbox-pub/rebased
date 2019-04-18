@@ -286,7 +286,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     emoji =
       Emoji.get_all()
       |> Enum.map(fn {short_code, path, tags} ->
-        {short_code, %{image_url: path, tags: String.split(tags, ",")}}
+        {short_code, %{image_url: path, tags: tags}}
       end)
       |> Enum.into(%{})
 
