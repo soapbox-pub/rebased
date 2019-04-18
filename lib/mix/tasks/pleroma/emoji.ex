@@ -11,22 +11,6 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
   @default_manifest "https://git.pleroma.social/vaartis/emoji-index/raw/master/index.json"
 
-  defp fetch_manifest(from) do
-    Tesla.get!(from).body |> Poison.decode!()
-  end
-
-  defp parse_global_opts(args) do
-    OptionParser.parse(
-      args,
-      strict: [
-        manifest: :string
-      ],
-      aliases: [
-        m: :manifest
-      ]
-    )
-  end
-
   def run(["ls-packs" | args]) do
     Application.ensure_all_started(:hackney)
 
@@ -145,5 +129,21 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         IO.puts(IO.ANSI.format([:bright, :red, "No pack named \"#{pack_name}\" found"]))
       end
     end
+  end
+
+  defp fetch_manifest(from) do
+    Tesla.get!(from).body |> Poison.decode!()
+  end
+
+  defp parse_global_opts(args) do
+    OptionParser.parse(
+      args,
+      strict: [
+        manifest: :string
+      ],
+      aliases: [
+        m: :manifest
+      ]
+    )
   end
 end
