@@ -30,15 +30,17 @@ defmodule Mix.Tasks.Pleroma.Database do
 
     Common.start_pleroma()
 
-    Ecto.Adapters.SQL.query!(
-      Pleroma.Repo,
-      "update activities set data = jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;"
+    Pleroma.Repo.query!(
+      "update activities set data = jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;",
+      [],
+      timeout: :infinity
     )
 
     if Keyword.get(options, :vacuum) do
-      Ecto.Adapters.SQL.query!(
-        Pleroma.Repo,
-        "vacuum full;"
+      Pleroma.Repo.query!(
+        "vacuum full;",
+        [],
+        timeout: :infinity
       )
     end
   end
