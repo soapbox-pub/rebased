@@ -41,7 +41,9 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   # guard
   def entire_thread_visible_for_user?(nil, _user), do: false
 
-  # XXX: Probably even more inefficient than the previous implementation, intended to be a placeholder untill https://git.pleroma.social/pleroma/pleroma/merge_requests/971 is in develop
+  # XXX: Probably even more inefficient than the previous implementation intended to be a placeholder untill https://git.pleroma.social/pleroma/pleroma/merge_requests/971 is in develop
+  # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
+
   def entire_thread_visible_for_user?(
         %Activity{} = tail,
         # %Activity{data: %{"object" => %{"inReplyTo" => parent_id}}} = tail,

@@ -4,8 +4,8 @@
 
 defmodule Pleroma.UserTest do
   alias Pleroma.Activity
-  alias Pleroma.Object
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
