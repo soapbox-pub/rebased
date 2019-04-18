@@ -41,6 +41,12 @@ Has these additional fields under the `pleroma` object:
 - `is_admin`: boolean, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
 
+## Account Search
+
+Behavior has changed:
+
+- `/api/v1/accounts/search`: Does not require authentication
+
 ## Notifications
 
 Has these additional fields under the `pleroma` object:
