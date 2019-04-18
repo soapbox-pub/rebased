@@ -204,11 +204,13 @@ defmodule Pleroma.Activity do
 
   def create_by_object_ap_id_with_object(_), do: nil
 
-  def get_create_by_object_ap_id_with_object(ap_id) do
+  def get_create_by_object_ap_id_with_object(ap_id) when is_binary(ap_id) do
     ap_id
     |> create_by_object_ap_id_with_object()
     |> Repo.one()
   end
+
+  def get_create_by_object_ap_id_with_object(_), do: nil
 
   defp get_in_reply_to_activity_from_object(%Object{data: %{"inReplyTo" => ap_id}}) do
     get_create_by_object_ap_id_with_object(ap_id)
