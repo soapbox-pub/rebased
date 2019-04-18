@@ -571,6 +571,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_since(query, _), do: query
 
+  defp restrict_tag_reject(_query, %{"tag_reject" => _tag_reject, "skip_preload" => true}) do
+    raise "Can't use the child object without preloading!"
+  end
+
   defp restrict_tag_reject(query, %{"tag_reject" => tag_reject})
        when is_list(tag_reject) and tag_reject != [] do
     from(
@@ -581,6 +585,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_tag_reject(query, _), do: query
 
+  defp restrict_tag_all(_query, %{"tag_all" => _tag_all, "skip_preload" => true}) do
+    raise "Can't use the child object without preloading!"
+  end
+
   defp restrict_tag_all(query, %{"tag_all" => tag_all})
        when is_list(tag_all) and tag_all != [] do
     from(
@@ -590,6 +598,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_tag_all(query, _), do: query
+
+  defp restrict_tag(_query, %{"tag" => _tag, "skip_preload" => true}) do
+    raise "Can't use the child object without preloading!"
+  end
 
   defp restrict_tag(query, %{"tag" => tag}) when is_list(tag) do
     from(
@@ -666,10 +678,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_favorited_by(query, _), do: query
 
+  defp restrict_media(_query, %{"only_media" => _val, "skip_preload" => true}) do
+    raise "Can't use the child object without preloading!"
+  end
+
   defp restrict_media(query, %{"only_media" => val}) when val == "true" or val == "1" do
     from(
-      activity in query,
-      where: fragment(~s(not (? #> '{"object","attachment"}' = ?\)), activity.data, ^[])
+      [_activity, object] in query,
+      where: fragment("not (?)->'attachment' = (?)", object.data, ^[])
     )
   end
 
