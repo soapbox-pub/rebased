@@ -167,7 +167,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def stream_out(activity) do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
-    if activity.data["type"] in ["Create", "Announce"] do
+    if activity.data["type"] in ["Create", "Announce", "Delete"] do
       object = Object.normalize(activity.data["object"])
       Pleroma.Web.Streamer.stream("user", activity)
       Pleroma.Web.Streamer.stream("list", activity)
