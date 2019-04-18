@@ -115,11 +115,14 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
         IO.puts(IO.ANSI.format(["Writing emoji.txt for ", :bright, pack_name]))
 
+        common_pack_path = Path.join([
+          "/", Pleroma.Config.get!([:instance, :static_dir]), "emoji", pack_name
+        ])
         emoji_txt_str =
           Enum.map(
             files,
             fn {shortcode, path} ->
-              "#{shortcode}, /instance/static/emoji/#{pack_name}/#{path}"
+              "#{shortcode}, #{Path.join(common_pack_path, path)}"
             end
           )
           |> Enum.join("\n")
@@ -182,11 +185,8 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         cwd: tmp_pack_dir
       )
 
-    emoji_map =
-      find_all_emoji(tmp_pack_dir, exts) |>
-      Enum.map(&Path.relative_to(&1, tmp_pack_dir)) |>
-      Enum.map(fn f -> {f |> Path.basename() |> Path.rootname(), f} end) |>
-      Enum.into(%{})
+    emoji_map = Pleroma.Emoji.make_shortcode_to_file_map(tmp_pack_dir, exts)
+
 
     File.write!(files_name, Poison.encode!(emoji_map, pretty: true))
 
@@ -217,21 +217,6 @@ defmodule Mix.Tasks.Pleroma.Emoji do
       IO.puts "index.json has been created with the #{name} pack"
     end
 
-  end
-
-  defp find_all_emoji(dir, exts) do
-    Enum.reduce(
-      File.ls!(dir),
-      [],
-      fn f, acc ->
-        filepath = Path.join(dir, f)
-        if File.dir?(filepath) do
-          acc ++ find_all_emoji(filepath, exts)
-        else
-          acc ++ [filepath]
-        end
-      end
-    ) |> Enum.filter(fn f -> Path.extname(f) in exts end)
   end
 
   defp fetch_manifest(from) do

@@ -100,8 +100,8 @@ config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   groups: [
     # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
-    Finmoji: ["/finmoji/128px/*-128.png", "/instance/static/emoji/finmoji/128px/*-128.png"],
-    Custom: ["/emoji/*.png", "/emoji/custom/*.png", "/instance/static/emoji/**/*.png"]
+    Finmoji: ["/finmoji/128px/*-128.png"],
+    Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
   ]
 
 config :pleroma, :uri_schemes,
