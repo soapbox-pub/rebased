@@ -108,8 +108,6 @@ defmodule Pleroma.Emoji do
         shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
 
         emojis =
-          # Add the things fro
-          # Deprecated?
           (Enum.flat_map(
              packs,
              fn pack -> load_from_file(Path.join([emoji_dir_path, pack, "emoji.txt"])) end
