@@ -337,7 +337,9 @@ config :pleroma, :gopher,
   ip: {0, 0, 0, 0},
   port: 9999
 
-config :pleroma, Pleroma.Web.Metadata, providers: [], unfurl_nsfw: false
+config :pleroma, Pleroma.Web.Metadata,
+  providers: [Pleroma.Web.Metadata.Providers.RelMe],
+  unfurl_nsfw: false
 
 config :pleroma, :suggestions,
   enabled: false,

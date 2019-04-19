@@ -13,21 +13,21 @@ defmodule Pleroma.Web.Auth.Authenticator do
     )
   end
 
-  @callback get_user(Plug.Conn.t(), Map.t()) :: {:ok, User.t()} | {:error, any()}
-  def get_user(plug, params), do: implementation().get_user(plug, params)
+  @callback get_user(Plug.Conn.t()) :: {:ok, User.t()} | {:error, any()}
+  def get_user(plug), do: implementation().get_user(plug)
 
-  @callback create_from_registration(Plug.Conn.t(), Map.t(), Registration.t()) ::
+  @callback create_from_registration(Plug.Conn.t(), Registration.t()) ::
               {:ok, User.t()} | {:error, any()}
-  def create_from_registration(plug, params, registration),
-    do: implementation().create_from_registration(plug, params, registration)
+  def create_from_registration(plug, registration),
+    do: implementation().create_from_registration(plug, registration)
 
-  @callback get_registration(Plug.Conn.t(), Map.t()) ::
+  @callback get_registration(Plug.Conn.t()) ::
               {:ok, Registration.t()} | {:error, any()}
-  def get_registration(plug, params),
-    do: implementation().get_registration(plug, params)
+  def get_registration(plug), do: implementation().get_registration(plug)
 
   @callback handle_error(Plug.Conn.t(), any()) :: any()
-  def handle_error(plug, error), do: implementation().handle_error(plug, error)
+  def handle_error(plug, error),
+    do: implementation().handle_error(plug, error)
 
   @callback auth_template() :: String.t() | nil
   def auth_template do

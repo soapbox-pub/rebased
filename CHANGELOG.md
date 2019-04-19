@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
 - ActivityPub C2S: OAuth endpoints
+- Metadata RelMe provider
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
