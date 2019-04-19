@@ -113,8 +113,9 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          cw <- OStatus.get_cw(entry),
          in_reply_to <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
          in_reply_to_activity <- fetch_replied_to_activity(entry, in_reply_to),
-         in_reply_to <-
-           (in_reply_to_activity && in_reply_to_activity.data["object"]["id"]) || in_reply_to,
+         in_reply_to_object <-
+           (in_reply_to_activity && Object.normalize(in_reply_to_activity)) || nil,
+         in_reply_to <- (in_reply_to_object && in_reply_to_object.data["id"]) || in_reply_to,
          attachments <- OStatus.get_attachments(entry),
          context <- get_context(entry, in_reply_to),
          tags <- OStatus.get_tags(entry),

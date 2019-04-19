@@ -5,6 +5,7 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Activity
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -256,7 +257,7 @@ defmodule Pleroma.UserTest do
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert activity.data["object"]["content"] =~ "cool site"
+      assert Object.normalize(activity).data["content"] =~ "cool site"
       assert activity.actor == welcome_user.ap_id
 
       Pleroma.Config.put([:instance, :welcome_user_nickname], nil)
@@ -1132,14 +1133,14 @@ defmodule Pleroma.UserTest do
         "status" => "heweoo!"
       })
 
-    id1 = activity1.data["object"]["id"]
+    id1 = Object.normalize(activity1).data["id"]
 
     {:ok, activity2} =
       CommonAPI.post(user, %{
         "status" => "heweoo!"
       })
 
-    id2 = activity2.data["object"]["id"]
+    id2 = Object.normalize(activity2).data["id"]
 
     assert {:ok, user_state1} = User.bookmark(user, id1)
     assert user_state1.bookmarks == [id1]
