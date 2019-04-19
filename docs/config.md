@@ -343,9 +343,10 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 * `max_retries`: The maximum number of times a federation job is retried
 
 ## Pleroma.Web.Metadata
-* `providers`: a list of metadata providers to enable. Providers availible:
+* `providers`: a list of metadata providers to enable. Providers available:
   * Pleroma.Web.Metadata.Providers.OpenGraph
   * Pleroma.Web.Metadata.Providers.TwitterCard
+  * Pleroma.Web.Metadata.Providers.RelMe - add links from user bio with rel=me into the `<header>` as `<link rel=me>`
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews
 
 ## :rich_media
