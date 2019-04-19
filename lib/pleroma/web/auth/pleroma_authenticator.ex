@@ -10,9 +10,9 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
 
   @behaviour Pleroma.Web.Auth.Authenticator
 
-  def get_user(%Plug.Conn{} = _conn, params) do
+  def get_user(%Plug.Conn{} = conn) do
     {name, password} =
-      case params do
+      case conn.params do
         %{"authorization" => %{"name" => name, "password" => password}} ->
           {name, password}
 
@@ -29,10 +29,9 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
     end
   end
 
-  def get_registration(
-        %Plug.Conn{assigns: %{ueberauth_auth: %{provider: provider, uid: uid} = auth}},
-        _params
-      ) do
+  def get_registration(%Plug.Conn{
+        assigns: %{ueberauth_auth: %{provider: provider, uid: uid} = auth}
+      }) do
     registration = Registration.get_by_provider_uid(provider, uid)
 
     if registration do
@@ -40,7 +39,8 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
     else
       info = auth.info
 
-      Registration.changeset(%Registration{}, %{
+      %Registration{}
+      |> Registration.changeset(%{
         provider: to_string(provider),
         uid: to_string(uid),
         info: %{
@@ -54,13 +54,16 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
     end
   end
 
-  def get_registration(%Plug.Conn{} = _conn, _params), do: {:error, :missing_credentials}
+  def get_registration(%Plug.Conn{} = _conn), do: {:error, :missing_credentials}
 
-  def create_from_registration(_conn, params, registration) do
-    nickname = value([params["nickname"], Registration.nickname(registration)])
-    email = value([params["email"], Registration.email(registration)])
-    name = value([params["name"], Registration.name(registration)]) || nickname
-    bio = value([params["bio"], Registration.description(registration)])
+  def create_from_registration(
+        %Plug.Conn{params: %{"authorization" => registration_attrs}},
+        registration
+      ) do
+    nickname = value([registration_attrs["nickname"], Registration.nickname(registration)])
+    email = value([registration_attrs["email"], Registration.email(registration)])
+    name = value([registration_attrs["name"], Registration.name(registration)]) || nickname
+    bio = value([registration_attrs["bio"], Registration.description(registration)])
 
     random_password = :crypto.strong_rand_bytes(64) |> Base.encode64()
 

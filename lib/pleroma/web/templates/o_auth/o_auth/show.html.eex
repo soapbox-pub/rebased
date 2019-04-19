@@ -17,7 +17,7 @@
   <%= password_input f, :password %>
 </div>
 
-<%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f, scope_param: "authorization[scope][]"}) %>
+<%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
 
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :response_type, value: @response_type %>
