@@ -1447,4 +1447,42 @@ defmodule Pleroma.User do
   def showing_reblogs?(%User{} = user, %User{} = target) do
     target.ap_id not in user.info.muted_reblogs
   end
+
+  @doc """
+  The function returns a query to get users with no activity for given interval of days.
+  Inactive users are those who didn't read any notification, or had any activity where
+  the user is the activity's actor, during `inactivity_threshold` days.
+  Deactivated users will not appear in this list.
+
+  ## Examples
+
+      iex> Pleroma.User.list_inactive_users()
+      %Ecto.Query{}
+  """
+  @spec list_inactive_users_query(integer()) :: Ecto.Query.t()
+  def list_inactive_users_query(inactivity_threshold \\ 7) do
+    negative_inactivity_threshold = -inactivity_threshold
+    now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+    # Subqueries are not supported in `where` clauses, join gets too complicated.
+    has_read_notifications =
+      from(n in Pleroma.Notification,
+        where: n.seen == true,
+        group_by: n.id,
+        having: max(n.updated_at) > datetime_add(^now, ^negative_inactivity_threshold, "day"),
+        select: n.user_id
+      )
+      |> Pleroma.Repo.all()
+
+    from(u in Pleroma.User,
+      left_join: a in Pleroma.Activity,
+      on: u.ap_id == a.actor,
+      where: not is_nil(u.nickname),
+      where: fragment("not (?->'deactivated' @> 'true')", u.info),
+      where: u.id not in ^has_read_notifications,
+      group_by: u.id,
+      having:
+        max(a.inserted_at) < datetime_add(^now, ^negative_inactivity_threshold, "day") or
+          is_nil(max(a.inserted_at))
+    )
+  end
 end
