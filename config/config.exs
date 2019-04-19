@@ -467,6 +467,7 @@ config :pleroma, Pleroma.ScheduledActivity,
 config :pleroma, :email_notifications,
   digest: %{
     # When to send digest email, in crontab format (https://en.wikipedia.org/wiki/Cron)
+    # 0 0 * * 0 - once a week at midnight on Sunday morning
     schedule: "0 0 * * 0",
     # Minimum interval between digest emails to one user
     interval: 7,
