@@ -31,6 +31,9 @@ defmodule Mix.Tasks.Pleroma.Emoji do
       for {param, value} <- to_print do
         IO.puts(IO.ANSI.format([:bright, param, :normal, ": ", value]))
       end
+
+      # A newline
+      IO.puts("")
     end)
   end
 
