@@ -821,27 +821,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def follow(%{assigns: %{user: follower}} = conn, %{"id" => id}) do
     with {_, %User{} = followed} <- {:followed, User.get_cached_by_id(id)},
          {_, true} <- {:followed, follower.id != followed.id},
-         false <- User.following?(follower, followed),
-         {:ok, follower, followed, _} <- CommonAPI.follow(follower, followed) do
+         {:ok, follower} <- MastodonAPI.follow(follower, followed, conn.params) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: follower, target: followed})
     else
       {:followed, _} ->
         {:error, :not_found}
-
-      true ->
-        followed = User.get_cached_by_id(id)
-
-        {:ok, follower} =
-          case conn.params["reblogs"] do
-            true -> CommonAPI.show_reblogs(follower, followed)
-            false -> CommonAPI.hide_reblogs(follower, followed)
-          end
-
-        conn
-        |> put_view(AccountView)
-        |> render("relationship.json", %{user: follower, target: followed})
 
       {:error, message} ->
         conn

@@ -71,6 +71,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Reblogs having `in_reply_to_id` - `null` even when they are replies
 - Mastodon API: Streaming API broadcasting wrong activity id
 - Mastodon API: 500 errors when requesting a card for a private conversation
+- Mastodon API: Handling of `reblogs` in `/api/v1/accounts/:id/follow`
 
 ## [0.9.9999] - 2019-04-05
 ### Security
