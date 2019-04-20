@@ -100,8 +100,7 @@ config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
   groups: [
     # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
-    Finmoji: ["/finmoji/128px/*-128.png"],
-    Custom: ["/emoji/*.png", "/emoji/custom/*.png"]
+    Custom: ["/emoji/*.png", "/emoji/**/*.png"]
   ],
   default_manifest: "https://git.pleroma.social/vaartis/emoji-index/raw/master/index.json"
 
@@ -224,7 +223,6 @@ config :pleroma, :instance,
     "text/html",
     "text/markdown"
   ],
-  finmoji_enabled: true,
   mrf_transparency: true,
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,

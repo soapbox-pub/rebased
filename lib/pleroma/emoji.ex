@@ -6,7 +6,7 @@ defmodule Pleroma.Emoji do
   @moduledoc """
   The emojis are loaded from:
 
-    * the built-in Finmojis (if enabled in configuration),
+    * emoji packs in INSTANCE-DIR/emoji
     * the files: `config/emoji.txt` and `config/custom_emoji.txt`
     * glob paths, nested folder is used as tag name for grouping e.g. priv/static/emoji/custom/nested_folder
 
