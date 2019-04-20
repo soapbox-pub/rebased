@@ -335,7 +335,7 @@ defmodule Pleroma.NotificationTest do
       recent_notifications_ids =
         user2
         |> Notification.for_user_since(
-          NaiveDateTime.add(NaiveDateTime.utc_now(), -5 * 86400, :second)
+          NaiveDateTime.add(NaiveDateTime.utc_now(), -5 * 86_400, :second)
         )
         |> Enum.map(& &1.id)
 

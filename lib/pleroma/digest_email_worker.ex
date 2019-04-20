@@ -4,7 +4,7 @@ defmodule Pleroma.DigestEmailWorker do
 
   # alias Pleroma.User
 
-  def run() do
+  def run do
     Logger.warn("Running digester")
     config = Application.get_env(:pleroma, :email_notifications)[:digest]
     negative_interval = -Map.fetch!(config, :interval)
@@ -14,7 +14,7 @@ defmodule Pleroma.DigestEmailWorker do
     now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
 
     from(u in inactive_users_query,
-      where: fragment("? #> '{\"email_notifications\",\"digest\"}' @> 'true'", u.info),
+      where: fragment(~s(? #> '{"email_notifications","digest"}' @> 'true'), u.info),
       where: u.last_digest_emailed_at < datetime_add(^now, ^negative_interval, "day"),
       select: u
     )

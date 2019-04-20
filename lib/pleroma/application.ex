@@ -187,7 +187,7 @@ defmodule Pleroma.Application do
     end
   end
 
-  defp after_supervisor_start() do
+  defp after_supervisor_start do
     with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
          true <- digest_config[:active],
          %Crontab.CronExpression{} = schedule <-

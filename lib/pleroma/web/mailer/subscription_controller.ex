@@ -1,7 +1,9 @@
 defmodule Pleroma.Web.Mailer.SubscriptionController do
   use Pleroma.Web, :controller
 
-  alias Pleroma.{JWT, Repo, User}
+  alias Pleroma.JWT
+  alias Pleroma.Repo
+  alias Pleroma.User
 
   def unsubscribe(conn, %{"token" => encoded_token}) do
     with {:ok, token} <- Base.decode64(encoded_token),
