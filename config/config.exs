@@ -468,6 +468,8 @@ config :pleroma, Pleroma.ScheduledActivity,
 
 config :pleroma, :email_notifications,
   digest: %{
+    # Globally enable or disable digest emails
+    active: true,
     # When to send digest email, in crontab format (https://en.wikipedia.org/wiki/Cron)
     # 0 0 * * 0 - once a week at midnight on Sunday morning
     schedule: "0 0 * * 0",

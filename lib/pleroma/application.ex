@@ -105,7 +105,8 @@ defmodule Pleroma.Application do
           id: :cachex_idem
         ),
         worker(Pleroma.FlakeId, []),
-        worker(Pleroma.ScheduledActivityWorker, [])
+        worker(Pleroma.ScheduledActivityWorker, []),
+        worker(Pleroma.QuantumScheduler, [])
       ] ++
         hackney_pool_children() ++
         [
@@ -125,7 +126,9 @@ defmodule Pleroma.Application do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
-    Supervisor.start_link(children, opts)
+    result = Supervisor.start_link(children, opts)
+    :ok = after_supervisor_start()
+    result
   end
 
   defp setup_instrumenters do
@@ -182,5 +185,20 @@ defmodule Pleroma.Application do
       options = Pleroma.Config.get([:hackney_pools, pool])
       :hackney_pool.child_spec(pool, options)
     end
+  end
+
+  defp after_supervisor_start() do
+    with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
+         true <- digest_config[:active],
+         %Crontab.CronExpression{} = schedule <-
+           Crontab.CronExpression.Parser.parse!(digest_config[:schedule]) do
+      Pleroma.QuantumScheduler.new_job()
+      |> Quantum.Job.set_name(:digest_emails)
+      |> Quantum.Job.set_schedule(schedule)
+      |> Quantum.Job.set_task(&Pleroma.DigestEmailWorker.run/0)
+      |> Pleroma.QuantumScheduler.add_job()
+    end
+
+    :ok
   end
 end

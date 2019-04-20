@@ -1484,4 +1484,40 @@ defmodule Pleroma.User do
           is_nil(max(a.inserted_at))
     )
   end
+
+  @doc """
+  Enable or disable email notifications for user
+
+  ## Examples
+
+      iex> Pleroma.User.switch_email_notifications(Pleroma.User{info: %{email_notifications: %{"digest" => false}}}, "digest", true)
+      Pleroma.User{info: %{email_notifications: %{"digest" => true}}}
+
+      iex> Pleroma.User.switch_email_notifications(Pleroma.User{info: %{email_notifications: %{"digest" => true}}}, "digest", false)
+      Pleroma.User{info: %{email_notifications: %{"digest" => false}}}
+  """
+  @spec switch_email_notifications(t(), String.t(), boolean()) ::
+          {:ok, t()} | {:error, Ecto.Changeset.t()}
+  def switch_email_notifications(user, type, status) do
+    info = Pleroma.User.Info.update_email_notifications(user.info, %{type => status})
+
+    change(user)
+    |> put_embed(:info, info)
+    |> update_and_set_cache()
+  end
+
+  @doc """
+  Set `last_digest_emailed_at` value for the user to current time
+  """
+  @spec touch_last_digest_emailed_at(t()) :: t()
+  def touch_last_digest_emailed_at(user) do
+    now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+
+    {:ok, updated_user} =
+      user
+      |> change(%{last_digest_emailed_at: now})
+      |> update_and_set_cache()
+
+    updated_user
+  end
 end

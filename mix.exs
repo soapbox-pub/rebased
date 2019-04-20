@@ -93,6 +93,7 @@ defmodule Pleroma.Mixfile do
       {:ex_doc, "~> 0.20.2", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
       {:swoosh, "~> 0.20"},
+      {:phoenix_swoosh, "~> 0.2"},
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
       {:floki, "~> 0.20.0"},
@@ -111,7 +112,8 @@ defmodule Pleroma.Mixfile do
       {:prometheus_process_collector, "~> 1.4"},
       {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"},
-      {:quantum, "~> 2.3"}
+      {:quantum, "~> 2.3"},
+      {:joken, "~> 2.0"}
     ] ++ oauth_deps
   end
 

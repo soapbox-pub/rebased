@@ -76,3 +76,5 @@ config :web_push_encryption, :vapid_details,
 #  storage_url: "https://swift-endpoint.prodider.com/v1/AUTH_<tenant>/<container>",
 #  object_url: "https://cdn-endpoint.provider.com/<container>"
 #
+
+config :joken, default_signer: "<%= jwt_secret %>"
