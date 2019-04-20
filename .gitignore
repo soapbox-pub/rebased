@@ -38,3 +38,5 @@ erl_crash.dump
 
 # Prevent committing docs files
 /priv/static/doc/*
+
+/cover
