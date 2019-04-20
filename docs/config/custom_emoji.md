@@ -1,15 +1,25 @@
 # Custom Emoji
 
+Before you add your own custom emoji, check if they are available in an existing pack.
+See `Mix.Tasks.Pleroma.Emoji` for information about emoji packs.
+
 To add custom emoji:
-* Add the image file(s) to `priv/static/emoji/custom`
-* In case of conflicts: add the desired shortcode with the path to `config/custom_emoji.txt`, comma-separated and one per line
-* Force recompilation (``mix clean && mix compile``)
+* Create the `STATIC-DIR/emoji/` directory if it doesn't exist
+  (`STATIC-DIR` is configurable, `instance/static/` by default)
+* Create a directory with whatever name you want (custom is a good name to show the purpose of it).
+  This will create a local emoji pack.
+* Put your `.png` emoji files in that directory. In case of conflicts, you can create an `emoji.txt`
+  file in that directory and specify a custom shortcode using the following format:
+  `shortcode, file-path, tag1, tag2, etc`. One emoji per line. Note that if you do so,
+  you'll have to list all other emojis in the pack too.
+* Either restart pleroma or connect to the iex session pleroma's running and
+  run `Pleroma.Emoji.reload/0` in it.
 
 Example:
 
-image files (in `/priv/static/emoji/custom`): `happy.png` and `sad.png`
+image files (in `instance/static/emoji/custom`): `happy.png` and `sad.png`
 
-content of `config/custom_emoji.txt`:
+content of `emoji.txt`:
 ```
 happy, /emoji/custom/happy.png, Tag1,Tag2
 sad, /emoji/custom/sad.png, Tag1
