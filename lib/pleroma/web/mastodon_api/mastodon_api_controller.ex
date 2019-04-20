@@ -553,7 +553,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def bookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
-         %Object{} = object <- Object.normalize(activity),
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, _bookmark} <- Bookmark.create(user.id, activity.id) do
@@ -567,7 +566,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def unbookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
-         %Object{} = object <- Object.normalize(activity),
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, _bookmark} <- Bookmark.destroy(user.id, activity.id) do
