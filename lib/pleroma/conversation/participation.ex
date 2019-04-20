@@ -65,21 +65,12 @@ defmodule Pleroma.Conversation.Participation do
 
   def for_user_with_last_activity_id(user, params \\ %{}) do
     for_user(user, params)
-    |> Repo.preload(:conversation)
     |> Enum.map(fn participation ->
-      # TODO: Don't load all those activities, just get the most recent
-      # Involves splitting up the query.
-      activities =
-        ActivityPub.fetch_activities_for_context(participation.conversation.ap_id, %{
+      activity_id =
+        ActivityPub.fetch_latest_activity_id_for_context(participation.conversation.ap_id, %{
           "user" => user,
           "blocking_user" => user
         })
-
-      activity_id =
-        case activities do
-          [activity | _] -> activity.id
-          _ -> nil
-        end
 
       %{
         participation

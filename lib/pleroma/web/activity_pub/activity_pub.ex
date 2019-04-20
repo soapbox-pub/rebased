@@ -459,35 +459,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_activities_for_context(context, opts \\ %{}) do
+  defp fetch_activities_for_context_query(context, opts) do
     public = ["https://www.w3.org/ns/activitystreams#Public"]
 
     recipients =
       if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
 
-    query = from(activity in Activity)
-
-    query =
-      query
-      |> restrict_blocked(opts)
-      |> restrict_recipients(recipients, opts["user"])
-
-    query =
-      from(
-        activity in query,
-        where:
-          fragment(
-            "?->>'type' = ? and ?->>'context' = ?",
-            activity.data,
-            "Create",
-            activity.data,
-            ^context
-          ),
-        order_by: [desc: :id]
+    from(activity in Activity)
+    |> restrict_blocked(opts)
+    |> restrict_recipients(recipients, opts["user"])
+    |> where(
+      [activity],
+      fragment(
+        "?->>'type' = ? and ?->>'context' = ?",
+        activity.data,
+        "Create",
+        activity.data,
+        ^context
       )
-      |> Activity.with_preloaded_object()
+    )
+    |> order_by([activity], desc: activity.id)
+  end
 
-    Repo.all(query)
+  @spec fetch_activities_for_context(String.t(), keyword() | map()) :: [Activity.t()]
+  def fetch_activities_for_context(context, opts \\ %{}) do
+    context
+    |> fetch_activities_for_context_query(opts)
+    |> Activity.with_preloaded_object()
+    |> Repo.all()
+  end
+
+  @spec fetch_latest_activity_id_for_context(String.t(), keyword() | map()) ::
+          Pleroma.FlakeId.t() | nil
+  def fetch_latest_activity_id_for_context(context, opts \\ %{}) do
+    context
+    |> fetch_activities_for_context_query(opts)
+    |> limit(1)
+    |> select([a], a.id)
+    |> Repo.one()
   end
 
   def fetch_public_activities(opts \\ %{}) do
