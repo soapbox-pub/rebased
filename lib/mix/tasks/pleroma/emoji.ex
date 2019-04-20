@@ -137,11 +137,8 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
         IO.puts(IO.ANSI.format(["Unpacking ", :bright, pack_name]))
 
-        static_path = Path.join(:code.priv_dir(:pleroma), "static")
-
         pack_path =
           Path.join([
-            static_path,
             Pleroma.Config.get!([:instance, :static_dir]),
             "emoji",
             pack_name
@@ -161,19 +158,12 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
         IO.puts(IO.ANSI.format(["Writing emoji.txt for ", :bright, pack_name]))
 
-        common_pack_path =
-          Path.join([
-            "/",
-            Pleroma.Config.get!([:instance, :static_dir]),
-            "emoji",
-            pack_name
-          ])
-
         emoji_txt_str =
           Enum.map(
             files,
             fn {shortcode, path} ->
-              "#{shortcode}, #{Path.join(common_pack_path, path)}"
+              emojo_path = Path.join("/emoji/#{pack_name}", path)
+              "#{shortcode}, #{emojo_path}"
             end
           )
           |> Enum.join("\n")

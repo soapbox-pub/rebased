@@ -81,14 +81,11 @@ defmodule Pleroma.Emoji do
   end
 
   defp load do
-    static_path = Path.join(:code.priv_dir(:pleroma), "static")
-
     emoji_dir_path =
-      Path.join([
-        static_path,
+      Path.join(
         Pleroma.Config.get!([:instance, :static_dir]),
         "emoji"
-      ])
+      )
 
     case File.ls(emoji_dir_path) do
       {:error, :enoent} ->
@@ -135,20 +132,12 @@ defmodule Pleroma.Emoji do
         "No emoji.txt found for pack \"#{pack_name}\", assuming all .png files are emoji"
       )
 
-      common_pack_path =
-        Path.join([
-          "/",
-          Pleroma.Config.get!([:instance, :static_dir]),
-          "emoji",
-          pack_name
-        ])
+      make_shortcode_to_file_map(pack_dir, [".png"]) |>
+        Enum.map(fn {shortcode, rel_file} ->
+          filename = Path.join("/emoji/#{pack_name}", rel_file)
 
-      make_shortcode_to_file_map(pack_dir, [".png"])
-      |> Enum.map(fn {shortcode, rel_file} ->
-        filename = Path.join(common_pack_path, rel_file)
-
-        {shortcode, filename, [to_string(match_extra(@groups, filename))]}
-      end)
+          {shortcode, filename, [to_string(match_extra(@groups, filename))]}
+        end)
     end
   end
 
