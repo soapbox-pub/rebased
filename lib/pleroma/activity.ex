@@ -10,6 +10,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.Object
   alias Pleroma.Repo
 
+  import Ecto.Changeset
   import Ecto.Query
 
   @type t :: %__MODULE__{}
@@ -77,6 +78,13 @@ defmodule Pleroma.Activity do
         where: fragment("(?)->>'id' = ?", activity.data, ^to_string(ap_id))
       )
     )
+  end
+
+  def change(struct, params \\ %{}) do
+    struct
+    |> cast(params, [:data])
+    |> validate_required([:data])
+    |> unique_constraint(:ap_id, name: :activities_unique_apid_index)
   end
 
   def get_by_ap_id_with_object(ap_id) do
@@ -196,21 +204,27 @@ defmodule Pleroma.Activity do
 
   def create_by_object_ap_id_with_object(_), do: nil
 
-  def get_create_by_object_ap_id_with_object(ap_id) do
+  def get_create_by_object_ap_id_with_object(ap_id) when is_binary(ap_id) do
     ap_id
     |> create_by_object_ap_id_with_object()
     |> Repo.one()
   end
 
+  def get_create_by_object_ap_id_with_object(_), do: nil
+
+  defp get_in_reply_to_activity_from_object(%Object{data: %{"inReplyTo" => ap_id}}) do
+    get_create_by_object_ap_id_with_object(ap_id)
+  end
+
+  defp get_in_reply_to_activity_from_object(_), do: nil
+
+  def get_in_reply_to_activity(%Activity{data: %{"object" => object}}) do
+    get_in_reply_to_activity_from_object(Object.normalize(object))
+  end
+
   def normalize(obj) when is_map(obj), do: get_by_ap_id_with_object(obj["id"])
   def normalize(ap_id) when is_binary(ap_id), do: get_by_ap_id_with_object(ap_id)
   def normalize(_), do: nil
-
-  def get_in_reply_to_activity(%Activity{data: %{"object" => %{"inReplyTo" => ap_id}}}) do
-    get_create_by_object_ap_id(ap_id)
-  end
-
-  def get_in_reply_to_activity(_), do: nil
 
   def delete_by_ap_id(id) when is_binary(id) do
     by_object_ap_id(id)
@@ -218,6 +232,7 @@ defmodule Pleroma.Activity do
     |> Repo.delete_all()
     |> elem(1)
     |> Enum.find(fn
+      %{data: %{"type" => "Create", "object" => ap_id}} when is_binary(ap_id) -> ap_id == id
       %{data: %{"type" => "Create", "object" => %{"id" => ap_id}}} -> ap_id == id
       _ -> nil
     end)
@@ -244,55 +259,5 @@ defmodule Pleroma.Activity do
     |> where([s], s.id in ^status_ids)
     |> where([s], s.actor == ^actor)
     |> Repo.all()
-  end
-
-  def increase_replies_count(nil), do: nil
-
-  def increase_replies_count(object_ap_id) do
-    from(a in create_by_object_ap_id(object_ap_id),
-      update: [
-        set: [
-          data:
-            fragment(
-              """
-              jsonb_set(?, '{object, repliesCount}',
-                (coalesce((?->'object'->>'repliesCount')::int, 0) + 1)::varchar::jsonb, true)
-              """,
-              a.data,
-              a.data
-            )
-        ]
-      ]
-    )
-    |> Repo.update_all([])
-    |> case do
-      {1, [activity]} -> activity
-      _ -> {:error, "Not found"}
-    end
-  end
-
-  def decrease_replies_count(nil), do: nil
-
-  def decrease_replies_count(object_ap_id) do
-    from(a in create_by_object_ap_id(object_ap_id),
-      update: [
-        set: [
-          data:
-            fragment(
-              """
-              jsonb_set(?, '{object, repliesCount}',
-                (greatest(0, (?->'object'->>'repliesCount')::int - 1))::varchar::jsonb, true)
-              """,
-              a.data,
-              a.data
-            )
-        ]
-      ]
-    )
-    |> Repo.update_all([])
-    |> case do
-      {1, [activity]} -> activity
-      _ -> {:error, "Not found"}
-    end
   end
 end

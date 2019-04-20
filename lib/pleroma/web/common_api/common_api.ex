@@ -125,7 +125,10 @@ defmodule Pleroma.Web.CommonAPI do
         "public"
 
       in_reply_to ->
-        Pleroma.Web.MastodonAPI.StatusView.get_visibility(in_reply_to.data["object"])
+        # XXX: these heuristics should be moved out of MastodonAPI.
+        with %Object{} = object <- Object.normalize(in_reply_to) do
+          Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
+        end
     end
   end
 
@@ -214,8 +217,10 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{
            actor: ^user_ap_id,
            data: %{
-             "type" => "Create",
-             "object" => %{
+             "type" => "Create"
+           },
+           object: %Object{
+             data: %{
                "to" => object_to,
                "type" => "Note"
              }

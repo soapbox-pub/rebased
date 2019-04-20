@@ -1,0 +1,90 @@
+defmodule Pleroma.Object.FetcherTest do
+  use Pleroma.DataCase
+
+  alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Object.Fetcher
+  import Tesla.Mock
+
+  setup do
+    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
+  describe "actor origin containment" do
+    test "it rejects objects with a bogus origin" do
+      {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity.json")
+    end
+
+    test "it rejects objects when attributedTo is wrong (variant 1)" do
+      {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity2.json")
+    end
+
+    test "it rejects objects when attributedTo is wrong (variant 2)" do
+      {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity3.json")
+    end
+  end
+
+  describe "fetching an object" do
+    test "it fetches an object" do
+      {:ok, object} =
+        Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
+      assert activity.data["id"]
+
+      {:ok, object_again} =
+        Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      assert [attachment] = object.data["attachment"]
+      assert is_list(attachment["url"])
+
+      assert object == object_again
+    end
+
+    test "it works with objects only available via Ostatus" do
+      {:ok, object} = Fetcher.fetch_object_from_id("https://shitposter.club/notice/2827873")
+      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
+      assert activity.data["id"]
+
+      {:ok, object_again} = Fetcher.fetch_object_from_id("https://shitposter.club/notice/2827873")
+
+      assert object == object_again
+    end
+
+    test "it correctly stitches up conversations between ostatus and ap" do
+      last = "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
+      {:ok, object} = Fetcher.fetch_object_from_id(last)
+
+      object = Object.get_by_ap_id(object.data["inReplyTo"])
+      assert object
+    end
+  end
+
+  describe "implementation quirks" do
+    test "it can fetch plume articles" do
+      {:ok, object} =
+        Fetcher.fetch_object_from_id(
+          "https://baptiste.gelez.xyz/~/PlumeDevelopment/this-month-in-plume-june-2018/"
+        )
+
+      assert object
+    end
+
+    test "it can fetch peertube videos" do
+      {:ok, object} =
+        Fetcher.fetch_object_from_id(
+          "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
+        )
+
+      assert object
+    end
+
+    test "all objects with fake directions are rejected by the object fetcher" do
+      {:error, _} =
+        Fetcher.fetch_and_contain_remote_object_from_id(
+          "https://info.pleroma.site/activity4.json"
+        )
+    end
+  end
+end

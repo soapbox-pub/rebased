@@ -6,8 +6,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
@@ -53,14 +54,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note with null content" do
     note = insert(:note_activity)
+    note_object = Object.normalize(note.data["object"])
 
     data =
-      note.data
-      |> put_in(["object", "content"], nil)
+      note_object.data
+      |> Map.put("content", nil)
 
-    note =
-      note
-      |> Map.put(:data, data)
+    Object.change(note_object, %{data: data})
+    |> Object.update_and_set_cache()
 
     User.get_cached_by_ap_id(note.data["actor"])
 
@@ -230,7 +231,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     user = insert(:user)
 
     {:ok, object} =
-      ActivityPub.fetch_object_from_id(
+      Pleroma.Object.Fetcher.fetch_object_from_id(
         "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
       )
 
