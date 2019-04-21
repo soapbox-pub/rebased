@@ -22,6 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.AppView
+  alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
@@ -1590,22 +1591,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     conversations =
       Enum.map(participations, fn participation ->
-        activity = Activity.get_by_id_with_object(participation.last_activity_id)
-
-        last_status = StatusView.render("status.json", %{activity: activity, for: user})
-
-        accounts =
-          AccountView.render("accounts.json", %{
-            users: participation.conversation.users,
-            as: :user
-          })
-
-        %{
-          id: participation.id |> to_string(),
-          accounts: accounts,
-          unread: !participation.read,
-          last_status: last_status
-        }
+        ConversationView.render("participation.json", %{participation: participation, user: user})
       end)
 
     conn
@@ -1617,31 +1603,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with %Participation{} = participation <-
            Repo.get_by(Participation, id: participation_id, user_id: user.id),
          {:ok, participation} <- Participation.mark_as_read(participation) do
-      participation = Repo.preload(participation, conversation: :users)
-
-      accounts =
-        AccountView.render("accounts.json", %{
-          users: participation.conversation.users,
-          as: :user
-        })
-
-      last_activity_id =
-        ActivityPub.fetch_latest_activity_id_for_context(participation.conversation.ap_id, %{
-          "user" => user,
-          "blocking_user" => user
-        })
-
-      activity = Activity.get_by_id_with_object(last_activity_id)
-
-      last_status = StatusView.render("status.json", %{activity: activity, for: user})
+      participation_view =
+        ConversationView.render("participation.json", %{participation: participation, user: user})
 
       conn
-      |> json(%{
-        id: participation.id,
-        accounts: accounts,
-        unread: !participation.read,
-        last_status: last_status
-      })
+      |> json(participation_view)
     end
   end
 
