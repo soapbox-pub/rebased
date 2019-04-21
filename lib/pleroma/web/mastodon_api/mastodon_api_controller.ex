@@ -1617,14 +1617,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with %Participation{} = participation <-
            Repo.get_by(Participation, id: participation_id, user_id: user.id),
          {:ok, participation} <- Participation.mark_as_read(participation) do
+      participation = Repo.preload(participation, conversation: :users)
+
+      accounts =
+        AccountView.render("accounts.json", %{
+          users: participation.conversation.users,
+          as: :user
+        })
+
+      last_activity_id =
+        ActivityPub.fetch_latest_activity_id_for_context(participation.conversation.ap_id, %{
+          "user" => user,
+          "blocking_user" => user
+        })
+
+      activity = Activity.get_by_id_with_object(last_activity_id)
+
+      last_status = StatusView.render("status.json", %{activity: activity, for: user})
+
       conn
       |> json(%{
         id: participation.id,
-        # TODO: Add this.
-        accounts: [],
+        accounts: accounts,
         unread: !participation.read,
-        # TODO: Add this.
-        last_status: nil
+        last_status: last_status
       })
     end
   end

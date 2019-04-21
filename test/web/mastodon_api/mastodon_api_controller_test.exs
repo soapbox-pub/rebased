@@ -346,6 +346,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> post("/api/v1/conversations/#{res_id}/read")
 
     assert response = json_response(res_conn, 200)
+    assert length(response["accounts"]) == 2
+    assert response["last_status"]["id"] == direct.id
     assert response["unread"] == false
 
     # (vanilla) Mastodon frontend behaviour
