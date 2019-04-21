@@ -3,9 +3,9 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
 
   alias Pleroma.Activity
   alias Pleroma.Repo
+  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.MastodonAPI.AccountView
 
   def render("participation.json", %{participation: participation, user: user}) do
     participation = Repo.preload(participation, conversation: :users)
