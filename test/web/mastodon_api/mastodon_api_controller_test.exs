@@ -1620,6 +1620,44 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert id == to_string(other_user.id)
   end
 
+  test "following without reblogs" do
+    follower = insert(:user)
+    followed = insert(:user)
+    other_user = insert(:user)
+
+    conn =
+      build_conn()
+      |> assign(:user, follower)
+      |> post("/api/v1/accounts/#{followed.id}/follow?reblogs=false")
+
+    assert %{"showing_reblogs" => false} = json_response(conn, 200)
+
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hey"})
+    {:ok, reblog, _} = CommonAPI.repeat(activity.id, followed)
+
+    conn =
+      build_conn()
+      |> assign(:user, User.get_cached_by_id(follower.id))
+      |> get("/api/v1/timelines/home")
+
+    assert [] == json_response(conn, 200)
+
+    conn =
+      build_conn()
+      |> assign(:user, follower)
+      |> post("/api/v1/accounts/#{followed.id}/follow?reblogs=true")
+
+    assert %{"showing_reblogs" => true} = json_response(conn, 200)
+
+    conn =
+      build_conn()
+      |> assign(:user, User.get_cached_by_id(follower.id))
+      |> get("/api/v1/timelines/home")
+
+    expected_activity_id = reblog.id
+    assert [%{"id" => ^expected_activity_id}] = json_response(conn, 200)
+  end
+
   test "following / unfollowing errors" do
     user = insert(:user)
 
