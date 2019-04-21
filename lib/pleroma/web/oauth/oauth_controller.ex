@@ -23,6 +23,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
+  # Note: this definition is only called from error-handling methods with `conn.params` as 2nd arg
+  def authorize(conn, %{"authorization" => _} = params) do
+    {auth_attrs, params} = Map.pop(params, "authorization")
+    authorize(conn, Map.merge(params, auth_attrs))
+  end
+
   def authorize(%{assigns: %{token: %Token{} = token}} = conn, params) do
     if ControllerHelper.truthy_param?(params["force_login"]) do
       do_authorize(conn, params)
@@ -44,21 +50,20 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   def authorize(conn, params), do: do_authorize(conn, params)
 
-  defp do_authorize(conn, %{"authorization" => auth_attrs}), do: do_authorize(conn, auth_attrs)
-
-  defp do_authorize(conn, auth_attrs) do
-    app = Repo.get_by(App, client_id: auth_attrs["client_id"])
+  defp do_authorize(conn, params) do
+    app = Repo.get_by(App, client_id: params["client_id"])
     available_scopes = (app && app.scopes) || []
-    scopes = oauth_scopes(auth_attrs, nil) || available_scopes
+    scopes = oauth_scopes(params, nil) || available_scopes
 
+    # Note: `params` might differ from `conn.params`; use `@params` not `@conn.params` in template
     render(conn, Authenticator.auth_template(), %{
-      response_type: auth_attrs["response_type"],
-      client_id: auth_attrs["client_id"],
+      response_type: params["response_type"],
+      client_id: params["client_id"],
       available_scopes: available_scopes,
       scopes: scopes,
-      redirect_uri: auth_attrs["redirect_uri"],
-      state: auth_attrs["state"],
-      params: auth_attrs
+      redirect_uri: params["redirect_uri"],
+      state: params["state"],
+      params: params
     })
   end
 
