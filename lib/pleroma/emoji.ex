@@ -132,12 +132,12 @@ defmodule Pleroma.Emoji do
         "No emoji.txt found for pack \"#{pack_name}\", assuming all .png files are emoji"
       )
 
-      make_shortcode_to_file_map(pack_dir, [".png"]) |>
-        Enum.map(fn {shortcode, rel_file} ->
-          filename = Path.join("/emoji/#{pack_name}", rel_file)
+      make_shortcode_to_file_map(pack_dir, [".png"])
+      |> Enum.map(fn {shortcode, rel_file} ->
+        filename = Path.join("/emoji/#{pack_name}", rel_file)
 
-          {shortcode, filename, [to_string(match_extra(@groups, filename))]}
-        end)
+        {shortcode, filename, [to_string(match_extra(@groups, filename))]}
+      end)
     end
   end
 
