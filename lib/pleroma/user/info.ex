@@ -42,7 +42,7 @@ defmodule Pleroma.User.Info do
     field(:hide_follows, :boolean, default: false)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
-    field(:email_notifications, :map, default: %{"digest" => true})
+    field(:email_notifications, :map, default: %{"digest" => false})
 
     field(:notification_settings, :map,
       default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}

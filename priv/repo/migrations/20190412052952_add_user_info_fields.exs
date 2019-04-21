@@ -6,7 +6,7 @@ defmodule Pleroma.Repo.Migrations.AddEmailNotificationsToUserInfo do
     UPDATE users
     SET info = info || '{
       \"email_notifications\": {
-        \"digest\": true
+        \"digest\": false
       }
     }'")
   end
