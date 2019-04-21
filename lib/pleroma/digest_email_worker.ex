@@ -1,11 +1,7 @@
 defmodule Pleroma.DigestEmailWorker do
   import Ecto.Query
-  require Logger
-
-  # alias Pleroma.User
 
   def run do
-    Logger.warn("Running digester")
     config = Application.get_env(:pleroma, :email_notifications)[:digest]
     negative_interval = -Map.fetch!(config, :interval)
     inactivity_threshold = Map.fetch!(config, :inactivity_threshold)
@@ -19,23 +15,14 @@ defmodule Pleroma.DigestEmailWorker do
       select: u
     )
     |> Pleroma.Repo.all()
-    |> run(:pre)
-  end
-
-  defp run(v, :pre) do
-    Logger.warn("Running for #{length(v)} users")
-    run(v)
+    |> run()
   end
 
   defp run([]), do: :ok
 
   defp run([user | users]) do
     with %Swoosh.Email{} = email <- Pleroma.Emails.UserEmail.digest_email(user) do
-      Logger.warn("Sending to #{user.nickname}")
       Pleroma.Emails.Mailer.deliver_async(email)
-    else
-      _ ->
-        Logger.warn("Skipping #{user.nickname}")
     end
 
     Pleroma.User.touch_last_digest_emailed_at(user)
