@@ -365,6 +365,27 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert html_response(conn, 200) =~ ~s(type="submit")
     end
 
+    test "properly handles internal calls with `authorization`-wrapped params", %{
+      app: app,
+      conn: conn
+    } do
+      conn =
+        get(
+          conn,
+          "/oauth/authorize",
+          %{
+            "authorization" => %{
+              "response_type" => "code",
+              "client_id" => app.client_id,
+              "redirect_uri" => app.redirect_uris,
+              "scope" => "read"
+            }
+          }
+        )
+
+      assert html_response(conn, 200) =~ ~s(type="submit")
+    end
+
     test "renders authentication page if user is already authenticated but `force_login` is tru-ish",
          %{app: app, conn: conn} do
       token = insert(:oauth_token, app_id: app.id)
