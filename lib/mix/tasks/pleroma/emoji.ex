@@ -41,7 +41,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   as remote pack files and packs are therefore assumed to be zip
   archives. This command is intended to run interactively and will
   first ask you some basic questions about the pack, then download
-  the remote file and generate an MD5 signature for it, then
+  the remote file and generate an SHA256 checksum for it, then
   generate an emoji file list for you.
 
   The manifest entry will either be written to a newly created
@@ -110,16 +110,16 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         )
 
         binary_archive = Tesla.get!(src_url).body
-        archive_md5 = :crypto.hash(:md5, binary_archive) |> Base.encode16()
+        archive_sha = :crypto.hash(:sha256, binary_archive) |> Base.encode16()
 
-        md5_status_text = ["MD5 of ", :bright, pack_name, :normal, " source file is ", :bright]
+        sha_status_text = ["SHA256 of ", :bright, pack_name, :normal, " source file is ", :bright]
 
-        if archive_md5 == String.upcase(pack["src_md5"]) do
-          IO.puts(IO.ANSI.format(md5_status_text ++ [:green, "OK"]))
+        if archive_sha == String.upcase(pack["src_sha256"]) do
+          IO.puts(IO.ANSI.format(sha_status_text ++ [:green, "OK"]))
         else
-          IO.puts(IO.ANSI.format(md5_status_text ++ [:red, "BAD"]))
+          IO.puts(IO.ANSI.format(sha_status_text ++ [:red, "BAD"]))
 
-          raise "Bad MD5 for #{pack_name}"
+          raise "Bad SHA256 for #{pack_name}"
         end
 
         # The url specified in files should be in the same directory
@@ -211,12 +211,12 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         default_exts
       end
 
-    IO.puts("Downloading the pack and generating MD5")
+    IO.puts("Downloading the pack and generating SHA256")
 
     binary_archive = Tesla.get!(src).body
-    archive_md5 = :crypto.hash(:md5, binary_archive) |> Base.encode16()
+    archive_sha = :crypto.hash(:sha256, binary_archive) |> Base.encode16()
 
-    IO.puts("MD5 is #{archive_md5}")
+    IO.puts("SHA256 is #{archive_sha}")
 
     pack_json = %{
       name => %{
@@ -224,7 +224,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         homepage: homepage,
         description: description,
         src: src,
-        src_md5: archive_md5,
+        src_sha256: archive_sha,
         files: files_name
       }
     }
