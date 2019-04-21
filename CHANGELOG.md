@@ -67,6 +67,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MediaProxy: Parse name from content disposition headers even for non-whitelisted types
 - MediaProxy: S3 link encoding
 - Rich Media: Reject any data which cannot be explicitly encoded into JSON
+- Pleroma API: Importing follows from Mastodon 2.8+
 - Mastodon API: `/api/v1/favourites` serving only public activities
 - Mastodon API: Reblogs having `in_reply_to_id` - `null` even when they are replies
 - Mastodon API: Streaming API broadcasting wrong activity id
