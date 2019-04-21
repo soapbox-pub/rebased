@@ -101,21 +101,26 @@ defmodule Pleroma.Emoji do
         # Print the packs we've found
         Logger.info("Found emoji packs: #{Enum.join(packs, ", ")}")
 
-        # compat thing for old custom emoji handling
-        shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
-
         emojis =
-          (Enum.flat_map(
-             packs,
-             fn pack -> load_pack(Path.join(emoji_dir_path, pack)) end
-           ) ++
-             load_from_file("config/emoji.txt") ++
-             load_from_file("config/custom_emoji.txt") ++
-             load_from_globs(shortcode_globs))
-          |> Enum.reject(fn value -> value == nil end)
+          Enum.flat_map(
+            packs,
+            fn pack -> load_pack(Path.join(emoji_dir_path, pack)) end
+          )
 
         true = :ets.insert(@ets, emojis)
     end
+
+    # Compat thing for old custom emoji handling & default emoji,
+    # it should run even if there are no emoji packs
+    shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
+
+    emojis =
+      (load_from_file("config/emoji.txt") ++
+         load_from_file("config/custom_emoji.txt") ++
+         load_from_globs(shortcode_globs))
+      |> Enum.reject(fn value -> value == nil end)
+
+    true = :ets.insert(@ets, emojis)
 
     :ok
   end
