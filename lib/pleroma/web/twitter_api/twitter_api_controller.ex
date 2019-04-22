@@ -434,7 +434,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
-    with %User{} = user <- User.get_by_id(uid),
+    with %User{} = user <- User.get_cached_by_id(uid),
          true <- user.local,
          true <- user.info.confirmation_pending,
          true <- user.info.confirmation_token == token,
@@ -587,7 +587,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def approve_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
-         %User{} = follower <- User.get_by_id(uid),
+         %User{} = follower <- User.get_cached_by_id(uid),
          {:ok, follower} <- CommonAPI.accept_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
@@ -599,7 +599,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def deny_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
-         %User{} = follower <- User.get_by_id(uid),
+         %User{} = follower <- User.get_cached_by_id(uid),
          {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
       conn
       |> put_view(UserView)

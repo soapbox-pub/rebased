@@ -50,7 +50,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "created"
 
-      user = User.get_by_nickname(unsaved.nickname)
+      user = User.get_cached_by_nickname(unsaved.nickname)
       assert user.name == unsaved.name
       assert user.email == unsaved.email
       assert user.bio == unsaved.bio
@@ -75,7 +75,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "will not be created"
 
-      refute User.get_by_nickname(unsaved.nickname)
+      refute User.get_cached_by_nickname(unsaved.nickname)
     end
   end
 
@@ -88,7 +88,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ " deleted"
 
-      user = User.get_by_nickname(user.nickname)
+      user = User.get_cached_by_nickname(user.nickname)
       assert user.info.deactivated
     end
 
@@ -109,7 +109,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ " deactivated"
 
-      user = User.get_by_nickname(user.nickname)
+      user = User.get_cached_by_nickname(user.nickname)
       assert user.info.deactivated
     end
 
@@ -121,7 +121,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ " activated"
 
-      user = User.get_by_nickname(user.nickname)
+      user = User.get_cached_by_nickname(user.nickname)
       refute user.info.deactivated
     end
 
@@ -150,7 +150,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Successfully unsubscribed"
 
-      user = User.get_by_nickname(user.nickname)
+      user = User.get_cached_by_nickname(user.nickname)
       assert Enum.empty?(user.following)
       assert user.info.deactivated
     end
@@ -178,7 +178,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ ~r/Admin status .* true/
 
-      user = User.get_by_nickname(user.nickname)
+      user = User.get_cached_by_nickname(user.nickname)
       assert user.info.is_moderator
       assert user.info.locked
       assert user.info.is_admin
@@ -204,7 +204,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ ~r/Admin status .* false/
 
-      user = User.get_by_nickname(user.nickname)
+      user = User.get_cached_by_nickname(user.nickname)
       refute user.info.is_moderator
       refute user.info.locked
       refute user.info.is_admin

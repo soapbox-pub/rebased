@@ -162,7 +162,7 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["rm", nickname]) do
     Common.start_pleroma()
 
-    with %User{local: true} = user <- User.get_by_nickname(nickname) do
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       User.delete(user)
       Mix.shell().info("User #{nickname} deleted.")
     else
@@ -174,7 +174,7 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["toggle_activated", nickname]) do
     Common.start_pleroma()
 
-    with %User{} = user <- User.get_by_nickname(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       {:ok, user} = User.deactivate(user, !user.info.deactivated)
 
       Mix.shell().info(
@@ -189,7 +189,7 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["reset_password", nickname]) do
     Common.start_pleroma()
 
-    with %User{local: true} = user <- User.get_by_nickname(nickname),
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
          {:ok, token} <- Pleroma.PasswordResetToken.create_token(user) do
       Mix.shell().info("Generated password reset token for #{user.nickname}")
 
@@ -211,14 +211,14 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["unsubscribe", nickname]) do
     Common.start_pleroma()
 
-    with %User{} = user <- User.get_by_nickname(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       Mix.shell().info("Deactivating #{user.nickname}")
       User.deactivate(user)
 
       {:ok, friends} = User.get_friends(user)
 
       Enum.each(friends, fn friend ->
-        user = User.get_by_id(user.id)
+        user = User.get_cached_by_id(user.id)
 
         Mix.shell().info("Unsubscribing #{friend.nickname} from #{user.nickname}")
         User.unfollow(user, friend)
@@ -226,7 +226,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
       :timer.sleep(500)
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       if Enum.empty?(user.following) do
         Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")
@@ -250,7 +250,7 @@ defmodule Mix.Tasks.Pleroma.User do
         ]
       )
 
-    with %User{local: true} = user <- User.get_by_nickname(nickname) do
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       user =
         case Keyword.get(options, :moderator) do
           nil -> user
@@ -277,7 +277,7 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["tag", nickname | tags]) do
     Common.start_pleroma()
 
-    with %User{} = user <- User.get_by_nickname(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       user = user |> User.tag(tags)
 
       Mix.shell().info("Tags of #{user.nickname}: #{inspect(tags)}")
@@ -290,7 +290,7 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["untag", nickname | tags]) do
     Common.start_pleroma()
 
-    with %User{} = user <- User.get_by_nickname(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
       user = user |> User.untag(tags)
 
       Mix.shell().info("Tags of #{user.nickname}: #{inspect(tags)}")
@@ -379,7 +379,7 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["delete_activities", nickname]) do
     Common.start_pleroma()
 
-    with %User{local: true} = user <- User.get_by_nickname(nickname) do
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       User.delete_user_activities(user)
       Mix.shell().info("User #{nickname} statuses deleted.")
     else

@@ -304,7 +304,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_by_id(params["id"]) do
+    with %User{} = user <- User.get_cached_by_id(params["id"]) do
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 
       conn
@@ -546,7 +546,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def bookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          %Object{} = object <- Object.normalize(activity),
-         %User{} = user <- User.get_by_nickname(user.nickname),
+         %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, user} <- User.bookmark(user, object.data["id"]) do
       conn
@@ -558,7 +558,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def unbookmark_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          %Object{} = object <- Object.normalize(activity),
-         %User{} = user <- User.get_by_nickname(user.nickname),
+         %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, user} <- User.unbookmark(user, object.data["id"]) do
       conn
@@ -750,7 +750,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def followers(%{assigns: %{user: for_user}} = conn, %{"id" => id} = params) do
-    with %User{} = user <- User.get_by_id(id),
+    with %User{} = user <- User.get_cached_by_id(id),
          followers <- MastodonAPI.get_followers(user, params) do
       followers =
         cond do
@@ -767,7 +767,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def following(%{assigns: %{user: for_user}} = conn, %{"id" => id} = params) do
-    with %User{} = user <- User.get_by_id(id),
+    with %User{} = user <- User.get_cached_by_id(id),
          followers <- MastodonAPI.get_friends(user, params) do
       followers =
         cond do
@@ -792,7 +792,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def authorize_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
-    with %User{} = follower <- User.get_by_id(id),
+    with %User{} = follower <- User.get_cached_by_id(id),
          {:ok, follower} <- CommonAPI.accept_follow_request(follower, followed) do
       conn
       |> put_view(AccountView)
@@ -806,7 +806,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def reject_follow_request(%{assigns: %{user: followed}} = conn, %{"id" => id}) do
-    with %User{} = follower <- User.get_by_id(id),
+    with %User{} = follower <- User.get_cached_by_id(id),
          {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
       conn
       |> put_view(AccountView)
@@ -872,7 +872,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def mute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
-    with %User{} = muted <- User.get_by_id(id),
+    with %User{} = muted <- User.get_cached_by_id(id),
          {:ok, muter} <- User.mute(muter, muted) do
       conn
       |> put_view(AccountView)
@@ -886,7 +886,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def unmute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
-    with %User{} = muted <- User.get_by_id(id),
+    with %User{} = muted <- User.get_cached_by_id(id),
          {:ok, muter} <- User.unmute(muter, muted) do
       conn
       |> put_view(AccountView)
@@ -907,7 +907,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def block(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
-    with %User{} = blocked <- User.get_by_id(id),
+    with %User{} = blocked <- User.get_cached_by_id(id),
          {:ok, blocker} <- User.block(blocker, blocked),
          {:ok, _activity} <- ActivityPub.block(blocker, blocked) do
       conn
@@ -922,7 +922,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def unblock(%{assigns: %{user: blocker}} = conn, %{"id" => id}) do
-    with %User{} = blocked <- User.get_by_id(id),
+    with %User{} = blocked <- User.get_cached_by_id(id),
          {:ok, blocker} <- User.unblock(blocker, blocked),
          {:ok, _activity} <- ActivityPub.unblock(blocker, blocked) do
       conn
@@ -1088,7 +1088,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def bookmarks(%{assigns: %{user: user}} = conn, _) do
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     activities =
       user.bookmarks
@@ -1145,7 +1145,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     accounts
     |> Enum.each(fn account_id ->
       with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-           %User{} = followed <- User.get_by_id(account_id) do
+           %User{} = followed <- User.get_cached_by_id(account_id) do
         Pleroma.List.follow(list, followed)
       end
     end)
@@ -1157,7 +1157,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     accounts
     |> Enum.each(fn account_id ->
       with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-           %User{} = followed <- Pleroma.User.get_by_id(account_id) do
+           %User{} = followed <- Pleroma.User.get_cached_by_id(account_id) do
         Pleroma.List.unfollow(list, followed)
       end
     end)
@@ -1450,7 +1450,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def relationship_noop(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     Logger.debug("Unimplemented, returning unmodified relationship")
 
-    with %User{} = target <- User.get_by_id(id) do
+    with %User{} = target <- User.get_cached_by_id(id) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: user, target: target})

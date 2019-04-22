@@ -445,7 +445,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   describe "deleting a status" do
     test "when you created it", %{conn: conn} do
       activity = insert(:note_activity)
-      author = User.get_by_ap_id(activity.data["actor"])
+      author = User.get_cached_by_ap_id(activity.data["actor"])
 
       conn =
         conn
@@ -1167,7 +1167,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     test "unimplemented pinned statuses feature", %{conn: conn} do
       note = insert(:note_activity)
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       conn =
         conn
@@ -1178,7 +1178,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     test "gets an users media", %{conn: conn} do
       note = insert(:note_activity)
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -1253,8 +1253,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = User.get_by_id(user.id)
-      other_user = User.get_by_id(other_user.id)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1273,8 +1273,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = User.get_by_id(user.id)
-      other_user = User.get_by_id(other_user.id)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1286,8 +1286,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert relationship = json_response(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
-      user = User.get_by_id(user.id)
-      other_user = User.get_by_id(other_user.id)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
 
       assert User.following?(other_user, user) == true
     end
@@ -1310,7 +1310,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       conn =
         build_conn()
@@ -1320,8 +1320,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert relationship = json_response(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
-      user = User.get_by_id(user.id)
-      other_user = User.get_by_id(other_user.id)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
     end
@@ -1606,7 +1606,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "following" => true} = json_response(conn, 200)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     conn =
       build_conn()
@@ -1615,7 +1615,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "following" => false} = json_response(conn, 200)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     conn =
       build_conn()
@@ -1709,7 +1709,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "muting" => true} = json_response(conn, 200)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     conn =
       build_conn()
@@ -1764,7 +1764,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "blocking" => true} = json_response(conn, 200)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     conn =
       build_conn()
@@ -2124,7 +2124,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
 
     # Stats should count users with missing or nil `info.deactivated` value
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
     info_change = Changeset.change(user.info, %{deactivated: nil})
 
     {:ok, _user} =

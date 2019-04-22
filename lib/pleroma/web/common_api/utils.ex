@@ -284,7 +284,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def confirm_current_password(user, password) do
-    with %User{local: true} = db_user <- User.get_by_id(user.id),
+    with %User{local: true} = db_user <- User.get_cached_by_id(user.id),
          true <- Pbkdf2.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else

@@ -186,7 +186,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def ap_enabled_actor(id) do
-    user = User.get_by_ap_id(id)
+    user = User.get_cached_by_ap_id(id)
 
     if User.ap_enabled?(user) do
       {:ok, user}

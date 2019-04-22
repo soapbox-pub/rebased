@@ -169,15 +169,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   test "represent an embedded relationship" do
     user =
       insert(:user, %{
-        info: %{note_count: 5, follower_count: 3, source_data: %{"type" => "Service"}},
+        info: %{note_count: 5, follower_count: 0, source_data: %{"type" => "Service"}},
         nickname: "shp@shitposter.club",
         inserted_at: ~N[2017-08-15 15:47:06.597036]
       })
 
     other_user = insert(:user)
-
     {:ok, other_user} = User.follow(other_user, user)
     {:ok, other_user} = User.block(other_user, user)
+    {:ok, _} = User.follow(insert(:user), user)
 
     expected = %{
       id: to_string(user.id),
@@ -186,7 +186,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       display_name: user.name,
       locked: false,
       created_at: "2017-08-15T15:47:06.000Z",
-      followers_count: 3,
+      followers_count: 1,
       following_count: 0,
       statuses_count: 5,
       note: user.bio,

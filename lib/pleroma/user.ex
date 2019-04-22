@@ -269,6 +269,7 @@ defmodule Pleroma.User do
   def register(%Ecto.Changeset{} = changeset) do
     with {:ok, user} <- Repo.insert(changeset),
          {:ok, user} <- autofollow_users(user),
+         {:ok, user} <- set_cache(user),
          {:ok, _} <- Pleroma.User.WelcomeMessage.post_welcome_message_to_user(user),
          {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
@@ -453,10 +454,13 @@ defmodule Pleroma.User do
     name = List.last(String.split(ap_id, "/"))
     nickname = "#{name}@#{domain}"
 
-    get_by_nickname(nickname)
+    get_cached_by_nickname(nickname)
   end
 
-  def set_cache(user) do
+  def set_cache({:ok, user}), do: set_cache(user)
+  def set_cache({:error, err}), do: {:error, err}
+
+  def set_cache(%User{} = user) do
     Cachex.put(:user_cache, "ap_id:#{user.ap_id}", user)
     Cachex.put(:user_cache, "nickname:#{user.nickname}", user)
     Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user))
@@ -544,6 +548,7 @@ defmodule Pleroma.User do
         with [_nick, _domain] <- String.split(nickname, "@"),
              {:ok, user} <- fetch_by_nickname(nickname) do
           if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
+            # TODO turn into job
             {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
           end
 
@@ -1002,7 +1007,7 @@ defmodule Pleroma.User do
 
   # helper to handle the block given only an actor's AP id
   def block(blocker, %{ap_id: ap_id}) do
-    block(blocker, User.get_by_ap_id(ap_id))
+    block(blocker, get_cached_by_ap_id(ap_id))
   end
 
   def unblock(blocker, %{ap_id: ap_id}) do
@@ -1032,7 +1037,7 @@ defmodule Pleroma.User do
   end
 
   def subscribed_to?(user, %{ap_id: ap_id}) do
-    with %User{} = target <- User.get_by_ap_id(ap_id) do
+    with %User{} = target <- get_cached_by_ap_id(ap_id) do
       Enum.member?(target.info.subscribers, user.ap_id)
     end
   end
@@ -1207,7 +1212,7 @@ defmodule Pleroma.User do
   end
 
   def get_or_fetch_by_ap_id(ap_id) do
-    user = get_by_ap_id(ap_id)
+    user = get_cached_by_ap_id(ap_id)
 
     if !is_nil(user) and !User.needs_update?(user) do
       user
@@ -1230,7 +1235,7 @@ defmodule Pleroma.User do
   def get_or_create_instance_user do
     relay_uri = "#{Pleroma.Web.Endpoint.url()}/relay"
 
-    if user = get_by_ap_id(relay_uri) do
+    if user = get_cached_by_ap_id(relay_uri) do
       user
     else
       changes =
@@ -1277,13 +1282,11 @@ defmodule Pleroma.User do
   defp blank?(n), do: n
 
   def insert_or_update_user(data) do
-    data =
-      data
-      |> Map.put(:name, blank?(data[:name]) || data[:nickname])
-
-    cs = User.remote_user_creation(data)
-
-    Repo.insert(cs, on_conflict: :replace_all, conflict_target: :nickname)
+    data
+    |> Map.put(:name, blank?(data[:name]) || data[:nickname])
+    |> remote_user_creation()
+    |> Repo.insert(on_conflict: :replace_all, conflict_target: :nickname)
+    |> set_cache()
   end
 
   def ap_enabled?(%User{local: true}), do: true
@@ -1299,8 +1302,8 @@ defmodule Pleroma.User do
   # this is because we have synchronous follow APIs and need to simulate them
   # with an async handshake
   def wait_and_refresh(_, %User{local: true} = a, %User{local: true} = b) do
-    with %User{} = a <- User.get_by_id(a.id),
-         %User{} = b <- User.get_by_id(b.id) do
+    with %User{} = a <- User.get_cached_by_id(a.id),
+         %User{} = b <- User.get_cached_by_id(b.id) do
       {:ok, a, b}
     else
       _e ->
@@ -1310,8 +1313,8 @@ defmodule Pleroma.User do
 
   def wait_and_refresh(timeout, %User{} = a, %User{} = b) do
     with :ok <- :timer.sleep(timeout),
-         %User{} = a <- User.get_by_id(a.id),
-         %User{} = b <- User.get_by_id(b.id) do
+         %User{} = a <- User.get_cached_by_id(a.id),
+         %User{} = b <- User.get_cached_by_id(b.id) do
       {:ok, a, b}
     else
       _e ->
@@ -1350,7 +1353,7 @@ defmodule Pleroma.User do
   end
 
   def tag(nickname, tags) when is_binary(nickname),
-    do: tag(User.get_by_nickname(nickname), tags)
+    do: tag(get_by_nickname(nickname), tags)
 
   def tag(%User{} = user, tags),
     do: update_tags(user, Enum.uniq((user.tags || []) ++ normalize_tags(tags)))
@@ -1362,7 +1365,7 @@ defmodule Pleroma.User do
   end
 
   def untag(nickname, tags) when is_binary(nickname),
-    do: untag(User.get_by_nickname(nickname), tags)
+    do: untag(get_by_nickname(nickname), tags)
 
   def untag(%User{} = user, tags),
     do: update_tags(user, (user.tags || []) -- normalize_tags(tags))
