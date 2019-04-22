@@ -40,19 +40,19 @@ defmodule Pleroma.Web.CommonAPITest do
 
   test "it adds emoji in the object" do
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => ":moominmamma:"})
+    {:ok, activity} = CommonAPI.post(user, %{"status" => ":firefox:"})
 
-    assert Object.normalize(activity).data["emoji"]["moominmamma"]
+    assert Object.normalize(activity).data["emoji"]["firefox"]
   end
 
   test "it adds emoji when updating profiles" do
-    user = insert(:user, %{name: ":karjalanpiirakka:"})
+    user = insert(:user, %{name: ":firefox:"})
 
     CommonAPI.update(user)
     user = User.get_cached_by_ap_id(user.ap_id)
-    [karjalanpiirakka] = user.info.source_data["tag"]
+    [firefox] = user.info.source_data["tag"]
 
-    assert karjalanpiirakka["name"] == ":karjalanpiirakka:"
+    assert firefox["name"] == ":firefox:"
   end
 
   describe "posting" do

@@ -946,7 +946,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal fields" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu :moominmamma:"})
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu :firefox:"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
