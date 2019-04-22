@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
@@ -32,24 +33,26 @@ defmodule Pleroma.Web.CommonAPITest do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu #2HU"})
 
-    assert activity.data["object"]["tag"] == ["2hu"]
+    object = Object.normalize(activity.data["object"])
+
+    assert object.data["tag"] == ["2hu"]
   end
 
   test "it adds emoji in the object" do
     user = insert(:user)
-    {:ok, activity} = CommonAPI.post(user, %{"status" => ":moominmamma:"})
+    {:ok, activity} = CommonAPI.post(user, %{"status" => ":firefox:"})
 
-    assert activity.data["object"]["emoji"]["moominmamma"]
+    assert Object.normalize(activity).data["emoji"]["firefox"]
   end
 
   test "it adds emoji when updating profiles" do
-    user = insert(:user, %{name: ":karjalanpiirakka:"})
+    user = insert(:user, %{name: ":firefox:"})
 
     CommonAPI.update(user)
     user = User.get_cached_by_ap_id(user.ap_id)
-    [karjalanpiirakka] = user.info.source_data["tag"]
+    [firefox] = user.info.source_data["tag"]
 
-    assert karjalanpiirakka["name"] == ":karjalanpiirakka:"
+    assert firefox["name"] == ":firefox:"
   end
 
   describe "posting" do
@@ -64,8 +67,9 @@ defmodule Pleroma.Web.CommonAPITest do
           "content_type" => "text/html"
         })
 
-      content = activity.data["object"]["content"]
-      assert content == "<p><b>2hu</b></p>alert('xss')"
+      object = Object.normalize(activity.data["object"])
+
+      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
 
     test "it filters out obviously bad tags when accepting a post as Markdown" do
@@ -79,8 +83,9 @@ defmodule Pleroma.Web.CommonAPITest do
           "content_type" => "text/markdown"
         })
 
-      content = activity.data["object"]["content"]
-      assert content == "<p><b>2hu</b></p>alert('xss')"
+      object = Object.normalize(activity.data["object"])
+
+      assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
   end
 

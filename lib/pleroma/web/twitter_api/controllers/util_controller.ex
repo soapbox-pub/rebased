@@ -75,7 +75,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def remote_follow(%{assigns: %{user: user}} = conn, %{"acct" => acct}) do
     if is_status?(acct) do
-      {:ok, object} = ActivityPub.fetch_object_from_id(acct)
+      {:ok, object} = Pleroma.Object.Fetcher.fetch_object_from_id(acct)
       %Activity{id: activity_id} = Activity.get_create_by_object_ap_id(object.data["id"])
       redirect(conn, to: "/notice/#{activity_id}")
     else
@@ -101,7 +101,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   defp is_status?(acct) do
-    case ActivityPub.fetch_and_contain_remote_object_from_id(acct) do
+    case Pleroma.Object.Fetcher.fetch_and_contain_remote_object_from_id(acct) do
       {:ok, %{"type" => type}} when type in ["Article", "Note", "Video", "Page", "Question"] ->
         true
 
@@ -286,7 +286,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     emoji =
       Emoji.get_all()
       |> Enum.map(fn {short_code, path, tags} ->
-        {short_code, %{image_url: path, tags: String.split(tags, ",")}}
+        {short_code, %{image_url: path, tags: tags}}
       end)
       |> Enum.into(%{})
 
@@ -304,7 +304,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def follow_import(%{assigns: %{user: follower}} = conn, %{"list" => list}) do
-    with followed_identifiers <- String.split(list),
+    with lines <- String.split(list, "\n"),
+         followed_identifiers <-
+           Enum.map(lines, fn line ->
+             String.split(line, ",") |> List.first()
+           end)
+           |> List.delete("Account address"),
          {:ok, _} = Task.start(fn -> User.follow_import(follower, followed_identifiers) end) do
       json(conn, "job started")
     end

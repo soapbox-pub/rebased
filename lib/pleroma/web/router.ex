@@ -243,7 +243,6 @@ defmodule Pleroma.Web.Router do
       get("/accounts/verify_credentials", MastodonAPIController, :verify_credentials)
 
       get("/accounts/relationships", MastodonAPIController, :relationships)
-      get("/accounts/search", MastodonAPIController, :account_search)
 
       get("/accounts/:id/lists", MastodonAPIController, :account_lists)
       get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
@@ -262,6 +261,7 @@ defmodule Pleroma.Web.Router do
       post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
       get("/notifications", MastodonAPIController, :notifications)
       get("/notifications/:id", MastodonAPIController, :get_notification)
+      delete("/notifications/destroy_multiple", MastodonAPIController, :destroy_multiple)
 
       get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
       get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)
@@ -376,6 +376,8 @@ defmodule Pleroma.Web.Router do
     get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
 
     get("/trends", MastodonAPIController, :empty_array)
+
+    get("/accounts/search", MastodonAPIController, :account_search)
 
     scope [] do
       pipe_through(:oauth_read_or_unauthenticated)

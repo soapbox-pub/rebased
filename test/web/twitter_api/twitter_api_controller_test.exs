@@ -22,8 +22,9 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.UserView
 
-  import Pleroma.Factory
   import Mock
+  import Pleroma.Factory
+  import Swoosh.TestAssertions
 
   @banner "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
 
@@ -1063,8 +1064,14 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     test "it sends an email to user", %{user: user} do
       token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
 
-      Swoosh.TestAssertions.assert_email_sent(
-        Pleroma.UserEmail.password_reset_email(user, token_record.token)
+      email = Pleroma.Emails.UserEmail.password_reset_email(user, token_record.token)
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: email.html_body
       )
     end
   end
@@ -1163,7 +1170,15 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> assign(:user, user)
       |> post("/api/account/resend_confirmation_email?email=#{user.email}")
 
-      Swoosh.TestAssertions.assert_email_sent(Pleroma.UserEmail.account_confirmation_email(user))
+      email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: email.html_body
+      )
     end
   end
 

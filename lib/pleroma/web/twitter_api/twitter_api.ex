@@ -4,10 +4,10 @@
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Activity
-  alias Pleroma.Mailer
+  alias Pleroma.Emails.Mailer
+  alias Pleroma.Emails.UserEmail
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.UserEmail
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -269,6 +269,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   defp parse_int(_, default), do: default
 
+  # TODO: unify the search query with MastoAPI one and do only pagination here
   def search(_user, %{"q" => query} = params) do
     limit = parse_int(params["rpp"], 20)
     page = parse_int(params["page"], 1)
@@ -276,13 +277,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     q =
       from(
-        a in Activity,
+        [a, o] in Activity.with_preloaded_object(Activity),
         where: fragment("?->>'type' = 'Create'", a.data),
         where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
         where:
           fragment(
-            "to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)",
-            a.data,
+            "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
+            o.data,
             ^query
           ),
         limit: ^limit,

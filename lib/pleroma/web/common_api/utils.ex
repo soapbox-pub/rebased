@@ -195,11 +195,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   Formatting text to markdown.
   """
   def format_input(text, "text/markdown", options) do
-    options = Keyword.put(options, :mentions_escape, true)
-
     text
+    |> Formatter.mentions_escape(options)
+    |> Earmark.as_html!()
     |> Formatter.linkify(options)
-    |> (fn {text, mentions, tags} -> {Earmark.as_html!(text), mentions, tags} end).()
     |> Formatter.html_escape("text/html")
   end
 
@@ -209,7 +208,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         context,
         content_html,
         attachments,
-        inReplyTo,
+        in_reply_to,
         tags,
         cw \\ nil,
         cc \\ []
@@ -226,10 +225,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
-    if inReplyTo do
+    if in_reply_to do
+      in_reply_to_object = Object.normalize(in_reply_to.data["object"])
+
       object
-      |> Map.put("inReplyTo", inReplyTo.data["object"]["id"])
-      |> Map.put("inReplyToStatusId", inReplyTo.id)
+      |> Map.put("inReplyTo", in_reply_to_object.data["id"])
     else
       object
     end

@@ -41,18 +41,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     input = %{
       "status" =>
-        "Hello again, @shp.<script></script>\nThis is on another :moominmamma: line. #2hu #epic #phantasmagoric",
+        "Hello again, @shp.<script></script>\nThis is on another :firefox: line. #2hu #epic #phantasmagoric",
       "media_ids" => [object.id]
     }
 
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
+    object = Object.normalize(activity.data["object"])
 
     expected_text =
-      "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+      "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :firefox: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
 
-    assert get_in(activity.data, ["object", "content"]) == expected_text
-    assert get_in(activity.data, ["object", "type"]) == "Note"
-    assert get_in(activity.data, ["object", "actor"]) == user.ap_id
+    assert get_in(object.data, ["content"]) == expected_text
+    assert get_in(object.data, ["type"]) == "Note"
+    assert get_in(object.data, ["actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
     assert Enum.member?(get_in(activity.data, ["cc"]), User.ap_followers(user))
 
@@ -64,19 +65,18 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.member?(get_in(activity.data, ["to"]), "shp")
     assert activity.local == true
 
-    assert %{"moominmamma" => "http://localhost:4001/finmoji/128px/moominmamma-128.png"} =
-             activity.data["object"]["emoji"]
+    assert %{"firefox" => "http://localhost:4001/emoji/Firefox.gif"} = object.data["emoji"]
 
     # hashtags
-    assert activity.data["object"]["tag"] == ["2hu", "epic", "phantasmagoric"]
+    assert object.data["tag"] == ["2hu", "epic", "phantasmagoric"]
 
     # Add a context
     assert is_binary(get_in(activity.data, ["context"]))
-    assert is_binary(get_in(activity.data, ["object", "context"]))
+    assert is_binary(get_in(object.data, ["context"]))
 
-    assert is_list(activity.data["object"]["attachment"])
+    assert is_list(object.data["attachment"])
 
-    assert activity.data["object"] == Object.get_by_ap_id(activity.data["object"]["id"]).data
+    assert activity.data["object"] == object.data["id"]
 
     user = User.get_by_ap_id(user.ap_id)
 
@@ -91,6 +91,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     }
 
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
+    object = Object.normalize(activity.data["object"])
 
     input = %{
       "status" => "Here's your (you).",
@@ -98,14 +99,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     }
 
     {:ok, reply = %Activity{}} = TwitterAPI.create_status(user, input)
+    reply_object = Object.normalize(reply.data["object"])
 
     assert get_in(reply.data, ["context"]) == get_in(activity.data, ["context"])
 
-    assert get_in(reply.data, ["object", "context"]) ==
-             get_in(activity.data, ["object", "context"])
+    assert get_in(reply_object.data, ["context"]) == get_in(object.data, ["context"])
 
-    assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
-    assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
+    assert get_in(reply_object.data, ["inReplyTo"]) == get_in(activity.data, ["object"])
+    assert Activity.get_in_reply_to_activity(reply).id == activity.id
   end
 
   test "Follow another user using user_id" do
@@ -325,7 +326,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert user.info.confirmation_pending
 
-    Swoosh.TestAssertions.assert_email_sent(Pleroma.UserEmail.account_confirmation_email(user))
+    email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
+
+    notify_email = Pleroma.Config.get([:instance, :notify_email])
+    instance_name = Pleroma.Config.get([:instance, :name])
+
+    Swoosh.TestAssertions.assert_email_sent(
+      from: {instance_name, notify_email},
+      to: {user.name, user.email},
+      html_body: email.html_body
+    )
   end
 
   test "it registers a new user and parses mentions in the bio" do

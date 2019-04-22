@@ -41,6 +41,12 @@ Has these additional fields under the `pleroma` object:
 - `is_admin`: boolean, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
 
+## Account Search
+
+Behavior has changed:
+
+- `/api/v1/accounts/search`: Does not require authentication
+
 ## Notifications
 
 Has these additional fields under the `pleroma` object:
@@ -52,3 +58,4 @@ Has these additional fields under the `pleroma` object:
 Additional parameters can be added to the JSON body/Form data:
 
 - `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
+- `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.

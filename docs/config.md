@@ -31,14 +31,14 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 * `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used.
 
-## Pleroma.Mailer
+## Pleroma.Emails.Mailer
 * `adapter`: one of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters), or `Swoosh.Adapters.Local` for in-memory mailbox.
 * `api_key` / `password` and / or other adapter-specific settings, per the above documentation.
 
 An example for Sendgrid adapter:
 
 ```exs
-config :pleroma, Pleroma.Mailer,
+config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
 ```
@@ -46,7 +46,7 @@ config :pleroma, Pleroma.Mailer,
 An example for SMTP adapter:
 
 ```exs
-config :pleroma, Pleroma.Mailer,
+config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
   username: "YOUR_USERNAME@gmail.com",
@@ -63,6 +63,7 @@ config :pleroma, Pleroma.Mailer,
 ## :instance
 * `name`: The instance’s name
 * `email`: Email used to reach an Administrator/Moderator of the instance
+* `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``
 * `limit`: Posts character limit (CW/Subject included in the counter)
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
@@ -86,7 +87,6 @@ config :pleroma, Pleroma.Mailer,
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML)
-* `finmoji_enabled`: Whenether to enable the finmojis in the custom emojis.
 * `mrf_transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `scope_copy`: Copy the scope (private/unlisted/public) in replies to posts by default.
 * `subject_line_behavior`: Allows changing the default behaviour of subject lines in replies. Valid values:
@@ -221,6 +221,8 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
   - `scheme` - e.g `http`, `https`
   - `port`
   - `path`
+* `extra_cookie_attrs` - a list of `Key=Value` strings to be added as non-standard cookie attributes. Defaults to `["SameSite=Lax"]`. See the [SameSite article](https://www.owasp.org/index.php/SameSite) on OWASP for more info.
+
 
 
 **Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
@@ -317,7 +319,7 @@ Pleroma has the following queues:
 
 * `federator_outgoing` - Outgoing federation
 * `federator_incoming` - Incoming federation
-* `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
+* `mailer` - Email sender, see [`Pleroma.Emails.Mailer`](#pleroma-emails-mailer)
 * `transmogrifier` - Transmogrifier
 * `web_push` - Web push notifications
 * `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
@@ -340,9 +342,10 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 * `max_retries`: The maximum number of times a federation job is retried
 
 ## Pleroma.Web.Metadata
-* `providers`: a list of metadata providers to enable. Providers availible:
+* `providers`: a list of metadata providers to enable. Providers available:
   * Pleroma.Web.Metadata.Providers.OpenGraph
   * Pleroma.Web.Metadata.Providers.TwitterCard
+  * Pleroma.Web.Metadata.Providers.RelMe - add links from user bio with rel=me into the `<header>` as `<link rel=me>`
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews
 
 ## :rich_media
@@ -427,7 +430,7 @@ Pleroma account will be created with the same name as the LDAP user name.
 
 Authentication / authorization settings.
 
-* `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`. 
+* `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`.
 * `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
 * `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
 
@@ -440,7 +443,9 @@ Note: each strategy is shipped as a separate dependency; in order to get the str
 e.g. `OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft" mix deps.get`.
 The server should also be started with `OAUTH_CONSUMER_STRATEGIES="..." mix phx.server` in case you enable any strategies.
 
-Note: each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.  
+Note: each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.
+
+Note: make sure that `"SameSite=Lax"` is set in `extra_cookie_attrs` when you have this feature enabled. OAuth consumer mode will not work with `"SameSite=Strict"`
 
 * For Twitter, [register an app](https://developer.twitter.com/en/apps), configure callback URL to https://<your_host>/oauth/twitter/callback
 
@@ -475,7 +480,7 @@ config :ueberauth, Ueberauth.Strategy.Google.OAuth,
 config :ueberauth, Ueberauth.Strategy.Microsoft.OAuth,
   client_id: System.get_env("MICROSOFT_CLIENT_ID"),
   client_secret: System.get_env("MICROSOFT_CLIENT_SECRET")
-  
+
 config :ueberauth, Ueberauth,
   providers: [
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}

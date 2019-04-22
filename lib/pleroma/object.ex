@@ -7,6 +7,7 @@ defmodule Pleroma.Object do
 
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.Object.Fetcher
   alias Pleroma.ObjectTombstone
   alias Pleroma.Repo
   alias Pleroma.User
@@ -40,41 +41,44 @@ defmodule Pleroma.Object do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
   end
 
+  def normalize(_, fetch_remote \\ true)
   # If we pass an Activity to Object.normalize(), we can try to use the preloaded object.
   # Use this whenever possible, especially when walking graphs in an O(N) loop!
-  def normalize(%Activity{object: %Object{} = object}), do: object
+  def normalize(%Object{} = object, _), do: object
+  def normalize(%Activity{object: %Object{} = object}, _), do: object
 
   # A hack for fake activities
-  def normalize(%Activity{data: %{"object" => %{"fake" => true} = data}}) do
+  def normalize(%Activity{data: %{"object" => %{"fake" => true} = data}}, _) do
     %Object{id: "pleroma:fake_object_id", data: data}
   end
 
   # Catch and log Object.normalize() calls where the Activity's child object is not
   # preloaded.
-  def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}) do
+  def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}, fetch_remote) do
     Logger.debug(
       "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
     )
 
     Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
 
-    normalize(ap_id)
+    normalize(ap_id, fetch_remote)
   end
 
-  def normalize(%Activity{data: %{"object" => ap_id}}) do
+  def normalize(%Activity{data: %{"object" => ap_id}}, fetch_remote) do
     Logger.debug(
       "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
     )
 
     Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
 
-    normalize(ap_id)
+    normalize(ap_id, fetch_remote)
   end
 
   # Old way, try fetching the object through cache.
-  def normalize(%{"id" => ap_id}), do: normalize(ap_id)
-  def normalize(ap_id) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
-  def normalize(_), do: nil
+  def normalize(%{"id" => ap_id}, fetch_remote), do: normalize(ap_id, fetch_remote)
+  def normalize(ap_id, false) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
+  def normalize(ap_id, true) when is_binary(ap_id), do: Fetcher.fetch_object_from_id!(ap_id)
+  def normalize(_, _), do: nil
 
   # Owned objects can only be mutated by their owner
   def authorize_mutation(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}),

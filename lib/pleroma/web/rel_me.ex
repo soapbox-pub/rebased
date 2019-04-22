@@ -6,7 +6,8 @@ defmodule Pleroma.Web.RelMe do
   @hackney_options [
     pool: :media,
     recv_timeout: 2_000,
-    max_body: 2_000_000
+    max_body: 2_000_000,
+    with_body: true
   ]
 
   if Mix.env() == :test do
