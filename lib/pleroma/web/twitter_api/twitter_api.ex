@@ -240,7 +240,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         end
 
       %{"screen_name" => nickname} ->
-        case User.get_by_nickname(nickname) do
+        case User.get_cached_by_nickname(nickname) do
           nil -> {:error, "No user with such screen_name"}
           target -> {:ok, target}
         end

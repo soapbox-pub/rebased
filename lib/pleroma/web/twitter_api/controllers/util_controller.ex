@@ -22,7 +22,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def show_password_reset(conn, %{"token" => token}) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
-         %User{} = user <- User.get_by_id(token.user_id) do
+         %User{} = user <- User.get_cached_by_id(token.user_id) do
       render(conn, "password_reset.html", %{
         token: token,
         user: user
@@ -113,13 +113,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   def do_remote_follow(conn, %{
         "authorization" => %{"name" => username, "password" => password, "id" => id}
       }) do
-    followee = User.get_by_id(id)
+    followee = User.get_cached_by_id(id)
     avatar = User.avatar_url(followee)
     name = followee.nickname
 
     with %User{} = user <- User.get_cached_by_nickname(username),
          true <- Pbkdf2.checkpw(password, user.password_hash),
-         %User{} = _followed <- User.get_by_id(id),
+         %User{} = _followed <- User.get_cached_by_id(id),
          {:ok, follower} <- User.follow(user, followee),
          {:ok, _activity} <- ActivityPub.follow(follower, followee) do
       conn
@@ -141,7 +141,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
-    with %User{} = followee <- User.get_by_id(id),
+    with %User{} = followee <- User.get_cached_by_id(id),
          {:ok, follower} <- User.follow(user, followee),
          {:ok, _activity} <- ActivityPub.follow(follower, followee) do
       conn

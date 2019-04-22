@@ -68,7 +68,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   defp do_render("account.json", %{user: user} = opts) do
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
-    user_info = User.user_info(user)
+    user_info = User.get_cached_user_info(user)
     bot = (user.info.source_data["type"] || "Person") in ["Application", "Service"]
 
     emojis =

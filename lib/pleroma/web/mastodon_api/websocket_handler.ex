@@ -90,7 +90,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   # Authenticated streams.
   defp allow_request(stream, {"access_token", access_token}) when stream in @streams do
     with %Token{user_id: user_id} <- Repo.get_by(Token, token: access_token),
-         user = %User{} <- User.get_by_id(user_id) do
+         user = %User{} <- User.get_cached_by_id(user_id) do
       {:ok, user}
     else
       _ -> {:error, 403}
