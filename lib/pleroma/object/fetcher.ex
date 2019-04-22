@@ -39,7 +39,7 @@ defmodule Pleroma.Object.Fetcher do
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
           case OStatus.fetch_activity_from_url(id) do
-            {:ok, [activity | _]} -> {:ok, Object.normalize(activity.data["object"], false)}
+            {:ok, [activity | _]} -> {:ok, Object.normalize(activity, false)}
             e -> e
           end
       end
