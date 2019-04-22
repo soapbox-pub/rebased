@@ -6,24 +6,24 @@ defmodule Pleroma.Repo.Migrations.MigrateOldBookmarks do
   alias Pleroma.User
   alias Pleroma.Repo
 
-  def up do
+  def change do
     query =
       from(u in User,
         where: u.local == true,
-        where: fragment("array_length(?, 1)", u.old_bookmarks) > 0,
-        select: %{id: u.id, old_bookmarks: u.old_bookmarks}
+        where: fragment("array_length(bookmarks, 1)") > 0,
+        select: %{id: u.id, bookmarks: fragment("bookmarks")}
       )
 
     Repo.stream(query)
-    |> Enum.each(fn user ->
-      Enum.each(user.old_bookmarks, fn id ->
-        activity = Activity.get_create_by_object_ap_id(id)
-        {:ok, _} = Bookmark.create(user.id, activity.id)
+    |> Enum.each(fn %{id: user_id, bookmarks: bookmarks} ->
+      Enum.each(bookmarks, fn ap_id ->
+        activity = Activity.get_create_by_object_ap_id(ap_id)
+        {:ok, _} = Bookmark.create(user_id, activity.id)
       end)
     end)
-  end
 
-  def down do
-    execute("TRUNCATE TABLE bookmarks")
+    alter table(:users) do
+      remove(:bookmarks)
+    end
   end
 end
