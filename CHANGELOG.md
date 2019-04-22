@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
 - Pleroma API: User subscribtions
+- Pleroma API: Healthcheck endpoint
 - Admin API: Endpoints for listing/revoking invite tokens
 - Admin API: Endpoints for making users follow/unfollow each other
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)

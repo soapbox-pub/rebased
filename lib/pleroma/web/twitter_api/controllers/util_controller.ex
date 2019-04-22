@@ -363,4 +363,17 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   def captcha(conn, _params) do
     json(conn, Pleroma.Captcha.new())
   end
+
+  def healthcheck(conn, _params) do
+    info = Pleroma.Healthcheck.system_info()
+
+    conn =
+      if info.healthy do
+        conn
+      else
+        Plug.Conn.put_status(conn, :service_unavailable)
+      end
+
+    json(conn, info)
+  end
 end

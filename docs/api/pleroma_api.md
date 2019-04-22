@@ -197,3 +197,20 @@ See [Admin-API](Admin-API.md)
     * `remote`: BOOLEAN field, receives notifications from people on remote instances
     * `local`: BOOLEAN field, receives notifications from people on the local instance
 * Response: JSON. Returns `{"status": "success"}` if the update was successful, otherwise returns `{"error": "error_msg"}`
+
+## `/api/pleroma/healthcheck`
+### Healthcheck endpoint with additional system data.
+* Method `GET`
+* Authentication: not required
+* Params: none
+* Response: JSON, statuses (200 - healthy, 503 unhealthy).
+* Example response:
+```json
+{
+  "pool_size": 0, # database connection pool
+  "active": 0, # active processes
+  "idle": 0, # idle processes
+  "memory_used": 0.00, # Memory used
+  "healthy": true # Instance state
+}
+```
