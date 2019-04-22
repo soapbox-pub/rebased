@@ -280,7 +280,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> ActivityPub.contain_timeline(user)
       |> Enum.reverse()
 
-    user = Repo.preload(user, :bookmarks)
+    user = Repo.preload(user, bookmarks: :activity)
 
     conn
     |> add_link_headers(:home_timeline, activities)

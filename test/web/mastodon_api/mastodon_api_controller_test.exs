@@ -1022,7 +1022,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       user2 = insert(:user)
       user3 = insert(:user)
       CommonAPI.favorite(activity.id, user2)
-      {:ok, user2} = User.bookmark(user2, activity.data["object"]["id"])
+      {:ok, _bookmark} = Pleroma.Bookmark.create(user2.id, activity.id)
       {:ok, reblog_activity1, _object} = CommonAPI.repeat(activity.id, user1)
       {:ok, _, _object} = CommonAPI.repeat(activity.id, user2)
 
