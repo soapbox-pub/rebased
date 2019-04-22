@@ -365,10 +365,15 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def healthcheck(conn, _params) do
-    info = Pleroma.Healthcheck.system_info()
+    info =
+      if Pleroma.Config.get([:instance, :healthcheck]) do
+        Pleroma.Healthcheck.system_info()
+      else
+        %{}
+      end
 
     conn =
-      if info.healthy do
+      if info[:healthy] do
         conn
       else
         Plug.Conn.put_status(conn, :service_unavailable)
