@@ -1087,6 +1087,43 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 
+  def user_favourites(%{assigns: %{user: for_user}} = conn, %{"id" => id} = params) do
+    with %User{} = user <- User.get_by_id(id),
+         false <- user.info.hide_favorites do
+      params =
+        params
+        |> Map.put("type", "Create")
+        |> Map.put("favorited_by", user.ap_id)
+        |> Map.put("blocking_user", for_user)
+
+      recipients =
+        if for_user do
+          ["https://www.w3.org/ns/activitystreams#Public"] ++
+            [for_user.ap_id | for_user.following]
+        else
+          ["https://www.w3.org/ns/activitystreams#Public"]
+        end
+
+      activities =
+        recipients
+        |> ActivityPub.fetch_activities(params)
+        |> Enum.reverse()
+
+      conn
+      |> add_link_headers(:favourites, activities)
+      |> put_view(StatusView)
+      |> render("index.json", %{activities: activities, for: for_user, as: :activity})
+    else
+      nil ->
+        {:error, :not_found}
+
+      true ->
+        conn
+        |> put_status(403)
+        |> json(%{error: "Can't get favorites"})
+    end
+  end
+
   def bookmarks(%{assigns: %{user: user}} = conn, _) do
     user = User.get_cached_by_id(user.id)
 
