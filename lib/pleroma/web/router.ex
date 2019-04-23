@@ -395,6 +395,8 @@ defmodule Pleroma.Web.Router do
       get("/accounts/:id", MastodonAPIController, :user)
 
       get("/search", MastodonAPIController, :search)
+
+      get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
     end
   end
 

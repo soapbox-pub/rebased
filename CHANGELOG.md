@@ -16,12 +16,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
-- Pleroma API: User subscribtions
+- Pleroma API: User subscriptions
 - Pleroma API: Healthcheck endpoint
 - Admin API: Endpoints for listing/revoking invite tokens
 - Admin API: Endpoints for making users follow/unfollow each other
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
+- Mastodon API: `/api/v1/pleroma/accounts/:id/favourites` (API extension)
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
 - ActivityPub C2S: OAuth endpoints
 - Metadata RelMe provider
