@@ -226,7 +226,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     }
 
     if in_reply_to do
-      in_reply_to_object = Object.normalize(in_reply_to.data["object"])
+      in_reply_to_object = Object.normalize(in_reply_to)
 
       object
       |> Map.put("inReplyTo", in_reply_to_object.data["id"])
