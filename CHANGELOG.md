@@ -42,7 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`
 - Mastodon API: Provide plaintext versions of cw/content in the Status entity
-- Mastodon API: Add `pleroma.conversation_id` field to the Status entity
+- Mastodon API: Add `pleroma.conversation_id`, `pleroma.in_reply_to_account_acct` fields to the Status entity
 - Mastodon API: Add `pleroma.tags`, `pleroma.relationship{}`, `pleroma.is_moderator`, `pleroma.is_admin`, `pleroma.confirmation_pending` fields to the User entity
 - Mastodon API: Add `pleroma.is_seen` to the Notification entity
 - Mastodon API: Add `pleroma.local` to the Status entity
