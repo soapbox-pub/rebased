@@ -56,7 +56,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       bot: false,
       source: %{
         note: "",
-        privacy: "public",
         sensitive: false
       },
       pleroma: %{
@@ -64,6 +63,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        hide_favorites: true,
+        hide_followers: false,
+        hide_follows: false,
         relationship: %{}
       }
     }
@@ -81,8 +83,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       "follows" => true
     }
 
-    assert %{pleroma: %{notification_settings: ^notification_settings}} =
-             AccountView.render("account.json", %{user: user, for: user})
+    privacy = user.info.default_scope
+
+    assert %{
+             pleroma: %{notification_settings: ^notification_settings},
+             source: %{privacy: ^privacy}
+           } = AccountView.render("account.json", %{user: user, for: user})
   end
 
   test "Represent a Service(bot) account" do
@@ -114,7 +120,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       bot: true,
       source: %{
         note: "",
-        privacy: "public",
         sensitive: false
       },
       pleroma: %{
@@ -122,6 +127,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        hide_favorites: true,
+        hide_followers: false,
+        hide_follows: false,
         relationship: %{}
       }
     }
@@ -200,7 +208,6 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       bot: true,
       source: %{
         note: "",
-        privacy: "public",
         sensitive: false
       },
       pleroma: %{
@@ -208,6 +215,9 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         tags: [],
         is_admin: false,
         is_moderator: false,
+        hide_favorites: true,
+        hide_followers: false,
+        hide_follows: false,
         relationship: %{
           id: to_string(user.id),
           following: false,
