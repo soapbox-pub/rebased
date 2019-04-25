@@ -215,6 +215,26 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
     end
 
+    test "it rejects incoming follow requests from blocked users when deny_follow_blocked is enabled" do
+      Pleroma.Config.put([:user, :deny_follow_blocked], true)
+
+      user = insert(:user)
+      target = User.get_or_fetch("http://mastodon.example.org/users/admin")
+
+      {:ok, user} = User.block(user, target)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: %{"id" => id}}} = Transmogrifier.handle_incoming(data)
+
+      %Activity{} = activity = Activity.get_by_ap_id(id)
+
+      assert activity.data["state"] == "reject"
+    end
+
     test "it works for incoming follow requests from hubzilla" do
       user = insert(:user)
 
