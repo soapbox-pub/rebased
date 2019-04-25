@@ -43,7 +43,13 @@ Has these additional fields under the `pleroma` object:
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
-- `show_role`: boolean, nullable (only shown when the user is requesting themselves), true when the user wants his role (e.g admin, moderator) to be shown
+
+### Source
+
+Has these additional fields under the `pleroma` object:
+
+- `show_role`: boolean, nullable, true when the user wants his role (e.g admin, moderator) to be shown
+- `no_rich_text` - boolean, nullable, true when html tags are stripped from all statuses requested from the API
 
 ## Account Search
 

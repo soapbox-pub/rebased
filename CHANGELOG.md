@@ -45,7 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Provide plaintext versions of cw/content in the Status entity
 - Mastodon API: Add `pleroma.conversation_id`, `pleroma.in_reply_to_account_acct` fields to the Status entity
 - Mastodon API: Add `pleroma.tags`, `pleroma.relationship{}`, `pleroma.is_moderator`, `pleroma.is_admin`, `pleroma.confirmation_pending`, `pleroma.hide_followers`, `pleroma.hide_follows`, `pleroma.hide_favorites` fields to the User entity
-- Mastodon API: Add `pleroma.show_role`, `pleroma.no_rich_text` fields to the User entity (when the user is requesting themselves)
+- Mastodon API: Add `pleroma.show_role`, `pleroma.no_rich_text` fields to the Source subentity
 - Mastodon API: Add support for updating `no_rich_text`, `hide_followers`, `hide_follows`, `hide_favorites`, `show_role` in `PATCH /api/v1/update_credentials`
 - Mastodon API: Add `pleroma.is_seen` to the Notification entity
 - Mastodon API: Add `pleroma.local` to the Status entity

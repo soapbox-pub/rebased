@@ -56,7 +56,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       bot: false,
       source: %{
         note: "",
-        sensitive: false
+        sensitive: false,
+        pleroma: %{}
       },
       pleroma: %{
         confirmation_pending: false,
@@ -120,7 +121,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       bot: true,
       source: %{
         note: "",
-        sensitive: false
+        sensitive: false,
+        pleroma: %{}
       },
       pleroma: %{
         confirmation_pending: false,
@@ -208,7 +210,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       bot: true,
       source: %{
         note: "",
-        sensitive: false
+        sensitive: false,
+        pleroma: %{}
       },
       pleroma: %{
         confirmation_pending: false,

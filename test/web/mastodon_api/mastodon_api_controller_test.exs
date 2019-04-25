@@ -2259,7 +2259,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> patch("/api/v1/accounts/update_credentials", %{show_role: "false"})
 
       assert user = json_response(conn, 200)
-      assert user["pleroma"]["show_role"] == false
+      assert user["source"]["pleroma"]["show_role"] == false
     end
 
     test "updates the user's no_rich_text status", %{conn: conn} do
@@ -2271,7 +2271,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> patch("/api/v1/accounts/update_credentials", %{no_rich_text: "true"})
 
       assert user = json_response(conn, 200)
-      assert user["pleroma"]["show_role"] == true
+      assert user["source"]["pleroma"]["no_rich_text"] == true
     end
 
     test "updates the user's name", %{conn: conn} do

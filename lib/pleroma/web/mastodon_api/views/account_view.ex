@@ -113,7 +113,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       bot: bot,
       source: %{
         note: "",
-        sensitive: false
+        sensitive: false,
+        pleroma: %{}
       },
 
       # Pleroma extension
@@ -145,8 +146,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
        ) do
     data
     |> Kernel.put_in([:source, :privacy], user_info.default_scope)
-    |> Kernel.put_in([:pleroma, :show_role], user.info.show_role)
-    |> Kernel.put_in([:pleroma, :no_rich_text], user.info.no_rich_text)
+    |> Kernel.put_in([:source, :pleroma, :show_role], user.info.show_role)
+    |> Kernel.put_in([:source, :pleroma, :no_rich_text], user.info.no_rich_text)
   end
 
   defp maybe_put_settings(data, _, _, _), do: data
