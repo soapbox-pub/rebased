@@ -177,4 +177,13 @@ defmodule Pleroma.MediaProxyTest do
     {:ok, decoded} = decode_url(sig, base64)
     decoded
   end
+
+  test "mediaproxy whitelist" do
+    Pleroma.Config.put([:media_proxy, :enabled], true)
+    Pleroma.Config.put([:media_proxy, :whitelist], ["google.com", "feld.me"])
+    url = "https://feld.me/foo.png"
+
+    unencoded = url(url)
+    assert unencoded == url
+  end
 end

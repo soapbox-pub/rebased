@@ -205,6 +205,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
+* `whitelist`: List of domains to bypass the mediaproxy
 
 ## :gopher
 * `enabled`: Enables the gopher interface
