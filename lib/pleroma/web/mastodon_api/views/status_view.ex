@@ -31,7 +31,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Activity.create_by_object_ap_id()
     |> Repo.all()
     |> Enum.reduce(%{}, fn activity, acc ->
-      object = Object.normalize(activity.data["object"])
+      object = Object.normalize(activity)
       Map.put(acc, object.data["id"], activity)
     end)
   end
@@ -238,6 +238,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       pleroma: %{
         local: activity.local,
         conversation_id: get_context_id(activity),
+        in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary_plaintext}
       }
@@ -316,7 +317,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     with nil <- replied_to_activities[object.data["inReplyTo"]] do
       # If user didn't participate in the thread

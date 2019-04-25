@@ -124,9 +124,9 @@ defmodule Pleroma.UserTest do
 
     {:ok, user} = User.follow(user, followed)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
-    followed = User.get_by_ap_id(followed.ap_id)
+    followed = User.get_cached_by_ap_id(followed.ap_id)
     assert followed.info.follower_count == 1
 
     assert User.ap_followers(followed) in user.following
@@ -189,7 +189,7 @@ defmodule Pleroma.UserTest do
 
     {:ok, user, _activity} = User.unfollow(user, followed)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     assert user.following == []
   end
@@ -199,7 +199,7 @@ defmodule Pleroma.UserTest do
 
     {:error, _} = User.unfollow(user, user)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
     assert user.following == [user.ap_id]
   end
 
@@ -557,8 +557,8 @@ defmodule Pleroma.UserTest do
 
       {:ok, res} = User.get_friends(user)
 
-      followed_one = User.get_by_ap_id(followed_one.ap_id)
-      followed_two = User.get_by_ap_id(followed_two.ap_id)
+      followed_one = User.get_cached_by_ap_id(followed_one.ap_id)
+      followed_two = User.get_cached_by_ap_id(followed_two.ap_id)
       assert Enum.member?(res, followed_one)
       assert Enum.member?(res, followed_two)
       refute Enum.member?(res, not_followed)
@@ -569,7 +569,7 @@ defmodule Pleroma.UserTest do
     test "it sets the info->note_count property" do
       note = insert(:note)
 
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       assert user.info.note_count == 0
 
@@ -580,7 +580,7 @@ defmodule Pleroma.UserTest do
 
     test "it increases the info->note_count property" do
       note = insert(:note)
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       assert user.info.note_count == 0
 
@@ -595,7 +595,7 @@ defmodule Pleroma.UserTest do
 
     test "it decreases the info->note_count property" do
       note = insert(:note)
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       assert user.info.note_count == 0
 
@@ -697,7 +697,7 @@ defmodule Pleroma.UserTest do
       assert User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = User.get_by_id(blocked.id)
+      blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
@@ -715,7 +715,7 @@ defmodule Pleroma.UserTest do
       refute User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = User.get_by_id(blocked.id)
+      blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
@@ -733,7 +733,7 @@ defmodule Pleroma.UserTest do
       assert User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = User.get_by_id(blocked.id)
+      blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
@@ -911,9 +911,9 @@ defmodule Pleroma.UserTest do
 
     {:ok, _} = User.delete(user)
 
-    followed = User.get_by_id(followed.id)
-    follower = User.get_by_id(follower.id)
-    user = User.get_by_id(user.id)
+    followed = User.get_cached_by_id(followed.id)
+    follower = User.get_cached_by_id(follower.id)
+    user = User.get_cached_by_id(user.id)
 
     assert user.info.deactivated
 
@@ -1067,7 +1067,7 @@ defmodule Pleroma.UserTest do
       results = User.search("http://mastodon.example.org/users/admin", resolve: true)
       result = results |> List.first()
 
-      user = User.get_by_ap_id("http://mastodon.example.org/users/admin")
+      user = User.get_cached_by_ap_id("http://mastodon.example.org/users/admin")
 
       assert length(results) == 1
       assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)

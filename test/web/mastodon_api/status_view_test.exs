@@ -128,6 +128,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pleroma: %{
         local: true,
         conversation_id: convo_id,
+        in_reply_to_account_acct: nil,
         content: %{"text/plain" => HtmlSanitizeEx.strip_tags(note.data["object"]["content"])},
         spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(note.data["object"]["summary"])}
       }
@@ -178,7 +179,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("status.json", %{activity: activity})
 
-    actor = User.get_by_ap_id(activity.actor)
+    actor = User.get_cached_by_ap_id(activity.actor)
 
     assert status.mentions ==
              Enum.map([user, actor], fn u -> AccountView.render("mention.json", %{user: u}) end)

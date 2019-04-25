@@ -78,7 +78,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert activity.data["object"] == object.data["id"]
 
-    user = User.get_by_ap_id(user.ap_id)
+    user = User.get_cached_by_ap_id(user.ap_id)
 
     assert user.info.note_count == 1
   end
@@ -129,7 +129,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert User.ap_followers(followed) in user.following
 
-    followed = User.get_by_ap_id(followed.ap_id)
+    followed = User.get_cached_by_ap_id(followed.ap_id)
     assert followed.info.follower_count == 1
 
     {:error, msg} = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
@@ -281,7 +281,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = User.get_by_nickname("lain")
+    fetched_user = User.get_cached_by_nickname("lain")
 
     assert UserView.render("show.json", %{user: user}) ==
              UserView.render("show.json", %{user: fetched_user})
@@ -299,7 +299,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = User.get_by_nickname("lain")
+    fetched_user = User.get_cached_by_nickname("lain")
 
     assert UserView.render("show.json", %{user: user}) ==
              UserView.render("show.json", %{user: fetched_user})
@@ -394,7 +394,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
       {:ok, user} = TwitterAPI.register_user(data)
 
-      fetched_user = User.get_by_nickname("vinny")
+      fetched_user = User.get_cached_by_nickname("vinny")
       invite = Repo.get_by(UserInviteToken, token: invite.token)
 
       assert invite.used == true
@@ -417,7 +417,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:error, msg} = TwitterAPI.register_user(data)
 
       assert msg == "Invalid token"
-      refute User.get_by_nickname("GrimReaper")
+      refute User.get_cached_by_nickname("GrimReaper")
     end
 
     test "returns error on expired token" do
@@ -437,7 +437,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:error, msg} = TwitterAPI.register_user(data)
 
       assert msg == "Expired token"
-      refute User.get_by_nickname("GrimReaper")
+      refute User.get_cached_by_nickname("GrimReaper")
     end
   end
 
@@ -462,7 +462,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       check_fn = fn invite ->
         data = Map.put(data, "token", invite.token)
         {:ok, user} = TwitterAPI.register_user(data)
-        fetched_user = User.get_by_nickname("vinny")
+        fetched_user = User.get_cached_by_nickname("vinny")
 
         assert UserView.render("show.json", %{user: user}) ==
                  UserView.render("show.json", %{user: fetched_user})
@@ -499,7 +499,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:error, msg} = TwitterAPI.register_user(data)
 
       assert msg == "Expired token"
-      refute User.get_by_nickname("vinny")
+      refute User.get_cached_by_nickname("vinny")
       invite = Repo.get_by(UserInviteToken, token: invite.token)
 
       refute invite.used
@@ -534,7 +534,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
-      fetched_user = User.get_by_nickname("vinny")
+      fetched_user = User.get_cached_by_nickname("vinny")
       invite = Repo.get_by(UserInviteToken, token: invite.token)
 
       assert invite.used == true
@@ -555,7 +555,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:error, msg} = TwitterAPI.register_user(data)
 
       assert msg == "Expired token"
-      refute User.get_by_nickname("GrimReaper")
+      refute User.get_cached_by_nickname("GrimReaper")
     end
   end
 
@@ -585,7 +585,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
-      fetched_user = User.get_by_nickname("vinny")
+      fetched_user = User.get_cached_by_nickname("vinny")
       invite = Repo.get_by(UserInviteToken, token: invite.token)
 
       refute invite.used
@@ -610,7 +610,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       }
 
       {:ok, user} = TwitterAPI.register_user(data)
-      fetched_user = User.get_by_nickname("vinny")
+      fetched_user = User.get_cached_by_nickname("vinny")
       invite = Repo.get_by(UserInviteToken, token: invite.token)
       assert invite.used == true
 
@@ -630,7 +630,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:error, msg} = TwitterAPI.register_user(data)
 
       assert msg == "Expired token"
-      refute User.get_by_nickname("GrimReaper")
+      refute User.get_cached_by_nickname("GrimReaper")
     end
 
     test "returns error on overdue date" do
@@ -650,7 +650,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:error, msg} = TwitterAPI.register_user(data)
 
       assert msg == "Expired token"
-      refute User.get_by_nickname("GrimReaper")
+      refute User.get_cached_by_nickname("GrimReaper")
     end
 
     test "returns error on with overdue date and after max" do
@@ -672,7 +672,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       {:error, msg} = TwitterAPI.register_user(data)
 
       assert msg == "Expired token"
-      refute User.get_by_nickname("GrimReaper")
+      refute User.get_cached_by_nickname("GrimReaper")
     end
   end
 
@@ -688,7 +688,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:error, error_object} = TwitterAPI.register_user(data)
 
     assert is_binary(error_object[:error])
-    refute User.get_by_nickname("lain")
+    refute User.get_cached_by_nickname("lain")
   end
 
   test "it assigns an integer conversation_id" do
@@ -709,7 +709,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       id = "https://mastodon.social/users/lambadalambda"
       user = insert(:user)
       {:ok, represented} = TwitterAPI.get_external_profile(user, id)
-      remote = User.get_by_ap_id(id)
+      remote = User.get_cached_by_ap_id(id)
 
       assert represented["id"] == UserView.render("show.json", %{user: remote, for: user})["id"]
 

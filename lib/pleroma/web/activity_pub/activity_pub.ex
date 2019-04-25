@@ -168,7 +168,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
     if activity.data["type"] in ["Create", "Announce", "Delete"] do
-      object = Object.normalize(activity.data["object"])
+      object = Object.normalize(activity)
       Pleroma.Web.Streamer.stream("user", activity)
       Pleroma.Web.Streamer.stream("list", activity)
 
@@ -197,7 +197,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         if !Enum.member?(activity.data["cc"] || [], public) &&
              !Enum.member?(
                activity.data["to"],
-               User.get_by_ap_id(activity.data["actor"]).follower_address
+               User.get_cached_by_ap_id(activity.data["actor"]).follower_address
              ),
            do: Pleroma.Web.Streamer.stream("direct", activity)
       end
@@ -890,7 +890,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def make_user_from_ap_id(ap_id) do
-    if _user = User.get_by_ap_id(ap_id) do
+    if _user = User.get_cached_by_ap_id(ap_id) do
       Transmogrifier.upgrade_user_from_ap_id(ap_id)
     else
       with {:ok, data} <- fetch_and_prepare_user_from_ap_id(ap_id) do

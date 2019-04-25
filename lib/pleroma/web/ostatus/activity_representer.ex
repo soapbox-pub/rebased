@@ -84,7 +84,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   def to_simple_form(%{data: %{"type" => "Create"}} = activity, user, with_author) do
     h = fn str -> [to_charlist(str)] end
 
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     updated_at = object.data["published"]
     inserted_at = object.data["published"]

@@ -16,11 +16,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
-- Pleroma API: User subscribtions
+- Pleroma API: User subscriptions
+- Pleroma API: Healthcheck endpoint
 - Admin API: Endpoints for listing/revoking invite tokens
 - Admin API: Endpoints for making users follow/unfollow each other
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
+- Mastodon API: `/api/v1/pleroma/accounts/:id/favourites` (API extension)
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
 - ActivityPub C2S: OAuth endpoints
 - Metadata RelMe provider
@@ -41,7 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`
 - Mastodon API: Provide plaintext versions of cw/content in the Status entity
-- Mastodon API: Add `pleroma.conversation_id` field to the Status entity
+- Mastodon API: Add `pleroma.conversation_id`, `pleroma.in_reply_to_account_acct` fields to the Status entity
 - Mastodon API: Add `pleroma.tags`, `pleroma.relationship{}`, `pleroma.is_moderator`, `pleroma.is_admin`, `pleroma.confirmation_pending` fields to the User entity
 - Mastodon API: Add `pleroma.is_seen` to the Notification entity
 - Mastodon API: Add `pleroma.local` to the Status entity

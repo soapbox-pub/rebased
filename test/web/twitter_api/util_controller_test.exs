@@ -246,6 +246,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
+  test "GET /api/pleroma/healthcheck", %{conn: conn} do
+    conn = get(conn, "/api/pleroma/healthcheck")
+
+    assert conn.status in [200, 503]
+  end
+
   describe "POST /api/pleroma/disable_account" do
     test "it returns HTTP 200", %{conn: conn} do
       user = insert(:user)

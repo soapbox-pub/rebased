@@ -284,7 +284,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def report(user, data) do
     with {:account_id, %{"account_id" => account_id}} <- {:account_id, data},
-         {:account, %User{} = account} <- {:account, User.get_by_id(account_id)},
+         {:account, %User{} = account} <- {:account, User.get_cached_by_id(account_id)},
          {:ok, {content_html, _, _}} <- make_report_content_html(data["comment"]),
          {:ok, statuses} <- get_report_statuses(account, data),
          {:ok, activity} <-

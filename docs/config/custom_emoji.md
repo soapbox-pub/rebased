@@ -28,6 +28,11 @@ foo, /emoji/custom/foo.png
 
 The files should be PNG (APNG is okay with `.png` for `image/png` Content-type) and under 50kb for compatibility with mastodon.
 
+Default file extentions and locations for emojis are set in `config.exs`. To use different locations or file-extentions, add the `shortcode_globs` to your secrets file (`prod.secret.exs` or `dev.secret.exs`) and edit it. Note that not all fediverse-software will show emojis with other file extentions:
+```elixir
+config :pleroma, :emoji, shortcode_globs: ["/emoji/custom/**/*.png", "/emoji/custom/**/*.gif"]
+```
+
 ## Emoji tags (groups)
 
 Default tags are set in `config.exs`. To set your own tags, copy the structure to your secrets file (`prod.secret.exs` or `dev.secret.exs`) and edit it.

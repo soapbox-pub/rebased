@@ -76,7 +76,7 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
     |> Enum.map(fn activity ->
       user = User.get_cached_by_ap_id(activity.data["actor"])
 
-      object = Object.normalize(activity.data["object"])
+      object = Object.normalize(activity)
       like_count = object["like_count"] || 0
       announcement_count = object["announcement_count"] || 0
 

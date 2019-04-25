@@ -11,7 +11,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
   ## ls-packs
 
-  mix pleroma.emoji ls-packs [OPTION...]
+      mix pleroma.emoji ls-packs [OPTION...]
 
   Lists the emoji packs and metadata specified in the manifest.
 
@@ -23,10 +23,10 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
   ## get-packs
 
-  mix pleroma.emoji get-packs [OPTION...] PACKS
+      mix pleroma.emoji get-packs [OPTION...] PACKS
 
   Fetches, verifies and installs the specified PACKS from the
-  manifest into the `STATIC-DIR/emoji/PACK-NAME
+  manifest into the `STATIC-DIR/emoji/PACK-NAME`
 
   ### Options
 
@@ -34,7 +34,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
   ## gen-pack
 
-  mix pleroma.emoji gen-pack PACK-URL
+      mix pleroma.emoji gen-pack PACK-URL
 
   Creates a new manifest entry and a file list from the specified
   remote pack file. Currently, only .zip archives are recognized
