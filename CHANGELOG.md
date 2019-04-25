@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
+- Configuration: Media proxy `whitelist` option
 - Pleroma API: User subscriptions
 - Pleroma API: Healthcheck endpoint
 - Admin API: Endpoints for listing/revoking invite tokens
@@ -40,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: Dedupe enabled by default
 - Configuration: Added `extra_cookie_attrs` for setting non-standard cookie attributes. Defaults to ["SameSite=Lax"] so that remote follows work.
 - Pleroma API: Support for emoji tags in `/api/pleroma/emoji` resulting in a breaking API change
+- Timelines: Messages involving people you have blocked will be excluded from the timeline in all cases instead of just repeats.
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`
 - Mastodon API: Provide plaintext versions of cw/content in the Status entity
@@ -68,6 +70,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Federation: Cope with missing or explicitly nulled address lists
 - Federation: Explicitly ensure activities addressed to `as:Public` become addressed to the followers collection
 - Federation: Better cope with actors which do not declare a followers collection and use `as:Public` with these semantics
+- Federation: Follow requests from remote users who have been blocked will be automatically rejected if appropriate
 - MediaProxy: Parse name from content disposition headers even for non-whitelisted types
 - MediaProxy: S3 link encoding
 - Rich Media: Reject any data which cannot be explicitly encoded into JSON
