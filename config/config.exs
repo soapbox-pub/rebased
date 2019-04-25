@@ -326,7 +326,8 @@ config :pleroma, :media_proxy,
       follow_redirect: true,
       pool: :media
     ]
-  ]
+  ],
+  whitelist: []
 
 config :pleroma, :chat, enabled: true
 
