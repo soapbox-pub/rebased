@@ -119,6 +119,22 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert output == expected
     end
 
+    test "works for bare text/bbcode" do
+      text = "[b]hello world[/b]"
+      expected = "<strong>hello world</strong>"
+
+      {output, [], []} = Utils.format_input(text, "text/bbcode")
+
+      assert output == expected
+
+      text = "[b]hello world![/b]\n\nsecond paragraph!"
+      expected = "<strong>hello world!</strong><br><br>second paragraph!"
+
+      {output, [], []} = Utils.format_input(text, "text/bbcode")
+
+      assert output == expected
+    end
+
     test "works for text/markdown with mentions" do
       {:ok, user} =
         UserBuilder.insert(%{nickname: "user__test", ap_id: "http://foo.com/user__test"})

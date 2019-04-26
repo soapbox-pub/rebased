@@ -221,7 +221,8 @@ config :pleroma, :instance,
   allowed_post_formats: [
     "text/plain",
     "text/html",
-    "text/markdown"
+    "text/markdown",
+    "text/bbcode"
   ],
   mrf_transparency: true,
   autofollowed_nicknames: [],
