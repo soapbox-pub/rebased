@@ -46,7 +46,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`
 - Mastodon API: Provide plaintext versions of cw/content in the Status entity
 - Mastodon API: Add `pleroma.conversation_id`, `pleroma.in_reply_to_account_acct` fields to the Status entity
-- Mastodon API: Add `pleroma.tags`, `pleroma.relationship{}`, `pleroma.is_moderator`, `pleroma.is_admin`, `pleroma.confirmation_pending` fields to the User entity
+- Mastodon API: Add `pleroma.tags`, `pleroma.relationship{}`, `pleroma.is_moderator`, `pleroma.is_admin`, `pleroma.confirmation_pending`, `pleroma.hide_followers`, `pleroma.hide_follows`, `pleroma.hide_favorites` fields to the User entity
+- Mastodon API: Add `pleroma.show_role`, `pleroma.no_rich_text` fields to the Source subentity
+- Mastodon API: Add support for updating `no_rich_text`, `hide_followers`, `hide_follows`, `hide_favorites`, `show_role` in `PATCH /api/v1/update_credentials`
 - Mastodon API: Add `pleroma.is_seen` to the Notification entity
 - Mastodon API: Add `pleroma.local` to the Status entity
 - Mastodon API: Add `preview` parameter to `POST /api/v1/statuses`
@@ -75,12 +77,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MediaProxy: S3 link encoding
 - Rich Media: Reject any data which cannot be explicitly encoded into JSON
 - Pleroma API: Importing follows from Mastodon 2.8+
+- Twitter API: Exposing default scope, `no_rich_text` of the user to anyone
+- Twitter API: Returning the `role` object in user entity despite `show_role = false`
 - Mastodon API: `/api/v1/favourites` serving only public activities
 - Mastodon API: Reblogs having `in_reply_to_id` - `null` even when they are replies
 - Mastodon API: Streaming API broadcasting wrong activity id
 - Mastodon API: 500 errors when requesting a card for a private conversation
 - Mastodon API: Handling of `reblogs` in `/api/v1/accounts/:id/follow`
 - Mastodon API: Correct `reblogged`, `favourited`, and `bookmarked` values in the reblog status JSON
+- Mastodon API: Exposing default scope of the user to anyone
 
 ## [0.9.9999] - 2019-04-05
 ### Security

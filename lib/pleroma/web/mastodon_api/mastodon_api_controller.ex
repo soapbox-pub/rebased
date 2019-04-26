@@ -35,7 +35,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
 
-  import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
+  alias Pleroma.Web.ControllerHelper
   import Ecto.Query
 
   require Logger
@@ -46,7 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   action_fallback(:errors)
 
   def create_app(conn, params) do
-    scopes = oauth_scopes(params, ["read"])
+    scopes = ControllerHelper.oauth_scopes(params, ["read"])
 
     app_attrs =
       params
@@ -96,8 +96,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end)
 
     info_params =
-      %{}
-      |> add_if_present(params, "locked", :locked, fn value -> {:ok, value == "true"} end)
+      [:no_rich_text, :locked, :hide_followers, :hide_follows, :hide_favorites, :show_role]
+      |> Enum.reduce(%{}, fn key, acc ->
+        add_if_present(acc, params, to_string(key), key, fn value ->
+          {:ok, ControllerHelper.truthy_param?(value)}
+        end)
+      end)
       |> add_if_present(params, "header", :banner, fn value ->
         with %Plug.Upload{} <- value,
              {:ok, object} <- ActivityPub.upload(value, type: :banner) do
@@ -107,7 +111,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end
       end)
 
-    info_cng = User.Info.mastodon_profile_update(user.info, info_params)
+    info_cng = User.Info.profile_update(user.info, info_params)
 
     with changeset <- User.update_changeset(user, user_params),
          changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),

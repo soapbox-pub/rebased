@@ -227,14 +227,6 @@ defmodule Pleroma.User.Info do
     cast(info, params, [:confirmation_pending, :confirmation_token])
   end
 
-  def mastodon_profile_update(info, params) do
-    info
-    |> cast(params, [
-      :locked,
-      :banner
-    ])
-  end
-
   def mastodon_settings_update(info, settings) do
     params = %{settings: settings}
 
