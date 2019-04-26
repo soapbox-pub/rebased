@@ -1125,33 +1125,6 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "bookmarks" do
-    user = insert(:user)
-
-    {:ok, activity1} =
-      CommonAPI.post(user, %{
-        "status" => "heweoo!"
-      })
-
-    id1 = Object.normalize(activity1).data["id"]
-
-    {:ok, activity2} =
-      CommonAPI.post(user, %{
-        "status" => "heweoo!"
-      })
-
-    id2 = Object.normalize(activity2).data["id"]
-
-    assert {:ok, user_state1} = User.bookmark(user, id1)
-    assert user_state1.bookmarks == [id1]
-
-    assert {:ok, user_state2} = User.unbookmark(user, id1)
-    assert user_state2.bookmarks == []
-
-    assert {:ok, user_state3} = User.bookmark(user, id2)
-    assert user_state3.bookmarks == [id2]
-  end
-
   test "follower count is updated when a follower is blocked" do
     user = insert(:user)
     follower = insert(:user)
