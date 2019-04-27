@@ -2214,6 +2214,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["locked"] == true
     end
 
+    test "updates the user's default scope", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{default_scope: "cofe"})
+
+      assert user = json_response(conn, 200)
+      assert user["source"]["privacy"] == "cofe"
+    end
+
     test "updates the user's hide_followers status", %{conn: conn} do
       user = insert(:user)
 

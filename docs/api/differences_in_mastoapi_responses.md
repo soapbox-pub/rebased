@@ -79,3 +79,4 @@ Additional parameters can be added to the JSON body/Form data:
 - `hide_follows` - if true, user's follows will be hidden
 - `hide_favorites` - if true, user's favorites timeline will be hidden
 - `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
+- `default_scope` - the scope returned under `privacy` key in Source subentity
