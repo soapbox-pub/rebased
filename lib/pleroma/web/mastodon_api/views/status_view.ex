@@ -86,11 +86,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     activity_object = Object.normalize(activity)
     favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
 
-    bookmarked =
-      opts[:for] && Ecto.assoc_loaded?(opts[:for].bookmarks) &&
-        Enum.any?(opts[:for].bookmarks, fn b ->
-          b.activity_id == activity.id or b.activity.data["object"]["id"] == object
-        end)
+    bookmarked = opts[:for] && CommonAPI.bookmarked?(opts[:for], reblogged_activity)
 
     mentions =
       activity.recipients
@@ -153,11 +149,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
-    bookmarked =
-      opts[:for] && Ecto.assoc_loaded?(opts[:for].bookmarks) &&
-        Enum.any?(opts[:for].bookmarks, fn b ->
-          b.activity_id == activity.id
-        end)
+    bookmarked = opts[:for] && CommonAPI.bookmarked?(opts[:for], activity)
 
     attachment_data = object.data["attachment"] || []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)

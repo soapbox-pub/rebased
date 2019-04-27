@@ -41,6 +41,13 @@ defmodule Pleroma.Bookmark do
     |> preload([b, a], activity: a)
   end
 
+  def get(user_id, activity_id) do
+    Bookmark
+    |> where(user_id: ^user_id)
+    |> where(activity_id: ^activity_id)
+    |> Repo.one()
+  end
+
   @spec destroy(FlakeId.t(), FlakeId.t()) :: {:ok, Bookmark.t()} | {:error, Changeset.t()}
   def destroy(user_id, activity_id) do
     from(b in Bookmark,
