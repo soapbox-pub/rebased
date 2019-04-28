@@ -100,7 +100,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "pleroma" => %{
         "confirmation_pending" => false,
         "tags" => []
-      }
+      },
+      "rights" => %{"admin" => false, "delete_others_notice" => false},
+      "role" => "member"
     }
 
     assert represented == UserView.render("show.json", %{user: user})
@@ -151,7 +153,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "pleroma" => %{
         "confirmation_pending" => false,
         "tags" => []
-      }
+      },
+      "rights" => %{"admin" => false, "delete_others_notice" => false},
+      "role" => "member"
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
@@ -194,7 +198,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "pleroma" => %{
         "confirmation_pending" => false,
         "tags" => []
-      }
+      },
+      "rights" => %{"admin" => false, "delete_others_notice" => false},
+      "role" => "member"
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
@@ -274,7 +280,9 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "pleroma" => %{
         "confirmation_pending" => false,
         "tags" => []
-      }
+      },
+      "rights" => %{"admin" => false, "delete_others_notice" => false},
+      "role" => "member"
     }
 
     blocker = User.get_cached_by_id(blocker.id)

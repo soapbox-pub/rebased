@@ -116,12 +116,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
           |> maybe_with_activation_status(user, for_user)
       }
       |> maybe_with_user_settings(user, for_user)
-
-    data =
-      if(user.info.is_admin || user.info.is_moderator,
-        do: maybe_with_role(data, user, for_user),
-        else: data
-      )
+      |> maybe_with_role(user, for_user)
 
     if assigns[:token] do
       Map.put(data, "token", token_string(assigns[:token]))
