@@ -67,24 +67,22 @@ defmodule Pleroma.Conversation.ParticipationTest do
         "in_reply_to_status_id" => activity_one.id
       })
 
-    assert [participation_one, participation_two] =
-             Participation.for_user(user)
-             |> Repo.preload(:conversation)
+    assert [participation_one, participation_two] = Participation.for_user(user)
 
-    assert participation_one.conversation.ap_id == activity_three.data["object"]["context"]
-    assert participation_two.conversation.ap_id == activity_two.data["object"]["context"]
+    object2 = Pleroma.Object.normalize(activity_two)
+    object3 = Pleroma.Object.normalize(activity_three)
+
+    assert participation_one.conversation.ap_id == object3.data["context"]
+    assert participation_two.conversation.ap_id == object2.data["context"]
 
     # Pagination
-    assert [participation_one] =
-             Participation.for_user(user, %{limit: 1})
-             |> Repo.preload(:conversation)
+    assert [participation_one] = Participation.for_user(user, %{"limit" => 1})
 
-    assert participation_one.conversation.ap_id == activity_three.data["object"]["context"]
+    assert participation_one.conversation.ap_id == object3.data["context"]
 
     # With last_activity_id
     assert [participation_one] =
-             Participation.for_user_with_last_activity_id(user, %{limit: 1})
-             |> Repo.preload(:conversation)
+             Participation.for_user_with_last_activity_id(user, %{"limit" => 1})
 
     assert participation_one.last_activity_id == activity_three.id
   end

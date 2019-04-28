@@ -47,9 +47,10 @@ defmodule Pleroma.Conversation do
   """
   def create_or_bump_for(activity) do
     with true <- Pleroma.Web.ActivityPub.Visibility.is_direct?(activity),
+         object <- Pleroma.Object.normalize(activity),
          "Create" <- activity.data["type"],
-         "Note" <- activity.data["object"]["type"],
-         ap_id when is_binary(ap_id) <- activity.data["object"]["context"] do
+         "Note" <- object.data["type"],
+         ap_id when is_binary(ap_id) and byte_size(ap_id) > 0 <- object.data["context"] do
       {:ok, conversation} = create_for_ap_id(ap_id)
 
       users = User.get_users_from_set(activity.recipients, false)

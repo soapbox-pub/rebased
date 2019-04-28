@@ -22,7 +22,8 @@ defmodule Pleroma.ConversationTest do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey"})
 
-    context = activity.data["object"]["context"]
+    object = Pleroma.Object.normalize(activity)
+    context = object.data["context"]
 
     conversation = Conversation.get_for_ap_id(context)
 
@@ -37,7 +38,8 @@ defmodule Pleroma.ConversationTest do
     {:ok, activity} =
       CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "direct"})
 
-    context = activity.data["object"]["context"]
+    object = Pleroma.Object.normalize(activity)
+    context = object.data["context"]
 
     conversation =
       Conversation.get_for_ap_id(context)
@@ -58,7 +60,8 @@ defmodule Pleroma.ConversationTest do
         "in_reply_to_status_id" => activity.id
       })
 
-    context = activity.data["object"]["context"]
+    object = Pleroma.Object.normalize(activity)
+    context = object.data["context"]
 
     conversation_two =
       Conversation.get_for_ap_id(context)
@@ -81,7 +84,8 @@ defmodule Pleroma.ConversationTest do
         "in_reply_to_status_id" => activity.id
       })
 
-    context = activity.data["object"]["context"]
+    object = Pleroma.Object.normalize(activity)
+    context = object.data["context"]
 
     conversation_three =
       Conversation.get_for_ap_id(context)

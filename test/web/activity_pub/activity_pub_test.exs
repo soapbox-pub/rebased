@@ -208,11 +208,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
+      object = Pleroma.Object.normalize(activity)
 
       assert is_binary(activity.data["context"])
-      assert is_binary(activity.data["object"]["context"])
+      assert is_binary(object.data["context"])
       assert activity.data["context_id"]
-      assert activity.data["object"]["context_id"]
+      assert object.data["context_id"]
     end
 
     test "adds an id to a given object if it lacks one and is a note and inserts it to the object database" do
