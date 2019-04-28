@@ -3,7 +3,6 @@
 /db
 /deps
 /*.ez
-/uploads
 /test/uploads
 /.elixir_ls
 /test/fixtures/test_tmp.txt
