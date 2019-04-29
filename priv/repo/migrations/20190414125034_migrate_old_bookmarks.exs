@@ -18,7 +18,7 @@ defmodule Pleroma.Repo.Migrations.MigrateOldBookmarks do
     |> Enum.each(fn %{id: user_id, bookmarks: bookmarks} ->
       Enum.each(bookmarks, fn ap_id ->
         activity = Activity.get_create_by_object_ap_id(ap_id)
-        {:ok, _} = Bookmark.create(user_id, activity.id)
+	unless is_nil(activity), do: {:ok, _} = Bookmark.create(user_id, activity.id)
       end)
     end)
 
