@@ -103,6 +103,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           {:ok, ControllerHelper.truthy_param?(value)}
         end)
       end)
+      |> add_if_present(params, "default_scope", :default_scope)
       |> add_if_present(params, "header", :banner, fn value ->
         with %Plug.Upload{} <- value,
              {:ok, object} <- ActivityPub.upload(value, type: :banner) do
