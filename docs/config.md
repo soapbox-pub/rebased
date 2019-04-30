@@ -87,7 +87,6 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML)
-* `finmoji_enabled`: Whenether to enable the finmojis in the custom emojis.
 * `mrf_transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `scope_copy`: Copy the scope (private/unlisted/public) in replies to posts by default.
 * `subject_line_behavior`: Allows changing the default behaviour of subject lines in replies. Valid values:
@@ -104,6 +103,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
+* `healthcheck`: if set to true, system data will be shown on ``/api/pleroma/healthcheck``.
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
@@ -205,6 +205,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
+* `whitelist`: List of domains to bypass the mediaproxy
 
 ## :gopher
 * `enabled`: Enables the gopher interface
@@ -499,3 +500,8 @@ config :ueberauth, Ueberauth,
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
   ]
 ```
+
+## :emoji
+* `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
+* `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
+* `default_manifest`: Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download. Currently only one manifest can be added (no arrays).

@@ -6,7 +6,6 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   use Pleroma.Web.ConnCase
   import Pleroma.Factory
   alias Pleroma.Object
-  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus.ActivityRepresenter
@@ -41,7 +40,8 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       assert response(conn, 200)
 
       # Set a wrong magic-key for a user so it has to refetch
-      salmon_user = User.get_by_ap_id("http://gs.example.org:4040/index.php/user/1")
+      salmon_user = User.get_cached_by_ap_id("http://gs.example.org:4040/index.php/user/1")
+
       # Wrong key
       info_cng =
         User.Info.remote_user_creation(salmon_user.info, %{
@@ -52,7 +52,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       salmon_user
       |> Ecto.Changeset.change()
       |> Ecto.Changeset.put_embed(:info, info_cng)
-      |> Repo.update()
+      |> User.update_and_set_cache()
 
       conn =
         build_conn()
@@ -86,7 +86,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   test "gets an object", %{conn: conn} do
     note_activity = insert(:note_activity)
-    user = User.get_by_ap_id(note_activity.data["actor"])
+    user = User.get_cached_by_ap_id(note_activity.data["actor"])
     [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"]))
     url = "/objects/#{uuid}"
 

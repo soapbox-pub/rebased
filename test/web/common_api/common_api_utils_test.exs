@@ -37,21 +37,21 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   end
 
   test "parses emoji from name and bio" do
-    {:ok, user} = UserBuilder.insert(%{name: ":karjalanpiirakka:", bio: ":perkele:"})
+    {:ok, user} = UserBuilder.insert(%{name: ":blank:", bio: ":firefox:"})
 
     expected = [
       %{
         "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/finmoji/128px/perkele-128.png"},
-        "name" => ":perkele:"
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/emoji/Firefox.gif"},
+        "name" => ":firefox:"
       },
       %{
         "type" => "Emoji",
         "icon" => %{
           "type" => "Image",
-          "url" => "#{Endpoint.url()}/finmoji/128px/karjalanpiirakka-128.png"
+          "url" => "#{Endpoint.url()}/emoji/blank.png"
         },
-        "name" => ":karjalanpiirakka:"
+        "name" => ":blank:"
       }
     ]
 
@@ -115,6 +115,31 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       expected = "<blockquote><p>cool quote</p>\n</blockquote>\n<p>by someone</p>\n"
 
       {output, [], []} = Utils.format_input(text, "text/markdown")
+
+      assert output == expected
+    end
+
+    test "works for bare text/bbcode" do
+      text = "[b]hello world[/b]"
+      expected = "<strong>hello world</strong>"
+
+      {output, [], []} = Utils.format_input(text, "text/bbcode")
+
+      assert output == expected
+
+      text = "[b]hello world![/b]\n\nsecond paragraph!"
+      expected = "<strong>hello world!</strong><br>\n<br>\nsecond paragraph!"
+
+      {output, [], []} = Utils.format_input(text, "text/bbcode")
+
+      assert output == expected
+
+      text = "[b]hello world![/b]\n\n<strong>second paragraph!</strong>"
+
+      expected =
+        "<strong>hello world!</strong><br>\n<br>\n&lt;strong&gt;second paragraph!&lt;/strong&gt;"
+
+      {output, [], []} = Utils.format_input(text, "text/bbcode")
 
       assert output == expected
     end

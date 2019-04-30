@@ -48,7 +48,7 @@ defmodule Pleroma.NotificationTest do
   describe "create_notification" do
     test "it doesn't create a notification for user if the user blocks the activity author" do
       activity = insert(:note_activity)
-      author = User.get_by_ap_id(activity.data["actor"])
+      author = User.get_cached_by_ap_id(activity.data["actor"])
       user = insert(:user)
       {:ok, user} = User.block(user, author)
 
@@ -126,7 +126,7 @@ defmodule Pleroma.NotificationTest do
 
     test "it doesn't create a notification for user if he is the activity author" do
       activity = insert(:note_activity)
-      author = User.get_by_ap_id(activity.data["actor"])
+      author = User.get_cached_by_ap_id(activity.data["actor"])
 
       assert nil == Notification.create_notification(activity, author)
     end

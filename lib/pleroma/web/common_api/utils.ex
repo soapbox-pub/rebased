@@ -183,6 +183,18 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   @doc """
+  Formatting text as BBCode.
+  """
+  def format_input(text, "text/bbcode", options) do
+    text
+    |> String.replace(~r/\r/, "")
+    |> Formatter.html_escape("text/plain")
+    |> BBCode.to_html()
+    |> (fn {:ok, html} -> html end).()
+    |> Formatter.linkify(options)
+  end
+
+  @doc """
   Formatting text to html.
   """
   def format_input(text, "text/html", options) do
@@ -226,7 +238,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     }
 
     if in_reply_to do
-      in_reply_to_object = Object.normalize(in_reply_to.data["object"])
+      in_reply_to_object = Object.normalize(in_reply_to)
 
       object
       |> Map.put("inReplyTo", in_reply_to_object.data["id"])
@@ -284,7 +296,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def confirm_current_password(user, password) do
-    with %User{local: true} = db_user <- User.get_by_id(user.id),
+    with %User{local: true} = db_user <- User.get_cached_by_id(user.id),
          true <- Pbkdf2.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else

@@ -13,30 +13,42 @@ defmodule Pleroma.Web.MediaProxy do
 
   def url(url) do
     config = Application.get_env(:pleroma, :media_proxy, [])
+    domain = URI.parse(url).host
 
-    if !Keyword.get(config, :enabled, false) or String.starts_with?(url, Pleroma.Web.base_url()) do
-      url
-    else
-      secret = Application.get_env(:pleroma, Pleroma.Web.Endpoint)[:secret_key_base]
-
-      # Must preserve `%2F` for compatibility with S3
-      # https://git.pleroma.social/pleroma/pleroma/issues/580
-      replacement = get_replacement(url, ":2F:")
-
-      # The URL is url-decoded and encoded again to ensure it is correctly encoded and not twice.
-      base64 =
+    cond do
+      !Keyword.get(config, :enabled, false) or String.starts_with?(url, Pleroma.Web.base_url()) ->
         url
-        |> String.replace("%2F", replacement)
-        |> URI.decode()
-        |> URI.encode()
-        |> String.replace(replacement, "%2F")
-        |> Base.url_encode64(@base64_opts)
 
-      sig = :crypto.hmac(:sha, secret, base64)
-      sig64 = sig |> Base.url_encode64(@base64_opts)
+      Enum.any?(Pleroma.Config.get([:media_proxy, :whitelist]), fn pattern ->
+        String.equivalent?(domain, pattern)
+      end) ->
+        url
 
-      build_url(sig64, base64, filename(url))
+      true ->
+        encode_url(url)
     end
+  end
+
+  def encode_url(url) do
+    secret = Application.get_env(:pleroma, Pleroma.Web.Endpoint)[:secret_key_base]
+
+    # Must preserve `%2F` for compatibility with S3
+    # https://git.pleroma.social/pleroma/pleroma/issues/580
+    replacement = get_replacement(url, ":2F:")
+
+    # The URL is url-decoded and encoded again to ensure it is correctly encoded and not twice.
+    base64 =
+      url
+      |> String.replace("%2F", replacement)
+      |> URI.decode()
+      |> URI.encode()
+      |> String.replace(replacement, "%2F")
+      |> Base.url_encode64(@base64_opts)
+
+    sig = :crypto.hmac(:sha, secret, base64)
+    sig64 = sig |> Base.url_encode64(@base64_opts)
+
+    build_url(sig64, base64, filename(url))
   end
 
   def decode_url(sig, url) do

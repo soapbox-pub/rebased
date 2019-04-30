@@ -99,7 +99,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert object["sensitive"] == true
 
-      user = User.get_by_ap_id(object["actor"])
+      user = User.get_cached_by_ap_id(object["actor"])
 
       assert user.info.note_count == 1
     end
@@ -212,7 +212,27 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["actor"] == "http://mastodon.example.org/users/admin"
       assert data["type"] == "Follow"
       assert data["id"] == "http://mastodon.example.org/users/admin#follows/2"
-      assert User.following?(User.get_by_ap_id(data["actor"]), user)
+      assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+    end
+
+    test "it rejects incoming follow requests from blocked users when deny_follow_blocked is enabled" do
+      Pleroma.Config.put([:user, :deny_follow_blocked], true)
+
+      user = insert(:user)
+      target = User.get_or_fetch("http://mastodon.example.org/users/admin")
+
+      {:ok, user} = User.block(user, target)
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: %{"id" => id}}} = Transmogrifier.handle_incoming(data)
+
+      %Activity{} = activity = Activity.get_by_ap_id(id)
+
+      assert activity.data["state"] == "reject"
     end
 
     test "it works for incoming follow requests from hubzilla" do
@@ -229,7 +249,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["actor"] == "https://hubzilla.example.org/channel/kaniini"
       assert data["type"] == "Follow"
       assert data["id"] == "https://hubzilla.example.org/channel/kaniini#follows/2"
-      assert User.following?(User.get_by_ap_id(data["actor"]), user)
+      assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
     end
 
     test "it works for incoming likes" do
@@ -540,7 +560,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"]["object"] == user.ap_id
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
-      refute User.following?(User.get_by_ap_id(data["actor"]), user)
+      refute User.following?(User.get_cached_by_ap_id(data["actor"]), user)
     end
 
     test "it works for incoming blocks" do
@@ -557,7 +577,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"] == user.ap_id
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
-      blocker = User.get_by_ap_id(data["actor"])
+      blocker = User.get_cached_by_ap_id(data["actor"])
 
       assert User.blocks?(blocker, user)
     end
@@ -584,8 +604,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"] == blocked.ap_id
       assert data["actor"] == blocker.ap_id
 
-      blocker = User.get_by_ap_id(data["actor"])
-      blocked = User.get_by_ap_id(data["object"])
+      blocker = User.get_cached_by_ap_id(data["actor"])
+      blocked = User.get_cached_by_ap_id(data["object"])
 
       assert User.blocks?(blocker, blocked)
 
@@ -614,7 +634,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"]["object"] == user.ap_id
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
-      blocker = User.get_by_ap_id(data["actor"])
+      blocker = User.get_cached_by_ap_id(data["actor"])
 
       refute User.blocks?(blocker, user)
     end
@@ -645,7 +665,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert activity.data["object"] == follow_activity.data["id"]
 
-      follower = User.get_by_id(follower.id)
+      follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
     end
@@ -667,7 +687,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
       assert activity.data["object"] == follow_activity.data["id"]
 
-      follower = User.get_by_id(follower.id)
+      follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
     end
@@ -687,7 +707,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = Transmogrifier.handle_incoming(accept_data)
       assert activity.data["object"] == follow_activity.data["id"]
 
-      follower = User.get_by_id(follower.id)
+      follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == true
     end
@@ -706,7 +726,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       :error = Transmogrifier.handle_incoming(accept_data)
 
-      follower = User.get_by_id(follower.id)
+      follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, followed) == true
     end
@@ -725,7 +745,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       :error = Transmogrifier.handle_incoming(accept_data)
 
-      follower = User.get_by_id(follower.id)
+      follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, followed) == true
     end
@@ -750,7 +770,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, activity} = Transmogrifier.handle_incoming(reject_data)
       refute activity.local
 
-      follower = User.get_by_id(follower.id)
+      follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == false
     end
@@ -772,7 +792,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, %Activity{data: _}} = Transmogrifier.handle_incoming(reject_data)
 
-      follower = User.get_by_id(follower.id)
+      follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, followed) == false
     end
@@ -946,7 +966,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     test "it strips internal fields" do
       user = insert(:user)
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu :moominmamma:"})
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu :firefox:"})
 
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
@@ -1026,7 +1046,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, unrelated_activity} = CommonAPI.post(user_two, %{"status" => "test"})
       assert "http://localhost:4001/users/rye@niu.moe/followers" in activity.recipients
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.note_count == 1
 
       {:ok, user} = Transmogrifier.upgrade_user_from_ap_id("https://niu.moe/users/rye")
@@ -1034,7 +1054,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.info.note_count == 1
       assert user.follower_address == "https://niu.moe/users/rye/followers"
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.note_count == 1
 
       activity = Activity.get_by_id(activity.id)
@@ -1063,7 +1083,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       unrelated_activity = Activity.get_by_id(unrelated_activity.id)
       refute user.follower_address in unrelated_activity.recipients
 
-      user_two = User.get_by_id(user_two.id)
+      user_two = User.get_cached_by_id(user_two.id)
       assert user.follower_address in user_two.following
       refute "..." in user_two.following
     end

@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> put_req_header("accept", "application/json")
         |> get("/users/#{user.nickname}")
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> put_req_header("accept", "application/activity+json")
         |> get("/users/#{user.nickname}")
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         )
         |> get("/users/#{user.nickname}")
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
@@ -572,7 +572,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
 
       Enum.each(1..15, fn _ ->
-        user = User.get_by_id(user.id)
+        user = User.get_cached_by_id(user.id)
         other_user = insert(:user)
         User.follow(user, other_user)
       end)
