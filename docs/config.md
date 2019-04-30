@@ -37,7 +37,7 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 An example for Sendgrid adapter:
 
-```exs
+```elixir
 config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
@@ -45,7 +45,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 
 An example for SMTP adapter:
 
-```exs
+```elixir
 config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
@@ -109,7 +109,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
-```
+```elixir
 config :logger,
   backends: [{ExSyslogger, :ex_syslogger}]
 
@@ -118,7 +118,7 @@ config :logger, :ex_syslogger,
 ```
 
 Another example, keeping console output and adding the pid to syslog output:
-```
+```elixir
 config :logger,
   backends: [:console, {ExSyslogger, :ex_syslogger}]
 
@@ -130,7 +130,7 @@ config :logger, :ex_syslogger,
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
 An example of logging info to local syslog, but warn to a Slack channel:
-```
+```elixir
 config :logger,
   backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
   level: :info
@@ -156,14 +156,30 @@ Frontends can access these settings at `/api/pleroma/frontend_configurations`
 
 To add your own configuration for PleromaFE, use it like this:
 
-`config :pleroma, :frontend_configurations, pleroma_fe: %{redirectRootNoLogin: "/main/all", ...}`
+```elixir
+config :pleroma, :frontend_configurations,
+  pleroma_fe: %{
+    theme: "pleroma-dark",
+    # ... see /priv/static/static/config.json for the available keys.
+},
+  masto_fe: %{
+    showInstanceSpecificPanel: true
+  }
+```
 
-These settings need to be complete, they will override the defaults. See `priv/static/static/config.json` for the available keys.
+These settings **need to be complete**, they will override the defaults.
+
+NOTE: for versions < 1.0, you need to set [`:fe`](#fe) to false, as shown a few lines below. 
 
 ## :fe
 __THIS IS DEPRECATED__
 
-If you are using this method, please change it to the `frontend_configurations` method. Please set this option to false in your config like this: `config :pleroma, :fe, false`.
+If you are using this method, please change it to the [`frontend_configurations`](#frontend_configurations) method.
+Please **set this option to false** in your config like this: 
+
+```elixir
+config :pleroma, :fe, false
+```
 
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
 
@@ -274,7 +290,7 @@ their ActivityPub ID.
 
 An example:
 
-```exs
+```elixir
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
@@ -303,7 +319,7 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 
 Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
 
-```exs
+```elixir
 config :pleroma, :admin_token, "somerandomtoken"
 ```
 
@@ -387,7 +403,7 @@ Configuration for the `auto_linker` library:
 
 Example:
 
-```exs
+```elixir
 config :auto_linker,
   opts: [
     scheme: true,
@@ -460,7 +476,7 @@ Note: make sure that `"SameSite=Lax"` is set in `extra_cookie_attrs` when you ha
 Once the app is configured on external OAuth provider side, add app's credentials and strategy-specific settings (if any — e.g. see Microsoft below) to `config/prod.secret.exs`,
 per strategy's documentation (e.g. [ueberauth_twitter](https://github.com/ueberauth/ueberauth_twitter)). Example config basing on environment variables:
 
-```
+```elixir
 # Twitter
 config :ueberauth, Ueberauth.Strategy.Twitter.OAuth,
   consumer_key: System.get_env("TWITTER_CONSUMER_KEY"),
