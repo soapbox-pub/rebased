@@ -196,7 +196,7 @@ defmodule Pleroma.Notification do
 
   def skip?(:follows, activity, %{info: %{notification_settings: %{"follows" => false}}} = user) do
     actor = activity.data["actor"]
-    followed = User.get_by_ap_id(actor)
+    followed = User.get_cached_by_ap_id(actor)
     User.following?(user, followed)
   end
 

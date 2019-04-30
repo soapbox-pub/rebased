@@ -245,4 +245,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert html_response(response, 200) =~ "Log in to follow"
     end
   end
+
+  test "GET /api/pleroma/healthcheck", %{conn: conn} do
+    conn = get(conn, "/api/pleroma/healthcheck")
+
+    assert conn.status in [200, 503]
+  end
 end

@@ -221,7 +221,8 @@ config :pleroma, :instance,
   allowed_post_formats: [
     "text/plain",
     "text/html",
-    "text/markdown"
+    "text/markdown",
+    "text/bbcode"
   ],
   mrf_transparency: true,
   autofollowed_nicknames: [],
@@ -230,7 +231,8 @@ config :pleroma, :instance,
   welcome_user_nickname: nil,
   welcome_message: nil,
   max_report_comment_size: 1000,
-  safe_dm_mentions: false
+  safe_dm_mentions: false,
+  healthcheck: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -325,7 +327,8 @@ config :pleroma, :media_proxy,
       follow_redirect: true,
       pool: :media
     ]
-  ]
+  ],
+  whitelist: []
 
 config :pleroma, :chat, enabled: true
 

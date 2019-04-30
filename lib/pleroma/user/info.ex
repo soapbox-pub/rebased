@@ -38,6 +38,7 @@ defmodule Pleroma.User.Info do
     field(:salmon, :string, default: nil)
     field(:hide_followers, :boolean, default: false)
     field(:hide_follows, :boolean, default: false)
+    field(:hide_favorites, :boolean, default: true)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
 
@@ -202,6 +203,7 @@ defmodule Pleroma.User.Info do
       :banner,
       :hide_follows,
       :hide_followers,
+      :hide_favorites,
       :background,
       :show_role
     ])
@@ -223,14 +225,6 @@ defmodule Pleroma.User.Info do
 
   def confirmation_changeset(info, params) do
     cast(info, params, [:confirmation_pending, :confirmation_token])
-  end
-
-  def mastodon_profile_update(info, params) do
-    info
-    |> cast(params, [
-      :locked,
-      :banner
-    ])
   end
 
   def mastodon_settings_update(info, settings) do

@@ -143,7 +143,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          fixed_token = fix_padding(params["code"]),
          %Authorization{} = auth <-
            Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
-         %User{} = user <- User.get_by_id(auth.user_id),
+         %User{} = user <- User.get_cached_by_id(auth.user_id),
          {:ok, token} <- Token.exchange_token(app, auth),
          {:ok, inserted_at} <- DateTime.from_naive(token.inserted_at, "Etc/UTC") do
       response = %{

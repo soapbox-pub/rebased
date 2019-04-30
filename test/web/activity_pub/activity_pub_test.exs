@@ -228,18 +228,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
 
       {:ok, _} =
-        CommonAPI.post(User.get_by_id(user.id), %{"status" => "1", "visibility" => "public"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "1",
+          "visibility" => "public"
+        })
 
       {:ok, _} =
-        CommonAPI.post(User.get_by_id(user.id), %{"status" => "2", "visibility" => "unlisted"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "2",
+          "visibility" => "unlisted"
+        })
 
       {:ok, _} =
-        CommonAPI.post(User.get_by_id(user.id), %{"status" => "2", "visibility" => "private"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "2",
+          "visibility" => "private"
+        })
 
       {:ok, _} =
-        CommonAPI.post(User.get_by_id(user.id), %{"status" => "3", "visibility" => "direct"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "3",
+          "visibility" => "direct"
+        })
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.note_count == 2
     end
 
@@ -772,23 +784,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user, info: %{note_count: 10})
 
       {:ok, a1} =
-        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "public"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "yeah",
+          "visibility" => "public"
+        })
 
       {:ok, a2} =
-        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "unlisted"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "yeah",
+          "visibility" => "unlisted"
+        })
 
       {:ok, a3} =
-        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "private"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "yeah",
+          "visibility" => "private"
+        })
 
       {:ok, a4} =
-        CommonAPI.post(User.get_by_id(user.id), %{"status" => "yeah", "visibility" => "direct"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "yeah",
+          "visibility" => "direct"
+        })
 
       {:ok, _} = Object.normalize(a1) |> ActivityPub.delete()
       {:ok, _} = Object.normalize(a2) |> ActivityPub.delete()
       {:ok, _} = Object.normalize(a3) |> ActivityPub.delete()
       {:ok, _} = Object.normalize(a4) |> ActivityPub.delete()
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.note_count == 10
     end
 

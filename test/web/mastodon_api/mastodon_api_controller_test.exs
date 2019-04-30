@@ -445,7 +445,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   describe "deleting a status" do
     test "when you created it", %{conn: conn} do
       activity = insert(:note_activity)
-      author = User.get_by_ap_id(activity.data["actor"])
+      author = User.get_cached_by_ap_id(activity.data["actor"])
 
       conn =
         conn
@@ -1022,7 +1022,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       user2 = insert(:user)
       user3 = insert(:user)
       CommonAPI.favorite(activity.id, user2)
-      {:ok, user2} = User.bookmark(user2, activity.data["object"]["id"])
+      {:ok, _bookmark} = Pleroma.Bookmark.create(user2.id, activity.id)
       {:ok, reblog_activity1, _object} = CommonAPI.repeat(activity.id, user1)
       {:ok, _, _object} = CommonAPI.repeat(activity.id, user2)
 
@@ -1167,7 +1167,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     test "unimplemented pinned statuses feature", %{conn: conn} do
       note = insert(:note_activity)
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       conn =
         conn
@@ -1178,7 +1178,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     test "gets an users media", %{conn: conn} do
       note = insert(:note_activity)
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       file = %Plug.Upload{
         content_type: "image/jpg",
@@ -1253,8 +1253,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = User.get_by_id(user.id)
-      other_user = User.get_by_id(other_user.id)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1273,8 +1273,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = User.get_by_id(user.id)
-      other_user = User.get_by_id(other_user.id)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
 
@@ -1286,8 +1286,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert relationship = json_response(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
-      user = User.get_by_id(user.id)
-      other_user = User.get_by_id(other_user.id)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
 
       assert User.following?(other_user, user) == true
     end
@@ -1310,7 +1310,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       {:ok, _activity} = ActivityPub.follow(other_user, user)
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       conn =
         build_conn()
@@ -1320,8 +1320,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert relationship = json_response(conn, 200)
       assert to_string(other_user.id) == relationship["id"]
 
-      user = User.get_by_id(user.id)
-      other_user = User.get_by_id(other_user.id)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
 
       assert User.following?(other_user, user) == false
     end
@@ -1606,7 +1606,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "following" => true} = json_response(conn, 200)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     conn =
       build_conn()
@@ -1615,7 +1615,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "following" => false} = json_response(conn, 200)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     conn =
       build_conn()
@@ -1709,7 +1709,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "muting" => true} = json_response(conn, 200)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     conn =
       build_conn()
@@ -1764,7 +1764,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     assert %{"id" => _id, "blocking" => true} = json_response(conn, 200)
 
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     conn =
       build_conn()
@@ -1988,6 +1988,199 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert [] = json_response(third_conn, 200)
   end
 
+  describe "getting favorites timeline of specified user" do
+    setup do
+      [current_user, user] = insert_pair(:user, %{info: %{hide_favorites: false}})
+      [current_user: current_user, user: user]
+    end
+
+    test "returns list of statuses favorited by specified user", %{
+      conn: conn,
+      current_user: current_user,
+      user: user
+    } do
+      [activity | _] = insert_pair(:note_activity)
+      CommonAPI.favorite(activity.id, user)
+
+      response =
+        conn
+        |> assign(:user, current_user)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+        |> json_response(:ok)
+
+      [like] = response
+
+      assert length(response) == 1
+      assert like["id"] == activity.id
+    end
+
+    test "returns favorites for specified user_id when user is not logged in", %{
+      conn: conn,
+      user: user
+    } do
+      activity = insert(:note_activity)
+      CommonAPI.favorite(activity.id, user)
+
+      response =
+        conn
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+        |> json_response(:ok)
+
+      assert length(response) == 1
+    end
+
+    test "returns favorited DM only when user is logged in and he is one of recipients", %{
+      conn: conn,
+      current_user: current_user,
+      user: user
+    } do
+      {:ok, direct} =
+        CommonAPI.post(current_user, %{
+          "status" => "Hi @#{user.nickname}!",
+          "visibility" => "direct"
+        })
+
+      CommonAPI.favorite(direct.id, user)
+
+      response =
+        conn
+        |> assign(:user, current_user)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+        |> json_response(:ok)
+
+      assert length(response) == 1
+
+      anonymous_response =
+        conn
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+        |> json_response(:ok)
+
+      assert length(anonymous_response) == 0
+    end
+
+    test "does not return others' favorited DM when user is not one of recipients", %{
+      conn: conn,
+      current_user: current_user,
+      user: user
+    } do
+      user_two = insert(:user)
+
+      {:ok, direct} =
+        CommonAPI.post(user_two, %{
+          "status" => "Hi @#{user.nickname}!",
+          "visibility" => "direct"
+        })
+
+      CommonAPI.favorite(direct.id, user)
+
+      response =
+        conn
+        |> assign(:user, current_user)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+        |> json_response(:ok)
+
+      assert length(response) == 0
+    end
+
+    test "paginates favorites using since_id and max_id", %{
+      conn: conn,
+      current_user: current_user,
+      user: user
+    } do
+      activities = insert_list(10, :note_activity)
+
+      Enum.each(activities, fn activity ->
+        CommonAPI.favorite(activity.id, user)
+      end)
+
+      third_activity = Enum.at(activities, 2)
+      seventh_activity = Enum.at(activities, 6)
+
+      response =
+        conn
+        |> assign(:user, current_user)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites", %{
+          since_id: third_activity.id,
+          max_id: seventh_activity.id
+        })
+        |> json_response(:ok)
+
+      assert length(response) == 3
+      refute third_activity in response
+      refute seventh_activity in response
+    end
+
+    test "limits favorites using limit parameter", %{
+      conn: conn,
+      current_user: current_user,
+      user: user
+    } do
+      7
+      |> insert_list(:note_activity)
+      |> Enum.each(fn activity ->
+        CommonAPI.favorite(activity.id, user)
+      end)
+
+      response =
+        conn
+        |> assign(:user, current_user)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites", %{limit: "3"})
+        |> json_response(:ok)
+
+      assert length(response) == 3
+    end
+
+    test "returns empty response when user does not have any favorited statuses", %{
+      conn: conn,
+      current_user: current_user,
+      user: user
+    } do
+      response =
+        conn
+        |> assign(:user, current_user)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+        |> json_response(:ok)
+
+      assert Enum.empty?(response)
+    end
+
+    test "returns 404 error when specified user is not exist", %{conn: conn} do
+      conn = get(conn, "/api/v1/pleroma/accounts/test/favourites")
+
+      assert json_response(conn, 404) == %{"error" => "Record not found"}
+    end
+
+    test "returns 403 error when user has hidden own favorites", %{
+      conn: conn,
+      current_user: current_user
+    } do
+      user = insert(:user, %{info: %{hide_favorites: true}})
+      activity = insert(:note_activity)
+      CommonAPI.favorite(activity.id, user)
+
+      conn =
+        conn
+        |> assign(:user, current_user)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+
+      assert json_response(conn, 403) == %{"error" => "Can't get favorites"}
+    end
+
+    test "hides favorites for new users by default", %{conn: conn, current_user: current_user} do
+      user = insert(:user)
+      activity = insert(:note_activity)
+      CommonAPI.favorite(activity.id, user)
+
+      conn =
+        conn
+        |> assign(:user, current_user)
+        |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
+
+      assert user.info.hide_favorites
+      assert json_response(conn, 403) == %{"error" => "Can't get favorites"}
+    end
+  end
+
   describe "updating credentials" do
     test "updates the user's bio", %{conn: conn} do
       user = insert(:user)
@@ -2019,6 +2212,78 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert user = json_response(conn, 200)
       assert user["locked"] == true
+    end
+
+    test "updates the user's default scope", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{default_scope: "cofe"})
+
+      assert user = json_response(conn, 200)
+      assert user["source"]["privacy"] == "cofe"
+    end
+
+    test "updates the user's hide_followers status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{hide_followers: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["hide_followers"] == true
+    end
+
+    test "updates the user's hide_follows status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{hide_follows: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["hide_follows"] == true
+    end
+
+    test "updates the user's hide_favorites status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{hide_favorites: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["hide_favorites"] == true
+    end
+
+    test "updates the user's show_role status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{show_role: "false"})
+
+      assert user = json_response(conn, 200)
+      assert user["source"]["pleroma"]["show_role"] == false
+    end
+
+    test "updates the user's no_rich_text status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{no_rich_text: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["source"]["pleroma"]["no_rich_text"] == true
     end
 
     test "updates the user's name", %{conn: conn} do
@@ -2124,7 +2389,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     {:ok, _} = TwitterAPI.create_status(user, %{"status" => "cofe"})
 
     # Stats should count users with missing or nil `info.deactivated` value
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
     info_change = Changeset.change(user.info, %{deactivated: nil})
 
     {:ok, _user} =
