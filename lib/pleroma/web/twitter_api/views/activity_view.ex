@@ -289,7 +289,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "uri" => object.data["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => html,
-      "text" => HtmlEntities.decode(text),
+      "text" => text,
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,
