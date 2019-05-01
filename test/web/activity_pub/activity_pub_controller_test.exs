@@ -50,7 +50,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> put_req_header("accept", "application/json")
         |> get("/users/#{user.nickname}")
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> put_req_header("accept", "application/activity+json")
         |> get("/users/#{user.nickname}")
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         )
         |> get("/users/#{user.nickname}")
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user})
     end
@@ -247,6 +247,36 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> assign(:valid_signature, true)
         |> put_req_header("content-type", "application/activity+json")
         |> post("/users/#{user.nickname}/inbox", data)
+
+      assert "ok" == json_response(conn, 200)
+      :timer.sleep(500)
+      assert Activity.get_by_ap_id(data["id"])
+    end
+
+    test "it accepts messages from actors that are followed by the user", %{conn: conn} do
+      recipient = insert(:user)
+      actor = insert(:user, %{ap_id: "http://mastodon.example.org/users/actor"})
+
+      {:ok, recipient} = User.follow(recipient, actor)
+
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      object =
+        data["object"]
+        |> Map.put("attributedTo", actor.ap_id)
+
+      data =
+        data
+        |> Map.put("actor", actor.ap_id)
+        |> Map.put("object", object)
+
+      conn =
+        conn
+        |> assign(:valid_signature, true)
+        |> put_req_header("content-type", "application/activity+json")
+        |> post("/users/#{recipient.nickname}/inbox", data)
 
       assert "ok" == json_response(conn, 200)
       :timer.sleep(500)
@@ -542,7 +572,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       user = insert(:user)
 
       Enum.each(1..15, fn _ ->
-        user = User.get_by_id(user.id)
+        user = User.get_cached_by_id(user.id)
         other_user = insert(:user)
         User.follow(user, other_user)
       end)

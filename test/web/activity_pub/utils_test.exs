@@ -1,7 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.UtilsTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
-  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -12,8 +11,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
   describe "fetch the latest Follow" do
     test "fetches the latest Follow activity" do
       %Activity{data: %{"type" => "Follow"}} = activity = insert(:follow_activity)
-      follower = Repo.get_by(User, ap_id: activity.data["actor"])
-      followed = Repo.get_by(User, ap_id: activity.data["object"])
+      follower = User.get_cached_by_ap_id(activity.data["actor"])
+      followed = User.get_cached_by_ap_id(activity.data["object"])
 
       assert activity == Utils.fetch_latest_follow(follower, followed)
     end

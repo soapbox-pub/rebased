@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.AdminEmail do
+defmodule Pleroma.Emails.AdminEmail do
   @moduledoc "Admin emails"
 
   import Swoosh.Email
@@ -11,7 +11,10 @@ defmodule Pleroma.AdminEmail do
 
   defp instance_config, do: Pleroma.Config.get(:instance)
   defp instance_name, do: instance_config()[:name]
-  defp instance_email, do: instance_config()[:email]
+
+  defp instance_notify_email do
+    Keyword.get(instance_config(), :notify_email, instance_config()[:email])
+  end
 
   defp user_url(user) do
     Helpers.o_status_url(Pleroma.Web.Endpoint, :feed_redirect, user.nickname)
@@ -59,7 +62,7 @@ defmodule Pleroma.AdminEmail do
 
     new()
     |> to({to.name, to.email})
-    |> from({instance_name(), instance_email()})
+    |> from({instance_name(), instance_notify_email()})
     |> reply_to({reporter.name, reporter.email})
     |> subject("#{instance_name()} Report")
     |> html_body(html_body)

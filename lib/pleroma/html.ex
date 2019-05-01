@@ -32,7 +32,8 @@ defmodule Pleroma.HTML do
     key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
 
     Cachex.fetch!(:scrubber_cache, key, fn _key ->
-      ensure_scrubbed_html(content, scrubbers, activity.data["object"]["fake"] || false)
+      object = Pleroma.Object.normalize(activity)
+      ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false)
     end)
   end
 
@@ -105,7 +106,14 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
 
   # links
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
-  Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
+
+  Meta.allow_tag_with_this_attribute_values("a", "class", [
+    "hashtag",
+    "u-url",
+    "mention",
+    "u-url mention",
+    "mention u-url"
+  ])
 
   Meta.allow_tag_with_this_attribute_values("a", "rel", [
     "tag",
@@ -114,12 +122,15 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
     "noreferrer"
   ])
 
+  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+
   # paragraphs and linebreaks
   Meta.allow_tag_with_these_attributes("br", [])
   Meta.allow_tag_with_these_attributes("p", [])
 
   # microformats
-  Meta.allow_tag_with_these_attributes("span", ["class"])
+  Meta.allow_tag_with_this_attribute_values("span", "class", ["h-card"])
+  Meta.allow_tag_with_these_attributes("span", [])
 
   # allow inline images for custom emoji
   @allow_inline_images Keyword.get(@markup, :allow_inline_images)
@@ -154,7 +165,14 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.strip_comments()
 
   Meta.allow_tag_with_uri_attributes("a", ["href", "data-user", "data-tag"], @valid_schemes)
-  Meta.allow_tag_with_these_attributes("a", ["name", "title", "class"])
+
+  Meta.allow_tag_with_this_attribute_values("a", "class", [
+    "hashtag",
+    "u-url",
+    "mention",
+    "u-url mention",
+    "mention u-url"
+  ])
 
   Meta.allow_tag_with_this_attribute_values("a", "rel", [
     "tag",
@@ -162,6 +180,8 @@ defmodule Pleroma.HTML.Scrubber.Default do
     "noopener",
     "noreferrer"
   ])
+
+  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
 
   Meta.allow_tag_with_these_attributes("abbr", ["title"])
 
@@ -176,10 +196,12 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes("ol", [])
   Meta.allow_tag_with_these_attributes("p", [])
   Meta.allow_tag_with_these_attributes("pre", [])
-  Meta.allow_tag_with_these_attributes("span", ["class"])
   Meta.allow_tag_with_these_attributes("strong", [])
   Meta.allow_tag_with_these_attributes("u", [])
   Meta.allow_tag_with_these_attributes("ul", [])
+
+  Meta.allow_tag_with_this_attribute_values("span", "class", ["h-card"])
+  Meta.allow_tag_with_these_attributes("span", [])
 
   @allow_inline_images Keyword.get(@markup, :allow_inline_images)
 

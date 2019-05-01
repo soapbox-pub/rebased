@@ -39,7 +39,7 @@ defmodule Pleroma.PasswordResetToken do
 
   def reset_password(token, data) do
     with %{used: false} = token <- Repo.get_by(PasswordResetToken, %{token: token}),
-         %User{} = user <- User.get_by_id(token.user_id),
+         %User{} = user <- User.get_cached_by_id(token.user_id),
          {:ok, _user} <- User.reset_password(user, data),
          {:ok, token} <- Repo.update(used_changeset(token)) do
       {:ok, token}

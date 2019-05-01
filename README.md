@@ -1,6 +1,6 @@
 # Pleroma
 
-**Note**: This readme as well as complete documentation is also availible at <https://docs-develop.pleroma.social>
+**Note**: This readme as well as complete documentation is also available at <https://docs-develop.pleroma.social>
 
 ## About Pleroma
 

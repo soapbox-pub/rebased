@@ -26,6 +26,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       assert response == "job started"
     end
 
+    test "it imports new-style mastodon follow lists", %{conn: conn} do
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      response =
+        conn
+        |> assign(:user, user1)
+        |> post("/api/pleroma/follow_import", %{
+          "list" => "Account address,Show boosts\n#{user2.ap_id},true"
+        })
+        |> json_response(:ok)
+
+      assert response == "job started"
+    end
+
     test "requires 'follow' permission", %{conn: conn} do
       token1 = insert(:oauth_token, scopes: ["read", "write"])
       token2 = insert(:oauth_token, scopes: ["follow"])
@@ -229,5 +244,11 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert html_response(response, 200) =~ "Log in to follow"
     end
+  end
+
+  test "GET /api/pleroma/healthcheck", %{conn: conn} do
+    conn = get(conn, "/api/pleroma/healthcheck")
+
+    assert conn.status in [200, 503]
   end
 end

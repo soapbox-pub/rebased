@@ -38,6 +38,7 @@ end
 defmodule Pleroma.Gopher.Server.ProtocolHandler do
   alias Pleroma.Activity
   alias Pleroma.HTML
+  alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
@@ -75,14 +76,14 @@ defmodule Pleroma.Gopher.Server.ProtocolHandler do
     |> Enum.map(fn activity ->
       user = User.get_cached_by_ap_id(activity.data["actor"])
 
-      object = activity.data["object"]
+      object = Object.normalize(activity)
       like_count = object["like_count"] || 0
       announcement_count = object["announcement_count"] || 0
 
       link("Post ##{activity.id} by #{user.nickname}", "/notices/#{activity.id}") <>
         info("#{like_count} likes, #{announcement_count} repeats") <>
         "i\tfake\t(NULL)\t0\r\n" <>
-        info(HTML.strip_tags(String.replace(activity.data["object"]["content"], "<br>", "\r")))
+        info(HTML.strip_tags(String.replace(object["content"], "<br>", "\r")))
     end)
     |> Enum.join("i\tfake\t(NULL)\t0\r\n")
   end

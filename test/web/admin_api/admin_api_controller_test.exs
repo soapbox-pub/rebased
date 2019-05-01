@@ -89,8 +89,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "followed" => user.nickname
       })
 
-      user = User.get_by_id(user.id)
-      follower = User.get_by_id(follower.id)
+      user = User.get_cached_by_id(user.id)
+      follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, user)
     end
@@ -112,8 +112,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "followed" => user.nickname
       })
 
-      user = User.get_by_id(user.id)
-      follower = User.get_by_id(follower.id)
+      user = User.get_cached_by_id(user.id)
+      follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, user)
     end
@@ -145,13 +145,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user2: user2
     } do
       assert json_response(conn, :no_content)
-      assert User.get_by_id(user1.id).tags == ["x", "foo", "bar"]
-      assert User.get_by_id(user2.id).tags == ["y", "foo", "bar"]
+      assert User.get_cached_by_id(user1.id).tags == ["x", "foo", "bar"]
+      assert User.get_cached_by_id(user2.id).tags == ["y", "foo", "bar"]
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
       assert json_response(conn, :no_content)
-      assert User.get_by_id(user3.id).tags == ["unchanged"]
+      assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
   end
 
@@ -181,13 +181,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user2: user2
     } do
       assert json_response(conn, :no_content)
-      assert User.get_by_id(user1.id).tags == []
-      assert User.get_by_id(user2.id).tags == ["y"]
+      assert User.get_cached_by_id(user1.id).tags == []
+      assert User.get_cached_by_id(user2.id).tags == ["y"]
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
       assert json_response(conn, :no_content)
-      assert User.get_by_id(user3.id).tags == ["unchanged"]
+      assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
   end
 
@@ -257,7 +257,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         conn
         |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: false})
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.deactivated == true
       assert json_response(conn, :no_content)
     end
@@ -269,7 +269,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         conn
         |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: true})
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.deactivated == false
       assert json_response(conn, :no_content)
     end
@@ -317,13 +317,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert token_record
       refute token_record.used
 
-      Swoosh.TestAssertions.assert_email_sent(
-        Pleroma.UserEmail.user_invitation_email(
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      email =
+        Pleroma.Emails.UserEmail.user_invitation_email(
           user,
           token_record,
           recipient_email,
           recipient_name
         )
+
+      Swoosh.TestAssertions.assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {recipient_name, recipient_email},
+        html_body: email.html_body
       )
     end
 

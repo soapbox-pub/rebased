@@ -36,6 +36,12 @@ defmodule Pleroma.Pagination do
       limit: :integer
     }
 
+    params =
+      Enum.reduce(params, %{}, fn
+        {key, _value}, acc when is_atom(key) -> Map.drop(acc, [key])
+        {key, value}, acc -> Map.put(acc, key, value)
+      end)
+
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))
     changeset.changes
   end

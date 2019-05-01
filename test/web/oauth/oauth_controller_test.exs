@@ -68,10 +68,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "/oauth/prepare_request",
           %{
             "provider" => "twitter",
-            "scope" => "read follow",
-            "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
-            "state" => "a_state"
+            "authorization" => %{
+              "scope" => "read follow",
+              "client_id" => app.client_id,
+              "redirect_uri" => app.redirect_uris,
+              "state" => "a_state"
+            }
           }
         )
 
@@ -104,7 +106,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       }
 
       with_mock Pleroma.Web.Auth.Authenticator,
-        get_registration: fn _, _ -> {:ok, registration} end do
+        get_registration: fn _ -> {:ok, registration} end do
         conn =
           get(
             conn,
@@ -134,7 +136,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       }
 
       with_mock Pleroma.Web.Auth.Authenticator,
-        get_registration: fn _, _ -> {:ok, registration} end do
+        get_registration: fn _ -> {:ok, registration} end do
         conn =
           get(
             conn,
@@ -193,12 +195,14 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           conn,
           "/oauth/registration_details",
           %{
-            "scopes" => app.scopes,
-            "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
-            "state" => "a_state",
-            "nickname" => nil,
-            "email" => "john@doe.com"
+            "authorization" => %{
+              "scopes" => app.scopes,
+              "client_id" => app.client_id,
+              "redirect_uri" => app.redirect_uris,
+              "state" => "a_state",
+              "nickname" => nil,
+              "email" => "john@doe.com"
+            }
           }
         )
 
@@ -221,12 +225,14 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "/oauth/register",
           %{
             "op" => "register",
-            "scopes" => app.scopes,
-            "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
-            "state" => "a_state",
-            "nickname" => "availablenick",
-            "email" => "available@email.com"
+            "authorization" => %{
+              "scopes" => app.scopes,
+              "client_id" => app.client_id,
+              "redirect_uri" => app.redirect_uris,
+              "state" => "a_state",
+              "nickname" => "availablenick",
+              "email" => "available@email.com"
+            }
           }
         )
 
@@ -244,17 +250,23 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       params = %{
         "op" => "register",
-        "scopes" => app.scopes,
-        "client_id" => app.client_id,
-        "redirect_uri" => app.redirect_uris,
-        "state" => "a_state",
-        "nickname" => "availablenickname",
-        "email" => "available@email.com"
+        "authorization" => %{
+          "scopes" => app.scopes,
+          "client_id" => app.client_id,
+          "redirect_uri" => app.redirect_uris,
+          "state" => "a_state",
+          "nickname" => "availablenickname",
+          "email" => "available@email.com"
+        }
       }
 
       for {bad_param, bad_param_value} <-
             [{"nickname", another_user.nickname}, {"email", another_user.email}] do
-        bad_params = Map.put(params, bad_param, bad_param_value)
+        bad_registration_attrs = %{
+          "authorization" => Map.put(params["authorization"], bad_param, bad_param_value)
+        }
+
+        bad_params = Map.merge(params, bad_registration_attrs)
 
         conn =
           conn
@@ -281,12 +293,14 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           "/oauth/register",
           %{
             "op" => "connect",
-            "scopes" => app.scopes,
-            "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
-            "state" => "a_state",
-            "auth_name" => user.nickname,
-            "password" => "testpassword"
+            "authorization" => %{
+              "scopes" => app.scopes,
+              "client_id" => app.client_id,
+              "redirect_uri" => app.redirect_uris,
+              "state" => "a_state",
+              "name" => user.nickname,
+              "password" => "testpassword"
+            }
           }
         )
 
@@ -304,12 +318,14 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       params = %{
         "op" => "connect",
-        "scopes" => app.scopes,
-        "client_id" => app.client_id,
-        "redirect_uri" => app.redirect_uris,
-        "state" => "a_state",
-        "auth_name" => user.nickname,
-        "password" => "wrong password"
+        "authorization" => %{
+          "scopes" => app.scopes,
+          "client_id" => app.client_id,
+          "redirect_uri" => app.redirect_uris,
+          "state" => "a_state",
+          "name" => user.nickname,
+          "password" => "wrong password"
+        }
       }
 
       conn =
@@ -343,6 +359,27 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "client_id" => app.client_id,
             "redirect_uri" => app.redirect_uris,
             "scope" => "read"
+          }
+        )
+
+      assert html_response(conn, 200) =~ ~s(type="submit")
+    end
+
+    test "properly handles internal calls with `authorization`-wrapped params", %{
+      app: app,
+      conn: conn
+    } do
+      conn =
+        get(
+          conn,
+          "/oauth/authorize",
+          %{
+            "authorization" => %{
+              "response_type" => "code",
+              "client_id" => app.client_id,
+              "redirect_uri" => app.redirect_uris,
+              "scope" => "read"
+            }
           }
         )
 

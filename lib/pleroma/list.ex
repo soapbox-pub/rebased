@@ -80,7 +80,7 @@ defmodule Pleroma.List do
 
   # Get lists to which the account belongs.
   def get_lists_account_belongs(%User{} = owner, account_id) do
-    user = User.get_by_id(account_id)
+    user = User.get_cached_by_id(account_id)
 
     query =
       from(
