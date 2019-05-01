@@ -371,4 +371,14 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     assert length(result["attachments"]) == 1
     assert result["summary"] == "Friday Night"
   end
+
+  test "special characters are not escaped in text field for status created" do
+    text = "<3 is on the way"
+
+    {:ok, activity} = CommonAPI.post(insert(:user), %{"status" => text})
+
+    result = ActivityView.render("activity.json", activity: activity)
+
+    assert result["text"] == text
+  end
 end
