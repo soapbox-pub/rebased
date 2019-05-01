@@ -71,14 +71,6 @@ defmodule Pleroma.HTML do
     end
   end
 
-  def ensure_scrubbed_html(
-        content,
-        scrubbers,
-        true = _fake
-      ) do
-    {:ignore, filter_tags(content, scrubbers)}
-  end
-
   defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
     generate_scrubber_signature([scrubber])
   end
