@@ -293,7 +293,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def get_external_profile(for_user, uri) do
-    with %User{} = user <- User.get_or_fetch(uri) do
+    with {:ok, %User{} = user} <- User.get_or_fetch(uri) do
       {:ok, UserView.render("show.json", %{user: user, for: for_user})}
     else
       _e ->
