@@ -1,0 +1,21 @@
+; Assumes pleroma is installed in /home/pleroma/pleroma and running as the pleroma user
+; Also assumes mix is in /usr/bin, this might differ on BSDs or niche Linux distros
+; Logs into /home/pleroma/logs
+[program:pleroma]
+command=/usr/bin/mix phx.server
+directory=/home/pleroma/pleroma
+autostart=true
+autorestart=true
+user=pleroma
+environment =
+  MIX_ENV=prod,
+  HOME=/home/pleroma,
+  USER=pleroma,
+  PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/home/pleroma/bin:%(ENV_PATH)s",
+  PWD=/home/pleroma/pleroma
+stdout_logfile=/home/pleroma/logs/stdout.log
+stdout_logfile_maxbytes=50MB
+stdout_logfile_backups=10
+stderr_logfile=/home/pleroma/logs/stderr.log
+stderr_logfile_maxbytes=50MB
+stderr_logfile_backups=10

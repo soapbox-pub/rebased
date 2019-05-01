@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
+  alias Pleroma.Bookmark
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.ThreadMute
@@ -125,7 +126,10 @@ defmodule Pleroma.Web.CommonAPI do
         "public"
 
       in_reply_to ->
-        Pleroma.Web.MastodonAPI.StatusView.get_visibility(in_reply_to.data["object"])
+        # XXX: these heuristics should be moved out of MastodonAPI.
+        with %Object{} = object <- Object.normalize(in_reply_to) do
+          Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
+        end
     end
   end
 
@@ -214,8 +218,10 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{
            actor: ^user_ap_id,
            data: %{
-             "type" => "Create",
-             "object" => %{
+             "type" => "Create"
+           },
+           object: %Object{
+             data: %{
                "to" => object_to,
                "type" => "Note"
              }
@@ -277,9 +283,18 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def bookmarked?(user, activity) do
+    with %Bookmark{} <- Bookmark.get(user.id, activity.id) do
+      true
+    else
+      _ ->
+        false
+    end
+  end
+
   def report(user, data) do
     with {:account_id, %{"account_id" => account_id}} <- {:account_id, data},
-         {:account, %User{} = account} <- {:account, User.get_by_id(account_id)},
+         {:account, %User{} = account} <- {:account, User.get_cached_by_id(account_id)},
          {:ok, {content_html, _, _}} <- make_report_content_html(data["comment"]),
          {:ok, statuses} <- get_report_statuses(account, data),
          {:ok, activity} <-

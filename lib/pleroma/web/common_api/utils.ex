@@ -12,6 +12,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
@@ -182,6 +183,18 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   @doc """
+  Formatting text as BBCode.
+  """
+  def format_input(text, "text/bbcode", options) do
+    text
+    |> String.replace(~r/\r/, "")
+    |> Formatter.html_escape("text/plain")
+    |> BBCode.to_html()
+    |> (fn {:ok, html} -> html end).()
+    |> Formatter.linkify(options)
+  end
+
+  @doc """
   Formatting text to html.
   """
   def format_input(text, "text/html", options) do
@@ -194,11 +207,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   Formatting text to markdown.
   """
   def format_input(text, "text/markdown", options) do
-    options = Keyword.put(options, :mentions_escape, true)
-
     text
+    |> Formatter.mentions_escape(options)
+    |> Earmark.as_html!()
     |> Formatter.linkify(options)
-    |> (fn {text, mentions, tags} -> {Earmark.as_html!(text), mentions, tags} end).()
     |> Formatter.html_escape("text/html")
   end
 
@@ -208,7 +220,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         context,
         content_html,
         attachments,
-        inReplyTo,
+        in_reply_to,
         tags,
         cw \\ nil,
         cc \\ []
@@ -225,10 +237,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
-    if inReplyTo do
+    if in_reply_to do
+      in_reply_to_object = Object.normalize(in_reply_to)
+
       object
-      |> Map.put("inReplyTo", inReplyTo.data["object"]["id"])
-      |> Map.put("inReplyToStatusId", inReplyTo.id)
+      |> Map.put("inReplyTo", in_reply_to_object.data["id"])
     else
       object
     end
@@ -283,7 +296,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def confirm_current_password(user, password) do
-    with %User{local: true} = db_user <- User.get_by_id(user.id),
+    with %User{local: true} = db_user <- User.get_cached_by_id(user.id),
          true <- Pbkdf2.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else
@@ -334,6 +347,24 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
+
+  def maybe_notify_subscribers(
+        recipients,
+        %Activity{data: %{"actor" => actor, "type" => type}} = activity
+      )
+      when type == "Create" do
+    with %User{} = user <- User.get_cached_by_ap_id(actor) do
+      subscriber_ids =
+        user
+        |> User.subscribers()
+        |> Enum.filter(&Visibility.visible_for_user?(activity, &1))
+        |> Enum.map(& &1.ap_id)
+
+      recipients ++ subscriber_ids
+    end
+  end
+
+  def maybe_notify_subscribers(recipients, _), do: recipients
 
   def maybe_extract_mentions(%{"tag" => tag}) do
     tag

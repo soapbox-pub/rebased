@@ -31,22 +31,22 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 * `text`: Text to replace filenames in links. If empty, `{random}.extension` will be used.
 
-## Pleroma.Mailer
+## Pleroma.Emails.Mailer
 * `adapter`: one of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters), or `Swoosh.Adapters.Local` for in-memory mailbox.
 * `api_key` / `password` and / or other adapter-specific settings, per the above documentation.
 
 An example for Sendgrid adapter:
 
-```exs
-config :pleroma, Pleroma.Mailer,
+```elixir
+config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
 ```
 
 An example for SMTP adapter:
 
-```exs
-config :pleroma, Pleroma.Mailer,
+```elixir
+config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
   username: "YOUR_USERNAME@gmail.com",
@@ -63,6 +63,7 @@ config :pleroma, Pleroma.Mailer,
 ## :instance
 * `name`: The instance’s name
 * `email`: Email used to reach an Administrator/Moderator of the instance
+* `notify_email`: Email used for notifications.
 * `description`: The instance’s description, can be seen in nodeinfo and ``/api/v1/instance``
 * `limit`: Posts character limit (CW/Subject included in the counter)
 * `remote_limit`: Hard character limit beyond which remote posts will be dropped.
@@ -86,7 +87,6 @@ config :pleroma, Pleroma.Mailer,
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML)
-* `finmoji_enabled`: Whenether to enable the finmojis in the custom emojis.
 * `mrf_transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
 * `scope_copy`: Copy the scope (private/unlisted/public) in replies to posts by default.
 * `subject_line_behavior`: Allows changing the default behaviour of subject lines in replies. Valid values:
@@ -103,12 +103,13 @@ config :pleroma, Pleroma.Mailer,
 * `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
+* `healthcheck`: if set to true, system data will be shown on ``/api/pleroma/healthcheck``.
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
-```
+```elixir
 config :logger,
   backends: [{ExSyslogger, :ex_syslogger}]
 
@@ -117,7 +118,7 @@ config :logger, :ex_syslogger,
 ```
 
 Another example, keeping console output and adding the pid to syslog output:
-```
+```elixir
 config :logger,
   backends: [:console, {ExSyslogger, :ex_syslogger}]
 
@@ -129,7 +130,7 @@ config :logger, :ex_syslogger,
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
 An example of logging info to local syslog, but warn to a Slack channel:
-```
+```elixir
 config :logger,
   backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
   level: :info
@@ -155,14 +156,30 @@ Frontends can access these settings at `/api/pleroma/frontend_configurations`
 
 To add your own configuration for PleromaFE, use it like this:
 
-`config :pleroma, :frontend_configurations, pleroma_fe: %{redirectRootNoLogin: "/main/all", ...}`
+```elixir
+config :pleroma, :frontend_configurations,
+  pleroma_fe: %{
+    theme: "pleroma-dark",
+    # ... see /priv/static/static/config.json for the available keys.
+},
+  masto_fe: %{
+    showInstanceSpecificPanel: true
+  }
+```
 
-These settings need to be complete, they will override the defaults. See `priv/static/static/config.json` for the available keys.
+These settings **need to be complete**, they will override the defaults.
+
+NOTE: for versions < 1.0, you need to set [`:fe`](#fe) to false, as shown a few lines below. 
 
 ## :fe
 __THIS IS DEPRECATED__
 
-If you are using this method, please change it to the `frontend_configurations` method. Please set this option to false in your config like this: `config :pleroma, :fe, false`.
+If you are using this method, please change it to the [`frontend_configurations`](#frontend_configurations) method.
+Please **set this option to false** in your config like this: 
+
+```elixir
+config :pleroma, :fe, false
+```
 
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
 
@@ -204,6 +221,7 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
 * `proxy_opts`: All options defined in `Pleroma.ReverseProxy` documentation, defaults to `[max_body_length: (25*1_048_576)]`.
+* `whitelist`: List of domains to bypass the mediaproxy
 
 ## :gopher
 * `enabled`: Enables the gopher interface
@@ -221,6 +239,8 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
   - `scheme` - e.g `http`, `https`
   - `port`
   - `path`
+* `extra_cookie_attrs` - a list of `Key=Value` strings to be added as non-standard cookie attributes. Defaults to `["SameSite=Lax"]`. See the [SameSite article](https://www.owasp.org/index.php/SameSite) on OWASP for more info.
+
 
 
 **Important note**: if you modify anything inside these lists, default `config.exs` values will be overwritten, which may result in breakage, to make sure this does not happen please copy the default value for the list from `config.exs` and modify/add only what you need
@@ -270,7 +290,7 @@ their ActivityPub ID.
 
 An example:
 
-```exs
+```elixir
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
@@ -299,7 +319,7 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 
 Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
 
-```exs
+```elixir
 config :pleroma, :admin_token, "somerandomtoken"
 ```
 
@@ -317,7 +337,7 @@ Pleroma has the following queues:
 
 * `federator_outgoing` - Outgoing federation
 * `federator_incoming` - Incoming federation
-* `mailer` - Email sender, see [`Pleroma.Mailer`](#pleroma-mailer)
+* `mailer` - Email sender, see [`Pleroma.Emails.Mailer`](#pleroma-emails-mailer)
 * `transmogrifier` - Transmogrifier
 * `web_push` - Web push notifications
 * `scheduled_activities` - Scheduled activities, see [`Pleroma.ScheduledActivities`](#pleromascheduledactivity)
@@ -340,9 +360,10 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 * `max_retries`: The maximum number of times a federation job is retried
 
 ## Pleroma.Web.Metadata
-* `providers`: a list of metadata providers to enable. Providers availible:
+* `providers`: a list of metadata providers to enable. Providers available:
   * Pleroma.Web.Metadata.Providers.OpenGraph
   * Pleroma.Web.Metadata.Providers.TwitterCard
+  * Pleroma.Web.Metadata.Providers.RelMe - add links from user bio with rel=me into the `<header>` as `<link rel=me>`
 * `unfurl_nsfw`: If set to `true` nsfw attachments will be shown in previews
 
 ## :rich_media
@@ -382,7 +403,7 @@ Configuration for the `auto_linker` library:
 
 Example:
 
-```exs
+```elixir
 config :auto_linker,
   opts: [
     scheme: true,
@@ -427,7 +448,7 @@ Pleroma account will be created with the same name as the LDAP user name.
 
 Authentication / authorization settings.
 
-* `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`. 
+* `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`.
 * `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
 * `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
 
@@ -440,7 +461,9 @@ Note: each strategy is shipped as a separate dependency; in order to get the str
 e.g. `OAUTH_CONSUMER_STRATEGIES="twitter facebook google microsoft" mix deps.get`.
 The server should also be started with `OAUTH_CONSUMER_STRATEGIES="..." mix phx.server` in case you enable any strategies.
 
-Note: each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.  
+Note: each strategy requires separate setup (on external provider side and Pleroma side). Below are the guidelines on setting up most popular strategies.
+
+Note: make sure that `"SameSite=Lax"` is set in `extra_cookie_attrs` when you have this feature enabled. OAuth consumer mode will not work with `"SameSite=Strict"`
 
 * For Twitter, [register an app](https://developer.twitter.com/en/apps), configure callback URL to https://<your_host>/oauth/twitter/callback
 
@@ -453,7 +476,7 @@ Note: each strategy requires separate setup (on external provider side and Plero
 Once the app is configured on external OAuth provider side, add app's credentials and strategy-specific settings (if any — e.g. see Microsoft below) to `config/prod.secret.exs`,
 per strategy's documentation (e.g. [ueberauth_twitter](https://github.com/ueberauth/ueberauth_twitter)). Example config basing on environment variables:
 
-```
+```elixir
 # Twitter
 config :ueberauth, Ueberauth.Strategy.Twitter.OAuth,
   consumer_key: System.get_env("TWITTER_CONSUMER_KEY"),
@@ -475,9 +498,14 @@ config :ueberauth, Ueberauth.Strategy.Google.OAuth,
 config :ueberauth, Ueberauth.Strategy.Microsoft.OAuth,
   client_id: System.get_env("MICROSOFT_CLIENT_ID"),
   client_secret: System.get_env("MICROSOFT_CLIENT_SECRET")
-  
+
 config :ueberauth, Ueberauth,
   providers: [
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
   ]
 ```
+
+## :emoji
+* `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
+* `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
+* `default_manifest`: Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download. Currently only one manifest can be added (no arrays).

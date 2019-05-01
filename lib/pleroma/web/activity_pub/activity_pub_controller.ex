@@ -7,6 +7,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.Object.Fetcher
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.ObjectView
@@ -153,9 +154,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def inbox(%{assigns: %{valid_signature: true}} = conn, %{"nickname" => nickname} = params) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname),
-         true <- Utils.recipient_in_message(user.ap_id, params),
-         params <- Utils.maybe_splice_recipient(user.ap_id, params) do
+    with %User{} = recipient <- User.get_cached_by_nickname(nickname),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(params["actor"]),
+         true <- Utils.recipient_in_message(recipient, actor, params),
+         params <- Utils.maybe_splice_recipient(recipient.ap_id, params) do
       Federator.incoming_ap_doc(params)
       json(conn, "ok")
     end
@@ -172,7 +174,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       "Signature missing or not from author, relayed Create message, fetching object from source"
     )
 
-    ActivityPub.fetch_object_from_id(params["object"]["id"])
+    Fetcher.fetch_object_from_id(params["object"]["id"])
 
     json(conn, "ok")
   end

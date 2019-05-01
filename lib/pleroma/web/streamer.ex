@@ -81,7 +81,7 @@ defmodule Pleroma.Web.Streamer do
         _ ->
           Pleroma.List.get_lists_from_activity(item)
           |> Enum.filter(fn list ->
-            owner = User.get_by_id(list.user_id)
+            owner = User.get_cached_by_id(list.user_id)
 
             Visibility.visible_for_user?(item, owner)
           end)

@@ -21,7 +21,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationViewTest do
     mentioned_user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{mentioned_user.nickname}"})
     {:ok, [notification]} = Notification.create_notifications(activity)
-    user = User.get_by_id(user.id)
+    user = User.get_cached_by_id(user.id)
 
     expected = %{
       id: to_string(notification.id),

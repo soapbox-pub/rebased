@@ -16,6 +16,11 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
   import Pleroma.Factory
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   test "create a status" do
     user = insert(:user)
     mentioned_user = insert(:user, %{nickname: "shp", ap_id: "shp"})
@@ -36,18 +41,19 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     input = %{
       "status" =>
-        "Hello again, @shp.<script></script>\nThis is on another :moominmamma: line. #2hu #epic #phantasmagoric",
+        "Hello again, @shp.<script></script>\nThis is on another :firefox: line. #2hu #epic #phantasmagoric",
       "media_ids" => [object.id]
     }
 
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
+    object = Object.normalize(activity.data["object"])
 
     expected_text =
-      "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :moominmamma: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
+      "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :firefox: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
 
-    assert get_in(activity.data, ["object", "content"]) == expected_text
-    assert get_in(activity.data, ["object", "type"]) == "Note"
-    assert get_in(activity.data, ["object", "actor"]) == user.ap_id
+    assert get_in(object.data, ["content"]) == expected_text
+    assert get_in(object.data, ["type"]) == "Note"
+    assert get_in(object.data, ["actor"]) == user.ap_id
     assert get_in(activity.data, ["actor"]) == user.ap_id
     assert Enum.member?(get_in(activity.data, ["cc"]), User.ap_followers(user))
 
@@ -59,21 +65,20 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert Enum.member?(get_in(activity.data, ["to"]), "shp")
     assert activity.local == true
 
-    assert %{"moominmamma" => "http://localhost:4001/finmoji/128px/moominmamma-128.png"} =
-             activity.data["object"]["emoji"]
+    assert %{"firefox" => "http://localhost:4001/emoji/Firefox.gif"} = object.data["emoji"]
 
     # hashtags
-    assert activity.data["object"]["tag"] == ["2hu", "epic", "phantasmagoric"]
+    assert object.data["tag"] == ["2hu", "epic", "phantasmagoric"]
 
     # Add a context
     assert is_binary(get_in(activity.data, ["context"]))
-    assert is_binary(get_in(activity.data, ["object", "context"]))
+    assert is_binary(get_in(object.data, ["context"]))
 
-    assert is_list(activity.data["object"]["attachment"])
+    assert is_list(object.data["attachment"])
 
-    assert activity.data["object"] == Object.get_by_ap_id(activity.data["object"]["id"]).data
+    assert activity.data["object"] == object.data["id"]
 
-    user = User.get_by_ap_id(user.ap_id)
+    user = User.get_cached_by_ap_id(user.ap_id)
 
     assert user.info.note_count == 1
   end
@@ -86,6 +91,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     }
 
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
+    object = Object.normalize(activity.data["object"])
 
     input = %{
       "status" => "Here's your (you).",
@@ -93,14 +99,14 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     }
 
     {:ok, reply = %Activity{}} = TwitterAPI.create_status(user, input)
+    reply_object = Object.normalize(reply.data["object"])
 
     assert get_in(reply.data, ["context"]) == get_in(activity.data, ["context"])
 
-    assert get_in(reply.data, ["object", "context"]) ==
-             get_in(activity.data, ["object", "context"])
+    assert get_in(reply_object.data, ["context"]) == get_in(object.data, ["context"])
 
-    assert get_in(reply.data, ["object", "inReplyTo"]) == get_in(activity.data, ["object", "id"])
-    assert get_in(reply.data, ["object", "inReplyToStatusId"]) == activity.id
+    assert get_in(reply_object.data, ["inReplyTo"]) == get_in(activity.data, ["object"])
+    assert Activity.get_in_reply_to_activity(reply).id == activity.id
   end
 
   test "Follow another user using user_id" do
@@ -123,7 +129,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert User.ap_followers(followed) in user.following
 
-    followed = User.get_by_ap_id(followed.ap_id)
+    followed = User.get_cached_by_ap_id(followed.ap_id)
     assert followed.info.follower_count == 1
 
     {:error, msg} = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
@@ -275,7 +281,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = User.get_by_nickname("lain")
+    fetched_user = User.get_cached_by_nickname("lain")
 
     assert UserView.render("show.json", %{user: user}) ==
              UserView.render("show.json", %{user: fetched_user})
@@ -293,13 +299,12 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, user} = TwitterAPI.register_user(data)
 
-    fetched_user = User.get_by_nickname("lain")
+    fetched_user = User.get_cached_by_nickname("lain")
 
     assert UserView.render("show.json", %{user: user}) ==
              UserView.render("show.json", %{user: fetched_user})
   end
 
-  @moduletag skip: "needs 'account_activation_required: true' in config"
   test "it sends confirmation email if :account_activation_required is specified in instance config" do
     setting = Pleroma.Config.get([:instance, :account_activation_required])
 
@@ -321,7 +326,16 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     assert user.info.confirmation_pending
 
-    Swoosh.TestAssertions.assert_email_sent(Pleroma.UserEmail.account_confirmation_email(user))
+    email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
+
+    notify_email = Pleroma.Config.get([:instance, :notify_email])
+    instance_name = Pleroma.Config.get([:instance, :name])
+
+    Swoosh.TestAssertions.assert_email_sent(
+      from: {instance_name, notify_email},
+      to: {user.name, user.email},
+      html_body: email.html_body
+    )
   end
 
   test "it registers a new user and parses mentions in the bio" do
@@ -353,68 +367,313 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     assert user2.bio == expected_text
   end
 
-  @moduletag skip: "needs 'registrations_open: false' in config"
-  test "it registers a new user via invite token and returns the user." do
-    {:ok, token} = UserInviteToken.create_token()
+  describe "register with one time token" do
+    setup do
+      setting = Pleroma.Config.get([:instance, :registrations_open])
 
-    data = %{
-      "nickname" => "vinny",
-      "email" => "pasta@pizza.vs",
-      "fullname" => "Vinny Vinesauce",
-      "bio" => "streamer",
-      "password" => "hiptofbees",
-      "confirm" => "hiptofbees",
-      "token" => token.token
-    }
+      if setting do
+        Pleroma.Config.put([:instance, :registrations_open], false)
+        on_exit(fn -> Pleroma.Config.put([:instance, :registrations_open], setting) end)
+      end
 
-    {:ok, user} = TwitterAPI.register_user(data)
+      :ok
+    end
 
-    fetched_user = User.get_by_nickname("vinny")
-    token = Repo.get_by(UserInviteToken, token: token.token)
+    test "returns user on success" do
+      {:ok, invite} = UserInviteToken.create_invite()
 
-    assert token.used == true
+      data = %{
+        "nickname" => "vinny",
+        "email" => "pasta@pizza.vs",
+        "fullname" => "Vinny Vinesauce",
+        "bio" => "streamer",
+        "password" => "hiptofbees",
+        "confirm" => "hiptofbees",
+        "token" => invite.token
+      }
 
-    assert UserView.render("show.json", %{user: user}) ==
-             UserView.render("show.json", %{user: fetched_user})
+      {:ok, user} = TwitterAPI.register_user(data)
+
+      fetched_user = User.get_cached_by_nickname("vinny")
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
+
+      assert invite.used == true
+
+      assert UserView.render("show.json", %{user: user}) ==
+               UserView.render("show.json", %{user: fetched_user})
+    end
+
+    test "returns error on invalid token" do
+      data = %{
+        "nickname" => "GrimReaper",
+        "email" => "death@reapers.afterlife",
+        "fullname" => "Reaper Grim",
+        "bio" => "Your time has come",
+        "password" => "scythe",
+        "confirm" => "scythe",
+        "token" => "DudeLetMeInImAFairy"
+      }
+
+      {:error, msg} = TwitterAPI.register_user(data)
+
+      assert msg == "Invalid token"
+      refute User.get_cached_by_nickname("GrimReaper")
+    end
+
+    test "returns error on expired token" do
+      {:ok, invite} = UserInviteToken.create_invite()
+      UserInviteToken.update_invite!(invite, used: true)
+
+      data = %{
+        "nickname" => "GrimReaper",
+        "email" => "death@reapers.afterlife",
+        "fullname" => "Reaper Grim",
+        "bio" => "Your time has come",
+        "password" => "scythe",
+        "confirm" => "scythe",
+        "token" => invite.token
+      }
+
+      {:error, msg} = TwitterAPI.register_user(data)
+
+      assert msg == "Expired token"
+      refute User.get_cached_by_nickname("GrimReaper")
+    end
   end
 
-  @moduletag skip: "needs 'registrations_open: false' in config"
-  test "it returns an error if invalid token submitted" do
-    data = %{
-      "nickname" => "GrimReaper",
-      "email" => "death@reapers.afterlife",
-      "fullname" => "Reaper Grim",
-      "bio" => "Your time has come",
-      "password" => "scythe",
-      "confirm" => "scythe",
-      "token" => "DudeLetMeInImAFairy"
-    }
+  describe "registers with date limited token" do
+    setup do
+      setting = Pleroma.Config.get([:instance, :registrations_open])
 
-    {:error, msg} = TwitterAPI.register_user(data)
+      if setting do
+        Pleroma.Config.put([:instance, :registrations_open], false)
+        on_exit(fn -> Pleroma.Config.put([:instance, :registrations_open], setting) end)
+      end
 
-    assert msg == "Invalid token"
-    refute User.get_by_nickname("GrimReaper")
+      data = %{
+        "nickname" => "vinny",
+        "email" => "pasta@pizza.vs",
+        "fullname" => "Vinny Vinesauce",
+        "bio" => "streamer",
+        "password" => "hiptofbees",
+        "confirm" => "hiptofbees"
+      }
+
+      check_fn = fn invite ->
+        data = Map.put(data, "token", invite.token)
+        {:ok, user} = TwitterAPI.register_user(data)
+        fetched_user = User.get_cached_by_nickname("vinny")
+
+        assert UserView.render("show.json", %{user: user}) ==
+                 UserView.render("show.json", %{user: fetched_user})
+      end
+
+      {:ok, data: data, check_fn: check_fn}
+    end
+
+    test "returns user on success", %{check_fn: check_fn} do
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.utc_today()})
+
+      check_fn.(invite)
+
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
+
+      refute invite.used
+    end
+
+    test "returns user on token which expired tomorrow", %{check_fn: check_fn} do
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), 1)})
+
+      check_fn.(invite)
+
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
+
+      refute invite.used
+    end
+
+    test "returns an error on overdue date", %{data: data} do
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), -1)})
+
+      data = Map.put(data, "token", invite.token)
+
+      {:error, msg} = TwitterAPI.register_user(data)
+
+      assert msg == "Expired token"
+      refute User.get_cached_by_nickname("vinny")
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
+
+      refute invite.used
+    end
   end
 
-  @moduletag skip: "needs 'registrations_open: false' in config"
-  test "it returns an error if expired token submitted" do
-    {:ok, token} = UserInviteToken.create_token()
-    UserInviteToken.mark_as_used(token.token)
+  describe "registers with reusable token" do
+    setup do
+      setting = Pleroma.Config.get([:instance, :registrations_open])
 
-    data = %{
-      "nickname" => "GrimReaper",
-      "email" => "death@reapers.afterlife",
-      "fullname" => "Reaper Grim",
-      "bio" => "Your time has come",
-      "password" => "scythe",
-      "confirm" => "scythe",
-      "token" => token.token
-    }
+      if setting do
+        Pleroma.Config.put([:instance, :registrations_open], false)
+        on_exit(fn -> Pleroma.Config.put([:instance, :registrations_open], setting) end)
+      end
 
-    {:error, msg} = TwitterAPI.register_user(data)
+      :ok
+    end
 
-    assert msg == "Expired token"
-    refute User.get_by_nickname("GrimReaper")
+    test "returns user on success, after him registration fails" do
+      {:ok, invite} = UserInviteToken.create_invite(%{max_use: 100})
+
+      UserInviteToken.update_invite!(invite, uses: 99)
+
+      data = %{
+        "nickname" => "vinny",
+        "email" => "pasta@pizza.vs",
+        "fullname" => "Vinny Vinesauce",
+        "bio" => "streamer",
+        "password" => "hiptofbees",
+        "confirm" => "hiptofbees",
+        "token" => invite.token
+      }
+
+      {:ok, user} = TwitterAPI.register_user(data)
+      fetched_user = User.get_cached_by_nickname("vinny")
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
+
+      assert invite.used == true
+
+      assert UserView.render("show.json", %{user: user}) ==
+               UserView.render("show.json", %{user: fetched_user})
+
+      data = %{
+        "nickname" => "GrimReaper",
+        "email" => "death@reapers.afterlife",
+        "fullname" => "Reaper Grim",
+        "bio" => "Your time has come",
+        "password" => "scythe",
+        "confirm" => "scythe",
+        "token" => invite.token
+      }
+
+      {:error, msg} = TwitterAPI.register_user(data)
+
+      assert msg == "Expired token"
+      refute User.get_cached_by_nickname("GrimReaper")
+    end
+  end
+
+  describe "registers with reusable date limited token" do
+    setup do
+      setting = Pleroma.Config.get([:instance, :registrations_open])
+
+      if setting do
+        Pleroma.Config.put([:instance, :registrations_open], false)
+        on_exit(fn -> Pleroma.Config.put([:instance, :registrations_open], setting) end)
+      end
+
+      :ok
+    end
+
+    test "returns user on success" do
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.utc_today(), max_use: 100})
+
+      data = %{
+        "nickname" => "vinny",
+        "email" => "pasta@pizza.vs",
+        "fullname" => "Vinny Vinesauce",
+        "bio" => "streamer",
+        "password" => "hiptofbees",
+        "confirm" => "hiptofbees",
+        "token" => invite.token
+      }
+
+      {:ok, user} = TwitterAPI.register_user(data)
+      fetched_user = User.get_cached_by_nickname("vinny")
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
+
+      refute invite.used
+
+      assert UserView.render("show.json", %{user: user}) ==
+               UserView.render("show.json", %{user: fetched_user})
+    end
+
+    test "error after max uses" do
+      {:ok, invite} = UserInviteToken.create_invite(%{expires_at: Date.utc_today(), max_use: 100})
+
+      UserInviteToken.update_invite!(invite, uses: 99)
+
+      data = %{
+        "nickname" => "vinny",
+        "email" => "pasta@pizza.vs",
+        "fullname" => "Vinny Vinesauce",
+        "bio" => "streamer",
+        "password" => "hiptofbees",
+        "confirm" => "hiptofbees",
+        "token" => invite.token
+      }
+
+      {:ok, user} = TwitterAPI.register_user(data)
+      fetched_user = User.get_cached_by_nickname("vinny")
+      invite = Repo.get_by(UserInviteToken, token: invite.token)
+      assert invite.used == true
+
+      assert UserView.render("show.json", %{user: user}) ==
+               UserView.render("show.json", %{user: fetched_user})
+
+      data = %{
+        "nickname" => "GrimReaper",
+        "email" => "death@reapers.afterlife",
+        "fullname" => "Reaper Grim",
+        "bio" => "Your time has come",
+        "password" => "scythe",
+        "confirm" => "scythe",
+        "token" => invite.token
+      }
+
+      {:error, msg} = TwitterAPI.register_user(data)
+
+      assert msg == "Expired token"
+      refute User.get_cached_by_nickname("GrimReaper")
+    end
+
+    test "returns error on overdue date" do
+      {:ok, invite} =
+        UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), -1), max_use: 100})
+
+      data = %{
+        "nickname" => "GrimReaper",
+        "email" => "death@reapers.afterlife",
+        "fullname" => "Reaper Grim",
+        "bio" => "Your time has come",
+        "password" => "scythe",
+        "confirm" => "scythe",
+        "token" => invite.token
+      }
+
+      {:error, msg} = TwitterAPI.register_user(data)
+
+      assert msg == "Expired token"
+      refute User.get_cached_by_nickname("GrimReaper")
+    end
+
+    test "returns error on with overdue date and after max" do
+      {:ok, invite} =
+        UserInviteToken.create_invite(%{expires_at: Date.add(Date.utc_today(), -1), max_use: 100})
+
+      UserInviteToken.update_invite!(invite, uses: 100)
+
+      data = %{
+        "nickname" => "GrimReaper",
+        "email" => "death@reapers.afterlife",
+        "fullname" => "Reaper Grim",
+        "bio" => "Your time has come",
+        "password" => "scythe",
+        "confirm" => "scythe",
+        "token" => invite.token
+      }
+
+      {:error, msg} = TwitterAPI.register_user(data)
+
+      assert msg == "Expired token"
+      refute User.get_cached_by_nickname("GrimReaper")
+    end
   end
 
   test "it returns the error on registration problems" do
@@ -429,7 +688,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:error, error_object} = TwitterAPI.register_user(data)
 
     assert is_binary(error_object[:error])
-    refute User.get_by_nickname("lain")
+    refute User.get_cached_by_nickname("lain")
   end
 
   test "it assigns an integer conversation_id" do
@@ -450,7 +709,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
       id = "https://mastodon.social/users/lambadalambda"
       user = insert(:user)
       {:ok, represented} = TwitterAPI.get_external_profile(user, id)
-      remote = User.get_by_ap_id(id)
+      remote = User.get_cached_by_ap_id(id)
 
       assert represented["id"] == UserView.render("show.json", %{user: remote, for: user})["id"]
 

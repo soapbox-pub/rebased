@@ -20,6 +20,18 @@ defmodule Pleroma.HTMLTest do
     <img src="http://example.com/image.jpg" onerror="alert('hacked')">
   """
 
+  @html_span_class_sample """
+    <span class="animate-spin">hi</span>
+  """
+
+  @html_span_microformats_sample """
+    <span class="h-card"><a class="u-url mention">@<span>foo</span></a></span>
+  """
+
+  @html_span_invalid_microformats_sample """
+    <span class="h-card"><a class="u-url mention animate-spin">@<span>foo</span></a></span>
+  """
+
   describe "StripTags scrubber" do
     test "works as expected" do
       expected = """
@@ -64,6 +76,36 @@ defmodule Pleroma.HTMLTest do
 
       assert expected == HTML.filter_tags(@html_onerror_sample, Pleroma.HTML.Scrubber.TwitterText)
     end
+
+    test "does not allow spans with invalid classes" do
+      expected = """
+      <span>hi</span>
+      """
+
+      assert expected ==
+               HTML.filter_tags(@html_span_class_sample, Pleroma.HTML.Scrubber.TwitterText)
+    end
+
+    test "does allow microformats" do
+      expected = """
+      <span class="h-card"><a class="u-url mention">@<span>foo</span></a></span>
+      """
+
+      assert expected ==
+               HTML.filter_tags(@html_span_microformats_sample, Pleroma.HTML.Scrubber.TwitterText)
+    end
+
+    test "filters invalid microformats markup" do
+      expected = """
+      <span class="h-card"><a>@<span>foo</span></a></span>
+      """
+
+      assert expected ==
+               HTML.filter_tags(
+                 @html_span_invalid_microformats_sample,
+                 Pleroma.HTML.Scrubber.TwitterText
+               )
+    end
   end
 
   describe "default scrubber" do
@@ -87,6 +129,35 @@ defmodule Pleroma.HTMLTest do
       """
 
       assert expected == HTML.filter_tags(@html_onerror_sample, Pleroma.HTML.Scrubber.Default)
+    end
+
+    test "does not allow spans with invalid classes" do
+      expected = """
+      <span>hi</span>
+      """
+
+      assert expected == HTML.filter_tags(@html_span_class_sample, Pleroma.HTML.Scrubber.Default)
+    end
+
+    test "does allow microformats" do
+      expected = """
+      <span class="h-card"><a class="u-url mention">@<span>foo</span></a></span>
+      """
+
+      assert expected ==
+               HTML.filter_tags(@html_span_microformats_sample, Pleroma.HTML.Scrubber.Default)
+    end
+
+    test "filters invalid microformats markup" do
+      expected = """
+      <span class="h-card"><a>@<span>foo</span></a></span>
+      """
+
+      assert expected ==
+               HTML.filter_tags(
+                 @html_span_invalid_microformats_sample,
+                 Pleroma.HTML.Scrubber.Default
+               )
     end
   end
 end

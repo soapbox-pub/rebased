@@ -7,6 +7,31 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   alias Pleroma.Pagination
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
+
+  def follow(follower, followed, params \\ %{}) do
+    options = cast_params(params)
+    reblogs = options[:reblogs]
+
+    result =
+      if not User.following?(follower, followed) do
+        CommonAPI.follow(follower, followed)
+      else
+        {:ok, follower, followed, nil}
+      end
+
+    with {:ok, follower, followed, _} <- result do
+      reblogs
+      |> case do
+        false -> CommonAPI.hide_reblogs(follower, followed)
+        _ -> CommonAPI.show_reblogs(follower, followed)
+      end
+      |> case do
+        {:ok, follower} -> {:ok, follower}
+        _ -> {:ok, follower}
+      end
+    end
+  end
 
   def get_followers(user, params \\ %{}) do
     user
@@ -37,7 +62,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
 
   defp cast_params(params) do
     param_types = %{
-      exclude_types: {:array, :string}
+      exclude_types: {:array, :string},
+      reblogs: :boolean
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))

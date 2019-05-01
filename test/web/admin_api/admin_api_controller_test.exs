@@ -6,6 +6,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.User
+  alias Pleroma.UserInviteToken
   import Pleroma.Factory
 
   describe "/api/pleroma/admin/user" do
@@ -88,8 +89,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "followed" => user.nickname
       })
 
-      user = User.get_by_id(user.id)
-      follower = User.get_by_id(follower.id)
+      user = User.get_cached_by_id(user.id)
+      follower = User.get_cached_by_id(follower.id)
 
       assert User.following?(follower, user)
     end
@@ -111,8 +112,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "followed" => user.nickname
       })
 
-      user = User.get_by_id(user.id)
-      follower = User.get_by_id(follower.id)
+      user = User.get_cached_by_id(user.id)
+      follower = User.get_cached_by_id(follower.id)
 
       refute User.following?(follower, user)
     end
@@ -144,13 +145,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user2: user2
     } do
       assert json_response(conn, :no_content)
-      assert User.get_by_id(user1.id).tags == ["x", "foo", "bar"]
-      assert User.get_by_id(user2.id).tags == ["y", "foo", "bar"]
+      assert User.get_cached_by_id(user1.id).tags == ["x", "foo", "bar"]
+      assert User.get_cached_by_id(user2.id).tags == ["y", "foo", "bar"]
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
       assert json_response(conn, :no_content)
-      assert User.get_by_id(user3.id).tags == ["unchanged"]
+      assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
   end
 
@@ -180,13 +181,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user2: user2
     } do
       assert json_response(conn, :no_content)
-      assert User.get_by_id(user1.id).tags == []
-      assert User.get_by_id(user2.id).tags == ["y"]
+      assert User.get_cached_by_id(user1.id).tags == []
+      assert User.get_cached_by_id(user2.id).tags == ["y"]
     end
 
     test "it does not modify tags of not specified users", %{conn: conn, user3: user3} do
       assert json_response(conn, :no_content)
-      assert User.get_by_id(user3.id).tags == ["unchanged"]
+      assert User.get_cached_by_id(user3.id).tags == ["unchanged"]
     end
   end
 
@@ -256,7 +257,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         conn
         |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: false})
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.deactivated == true
       assert json_response(conn, :no_content)
     end
@@ -268,7 +269,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         conn
         |> put("/api/pleroma/admin/activation_status/#{user.nickname}", %{status: true})
 
-      user = User.get_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.deactivated == false
       assert json_response(conn, :no_content)
     end
@@ -316,13 +317,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert token_record
       refute token_record.used
 
-      Swoosh.TestAssertions.assert_email_sent(
-        Pleroma.UserEmail.user_invitation_email(
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      email =
+        Pleroma.Emails.UserEmail.user_invitation_email(
           user,
           token_record,
           recipient_email,
           recipient_name
         )
+
+      Swoosh.TestAssertions.assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {recipient_name, recipient_email},
+        html_body: email.html_body
       )
     end
 
@@ -639,5 +648,137 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "local" => true,
                "tags" => []
              }
+  end
+
+  describe "GET /api/pleroma/admin/invite_token" do
+    test "without options" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invite_token")
+
+      token = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(token)
+      refute invite.used
+      refute invite.expires_at
+      refute invite.max_use
+      assert invite.invite_type == "one_time"
+    end
+
+    test "with expires_at" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invite_token", %{
+          "invite" => %{"expires_at" => Date.to_string(Date.utc_today())}
+        })
+
+      token = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(token)
+
+      refute invite.used
+      assert invite.expires_at == Date.utc_today()
+      refute invite.max_use
+      assert invite.invite_type == "date_limited"
+    end
+
+    test "with max_use" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invite_token", %{
+          "invite" => %{"max_use" => 150}
+        })
+
+      token = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(token)
+      refute invite.used
+      refute invite.expires_at
+      assert invite.max_use == 150
+      assert invite.invite_type == "reusable"
+    end
+
+    test "with max use and expires_at" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invite_token", %{
+          "invite" => %{"max_use" => 150, "expires_at" => Date.to_string(Date.utc_today())}
+        })
+
+      token = json_response(conn, 200)
+      invite = UserInviteToken.find_by_token!(token)
+      refute invite.used
+      assert invite.expires_at == Date.utc_today()
+      assert invite.max_use == 150
+      assert invite.invite_type == "reusable_date_limited"
+    end
+  end
+
+  describe "GET /api/pleroma/admin/invites" do
+    test "no invites" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invites")
+
+      assert json_response(conn, 200) == %{"invites" => []}
+    end
+
+    test "with invite" do
+      admin = insert(:user, info: %{is_admin: true})
+      {:ok, invite} = UserInviteToken.create_invite()
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/invites")
+
+      assert json_response(conn, 200) == %{
+               "invites" => [
+                 %{
+                   "expires_at" => nil,
+                   "id" => invite.id,
+                   "invite_type" => "one_time",
+                   "max_use" => nil,
+                   "token" => invite.token,
+                   "used" => false,
+                   "uses" => 0
+                 }
+               ]
+             }
+    end
+  end
+
+  describe "POST /api/pleroma/admin/revoke_invite" do
+    test "with token" do
+      admin = insert(:user, info: %{is_admin: true})
+      {:ok, invite} = UserInviteToken.create_invite()
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> post("/api/pleroma/admin/revoke_invite", %{"token" => invite.token})
+
+      assert json_response(conn, 200) == %{
+               "expires_at" => nil,
+               "id" => invite.id,
+               "invite_type" => "one_time",
+               "max_use" => nil,
+               "token" => invite.token,
+               "used" => true,
+               "uses" => 0
+             }
+    end
   end
 end

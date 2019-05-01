@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   alias Pleroma.Activity
   alias Pleroma.HTML
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -19,8 +20,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_replied_to_activities(activities) do
     activities
     |> Enum.map(fn
-      %{data: %{"type" => "Create", "object" => %{"inReplyTo" => in_reply_to}}} ->
-        in_reply_to != "" && in_reply_to
+      %{data: %{"type" => "Create", "object" => object}} ->
+        object = Object.normalize(object)
+        object.data["inReplyTo"] != "" && object.data["inReplyTo"]
 
       _ ->
         nil
@@ -29,7 +31,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     |> Activity.create_by_object_ap_id()
     |> Repo.all()
     |> Enum.reduce(%{}, fn activity, acc ->
-      Map.put(acc, activity.data["object"]["id"], activity)
+      object = Object.normalize(activity)
+      Map.put(acc, object.data["id"], activity)
     end)
   end
 
@@ -54,6 +57,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   defp get_context_id(_), do: nil
 
+  defp reblogged?(activity, user) do
+    object = Object.normalize(activity) || %{}
+    present?(user && user.ap_id in (object.data["announcements"] || []))
+  end
+
   def render("index.json", opts) do
     replied_to_activities = get_replied_to_activities(opts.activities)
 
@@ -72,8 +80,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     user = get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
 
-    reblogged = Activity.get_create_by_object_ap_id(object)
-    reblogged = render("status.json", Map.put(opts, :activity, reblogged))
+    reblogged_activity = Activity.get_create_by_object_ap_id(object)
+    reblogged = render("status.json", Map.put(opts, :activity, reblogged_activity))
+
+    activity_object = Object.normalize(activity)
+    favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
+
+    bookmarked = opts[:for] && CommonAPI.bookmarked?(opts[:for], reblogged_activity)
 
     mentions =
       activity.recipients
@@ -94,9 +107,9 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogs_count: 0,
       replies_count: 0,
       favourites_count: 0,
-      reblogged: false,
-      favourited: false,
-      bookmarked: false,
+      reblogged: reblogged?(reblogged_activity, opts[:for]),
+      favourited: present?(favorited),
+      bookmarked: present?(bookmarked),
       muted: false,
       pinned: pinned?(activity, user),
       sensitive: false,
@@ -117,14 +130,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  def render("status.json", %{activity: %{data: %{"object" => object}} = activity} = opts) do
+  def render("status.json", %{activity: %{data: %{"object" => _object}} = activity} = opts) do
+    object = Object.normalize(activity)
+
     user = get_user(activity.data["actor"])
 
-    like_count = object["like_count"] || 0
-    announcement_count = object["announcement_count"] || 0
+    like_count = object.data["like_count"] || 0
+    announcement_count = object.data["announcement_count"] || 0
 
-    tags = object["tag"] || []
-    sensitive = object["sensitive"] || Enum.member?(tags, "nsfw")
+    tags = object.data["tag"] || []
+    sensitive = object.data["sensitive"] || Enum.member?(tags, "nsfw")
 
     mentions =
       activity.recipients
@@ -132,31 +147,51 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
 
-    repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
-    favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
-    bookmarked = opts[:for] && object["id"] in opts[:for].bookmarks
+    favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
-    attachment_data = object["attachment"] || []
+    bookmarked = opts[:for] && CommonAPI.bookmarked?(opts[:for], activity)
+
+    attachment_data = object.data["attachment"] || []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
 
-    created_at = Utils.to_masto_date(object["published"])
+    created_at = Utils.to_masto_date(object.data["published"])
 
     reply_to = get_reply_to(activity, opts)
+
     reply_to_user = reply_to && get_user(reply_to.data["actor"])
 
     content =
       object
       |> render_content()
+
+    content_html =
+      content
       |> HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
         "mastoapi:content"
       )
 
-    summary =
-      (object["summary"] || "")
+    content_plaintext =
+      content
+      |> HTML.get_cached_stripped_html_for_activity(
+        activity,
+        "mastoapi:content"
+      )
+
+    summary = object.data["summary"] || ""
+
+    summary_html =
+      summary
       |> HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
+        activity,
+        "mastoapi:summary"
+      )
+
+    summary_plaintext =
+      summary
+      |> HTML.get_cached_stripped_html_for_activity(
         activity,
         "mastoapi:summary"
       )
@@ -167,30 +202,30 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       if user.local do
         Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity)
       else
-        object["external_url"] || object["id"]
+        object.data["external_url"] || object.data["id"]
       end
 
     %{
       id: to_string(activity.id),
-      uri: object["id"],
+      uri: object.data["id"],
       url: url,
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
       card: card,
-      content: content,
+      content: content_html,
       created_at: created_at,
       reblogs_count: announcement_count,
-      replies_count: object["repliesCount"] || 0,
+      replies_count: object.data["repliesCount"] || 0,
       favourites_count: like_count,
-      reblogged: present?(repeated),
+      reblogged: reblogged?(activity, opts[:for]),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
       muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
-      spoiler_text: summary,
+      spoiler_text: summary_html,
       visibility: get_visibility(object),
       media_attachments: attachments,
       mentions: mentions,
@@ -200,10 +235,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         website: nil
       },
       language: nil,
-      emojis: build_emojis(activity.data["object"]["emoji"]),
+      emojis: build_emojis(object.data["emoji"]),
       pleroma: %{
         local: activity.local,
-        conversation_id: get_context_id(activity)
+        conversation_id: get_context_id(activity),
+        in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
+        content: %{"text/plain" => content_plaintext},
+        spoiler_text: %{"text/plain" => summary_plaintext}
       }
     }
   end
@@ -280,13 +318,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
-    _id = activity.data["object"]["inReplyTo"]
-    replied_to_activities[activity.data["object"]["inReplyTo"]]
+    object = Object.normalize(activity)
+
+    with nil <- replied_to_activities[object.data["inReplyTo"]] do
+      # If user didn't participate in the thread
+      Activity.get_in_reply_to_activity(activity)
+    end
   end
 
-  def get_reply_to(%{data: %{"object" => object}}, _) do
-    if object["inReplyTo"] && object["inReplyTo"] != "" do
-      Activity.get_create_by_object_ap_id(object["inReplyTo"])
+  def get_reply_to(%{data: %{"object" => _object}} = activity, _) do
+    object = Object.normalize(activity)
+
+    if object.data["inReplyTo"] && object.data["inReplyTo"] != "" do
+      Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
     else
       nil
     end
@@ -294,8 +338,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def get_visibility(object) do
     public = "https://www.w3.org/ns/activitystreams#Public"
-    to = object["to"] || []
-    cc = object["cc"] || []
+    to = object.data["to"] || []
+    cc = object.data["cc"] || []
 
     cond do
       public in to ->
@@ -316,25 +360,25 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     end
   end
 
-  def render_content(%{"type" => "Video"} = object) do
-    with name when not is_nil(name) and name != "" <- object["name"] do
-      "<p><a href=\"#{object["id"]}\">#{name}</a></p>#{object["content"]}"
+  def render_content(%{data: %{"type" => "Video"}} = object) do
+    with name when not is_nil(name) and name != "" <- object.data["name"] do
+      "<p><a href=\"#{object.data["id"]}\">#{name}</a></p>#{object.data["content"]}"
     else
-      _ -> object["content"] || ""
+      _ -> object.data["content"] || ""
     end
   end
 
-  def render_content(%{"type" => object_type} = object)
+  def render_content(%{data: %{"type" => object_type}} = object)
       when object_type in ["Article", "Page"] do
-    with summary when not is_nil(summary) and summary != "" <- object["name"],
-         url when is_bitstring(url) <- object["url"] do
-      "<p><a href=\"#{url}\">#{summary}</a></p>#{object["content"]}"
+    with summary when not is_nil(summary) and summary != "" <- object.data["name"],
+         url when is_bitstring(url) <- object.data["url"] do
+      "<p><a href=\"#{url}\">#{summary}</a></p>#{object.data["content"]}"
     else
-      _ -> object["content"] || ""
+      _ -> object.data["content"] || ""
     end
   end
 
-  def render_content(object), do: object["content"] || ""
+  def render_content(object), do: object.data["content"] || ""
 
   @doc """
   Builds a dictionary tags.

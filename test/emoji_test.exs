@@ -15,7 +15,7 @@ defmodule Pleroma.EmojiTest do
       assert tuple_size(emoji) == 3
       assert is_binary(code)
       assert is_binary(path)
-      assert is_binary(tags)
+      assert is_list(tags)
     end
 
     test "random emoji", %{emoji_list: emoji_list} do
@@ -25,7 +25,7 @@ defmodule Pleroma.EmojiTest do
       assert tuple_size(emoji) == 3
       assert is_binary(code)
       assert is_binary(path)
-      assert is_binary(tags)
+      assert is_list(tags)
     end
   end
 
