@@ -6,13 +6,13 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.TwitterAPI.ActivityView
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.TwitterAPI.UserView
 
   import Pleroma.Factory
@@ -82,7 +82,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     result = ActivityView.render("activity.json", activity: activity)
 
     assert result["statusnet_html"] ==
-             "<a class=\"hashtag\" data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a class=\"hashtag\" data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\">#cycling</a> <a class=\"hashtag\" data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\">#CHScycling</a> <a class=\"hashtag\" data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\">#commute</a><br />MVIMG_20181211_054020.jpg"
+             "<a class=\"hashtag\" data-tag=\"bike\" href=\"http://localhost:4001/tag/bike\" rel=\"tag\">#Bike</a> log - Commute Tuesday<br /><a href=\"https://pla.bike/posts/20181211/\">https://pla.bike/posts/20181211/</a><br /><a class=\"hashtag\" data-tag=\"cycling\" href=\"http://localhost:4001/tag/cycling\" rel=\"tag\">#cycling</a> <a class=\"hashtag\" data-tag=\"chscycling\" href=\"http://localhost:4001/tag/chscycling\" rel=\"tag\">#CHScycling</a> <a class=\"hashtag\" data-tag=\"commute\" href=\"http://localhost:4001/tag/commute\" rel=\"tag\">#commute</a><br />MVIMG_20181211_054020.jpg"
 
     assert result["text"] ==
              "#Bike log - Commute Tuesday\nhttps://pla.bike/posts/20181211/\n#cycling #CHScycling #commute\nMVIMG_20181211_054020.jpg"
@@ -91,16 +91,16 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
   test "a create activity with a summary containing emoji" do
     {:ok, activity} =
       CommonAPI.post(insert(:user), %{
-        "spoiler_text" => ":woollysocks: meow",
+        "spoiler_text" => ":firefox: meow",
         "status" => "."
       })
 
     result = ActivityView.render("activity.json", activity: activity)
 
-    expected = ":woollysocks: meow"
+    expected = ":firefox: meow"
 
     expected_html =
-      "<img height=\"32px\" width=\"32px\" alt=\"woollysocks\" title=\"woollysocks\" src=\"http://localhost:4001/finmoji/128px/woollysocks-128.png\" /> meow"
+      "<img height=\"32px\" width=\"32px\" alt=\"firefox\" title=\"firefox\" src=\"http://localhost:4001/emoji/Firefox.gif\" /> meow"
 
     assert result["summary"] == expected
     assert result["summary_html"] == expected_html
@@ -126,10 +126,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     other_user = insert(:user, %{nickname: "shp"})
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+    object = Object.normalize(activity.data["object"])
 
     result = ActivityView.render("activity.json", activity: activity)
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(object.data["context"])
 
     expected = %{
       "activity_type" => "post",
@@ -137,8 +138,8 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "attentions" => [
         UserView.render("show.json", %{user: other_user})
       ],
-      "created_at" => activity.data["object"]["published"] |> Utils.date_to_asctime(),
-      "external_url" => activity.data["object"]["id"],
+      "created_at" => object.data["published"] |> Utils.date_to_asctime(),
+      "external_url" => object.data["id"],
       "fave_num" => 0,
       "favorited" => false,
       "id" => activity.id,
@@ -162,7 +163,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
         }\">@<span>shp</span></a></span>!",
       "tags" => [],
       "text" => "Hey @shp!",
-      "uri" => activity.data["object"]["id"],
+      "uri" => object.data["id"],
       "user" => UserView.render("show.json", %{user: user}),
       "visibility" => "direct",
       "card" => nil,
@@ -176,13 +177,14 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     user = insert(:user)
     other_user = insert(:user, %{nickname: "shp"})
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
+    object = Object.normalize(activity.data["object"])
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(object.data["context"])
 
     mocks = [
       {
-        TwitterAPI,
-        [],
+        Utils,
+        [:passthrough],
         [context_to_conversation_id: fn _ -> false end]
       },
       {
@@ -197,7 +199,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
       assert result["statusnet_conversation_id"] == convo_id
       assert result["user"]
-      refute called(TwitterAPI.context_to_conversation_id(:_))
+      refute called(Utils.context_to_conversation_id(:_))
       refute called(User.get_cached_by_ap_id(user.ap_id))
       refute called(User.get_cached_by_ap_id(other_user.ap_id))
     end
@@ -278,11 +280,11 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     other_user = insert(:user, %{nickname: "shp"})
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
-    {:ok, announce, _object} = CommonAPI.repeat(activity.id, other_user)
+    {:ok, announce, object} = CommonAPI.repeat(activity.id, other_user)
 
-    convo_id = TwitterAPI.context_to_conversation_id(activity.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(object.data["context"])
 
-    activity = Repo.get(Activity, activity.id)
+    activity = Activity.get_by_id(activity.id)
 
     result = ActivityView.render("activity.json", activity: announce)
 
@@ -358,7 +360,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
 
   test "a peertube video" do
     {:ok, object} =
-      ActivityPub.fetch_object_from_id(
+      Pleroma.Object.Fetcher.fetch_object_from_id(
         "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
       )
 

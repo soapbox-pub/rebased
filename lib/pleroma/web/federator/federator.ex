@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.Federator do
   alias Pleroma.Activity
-  alias Pleroma.Jobs
+  alias Pleroma.Object.Containment
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
@@ -31,39 +31,39 @@ defmodule Pleroma.Web.Federator do
   # Client API
 
   def incoming_doc(doc) do
-    Jobs.enqueue(:federator_incoming, __MODULE__, [:incoming_doc, doc])
+    PleromaJobQueue.enqueue(:federator_incoming, __MODULE__, [:incoming_doc, doc])
   end
 
   def incoming_ap_doc(params) do
-    Jobs.enqueue(:federator_incoming, __MODULE__, [:incoming_ap_doc, params])
+    PleromaJobQueue.enqueue(:federator_incoming, __MODULE__, [:incoming_ap_doc, params])
   end
 
   def publish(activity, priority \\ 1) do
-    Jobs.enqueue(:federator_outgoing, __MODULE__, [:publish, activity], priority)
+    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish, activity], priority)
   end
 
   def publish_single_ap(params) do
-    Jobs.enqueue(:federator_outgoing, __MODULE__, [:publish_single_ap, params])
+    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_ap, params])
   end
 
   def publish_single_websub(websub) do
-    Jobs.enqueue(:federator_outgoing, __MODULE__, [:publish_single_websub, websub])
+    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_websub, websub])
   end
 
   def verify_websub(websub) do
-    Jobs.enqueue(:federator_outgoing, __MODULE__, [:verify_websub, websub])
+    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:verify_websub, websub])
   end
 
   def request_subscription(sub) do
-    Jobs.enqueue(:federator_outgoing, __MODULE__, [:request_subscription, sub])
+    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:request_subscription, sub])
   end
 
   def refresh_subscriptions do
-    Jobs.enqueue(:federator_outgoing, __MODULE__, [:refresh_subscriptions])
+    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:refresh_subscriptions])
   end
 
   def publish_single_salmon(params) do
-    Jobs.enqueue(:federator_outgoing, __MODULE__, [:publish_single_salmon, params])
+    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_salmon, params])
   end
 
   # Job Worker Callbacks
@@ -137,7 +137,7 @@ defmodule Pleroma.Web.Federator do
     # actor shouldn't be acting on objects outside their own AP server.
     with {:ok, _user} <- ap_enabled_actor(params["actor"]),
          nil <- Activity.normalize(params["id"]),
-         :ok <- Transmogrifier.contain_origin_from_id(params["actor"], params),
+         :ok <- Containment.contain_origin_from_id(params["actor"], params),
          {:ok, activity} <- Transmogrifier.handle_incoming(params) do
       {:ok, activity}
     else
@@ -186,7 +186,7 @@ defmodule Pleroma.Web.Federator do
   end
 
   def ap_enabled_actor(id) do
-    user = User.get_by_ap_id(id)
+    user = User.get_cached_by_ap_id(id)
 
     if User.ap_enabled?(user) do
       {:ok, user}

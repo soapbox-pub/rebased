@@ -5,9 +5,11 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Activity
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
+
   use Pleroma.DataCase
 
   import Pleroma.Factory
@@ -121,9 +123,9 @@ defmodule Pleroma.UserTest do
 
     {:ok, user} = User.follow(user, followed)
 
-    user = Repo.get(User, user.id)
+    user = User.get_cached_by_id(user.id)
 
-    followed = User.get_by_ap_id(followed.ap_id)
+    followed = User.get_cached_by_ap_id(followed.ap_id)
     assert followed.info.follower_count == 1
 
     assert User.ap_followers(followed) in user.following
@@ -143,6 +145,15 @@ defmodule Pleroma.UserTest do
     {:ok, blocker} = User.block(blocker, blockee)
 
     {:error, _} = User.follow(blockee, blocker)
+  end
+
+  test "can't subscribe to a user who blocked us" do
+    blocker = insert(:user)
+    blocked = insert(:user)
+
+    {:ok, blocker} = User.block(blocker, blocked)
+
+    {:error, _} = User.subscribe(blocked, blocker)
   end
 
   test "local users do not automatically follow local locked accounts" do
@@ -177,7 +188,7 @@ defmodule Pleroma.UserTest do
 
     {:ok, user, _activity} = User.unfollow(user, followed)
 
-    user = Repo.get(User, user.id)
+    user = User.get_cached_by_id(user.id)
 
     assert user.following == []
   end
@@ -187,7 +198,7 @@ defmodule Pleroma.UserTest do
 
     {:error, _} = User.unfollow(user, user)
 
-    user = Repo.get(User, user.id)
+    user = User.get_cached_by_id(user.id)
     assert user.following == [user.ap_id]
   end
 
@@ -197,6 +208,13 @@ defmodule Pleroma.UserTest do
 
     assert User.following?(user, followed)
     refute User.following?(followed, user)
+  end
+
+  test "fetches correct profile for nickname beginning with number" do
+    # Use old-style integer ID to try to reproduce the problem
+    user = insert(:user, %{id: 1080})
+    userwithnumbers = insert(:user, %{nickname: "#{user.id}garbage"})
+    assert userwithnumbers == User.get_cached_by_nickname_or_id(userwithnumbers.nickname)
   end
 
   describe "user registration" do
@@ -239,7 +257,7 @@ defmodule Pleroma.UserTest do
 
       activity = Repo.one(Pleroma.Activity)
       assert registered_user.ap_id in activity.recipients
-      assert activity.data["object"]["content"] =~ "cool site"
+      assert Object.normalize(activity).data["content"] =~ "cool site"
       assert activity.actor == welcome_user.ap_id
 
       Pleroma.Config.put([:instance, :welcome_user_nickname], nil)
@@ -538,8 +556,8 @@ defmodule Pleroma.UserTest do
 
       {:ok, res} = User.get_friends(user)
 
-      followed_one = User.get_by_ap_id(followed_one.ap_id)
-      followed_two = User.get_by_ap_id(followed_two.ap_id)
+      followed_one = User.get_cached_by_ap_id(followed_one.ap_id)
+      followed_two = User.get_cached_by_ap_id(followed_two.ap_id)
       assert Enum.member?(res, followed_one)
       assert Enum.member?(res, followed_two)
       refute Enum.member?(res, not_followed)
@@ -550,7 +568,7 @@ defmodule Pleroma.UserTest do
     test "it sets the info->note_count property" do
       note = insert(:note)
 
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       assert user.info.note_count == 0
 
@@ -561,7 +579,7 @@ defmodule Pleroma.UserTest do
 
     test "it increases the info->note_count property" do
       note = insert(:note)
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       assert user.info.note_count == 0
 
@@ -576,7 +594,7 @@ defmodule Pleroma.UserTest do
 
     test "it decreases the info->note_count property" do
       note = insert(:note)
-      user = User.get_by_ap_id(note.data["actor"])
+      user = User.get_cached_by_ap_id(note.data["actor"])
 
       assert user.info.note_count == 0
 
@@ -678,7 +696,7 @@ defmodule Pleroma.UserTest do
       assert User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = Repo.get(User, blocked.id)
+      blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
@@ -696,7 +714,7 @@ defmodule Pleroma.UserTest do
       refute User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = Repo.get(User, blocked.id)
+      blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
@@ -714,12 +732,28 @@ defmodule Pleroma.UserTest do
       assert User.following?(blocked, blocker)
 
       {:ok, blocker} = User.block(blocker, blocked)
-      blocked = Repo.get(User, blocked.id)
+      blocked = User.get_cached_by_id(blocked.id)
 
       assert User.blocks?(blocker, blocked)
 
       refute User.following?(blocker, blocked)
       refute User.following?(blocked, blocker)
+    end
+
+    test "blocks tear down blocked->blocker subscription relationships" do
+      blocker = insert(:user)
+      blocked = insert(:user)
+
+      {:ok, blocker} = User.subscribe(blocked, blocker)
+
+      assert User.subscribed_to?(blocked, blocker)
+      refute User.subscribed_to?(blocker, blocked)
+
+      {:ok, blocker} = User.block(blocker, blocked)
+
+      assert User.blocks?(blocker, blocked)
+      refute User.subscribed_to?(blocker, blocked)
+      refute User.subscribed_to?(blocked, blocker)
     end
   end
 
@@ -791,6 +825,16 @@ defmodule Pleroma.UserTest do
     assert false == user.info.deactivated
   end
 
+  test ".delete_user_activities deletes all create activities" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
+    {:ok, _} = User.delete_user_activities(user)
+
+    # TODO: Remove favorites, repeats, delete activities.
+    refute Activity.get_by_id(activity.id)
+  end
+
   test ".delete deactivates a user, all follow relationships and all create activities" do
     user = insert(:user)
     followed = insert(:user)
@@ -808,9 +852,9 @@ defmodule Pleroma.UserTest do
 
     {:ok, _} = User.delete(user)
 
-    followed = Repo.get(User, followed.id)
-    follower = Repo.get(User, follower.id)
-    user = Repo.get(User, user.id)
+    followed = User.get_cached_by_id(followed.id)
+    follower = User.get_cached_by_id(follower.id)
+    user = User.get_cached_by_id(user.id)
 
     assert user.info.deactivated
 
@@ -819,7 +863,7 @@ defmodule Pleroma.UserTest do
 
     # TODO: Remove favorites, repeats, delete activities.
 
-    refute Repo.get(Activity, activity.id)
+    refute Activity.get_by_id(activity.id)
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
@@ -879,7 +923,11 @@ defmodule Pleroma.UserTest do
       user = insert(:user, %{nickname: "john"})
 
       Enum.each(["john", "jo", "j"], fn query ->
-        assert user == User.search(query) |> List.first() |> Map.put(:search_rank, nil)
+        assert user ==
+                 User.search(query)
+                 |> List.first()
+                 |> Map.put(:search_rank, nil)
+                 |> Map.put(:search_type, nil)
       end)
     end
 
@@ -887,7 +935,11 @@ defmodule Pleroma.UserTest do
       user = insert(:user, %{name: "John Doe"})
 
       Enum.each(["John Doe", "JOHN", "doe", "j d", "j", "d"], fn query ->
-        assert user == User.search(query) |> List.first() |> Map.put(:search_rank, nil)
+        assert user ==
+                 User.search(query)
+                 |> List.first()
+                 |> Map.put(:search_rank, nil)
+                 |> Map.put(:search_type, nil)
       end)
     end
 
@@ -941,6 +993,7 @@ defmodule Pleroma.UserTest do
                User.search("lain@pleroma.soykaf.com")
                |> List.first()
                |> Map.put(:search_rank, nil)
+               |> Map.put(:search_type, nil)
     end
 
     test "does not yield false-positive matches" do
@@ -955,10 +1008,10 @@ defmodule Pleroma.UserTest do
       results = User.search("http://mastodon.example.org/users/admin", resolve: true)
       result = results |> List.first()
 
-      user = User.get_by_ap_id("http://mastodon.example.org/users/admin")
+      user = User.get_cached_by_ap_id("http://mastodon.example.org/users/admin")
 
       assert length(results) == 1
-      assert user == result |> Map.put(:search_rank, nil)
+      assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)
     end
   end
 
@@ -1072,30 +1125,20 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test "bookmarks" do
+  test "follower count is updated when a follower is blocked" do
     user = insert(:user)
+    follower = insert(:user)
+    follower2 = insert(:user)
+    follower3 = insert(:user)
 
-    {:ok, activity1} =
-      CommonAPI.post(user, %{
-        "status" => "heweoo!"
-      })
+    {:ok, follower} = Pleroma.User.follow(follower, user)
+    {:ok, _follower2} = Pleroma.User.follow(follower2, user)
+    {:ok, _follower3} = Pleroma.User.follow(follower3, user)
 
-    id1 = activity1.data["object"]["id"]
+    {:ok, _} = Pleroma.User.block(user, follower)
 
-    {:ok, activity2} =
-      CommonAPI.post(user, %{
-        "status" => "heweoo!"
-      })
+    user_show = Pleroma.Web.TwitterAPI.UserView.render("show.json", %{user: user})
 
-    id2 = activity2.data["object"]["id"]
-
-    assert {:ok, user_state1} = User.bookmark(user, id1)
-    assert user_state1.bookmarks == [id1]
-
-    assert {:ok, user_state2} = User.unbookmark(user, id1)
-    assert user_state2.bookmarks == []
-
-    assert {:ok, user_state3} = User.bookmark(user, id2)
-    assert user_state3.bookmarks == [id2]
+    assert Map.get(user_show, "followers_count") == 2
   end
 end

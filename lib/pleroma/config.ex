@@ -57,4 +57,8 @@ defmodule Pleroma.Config do
   def delete(key) do
     Application.delete_env(:pleroma, key)
   end
+
+  def oauth_consumer_strategies, do: get([:auth, :oauth_consumer_strategies], [])
+
+  def oauth_consumer_enabled?, do: oauth_consumer_strategies() != []
 end

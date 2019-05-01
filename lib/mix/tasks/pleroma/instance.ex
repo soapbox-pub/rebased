@@ -24,10 +24,12 @@ defmodule Mix.Tasks.Pleroma.Instance do
   - `--domain DOMAIN` - the domain of your instance
   - `--instance-name INSTANCE_NAME` - the name of your instance
   - `--admin-email ADMIN_EMAIL` - the email address of the instance admin
+  - `--notify-email NOTIFY_EMAIL` - email address for notifications
   - `--dbhost HOSTNAME` - the hostname of the PostgreSQL database to use
   - `--dbname DBNAME` - the name of the database to use
   - `--dbuser DBUSER` - the user (aka role) to use for the database connection
   - `--dbpass DBPASS` - the password to use for the database connection
+  - `--indexable Y/N` - Allow/disallow indexing site by search engines
   """
 
   def run(["gen" | rest]) do
@@ -41,10 +43,12 @@ defmodule Mix.Tasks.Pleroma.Instance do
           domain: :string,
           instance_name: :string,
           admin_email: :string,
+          notify_email: :string,
           dbhost: :string,
           dbname: :string,
           dbuser: :string,
-          dbpass: :string
+          dbpass: :string,
+          indexable: :string
         ],
         aliases: [
           o: :output,
@@ -61,7 +65,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
     will_overwrite = Enum.filter(paths, &File.exists?/1)
     proceed? = Enum.empty?(will_overwrite) or Keyword.get(options, :force, false)
 
-    unless not proceed? do
+    if proceed? do
       [domain, port | _] =
         String.split(
           Common.get_option(
@@ -80,6 +84,22 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
 
       email = Common.get_option(options, :admin_email, "What is your admin email address?")
+
+      notify_email =
+        Common.get_option(
+          options,
+          :notify_email,
+          "What email address do you want to use for sending email notifications?",
+          email
+        )
+
+      indexable =
+        Common.get_option(
+          options,
+          :indexable,
+          "Do you want search engines to index your site? (y/n)",
+          "y"
+        ) === "y"
 
       dbhost =
         Common.get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
@@ -114,6 +134,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           domain: domain,
           port: port,
           email: email,
+          notify_email: notify_email,
           name: name,
           dbhost: dbhost,
           dbname: dbname,
@@ -142,6 +163,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
       Mix.shell().info("Writing #{psql_path}.")
       File.write(psql_path, result_psql)
 
+      write_robots_txt(indexable)
+
       Mix.shell().info(
         "\n" <>
           """
@@ -162,5 +185,29 @@ defmodule Mix.Tasks.Pleroma.Instance do
           "Rerun with `--force` to overwrite them."
       )
     end
+  end
+
+  defp write_robots_txt(indexable) do
+    robots_txt =
+      EEx.eval_file(
+        Path.expand("robots_txt.eex", __DIR__),
+        indexable: indexable
+      )
+
+    static_dir = Pleroma.Config.get([:instance, :static_dir], "instance/static/")
+
+    unless File.exists?(static_dir) do
+      File.mkdir_p!(static_dir)
+    end
+
+    robots_txt_path = Path.join(static_dir, "robots.txt")
+
+    if File.exists?(robots_txt_path) do
+      File.cp!(robots_txt_path, "#{robots_txt_path}.bak")
+      Mix.shell().info("Backing up existing robots.txt to #{robots_txt_path}.bak")
+    end
+
+    File.write(robots_txt_path, robots_txt)
+    Mix.shell().info("Writing #{robots_txt_path}.")
   end
 end

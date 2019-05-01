@@ -8,7 +8,7 @@ defmodule Pleroma.Repo.Migrations.CreateFilters do
       add :hide, :boolean
       add :phrase, :string
       add :context, {:array, :string}
-      add :expires_at, :datetime
+      add :expires_at, :utc_datetime
       add :whole_word, :boolean
 
       timestamps()

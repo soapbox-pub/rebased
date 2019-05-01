@@ -8,20 +8,32 @@ defmodule Pleroma.Formatter do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
+  @safe_mention_regex ~r/^(\s*(?<mentions>@.+?\s+)+)(?<rest>.*)/
+  @link_regex ~r"((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+"ui
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
-  @link_regex ~r{((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+}ui
-  # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
 
   @auto_linker_config hashtag: true,
                       hashtag_handler: &Pleroma.Formatter.hashtag_handler/4,
                       mention: true,
                       mention_handler: &Pleroma.Formatter.mention_handler/4
 
+  def escape_mention_handler("@" <> nickname = mention, buffer, _, _) do
+    case User.get_cached_by_nickname(nickname) do
+      %User{} ->
+        # escape markdown characters with `\\`
+        # (we don't want something like @user__name to be parsed by markdown)
+        String.replace(mention, @markdown_characters_regex, "\\\\\\1")
+
+      _ ->
+        buffer
+    end
+  end
+
   def mention_handler("@" <> nickname, buffer, opts, acc) do
     case User.get_cached_by_nickname(nickname) do
       %User{id: id} = user ->
         ap_id = get_ap_id(user)
-        nickname_text = get_nickname_text(nickname, opts) |> maybe_escape(opts)
+        nickname_text = get_nickname_text(nickname, opts)
 
         link =
           "<span class='h-card'><a data-user='#{id}' class='u-url mention' href='#{ap_id}'>@<span>#{
@@ -45,15 +57,47 @@ defmodule Pleroma.Formatter do
 
   @doc """
   Parses a text and replace plain text links with HTML. Returns a tuple with a result text, mentions, and hashtags.
+
+  If the 'safe_mention' option is given, only consecutive mentions at the start the post are actually mentioned.
   """
   @spec linkify(String.t(), keyword()) ::
           {String.t(), [{String.t(), User.t()}], [{String.t(), String.t()}]}
   def linkify(text, options \\ []) do
     options = options ++ @auto_linker_config
-    acc = %{mentions: MapSet.new(), tags: MapSet.new()}
-    {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
 
-    {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
+      %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
+      acc = %{mentions: MapSet.new(), tags: MapSet.new()}
+
+      {text_mentions, %{mentions: mentions}} = AutoLinker.link_map(mentions, acc, options)
+      {text_rest, %{tags: tags}} = AutoLinker.link_map(rest, acc, options)
+
+      {text_mentions <> text_rest, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    else
+      acc = %{mentions: MapSet.new(), tags: MapSet.new()}
+      {text, %{mentions: mentions, tags: tags}} = AutoLinker.link_map(text, acc, options)
+
+      {text, MapSet.to_list(mentions), MapSet.to_list(tags)}
+    end
+  end
+
+  @doc """
+  Escapes a special characters in mention names.
+  """
+  def mentions_escape(text, options \\ []) do
+    options =
+      Keyword.merge(options,
+        mention: true,
+        url: false,
+        mention_handler: &Pleroma.Formatter.escape_mention_handler/4
+      )
+
+    if options[:safe_mention] && Regex.named_captures(@safe_mention_regex, text) do
+      %{"mentions" => mentions, "rest" => rest} = Regex.named_captures(@safe_mention_regex, text)
+      AutoLinker.link(mentions, options) <> AutoLinker.link(rest, options)
+    else
+      AutoLinker.link(text, options)
+    end
   end
 
   def emojify(text) do
@@ -63,9 +107,9 @@ defmodule Pleroma.Formatter do
   def emojify(text, nil), do: text
 
   def emojify(text, emoji, strip \\ false) do
-    Enum.reduce(emoji, text, fn {emoji, file}, text ->
-      emoji = HTML.strip_tags(emoji)
-      file = HTML.strip_tags(file)
+    Enum.reduce(emoji, text, fn emoji_data, text ->
+      emoji = HTML.strip_tags(elem(emoji_data, 0))
+      file = HTML.strip_tags(elem(emoji_data, 1))
 
       html =
         if not strip do
@@ -87,7 +131,7 @@ defmodule Pleroma.Formatter do
   def demojify(text, nil), do: text
 
   def get_emoji(text) when is_binary(text) do
-    Enum.filter(Emoji.get_all(), fn {emoji, _} -> String.contains?(text, ":#{emoji}:") end)
+    Enum.filter(Emoji.get_all(), fn {emoji, _, _} -> String.contains?(text, ":#{emoji}:") end)
   end
 
   def get_emoji(_), do: []
@@ -126,10 +170,4 @@ defmodule Pleroma.Formatter do
 
   defp get_nickname_text(nickname, %{mentions_format: :full}), do: User.full_nickname(nickname)
   defp get_nickname_text(nickname, _), do: User.local_nickname(nickname)
-
-  defp maybe_escape(str, %{mentions_escape: true}) do
-    String.replace(str, @markdown_characters_regex, "\\\\\\1")
-  end
-
-  defp maybe_escape(str, _), do: str
 end

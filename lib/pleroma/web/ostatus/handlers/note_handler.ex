@@ -106,15 +106,16 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   # TODO: Clean this up a bit.
   def handle_note(entry, doc \\ nil) do
     with id <- XML.string_from_xpath("//id", entry),
-         activity when is_nil(activity) <- Activity.get_create_by_object_ap_id(id),
+         activity when is_nil(activity) <- Activity.get_create_by_object_ap_id_with_object(id),
          [author] <- :xmerl_xpath.string('//author[1]', doc),
          {:ok, actor} <- OStatus.find_make_or_update_user(author),
          content_html <- OStatus.get_content(entry),
          cw <- OStatus.get_cw(entry),
          in_reply_to <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
          in_reply_to_activity <- fetch_replied_to_activity(entry, in_reply_to),
-         in_reply_to <-
-           (in_reply_to_activity && in_reply_to_activity.data["object"]["id"]) || in_reply_to,
+         in_reply_to_object <-
+           (in_reply_to_activity && Object.normalize(in_reply_to_activity)) || nil,
+         in_reply_to <- (in_reply_to_object && in_reply_to_object.data["id"]) || in_reply_to,
          attachments <- OStatus.get_attachments(entry),
          context <- get_context(entry, in_reply_to),
          tags <- OStatus.get_tags(entry),

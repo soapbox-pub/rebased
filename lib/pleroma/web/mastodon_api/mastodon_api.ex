@@ -2,61 +2,82 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   import Ecto.Query
   import Ecto.Changeset
 
-  alias Pleroma.Repo
+  alias Pleroma.Activity
+  alias Pleroma.Notification
+  alias Pleroma.Pagination
+  alias Pleroma.ScheduledActivity
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
 
-  @default_limit 20
+  def follow(follower, followed, params \\ %{}) do
+    options = cast_params(params)
+    reblogs = options[:reblogs]
+
+    result =
+      if not User.following?(follower, followed) do
+        CommonAPI.follow(follower, followed)
+      else
+        {:ok, follower, followed, nil}
+      end
+
+    with {:ok, follower, followed, _} <- result do
+      reblogs
+      |> case do
+        false -> CommonAPI.hide_reblogs(follower, followed)
+        _ -> CommonAPI.show_reblogs(follower, followed)
+      end
+      |> case do
+        {:ok, follower} -> {:ok, follower}
+        _ -> {:ok, follower}
+      end
+    end
+  end
 
   def get_followers(user, params \\ %{}) do
     user
     |> User.get_followers_query()
-    |> paginate(params)
-    |> Repo.all()
+    |> Pagination.fetch_paginated(params)
   end
 
   def get_friends(user, params \\ %{}) do
     user
     |> User.get_friends_query()
-    |> paginate(params)
-    |> Repo.all()
+    |> Pagination.fetch_paginated(params)
   end
 
-  def paginate(query, params \\ %{}) do
+  def get_notifications(user, params \\ %{}) do
     options = cast_params(params)
 
-    query
-    |> restrict(:max_id, options)
-    |> restrict(:since_id, options)
-    |> restrict(:limit, options)
-    |> order_by([u], fragment("? desc nulls last", u.id))
+    user
+    |> Notification.for_user_query()
+    |> restrict(:exclude_types, options)
+    |> Pagination.fetch_paginated(params)
   end
 
-  def cast_params(params) do
+  def get_scheduled_activities(user, params \\ %{}) do
+    user
+    |> ScheduledActivity.for_user_query()
+    |> Pagination.fetch_paginated(params)
+  end
+
+  defp cast_params(params) do
     param_types = %{
-      max_id: :string,
-      since_id: :string,
-      limit: :integer
+      exclude_types: {:array, :string},
+      reblogs: :boolean
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))
     changeset.changes
   end
 
-  defp restrict(query, :max_id, %{max_id: max_id}) do
-    query
-    |> where([q], q.id < ^max_id)
-  end
-
-  defp restrict(query, :since_id, %{since_id: since_id}) do
-    query
-    |> where([q], q.id > ^since_id)
-  end
-
-  defp restrict(query, :limit, options) do
-    limit = Map.get(options, :limit, @default_limit)
+  defp restrict(query, :exclude_types, %{exclude_types: mastodon_types = [_ | _]}) do
+    ap_types =
+      mastodon_types
+      |> Enum.map(&Activity.from_mastodon_notification_type/1)
+      |> Enum.filter(& &1)
 
     query
-    |> limit(^limit)
+    |> where([q, a], not fragment("? @> ARRAY[?->>'type']::varchar[]", ^ap_types, a.data))
   end
 
   defp restrict(query, _, _), do: query

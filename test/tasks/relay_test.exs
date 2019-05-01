@@ -31,7 +31,7 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       local_user = Relay.get_actor()
       assert local_user.ap_id =~ "/relay"
 
-      target_user = User.get_by_ap_id(target_instance)
+      target_user = User.get_cached_by_ap_id(target_instance)
       refute target_user.local
 
       activity = Utils.fetch_latest_follow(local_user, target_user)
@@ -48,7 +48,7 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       Mix.Tasks.Pleroma.Relay.run(["follow", target_instance])
 
       %User{ap_id: follower_id} = local_user = Relay.get_actor()
-      target_user = User.get_by_ap_id(target_instance)
+      target_user = User.get_cached_by_ap_id(target_instance)
       follow_activity = Utils.fetch_latest_follow(local_user, target_user)
 
       Mix.Tasks.Pleroma.Relay.run(["unfollow", target_instance])
@@ -60,7 +60,8 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
         ActivityPub.fetch_activities([], %{
           "type" => "Undo",
           "actor_id" => follower_id,
-          "limit" => 1
+          "limit" => 1,
+          "skip_preload" => true
         })
 
       assert undo_activity.data["type"] == "Undo"

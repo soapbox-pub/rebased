@@ -4,9 +4,9 @@
 
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
+  alias Pleroma.Bookmark
   alias Pleroma.Formatter
   alias Pleroma.Object
-  alias Pleroma.Repo
   alias Pleroma.ThreadMute
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -64,8 +64,9 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def delete(activity_id, user) do
-    with %Activity{data: %{"object" => %{"id" => object_id}}} <- Repo.get(Activity, activity_id),
-         %Object{} = object <- Object.normalize(object_id),
+    with %Activity{data: %{"object" => _}} = activity <-
+           Activity.get_by_id_with_object(activity_id),
+         %Object{} = object <- Object.normalize(activity),
          true <- User.superuser?(user) || user.ap_id == object.data["actor"],
          {:ok, _} <- unpin(activity_id, user),
          {:ok, delete} <- ActivityPub.delete(object) do
@@ -75,7 +76,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def repeat(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]),
+         object <- Object.normalize(activity),
          nil <- Utils.get_existing_announce(user.ap_id, object) do
       ActivityPub.announce(user, object)
     else
@@ -86,7 +87,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unrepeat(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity) do
       ActivityPub.unannounce(user, object)
     else
       _ ->
@@ -96,7 +97,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def favorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]),
+         object <- Object.normalize(activity),
          nil <- Utils.get_existing_like(user.ap_id, object) do
       ActivityPub.like(user, object)
     else
@@ -107,7 +108,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unfavorite(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         object <- Object.normalize(activity.data["object"]["id"]) do
+         object <- Object.normalize(activity) do
       ActivityPub.unlike(user, object)
     else
       _ ->
@@ -125,7 +126,10 @@ defmodule Pleroma.Web.CommonAPI do
         "public"
 
       in_reply_to ->
-        Pleroma.Web.MastodonAPI.StatusView.get_visibility(in_reply_to.data["object"])
+        # XXX: these heuristics should be moved out of MastodonAPI.
+        with %Object{} = object <- Object.normalize(in_reply_to) do
+          Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
+        end
     end
   end
 
@@ -142,7 +146,8 @@ defmodule Pleroma.Web.CommonAPI do
            make_content_html(
              status,
              attachments,
-             data
+             data,
+             visibility
            ),
          {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
          context <- make_context(in_reply_to),
@@ -166,18 +171,21 @@ defmodule Pleroma.Web.CommonAPI do
              object,
              "emoji",
              (Formatter.get_emoji(status) ++ Formatter.get_emoji(data["spoiler_text"]))
-             |> Enum.reduce(%{}, fn {name, file}, acc ->
+             |> Enum.reduce(%{}, fn {name, file, _}, acc ->
                Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
              end)
            ) do
       res =
-        ActivityPub.create(%{
-          to: to,
-          actor: user,
-          context: context,
-          object: object,
-          additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
-        })
+        ActivityPub.create(
+          %{
+            to: to,
+            actor: user,
+            context: context,
+            object: object,
+            additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
+          },
+          Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
+        )
 
       res
     end
@@ -210,8 +218,10 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{
            actor: ^user_ap_id,
            data: %{
-             "type" => "Create",
-             "object" => %{
+             "type" => "Create"
+           },
+           object: %Object{
+             data: %{
                "to" => object_to,
                "type" => "Note"
              }
@@ -273,9 +283,18 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def bookmarked?(user, activity) do
+    with %Bookmark{} <- Bookmark.get(user.id, activity.id) do
+      true
+    else
+      _ ->
+        false
+    end
+  end
+
   def report(user, data) do
     with {:account_id, %{"account_id" => account_id}} <- {:account_id, data},
-         {:account, %User{} = account} <- {:account, User.get_by_id(account_id)},
+         {:account, %User{} = account} <- {:account, User.get_cached_by_id(account_id)},
          {:ok, {content_html, _, _}} <- make_report_content_html(data["comment"]),
          {:ok, statuses} <- get_report_statuses(account, data),
          {:ok, activity} <-
@@ -284,19 +303,34 @@ defmodule Pleroma.Web.CommonAPI do
              actor: user,
              account: account,
              statuses: statuses,
-             content: content_html
+             content: content_html,
+             forward: data["forward"] || false
            }) do
-      Enum.each(User.all_superusers(), fn superuser ->
-        superuser
-        |> Pleroma.AdminEmail.report(user, account, statuses, content_html)
-        |> Pleroma.Mailer.deliver_async()
-      end)
-
       {:ok, activity}
     else
       {:error, err} -> {:error, err}
       {:account_id, %{}} -> {:error, "Valid `account_id` required"}
       {:account, nil} -> {:error, "Account not found"}
+    end
+  end
+
+  def hide_reblogs(user, muted) do
+    ap_id = muted.ap_id
+
+    if ap_id not in user.info.muted_reblogs do
+      info_changeset = User.Info.add_reblog_mute(user.info, ap_id)
+      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
+      User.update_and_set_cache(changeset)
+    end
+  end
+
+  def show_reblogs(user, muted) do
+    ap_id = muted.ap_id
+
+    if ap_id in user.info.muted_reblogs do
+      info_changeset = User.Info.remove_reblog_mute(user.info, ap_id)
+      changeset = Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset)
+      User.update_and_set_cache(changeset)
     end
   end
 end

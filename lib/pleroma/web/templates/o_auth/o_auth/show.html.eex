@@ -4,7 +4,9 @@
 <%= if get_flash(@conn, :error) do %>
 <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
 <% end %>
+
 <h2>OAuth Authorization</h2>
+
 <%= form_for @conn, o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
 <div class="input">
   <%= label f, :name, "Name or email" %>
@@ -14,22 +16,16 @@
   <%= label f, :password, "Password" %>
   <%= password_input f, :password %>
 </div>
-<div class="scopes-input">
-<%= label f, :scope, "Permissions" %>
-  <div class="scopes">
-    <%= for scope <- @available_scopes do %>
-      <%# Note: using hidden input with `unchecked_value` in order to distinguish user's empty selection from `scope` param being omitted %>
-      <div class="scope">
-        <%= checkbox f, :"scope_#{scope}", value: scope in @scopes && scope, checked_value: scope, unchecked_value: "", name: "authorization[scope][]" %>
-        <%= label f, :"scope_#{scope}", String.capitalize(scope) %>
-      </div>
-    <% end %>
-  </div>
-</div>
+
+<%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
 
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :response_type, value: @response_type %>
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
-<%= hidden_input f, :state, value: @state%>
+<%= hidden_input f, :state, value: @state %>
 <%= submit "Authorize" %>
+<% end %>
+
+<%= if Pleroma.Config.oauth_consumer_enabled?() do %>
+  <%= render @view_module, Pleroma.Web.Auth.Authenticator.oauth_consumer_template(), assigns %>
 <% end %>

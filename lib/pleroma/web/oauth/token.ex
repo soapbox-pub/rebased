@@ -17,7 +17,7 @@ defmodule Pleroma.Web.OAuth.Token do
     field(:token, :string)
     field(:refresh_token, :string)
     field(:scopes, {:array, :string}, default: [])
-    field(:valid_until, :naive_datetime)
+    field(:valid_until, :naive_datetime_usec)
     belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
     belongs_to(:app, App)
 
@@ -27,7 +27,7 @@ defmodule Pleroma.Web.OAuth.Token do
   def exchange_token(app, auth) do
     with {:ok, auth} <- Authorization.use_token(auth),
          true <- auth.app_id == app.id do
-      create_token(app, Repo.get(User, auth.user_id), auth.scopes)
+      create_token(app, User.get_cached_by_id(auth.user_id), auth.scopes)
     end
   end
 

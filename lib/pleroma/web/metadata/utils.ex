@@ -12,7 +12,7 @@ defmodule Pleroma.Web.Metadata.Utils do
     # html content comes from DB already encoded, decode first and scrub after
     |> HtmlEntities.decode()
     |> String.replace(~r/<br\s?\/?>/, " ")
-    |> HTML.get_cached_stripped_html_for_object(object, __MODULE__)
+    |> HTML.get_cached_stripped_html_for_activity(object, "metadata")
     |> Formatter.demojify()
     |> Formatter.truncate()
   end

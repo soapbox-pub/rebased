@@ -4,11 +4,10 @@
 
 defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   alias Pleroma.Activity
-  alias Pleroma.Mailer
-  alias Pleroma.Object
+  alias Pleroma.Emails.Mailer
+  alias Pleroma.Emails.UserEmail
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.UserEmail
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -21,7 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def delete(%User{} = user, id) do
-    with %Activity{data: %{"type" => _type}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"type" => _type}} <- Activity.get_by_id(id),
          {:ok, activity} <- CommonAPI.delete(id, user) do
       {:ok, activity}
     end
@@ -130,7 +129,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def register_user(params) do
-    token_string = params["token"]
+    token = params["token"]
 
     params = %{
       nickname: params["nickname"],
@@ -164,36 +163,49 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       {:error, %{error: Jason.encode!(%{captcha: [error]})}}
     else
       registrations_open = Pleroma.Config.get([:instance, :registrations_open])
+      registration_process(registrations_open, params, token)
+    end
+  end
 
-      # no need to query DB if registration is open
-      token =
-        unless registrations_open || is_nil(token_string) do
-          Repo.get_by(UserInviteToken, %{token: token_string})
-        end
-
-      cond do
-        registrations_open || (!is_nil(token) && !token.used) ->
-          changeset = User.register_changeset(%User{}, params)
-
-          with {:ok, user} <- User.register(changeset) do
-            !registrations_open && UserInviteToken.mark_as_used(token.token)
-
-            {:ok, user}
-          else
-            {:error, changeset} ->
-              errors =
-                Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
-                |> Jason.encode!()
-
-              {:error, %{error: errors}}
-          end
-
-        !registrations_open && is_nil(token) ->
-          {:error, "Invalid token"}
-
-        !registrations_open && token.used ->
-          {:error, "Expired token"}
+  defp registration_process(registration_open, params, token)
+       when registration_open == false or is_nil(registration_open) do
+    invite =
+      unless is_nil(token) do
+        Repo.get_by(UserInviteToken, %{token: token})
       end
+
+    valid_invite? = invite && UserInviteToken.valid_invite?(invite)
+
+    case invite do
+      nil ->
+        {:error, "Invalid token"}
+
+      invite when valid_invite? ->
+        UserInviteToken.update_usage!(invite)
+        create_user(params)
+
+      _ ->
+        {:error, "Expired token"}
+    end
+  end
+
+  defp registration_process(true, params, _token) do
+    create_user(params)
+  end
+
+  defp create_user(params) do
+    changeset = User.register_changeset(%User{}, params)
+
+    case User.register(changeset) do
+      {:ok, user} ->
+        {:ok, user}
+
+      {:error, changeset} ->
+        errors =
+          Ecto.Changeset.traverse_errors(changeset, fn {msg, _opts} -> msg end)
+          |> Jason.encode!()
+
+        {:error, %{error: errors}}
     end
   end
 
@@ -228,12 +240,9 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
         end
 
       %{"screen_name" => nickname} ->
-        case target = Repo.get_by(User, nickname: nickname) do
-          nil ->
-            {:error, "No user with such screen_name"}
-
-          _ ->
-            {:ok, target}
+        case User.get_cached_by_nickname(nickname) do
+          nil -> {:error, "No user with such screen_name"}
+          target -> {:ok, target}
         end
 
       _ ->
@@ -257,6 +266,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   defp parse_int(_, default), do: default
 
+  # TODO: unify the search query with MastoAPI one and do only pagination here
   def search(_user, %{"q" => query} = params) do
     limit = parse_int(params["rpp"], 20)
     page = parse_int(params["page"], 1)
@@ -264,13 +274,13 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
     q =
       from(
-        a in Activity,
+        [a, o] in Activity.with_preloaded_object(Activity),
         where: fragment("?->>'type' = 'Create'", a.data),
         where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
         where:
           fragment(
-            "to_tsvector('english', ?->'object'->>'content') @@ plainto_tsquery('english', ?)",
-            a.data,
+            "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
+            o.data,
             ^query
           ),
         limit: ^limit,
@@ -280,35 +290,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       )
 
     _activities = Repo.all(q)
-  end
-
-  # DEPRECATED mostly, context objects are now created at insertion time.
-  def context_to_conversation_id(context) do
-    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
-      id
-    else
-      _e ->
-        changeset = Object.context_mapping(context)
-
-        case Repo.insert(changeset) do
-          {:ok, %{id: id}} ->
-            id
-
-          # This should be solved by an upsert, but it seems ecto
-          # has problems accessing the constraint inside the jsonb.
-          {:error, _} ->
-            Object.get_cached_by_ap_id(context).id
-        end
-    end
-  end
-
-  def conversation_id_to_context(id) do
-    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
-      context
-    else
-      _e ->
-        {:error, "No such conversation"}
-    end
   end
 
   def get_external_profile(for_user, uri) do

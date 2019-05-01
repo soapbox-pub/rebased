@@ -9,7 +9,7 @@ defmodule Pleroma.Web.Websub.WebsubClientSubscription do
   schema "websub_client_subscriptions" do
     field(:topic, :string)
     field(:secret, :string)
-    field(:valid_until, :naive_datetime)
+    field(:valid_until, :naive_datetime_usec)
     field(:state, :string)
     field(:subscribers, {:array, :string}, default: [])
     field(:hub, :string)

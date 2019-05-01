@@ -52,7 +52,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
   defp recipient_in_collection(_, _), do: false
 
-  def recipient_in_message(ap_id, params) do
+  def recipient_in_message(%User{ap_id: ap_id} = recipient, %User{} = actor, params) do
     cond do
       recipient_in_collection(ap_id, params["to"]) ->
         true
@@ -69,6 +69,11 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       # if the message is unaddressed at all, then assume it is directly addressed
       # to the recipient
       !params["to"] && !params["cc"] && !params["bto"] && !params["bcc"] ->
+        true
+
+      # if the message is sent from somebody the user is following, then assume it
+      # is addressed to the recipient
+      User.following?(recipient, actor) ->
         true
 
       true ->
@@ -99,7 +104,10 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     %{
       "@context" => [
         "https://www.w3.org/ns/activitystreams",
-        "#{Web.base_url()}/schemas/litepub-0.1.jsonld"
+        "#{Web.base_url()}/schemas/litepub-0.1.jsonld",
+        %{
+          "@language" => "und"
+        }
       ]
     }
   end
@@ -175,18 +183,26 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Adds an id and a published data if they aren't there,
   also adds it to an included object
   """
-  def lazy_put_activity_defaults(map) do
-    %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
-
+  def lazy_put_activity_defaults(map, fake \\ false) do
     map =
-      map
-      |> Map.put_new_lazy("id", &generate_activity_id/0)
-      |> Map.put_new_lazy("published", &make_date/0)
-      |> Map.put_new("context", context)
-      |> Map.put_new("context_id", context_id)
+      unless fake do
+        %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
+
+        map
+        |> Map.put_new_lazy("id", &generate_activity_id/0)
+        |> Map.put_new_lazy("published", &make_date/0)
+        |> Map.put_new("context", context)
+        |> Map.put_new("context_id", context_id)
+      else
+        map
+        |> Map.put_new("id", "pleroma:fakeid")
+        |> Map.put_new_lazy("published", &make_date/0)
+        |> Map.put_new("context", "pleroma:fakecontext")
+        |> Map.put_new("context_id", -1)
+      end
 
     if is_map(map["object"]) do
-      object = lazy_put_object_defaults(map["object"], map)
+      object = lazy_put_object_defaults(map["object"], map, fake)
       %{map | "object" => object}
     else
       map
@@ -196,7 +212,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Adds an id and published date if they aren't there.
   """
-  def lazy_put_object_defaults(map, activity \\ %{}) do
+  def lazy_put_object_defaults(map, activity \\ %{}, fake)
+
+  def lazy_put_object_defaults(map, activity, true = _fake) do
+    map
+    |> Map.put_new_lazy("published", &make_date/0)
+    |> Map.put_new("id", "pleroma:fake_object_id")
+    |> Map.put_new("context", activity["context"])
+    |> Map.put_new("fake", true)
+    |> Map.put_new("context_id", activity["context_id"])
+  end
+
+  def lazy_put_object_defaults(map, activity, _fake) do
     map
     |> Map.put_new_lazy("id", &generate_object_id/0)
     |> Map.put_new_lazy("published", &make_date/0)
@@ -207,14 +234,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Inserts a full object if it is contained in an activity.
   """
-  def insert_full_object(%{"object" => %{"type" => type} = object_data})
+  def insert_full_object(%{"object" => %{"type" => type} = object_data} = map)
       when is_map(object_data) and type in @supported_object_types do
-    with {:ok, _} <- Object.create(object_data) do
-      :ok
+    with {:ok, object} <- Object.create(object_data) do
+      map =
+        map
+        |> Map.put("object", object.data["id"])
+
+      {:ok, map, object}
     end
   end
 
-  def insert_full_object(_), do: :ok
+  def insert_full_object(map), do: {:ok, map, nil}
 
   def update_object_in_activities(%{data: %{"id" => id}} = object) do
     # TODO
@@ -354,7 +385,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         [state, actor, object]
       )
 
-      activity = Repo.get(Activity, activity.id)
+      activity = Activity.get_by_id(activity.id)
       {:ok, activity}
     rescue
       e ->
@@ -404,13 +435,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
             activity.data
           ),
         where: activity.actor == ^follower_id,
+        # this is to use the index
         where:
           fragment(
-            "? @> ?",
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
             activity.data,
-            ^%{object: followed_id}
+            activity.data,
+            ^followed_id
           ),
-        order_by: [desc: :id],
+        order_by: [fragment("? desc nulls last", activity.id)],
         limit: 1
       )
 
@@ -567,13 +600,15 @@ defmodule Pleroma.Web.ActivityPub.Utils do
             activity.data
           ),
         where: activity.actor == ^blocker_id,
+        # this is to use the index
         where:
           fragment(
-            "? @> ?",
+            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
             activity.data,
-            ^%{object: blocked_id}
+            activity.data,
+            ^blocked_id
           ),
-        order_by: [desc: :id],
+        order_by: [fragment("? desc nulls last", activity.id)],
         limit: 1
       )
 
@@ -621,7 +656,13 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Flag-related helpers
 
   def make_flag_data(params, additional) do
-    status_ap_ids = Enum.map(params.statuses || [], & &1.data["id"])
+    status_ap_ids =
+      Enum.map(params.statuses || [], fn
+        %Activity{} = act -> act.data["id"]
+        act when is_map(act) -> act["id"]
+        act when is_binary(act) -> act
+      end)
+
     object = [params.account.ap_id] ++ status_ap_ids
 
     %{

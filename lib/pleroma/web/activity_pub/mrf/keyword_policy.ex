@@ -4,6 +4,10 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
+  defp string_matches?(string, _) when not is_binary(string) do
+    false
+  end
+
   defp string_matches?(string, pattern) when is_binary(pattern) do
     String.contains?(string, pattern)
   end
@@ -44,6 +48,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   end
 
   defp check_replace(%{"object" => %{"content" => content, "summary" => summary}} = message) do
+    content =
+      if is_binary(content) do
+        content
+      else
+        ""
+      end
+
+    summary =
+      if is_binary(summary) do
+        summary
+      else
+        ""
+      end
+
     {content, summary} =
       Enum.reduce(
         Pleroma.Config.get([:mrf_keyword, :replace]),
@@ -58,11 +76,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
      message
      |> put_in(["object", "content"], content)
      |> put_in(["object", "summary"], summary)}
-  end
-
-  @impl true
-  def filter(%{"object" => %{"content" => nil}} = message) do
-    {:ok, message}
   end
 
   @impl true

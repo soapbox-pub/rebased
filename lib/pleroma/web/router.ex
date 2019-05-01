@@ -5,6 +5,16 @@
 defmodule Pleroma.Web.Router do
   use Pleroma.Web, :router
 
+  pipeline :browser do
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+  end
+
+  pipeline :oauth do
+    plug(:fetch_session)
+    plug(Pleroma.Plugs.OAuthPlug)
+  end
+
   pipeline :api do
     plug(:accepts, ["json"])
     plug(:fetch_session)
@@ -105,10 +115,6 @@ defmodule Pleroma.Web.Router do
     plug(:accepts, ["json", "xml"])
   end
 
-  pipeline :oauth do
-    plug(:accepts, ["html", "json"])
-  end
-
   pipeline :pleroma_api do
     plug(:accepts, ["html", "json"])
   end
@@ -129,6 +135,7 @@ defmodule Pleroma.Web.Router do
     post("/password_reset", UtilController, :password_reset)
     get("/emoji", UtilController, :emoji)
     get("/captcha", UtilController, :captcha)
+    get("/healthcheck", UtilController, :healthcheck)
   end
 
   scope "/api/pleroma", Pleroma.Web do
@@ -139,7 +146,12 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through([:admin_api, :oauth_write])
 
+    post("/user/follow", AdminAPIController, :user_follow)
+    post("/user/unfollow", AdminAPIController, :user_unfollow)
+
     get("/users", AdminAPIController, :list_users)
+    get("/users/:nickname", AdminAPIController, :user_show)
+
     delete("/user", AdminAPIController, :user_delete)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     post("/user", AdminAPIController, :user_create)
@@ -157,6 +169,8 @@ defmodule Pleroma.Web.Router do
     delete("/relay", AdminAPIController, :relay_unfollow)
 
     get("/invite_token", AdminAPIController, :get_invite_token)
+    get("/invites", AdminAPIController, :invites)
+    post("/revoke_invite", AdminAPIController, :revoke_invite)
     post("/email_invite", AdminAPIController, :email_invite)
 
     get("/password_reset", AdminAPIController, :get_password_reset)
@@ -182,6 +196,7 @@ defmodule Pleroma.Web.Router do
 
       post("/change_password", UtilController, :change_password)
       post("/delete_account", UtilController, :delete_account)
+      put("/notification_settings", UtilController, :update_notificaton_settings)
     end
 
     scope [] do
@@ -190,13 +205,33 @@ defmodule Pleroma.Web.Router do
       post("/blocks_import", UtilController, :blocks_import)
       post("/follow_import", UtilController, :follow_import)
     end
+
+    scope [] do
+      pipe_through(:oauth_read)
+
+      post("/notifications/read", UtilController, :notifications_read)
+    end
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
-    get("/authorize", OAuthController, :authorize)
+    scope [] do
+      pipe_through(:oauth)
+      get("/authorize", OAuthController, :authorize)
+    end
+
     post("/authorize", OAuthController, :create_authorization)
     post("/token", OAuthController, :token_exchange)
     post("/revoke", OAuthController, :token_revoke)
+    get("/registration_details", OAuthController, :registration_details)
+
+    scope [] do
+      pipe_through(:browser)
+
+      get("/prepare_request", OAuthController, :prepare_request)
+      get("/:provider", OAuthController, :request)
+      get("/:provider/callback", OAuthController, :callback)
+      post("/register", OAuthController, :register)
+    end
   end
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
@@ -208,9 +243,9 @@ defmodule Pleroma.Web.Router do
       get("/accounts/verify_credentials", MastodonAPIController, :verify_credentials)
 
       get("/accounts/relationships", MastodonAPIController, :relationships)
-      get("/accounts/search", MastodonAPIController, :account_search)
 
       get("/accounts/:id/lists", MastodonAPIController, :account_lists)
+      get("/accounts/:id/identity_proofs", MastodonAPIController, :empty_array)
 
       get("/follow_requests", MastodonAPIController, :follow_requests)
       get("/blocks", MastodonAPIController, :blocks)
@@ -226,6 +261,10 @@ defmodule Pleroma.Web.Router do
       post("/notifications/dismiss", MastodonAPIController, :dismiss_notification)
       get("/notifications", MastodonAPIController, :notifications)
       get("/notifications/:id", MastodonAPIController, :get_notification)
+      delete("/notifications/destroy_multiple", MastodonAPIController, :destroy_multiple)
+
+      get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
+      get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)
 
       get("/lists", MastodonAPIController, :get_lists)
       get("/lists/:id", MastodonAPIController, :get_list)
@@ -260,6 +299,9 @@ defmodule Pleroma.Web.Router do
       post("/statuses/:id/unbookmark", MastodonAPIController, :unbookmark_status)
       post("/statuses/:id/mute", MastodonAPIController, :mute_conversation)
       post("/statuses/:id/unmute", MastodonAPIController, :unmute_conversation)
+
+      put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
+      delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
 
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
@@ -298,6 +340,9 @@ defmodule Pleroma.Web.Router do
 
       post("/domain_blocks", MastodonAPIController, :block_domain)
       delete("/domain_blocks", MastodonAPIController, :unblock_domain)
+
+      post("/pleroma/accounts/:id/subscribe", MastodonAPIController, :subscribe)
+      post("/pleroma/accounts/:id/unsubscribe", MastodonAPIController, :unsubscribe)
     end
 
     scope [] do
@@ -322,6 +367,7 @@ defmodule Pleroma.Web.Router do
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)
     post("/apps", MastodonAPIController, :create_app)
+    get("/apps/verify_credentials", MastodonAPIController, :verify_app_credentials)
     get("/custom_emojis", MastodonAPIController, :custom_emojis)
 
     get("/statuses/:id/card", MastodonAPIController, :status_card)
@@ -330,6 +376,8 @@ defmodule Pleroma.Web.Router do
     get("/statuses/:id/reblogged_by", MastodonAPIController, :reblogged_by)
 
     get("/trends", MastodonAPIController, :empty_array)
+
+    get("/accounts/search", MastodonAPIController, :account_search)
 
     scope [] do
       pipe_through(:oauth_read_or_unauthenticated)
@@ -347,6 +395,8 @@ defmodule Pleroma.Web.Router do
       get("/accounts/:id", MastodonAPIController, :user)
 
       get("/search", MastodonAPIController, :search)
+
+      get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
     end
   end
 

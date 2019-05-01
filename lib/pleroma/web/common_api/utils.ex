@@ -12,25 +12,29 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.MediaProxy
 
+  require Logger
+
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_by_object_ap_id(id)
+    activity =
+      Activity.get_by_id_with_object(id) || Activity.get_create_by_object_ap_id_with_object(id)
 
     activity &&
       if activity.data["type"] == "Create" do
         activity
       else
-        Activity.get_create_by_object_ap_id(activity.data["object"])
+        Activity.get_create_by_object_ap_id_with_object(activity.data["object"])
       end
   end
 
   def get_replied_to_activity(""), do: nil
 
   def get_replied_to_activity(id) when not is_nil(id) do
-    Repo.get(Activity, id)
+    Activity.get_by_id(id)
   end
 
   def get_replied_to_activity(_), do: nil
@@ -101,7 +105,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def make_content_html(
         status,
         attachments,
-        data
+        data,
+        visibility
       ) do
     no_attachment_links =
       data
@@ -110,8 +115,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     content_type = get_content_type(data["content_type"])
 
+    options =
+      if visibility == "direct" && Config.get([:instance, :safe_dm_mentions]) do
+        [safe_mention: true]
+      else
+        []
+      end
+
     status
-    |> format_input(content_type)
+    |> format_input(content_type, options)
     |> maybe_add_attachments(attachments, no_attachment_links)
     |> maybe_add_nsfw_tag(data)
   end
@@ -171,6 +183,18 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   @doc """
+  Formatting text as BBCode.
+  """
+  def format_input(text, "text/bbcode", options) do
+    text
+    |> String.replace(~r/\r/, "")
+    |> Formatter.html_escape("text/plain")
+    |> BBCode.to_html()
+    |> (fn {:ok, html} -> html end).()
+    |> Formatter.linkify(options)
+  end
+
+  @doc """
   Formatting text to html.
   """
   def format_input(text, "text/html", options) do
@@ -183,11 +207,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   Formatting text to markdown.
   """
   def format_input(text, "text/markdown", options) do
-    options = Keyword.put(options, :mentions_escape, true)
-
     text
+    |> Formatter.mentions_escape(options)
+    |> Earmark.as_html!()
     |> Formatter.linkify(options)
-    |> (fn {text, mentions, tags} -> {Earmark.as_html!(text), mentions, tags} end).()
     |> Formatter.html_escape("text/html")
   end
 
@@ -197,7 +220,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         context,
         content_html,
         attachments,
-        inReplyTo,
+        in_reply_to,
         tags,
         cw \\ nil,
         cc \\ []
@@ -214,10 +237,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
-    if inReplyTo do
+    if in_reply_to do
+      in_reply_to_object = Object.normalize(in_reply_to)
+
       object
-      |> Map.put("inReplyTo", inReplyTo.data["object"]["id"])
-      |> Map.put("inReplyToStatusId", inReplyTo.id)
+      |> Map.put("inReplyTo", in_reply_to_object.data["id"])
     else
       object
     end
@@ -231,13 +255,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     Strftime.strftime!(date, "%a %b %d %H:%M:%S %z %Y")
   end
 
-  def date_to_asctime(date) do
-    with {:ok, date, _offset} <- date |> DateTime.from_iso8601() do
+  def date_to_asctime(date) when is_binary(date) do
+    with {:ok, date, _offset} <- DateTime.from_iso8601(date) do
       format_asctime(date)
     else
       _e ->
+        Logger.warn("Date #{date} in wrong format, must be ISO 8601")
         ""
     end
+  end
+
+  def date_to_asctime(date) do
+    Logger.warn("Date #{date} in wrong format, must be ISO 8601")
+    ""
   end
 
   def to_masto_date(%NaiveDateTime{} = date) do
@@ -266,7 +296,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def confirm_current_password(user, password) do
-    with %User{local: true} = db_user <- Repo.get(User, user.id),
+    with %User{local: true} = db_user <- User.get_cached_by_id(user.id),
          true <- Pbkdf2.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else
@@ -276,7 +306,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def emoji_from_profile(%{info: _info} = user) do
     (Formatter.get_emoji(user.bio) ++ Formatter.get_emoji(user.name))
-    |> Enum.map(fn {shortcode, url} ->
+    |> Enum.map(fn {shortcode, url, _} ->
       %{
         "type" => "Emoji",
         "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},
@@ -294,10 +324,10 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(
         recipients,
-        %Activity{data: %{"to" => _to, "type" => type} = data} = _activity
+        %Activity{data: %{"to" => _to, "type" => type} = data} = activity
       )
       when type == "Create" do
-    object = Object.normalize(data["object"])
+    object = Object.normalize(activity)
 
     object_data =
       cond do
@@ -317,6 +347,24 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
+
+  def maybe_notify_subscribers(
+        recipients,
+        %Activity{data: %{"actor" => actor, "type" => type}} = activity
+      )
+      when type == "Create" do
+    with %User{} = user <- User.get_cached_by_ap_id(actor) do
+      subscriber_ids =
+        user
+        |> User.subscribers()
+        |> Enum.filter(&Visibility.visible_for_user?(activity, &1))
+        |> Enum.map(& &1.ap_id)
+
+      recipients ++ subscriber_ids
+    end
+  end
+
+  def maybe_notify_subscribers(recipients, _), do: recipients
 
   def maybe_extract_mentions(%{"tag" => tag}) do
     tag
@@ -344,4 +392,33 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def get_report_statuses(_, _), do: {:ok, nil}
+
+  # DEPRECATED mostly, context objects are now created at insertion time.
+  def context_to_conversation_id(context) do
+    with %Object{id: id} <- Object.get_cached_by_ap_id(context) do
+      id
+    else
+      _e ->
+        changeset = Object.context_mapping(context)
+
+        case Repo.insert(changeset) do
+          {:ok, %{id: id}} ->
+            id
+
+          # This should be solved by an upsert, but it seems ecto
+          # has problems accessing the constraint inside the jsonb.
+          {:error, _} ->
+            Object.get_cached_by_ap_id(context).id
+        end
+    end
+  end
+
+  def conversation_id_to_context(id) do
+    with %Object{data: %{"id" => context}} <- Repo.get(Object, id) do
+      context
+    else
+      _e ->
+        {:error, "No such conversation"}
+    end
+  end
 end

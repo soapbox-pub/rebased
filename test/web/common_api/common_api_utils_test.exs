@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Endpoint
   use Pleroma.DataCase
@@ -36,21 +37,21 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   end
 
   test "parses emoji from name and bio" do
-    {:ok, user} = UserBuilder.insert(%{name: ":karjalanpiirakka:", bio: ":perkele:"})
+    {:ok, user} = UserBuilder.insert(%{name: ":blank:", bio: ":firefox:"})
 
     expected = [
       %{
         "type" => "Emoji",
-        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/finmoji/128px/perkele-128.png"},
-        "name" => ":perkele:"
+        "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}/emoji/Firefox.gif"},
+        "name" => ":firefox:"
       },
       %{
         "type" => "Emoji",
         "icon" => %{
           "type" => "Image",
-          "url" => "#{Endpoint.url()}/finmoji/128px/karjalanpiirakka-128.png"
+          "url" => "#{Endpoint.url()}/emoji/blank.png"
         },
-        "name" => ":karjalanpiirakka:"
+        "name" => ":blank:"
       }
     ]
 
@@ -118,6 +119,31 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert output == expected
     end
 
+    test "works for bare text/bbcode" do
+      text = "[b]hello world[/b]"
+      expected = "<strong>hello world</strong>"
+
+      {output, [], []} = Utils.format_input(text, "text/bbcode")
+
+      assert output == expected
+
+      text = "[b]hello world![/b]\n\nsecond paragraph!"
+      expected = "<strong>hello world!</strong><br>\n<br>\nsecond paragraph!"
+
+      {output, [], []} = Utils.format_input(text, "text/bbcode")
+
+      assert output == expected
+
+      text = "[b]hello world![/b]\n\n<strong>second paragraph!</strong>"
+
+      expected =
+        "<strong>hello world!</strong><br>\n<br>\n&lt;strong&gt;second paragraph!&lt;/strong&gt;"
+
+      {output, [], []} = Utils.format_input(text, "text/bbcode")
+
+      assert output == expected
+    end
+
     test "works for text/markdown with mentions" do
       {:ok, user} =
         UserBuilder.insert(%{nickname: "user__test", ap_id: "http://foo.com/user__test"})
@@ -134,6 +160,58 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
       assert output == expected
+    end
+  end
+
+  describe "context_to_conversation_id" do
+    test "creates a mapping object" do
+      conversation_id = Utils.context_to_conversation_id("random context")
+      object = Object.get_by_ap_id("random context")
+
+      assert conversation_id == object.id
+    end
+
+    test "returns an existing mapping for an existing object" do
+      {:ok, object} = Object.context_mapping("random context") |> Repo.insert()
+      conversation_id = Utils.context_to_conversation_id("random context")
+
+      assert conversation_id == object.id
+    end
+  end
+
+  describe "formats date to asctime" do
+    test "when date is in ISO 8601 format" do
+      date = DateTime.utc_now() |> DateTime.to_iso8601()
+
+      expected =
+        date
+        |> DateTime.from_iso8601()
+        |> elem(1)
+        |> Calendar.Strftime.strftime!("%a %b %d %H:%M:%S %z %Y")
+
+      assert Utils.date_to_asctime(date) == expected
+    end
+
+    test "when date is a binary in wrong format" do
+      date = DateTime.utc_now()
+
+      expected = ""
+
+      assert Utils.date_to_asctime(date) == expected
+    end
+
+    test "when date is a Unix timestamp" do
+      date = DateTime.utc_now() |> DateTime.to_unix()
+
+      expected = ""
+
+      assert Utils.date_to_asctime(date) == expected
+    end
+
+    test "when date is nil" do
+      expected = ""
+
+      assert Utils.date_to_asctime(nil) == expected
     end
   end
 end

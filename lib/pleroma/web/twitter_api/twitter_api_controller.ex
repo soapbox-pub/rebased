@@ -16,6 +16,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.TwitterAPI.NotificationView
@@ -269,7 +270,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def fetch_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{} = activity <- Repo.get(Activity, id),
+    with %Activity{} = activity <- Activity.get_by_id(id),
          true <- Visibility.visible_for_user?(activity, user) do
       conn
       |> put_view(ActivityView)
@@ -278,7 +279,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def fetch_conversation(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with context when is_binary(context) <- TwitterAPI.conversation_id_to_context(id),
+    with context when is_binary(context) <- Utils.conversation_id_to_context(id),
          activities <-
            ActivityPub.fetch_activities_for_context(context, %{
              "blocking_user" => user,
@@ -341,7 +342,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def get_by_id_or_ap_id(id) do
-    activity = Repo.get(Activity, id) || Activity.get_create_by_object_ap_id(id)
+    activity = Activity.get_by_id(id) || Activity.get_create_by_object_ap_id(id)
 
     if activity.data["type"] == "Create" do
       activity
@@ -433,7 +434,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def confirm_email(conn, %{"user_id" => uid, "token" => token}) do
-    with %User{} = user <- Repo.get(User, uid),
+    with %User{} = user <- User.get_cached_by_id(uid),
          true <- user.local,
          true <- user.info.confirmation_pending,
          true <- user.info.confirmation_token == token,
@@ -586,7 +587,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def approve_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
-         %User{} = follower <- Repo.get(User, uid),
+         %User{} = follower <- User.get_cached_by_id(uid),
          {:ok, follower} <- CommonAPI.accept_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
@@ -598,7 +599,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   def deny_friend_request(conn, %{"user_id" => uid} = _params) do
     with followed <- conn.assigns[:user],
-         %User{} = follower <- Repo.get(User, uid),
+         %User{} = follower <- User.get_cached_by_id(uid),
          {:ok, follower} <- CommonAPI.reject_follow_request(follower, followed) do
       conn
       |> put_view(UserView)
@@ -631,7 +632,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp build_info_cng(user, params) do
     info_params =
-      ["no_rich_text", "locked", "hide_followers", "hide_follows", "show_role"]
+      ["no_rich_text", "locked", "hide_followers", "hide_follows", "hide_favorites", "show_role"]
       |> Enum.reduce(%{}, fn key, res ->
         if value = params[key] do
           Map.put(res, key, value == "true")

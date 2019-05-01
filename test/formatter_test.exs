@@ -181,6 +181,31 @@ defmodule Pleroma.FormatterTest do
       expected_text = "@a hi"
       assert {^expected_text, [] = _mentions, [] = _tags} = Formatter.linkify(text)
     end
+
+    test "given the 'safe_mention' option, it will only mention people in the beginning" do
+      user = insert(:user)
+      _other_user = insert(:user)
+      third_user = insert(:user)
+      text = " @#{user.nickname} hey dude i hate @#{third_user.nickname}"
+      {expected_text, mentions, [] = _tags} = Formatter.linkify(text, safe_mention: true)
+
+      assert mentions == [{"@#{user.nickname}", user}]
+
+      assert expected_text ==
+               "<span class='h-card'><a data-user='#{user.id}' class='u-url mention' href='#{
+                 user.ap_id
+               }'>@<span>#{user.nickname}</span></a></span> hey dude i hate <span class='h-card'><a data-user='#{
+                 third_user.id
+               }' class='u-url mention' href='#{third_user.ap_id}'>@<span>#{third_user.nickname}</span></a></span>"
+    end
+
+    test "given the 'safe_mention' option, it will still work without any mention" do
+      text = "A post without any mention"
+      {expected_text, mentions, [] = _tags} = Formatter.linkify(text, safe_mention: true)
+
+      assert mentions == []
+      assert expected_text == text
+    end
   end
 
   describe ".parse_tags" do
@@ -220,10 +245,10 @@ defmodule Pleroma.FormatterTest do
   end
 
   test "it adds cool emoji" do
-    text = "I love :moominmamma:"
+    text = "I love :firefox:"
 
     expected_result =
-      "I love <img height=\"32px\" width=\"32px\" alt=\"moominmamma\" title=\"moominmamma\" src=\"/finmoji/128px/moominmamma-128.png\" />"
+      "I love <img height=\"32px\" width=\"32px\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
 
     assert Formatter.emojify(text) == expected_result
   end
@@ -244,9 +269,11 @@ defmodule Pleroma.FormatterTest do
   end
 
   test "it returns the emoji used in the text" do
-    text = "I love :moominmamma:"
+    text = "I love :firefox:"
 
-    assert Formatter.get_emoji(text) == [{"moominmamma", "/finmoji/128px/moominmamma-128.png"}]
+    assert Formatter.get_emoji(text) == [
+             {"firefox", "/emoji/Firefox.gif", ["Gif", "Fun"]}
+           ]
   end
 
   test "it returns a nice empty result when no emojis are present" do

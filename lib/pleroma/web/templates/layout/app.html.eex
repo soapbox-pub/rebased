@@ -179,6 +179,17 @@
           flex-basis: 50%;
         }
       }
+      .form-row {
+        display: flex;
+      }
+      .form-row > label {
+        text-align: left;
+        line-height: 47px;
+        flex: 1;
+      }
+      .form-row > input {
+        flex: 2;
+      }
     </style>
   </head>
   <body>
