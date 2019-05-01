@@ -28,19 +28,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
   defp get_recipients(%{"type" => "Announce"} = data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
     actor = User.get_cached_by_ap_id(data["actor"])
 
     recipients =
-      (to ++ cc)
-      |> Enum.filter(fn recipient ->
+      Enum.filter(Enum.concat([to, cc, bcc]), fn recipient ->
         case User.get_cached_by_ap_id(recipient) do
-          nil ->
-            true
-
-          user ->
-            User.following?(user, actor)
+          nil -> true
+          user -> User.following?(user, actor)
         end
       end)
 
@@ -48,17 +45,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp get_recipients(%{"type" => "Create"} = data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
-    actor = data["actor"] || []
-    recipients = (to ++ cc ++ [actor]) |> Enum.uniq()
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
+    actor = Map.get(data, "actor", [])
+    recipients = [to, cc, bcc, [actor]] |> Enum.concat() |> Enum.uniq()
     {recipients, to, cc}
   end
 
   defp get_recipients(data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
-    recipients = to ++ cc
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
+    recipients = Enum.concat([to, cc, bcc])
     {recipients, to, cc}
   end
 
@@ -917,22 +916,55 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def publish(actor, activity) do
-    remote_followers =
+  defp recipients(actor, activity) do
+    Pleroma.Web.Salmon.remote_users(activity) ++
       if actor.follower_address in activity.recipients do
         {:ok, followers} = User.get_followers(actor)
         followers |> Enum.filter(&(!&1.local))
       else
         []
       end
+  end
 
+  def publish(actor, %{data: %{"bcc" => bcc}} = activity) when is_list(bcc) and bcc != [] do
     public = is_public?(activity)
-
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
+
+    recipients = recipients(actor, activity)
+
+    recipients
+    |> Enum.filter(&User.ap_enabled?/1)
+    |> Enum.map(fn %{info: %{source_data: data}} -> data["inbox"] end)
+    |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
+    |> Instances.filter_reachable()
+    |> Enum.each(fn {inbox, unreachable_since} ->
+      %User{ap_id: cc} =
+        Enum.find(recipients, fn %{info: %{source_data: data}} -> data["inbox"] == inbox end)
+
+      json =
+        data
+        |> Map.put("cc", [cc])
+        |> Map.put("directMessage", true)
+        |> Jason.encode!()
+
+      Federator.publish_single_ap(%{
+        inbox: inbox,
+        json: json,
+        actor: actor,
+        id: activity.data["id"],
+        unreachable_since: unreachable_since
+      })
+    end)
+  end
+
+  def publish(actor, activity) do
+    public = is_public?(activity)
+    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
+
     json = Jason.encode!(data)
 
-    (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
-    |> Enum.filter(fn user -> User.ap_enabled?(user) end)
+    recipients(actor, activity)
+    |> Enum.filter(&User.ap_enabled?/1)
     |> Enum.map(fn %{info: %{source_data: data}} ->
       (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
     end)

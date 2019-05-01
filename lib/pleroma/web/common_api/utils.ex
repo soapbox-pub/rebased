@@ -8,6 +8,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Formatter
+  alias Pleroma.List
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -101,6 +102,20 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       {mentioned_users, []}
     end
   end
+
+  def to_for_user_and_mentions(_user, _mentions, _inReplyTo, _), do: {[], []}
+
+  def bcc_for_list(user, {:list, list_id}) do
+    with {_, %List{} = list} <- {:list, List.get(list_id, user)},
+         {:ok, following} <- List.get_following(list) do
+      {:ok, Enum.map(following, & &1.ap_id)}
+    else
+      {:list, _} -> {:error, "List not found"}
+      err -> err
+    end
+  end
+
+  def bcc_for_list(_, _), do: {:ok, []}
 
   def make_content_html(
         status,

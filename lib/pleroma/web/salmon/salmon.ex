@@ -157,10 +157,12 @@ defmodule Pleroma.Web.Salmon do
   end
 
   def remote_users(%{data: %{"to" => to} = data}) do
-    to = to ++ (data["cc"] || [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
 
-    to
-    |> Enum.map(fn id -> User.get_cached_by_ap_id(id) end)
+    [to, cc, bcc]
+    |> Enum.concat()
+    |> Enum.map(&User.get_cached_by_ap_id/1)
     |> Enum.filter(fn user -> user && !user.local end)
   end
 

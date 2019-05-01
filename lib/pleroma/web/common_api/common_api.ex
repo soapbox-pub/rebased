@@ -119,6 +119,10 @@ defmodule Pleroma.Web.CommonAPI do
       when visibility in ~w{public unlisted private direct},
       do: visibility
 
+  def get_visibility(%{"visibility" => "list:" <> list_id}) do
+    {:list, String.to_integer(list_id)}
+  end
+
   def get_visibility(%{"in_reply_to_status_id" => status_id}) when not is_nil(status_id) do
     case get_replied_to_activity(status_id) do
       nil ->
@@ -149,6 +153,7 @@ defmodule Pleroma.Web.CommonAPI do
              visibility
            ),
          {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
+         {:ok, bcc} <- bcc_for_list(user, visibility),
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"],
          full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
@@ -174,19 +179,16 @@ defmodule Pleroma.Web.CommonAPI do
                Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
              end)
            ) do
-      res =
-        ActivityPub.create(
-          %{
-            to: to,
-            actor: user,
-            context: context,
-            object: object,
-            additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
-          },
-          Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
-        )
-
-      res
+      ActivityPub.create(
+        %{
+          to: to,
+          actor: user,
+          context: context,
+          object: object,
+          additional: %{"cc" => cc, "bcc" => bcc, "directMessage" => visibility == "direct"}
+        },
+        Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
+      )
     end
   end
 
