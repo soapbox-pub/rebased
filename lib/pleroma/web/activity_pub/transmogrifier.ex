@@ -126,7 +126,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_implicit_addressing(object, _), do: object
 
   def fix_addressing(object) do
-    %User{} = user = User.get_or_fetch_by_ap_id(object["actor"])
+    {:ok, %User{} = user} = User.get_or_fetch_by_ap_id(object["actor"])
     followers_collection = User.ap_followers(user)
 
     object

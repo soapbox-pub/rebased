@@ -147,7 +147,7 @@ defmodule Pleroma.FormatterTest do
     end
 
     test "gives a replacement for user links when the user is using Osada" do
-      mike = User.get_or_fetch("mike@osada.macgirvin.com")
+      {:ok, mike} = User.get_or_fetch("mike@osada.macgirvin.com")
 
       text = "@mike@osada.macgirvin.com test"
 

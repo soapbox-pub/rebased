@@ -513,7 +513,7 @@ defmodule Pleroma.User do
 
       case user_result do
         {:ok, user} -> {:commit, user}
-        {:error, error} -> {:ignore, error}
+        {:error, _error} -> {:ignore, nil}
       end
     end)
   end
@@ -563,7 +563,7 @@ defmodule Pleroma.User do
 
           {:ok, user}
         else
-          e -> {:error, e}
+          _e -> {:error, "not found " <> nickname}
         end
     end
   end
@@ -1210,11 +1210,11 @@ defmodule Pleroma.User do
 
     case ap_try do
       {:ok, user} ->
-        user
+        {:ok, user}
 
       _ ->
         case OStatus.make_user(ap_id) do
-          {:ok, user} -> user
+          {:ok, user} -> {:ok, user}
           _ -> {:error, "Could not fetch by AP id"}
         end
     end
@@ -1229,15 +1229,15 @@ defmodule Pleroma.User do
       # Whether to fetch initial posts for the user (if it's a new user & the fetching is enabled)
       should_fetch_initial = is_nil(user) and Pleroma.Config.get([:fetch_initial_posts, :enabled])
 
+      resp = fetch_by_ap_id(ap_id)
+
       if should_fetch_initial do
-        with {:ok, %User{} = user} = fetch_by_ap_id(ap_id) do
+        with {:ok, %User{} = user} = resp do
           {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
         end
-
-        {:ok, user}
-      else
-        _ -> {:error, "Could not fetch by AP id"}
       end
+
+      resp
     end
   end
 

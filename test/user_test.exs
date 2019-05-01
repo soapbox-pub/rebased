@@ -362,7 +362,7 @@ defmodule Pleroma.UserTest do
   describe "get_or_fetch/1" do
     test "gets an existing user by nickname" do
       user = insert(:user)
-      fetched_user = User.get_or_fetch(user.nickname)
+      {:ok, fetched_user} = User.get_or_fetch(user.nickname)
 
       assert user == fetched_user
     end
@@ -379,7 +379,7 @@ defmodule Pleroma.UserTest do
           info: %{}
         )
 
-      fetched_user = User.get_or_fetch(ap_id)
+      {:ok, fetched_user} = User.get_or_fetch(ap_id)
       freshed_user = refresh_record(user)
       assert freshed_user == fetched_user
     end
@@ -388,14 +388,14 @@ defmodule Pleroma.UserTest do
   describe "fetching a user from nickname or trying to build one" do
     test "gets an existing user" do
       user = insert(:user)
-      fetched_user = User.get_or_fetch_by_nickname(user.nickname)
+      {:ok, fetched_user} = User.get_or_fetch_by_nickname(user.nickname)
 
       assert user == fetched_user
     end
 
     test "gets an existing user, case insensitive" do
       user = insert(:user, nickname: "nick")
-      fetched_user = User.get_or_fetch_by_nickname("NICK")
+      {:ok, fetched_user} = User.get_or_fetch_by_nickname("NICK")
 
       assert user == fetched_user
     end
@@ -403,7 +403,7 @@ defmodule Pleroma.UserTest do
     test "gets an existing user by fully qualified nickname" do
       user = insert(:user)
 
-      fetched_user =
+      {:ok, fetched_user} =
         User.get_or_fetch_by_nickname(user.nickname <> "@" <> Pleroma.Web.Endpoint.host())
 
       assert user == fetched_user
@@ -413,24 +413,24 @@ defmodule Pleroma.UserTest do
       user = insert(:user, nickname: "nick")
       casing_altered_fqn = String.upcase(user.nickname <> "@" <> Pleroma.Web.Endpoint.host())
 
-      fetched_user = User.get_or_fetch_by_nickname(casing_altered_fqn)
+      {:ok, fetched_user} = User.get_or_fetch_by_nickname(casing_altered_fqn)
 
       assert user == fetched_user
     end
 
     test "fetches an external user via ostatus if no user exists" do
-      fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
+      {:ok, fetched_user} = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
       assert fetched_user.nickname == "shp@social.heldscal.la"
     end
 
     test "returns nil if no user could be fetched" do
-      fetched_user = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
-      assert fetched_user == nil
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
+      assert fetched_user == "not found nonexistant@social.heldscal.la"
     end
 
     test "returns nil for nonexistant local user" do
-      fetched_user = User.get_or_fetch_by_nickname("nonexistant")
-      assert fetched_user == nil
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant")
+      assert fetched_user == "not found nonexistant"
     end
 
     test "updates an existing user, if stale" do
@@ -448,7 +448,7 @@ defmodule Pleroma.UserTest do
 
       assert orig_user.last_refreshed_at == a_week_ago
 
-      user = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
+      {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
       assert user.info.source_data["endpoints"]
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at

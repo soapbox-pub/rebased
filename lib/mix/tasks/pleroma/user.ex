@@ -126,7 +126,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     proceed? = assume_yes? or Mix.shell().yes?("Continue?")
 
-    unless not proceed? do
+    if proceed? do
       Common.start_pleroma()
 
       params = %{
