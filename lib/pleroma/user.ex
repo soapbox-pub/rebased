@@ -10,7 +10,6 @@ defmodule Pleroma.User do
 
   alias Comeonin.Pbkdf2
   alias Pleroma.Activity
-  alias Pleroma.Bookmark
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Registration
@@ -54,7 +53,6 @@ defmodule Pleroma.User do
     field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
-    has_many(:bookmarks, Bookmark)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
     embeds_one(:info, Pleroma.User.Info)
