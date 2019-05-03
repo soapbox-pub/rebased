@@ -61,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Added support max_id & since_id for bookmark timeline endpoints.
 
 ### Fixed
+- Added an FTS index on objects. Running `vacuum analyze` and setting a larger `work_mem` is recommended.
 - Followers counter not being updated when a follower is blocked
 - Deactivated users being able to request an access token
 - Limit on request body in rich media/relme parsers being ignored resulting in a possible memory leak
