@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
-  alias Pleroma.Conversation.Participation
   alias Pleroma.Activity
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
