@@ -856,10 +856,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("tag", tags ++ mentions)
   end
 
+  def add_emoji_tags(%User{info: %{"emoji" => _emoji} = user_info} = object) do
+    user_info = add_emoji_tags(user_info)
+
+    object
+    |> Map.put(:info, user_info)
+  end
+
   # TODO: we should probably send mtime instead of unix epoch time for updated
-  def add_emoji_tags(object) do
+  def add_emoji_tags(%{"emoji" => emoji} = object) do
     tags = object["tag"] || []
-    emoji = object["emoji"] || []
 
     out =
       emoji
@@ -875,6 +881,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("tag", tags ++ out)
+  end
+
+  def add_emoji_tags(object) do
+    object
   end
 
   def set_conversation(object) do

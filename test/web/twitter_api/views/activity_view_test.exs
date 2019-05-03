@@ -100,7 +100,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     expected = ":firefox: meow"
 
     expected_html =
-      "<img height=\"32px\" width=\"32px\" alt=\"firefox\" title=\"firefox\" src=\"http://localhost:4001/emoji/Firefox.gif\" /> meow"
+      "<img class=\"emoji\" alt=\"firefox\" title=\"firefox\" src=\"http://localhost:4001/emoji/Firefox.gif\" /> meow"
 
     assert result["summary"] == expected
     assert result["summary_html"] == expected_html

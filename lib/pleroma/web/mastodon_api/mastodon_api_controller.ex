@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Bookmark
   alias Pleroma.Config
   alias Pleroma.Filter
+  alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
@@ -86,7 +87,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     user_params =
       %{}
       |> add_if_present(params, "display_name", :name)
-      |> add_if_present(params, "note", :bio, fn value -> {:ok, User.parse_bio(value)} end)
+      |> add_if_present(params, "note", :bio, fn value -> {:ok, User.parse_bio(value, user)} end)
       |> add_if_present(params, "avatar", :avatar, fn value ->
         with %Plug.Upload{} <- value,
              {:ok, object} <- ActivityPub.upload(value, type: :avatar) do
@@ -95,6 +96,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           _ -> :error
         end
       end)
+
+    emojis_text = (user_params["display_name"] || "") <> (user_params["note"] || "")
+
+    user_info_emojis =
+      ((user.info.emoji || []) ++ Formatter.get_emoji_map(emojis_text))
+      |> Enum.dedup()
 
     info_params =
       [:no_rich_text, :locked, :hide_followers, :hide_follows, :hide_favorites, :show_role]
@@ -112,6 +119,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           _ -> :error
         end
       end)
+      |> Map.put(:emoji, user_info_emojis)
 
     info_cng = User.Info.profile_update(user.info, info_params)
 

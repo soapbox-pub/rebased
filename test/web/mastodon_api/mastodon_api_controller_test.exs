@@ -2351,6 +2351,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         end
       end
     end
+
+    test "updates profile emojos", %{conn: conn} do
+      user = insert(:user)
+
+      note = "*sips :blank:*"
+      name = "I am :firefox:"
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "note" => note,
+          "display_name" => name
+        })
+
+      assert json_response(conn, 200)
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}")
+
+      assert user = json_response(conn, 200)
+
+      assert user["note"] == note
+      assert user["display_name"] == name
+      assert [%{"shortcode" => "blank"}, %{"shortcode" => "firefox"}] = user["emojis"]
+    end
   end
 
   test "get instance information", %{conn: conn} do
