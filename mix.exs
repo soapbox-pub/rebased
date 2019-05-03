@@ -111,7 +111,8 @@ defmodule Pleroma.Mixfile do
       {:prometheus_ecto, "~> 1.4"},
       {:prometheus_process_collector, "~> 1.4"},
       {:recon, github: "ferd/recon", tag: "2.4.0"},
-      {:quack, "~> 0.1.1"}
+      {:quack, "~> 0.1.1"},
+      {:benchee, "~> 1.0"}
     ] ++ oauth_deps
   end
 
