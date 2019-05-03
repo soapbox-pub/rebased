@@ -159,7 +159,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  @mastodon_api_level "2.5.0"
+  @mastodon_api_level "2.6.5"
 
   def masto_instance(conn, _params) do
     instance = Config.get(:instance)
