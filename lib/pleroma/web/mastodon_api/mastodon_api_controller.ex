@@ -1295,8 +1295,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       initial_state =
         %{
           meta: %{
-            streaming_api_base_url:
-              String.replace(Pleroma.Web.Endpoint.static_url(), "http", "ws"),
+            streaming_api_base_url: Pleroma.Web.Endpoint.websocket_url(),
             access_token: token,
             locale: "en",
             domain: Pleroma.Web.Endpoint.host(),
