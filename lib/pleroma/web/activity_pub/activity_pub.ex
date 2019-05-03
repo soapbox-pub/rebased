@@ -142,8 +142,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
       Notification.create_notifications(activity)
-      Conversation.create_or_bump_for(activity)
+
+      participations =
+        activity
+        |> Conversation.create_or_bump_for()
+        |> get_participations()
+
       stream_out(activity)
+      stream_out_participations(participations)
       {:ok, activity}
     else
       %Activity{} = activity ->
@@ -164,6 +170,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       error ->
         {:error, error}
     end
+  end
+
+  defp get_participations({:ok, %{participations: participations}}), do: participations
+  defp get_participations(_), do: []
+
+  def stream_out_participations(participations) do
+    participations =
+      participations
+      |> Repo.preload(:user)
+
+    Enum.each(participations, fn participation ->
+      Pleroma.Web.Streamer.stream("participation", participation)
+    end)
   end
 
   def stream_out(activity) do
@@ -197,6 +216,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           end
         end
       else
+        # TODO: Write test, replace with visibility test
         if !Enum.member?(activity.data["cc"] || [], public) &&
              !Enum.member?(
                activity.data["to"],

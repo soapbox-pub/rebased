@@ -22,6 +22,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     :ok
   end
 
+  describe "streaming out participations" do
+    test "it streams them out" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+
+      {:ok, conversation} = Pleroma.Conversation.create_or_bump_for(activity)
+
+      participations =
+        conversation.participations
+        |> Repo.preload(:user)
+
+      with_mock Pleroma.Web.Streamer,
+        stream: fn _, _ -> nil end do
+        ActivityPub.stream_out_participations(conversation.participations)
+
+        Enum.each(participations, fn participation ->
+          assert called(Pleroma.Web.Streamer.stream("participation", participation))
+        end)
+      end
+    end
+  end
+
   describe "fetching restricted by visibility" do
     test "it restricts by the appropriate visibility" do
       user = insert(:user)

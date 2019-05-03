@@ -117,4 +117,21 @@ defmodule Pleroma.ConversationTest do
              tridi.id == user_id
            end)
   end
+
+  test "create_or_bump_for returns the conversation with participations" do
+    har = insert(:user)
+    jafnhar = insert(:user, local: false)
+
+    {:ok, activity} =
+      CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "direct"})
+
+    {:ok, conversation} = Conversation.create_or_bump_for(activity)
+
+    assert length(conversation.participations) == 2
+
+    {:ok, activity} =
+      CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "public"})
+
+    assert {:error, _} = Conversation.create_or_bump_for(activity)
+  end
 end

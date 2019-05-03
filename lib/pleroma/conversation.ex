@@ -63,10 +63,13 @@ defmodule Pleroma.Conversation do
           participation
         end)
 
-      %{
-        conversation
-        | participations: participations
-      }
+      {:ok,
+       %{
+         conversation
+         | participations: participations
+       }}
+    else
+      e -> {:error, e}
     end
   end
 end
