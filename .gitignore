@@ -3,7 +3,6 @@
 /db
 /deps
 /*.ez
-/uploads
 /test/uploads
 /.elixir_ls
 /test/fixtures/test_tmp.txt
@@ -36,3 +35,6 @@ erl_crash.dump
 
 # Editor config
 /.vscode/
+
+# Prevent committing docs files
+/priv/static/doc/*

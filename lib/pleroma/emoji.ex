@@ -6,15 +6,23 @@ defmodule Pleroma.Emoji do
   @moduledoc """
   The emojis are loaded from:
 
-    * the built-in Finmojis (if enabled in configuration),
+    * emoji packs in INSTANCE-DIR/emoji
     * the files: `config/emoji.txt` and `config/custom_emoji.txt`
-    * glob paths
+    * glob paths, nested folder is used as tag name for grouping e.g. priv/static/emoji/custom/nested_folder
 
   This GenServer stores in an ETS table the list of the loaded emojis, and also allows to reload the list at runtime.
   """
   use GenServer
+
+  require Logger
+
+  @type pattern :: Regex.t() | module() | String.t()
+  @type patterns :: pattern() | [pattern()]
+  @type group_patterns :: keyword(patterns())
+
   @ets __MODULE__.Ets
   @ets_options [:ordered_set, :protected, :named_table, {:read_concurrency, true}]
+  @groups Application.get_env(:pleroma, :emoji)[:groups]
 
   @doc false
   def start_link do
@@ -73,91 +81,94 @@ defmodule Pleroma.Emoji do
   end
 
   defp load do
+    emoji_dir_path =
+      Path.join(
+        Pleroma.Config.get!([:instance, :static_dir]),
+        "emoji"
+      )
+
+    case File.ls(emoji_dir_path) do
+      {:error, :enoent} ->
+        # The custom emoji directory doesn't exist,
+        # don't do anything
+        nil
+
+      {:error, e} ->
+        # There was some other error
+        Logger.error("Could not access the custom emoji directory #{emoji_dir_path}: #{e}")
+
+      {:ok, packs} ->
+        # Print the packs we've found
+        Logger.info("Found emoji packs: #{Enum.join(packs, ", ")}")
+
+        emojis =
+          Enum.flat_map(
+            packs,
+            fn pack -> load_pack(Path.join(emoji_dir_path, pack)) end
+          )
+
+        true = :ets.insert(@ets, emojis)
+    end
+
+    # Compat thing for old custom emoji handling & default emoji,
+    # it should run even if there are no emoji packs
+    shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
+
     emojis =
-      (load_finmoji(Keyword.get(Application.get_env(:pleroma, :instance), :finmoji_enabled)) ++
-         load_from_file("config/emoji.txt") ++
+      (load_from_file("config/emoji.txt") ++
          load_from_file("config/custom_emoji.txt") ++
-         load_from_globs(
-           Keyword.get(Application.get_env(:pleroma, :emoji, []), :shortcode_globs, [])
-         ))
+         load_from_globs(shortcode_globs))
       |> Enum.reject(fn value -> value == nil end)
 
     true = :ets.insert(@ets, emojis)
+
     :ok
   end
 
-  @finmoji [
-    "a_trusted_friend",
-    "alandislands",
-    "association",
-    "auroraborealis",
-    "baby_in_a_box",
-    "bear",
-    "black_gold",
-    "christmasparty",
-    "crosscountryskiing",
-    "cupofcoffee",
-    "education",
-    "fashionista_finns",
-    "finnishlove",
-    "flag",
-    "forest",
-    "four_seasons_of_bbq",
-    "girlpower",
-    "handshake",
-    "happiness",
-    "headbanger",
-    "icebreaker",
-    "iceman",
-    "joulutorttu",
-    "kaamos",
-    "kalsarikannit_f",
-    "kalsarikannit_m",
-    "karjalanpiirakka",
-    "kicksled",
-    "kokko",
-    "lavatanssit",
-    "losthopes_f",
-    "losthopes_m",
-    "mattinykanen",
-    "meanwhileinfinland",
-    "moominmamma",
-    "nordicfamily",
-    "out_of_office",
-    "peacemaker",
-    "perkele",
-    "pesapallo",
-    "polarbear",
-    "pusa_hispida_saimensis",
-    "reindeer",
-    "sami",
-    "sauna_f",
-    "sauna_m",
-    "sauna_whisk",
-    "sisu",
-    "stuck",
-    "suomimainittu",
-    "superfood",
-    "swan",
-    "the_cap",
-    "the_conductor",
-    "the_king",
-    "the_voice",
-    "theoriginalsanta",
-    "tomoffinland",
-    "torillatavataan",
-    "unbreakable",
-    "waiting",
-    "white_nights",
-    "woollysocks"
-  ]
-  defp load_finmoji(true) do
-    Enum.map(@finmoji, fn finmoji ->
-      {finmoji, "/finmoji/128px/#{finmoji}-128.png"}
-    end)
+  defp load_pack(pack_dir) do
+    pack_name = Path.basename(pack_dir)
+
+    emoji_txt = Path.join(pack_dir, "emoji.txt")
+
+    if File.exists?(emoji_txt) do
+      load_from_file(emoji_txt)
+    else
+      Logger.info(
+        "No emoji.txt found for pack \"#{pack_name}\", assuming all .png files are emoji"
+      )
+
+      make_shortcode_to_file_map(pack_dir, [".png"])
+      |> Enum.map(fn {shortcode, rel_file} ->
+        filename = Path.join("/emoji/#{pack_name}", rel_file)
+
+        {shortcode, filename, [to_string(match_extra(@groups, filename))]}
+      end)
+    end
   end
 
-  defp load_finmoji(_), do: []
+  def make_shortcode_to_file_map(pack_dir, exts) do
+    find_all_emoji(pack_dir, exts)
+    |> Enum.map(&Path.relative_to(&1, pack_dir))
+    |> Enum.map(fn f -> {f |> Path.basename() |> Path.rootname(), f} end)
+    |> Enum.into(%{})
+  end
+
+  def find_all_emoji(dir, exts) do
+    Enum.reduce(
+      File.ls!(dir),
+      [],
+      fn f, acc ->
+        filepath = Path.join(dir, f)
+
+        if File.dir?(filepath) do
+          acc ++ find_all_emoji(filepath, exts)
+        else
+          acc ++ [filepath]
+        end
+      end
+    )
+    |> Enum.filter(fn f -> Path.extname(f) in exts end)
+  end
 
   defp load_from_file(file) do
     if File.exists?(file) do
@@ -172,8 +183,14 @@ defmodule Pleroma.Emoji do
     |> Stream.map(&String.trim/1)
     |> Stream.map(fn line ->
       case String.split(line, ~r/,\s*/) do
-        [name, file] -> {name, file}
-        _ -> nil
+        [name, file] ->
+          {name, file, [to_string(match_extra(@groups, file))]}
+
+        [name, file | tags] ->
+          {name, file, tags}
+
+        _ ->
+          nil
       end
     end)
     |> Enum.to_list()
@@ -190,9 +207,40 @@ defmodule Pleroma.Emoji do
       |> Enum.concat()
 
     Enum.map(paths, fn path ->
+      tag = match_extra(@groups, Path.join("/", Path.relative_to(path, static_path)))
       shortcode = Path.basename(path, Path.extname(path))
       external_path = Path.join("/", Path.relative_to(path, static_path))
-      {shortcode, external_path}
+      {shortcode, external_path, [to_string(tag)]}
+    end)
+  end
+
+  @doc """
+  Finds a matching group for the given emoji filename
+  """
+  @spec match_extra(group_patterns(), String.t()) :: atom() | nil
+  def match_extra(group_patterns, filename) do
+    match_group_patterns(group_patterns, fn pattern ->
+      case pattern do
+        %Regex{} = regex -> Regex.match?(regex, filename)
+        string when is_binary(string) -> filename == string
+      end
+    end)
+  end
+
+  defp match_group_patterns(group_patterns, matcher) do
+    Enum.find_value(group_patterns, fn {group, patterns} ->
+      patterns =
+        patterns
+        |> List.wrap()
+        |> Enum.map(fn pattern ->
+          if String.contains?(pattern, "*") do
+            ~r(#{String.replace(pattern, "*", ".*")})
+          else
+            pattern
+          end
+        end)
+
+      Enum.any?(patterns, matcher) && group
     end)
   end
 end

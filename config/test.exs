@@ -21,7 +21,11 @@ config :pleroma, Pleroma.Upload, filters: [], link_name: false
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
-config :pleroma, Pleroma.Mailer, adapter: Swoosh.Adapters.Test
+config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test
+
+config :pleroma, :instance,
+  email: "admin@example.com",
+  notify_email: "noreply@example.com"
 
 # Configure your database
 config :pleroma, Pleroma.Repo,
@@ -49,6 +53,11 @@ config :web_push_encryption, :vapid_details,
 config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
 
 config :pleroma_job_queue, disabled: true
+
+config :pleroma, Pleroma.ScheduledActivity,
+  daily_user_limit: 2,
+  total_user_limit: 3,
+  enabled: false
 
 try do
   import_config "test.secret.exs"

@@ -58,6 +58,26 @@ Authentication is required and the user must be an admin.
   - `password`
 - Response: User’s nickname
 
+## `/api/pleroma/admin/user/follow`
+### Make a user follow another user
+
+- Methods: `POST`
+- Params:
+ - `follower`: The nickname of the follower
+ - `followed`: The nickname of the followed
+- Response:
+ - "ok"
+
+## `/api/pleroma/admin/user/unfollow`
+### Make a user unfollow another user
+
+- Methods: `POST`
+- Params:
+ - `follower`: The nickname of the follower
+ - `followed`: The nickname of the followed
+- Response:
+ - "ok"
+
 ## `/api/pleroma/admin/users/:nickname/toggle_activation`
 
 ### Toggle user activation
@@ -180,11 +200,64 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ## `/api/pleroma/admin/invite_token`
 
-### Get a account registeration invite token
+### Get an account registration invite token
+
+- Methods: `GET`
+- Params:
+  - *optional* `invite` => [
+    - *optional* `max_use` (integer)
+    - *optional* `expires_at` (date string e.g. "2019-04-07")
+  ]
+- Response: invite token (base64 string)
+
+## `/api/pleroma/admin/invites`
+
+### Get a list of generated invites
 
 - Methods: `GET`
 - Params: none
-- Response: invite token (base64 string)
+- Response:
+
+```JSON
+{
+
+  "invites": [
+    {
+      "id": integer,
+      "token": string,
+      "used": boolean,
+      "expires_at": date,
+      "uses": integer,
+      "max_use": integer,
+      "invite_type": string (possible values: `one_time`, `reusable`, `date_limited`, `reusable_date_limited`)
+    },
+    ...
+  ]
+}
+```
+
+## `/api/pleroma/admin/revoke_invite`
+
+### Revoke invite by token
+
+- Methods: `POST`
+- Params:
+  - `token`
+- Response:
+
+```JSON
+{
+  "id": integer,
+  "token": string,
+  "used": boolean,
+  "expires_at": date,
+  "uses": integer,
+  "max_use": integer,
+  "invite_type": string (possible values: `one_time`, `reusable`, `date_limited`, `reusable_date_limited`)
+
+}
+```
+
 
 ## `/api/pleroma/admin/email_invite`
 
@@ -193,7 +266,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Methods: `POST`
 - Params:
   - `email`
-  - `name`, optionnal
+  - `name`, optional
 
 ## `/api/pleroma/admin/password_reset`
 

@@ -1,0 +1,42 @@
+<%= if get_flash(@conn, :info) do %>
+  <p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
+<% end %>
+<%= if get_flash(@conn, :error) do %>
+  <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
+<% end %>
+
+<h2>Registration Details</h2>
+
+<p>If you'd like to register a new account, please provide the details below.</p>
+<%= form_for @conn, o_auth_path(@conn, :register), [as: "authorization"], fn f -> %>
+
+<div class="input">
+  <%= label f, :nickname, "Nickname" %>
+  <%= text_input f, :nickname, value: @nickname %>
+</div>
+<div class="input">
+  <%= label f, :email, "Email" %>
+  <%= text_input f, :email, value: @email %>
+</div>
+
+<%= submit "Proceed as new user", name: "op", value: "register" %>
+
+<p>Alternatively, sign in to connect to existing account.</p>
+
+<div class="input">
+  <%= label f, :name, "Name or email" %>
+  <%= text_input f, :name %>
+</div>
+<div class="input">
+  <%= label f, :password, "Password" %>
+  <%= password_input f, :password %>
+</div>
+
+<%= submit "Proceed as existing user", name: "op", value: "connect" %>
+
+<%= hidden_input f, :client_id, value: @client_id %>
+<%= hidden_input f, :redirect_uri, value: @redirect_uri %>
+<%= hidden_input f, :scope, value: Enum.join(@scopes, " ") %>
+<%= hidden_input f, :state, value: @state %>
+
+<% end %>

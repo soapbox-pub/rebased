@@ -3,8 +3,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   alias Pleroma.Notification
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
+
+  setup do
+    Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   describe "POST /api/pleroma/follow_import" do
     test "it returns HTTP 200", %{conn: conn} do
@@ -15,6 +21,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         conn
         |> assign(:user, user1)
         |> post("/api/pleroma/follow_import", %{"list" => "#{user2.ap_id}"})
+        |> json_response(:ok)
+
+      assert response == "job started"
+    end
+
+    test "it imports new-style mastodon follow lists", %{conn: conn} do
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      response =
+        conn
+        |> assign(:user, user1)
+        |> post("/api/pleroma/follow_import", %{
+          "list" => "Account address,Show boosts\n#{user2.ap_id},true"
+        })
         |> json_response(:ok)
 
       assert response == "job started"
@@ -71,6 +92,26 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert Repo.get(Notification, notification1.id).seen
       refute Repo.get(Notification, notification2.id).seen
+    end
+  end
+
+  describe "PUT /api/pleroma/notification_settings" do
+    test "it updates notification settings", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> put("/api/pleroma/notification_settings", %{
+        "remote" => false,
+        "followers" => false,
+        "bar" => 1
+      })
+      |> json_response(:ok)
+
+      user = Repo.get(User, user.id)
+
+      assert %{"remote" => false, "local" => true, "followers" => false, "follows" => true} ==
+               user.info.notification_settings
     end
   end
 
@@ -163,5 +204,51 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       assert response == Jason.encode!(config |> Enum.into(%{})) |> Jason.decode!()
     end
+  end
+
+  describe "/api/pleroma/emoji" do
+    test "returns json with custom emoji with tags", %{conn: conn} do
+      emoji =
+        conn
+        |> get("/api/pleroma/emoji")
+        |> json_response(200)
+
+      assert Enum.all?(emoji, fn
+               {_key,
+                %{
+                  "image_url" => url,
+                  "tags" => tags
+                }} ->
+                 is_binary(url) and is_list(tags)
+             end)
+    end
+  end
+
+  describe "GET /ostatus_subscribe?acct=...." do
+    test "adds status to pleroma instance if the `acct` is a status", %{conn: conn} do
+      conn =
+        get(
+          conn,
+          "/ostatus_subscribe?acct=https://mastodon.social/users/emelie/statuses/101849165031453009"
+        )
+
+      assert redirected_to(conn) =~ "/notice/"
+    end
+
+    test "show follow account page if the `acct` is a account link", %{conn: conn} do
+      response =
+        get(
+          conn,
+          "/ostatus_subscribe?acct=https://mastodon.social/users/emelie"
+        )
+
+      assert html_response(response, 200) =~ "Log in to follow"
+    end
+  end
+
+  test "GET /api/pleroma/healthcheck", %{conn: conn} do
+    conn = get(conn, "/api/pleroma/healthcheck")
+
+    assert conn.status in [200, 503]
   end
 end

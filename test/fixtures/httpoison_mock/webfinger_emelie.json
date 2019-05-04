@@ -1,0 +1,36 @@
+{
+    "aliases": [
+        "https://mastodon.social/@emelie",
+        "https://mastodon.social/users/emelie"
+    ],
+    "links": [
+        {
+            "href": "https://mastodon.social/@emelie",
+            "rel": "http://webfinger.net/rel/profile-page",
+            "type": "text/html"
+        },
+        {
+            "href": "https://mastodon.social/users/emelie.atom",
+            "rel": "http://schemas.google.com/g/2010#updates-from",
+            "type": "application/atom+xml"
+        },
+        {
+            "href": "https://mastodon.social/users/emelie",
+            "rel": "self",
+            "type": "application/activity+json"
+        },
+        {
+            "href": "https://mastodon.social/api/salmon/15657",
+            "rel": "salmon"
+        },
+        {
+            "href": "data:application/magic-public-key,RSA.u3CWs1oAJPE3ZJ9sj6Ut_Mu-mTE7MOijsQc8_6c73XVVuhIEomiozJIH7l8a7S1n5SYL4UuiwcubSOi7u1bbGpYnp5TYhN-Cxvq_P80V4_ncNIPSQzS49it7nSLeG5pA21lGPDA44huquES1un6p9gSmbTwngVX9oe4MYuUeh0Z7vijjU13Llz1cRq_ZgPQPgfz-2NJf-VeXnvyDZDYxZPVBBlrMl3VoGbu0M5L8SjY35559KCZ3woIvqRolcoHXfgvJMdPcJgSZVYxlCw3dA95q9jQcn6s87CPSUs7bmYEQCrDVn5m5NER5TzwBmP4cgJl9AaDVWQtRd4jFZNTxlQ==.AQAB",
+            "rel": "magic-public-key"
+        },
+        {
+            "rel": "http://ostatus.org/schema/1.0/subscribe",
+            "template": "https://mastodon.social/authorize_interaction?uri={uri}"
+        }
+    ],
+    "subject": "acct:emelie@mastodon.social"
+}

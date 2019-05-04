@@ -8,6 +8,10 @@ defmodule Pleroma.Repo do
     adapter: Ecto.Adapters.Postgres,
     migration_timestamps: [type: :naive_datetime_usec]
 
+  defmodule Instrumenter do
+    use Prometheus.EctoInstrumenter
+  end
+
   @doc """
   Dynamically loads the repository url from the
   DATABASE_URL environment variable.

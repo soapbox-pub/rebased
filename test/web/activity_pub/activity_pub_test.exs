@@ -84,17 +84,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, status_two} = CommonAPI.post(user, %{"status" => ". #essais"})
       {:ok, status_three} = CommonAPI.post(user, %{"status" => ". #test #reject"})
 
-      fetch_one = ActivityPub.fetch_activities([], %{"tag" => "test"})
-      fetch_two = ActivityPub.fetch_activities([], %{"tag" => ["test", "essais"]})
+      fetch_one = ActivityPub.fetch_activities([], %{"type" => "Create", "tag" => "test"})
+
+      fetch_two =
+        ActivityPub.fetch_activities([], %{"type" => "Create", "tag" => ["test", "essais"]})
 
       fetch_three =
         ActivityPub.fetch_activities([], %{
+          "type" => "Create",
           "tag" => ["test", "essais"],
           "tag_reject" => ["reject"]
         })
 
       fetch_four =
         ActivityPub.fetch_activities([], %{
+          "type" => "Create",
           "tag" => ["test"],
           "tag_all" => ["test", "reject"]
         })
@@ -192,8 +196,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      assert is_binary(activity.data["object"]["id"])
-      assert %Object{} = Object.get_by_ap_id(activity.data["object"]["id"])
+      object = Object.normalize(activity.data["object"])
+
+      assert is_binary(object.data["id"])
+      assert %Object{} = Object.get_by_ap_id(activity.data["object"])
     end
   end
 
@@ -206,7 +212,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           to: ["user1", "user1", "user2"],
           actor: user,
           context: "",
-          object: %{}
+          object: %{
+            "to" => ["user1", "user1", "user2"],
+            "type" => "Note",
+            "content" => "testing"
+          }
         })
 
       assert activity.data["to"] == ["user1", "user2"]
@@ -218,18 +228,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user)
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "1", "visibility" => "public"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "1",
+          "visibility" => "public"
+        })
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "2", "visibility" => "unlisted"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "2",
+          "visibility" => "unlisted"
+        })
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "2", "visibility" => "private"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "2",
+          "visibility" => "private"
+        })
 
       {:ok, _} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "3", "visibility" => "direct"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "3",
+          "visibility" => "direct"
+        })
 
-      user = Repo.get(User, user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.note_count == 2
     end
 
@@ -244,25 +266,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       # public
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "public"))
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert data["object"]["repliesCount"] == 1
       assert object.data["repliesCount"] == 1
 
       # unlisted
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "unlisted"))
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert data["object"]["repliesCount"] == 2
       assert object.data["repliesCount"] == 2
 
       # private
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "private"))
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert data["object"]["repliesCount"] == 2
       assert object.data["repliesCount"] == 2
 
       # direct
       {:ok, _} = CommonAPI.post(user2, Map.put(reply_data, "visibility", "direct"))
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert data["object"]["repliesCount"] == 2
       assert object.data["repliesCount"] == 2
     end
   end
@@ -322,7 +340,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, user} = User.block(user, %{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
-    activity_three = Repo.get(Activity, activity_three.id)
+    activity_three = Activity.get_by_id(activity_three.id)
 
     activities =
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
@@ -339,6 +357,51 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_three)
     assert Enum.member?(activities, boost_activity)
     assert Enum.member?(activities, activity_one)
+  end
+
+  test "doesn't return transitive interactions concerning blocked users" do
+    blocker = insert(:user)
+    blockee = insert(:user)
+    friend = insert(:user)
+
+    {:ok, blocker} = User.block(blocker, blockee)
+
+    {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
+
+    {:ok, activity_two} = CommonAPI.post(friend, %{"status" => "hey! @#{blockee.nickname}"})
+
+    {:ok, activity_three} = CommonAPI.post(blockee, %{"status" => "hey! @#{friend.nickname}"})
+
+    {:ok, activity_four} = CommonAPI.post(blockee, %{"status" => "hey! @#{blocker.nickname}"})
+
+    activities = ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
+
+    assert Enum.member?(activities, activity_one)
+    refute Enum.member?(activities, activity_two)
+    refute Enum.member?(activities, activity_three)
+    refute Enum.member?(activities, activity_four)
+  end
+
+  test "doesn't return announce activities concerning blocked users" do
+    blocker = insert(:user)
+    blockee = insert(:user)
+    friend = insert(:user)
+
+    {:ok, blocker} = User.block(blocker, blockee)
+
+    {:ok, activity_one} = CommonAPI.post(friend, %{"status" => "hey!"})
+
+    {:ok, activity_two} = CommonAPI.post(blockee, %{"status" => "hey! @#{friend.nickname}"})
+
+    {:ok, activity_three, _} = CommonAPI.repeat(activity_two.id, friend)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => blocker})
+      |> Enum.map(fn act -> act.id end)
+
+    assert Enum.member?(activities, activity_one.id)
+    refute Enum.member?(activities, activity_two.id)
+    refute Enum.member?(activities, activity_three.id)
   end
 
   test "doesn't return muted activities" do
@@ -380,7 +443,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     {:ok, user} = User.mute(user, %User{ap_id: activity_three.data["actor"]})
     {:ok, _announce, %{data: %{"id" => id}}} = CommonAPI.repeat(activity_three.id, booster)
     %Activity{} = boost_activity = Activity.get_create_by_object_ap_id(id)
-    activity_three = Repo.get(Activity, activity_three.id)
+    activity_three = Activity.get_by_id(activity_three.id)
 
     activities =
       ActivityPub.fetch_activities([], %{"muting_user" => user, "skip_preload" => true})
@@ -559,7 +622,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       {:ok, _, _, object} = ActivityPub.unlike(user, object)
       assert object.data["like_count"] == 0
 
-      assert Repo.get(Activity, like_activity.id) == nil
+      assert Activity.get_by_id(like_activity.id) == nil
     end
   end
 
@@ -610,7 +673,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert unannounce_activity.data["actor"] == user.ap_id
       assert unannounce_activity.data["context"] == announce_activity.data["context"]
 
-      assert Repo.get(Activity, announce_activity.id) == nil
+      assert Activity.get_by_id(announce_activity.id) == nil
     end
   end
 
@@ -642,43 +705,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       followed = Repo.get_by(User, ap_id: activity.data["object"])
 
       assert activity == Utils.fetch_latest_follow(follower, followed)
-    end
-  end
-
-  describe "fetching an object" do
-    test "it fetches an object" do
-      {:ok, object} =
-        ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
-
-      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      assert activity.data["id"]
-
-      {:ok, object_again} =
-        ActivityPub.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
-
-      assert [attachment] = object.data["attachment"]
-      assert is_list(attachment["url"])
-
-      assert object == object_again
-    end
-
-    test "it works with objects only available via Ostatus" do
-      {:ok, object} = ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
-      assert activity = Activity.get_create_by_object_ap_id(object.data["id"])
-      assert activity.data["id"]
-
-      {:ok, object_again} =
-        ActivityPub.fetch_object_from_id("https://shitposter.club/notice/2827873")
-
-      assert object == object_again
-    end
-
-    test "it correctly stitches up conversations between ostatus and ap" do
-      last = "https://mstdn.io/users/mayuutann/statuses/99568293732299394"
-      {:ok, object} = ActivityPub.fetch_object_from_id(last)
-
-      object = Object.get_by_ap_id(object.data["inReplyTo"])
-      assert object
     end
   end
 
@@ -749,7 +775,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert delete.data["actor"] == note.data["actor"]
       assert delete.data["object"] == note.data["object"]["id"]
 
-      assert Repo.get(Activity, delete.id) != nil
+      assert Activity.get_by_id(delete.id) != nil
 
       assert Repo.get(Object, object.id).data["type"] == "Tombstone"
     end
@@ -758,23 +784,35 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       user = insert(:user, info: %{note_count: 10})
 
       {:ok, a1} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "public"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "yeah",
+          "visibility" => "public"
+        })
 
       {:ok, a2} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "unlisted"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "yeah",
+          "visibility" => "unlisted"
+        })
 
       {:ok, a3} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "private"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "yeah",
+          "visibility" => "private"
+        })
 
       {:ok, a4} =
-        CommonAPI.post(Repo.get(User, user.id), %{"status" => "yeah", "visibility" => "direct"})
+        CommonAPI.post(User.get_cached_by_id(user.id), %{
+          "status" => "yeah",
+          "visibility" => "direct"
+        })
 
-      {:ok, _} = a1.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
-      {:ok, _} = a2.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
-      {:ok, _} = a3.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
-      {:ok, _} = a4.data["object"]["id"] |> Object.get_by_ap_id() |> ActivityPub.delete()
+      {:ok, _} = Object.normalize(a1) |> ActivityPub.delete()
+      {:ok, _} = Object.normalize(a2) |> ActivityPub.delete()
+      {:ok, _} = Object.normalize(a3) |> ActivityPub.delete()
+      {:ok, _} = Object.normalize(a4) |> ActivityPub.delete()
 
-      user = Repo.get(User, user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.info.note_count == 10
     end
 
@@ -814,22 +852,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       _ = CommonAPI.delete(direct_reply.id, user2)
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert data["object"]["repliesCount"] == 2
       assert object.data["repliesCount"] == 2
 
       _ = CommonAPI.delete(private_reply.id, user2)
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert data["object"]["repliesCount"] == 2
       assert object.data["repliesCount"] == 2
 
       _ = CommonAPI.delete(public_reply.id, user2)
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert data["object"]["repliesCount"] == 1
       assert object.data["repliesCount"] == 1
 
       _ = CommonAPI.delete(unlisted_reply.id, user2)
       assert %{data: data, object: object} = Activity.get_by_ap_id_with_object(ap_id)
-      assert data["object"]["repliesCount"] == 0
       assert object.data["repliesCount"] == 0
     end
   end
@@ -871,7 +905,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
 
       private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
-      assert [public_activity, private_activity_1, private_activity_3] == activities
+
+      assert [public_activity, private_activity_1, private_activity_3] ==
+               activities
+
       assert length(activities) == 3
 
       activities = ActivityPub.contain_timeline(activities, user1)
@@ -879,15 +916,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert [public_activity, private_activity_1] == activities
       assert length(activities) == 2
     end
-  end
-
-  test "it can fetch plume articles" do
-    {:ok, object} =
-      ActivityPub.fetch_object_from_id(
-        "https://baptiste.gelez.xyz/~/PlumeDevelopment/this-month-in-plume-june-2018/"
-      )
-
-    assert object
   end
 
   describe "update" do
@@ -909,15 +937,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert update.data["object"]["id"] == user_data["id"]
       assert update.data["object"]["type"] == user_data["type"]
     end
-  end
-
-  test "it can fetch peertube videos" do
-    {:ok, object} =
-      ActivityPub.fetch_object_from_id(
-        "https://peertube.moe/videos/watch/df5f464b-be8d-46fb-ad81-2d4c2d1630e3"
-      )
-
-    assert object
   end
 
   test "returned pinned statuses" do

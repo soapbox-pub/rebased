@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
+  alias Pleroma.Bookmark
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.ThreadMute
@@ -125,7 +126,10 @@ defmodule Pleroma.Web.CommonAPI do
         "public"
 
       in_reply_to ->
-        Pleroma.Web.MastodonAPI.StatusView.get_visibility(in_reply_to.data["object"])
+        # XXX: these heuristics should be moved out of MastodonAPI.
+        with %Object{} = object <- Object.normalize(in_reply_to) do
+          Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
+        end
     end
   end
 
@@ -147,8 +151,8 @@ defmodule Pleroma.Web.CommonAPI do
            ),
          {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
          context <- make_context(in_reply_to),
-         cw <- data["spoiler_text"],
-         full_payload <- String.trim(status <> (data["spoiler_text"] || "")),
+         cw <- data["spoiler_text"] || "",
+         full_payload <- String.trim(status <> cw),
          length when length in 1..limit <- String.length(full_payload),
          object <-
            make_note_data(
@@ -166,19 +170,19 @@ defmodule Pleroma.Web.CommonAPI do
            Map.put(
              object,
              "emoji",
-             (Formatter.get_emoji(status) ++ Formatter.get_emoji(data["spoiler_text"]))
-             |> Enum.reduce(%{}, fn {name, file}, acc ->
-               Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
-             end)
+             Formatter.get_emoji_map(full_payload)
            ) do
       res =
-        ActivityPub.create(%{
-          to: to,
-          actor: user,
-          context: context,
-          object: object,
-          additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
-        })
+        ActivityPub.create(
+          %{
+            to: to,
+            actor: user,
+            context: context,
+            object: object,
+            additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
+          },
+          Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
+        )
 
       res
     end
@@ -211,8 +215,10 @@ defmodule Pleroma.Web.CommonAPI do
     with %Activity{
            actor: ^user_ap_id,
            data: %{
-             "type" => "Create",
-             "object" => %{
+             "type" => "Create"
+           },
+           object: %Object{
+             data: %{
                "to" => object_to,
                "type" => "Note"
              }
@@ -274,9 +280,18 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def bookmarked?(user, activity) do
+    with %Bookmark{} <- Bookmark.get(user.id, activity.id) do
+      true
+    else
+      _ ->
+        false
+    end
+  end
+
   def report(user, data) do
     with {:account_id, %{"account_id" => account_id}} <- {:account_id, data},
-         {:account, %User{} = account} <- {:account, User.get_by_id(account_id)},
+         {:account, %User{} = account} <- {:account, User.get_cached_by_id(account_id)},
          {:ok, {content_html, _, _}} <- make_report_content_html(data["comment"]),
          {:ok, statuses} <- get_report_statuses(account, data),
          {:ok, activity} <-

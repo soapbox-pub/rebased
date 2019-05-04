@@ -147,7 +147,7 @@ defmodule Pleroma.FormatterTest do
     end
 
     test "gives a replacement for user links when the user is using Osada" do
-      mike = User.get_or_fetch("mike@osada.macgirvin.com")
+      {:ok, mike} = User.get_or_fetch("mike@osada.macgirvin.com")
 
       text = "@mike@osada.macgirvin.com test"
 
@@ -245,10 +245,10 @@ defmodule Pleroma.FormatterTest do
   end
 
   test "it adds cool emoji" do
-    text = "I love :moominmamma:"
+    text = "I love :firefox:"
 
     expected_result =
-      "I love <img height=\"32px\" width=\"32px\" alt=\"moominmamma\" title=\"moominmamma\" src=\"/finmoji/128px/moominmamma-128.png\" />"
+      "I love <img class=\"emoji\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
 
     assert Formatter.emojify(text) == expected_result
   end
@@ -263,15 +263,17 @@ defmodule Pleroma.FormatterTest do
     }
 
     expected_result =
-      "I love <img height=\"32px\" width=\"32px\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
+      "I love <img class=\"emoji\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
 
     assert Formatter.emojify(text, custom_emoji) == expected_result
   end
 
   test "it returns the emoji used in the text" do
-    text = "I love :moominmamma:"
+    text = "I love :firefox:"
 
-    assert Formatter.get_emoji(text) == [{"moominmamma", "/finmoji/128px/moominmamma-128.png"}]
+    assert Formatter.get_emoji(text) == [
+             {"firefox", "/emoji/Firefox.gif", ["Gif", "Fun"]}
+           ]
   end
 
   test "it returns a nice empty result when no emojis are present" do

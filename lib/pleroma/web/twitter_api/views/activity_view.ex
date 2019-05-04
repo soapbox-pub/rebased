@@ -224,15 +224,17 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
   def render(
         "activity.json",
-        %{activity: %{data: %{"type" => "Create", "object" => object}} = activity} = opts
+        %{activity: %{data: %{"type" => "Create", "object" => object_id}} = activity} = opts
       ) do
     user = get_user(activity.data["actor"], opts)
 
-    created_at = object["published"] |> Utils.date_to_asctime()
-    like_count = object["like_count"] || 0
-    announcement_count = object["announcement_count"] || 0
-    favorited = opts[:for] && opts[:for].ap_id in (object["likes"] || [])
-    repeated = opts[:for] && opts[:for].ap_id in (object["announcements"] || [])
+    object = Object.normalize(object_id)
+
+    created_at = object.data["published"] |> Utils.date_to_asctime()
+    like_count = object.data["like_count"] || 0
+    announcement_count = object.data["announcement_count"] || 0
+    favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
+    repeated = opts[:for] && opts[:for].ap_id in (object.data["announcements"] || [])
     pinned = activity.id in user.info.pinned_activities
 
     attentions =
@@ -245,27 +247,27 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     conversation_id = get_context_id(activity, opts)
 
-    tags = activity.data["object"]["tag"] || []
-    possibly_sensitive = activity.data["object"]["sensitive"] || Enum.member?(tags, "nsfw")
+    tags = object.data["tag"] || []
+    possibly_sensitive = object.data["sensitive"] || Enum.member?(tags, "nsfw")
 
     tags = if possibly_sensitive, do: Enum.uniq(["nsfw" | tags]), else: tags
 
-    {summary, content} = render_content(object)
+    {summary, content} = render_content(object.data)
 
     html =
       content
-      |> HTML.get_cached_scrubbed_html_for_object(
+      |> HTML.get_cached_scrubbed_html_for_activity(
         User.html_filter_policy(opts[:for]),
         activity,
-        __MODULE__
+        "twitterapi:content"
       )
-      |> Formatter.emojify(object["emoji"])
+      |> Formatter.emojify(object.data["emoji"])
 
     text =
       if content do
         content
         |> String.replace(~r/<br\s?\/?>/, "\n")
-        |> HTML.get_cached_stripped_html_for_object(activity, __MODULE__)
+        |> HTML.get_cached_stripped_html_for_activity(activity, "twitterapi:content")
       else
         ""
       end
@@ -284,33 +286,33 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
     %{
       "id" => activity.id,
-      "uri" => activity.data["object"]["id"],
+      "uri" => object.data["id"],
       "user" => UserView.render("show.json", %{user: user, for: opts[:for]}),
       "statusnet_html" => html,
       "text" => text,
       "is_local" => activity.local,
       "is_post_verb" => true,
       "created_at" => created_at,
-      "in_reply_to_status_id" => object["inReplyToStatusId"],
+      "in_reply_to_status_id" => reply_parent && reply_parent.id,
       "in_reply_to_screen_name" => reply_user && reply_user.nickname,
       "in_reply_to_profileurl" => User.profile_url(reply_user),
       "in_reply_to_ostatus_uri" => reply_user && reply_user.ap_id,
       "in_reply_to_user_id" => reply_user && reply_user.id,
       "statusnet_conversation_id" => conversation_id,
-      "attachments" => (object["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
+      "attachments" => (object.data["attachment"] || []) |> ObjectRepresenter.enum_to_list(opts),
       "attentions" => attentions,
       "fave_num" => like_count,
       "repeat_num" => announcement_count,
       "favorited" => !!favorited,
       "repeated" => !!repeated,
       "pinned" => pinned,
-      "external_url" => object["external_url"] || object["id"],
+      "external_url" => object.data["external_url"] || object.data["id"],
       "tags" => tags,
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive,
       "visibility" => StatusView.get_visibility(object),
       "summary" => summary,
-      "summary_html" => summary |> Formatter.emojify(object["emoji"]),
+      "summary_html" => summary |> Formatter.emojify(object.data["emoji"]),
       "card" => card,
       "muted" => CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user)
     }

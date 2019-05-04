@@ -51,10 +51,16 @@ defmodule Pleroma.Web.Endpoint do
   plug(Plug.MethodOverride)
   plug(Plug.Head)
 
+  secure_cookies = Pleroma.Config.get([__MODULE__, :secure_cookie_flag])
+
   cookie_name =
-    if Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
+    if secure_cookies,
       do: "__Host-pleroma_key",
       else: "pleroma_key"
+
+  extra =
+    Pleroma.Config.get([__MODULE__, :extra_cookie_attrs])
+    |> Enum.join(";")
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
@@ -65,10 +71,29 @@ defmodule Pleroma.Web.Endpoint do
     key: cookie_name,
     signing_salt: {Pleroma.Config, :get, [[__MODULE__, :signing_salt], "CqaoopA2"]},
     http_only: true,
-    secure:
-      Application.get_env(:pleroma, Pleroma.Web.Endpoint) |> Keyword.get(:secure_cookie_flag),
-    extra: "SameSite=Strict"
+    secure: secure_cookies,
+    extra: extra
   )
+
+  # Note: the plug and its configuration is compile-time this can't be upstreamed yet
+  if proxies = Pleroma.Config.get([__MODULE__, :reverse_proxies]) do
+    plug(RemoteIp, proxies: proxies)
+  end
+
+  defmodule Instrumenter do
+    use Prometheus.PhoenixInstrumenter
+  end
+
+  defmodule PipelineInstrumenter do
+    use Prometheus.PlugPipelineInstrumenter
+  end
+
+  defmodule MetricsExporter do
+    use Prometheus.PlugExporter
+  end
+
+  plug(PipelineInstrumenter)
+  plug(MetricsExporter)
 
   plug(Pleroma.Web.Router)
 

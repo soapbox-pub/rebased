@@ -8,7 +8,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   alias Pleroma.Activity
   alias Pleroma.Object
+  alias Pleroma.Object.Containment
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -17,56 +19,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   import Ecto.Query
 
   require Logger
-
-  def get_actor(%{"actor" => actor}) when is_binary(actor) do
-    actor
-  end
-
-  def get_actor(%{"actor" => actor}) when is_list(actor) do
-    if is_binary(Enum.at(actor, 0)) do
-      Enum.at(actor, 0)
-    else
-      Enum.find(actor, fn %{"type" => type} -> type in ["Person", "Service", "Application"] end)
-      |> Map.get("id")
-    end
-  end
-
-  def get_actor(%{"actor" => %{"id" => id}}) when is_bitstring(id) do
-    id
-  end
-
-  def get_actor(%{"actor" => nil, "attributedTo" => actor}) when not is_nil(actor) do
-    get_actor(%{"actor" => actor})
-  end
-
-  @doc """
-  Checks that an imported AP object's actor matches the domain it came from.
-  """
-  def contain_origin(_id, %{"actor" => nil}), do: :error
-
-  def contain_origin(id, %{"actor" => _actor} = params) do
-    id_uri = URI.parse(id)
-    actor_uri = URI.parse(get_actor(params))
-
-    if id_uri.host == actor_uri.host do
-      :ok
-    else
-      :error
-    end
-  end
-
-  def contain_origin_from_id(_id, %{"id" => nil}), do: :error
-
-  def contain_origin_from_id(id, %{"id" => other_id} = _params) do
-    id_uri = URI.parse(id)
-    other_uri = URI.parse(other_id)
-
-    if id_uri.host == other_uri.host do
-      :ok
-    else
-      :error
-    end
-  end
 
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
@@ -83,6 +35,22 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_content_map
     |> fix_likes
     |> fix_addressing
+    |> fix_summary
+  end
+
+  def fix_summary(%{"summary" => nil} = object) do
+    object
+    |> Map.put("summary", "")
+  end
+
+  def fix_summary(%{"summary" => _} = object) do
+    # summary is present, nothing to do
+    object
+  end
+
+  def fix_summary(object) do
+    object
+    |> Map.put("summary", "")
   end
 
   def fix_addressing_list(map, field) do
@@ -158,7 +126,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_implicit_addressing(object, _), do: object
 
   def fix_addressing(object) do
-    %User{} = user = User.get_or_fetch_by_ap_id(object["actor"])
+    {:ok, %User{} = user} = User.get_or_fetch_by_ap_id(object["actor"])
     followers_collection = User.ap_followers(user)
 
     object
@@ -172,7 +140,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_actor(%{"attributedTo" => actor} = object) do
     object
-    |> Map.put("actor", get_actor(%{"actor" => actor}))
+    |> Map.put("actor", Containment.get_actor(%{"actor" => actor}))
   end
 
   # Check for standardisation
@@ -207,14 +175,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           ""
       end
 
-    case fetch_obj_helper(in_reply_to_id) do
+    case get_obj_helper(in_reply_to_id) do
       {:ok, replied_object} ->
-        with %Activity{} = activity <-
+        with %Activity{} = _activity <-
                Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
           object
           |> Map.put("inReplyTo", replied_object.data["id"])
           |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
-          |> Map.put("inReplyToStatusId", activity.id)
           |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
           |> Map.put("context", replied_object.data["context"] || object["conversation"])
         else
@@ -433,14 +400,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
       when objtype in ["Article", "Note", "Video", "Page"] do
-    actor = get_actor(data)
+    actor = Containment.get_actor(data)
 
     data =
       Map.put(data, "actor", actor)
       |> fix_addressing
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
-         %User{} = user <- User.get_or_fetch_by_ap_id(data["actor"]) do
+         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(data["actor"]) do
       object = fix_object(data["object"])
 
       params = %{
@@ -469,30 +436,56 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Follow", "object" => followed, "actor" => follower, "id" => id} = data
       ) do
     with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
-         %User{} = follower <- User.get_or_fetch_by_ap_id(follower),
+         {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
          {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
-      if not User.locked?(followed) do
+      with deny_follow_blocked <- Pleroma.Config.get([:user, :deny_follow_blocked]),
+           {:user_blocked, false} <-
+             {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
+           {:user_locked, false} <- {:user_locked, User.locked?(followed)},
+           {:follow, {:ok, follower}} <- {:follow, User.follow(follower, followed)} do
         ActivityPub.accept(%{
           to: [follower.ap_id],
           actor: followed,
           object: data,
           local: true
         })
+      else
+        {:user_blocked, true} ->
+          {:ok, _} = Utils.update_follow_state(activity, "reject")
 
-        User.follow(follower, followed)
+          ActivityPub.reject(%{
+            to: [follower.ap_id],
+            actor: followed,
+            object: data,
+            local: true
+          })
+
+        {:follow, {:error, _}} ->
+          {:ok, _} = Utils.update_follow_state(activity, "reject")
+
+          ActivityPub.reject(%{
+            to: [follower.ap_id],
+            actor: followed,
+            object: data,
+            local: true
+          })
+
+        {:user_locked, true} ->
+          :noop
       end
 
       {:ok, activity}
     else
-      _e -> :error
+      _e ->
+        :error
     end
   end
 
   def handle_incoming(
         %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => _id} = data
       ) do
-    with actor <- get_actor(data),
-         %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
          {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
@@ -517,8 +510,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => _id} = data
       ) do
-    with actor <- get_actor(data),
-         %User{} = followed <- User.get_or_fetch_by_ap_id(actor),
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
          {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
@@ -541,9 +534,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data
       ) do
-    with actor <- get_actor(data),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id),
          {:ok, activity, _object} <- ActivityPub.like(actor, object, id, false) do
       {:ok, activity}
     else
@@ -554,9 +547,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def handle_incoming(
         %{"type" => "Announce", "object" => object_id, "actor" => _actor, "id" => id} = data
       ) do
-    with actor <- get_actor(data),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id),
          public <- Visibility.is_public?(data),
          {:ok, activity, _object} <- ActivityPub.announce(actor, object, id, false, public) do
       {:ok, activity}
@@ -570,7 +563,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           data
       )
       when object_type in ["Person", "Application", "Service", "Organization"] do
-    with %User{ap_id: ^actor_id} = actor <- User.get_by_ap_id(object["id"]) do
+    with %User{ap_id: ^actor_id} = actor <- User.get_cached_by_ap_id(object["id"]) do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
 
       banner = new_user_data[:info]["banner"]
@@ -609,10 +602,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     object_id = Utils.get_ap_id(object_id)
 
-    with actor <- get_actor(data),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
-         :ok <- contain_origin(actor.ap_id, object.data),
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id),
+         :ok <- Containment.contain_origin(actor.ap_id, object.data),
          {:ok, activity} <- ActivityPub.delete(object, false) do
       {:ok, activity}
     else
@@ -628,9 +621,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "id" => id
         } = data
       ) do
-    with actor <- get_actor(data),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id),
          {:ok, activity, _} <- ActivityPub.unannounce(actor, object, id, false) do
       {:ok, activity}
     else
@@ -647,7 +640,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         } = _data
       ) do
     with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
-         %User{} = follower <- User.get_or_fetch_by_ap_id(follower),
+         {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
          {:ok, activity} <- ActivityPub.unfollow(follower, followed, id, false) do
       User.unfollow(follower, followed)
       {:ok, activity}
@@ -666,7 +659,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
          %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
-         %User{} = blocker <- User.get_or_fetch_by_ap_id(blocker),
+         {:ok, %User{} = blocker} <- User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.unblock(blocker, blocked, id, false) do
       User.unblock(blocker, blocked)
       {:ok, activity}
@@ -680,7 +673,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       ) do
     with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
          %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
-         %User{} = blocker = User.get_or_fetch_by_ap_id(blocker),
+         {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
       User.unfollow(blocker, blocked)
       User.block(blocker, blocked)
@@ -698,9 +691,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "id" => id
         } = data
       ) do
-    with actor <- get_actor(data),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(actor),
-         {:ok, object} <- get_obj_helper(object_id) || fetch_obj_helper(object_id),
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id),
          {:ok, activity, _, _} <- ActivityPub.unlike(actor, object, id, false) do
       {:ok, activity}
     else
@@ -709,9 +702,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(_), do: :error
-
-  def fetch_obj_helper(id) when is_bitstring(id), do: ActivityPub.fetch_object_from_id(id)
-  def fetch_obj_helper(obj) when is_map(obj), do: ActivityPub.fetch_object_from_id(obj["id"])
 
   def get_obj_helper(id) do
     if object = Object.normalize(id), do: {:ok, object}, else: nil
@@ -749,9 +739,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   #  internal -> Mastodon
   #  """
 
-  def prepare_outgoing(%{"type" => "Create", "object" => object} = data) do
+  def prepare_outgoing(%{"type" => "Create", "object" => object_id} = data) do
     object =
-      object
+      Object.normalize(object_id).data
       |> prepare_object
 
     data =
@@ -812,7 +802,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def maybe_fix_object_url(data) do
     if is_binary(data["object"]) and not String.starts_with?(data["object"], "http") do
-      case fetch_obj_helper(data["object"]) do
+      case get_obj_helper(data["object"]) do
         {:ok, relative_object} ->
           if relative_object.data["external_url"] do
             _data =
@@ -866,10 +856,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("tag", tags ++ mentions)
   end
 
+  def add_emoji_tags(%User{info: %{"emoji" => _emoji} = user_info} = object) do
+    user_info = add_emoji_tags(user_info)
+
+    object
+    |> Map.put(:info, user_info)
+  end
+
   # TODO: we should probably send mtime instead of unix epoch time for updated
-  def add_emoji_tags(object) do
+  def add_emoji_tags(%{"emoji" => emoji} = object) do
     tags = object["tag"] || []
-    emoji = object["emoji"] || []
 
     out =
       emoji
@@ -885,6 +881,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object
     |> Map.put("tag", tags ++ out)
+  end
+
+  def add_emoji_tags(object) do
+    object
   end
 
   def set_conversation(object) do
@@ -954,7 +954,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   defp strip_internal_tags(object), do: object
 
-  defp user_upgrade_task(user) do
+  def perform(:user_upgrade, user) do
     # we pass a fake user so that the followers collection is stripped away
     old_follower_address = User.ap_followers(%User{nickname: user.nickname})
 
@@ -999,28 +999,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     Repo.update_all(q, [])
   end
 
-  def upgrade_user_from_ap_id(ap_id, async \\ true) do
-    with %User{local: false} = user <- User.get_by_ap_id(ap_id),
-         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id) do
-      already_ap = User.ap_enabled?(user)
-
-      {:ok, user} =
-        User.upgrade_changeset(user, data)
-        |> Repo.update()
-
-      if !already_ap do
-        # This could potentially take a long time, do it in the background
-        if async do
-          Task.start(fn ->
-            user_upgrade_task(user)
-          end)
-        else
-          user_upgrade_task(user)
-        end
+  def upgrade_user_from_ap_id(ap_id) do
+    with %User{local: false} = user <- User.get_cached_by_ap_id(ap_id),
+         {:ok, data} <- ActivityPub.fetch_and_prepare_user_from_ap_id(ap_id),
+         already_ap <- User.ap_enabled?(user),
+         {:ok, user} <- user |> User.upgrade_changeset(data) |> User.update_and_set_cache() do
+      unless already_ap do
+        PleromaJobQueue.enqueue(:transmogrifier, __MODULE__, [:user_upgrade, user])
       end
 
       {:ok, user}
     else
+      %User{} = user -> {:ok, user}
       e -> e
     end
   end

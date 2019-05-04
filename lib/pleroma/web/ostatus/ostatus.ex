@@ -294,7 +294,7 @@ defmodule Pleroma.Web.OStatus do
       }
 
       with false <- update,
-           %User{} = user <- User.get_by_ap_id(data.ap_id) do
+           %User{} = user <- User.get_cached_by_ap_id(data.ap_id) do
         {:ok, user}
       else
         _e -> User.insert_or_update_user(data)

@@ -1,2 +1,2 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[25],{694:function(n,a,t){"use strict";t.r(a);var c=t(1),e=(t(3),t(642)),o=t(908);a.default=function(){return Object(c.a)(e.a,{},void 0,Object(c.a)(o.a,{}))}}}]);
+(window.webpackJsonp=window.webpackJsonp||[]).push([[25],{682:function(n,a,t){"use strict";t.r(a);var c=t(0),e=(t(2),t(625)),o=t(910);a.default=function(){return Object(c.a)(e.a,{},void 0,Object(c.a)(o.a,{}))}}}]);
 //# sourceMappingURL=generic_not_found.js.map
