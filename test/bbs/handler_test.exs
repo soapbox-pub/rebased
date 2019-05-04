@@ -3,6 +3,7 @@ defmodule Pleroma.BBS.HandlerTest do
   alias Pleroma.Activity
   alias Pleroma.BBS.Handler
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
 
@@ -49,7 +50,8 @@ defmodule Pleroma.BBS.HandlerTest do
       )
 
     assert activity.actor == user.ap_id
-    assert activity.data["object"]["content"] == "this is a test post"
+    object = Object.normalize(activity)
+    assert object.data["content"] == "this is a test post"
   end
 
   test "replying" do
@@ -74,7 +76,8 @@ defmodule Pleroma.BBS.HandlerTest do
       )
 
     assert reply.actor == user.ap_id
-    assert reply.data["object"]["content"] == "this is a reply"
-    assert reply.data["object"]["inReplyTo"] == activity.data["object"]["id"]
+    object = Object.normalize(reply)
+    assert object.data["content"] == "this is a reply"
+    assert object.data["inReplyTo"] == activity.data["object"]
   end
 end
