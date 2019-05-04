@@ -1,8 +1,8 @@
 defmodule Pleroma.BBS.Handler do
   use Sshd.ShellHandler
   alias Pleroma.Activity
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.CommonAPI
 
   def on_shell(username, _pubkey, _ip, _port) do
     :ok = IO.puts("Welcome to #{Pleroma.Config.get([:instance, :name])}!")
