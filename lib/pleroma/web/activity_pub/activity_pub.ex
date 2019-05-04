@@ -137,6 +137,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
+      activity =
+        if activity.data["type"] in ["Create", "Announce"] do
+          Repo.preload(activity, :bookmarks)
+        else
+          activity
+        end
+
       Task.start(fn ->
         Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
       end)
