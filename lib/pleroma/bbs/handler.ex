@@ -6,7 +6,7 @@ defmodule Pleroma.BBS.Handler do
 
   def on_shell(username, _pubkey, _ip, _port) do
     :ok = IO.puts("Welcome to #{Pleroma.Config.get([:instance, :name])}!")
-    user = Pleroma.User.get_by_nickname(to_string(username))
+    user = Pleroma.User.get_cached_by_nickname(to_string(username))
     Logger.debug("#{inspect(user)}")
     loop(run_state(user: user))
   end
