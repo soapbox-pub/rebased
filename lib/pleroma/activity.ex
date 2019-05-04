@@ -210,9 +210,9 @@ defmodule Pleroma.Activity do
           activity.data,
           activity.data
         ),
-      preload: [object: o],
-      preload: :bookmarks
+      preload: [object: o]
     )
+    |> with_preloaded_bookmarks()
   end
 
   def create_by_object_ap_id_with_object(_), do: nil
