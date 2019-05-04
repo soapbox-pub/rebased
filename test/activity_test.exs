@@ -31,30 +31,52 @@ defmodule Pleroma.ActivityTest do
     assert activity == found_activity
   end
 
-  test "preloading object preloads bookmarks" do
-    user1 = insert(:user)
-    user2 = insert(:user)
-    activity = insert(:note_activity)
-    {:ok, bookmark1} = Bookmark.create(user1.id, activity.id)
-    {:ok, bookmark2} = Bookmark.create(user2.id, activity.id)
-    bookmarks = Enum.sort([bookmark1, bookmark2])
+  describe "preloading bookmarks" do
+    setup do
+      user1 = insert(:user)
+      user2 = insert(:user)
+      activity = insert(:note_activity)
+      {:ok, bookmark1} = Bookmark.create(user1.id, activity.id)
+      {:ok, bookmark2} = Bookmark.create(user2.id, activity.id)
+      [activity: activity, bookmarks: Enum.sort([bookmark1, bookmark2])]
+    end
 
-    queried_activity =
-      Ecto.Query.from(a in Activity, where: a.id == ^activity.id)
-      |> Activity.with_preloaded_object()
-      |> Repo.one()
+    test "using with_preloaded_bookmarks", %{activity: activity, bookmarks: bookmarks} do
+      queried_activity =
+        Ecto.Query.from(a in Activity, where: a.id == ^activity.id)
+        |> Activity.with_preloaded_bookmarks()
+        |> Repo.one()
 
-    assert Enum.sort(queried_activity.bookmarks) == bookmarks
+      assert Enum.sort(queried_activity.bookmarks) == bookmarks
+    end
 
-    queried_activity = Activity.get_by_ap_id_with_object(activity.data["id"])
-    assert Enum.sort(queried_activity.bookmarks) == bookmarks
+    test "using with_preloaded_object", %{activity: activity, bookmarks: bookmarks} do
+      queried_activity =
+        Ecto.Query.from(a in Activity, where: a.id == ^activity.id)
+        |> Activity.with_preloaded_object()
+        |> Repo.one()
 
-    queried_activity = Activity.get_by_id_with_object(activity.id)
-    assert Enum.sort(queried_activity.bookmarks) == bookmarks
+      assert Enum.sort(queried_activity.bookmarks) == bookmarks
+    end
 
-    queried_activity =
-      Activity.get_create_by_object_ap_id_with_object(Object.normalize(activity).data["id"])
+    test "using get_by_ap_id_with_object", %{activity: activity, bookmarks: bookmarks} do
+      queried_activity = Activity.get_by_ap_id_with_object(activity.data["id"])
+      assert Enum.sort(queried_activity.bookmarks) == bookmarks
+    end
 
-    assert Enum.sort(queried_activity.bookmarks) == bookmarks
+    test "using get_by_id_with_object", %{activity: activity, bookmarks: bookmarks} do
+      queried_activity = Activity.get_by_id_with_object(activity.id)
+      assert Enum.sort(queried_activity.bookmarks) == bookmarks
+    end
+
+    test "using get_create_by_object_ap_id_with_object", %{
+      activity: activity,
+      bookmarks: bookmarks
+    } do
+      queried_activity =
+        Activity.get_create_by_object_ap_id_with_object(Object.normalize(activity).data["id"])
+
+      assert Enum.sort(queried_activity.bookmarks) == bookmarks
+    end
   end
 end
