@@ -1,10 +1,10 @@
 defmodule Pleroma.BBS.HandlerTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
   alias Pleroma.BBS.Handler
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.User
   alias Pleroma.Repo
-  alias Pleroma.Activity
+  alias Pleroma.User
 
   import ExUnit.CaptureIO
   import Pleroma.Factory

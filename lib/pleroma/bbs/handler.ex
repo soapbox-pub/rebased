@@ -1,12 +1,8 @@
 defmodule Pleroma.BBS.Handler do
-  @moduledoc """
-  An example implementation of `Sshd.ShellHandler`, implementing a very simple
-  Read-Eval-Loop, that does nothing.
-  """
   use Sshd.ShellHandler
+  alias Pleroma.Activity
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Activity
 
   def on_shell(username, _pubkey, _ip, _port) do
     :ok = IO.puts("Welcome to #{Pleroma.Config.get([:instance, :name])}!")
