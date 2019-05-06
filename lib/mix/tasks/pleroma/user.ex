@@ -163,7 +163,7 @@ defmodule Mix.Tasks.Pleroma.User do
     Common.start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.delete(user)
+      User.perform(:delete, user)
       Mix.shell().info("User #{nickname} deleted.")
     else
       _ ->
@@ -380,7 +380,7 @@ defmodule Mix.Tasks.Pleroma.User do
     Common.start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.delete_user_activities(user)
+      {:ok, _} = User.delete_user_activities(user)
       Mix.shell().info("User #{nickname} statuses deleted.")
     else
       _ ->
