@@ -445,7 +445,28 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
 
+## BBS / SSH access
+
+To enable simple command line interface accessible over ssh, add a setting like this to your configuration file:
+
+```exs
+app_dir = File.cwd!
+priv_dir = Path.join([app_dir, "priv/ssh_keys"])
+
+config :esshd,
+  enabled: true,
+  priv_dir: priv_dir,
+  handler: "Pleroma.BBS.Handler",
+  port: 10_022,
+  password_authenticator: "Pleroma.BBS.Authenticator"
+```
+
+Feel free to adjust the priv_dir and port number. Then you will have to create the key for the keys (in the example `priv/ssh_keys`) and create the host keys with `ssh-keygen -N "" -b 2048 -t rsa -f ssh_host_rsa_key`. After restarting, you should be able to connect to your Pleroma instance with `ssh username@server -p $PORT`
+
 ## :auth
+
+* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
+* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
 
 Authentication / authorization settings.
 

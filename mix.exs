@@ -41,7 +41,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :esshd, :quack],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -112,7 +112,8 @@ defmodule Pleroma.Mixfile do
       {:prometheus_process_collector, "~> 1.4"},
       {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"},
-      {:benchee, "~> 1.0"}
+      {:benchee, "~> 1.0"},
+      {:esshd, "~> 0.1.0"}
     ] ++ oauth_deps
   end
 
