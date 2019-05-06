@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
   alias Pleroma.User
+  @moduledoc "Rejects non-public (followers-only, direct) activities"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   @impl true

@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
   alias Pleroma.User
   @behaviour Pleroma.Web.ActivityPub.MRF
+  @moduledoc "Apply policies based on user tags"
 
   defp get_tags(%User{tags: tags}) when is_list(tags), do: tags
   defp get_tags(_), do: []

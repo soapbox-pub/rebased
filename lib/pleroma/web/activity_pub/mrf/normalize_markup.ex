@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.NormalizeMarkup do
+  @moduledoc "Scrub configured hypertext markup"
   alias Pleroma.HTML
 
   @behaviour Pleroma.Web.ActivityPub.MRF

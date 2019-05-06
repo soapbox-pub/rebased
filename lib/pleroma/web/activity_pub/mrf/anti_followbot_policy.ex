@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
   alias Pleroma.User
 
+  @moduledoc "Prevent followbots from following with a bit of heuristic"
+
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   # XXX: this should become User.normalize_by_ap_id() or similar, really.
