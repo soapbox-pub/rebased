@@ -1,6 +1,6 @@
 # Differences in Mastodon API responses from vanilla Mastodon
 
-A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma <version>)" present in `version` field in response from `/api/v1/instance` 
+A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma <version>)" present in `version` field in response from `/api/v1/instance`
 
 ## Flake IDs
 
@@ -80,3 +80,10 @@ Additional parameters can be added to the JSON body/Form data:
 - `hide_favorites` - if true, user's favorites timeline will be hidden
 - `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
 - `default_scope` - the scope returned under `privacy` key in Source subentity
+
+## Authentication
+
+*Pleroma supports refreshing tokens.
+
+`POST /oauth/token`
+Post here request with grant_type=refresh_token to obtain new access token. Returns an access token.

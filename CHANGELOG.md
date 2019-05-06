@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
 - ActivityPub C2S: OAuth endpoints
 - Metadata RelMe provider
+- OAuth: added support for refresh tokens
 - Emoji packs and emoji pack manager
 
 ### Changed

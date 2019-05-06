@@ -474,7 +474,7 @@ Authentication / authorization settings.
 * `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
 * `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
 
-# OAuth consumer mode
+## OAuth consumer mode
 
 OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
 Implementation is based on Ueberauth; see the list of [available strategies](https://github.com/ueberauth/ueberauth/wiki/List-of-Strategies).
@@ -526,6 +526,13 @@ config :ueberauth, Ueberauth,
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
   ]
 ```
+
+## OAuth 2.0 provider - :oauth2
+
+Configure OAuth 2 provider capabilities:
+
+* `token_expires_in` - The lifetime in seconds of the access token.
+* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
 
 ## :emoji
 * `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
