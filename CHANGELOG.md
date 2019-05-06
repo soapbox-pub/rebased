@@ -66,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Deactivated users being able to request an access token
 - Limit on request body in rich media/relme parsers being ignored resulting in a possible memory leak
 - proper Twitter Card generation instead of a dummy
+- Deletions failing for users with a large number of posts
 - NodeInfo: Include admins in `staffAccounts`
 - ActivityPub: Crashing when requesting empty local user's outbox
 - Federation: Handling of objects without `summary` property

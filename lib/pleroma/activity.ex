@@ -14,6 +14,8 @@ defmodule Pleroma.Activity do
   import Ecto.Query
 
   @type t :: %__MODULE__{}
+  @type actor :: String.t()
+
   @primary_key {:id, Pleroma.FlakeId, autogenerate: true}
 
   # https://github.com/tootsuite/mastodon/blob/master/app/models/notification.rb#L19
@@ -259,5 +261,10 @@ defmodule Pleroma.Activity do
     |> where([s], s.id in ^status_ids)
     |> where([s], s.actor == ^actor)
     |> Repo.all()
+  end
+
+  @spec query_by_actor(actor()) :: Ecto.Query.t()
+  def query_by_actor(actor) do
+    from(a in Activity, where: a.actor == ^actor)
   end
 end

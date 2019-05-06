@@ -1164,7 +1164,12 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def delete(%User{} = user) do
+  @spec delete(User.t()) :: :ok
+  def delete(%User{} = user),
+    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:delete, user])
+
+  @spec perform(atom(), User.t()) :: {:ok, User.t()}
+  def perform(:delete, %User{} = user) do
     {:ok, user} = User.deactivate(user)
 
     # Remove all relationships
@@ -1180,21 +1185,22 @@ defmodule Pleroma.User do
   end
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do
-    Activity
-    |> where(actor: ^ap_id)
-    |> Activity.with_preloaded_object()
-    |> Repo.all()
-    |> Enum.each(fn
-      %{data: %{"type" => "Create"}} = activity ->
-        activity |> Object.normalize() |> ActivityPub.delete()
+    stream =
+      ap_id
+      |> Activity.query_by_actor()
+      |> Activity.with_preloaded_object()
+      |> Repo.stream()
 
-      # TODO: Do something with likes, follows, repeats.
-      _ ->
-        "Doing nothing"
-    end)
+    Repo.transaction(fn -> Enum.each(stream, &delete_activity(&1)) end, timeout: :infinity)
 
     {:ok, user}
   end
+
+  defp delete_activity(%{data: %{"type" => "Create"}} = activity) do
+    Object.normalize(activity) |> ActivityPub.delete()
+  end
+
+  defp delete_activity(_activity), do: "Doing nothing"
 
   def html_filter_policy(%User{info: %{no_rich_text: true}}) do
     Pleroma.HTML.Scrubber.TwitterText
