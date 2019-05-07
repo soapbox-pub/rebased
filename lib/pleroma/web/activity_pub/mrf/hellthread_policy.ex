@@ -4,6 +4,8 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   alias Pleroma.User
+  @moduledoc "Block messages with too much mentions (configurable)"
+
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp delist_message(message, threshold) when threshold > 0 do

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.NoPlaceholderTextPolicy do
+  @moduledoc "Ensure no content placeholder is present (such as the dot from mastodon)"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   @impl true
