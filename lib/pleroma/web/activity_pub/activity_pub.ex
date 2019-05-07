@@ -822,12 +822,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_bookmark(opts["user"])
   end
 
+  defp maybe_order(query, %{order: :desc}) do
+    query
+    |> order_by(desc: :id)
+  end
+
+  defp maybe_order(query, %{order: :asc}) do
+    query
+    |> order_by(asc: :id)
+  end
+
+  defp maybe_order(query, _), do: query
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query = from(activity in Activity)
 
     base_query
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
+    |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
