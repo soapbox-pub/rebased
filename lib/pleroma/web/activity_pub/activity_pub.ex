@@ -137,13 +137,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
-      activity =
-        if activity.data["type"] in ["Create", "Announce"] do
-          Repo.preload(activity, :bookmarks)
-        else
-          activity
-        end
-
       Task.start(fn ->
         Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
       end)
@@ -822,11 +815,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_object()
   end
 
+  defp maybe_preload_bookmarks(query, %{"skip_preload" => true}), do: query
+
+  defp maybe_preload_bookmarks(query, opts) do
+    query
+    |> Activity.with_preloaded_bookmark(opts["user"])
+  end
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query = from(activity in Activity)
 
     base_query
     |> maybe_preload_objects(opts)
+    |> maybe_preload_bookmarks(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)

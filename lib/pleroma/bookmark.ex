@@ -38,8 +38,7 @@ defmodule Pleroma.Bookmark do
     Bookmark
     |> where(user_id: ^user_id)
     |> join(:inner, [b], activity in assoc(b, :activity))
-    |> join(:inner, [_b, a], bookmarks in assoc(a, :bookmarks))
-    |> preload([b, a, b2], activity: {a, bookmarks: b2})
+    |> preload([b, a], activity: a)
   end
 
   def get(user_id, activity_id) do

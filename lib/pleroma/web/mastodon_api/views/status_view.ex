@@ -75,26 +75,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render(
         "status.json",
-        %{activity: %{data: %{"type" => "Announce", "object" => object}} = activity} = opts
+        %{activity: %{data: %{"type" => "Announce", "object" => _object}} = activity} = opts
       ) do
     user = get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
+    activity_object = Object.normalize(activity)
 
     reblogged_activity =
-      Activity.create_by_object_ap_id(object)
-      |> Activity.with_preloaded_bookmarks()
+      Activity.create_by_object_ap_id(activity_object.data["id"])
+      |> Activity.with_preloaded_bookmark(opts[:for])
       |> Repo.one()
 
     reblogged = render("status.json", Map.put(opts, :activity, reblogged_activity))
 
-    activity_object = Object.normalize(activity)
     favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
 
-    bookmarked =
-      opts[:for] && Ecto.assoc_loaded?(reblogged_activity.bookmarks) &&
-        Enum.any?(reblogged_activity.bookmarks, fn %{user_id: user_id} ->
-          user_id == opts[:for].id
-        end)
+    bookmarked = Activity.get_bookmark(reblogged_activity, opts[:for]) != nil
 
     mentions =
       activity.recipients
@@ -104,8 +100,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     %{
       id: to_string(activity.id),
-      uri: object,
-      url: object,
+      uri: activity_object.data["id"],
+      url: activity_object.data["id"],
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -157,11 +153,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
-    bookmarked =
-      opts[:for] && Ecto.assoc_loaded?(activity.bookmarks) &&
-        Enum.any?(activity.bookmarks, fn %{user_id: user_id} ->
-          user_id == opts[:for].id
-        end)
+    bookmarked = Activity.get_bookmark(activity, opts[:for]) != nil
 
     attachment_data = object.data["attachment"] || []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)

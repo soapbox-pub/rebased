@@ -6,7 +6,6 @@ defmodule Pleroma.ActivityTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
   alias Pleroma.Bookmark
-  alias Pleroma.Object
   import Pleroma.Factory
 
   test "returns an activity by it's AP id" do
@@ -31,52 +30,47 @@ defmodule Pleroma.ActivityTest do
     assert activity == found_activity
   end
 
-  describe "preloading bookmarks" do
-    setup do
-      user1 = insert(:user)
-      user2 = insert(:user)
+  test "preloading a bookmark" do
+    user = insert(:user)
+    user2 = insert(:user)
+    user3 = insert(:user)
+    activity = insert(:note_activity)
+    {:ok, _bookmark} = Bookmark.create(user.id, activity.id)
+    {:ok, _bookmark2} = Bookmark.create(user2.id, activity.id)
+    {:ok, bookmark3} = Bookmark.create(user3.id, activity.id)
+
+    queried_activity =
+      Ecto.Query.from(Pleroma.Activity)
+      |> Activity.with_preloaded_bookmark(user3)
+      |> Repo.one()
+
+    assert queried_activity.bookmark == bookmark3
+  end
+
+  describe "getting a bookmark" do
+    test "when association is loaded" do
+      user = insert(:user)
       activity = insert(:note_activity)
-      {:ok, bookmark1} = Bookmark.create(user1.id, activity.id)
-      {:ok, bookmark2} = Bookmark.create(user2.id, activity.id)
-      [activity: activity, bookmarks: Enum.sort([bookmark1, bookmark2])]
-    end
+      {:ok, bookmark} = Bookmark.create(user.id, activity.id)
 
-    test "using with_preloaded_bookmarks", %{activity: activity, bookmarks: bookmarks} do
       queried_activity =
-        Ecto.Query.from(a in Activity, where: a.id == ^activity.id)
-        |> Activity.with_preloaded_bookmarks()
+        Ecto.Query.from(Pleroma.Activity)
+        |> Activity.with_preloaded_bookmark(user)
         |> Repo.one()
 
-      assert Enum.sort(queried_activity.bookmarks) == bookmarks
+      assert Activity.get_bookmark(queried_activity, user) == bookmark
     end
 
-    test "using with_preloaded_object", %{activity: activity, bookmarks: bookmarks} do
+    test "when association is not loaded" do
+      user = insert(:user)
+      activity = insert(:note_activity)
+      {:ok, bookmark} = Bookmark.create(user.id, activity.id)
+
       queried_activity =
-        Ecto.Query.from(a in Activity, where: a.id == ^activity.id)
-        |> Activity.with_preloaded_object()
+        Ecto.Query.from(Pleroma.Activity)
         |> Repo.one()
 
-      assert Enum.sort(queried_activity.bookmarks) == bookmarks
-    end
-
-    test "using get_by_ap_id_with_object", %{activity: activity, bookmarks: bookmarks} do
-      queried_activity = Activity.get_by_ap_id_with_object(activity.data["id"])
-      assert Enum.sort(queried_activity.bookmarks) == bookmarks
-    end
-
-    test "using get_by_id_with_object", %{activity: activity, bookmarks: bookmarks} do
-      queried_activity = Activity.get_by_id_with_object(activity.id)
-      assert Enum.sort(queried_activity.bookmarks) == bookmarks
-    end
-
-    test "using get_create_by_object_ap_id_with_object", %{
-      activity: activity,
-      bookmarks: bookmarks
-    } do
-      queried_activity =
-        Activity.get_create_by_object_ap_id_with_object(Object.normalize(activity).data["id"])
-
-      assert Enum.sort(queried_activity.bookmarks) == bookmarks
+      assert Activity.get_bookmark(queried_activity, user) == bookmark
     end
   end
 end
