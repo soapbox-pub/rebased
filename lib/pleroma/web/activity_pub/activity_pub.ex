@@ -168,7 +168,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
     if activity.data["type"] in ["Create", "Announce", "Delete"] do
-      object = Object.normalize(activity)
       Pleroma.Web.Streamer.stream("user", activity)
       Pleroma.Web.Streamer.stream("list", activity)
 
@@ -180,6 +179,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         end
 
         if activity.data["type"] in ["Create"] do
+          object = Object.normalize(activity)
+
           object.data
           |> Map.get("tag", [])
           |> Enum.filter(fn tag -> is_bitstring(tag) end)

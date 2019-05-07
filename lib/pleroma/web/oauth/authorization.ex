@@ -13,6 +13,7 @@ defmodule Pleroma.Web.OAuth.Authorization do
   import Ecto.Changeset
   import Ecto.Query
 
+  @type t :: %__MODULE__{}
   schema "oauth_authorizations" do
     field(:token, :string)
     field(:scopes, {:array, :string}, default: [])
@@ -62,5 +63,12 @@ defmodule Pleroma.Web.OAuth.Authorization do
       where: a.user_id == ^user_id
     )
     |> Repo.delete_all()
+  end
+
+  @doc "gets auth for app by token"
+  @spec get_by_token(App.t(), String.t()) :: {:ok, t()} | {:error, :not_found}
+  def get_by_token(%App{id: app_id} = _app, token) do
+    from(t in __MODULE__, where: t.app_id == ^app_id and t.token == ^token)
+    |> Repo.find_resource()
   end
 end

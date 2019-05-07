@@ -41,6 +41,7 @@ defmodule Pleroma.User.Info do
     field(:hide_favorites, :boolean, default: true)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
+    field(:emoji, {:array, :map}, default: [])
 
     field(:notification_settings, :map,
       default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
@@ -225,14 +226,6 @@ defmodule Pleroma.User.Info do
 
   def confirmation_changeset(info, params) do
     cast(info, params, [:confirmation_pending, :confirmation_token])
-  end
-
-  def mastodon_profile_update(info, params) do
-    info
-    |> cast(params, [
-      :locked,
-      :banner
-    ])
   end
 
   def mastodon_settings_update(info, settings) do

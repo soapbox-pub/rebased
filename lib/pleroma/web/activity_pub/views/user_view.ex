@@ -69,6 +69,11 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
     endpoints = render("endpoints.json", %{user: user})
 
+    user_tags =
+      user
+      |> Transmogrifier.add_emoji_tags()
+      |> Map.get("tag", [])
+
     %{
       "id" => user.ap_id,
       "type" => "Person",
@@ -87,7 +92,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "publicKeyPem" => public_key
       },
       "endpoints" => endpoints,
-      "tag" => user.info.source_data["tag"] || []
+      "tag" => (user.info.source_data["tag"] || []) ++ user_tags
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))
