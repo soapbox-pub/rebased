@@ -232,8 +232,7 @@ config :pleroma, :instance,
   welcome_message: nil,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
-  healthcheck: false,
-  repo_batch_size: 500
+  healthcheck: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because

@@ -104,7 +104,6 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 * `healthcheck`: if set to true, system data will be shown on ``/api/pleroma/healthcheck``.
-* `repo_batch_size`: Repo batch size. The number of loaded rows from the database to the memory for processing chunks. E.g. deleting user statuses.
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
@@ -170,13 +169,13 @@ config :pleroma, :frontend_configurations,
 
 These settings **need to be complete**, they will override the defaults.
 
-NOTE: for versions < 1.0, you need to set [`:fe`](#fe) to false, as shown a few lines below. 
+NOTE: for versions < 1.0, you need to set [`:fe`](#fe) to false, as shown a few lines below.
 
 ## :fe
 __THIS IS DEPRECATED__
 
 If you are using this method, please change it to the [`frontend_configurations`](#frontend_configurations) method.
-Please **set this option to false** in your config like this: 
+Please **set this option to false** in your config like this:
 
 ```elixir
 config :pleroma, :fe, false
