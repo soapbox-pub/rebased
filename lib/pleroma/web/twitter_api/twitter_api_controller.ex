@@ -182,6 +182,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
       |> Map.put(:visibility, "direct")
+      |> Map.put(:order, :desc)
 
     activities =
       ActivityPub.fetch_activities_query([user.ap_id], params)
