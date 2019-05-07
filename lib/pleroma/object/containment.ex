@@ -1,7 +1,5 @@
 defmodule Pleroma.Object.Containment do
   @moduledoc """
-  help on getting the origin of contained objects
-
   This module contains some useful functions for containing objects to specific
   origins and determining those origins.  They previously lived in the
   ActivityPub `Transmogrifier` module.
