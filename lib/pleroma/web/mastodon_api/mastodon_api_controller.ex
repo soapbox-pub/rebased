@@ -37,6 +37,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
 
   alias Pleroma.Web.ControllerHelper
@@ -50,7 +51,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   action_fallback(:errors)
 
   def create_app(conn, params) do
-    scopes = ControllerHelper.oauth_scopes(params, ["read"])
+    scopes = Scopes.fetch_scopes(params, ["read"])
 
     app_attrs =
       params

@@ -15,8 +15,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
   alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
-
-  import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
+  alias Pleroma.Web.OAuth.Scopes
 
   if Pleroma.Config.oauth_consumer_enabled?(), do: plug(Ueberauth)
 
@@ -57,7 +56,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   defp do_authorize(conn, params) do
     app = Repo.get_by(App, client_id: params["client_id"])
     available_scopes = (app && app.scopes) || []
-    scopes = oauth_scopes(params, nil) || available_scopes
+    scopes = Scopes.fetch_scopes(params, available_scopes)
 
     # Note: `params` might differ from `conn.params`; use `@params` not `@conn.params` in template
     render(conn, Authenticator.auth_template(), %{
@@ -113,7 +112,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp handle_create_authorization_error(
          conn,
-         {scopes_issue, _},
+         {:error, scopes_issue},
          %{"authorization" => _} = params
        )
        when scopes_issue in [:unsupported_scopes, :missing_scopes] do
@@ -184,9 +183,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
          %App{} = app <- get_app_from_request(conn, params),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          {:user_active, true} <- {:user_active, !user.info.deactivated},
-         scopes <- oauth_scopes(params, app.scopes),
-         [] <- scopes -- app.scopes,
-         true <- Enum.any?(scopes),
+         {:ok, scopes} <- validate_scopes(app, params),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
       json(conn, response_token(user, token))
@@ -247,8 +244,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   @doc "Prepares OAuth request to provider for Ueberauth"
   def prepare_request(conn, %{"provider" => provider, "authorization" => auth_attrs}) do
     scope =
-      oauth_scopes(auth_attrs, [])
-      |> Enum.join(" ")
+      auth_attrs
+      |> Scopes.fetch_scopes([])
+      |> Scopes.to_string()
 
     state =
       auth_attrs
@@ -326,7 +324,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       client_id: auth_attrs["client_id"],
       redirect_uri: auth_attrs["redirect_uri"],
       state: auth_attrs["state"],
-      scopes: oauth_scopes(auth_attrs, []),
+      scopes: Scopes.fetch_scopes(auth_attrs, []),
       nickname: auth_attrs["nickname"],
       email: auth_attrs["email"]
     })
@@ -401,10 +399,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
            {:get_user, (user && {:ok, user}) || Authenticator.get_user(conn)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         scopes <- oauth_scopes(auth_attrs, []),
-         {:unsupported_scopes, []} <- {:unsupported_scopes, scopes -- app.scopes},
-         # Note: `scope` param is intentionally not optional in this context
-         {:missing_scopes, false} <- {:missing_scopes, scopes == []},
+         {:ok, scopes} <- validate_scopes(app, auth_attrs),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)} do
       Authorization.create_authorization(app, user, scopes)
     end
@@ -457,5 +452,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       me: user.ap_id
     }
     |> Map.merge(opts)
+  end
+
+  @spec validate_scopes(App.t(), map()) ::
+          {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
+  defp validate_scopes(app, params) do
+    params
+    |> Scopes.fetch_scopes(app.scopes)
+    |> Scopes.validates(app.scopes)
   end
 end
