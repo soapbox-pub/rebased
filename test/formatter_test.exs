@@ -147,7 +147,7 @@ defmodule Pleroma.FormatterTest do
     end
 
     test "gives a replacement for user links when the user is using Osada" do
-      mike = User.get_or_fetch("mike@osada.macgirvin.com")
+      {:ok, mike} = User.get_or_fetch("mike@osada.macgirvin.com")
 
       text = "@mike@osada.macgirvin.com test"
 
@@ -248,7 +248,7 @@ defmodule Pleroma.FormatterTest do
     text = "I love :firefox:"
 
     expected_result =
-      "I love <img height=\"32px\" width=\"32px\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
+      "I love <img class=\"emoji\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
 
     assert Formatter.emojify(text) == expected_result
   end
@@ -263,7 +263,7 @@ defmodule Pleroma.FormatterTest do
     }
 
     expected_result =
-      "I love <img height=\"32px\" width=\"32px\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
+      "I love <img class=\"emoji\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
 
     assert Formatter.emojify(text, custom_emoji) == expected_result
   end

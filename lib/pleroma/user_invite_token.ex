@@ -24,7 +24,7 @@ defmodule Pleroma.UserInviteToken do
     timestamps()
   end
 
-  @spec create_invite(map()) :: UserInviteToken.t()
+  @spec create_invite(map()) :: {:ok, UserInviteToken.t()}
   def create_invite(params \\ %{}) do
     %UserInviteToken{}
     |> cast(params, [:max_use, :expires_at])

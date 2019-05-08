@@ -300,6 +300,65 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert status["url"] != direct.data["id"]
   end
 
+  test "Conversations", %{conn: conn} do
+    user_one = insert(:user)
+    user_two = insert(:user)
+
+    {:ok, user_two} = User.follow(user_two, user_one)
+
+    {:ok, direct} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, _follower_only} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "private"
+      })
+
+    res_conn =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/conversations")
+
+    assert response = json_response(res_conn, 200)
+
+    assert [
+             %{
+               "id" => res_id,
+               "accounts" => res_accounts,
+               "last_status" => res_last_status,
+               "unread" => unread
+             }
+           ] = response
+
+    assert length(res_accounts) == 2
+    assert is_binary(res_id)
+    assert unread == true
+    assert res_last_status["id"] == direct.id
+
+    # Apparently undocumented API endpoint
+    res_conn =
+      conn
+      |> assign(:user, user_one)
+      |> post("/api/v1/conversations/#{res_id}/read")
+
+    assert response = json_response(res_conn, 200)
+    assert length(response["accounts"]) == 2
+    assert response["last_status"]["id"] == direct.id
+    assert response["unread"] == false
+
+    # (vanilla) Mastodon frontend behaviour
+    res_conn =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/statuses/#{res_last_status["id"]}/context")
+
+    assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
+  end
+
   test "doesn't include DMs from blocked users", %{conn: conn} do
     blocker = insert(:user)
     blocked = insert(:user)
@@ -2350,6 +2409,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           assert json_response(conn, 200)
         end
       end
+    end
+
+    test "updates profile emojos", %{conn: conn} do
+      user = insert(:user)
+
+      note = "*sips :blank:*"
+      name = "I am :firefox:"
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "note" => note,
+          "display_name" => name
+        })
+
+      assert json_response(conn, 200)
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}")
+
+      assert user = json_response(conn, 200)
+
+      assert user["note"] == note
+      assert user["display_name"] == name
+      assert [%{"shortcode" => "blank"}, %{"shortcode" => "firefox"}] = user["emojis"]
     end
   end
 

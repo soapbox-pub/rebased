@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
   alias Pleroma.Activity
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.User
@@ -67,6 +68,15 @@ defmodule Pleroma.Web.Streamer do
       Logger.debug("Trying to push direct message to #{user_topic}\n\n")
       push_to_socket(topics, user_topic, item)
     end)
+
+    {:noreply, topics}
+  end
+
+  def handle_cast(%{action: :stream, topic: "participation", item: participation}, topics) do
+    user_topic = "direct:#{participation.user_id}"
+    Logger.debug("Trying to push a conversation participation to #{user_topic}\n\n")
+
+    push_to_socket(topics, user_topic, participation)
 
     {:noreply, topics}
   end
@@ -192,6 +202,19 @@ defmodule Pleroma.Web.Streamer do
     |> Jason.encode!()
   end
 
+  def represent_conversation(%Participation{} = participation) do
+    %{
+      event: "conversation",
+      payload:
+        Pleroma.Web.MastodonAPI.ConversationView.render("participation.json", %{
+          participation: participation,
+          user: participation.user
+        })
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
   def push_to_socket(topics, topic, %Activity{data: %{"type" => "Announce"}} = item) do
     Enum.each(topics[topic] || [], fn socket ->
       # Get the current user so we have up-to-date blocks etc.
@@ -211,6 +234,12 @@ defmodule Pleroma.Web.Streamer do
       else
         send(socket.transport_pid, {:text, represent_update(item)})
       end
+    end)
+  end
+
+  def push_to_socket(topics, topic, %Participation{} = participation) do
+    Enum.each(topics[topic] || [], fn socket ->
+      send(socket.transport_pid, {:text, represent_conversation(participation)})
     end)
   end
 

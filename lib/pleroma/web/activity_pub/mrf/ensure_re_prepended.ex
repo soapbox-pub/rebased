@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.MRF.EnsureRePrepended do
   alias Pleroma.Object
 
+  @moduledoc "Ensure a re: is prepended on replies to a post with a Subject"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   @reply_prefix Regex.compile!("^re:[[:space:]]*", [:caseless])

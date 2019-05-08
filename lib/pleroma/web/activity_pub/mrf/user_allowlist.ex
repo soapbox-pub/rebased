@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
   alias Pleroma.Config
 
+  @moduledoc "Accept-list of users from specified instances"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp filter_by_list(object, []), do: {:ok, object}

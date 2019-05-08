@@ -5,6 +5,23 @@
 defmodule Pleroma.Factory do
   use ExMachina.Ecto, repo: Pleroma.Repo
 
+  def participation_factory do
+    conversation = insert(:conversation)
+    user = insert(:user)
+
+    %Pleroma.Conversation.Participation{
+      conversation: conversation,
+      user: user,
+      read: false
+    }
+  end
+
+  def conversation_factory do
+    %Pleroma.Conversation{
+      ap_id: sequence(:ap_id, &"https://some_conversation/#{&1}")
+    }
+  end
+
   def user_factory do
     user = %Pleroma.User{
       name: sequence(:name, &"Test テスト User #{&1}"),

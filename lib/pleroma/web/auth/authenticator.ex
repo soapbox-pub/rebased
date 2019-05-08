@@ -42,4 +42,30 @@ defmodule Pleroma.Web.Auth.Authenticator do
     implementation().oauth_consumer_template() ||
       Pleroma.Config.get([:auth, :oauth_consumer_template], "consumer.html")
   end
+
+  @doc "Gets user by nickname or email for auth."
+  @spec fetch_user(String.t()) :: User.t() | nil
+  def fetch_user(name) do
+    User.get_by_nickname_or_email(name)
+  end
+
+  # Gets name and password from conn
+  #
+  @spec fetch_credentials(Plug.Conn.t() | map()) ::
+          {:ok, {name :: any, password :: any}} | {:error, :invalid_credentials}
+  def fetch_credentials(%Plug.Conn{params: params} = _),
+    do: fetch_credentials(params)
+
+  def fetch_credentials(params) do
+    case params do
+      %{"authorization" => %{"name" => name, "password" => password}} ->
+        {:ok, {name, password}}
+
+      %{"grant_type" => "password", "username" => name, "password" => password} ->
+        {:ok, {name, password}}
+
+      _ ->
+        {:error, :invalid_credentials}
+    end
+  end
 end

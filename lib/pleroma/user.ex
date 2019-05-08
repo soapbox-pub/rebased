@@ -10,8 +10,6 @@ defmodule Pleroma.User do
 
   alias Comeonin.Pbkdf2
   alias Pleroma.Activity
-  alias Pleroma.Bookmark
-  alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Registration
@@ -56,7 +54,6 @@ defmodule Pleroma.User do
     field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
     field(:last_digest_emailed_at, :naive_datetime)
-    has_many(:bookmarks, Bookmark)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
     embeds_one(:info, Pleroma.User.Info)
@@ -424,7 +421,7 @@ defmodule Pleroma.User do
     Enum.map(
       followed_identifiers,
       fn followed_identifier ->
-        with %User{} = followed <- get_or_fetch(followed_identifier),
+        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
              {:ok, follower} <- maybe_direct_follow(follower, followed),
              {:ok, _} <- ActivityPub.follow(follower, followed) do
           followed
@@ -508,7 +505,15 @@ defmodule Pleroma.User do
 
   def get_cached_by_nickname(nickname) do
     key = "nickname:#{nickname}"
-    Cachex.fetch!(:user_cache, key, fn _ -> get_or_fetch_by_nickname(nickname) end)
+
+    Cachex.fetch!(:user_cache, key, fn ->
+      user_result = get_or_fetch_by_nickname(nickname)
+
+      case user_result do
+        {:ok, user} -> {:commit, user}
+        {:error, _error} -> {:ignore, nil}
+      end
+    end)
   end
 
   def get_cached_by_nickname_or_id(nickname_or_id) do
@@ -544,7 +549,7 @@ defmodule Pleroma.User do
 
   def get_or_fetch_by_nickname(nickname) do
     with %User{} = user <- get_by_nickname(nickname) do
-      user
+      {:ok, user}
     else
       _e ->
         with [_nick, _domain] <- String.split(nickname, "@"),
@@ -554,9 +559,9 @@ defmodule Pleroma.User do
             {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
           end
 
-          user
+          {:ok, user}
         else
-          _e -> nil
+          _e -> {:error, "not found " <> nickname}
         end
     end
   end
@@ -903,7 +908,7 @@ defmodule Pleroma.User do
     Enum.map(
       blocked_identifiers,
       fn blocked_identifier ->
-        with %User{} = blocked <- get_or_fetch(blocked_identifier),
+        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
              {:ok, blocker} <- block(blocker, blocked),
              {:ok, _} <- ActivityPub.block(blocker, blocked) do
           blocked
@@ -1158,7 +1163,12 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def delete(%User{} = user) do
+  @spec delete(User.t()) :: :ok
+  def delete(%User{} = user),
+    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:delete, user])
+
+  @spec perform(atom(), User.t()) :: {:ok, User.t()}
+  def perform(:delete, %User{} = user) do
     {:ok, user} = User.deactivate(user)
 
     # Remove all relationships
@@ -1174,21 +1184,22 @@ defmodule Pleroma.User do
   end
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do
-    Activity
-    |> where(actor: ^ap_id)
-    |> Activity.with_preloaded_object()
-    |> Repo.all()
-    |> Enum.each(fn
-      %{data: %{"type" => "Create"}} = activity ->
-        activity |> Object.normalize() |> ActivityPub.delete()
+    stream =
+      ap_id
+      |> Activity.query_by_actor()
+      |> Activity.with_preloaded_object()
+      |> Repo.stream()
 
-      # TODO: Do something with likes, follows, repeats.
-      _ ->
-        "Doing nothing"
-    end)
+    Repo.transaction(fn -> Enum.each(stream, &delete_activity(&1)) end, timeout: :infinity)
 
     {:ok, user}
   end
+
+  defp delete_activity(%{data: %{"type" => "Create"}} = activity) do
+    Object.normalize(activity) |> ActivityPub.delete()
+  end
+
+  defp delete_activity(_activity), do: "Doing nothing"
 
   def html_filter_policy(%User{info: %{no_rich_text: true}}) do
     Pleroma.HTML.Scrubber.TwitterText
@@ -1203,11 +1214,11 @@ defmodule Pleroma.User do
 
     case ap_try do
       {:ok, user} ->
-        user
+        {:ok, user}
 
       _ ->
         case OStatus.make_user(ap_id) do
-          {:ok, user} -> user
+          {:ok, user} -> {:ok, user}
           _ -> {:error, "Could not fetch by AP id"}
         end
     end
@@ -1217,20 +1228,20 @@ defmodule Pleroma.User do
     user = get_cached_by_ap_id(ap_id)
 
     if !is_nil(user) and !User.needs_update?(user) do
-      user
+      {:ok, user}
     else
       # Whether to fetch initial posts for the user (if it's a new user & the fetching is enabled)
       should_fetch_initial = is_nil(user) and Pleroma.Config.get([:fetch_initial_posts, :enabled])
 
-      user = fetch_by_ap_id(ap_id)
+      resp = fetch_by_ap_id(ap_id)
 
       if should_fetch_initial do
-        with %User{} = user do
+        with {:ok, %User{} = user} = resp do
           {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
         end
       end
 
-      user
+      resp
     end
   end
 
@@ -1272,7 +1283,7 @@ defmodule Pleroma.User do
   end
 
   def get_public_key_for_ap_id(ap_id) do
-    with %User{} = user <- get_or_fetch_by_ap_id(ap_id),
+    with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
          {:ok, public_key} <- public_key_from_info(user.info) do
       {:ok, public_key}
     else
@@ -1324,18 +1335,15 @@ defmodule Pleroma.User do
     end
   end
 
-  def parse_bio(bio, user \\ %User{info: %{source_data: %{}}})
-  def parse_bio(nil, _user), do: ""
-  def parse_bio(bio, _user) when bio == "", do: bio
+  def parse_bio(bio) when is_binary(bio) and bio != "" do
+    bio
+    |> CommonUtils.format_input("text/plain", mentions_format: :full)
+    |> elem(0)
+  end
 
-  def parse_bio(bio, user) do
-    emoji =
-      (user.info.source_data["tag"] || [])
-      |> Enum.filter(fn %{"type" => t} -> t == "Emoji" end)
-      |> Enum.map(fn %{"icon" => %{"url" => url}, "name" => name} ->
-        {String.trim(name, ":"), url}
-      end)
+  def parse_bio(_), do: ""
 
+  def parse_bio(bio, user) when is_binary(bio) and bio != "" do
     # TODO: get profile URLs other than user.ap_id
     profile_urls = [user.ap_id]
 
@@ -1345,8 +1353,9 @@ defmodule Pleroma.User do
       rel: &RelMe.maybe_put_rel_me(&1, profile_urls)
     )
     |> elem(0)
-    |> Formatter.emojify(emoji)
   end
+
+  def parse_bio(_, _), do: ""
 
   def tag(user_identifiers, tags) when is_list(user_identifiers) do
     Repo.transaction(fn ->

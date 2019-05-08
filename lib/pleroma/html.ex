@@ -28,12 +28,18 @@ defmodule Pleroma.HTML do
   def filter_tags(html), do: filter_tags(html, nil)
   def strip_tags(html), do: Scrubber.scrub(html, Scrubber.StripTags)
 
-  def get_cached_scrubbed_html_for_activity(content, scrubbers, activity, key \\ "") do
+  def get_cached_scrubbed_html_for_activity(
+        content,
+        scrubbers,
+        activity,
+        key \\ "",
+        callback \\ fn x -> x end
+      ) do
     key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
 
     Cachex.fetch!(:scrubber_cache, key, fn _key ->
       object = Pleroma.Object.normalize(activity)
-      ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false)
+      ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false, callback)
     end)
   end
 
@@ -42,24 +48,27 @@ defmodule Pleroma.HTML do
       content,
       HtmlSanitizeEx.Scrubber.StripTags,
       activity,
-      key
+      key,
+      &HtmlEntities.decode/1
     )
   end
 
   def ensure_scrubbed_html(
         content,
         scrubbers,
-        false = _fake
+        fake,
+        callback
       ) do
-    {:commit, filter_tags(content, scrubbers)}
-  end
+    content =
+      content
+      |> filter_tags(scrubbers)
+      |> callback.()
 
-  def ensure_scrubbed_html(
-        content,
-        scrubbers,
-        true = _fake
-      ) do
-    {:ignore, filter_tags(content, scrubbers)}
+    if fake do
+      {:ignore, content}
+    else
+      {:commit, content}
+    end
   end
 
   defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
@@ -142,6 +151,7 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
     Meta.allow_tag_with_these_attributes("img", [
       "width",
       "height",
+      "class",
       "title",
       "alt"
     ])
@@ -212,6 +222,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
     Meta.allow_tag_with_these_attributes("img", [
       "width",
       "height",
+      "class",
       "title",
       "alt"
     ])

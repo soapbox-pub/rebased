@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.NoOpPolicy do
+  @moduledoc "Does nothing (lets the messages go through unmodified)"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   @impl true

@@ -9,6 +9,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   alias Ecto.Changeset
   alias Pleroma.Activity
+  alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -181,6 +182,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
       |> Map.put(:visibility, "direct")
+      |> Map.put(:order, :desc)
 
     activities =
       ActivityPub.fetch_activities_query([user.ap_id], params)
@@ -653,7 +655,22 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp parse_profile_bio(user, params) do
     if bio = params["description"] do
-      Map.put(params, "bio", User.parse_bio(bio, user))
+      emojis_text = (params["description"] || "") <> " " <> (params["name"] || "")
+
+      emojis =
+        ((user.info.emoji || []) ++ Formatter.get_emoji_map(emojis_text))
+        |> Enum.dedup()
+
+      user_info =
+        user.info
+        |> Map.put(
+          "emoji",
+          emojis
+        )
+
+      params
+      |> Map.put("bio", User.parse_bio(bio, user))
+      |> Map.put("info", user_info)
     else
       params
     end

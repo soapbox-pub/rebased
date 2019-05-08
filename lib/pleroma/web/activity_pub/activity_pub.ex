@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
+  alias Pleroma.Conversation
   alias Pleroma.Instances
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -141,7 +142,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       end)
 
       Notification.create_notifications(activity)
+
+      participations =
+        activity
+        |> Conversation.create_or_bump_for()
+        |> get_participations()
+
       stream_out(activity)
+      stream_out_participations(participations)
       {:ok, activity}
     else
       %Activity{} = activity ->
@@ -164,11 +172,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  defp get_participations({:ok, %{participations: participations}}), do: participations
+  defp get_participations(_), do: []
+
+  def stream_out_participations(participations) do
+    participations =
+      participations
+      |> Repo.preload(:user)
+
+    Enum.each(participations, fn participation ->
+      Pleroma.Web.Streamer.stream("participation", participation)
+    end)
+  end
+
   def stream_out(activity) do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
     if activity.data["type"] in ["Create", "Announce", "Delete"] do
-      object = Object.normalize(activity)
       Pleroma.Web.Streamer.stream("user", activity)
       Pleroma.Web.Streamer.stream("list", activity)
 
@@ -180,6 +200,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         end
 
         if activity.data["type"] in ["Create"] do
+          object = Object.normalize(activity)
+
           object.data
           |> Map.get("tag", [])
           |> Enum.filter(fn tag -> is_bitstring(tag) end)
@@ -194,6 +216,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           end
         end
       else
+        # TODO: Write test, replace with visibility test
         if !Enum.member?(activity.data["cc"] || [], public) &&
              !Enum.member?(
                activity.data["to"],
@@ -456,35 +479,44 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def fetch_activities_for_context(context, opts \\ %{}) do
+  defp fetch_activities_for_context_query(context, opts) do
     public = ["https://www.w3.org/ns/activitystreams#Public"]
 
     recipients =
       if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
 
-    query = from(activity in Activity)
-
-    query =
-      query
-      |> restrict_blocked(opts)
-      |> restrict_recipients(recipients, opts["user"])
-
-    query =
-      from(
-        activity in query,
-        where:
-          fragment(
-            "?->>'type' = ? and ?->>'context' = ?",
-            activity.data,
-            "Create",
-            activity.data,
-            ^context
-          ),
-        order_by: [desc: :id]
+    from(activity in Activity)
+    |> restrict_blocked(opts)
+    |> restrict_recipients(recipients, opts["user"])
+    |> where(
+      [activity],
+      fragment(
+        "?->>'type' = ? and ?->>'context' = ?",
+        activity.data,
+        "Create",
+        activity.data,
+        ^context
       )
-      |> Activity.with_preloaded_object()
+    )
+    |> order_by([activity], desc: activity.id)
+  end
 
-    Repo.all(query)
+  @spec fetch_activities_for_context(String.t(), keyword() | map()) :: [Activity.t()]
+  def fetch_activities_for_context(context, opts \\ %{}) do
+    context
+    |> fetch_activities_for_context_query(opts)
+    |> Activity.with_preloaded_object()
+    |> Repo.all()
+  end
+
+  @spec fetch_latest_activity_id_for_context(String.t(), keyword() | map()) ::
+          Pleroma.FlakeId.t() | nil
+  def fetch_latest_activity_id_for_context(context, opts \\ %{}) do
+    context
+    |> fetch_activities_for_context_query(opts)
+    |> limit(1)
+    |> select([a], a.id)
+    |> Repo.one()
   end
 
   def fetch_public_activities(opts \\ %{}) do
@@ -783,11 +815,32 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_object()
   end
 
+  defp maybe_preload_bookmarks(query, %{"skip_preload" => true}), do: query
+
+  defp maybe_preload_bookmarks(query, opts) do
+    query
+    |> Activity.with_preloaded_bookmark(opts["user"])
+  end
+
+  defp maybe_order(query, %{order: :desc}) do
+    query
+    |> order_by(desc: :id)
+  end
+
+  defp maybe_order(query, %{order: :asc}) do
+    query
+    |> order_by(asc: :id)
+  end
+
+  defp maybe_order(query, _), do: query
+
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query = from(activity in Activity)
 
     base_query
     |> maybe_preload_objects(opts)
+    |> maybe_preload_bookmarks(opts)
+    |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
