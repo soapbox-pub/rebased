@@ -287,6 +287,29 @@ defmodule Pleroma.Activity do
     |> Repo.all()
   end
 
+  def follow_requests_for_actor(%Pleroma.User{ap_id: ap_id}) do
+    from(
+      a in Activity,
+      where:
+        fragment(
+          "? ->> 'type' = 'Follow'",
+          a.data
+        ),
+      where:
+        fragment(
+          "? ->> 'state' = 'pending'",
+          a.data
+        ),
+      where:
+        fragment(
+          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
+          a.data,
+          a.data,
+          ^ap_id
+        )
+    )
+  end
+
   @spec query_by_actor(actor()) :: Ecto.Query.t()
   def query_by_actor(actor) do
     from(a in Activity, where: a.actor == ^actor)

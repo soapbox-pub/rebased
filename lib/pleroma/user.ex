@@ -254,10 +254,7 @@ defmodule Pleroma.User do
     candidates = Pleroma.Config.get([:instance, :autofollowed_nicknames])
 
     autofollowed_users =
-      from(u in User,
-        where: u.local == true,
-        where: u.nickname in ^candidates
-      )
+      User.Query.build(%{nickname: candidates, local: true})
       |> Repo.all()
 
     follow_all(user, autofollowed_users)
@@ -576,19 +573,17 @@ defmodule Pleroma.User do
     )
   end
 
-  def get_followers_query(%User{id: id, follower_address: follower_address}, nil) do
-    from(
-      u in User,
-      where: fragment("? <@ ?", ^[follower_address], u.following),
-      where: u.id != ^id
-    )
+  @spec get_followers_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
+  def get_followers_query(%User{} = user, nil) do
+    User.Query.build(%{followers: user})
   end
 
   def get_followers_query(user, page) do
     from(u in get_followers_query(user, nil))
-    |> paginate(page, 20)
+    |> User.Query.paginate(page, 20)
   end
 
+  @spec get_followers_query(User.t()) :: Ecto.Query.t()
   def get_followers_query(user), do: get_followers_query(user, nil)
 
   def get_followers(user, page \\ nil) do
@@ -603,19 +598,17 @@ defmodule Pleroma.User do
     Repo.all(from(u in q, select: u.id))
   end
 
-  def get_friends_query(%User{id: id, following: following}, nil) do
-    from(
-      u in User,
-      where: u.follower_address in ^following,
-      where: u.id != ^id
-    )
+  @spec get_friends_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
+  def get_friends_query(%User{} = user, nil) do
+    User.Query.build(%{friends: user})
   end
 
   def get_friends_query(user, page) do
     from(u in get_friends_query(user, nil))
-    |> paginate(page, 20)
+    |> User.Query.paginate(page, 20)
   end
 
+  @spec get_friends_query(User.t()) :: Ecto.Query.t()
   def get_friends_query(user), do: get_friends_query(user, nil)
 
   def get_friends(user, page \\ nil) do
@@ -630,33 +623,10 @@ defmodule Pleroma.User do
     Repo.all(from(u in q, select: u.id))
   end
 
-  def get_follow_requests_query(%User{} = user) do
-    from(
-      a in Activity,
-      where:
-        fragment(
-          "? ->> 'type' = 'Follow'",
-          a.data
-        ),
-      where:
-        fragment(
-          "? ->> 'state' = 'pending'",
-          a.data
-        ),
-      where:
-        fragment(
-          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-          a.data,
-          a.data,
-          ^user.ap_id
-        )
-    )
-  end
-
+  @spec get_follow_requests(User.t()) :: {:ok, [User.t()]}
   def get_follow_requests(%User{} = user) do
     users =
-      user
-      |> User.get_follow_requests_query()
+      Activity.follow_requests_for_actor(user)
       |> join(:inner, [a], u in User, on: a.actor == u.ap_id)
       |> where([a, u], not fragment("? @> ?", u.following, ^[user.follower_address]))
       |> group_by([a, u], u.id)
@@ -729,10 +699,7 @@ defmodule Pleroma.User do
 
   def update_follower_count(%User{} = user) do
     follower_count_query =
-      User
-      |> where([u], ^user.follower_address in u.following)
-      |> where([u], u.id != ^user.id)
-      |> select([u], %{count: count(u.id)})
+      User.Query.build(%{followers: user}) |> select([u], %{count: count(u.id)})
 
     User
     |> where(id: ^user.id)
@@ -755,38 +722,19 @@ defmodule Pleroma.User do
     end
   end
 
-  def get_users_from_set_query(ap_ids, false) do
-    from(
-      u in User,
-      where: u.ap_id in ^ap_ids
-    )
-  end
-
-  def get_users_from_set_query(ap_ids, true) do
-    query = get_users_from_set_query(ap_ids, false)
-
-    from(
-      u in query,
-      where: u.local == true
-    )
-  end
-
+  @spec get_users_from_set([String.t()], boolean()) :: [User.t()]
   def get_users_from_set(ap_ids, local_only \\ true) do
-    get_users_from_set_query(ap_ids, local_only)
+    criteria = %{ap_id: ap_ids}
+    criteria = if local_only, do: Map.put(criteria, :local, true), else: criteria
+
+    User.Query.build(criteria)
     |> Repo.all()
   end
 
+  @spec get_recipients_from_activity(Activity.t()) :: [User.t()]
   def get_recipients_from_activity(%Activity{recipients: to}) do
-    query =
-      from(
-        u in User,
-        where: u.ap_id in ^to,
-        or_where: fragment("? && ?", u.following, ^to)
-      )
-
-    query = from(u in query, where: u.local == true)
-
-    Repo.all(query)
+    User.Query.build(%{recipients_from_activity: to, local: true})
+    |> Repo.all()
   end
 
   def search(query, resolve \\ false, for_user \\ nil) do
@@ -1048,14 +996,23 @@ defmodule Pleroma.User do
     end
   end
 
-  def muted_users(user),
-    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.mutes))
+  @spec muted_users(User.t()) :: [User.t()]
+  def muted_users(user) do
+    User.Query.build(%{ap_id: user.info.mutes})
+    |> Repo.all()
+  end
 
-  def blocked_users(user),
-    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.blocks))
+  @spec blocked_users(User.t()) :: [User.t()]
+  def blocked_users(user) do
+    User.Query.build(%{ap_id: user.info.blocks})
+    |> Repo.all()
+  end
 
-  def subscribers(user),
-    do: Repo.all(from(u in User, where: u.ap_id in ^user.info.subscribers))
+  @spec subscribers(User.t()) :: [User.t()]
+  def subscribers(user) do
+    User.Query.build(%{ap_id: user.info.subscribers})
+    |> Repo.all()
+  end
 
   def block_domain(user, domain) do
     info_cng =
@@ -1079,69 +1036,6 @@ defmodule Pleroma.User do
       |> put_embed(:info, info_cng)
 
     update_and_set_cache(cng)
-  end
-
-  def maybe_local_user_query(query, local) do
-    if local, do: local_user_query(query), else: query
-  end
-
-  def local_user_query(query \\ User) do
-    from(
-      u in query,
-      where: u.local == true,
-      where: not is_nil(u.nickname)
-    )
-  end
-
-  def maybe_external_user_query(query, external) do
-    if external, do: external_user_query(query), else: query
-  end
-
-  def external_user_query(query \\ User) do
-    from(
-      u in query,
-      where: u.local == false,
-      where: not is_nil(u.nickname)
-    )
-  end
-
-  def maybe_active_user_query(query, active) do
-    if active, do: active_user_query(query), else: query
-  end
-
-  def active_user_query(query \\ User) do
-    from(
-      u in query,
-      where: fragment("not (?->'deactivated' @> 'true')", u.info),
-      where: not is_nil(u.nickname)
-    )
-  end
-
-  def maybe_deactivated_user_query(query, deactivated) do
-    if deactivated, do: deactivated_user_query(query), else: query
-  end
-
-  def deactivated_user_query(query \\ User) do
-    from(
-      u in query,
-      where: fragment("(?->'deactivated' @> 'true')", u.info),
-      where: not is_nil(u.nickname)
-    )
-  end
-
-  def active_local_user_query do
-    from(
-      u in local_user_query(),
-      where: fragment("not (?->'deactivated' @> 'true')", u.info)
-    )
-  end
-
-  def moderator_user_query do
-    from(
-      u in User,
-      where: u.local == true,
-      where: fragment("?->'is_moderator' @> 'true'", u.info)
-    )
   end
 
   def deactivate(%User{} = user, status \\ true) do
@@ -1306,7 +1200,7 @@ defmodule Pleroma.User do
   def ap_enabled?(_), do: false
 
   @doc "Gets or fetch a user by uri or nickname."
-  @spec get_or_fetch(String.t()) :: User.t()
+  @spec get_or_fetch(String.t()) :: {:ok, User.t()} | {:error, String.t()}
   def get_or_fetch("http" <> _host = uri), do: get_or_fetch_by_ap_id(uri)
   def get_or_fetch(nickname), do: get_or_fetch_by_nickname(nickname)
 
@@ -1423,20 +1317,10 @@ defmodule Pleroma.User do
     }
   end
 
+  @spec all_superusers() :: [User.t()]
   def all_superusers do
-    from(
-      u in User,
-      where: u.local == true,
-      where: fragment("?->'is_admin' @> 'true' OR ?->'is_moderator' @> 'true'", u.info, u.info)
-    )
+    User.Query.build(%{super_users: true, local: true})
     |> Repo.all()
-  end
-
-  defp paginate(query, page, page_size) do
-    from(u in query,
-      limit: ^page_size,
-      offset: ^((page - 1) * page_size)
-    )
   end
 
   def showing_reblogs?(%User{} = user, %User{} = target) do
