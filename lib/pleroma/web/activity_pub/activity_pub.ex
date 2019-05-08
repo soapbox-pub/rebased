@@ -533,22 +533,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_visibility(query, %{visibility: visibility})
        when is_list(visibility) do
     if Enum.all?(visibility, &(&1 in @valid_visibilities)) do
-      query =
-        from(
-          a in query,
-          where:
-            fragment(
-              "activity_visibility(?, ?, ?) = ANY (?)",
-              a.actor,
-              a.recipients,
-              a.data,
-              ^visibility
-            )
-        )
-
-      Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
-      query
+      from(
+        a in query,
+        where:
+          fragment(
+            "activity_visibility(?, ?, ?) = ANY (?)",
+            a.actor,
+            a.recipients,
+            a.data,
+            ^visibility
+          )
+      )
     else
       Logger.error("Could not restrict visibility to #{visibility}")
     end
@@ -556,16 +551,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_visibility(query, %{visibility: visibility})
        when visibility in @valid_visibilities do
-    query =
-      from(
-        a in query,
-        where:
-          fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
-      )
-
-    Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
-    query
+    from(
+      a in query,
+      where:
+        fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
+    )
   end
 
   defp restrict_visibility(_query, %{visibility: visibility})
