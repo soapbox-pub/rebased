@@ -8,15 +8,20 @@ Authentication is required and the user must be an admin.
 
 - Method `GET`
 - Query Params:
-  - *optional* `query`: **string** search term
+  - *optional* `query`: **string** search term (e.g. nickname, domain, nickname@domain)
   - *optional* `filters`: **string** comma-separated string of filters:
     - `local`: only local users
     - `external`: only external users
     - `active`: only active users
     - `deactivated`: only deactivated users
+    - `is_admin`: users with admin role
+    - `is_moderator`: users with moderator role
   - *optional* `page`: **integer** page number
   - *optional* `page_size`: **integer** number of users per page (default is `50`)
-- Example: `https://mypleroma.org/api/pleroma/admin/users?query=john&filters=local,active&page=1&page_size=10`
+  - *optional* `tags`: **[string]** tags list
+  - *optional* `name`: **string** user display name
+  - *optional* `email`: **string** user email
+- Example: `https://mypleroma.org/api/pleroma/admin/users?query=john&filters=local,active&page=1&page_size=10&tags[]=some_tag&tags[]=another_tag&name=display_name&email=email@example.com`
 - Response:
 
 ```JSON
