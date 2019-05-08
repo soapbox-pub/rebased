@@ -109,7 +109,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
           ])
         )
 
-        binary_archive = Tesla.get!(src_url).body
+        binary_archive = Tesla.get!(client(), src_url).body
         archive_sha = :crypto.hash(:sha256, binary_archive) |> Base.encode16()
 
         sha_status_text = ["SHA256 of ", :bright, pack_name, :normal, " source file is ", :bright]
@@ -137,7 +137,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
           ])
         )
 
-        files = Tesla.get!(files_url).body |> Poison.decode!()
+        files = Tesla.get!(client(), files_url).body |> Poison.decode!()
 
         IO.puts(IO.ANSI.format(["Unpacking ", :bright, pack_name]))
 
@@ -213,7 +213,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     IO.puts("Downloading the pack and generating SHA256")
 
-    binary_archive = Tesla.get!(src).body
+    binary_archive = Tesla.get!(client(), src).body
     archive_sha = :crypto.hash(:sha256, binary_archive) |> Base.encode16()
 
     IO.puts("SHA256 is #{archive_sha}")
@@ -272,7 +272,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   defp fetch_manifest(from) do
     Poison.decode!(
       if String.starts_with?(from, "http") do
-        Tesla.get!(from).body
+        Tesla.get!(client(), from).body
       else
         File.read!(from)
       end
@@ -289,5 +289,13 @@ defmodule Mix.Tasks.Pleroma.Emoji do
         m: :manifest
       ]
     )
+  end
+
+  defp client do
+    middleware = [
+      {Tesla.Middleware.FollowRedirects, [max_redirects: 3]}
+    ]
+
+    Tesla.client(middleware)
   end
 end
