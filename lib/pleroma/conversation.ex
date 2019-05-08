@@ -81,9 +81,12 @@ defmodule Pleroma.Conversation do
       Pleroma.Web.ActivityPub.ActivityPub.fetch_direct_messages_query()
       |> Repo.stream()
 
-    Repo.transaction(fn ->
-      stream
-      |> Enum.each(&create_or_bump_for/1)
-    end)
+    Repo.transaction(
+      fn ->
+        stream
+        |> Enum.each(&create_or_bump_for/1)
+      end,
+      timeout: :infinity
+    )
   end
 end
