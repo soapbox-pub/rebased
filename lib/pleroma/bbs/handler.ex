@@ -95,7 +95,6 @@ defmodule Pleroma.BBS.Handler do
     activities =
       [user.ap_id | user.following]
       |> ActivityPub.fetch_activities(params)
-      |> ActivityPub.contain_timeline(user)
 
     Enum.each(activities, fn activity ->
       puts_activity(activity)
