@@ -1061,4 +1061,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       contain_activity(activity, user)
     end)
   end
+
+  def fetch_direct_messages_query() do
+    Activity
+    |> restrict_type(%{"type" => "Create"})
+    |> restrict_visibility(%{visibility: "direct"})
+  end
 end
