@@ -76,7 +76,7 @@ defmodule Pleroma.Conversation do
   @doc """
   This is only meant to be run by a mix task. It creates conversations/participations for all direct messages in the database.
   """
-  def bump_for_all_activities() do
+  def bump_for_all_activities do
     stream =
       Pleroma.Web.ActivityPub.ActivityPub.fetch_direct_messages_query()
       |> Repo.stream()
