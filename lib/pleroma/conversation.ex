@@ -45,7 +45,7 @@ defmodule Pleroma.Conversation do
   2. Create a participation for all the people involved who don't have one already
   3. Bump all relevant participations to 'unread'
   """
-  def create_or_bump_for(activity) do
+  def create_or_bump_for(activity, opts \\ []) do
     with true <- Pleroma.Web.ActivityPub.Visibility.is_direct?(activity),
          object <- Pleroma.Object.normalize(activity),
          "Create" <- activity.data["type"],
@@ -58,7 +58,7 @@ defmodule Pleroma.Conversation do
       participations =
         Enum.map(users, fn user ->
           {:ok, participation} =
-            Participation.create_for_user_and_conversation(user, conversation)
+            Participation.create_for_user_and_conversation(user, conversation, opts)
 
           participation
         end)
@@ -84,7 +84,7 @@ defmodule Pleroma.Conversation do
     Repo.transaction(
       fn ->
         stream
-        |> Enum.each(&create_or_bump_for/1)
+        |> Enum.each(fn a -> create_or_bump_for(a, read: true) end)
       end,
       timeout: :infinity
     )

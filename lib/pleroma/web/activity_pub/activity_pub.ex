@@ -1056,5 +1056,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Activity
     |> restrict_type(%{"type" => "Create"})
     |> restrict_visibility(%{visibility: "direct"})
+    |> order_by([activity], asc: activity.id)
   end
 end

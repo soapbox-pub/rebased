@@ -24,7 +24,9 @@ defmodule Pleroma.ConversationTest do
     Conversation.bump_for_all_activities()
 
     assert Repo.one(Conversation)
-    assert length(Repo.all(Conversation.Participation)) == 2
+    [participation, _p2] = Repo.all(Conversation.Participation)
+
+    assert participation.read
   end
 
   test "it creates a conversation for given ap_id" do
