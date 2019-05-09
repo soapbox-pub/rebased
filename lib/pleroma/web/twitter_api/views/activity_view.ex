@@ -170,7 +170,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
     created_at = activity.data["published"] |> Utils.date_to_asctime()
     announced_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
 
-    text = "#{user.nickname} retweeted a status."
+    text = "#{user.nickname} repeated a status."
 
     retweeted_status = render("activity.json", Map.merge(opts, %{activity: announced_activity}))
 
