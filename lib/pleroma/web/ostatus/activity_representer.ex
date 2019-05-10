@@ -149,7 +149,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     updated_at = activity.data["published"]
     inserted_at = activity.data["published"]
 
-    _in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
     mentions = activity.recipients |> get_mentions
 
@@ -180,7 +179,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     updated_at = activity.data["published"]
     inserted_at = activity.data["published"]
 
-    _in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
     retweeted_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
