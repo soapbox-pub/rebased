@@ -39,4 +39,6 @@ erl_crash.dump
 # Prevent committing docs files
 /priv/static/doc/*
 
+# Code test coverage
 /cover
+/Elixir.*.coverdata
