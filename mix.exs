@@ -113,7 +113,8 @@ defmodule Pleroma.Mixfile do
       {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"},
       {:benchee, "~> 1.0"},
-      {:esshd, "~> 0.1.0"}
+      {:esshd, "~> 0.1.0"},
+      {:plug_static_index_html, "~> 1.0.0"}
     ] ++ oauth_deps
   end
 
