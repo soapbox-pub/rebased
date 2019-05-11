@@ -1019,12 +1019,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
         where:
           fragment(
-            "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
-            o.data,
+            "? @@ plainto_tsquery('english', ?)",
+            o.fts_content,
             ^query
           ),
         limit: 20,
-        order_by: [desc: :id]
+        order_by: [fragment("? <=> now()::date", o.inserted_at)]
       )
 
     Repo.all(q) ++ fetched
