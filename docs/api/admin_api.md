@@ -45,7 +45,7 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `/api/pleroma/admin/user`
+## `/api/pleroma/admin/users`
 
 ### Remove a user
 
@@ -63,7 +63,7 @@ Authentication is required and the user must be an admin.
   - `password`
 - Response: User’s nickname
 
-## `/api/pleroma/admin/user/follow`
+## `/api/pleroma/admin/users/follow`
 ### Make a user follow another user
 
 - Methods: `POST`
@@ -73,7 +73,7 @@ Authentication is required and the user must be an admin.
 - Response:
  - "ok"
 
-## `/api/pleroma/admin/user/unfollow`
+## `/api/pleroma/admin/users/unfollow`
 ### Make a user unfollow another user
 
 - Methods: `POST`
@@ -116,7 +116,7 @@ Authentication is required and the user must be an admin.
   - `nickname`
   - `tags`
 
-## `/api/pleroma/admin/permission_group/:nickname`
+## `/api/pleroma/admin/users/:nickname/permission_group`
 
 ### Get user user permission groups membership
 
@@ -131,7 +131,7 @@ Authentication is required and the user must be an admin.
 }
 ```
 
-## `/api/pleroma/admin/permission_group/:nickname/:permission_group`
+## `/api/pleroma/admin/users/:nickname/permission_group/:permission_group`
 
 Note: Available `:permission_group` is currently moderator and admin. 404 is returned when the permission group doesn’t exist.
 
@@ -165,7 +165,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On success: JSON of the `user.info`
 - Note: An admin cannot revoke their own admin status.
 
-## `/api/pleroma/admin/activation_status/:nickname`
+## `/api/pleroma/admin/users/:nickname/activation_status`
 
 ### Active or deactivate a user
 
@@ -203,7 +203,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Response:
   - On success: URL of the unfollowed relay
 
-## `/api/pleroma/admin/invite_token`
+## `/api/pleroma/admin/users/invite_token`
 
 ### Get an account registration invite token
 
@@ -215,7 +215,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   ]
 - Response: invite token (base64 string)
 
-## `/api/pleroma/admin/invites`
+## `/api/pleroma/admin/users/invites`
 
 ### Get a list of generated invites
 
@@ -241,7 +241,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 }
 ```
 
-## `/api/pleroma/admin/revoke_invite`
+## `/api/pleroma/admin/users/revoke_invite`
 
 ### Revoke invite by token
 
@@ -264,7 +264,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 ```
 
 
-## `/api/pleroma/admin/email_invite`
+## `/api/pleroma/admin/users/email_invite`
 
 ### Sends registration invite via email
 
@@ -273,7 +273,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `email`
   - `name`, optional
 
-## `/api/pleroma/admin/password_reset`
+## `/api/pleroma/admin/users/:nickname/password_reset`
 
 ### Get a password reset token for a given nickname
 
