@@ -26,10 +26,11 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   Determine if an activity can be represented by running it through Transmogrifier.
   """
   def is_representable?(%Activity{} = activity) do
-    with %{} = _data <- Transmogrifier.prepare_outgoing(activity.data) do
+    with {:ok, _data} <- Transmogrifier.prepare_outgoing(activity.data) do
       true
     else
-      _e -> false
+      _e ->
+        false
     end
   end
 
