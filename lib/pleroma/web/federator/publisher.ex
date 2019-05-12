@@ -66,4 +66,17 @@ defmodule Pleroma.Web.Federator.Publisher do
 
     :ok
   end
+
+  @doc """
+  Gathers links used by an outgoing federation module for WebFinger output.
+  """
+  @callback gather_webfinger_links(Pleroma.User.t()) :: list()
+
+  @spec gather_webfinger_links(Pleroma.User.t()) :: list()
+  def gather_webfinger_links(%User{} = user) do
+    Config.get([:instance, :federation_publisher_modules])
+    |> Enum.reduce([], fn module, links ->
+      links ++ module.gather_webfinger_links(user)
+    end)
+  end
 end

@@ -14,6 +14,7 @@ defmodule Pleroma.Web.Salmon do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator.Publisher
+  alias Pleroma.Web.OStatus
   alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.Web.XML
 
@@ -250,4 +251,17 @@ defmodule Pleroma.Web.Salmon do
   end
 
   def publish(%{id: id}, _), do: Logger.debug(fn -> "Keys missing for user #{id}" end)
+
+  def gather_webfinger_links(%User{} = user) do
+    {:ok, _private, public} = keys_from_pem(user.info.keys)
+    magic_key = encode_key(public)
+
+    [
+      %{"rel" => "salmon", "href" => OStatus.salmon_path(user)},
+      %{
+        "rel" => "magic-public-key",
+        "href" => "data:application/magic-public-key,#{magic_key}"
+      }
+    ]
+  end
 end

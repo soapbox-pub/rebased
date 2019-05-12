@@ -7,6 +7,7 @@ defmodule Pleroma.Web.Websub do
   alias Pleroma.Activity
   alias Pleroma.Instances
   alias Pleroma.Repo
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Federator
@@ -312,5 +313,19 @@ defmodule Pleroma.Web.Websub do
         Logger.debug(fn -> "Couldn't push to #{callback}, #{inspect(response)}" end)
         {:error, response}
     end
+  end
+
+  def gather_webfinger_links(%User{} = user) do
+    [
+      %{
+        "rel" => "http://schemas.google.com/g/2010#updates-from",
+        "type" => "application/atom+xml",
+        "href" => OStatus.feed_path(user)
+      },
+      %{
+        "rel" => "http://ostatus.org/schema/1.0/subscribe",
+        "template" => OStatus.remote_follow_path()
+      }
+    ]
   end
 end

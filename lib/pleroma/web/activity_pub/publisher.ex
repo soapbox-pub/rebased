@@ -136,4 +136,15 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       )
     end)
   end
+
+  def gather_webfinger_links(%User{} = user) do
+    [
+      %{"rel" => "self", "type" => "application/activity+json", "href" => user.ap_id},
+      %{
+        "rel" => "self",
+        "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+        "href" => user.ap_id
+      }
+    ]
+  end
 end
