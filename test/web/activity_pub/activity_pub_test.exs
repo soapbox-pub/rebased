@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Publisher
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
 
@@ -963,8 +964,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
 
-      assert [public_activity, private_activity_1, private_activity_3] ==
-               activities
+      assert [public_activity, private_activity_1, private_activity_3] == activities
 
       assert length(activities) == 3
 
@@ -1057,7 +1057,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       actor = insert(:user)
       inbox = "http://200.site/users/nick1/inbox"
 
-      assert {:ok, _} = ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+      assert {:ok, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
 
       assert called(Instances.set_reachable(inbox))
     end
@@ -1070,7 +1070,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       inbox = "http://200.site/users/nick1/inbox"
 
       assert {:ok, _} =
-               ActivityPub.publish_one(%{
+               Publisher.publish_one(%{
                  inbox: inbox,
                  json: "{}",
                  actor: actor,
@@ -1089,7 +1089,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       inbox = "http://200.site/users/nick1/inbox"
 
       assert {:ok, _} =
-               ActivityPub.publish_one(%{
+               Publisher.publish_one(%{
                  inbox: inbox,
                  json: "{}",
                  actor: actor,
@@ -1107,8 +1107,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       actor = insert(:user)
       inbox = "http://404.site/users/nick1/inbox"
 
-      assert {:error, _} =
-               ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+      assert {:error, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
 
       assert called(Instances.set_unreachable(inbox))
     end
@@ -1120,8 +1119,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       actor = insert(:user)
       inbox = "http://connrefused.site/users/nick1/inbox"
 
-      assert {:error, _} =
-               ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+      assert {:error, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
 
       assert called(Instances.set_unreachable(inbox))
     end
@@ -1133,7 +1131,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       actor = insert(:user)
       inbox = "http://200.site/users/nick1/inbox"
 
-      assert {:ok, _} = ActivityPub.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
+      assert {:ok, _} = Publisher.publish_one(%{inbox: inbox, json: "{}", actor: actor, id: 1})
 
       refute called(Instances.set_unreachable(inbox))
     end
@@ -1146,7 +1144,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       inbox = "http://connrefused.site/users/nick1/inbox"
 
       assert {:error, _} =
-               ActivityPub.publish_one(%{
+               Publisher.publish_one(%{
                  inbox: inbox,
                  json: "{}",
                  actor: actor,
