@@ -13,7 +13,6 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Salmon
   alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Websub
 
@@ -58,10 +57,6 @@ defmodule Pleroma.Web.Federator do
     PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:refresh_subscriptions])
   end
 
-  def publish_single_salmon(params) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_salmon, params])
-  end
-
   # Job Worker Callbacks
 
   def perform(:refresh_subscriptions) do
@@ -95,9 +90,6 @@ defmodule Pleroma.Web.Federator do
         if OStatus.is_representable?(activity) do
           Logger.info(fn -> "Sending #{activity.data["id"]} out via WebSub" end)
           Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
-
-          Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
-          Pleroma.Web.Salmon.publish(actor, activity)
         end
       end
 
@@ -141,10 +133,6 @@ defmodule Pleroma.Web.Federator do
         Logger.info(Poison.encode!(params, pretty: 2))
         :error
     end
-  end
-
-  def perform(:publish_single_salmon, params) do
-    Salmon.send_to_user(params)
   end
 
   def perform(

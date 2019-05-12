@@ -213,7 +213,8 @@ config :pleroma, :instance,
   federating: true,
   federation_reachability_timeout_days: 7,
   federation_publisher_modules: [
-    Pleroma.Web.ActivityPub.Publisher
+    Pleroma.Web.ActivityPub.Publisher,
+    Pleroma.Web.Salmon
   ],
   allow_relay: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
