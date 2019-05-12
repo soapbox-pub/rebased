@@ -79,4 +79,17 @@ defmodule Pleroma.Web.Federator.Publisher do
       links ++ module.gather_webfinger_links(user)
     end)
   end
+
+  @doc """
+  Gathers nodeinfo protocol names supported by the federation module.
+  """
+  @callback gather_nodeinfo_protocol_names() :: list()
+
+  @spec gather_nodeinfo_protocol_names() :: list()
+  def gather_nodeinfo_protocol_names do
+    Config.get([:instance, :federation_publisher_modules])
+    |> Enum.reduce([], fn module, links ->
+      links ++ module.gather_nodeinfo_protocol_names()
+    end)
+  end
 end

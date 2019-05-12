@@ -264,4 +264,6 @@ defmodule Pleroma.Web.Salmon do
       }
     ]
   end
+
+  def gather_nodeinfo_protocol_names, do: []
 end

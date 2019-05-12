@@ -147,4 +147,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       }
     ]
   end
+
+  def gather_nodeinfo_protocol_names, do: ["activitypub"]
 end
