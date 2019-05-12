@@ -4,8 +4,10 @@
 
 defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Instances
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
   import Pleroma.Web.ActivityPub.Visibility
@@ -103,6 +105,11 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       end
 
     public = is_public?(activity)
+
+    if public && Config.get([:instance, :allow_relay]) do
+      Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
+      Relay.publish(activity)
+    end
 
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Jason.encode!(data)
