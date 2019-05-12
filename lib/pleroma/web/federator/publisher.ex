@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Federator.Publisher do
+  alias Pleroma.Activity
+  alias Pleroma.Config
+  alias Pleroma.User
   alias Pleroma.Web.Federator.RetryQueue
 
   require Logger
@@ -22,11 +25,6 @@ defmodule Pleroma.Web.Federator.Publisher do
   parameters used are controlled by the federation module.
   """
   @callback publish_one(Map.t()) :: {:ok, Map.t()} | {:error, any()}
-
-  @doc """
-  Relays an activity to all specified peers.
-  """
-  @callback publish(Pleroma.User.t(), Pleroma.Activity.t()) :: :ok | {:error, any()}
 
   @doc """
   Enqueue publishing a single activity.
@@ -49,5 +47,21 @@ defmodule Pleroma.Web.Federator.Publisher do
   def perform(type, _, _) do
     Logger.debug("Unknown task: #{type}")
     {:error, "Don't know what to do with this"}
+  end
+
+  @doc """
+  Relays an activity to all specified peers.
+  """
+  @callback publish(Pleroma.User.t(), Pleroma.Activity.t()) :: :ok | {:error, any()}
+
+  @spec publish(Pleroma.User.t(), Pleroma.Activity.t()) :: :ok
+  def publish(%User{} = user, %Activity{} = activity) do
+    Config.get([:instance, :federation_publisher_modules])
+    |> Enum.each(fn module ->
+      Logger.info("Publishing #{activity.data["id"]} using #{inspect(module)}")
+      module.publish(user, activity)
+    end)
+
+    :ok
   end
 end
