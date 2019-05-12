@@ -16,6 +16,7 @@ defmodule Pleroma.Web.OStatus do
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.OStatus.DeleteHandler
   alias Pleroma.Web.OStatus.FollowHandler
   alias Pleroma.Web.OStatus.NoteHandler
@@ -30,7 +31,7 @@ defmodule Pleroma.Web.OStatus do
       is_nil(object) ->
         false
 
-      object.data["type"] == "Note" ->
+      Visibility.is_public?(activity) && object.data["type"] == "Note" ->
         true
 
       true ->
