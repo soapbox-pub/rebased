@@ -39,7 +39,7 @@ defmodule Pleroma.Web.Federator.Publisher do
       {:ok, _} ->
         :ok
 
-      {:error, _} ->
+      {:error, _e} ->
         RetryQueue.enqueue(params, module)
     end
   end
@@ -58,8 +58,10 @@ defmodule Pleroma.Web.Federator.Publisher do
   def publish(%User{} = user, %Activity{} = activity) do
     Config.get([:instance, :federation_publisher_modules])
     |> Enum.each(fn module ->
-      Logger.info("Publishing #{activity.data["id"]} using #{inspect(module)}")
-      module.publish(user, activity)
+      if module.is_representable?(activity) do
+        Logger.info("Publishing #{activity.data["id"]} using #{inspect(module)}")
+        module.publish(user, activity)
+      end
     end)
 
     :ok
