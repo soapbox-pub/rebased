@@ -42,10 +42,6 @@ defmodule Pleroma.Web.Federator do
     PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish, activity], priority)
   end
 
-  def publish_single_ap(params) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_ap, params])
-  end
-
   def publish_single_websub(websub) do
     PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_websub, websub])
   end
@@ -155,16 +151,6 @@ defmodule Pleroma.Web.Federator do
 
   def perform(:publish_single_salmon, params) do
     Salmon.send_to_user(params)
-  end
-
-  def perform(:publish_single_ap, params) do
-    case ActivityPub.publish_one(params) do
-      {:ok, _} ->
-        :ok
-
-      {:error, _} ->
-        RetryQueue.enqueue(params, ActivityPub)
-    end
   end
 
   def perform(
