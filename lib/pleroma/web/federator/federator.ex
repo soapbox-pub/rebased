@@ -11,6 +11,7 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Salmon
@@ -106,8 +107,7 @@ defmodule Pleroma.Web.Federator do
         end
       end
 
-      Logger.info(fn -> "Sending #{activity.data["id"]} out via AP" end)
-      Pleroma.Web.ActivityPub.ActivityPub.publish(actor, activity)
+      Publisher.publish(actor, activity)
     end
   end
 
