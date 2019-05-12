@@ -41,10 +41,6 @@ defmodule Pleroma.Web.Federator do
     PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish, activity], priority)
   end
 
-  def publish_single_websub(websub) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_websub, websub])
-  end
-
   def verify_websub(websub) do
     PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:verify_websub, websub])
   end

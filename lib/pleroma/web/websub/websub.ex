@@ -4,10 +4,13 @@
 
 defmodule Pleroma.Web.Websub do
   alias Ecto.Changeset
+  alias Pleroma.Activity
   alias Pleroma.Instances
   alias Pleroma.Repo
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Federator
+  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.Router.Helpers
@@ -17,6 +20,8 @@ defmodule Pleroma.Web.Websub do
   require Logger
 
   import Ecto.Query
+
+  @behaviour Pleroma.Web.Federator.Publisher
 
   @httpoison Application.get_env(:pleroma, :httpoison)
 
@@ -56,6 +61,13 @@ defmodule Pleroma.Web.Websub do
     "Undo",
     "Delete"
   ]
+
+  def is_representable?(%Activity{data: %{"type" => type}} = activity)
+      when type in @supported_activities,
+      do: Visibility.is_public?(activity)
+
+  def is_representable?(_), do: false
+
   def publish(topic, user, %{data: %{"type" => type}} = activity)
       when type in @supported_activities do
     response =
@@ -88,11 +100,13 @@ defmodule Pleroma.Web.Websub do
         unreachable_since: reachable_callbacks_metadata[sub.callback]
       }
 
-      Federator.publish_single_websub(data)
+      Publisher.enqueue_one(__MODULE__, data)
     end)
   end
 
   def publish(_, _, _), do: ""
+
+  def publish(actor, activity), do: publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
   def sign(secret, doc) do
     :crypto.hmac(:sha, secret, to_string(doc)) |> Base.encode16() |> String.downcase()
