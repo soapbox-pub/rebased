@@ -1094,7 +1094,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "GET /api/account/confirm_email/:id/:token" do
     setup do
       user = insert(:user)
-      info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
+      info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
 
       {:ok, user} =
         user
@@ -1145,7 +1145,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       end
 
       user = insert(:user)
-      info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
+      info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
 
       {:ok, user} =
         user

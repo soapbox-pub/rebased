@@ -218,6 +218,28 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     token_exchange(conn, params)
   end
 
+  def token_exchange(conn, %{"grant_type" => "client_credentials"} = params) do
+    with %App{} = app <- get_app_from_request(conn, params),
+         {:ok, auth} <- Authorization.create_authorization(app, %User{}),
+         {:ok, token} <- Token.exchange_token(app, auth),
+         {:ok, inserted_at} <- DateTime.from_naive(token.inserted_at, "Etc/UTC") do
+      response = %{
+        token_type: "Bearer",
+        access_token: token.token,
+        refresh_token: token.refresh_token,
+        created_at: DateTime.to_unix(inserted_at),
+        expires_in: 60 * 10,
+        scope: Enum.join(token.scopes, " ")
+      }
+
+      json(conn, response)
+    else
+      _error ->
+        put_status(conn, 400)
+        |> json(%{error: "Invalid credentials"})
+    end
+  end
+
   # Bad request
   def token_exchange(conn, params), do: bad_request(conn, params)
 

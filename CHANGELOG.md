@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
 - Mastodon API: `/api/v1/pleroma/accounts/:id/favourites` (API extension)
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
+- Mastodon API: REST API for creating an account
 - ActivityPub C2S: OAuth endpoints
 - Metadata RelMe provider
 - OAuth: added support for refresh tokens
@@ -57,10 +58,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `with_muted` parameter to timeline endpoints
 - Mastodon API: Actual reblog hiding instead of a dummy
 - Mastodon API: Remove attachment limit in the Status entity
+- Mastodon API: Added support max_id & since_id for bookmark timeline endpoints.
 - Deps: Updated Cowboy to 2.6
 - Deps: Updated Ecto to 3.0.7
 - Don't ship finmoji by default, they can be installed as an emoji pack
-- Mastodon API: Added support max_id & since_id for bookmark timeline endpoints.
 - Admin API: Move the user related API to `api/pleroma/admin/users`
 
 ### Fixed

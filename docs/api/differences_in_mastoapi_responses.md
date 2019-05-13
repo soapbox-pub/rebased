@@ -87,3 +87,13 @@ Additional parameters can be added to the JSON body/Form data:
 
 `POST /oauth/token`
 Post here request with grant_type=refresh_token to obtain new access token. Returns an access token.
+
+## Account Registration
+`POST /api/v1/accounts`
+
+Has theses additionnal parameters (which are the same as in Pleroma-API):
+    * `fullname`: optional
+    * `bio`: optional
+    * `captcha_solution`: optional, contains provider-specific captcha solution,
+    * `captcha_token`: optional, contains provider-specific captcha token
+    * `token`: invite token required when the registerations aren't public.

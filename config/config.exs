@@ -234,6 +234,8 @@ config :pleroma, :instance,
   safe_dm_mentions: false,
   healthcheck: false
 
+config :pleroma, :app_account_creation, enabled: false, max_requests: 5, interval: 1800
+
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
   # of custom emoji.  Issue #275 discusses defanging that somehow.

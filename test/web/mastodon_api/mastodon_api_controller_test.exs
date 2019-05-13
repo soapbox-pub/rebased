@@ -16,6 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Push
   alias Pleroma.Web.TwitterAPI.TwitterAPI
@@ -3215,5 +3216,130 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     replied_to_user = User.get_by_ap_id(replied_to.data["actor"])
     assert reblogged_activity["reblog"]["in_reply_to_account_id"] == replied_to_user.id
+  end
+
+  describe "create account by app" do
+    setup do
+      enabled = Pleroma.Config.get([:app_account_creation, :enabled])
+      max_requests = Pleroma.Config.get([:app_account_creation, :max_requests])
+      interval = Pleroma.Config.get([:app_account_creation, :interval])
+
+      Pleroma.Config.put([:app_account_creation, :enabled], true)
+      Pleroma.Config.put([:app_account_creation, :max_requests], 5)
+      Pleroma.Config.put([:app_account_creation, :interval], 1)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:app_account_creation, :enabled], enabled)
+        Pleroma.Config.put([:app_account_creation, :max_requests], max_requests)
+        Pleroma.Config.put([:app_account_creation, :interval], interval)
+      end)
+
+      :ok
+    end
+
+    test "Account registration via Application", %{conn: conn} do
+      conn =
+        conn
+        |> post("/api/v1/apps", %{
+          client_name: "client_name",
+          redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
+          scopes: "read, write, follow"
+        })
+
+      %{
+        "client_id" => client_id,
+        "client_secret" => client_secret,
+        "id" => _,
+        "name" => "client_name",
+        "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
+        "vapid_key" => _,
+        "website" => nil
+      } = json_response(conn, 200)
+
+      conn =
+        conn
+        |> post("/oauth/token", %{
+          grant_type: "client_credentials",
+          client_id: client_id,
+          client_secret: client_secret
+        })
+
+      assert %{"access_token" => token, "refresh_token" => refresh, "scope" => scope} =
+               json_response(conn, 200)
+
+      assert token
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      assert refresh
+      assert scope == "read write follow"
+
+      conn =
+        build_conn()
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", %{
+          username: "lain",
+          email: "lain@example.org",
+          password: "PlzDontHackLain",
+          agreement: true
+        })
+
+      %{
+        "access_token" => token,
+        "created_at" => _created_at,
+        "scope" => _scope,
+        "token_type" => "Bearer"
+      } = json_response(conn, 200)
+
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      token_from_db = Repo.preload(token_from_db, :user)
+      assert token_from_db.user
+
+      assert token_from_db.user.info.confirmation_pending
+    end
+
+    test "rate limit", %{conn: conn} do
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+        |> Map.put(:remote_ip, {15, 15, 15, 15})
+
+      for i <- 1..5 do
+        conn =
+          conn
+          |> post("/api/v1/accounts", %{
+            username: "#{i}lain",
+            email: "#{i}lain@example.org",
+            password: "PlzDontHackLain",
+            agreement: true
+          })
+
+        %{
+          "access_token" => token,
+          "created_at" => _created_at,
+          "scope" => _scope,
+          "token_type" => "Bearer"
+        } = json_response(conn, 200)
+
+        token_from_db = Repo.get_by(Token, token: token)
+        assert token_from_db
+        token_from_db = Repo.preload(token_from_db, :user)
+        assert token_from_db.user
+
+        assert token_from_db.user.info.confirmation_pending
+      end
+
+      conn =
+        conn
+        |> post("/api/v1/accounts", %{
+          username: "6lain",
+          email: "6lain@example.org",
+          password: "PlzDontHackLain",
+          agreement: true
+        })
+
+      assert json_response(conn, 403) == %{"error" => "Rate limit exceeded."}
+    end
   end
 end
