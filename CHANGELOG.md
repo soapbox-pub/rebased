@@ -92,6 +92,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Handling of `reblogs` in `/api/v1/accounts/:id/follow`
 - Mastodon API: Correct `reblogged`, `favourited`, and `bookmarked` values in the reblog status JSON
 - Mastodon API: Exposing default scope of the user to anyone
+- Mastodon API: Make `irreversible` field default to `false` [`POST /api/v1/filters`]
 
 ## [0.9.9999] - 2019-04-05
 ### Security
