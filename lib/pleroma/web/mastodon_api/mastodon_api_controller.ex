@@ -1536,7 +1536,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       user_id: user.id,
       phrase: phrase,
       context: context,
-      hide: Map.get(params, "irreversible", nil),
+      hide: Map.get(params, "irreversible", false),
       whole_word: Map.get(params, "boolean", true)
       # expires_at
     }
