@@ -156,9 +156,22 @@ defmodule Pleroma.Web.Salmon do
     {:ok, salmon}
   end
 
-  def remote_users(%{data: %{"to" => to} = data}) do
+  def remote_users(%User{id: user_id}, %{data: %{"to" => to} = data}) do
     cc = Map.get(data, "cc", [])
-    bcc = Map.get(data, "bcc", [])
+
+    bcc =
+      data
+      |> Map.get("bcc", [])
+      |> Enum.reduce([], fn ap_id, bcc ->
+        case Pleroma.List.get_by_ap_id(ap_id) do
+          %Pleroma.List{user_id: ^user_id} = list ->
+            {:ok, following} = Pleroma.List.get_following(list)
+            bcc ++ Enum.map(following, & &1.ap_id)
+
+          _ ->
+            bcc
+        end
+      end)
 
     [to, cc, bcc]
     |> Enum.concat()
@@ -220,7 +233,7 @@ defmodule Pleroma.Web.Salmon do
       {:ok, private, _} = keys_from_pem(keys)
       {:ok, feed} = encode(private, feed)
 
-      remote_users = remote_users(activity)
+      remote_users = remote_users(user, activity)
 
       salmon_urls = Enum.map(remote_users, & &1.info.salmon)
       reachable_urls_metadata = Instances.filter_reachable(salmon_urls)

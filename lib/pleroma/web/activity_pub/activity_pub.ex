@@ -783,9 +783,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_activities_query(recipients, opts \\ %{}) do
-    base_query = from(activity in Activity)
-
-    base_query
+    Activity
     |> maybe_preload_objects(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
@@ -807,9 +805,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
-    fetch_activities_query(recipients, opts)
+    list_memberships = Pleroma.List.memberships(opts["user"])
+
+    fetch_activities_query(recipients ++ list_memberships, opts)
     |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
+    |> maybe_update_cc(list_memberships, opts["user"])
+  end
+
+  defp maybe_update_cc(activities, [], _), do: activities
+  defp maybe_update_cc(activities, _, nil), do: activities
+
+  defp maybe_update_cc(activities, list_memberships, user) do
+    Enum.map(activities, fn
+      %{data: %{"bcc" => bcc}} = activity when is_list(bcc) ->
+        if Enum.any?(bcc, &(&1 in list_memberships)) do
+          update_in(activity.data["cc"], &[user.ap_id | &1])
+        else
+          activity
+        end
+
+      activity ->
+        activity
+    end)
   end
 
   def fetch_activities_bounded(recipients_to, recipients_cc, opts \\ %{}) do
@@ -917,13 +935,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp recipients(actor, activity) do
-    Pleroma.Web.Salmon.remote_users(activity) ++
+    followers =
       if actor.follower_address in activity.recipients do
         {:ok, followers} = User.get_followers(actor)
-        followers |> Enum.filter(&(!&1.local))
+        Enum.filter(followers, &(!&1.local))
       else
         []
       end
+
+    Pleroma.Web.Salmon.remote_users(actor, activity) ++ followers
+  end
+
+  defp get_cc_ap_ids(ap_id, recipients) do
+    host = Map.get(URI.parse(ap_id), :host)
+
+    recipients
+    |> Enum.filter(fn %User{ap_id: ap_id} -> Map.get(URI.parse(ap_id), :host) == host end)
+    |> Enum.map(& &1.ap_id)
   end
 
   def publish(actor, %{data: %{"bcc" => bcc}} = activity) when is_list(bcc) and bcc != [] do
@@ -938,12 +966,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
     |> Instances.filter_reachable()
     |> Enum.each(fn {inbox, unreachable_since} ->
-      %User{ap_id: cc} =
+      %User{ap_id: ap_id} =
         Enum.find(recipients, fn %{info: %{source_data: data}} -> data["inbox"] == inbox end)
+
+      cc = get_cc_ap_ids(ap_id, recipients)
 
       json =
         data
-        |> Map.put("cc", [cc])
+        |> Map.put("cc", cc)
         |> Map.put("directMessage", true)
         |> Jason.encode!()
 
