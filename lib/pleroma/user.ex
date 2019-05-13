@@ -413,24 +413,6 @@ defmodule Pleroma.User do
     Enum.member?(follower.following, followed.follower_address)
   end
 
-  def follow_import(%User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    Enum.map(
-      followed_identifiers,
-      fn followed_identifier ->
-        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
-             {:ok, follower} <- maybe_direct_follow(follower, followed),
-             {:ok, _} <- ActivityPub.follow(follower, followed) do
-          followed
-        else
-          err ->
-            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
   def locked?(%User{} = user) do
     user.info.locked || false
   end
@@ -844,23 +826,6 @@ defmodule Pleroma.User do
     )
   end
 
-  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
-    Enum.map(
-      blocked_identifiers,
-      fn blocked_identifier ->
-        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, blocker} <- block(blocker, blocked),
-             {:ok, _} <- ActivityPub.block(blocker, blocked) do
-          blocked
-        else
-          err ->
-            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
   def mute(muter, %User{ap_id: ap_id}) do
     info_cng =
       muter.info
@@ -1080,6 +1045,44 @@ defmodule Pleroma.User do
     )
 
     {:ok, user}
+  end
+
+  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
+  def perform(:blocks_import, %User{} = blocker, blocked_identifiers)
+      when is_list(blocked_identifiers) do
+    Enum.map(
+      blocked_identifiers,
+      fn blocked_identifier ->
+        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
+             {:ok, blocker} <- block(blocker, blocked),
+             {:ok, _} <- ActivityPub.block(blocker, blocked) do
+          blocked
+        else
+          err ->
+            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
+            err
+        end
+      end
+    )
+  end
+
+  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
+  def perform(:follow_import, %User{} = follower, followed_identifiers)
+      when is_list(followed_identifiers) do
+    Enum.map(
+      followed_identifiers,
+      fn followed_identifier ->
+        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
+             {:ok, follower} <- maybe_direct_follow(follower, followed),
+             {:ok, _} <- ActivityPub.follow(follower, followed) do
+          followed
+        else
+          err ->
+            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
+            err
+        end
+      end
+    )
   end
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do
