@@ -137,7 +137,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
           ])
         )
 
-        files = Tesla.get!(client(), files_url).body |> Poison.decode!()
+        files = Tesla.get!(client(), files_url).body |> Jason.decode!()
 
         IO.puts(IO.ANSI.format(["Unpacking ", :bright, pack_name]))
 
@@ -239,7 +239,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     emoji_map = Pleroma.Emoji.make_shortcode_to_file_map(tmp_pack_dir, exts)
 
-    File.write!(files_name, Poison.encode!(emoji_map, pretty: true))
+    File.write!(files_name, Jason.encode!(emoji_map, pretty: true))
 
     IO.puts("""
 
@@ -248,11 +248,11 @@ defmodule Mix.Tasks.Pleroma.Emoji do
     """)
 
     if File.exists?("index.json") do
-      existing_data = File.read!("index.json") |> Poison.decode!()
+      existing_data = File.read!("index.json") |> Jason.decode!()
 
       File.write!(
         "index.json",
-        Poison.encode!(
+        Jason.encode!(
           Map.merge(
             existing_data,
             pack_json
@@ -263,14 +263,14 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
       IO.puts("index.json file has been update with the #{name} pack")
     else
-      File.write!("index.json", Poison.encode!(pack_json, pretty: true))
+      File.write!("index.json", Jason.encode!(pack_json, pretty: true))
 
       IO.puts("index.json has been created with the #{name} pack")
     end
   end
 
   defp fetch_manifest(from) do
-    Poison.decode!(
+    Jason.decode!(
       if String.starts_with?(from, "http") do
         Tesla.get!(client(), from).body
       else
