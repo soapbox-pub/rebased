@@ -7,7 +7,9 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
   alias Pleroma.Activity
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.Salmon
+  import Mock
   import Pleroma.Factory
 
   @magickey "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwQhh-1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
@@ -77,7 +79,10 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
              "RSA.uzg6r1peZU0vXGADWxGJ0PE34WvmhjUmydbX5YYdOiXfODVLwCMi1umGoqUDm-mRu4vNEdFBVJU1CpFA7dKzWgIsqsa501i2XqElmEveXRLvNRWFB6nG03Q5OUY2as8eE54BJm0p20GkMfIJGwP6TSFb-ICp3QjzbatuSPJ6xCE=.AQAB"
   end
 
-  test "it pushes an activity to remote accounts it's addressed to" do
+  test_with_mock "it pushes an activity to remote accounts it's addressed to",
+                 Publisher,
+                 [:passthrough],
+                 [] do
     user_data = %{
       info: %{
         salmon: "http://test-example.org/salmon"
@@ -102,10 +107,8 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     user = User.get_cached_by_ap_id(activity.data["actor"])
     {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
 
-    poster = fn url, _data, _headers ->
-      assert url == "http://test-example.org/salmon"
-    end
+    Salmon.publish(user, activity)
 
-    Salmon.publish(user, activity, poster)
+    assert called(Publisher.enqueue_one(Salmon, %{recipient: mentioned_user}))
   end
 end
