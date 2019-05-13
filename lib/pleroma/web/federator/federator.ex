@@ -117,7 +117,7 @@ defmodule Pleroma.Web.Federator do
       _e ->
         # Just drop those for now
         Logger.info("Unhandled activity")
-        Logger.info(Poison.encode!(params, pretty: 2))
+        Logger.info(Jason.encode!(params, pretty: true))
         :error
     end
   end

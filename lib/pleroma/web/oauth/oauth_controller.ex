@@ -274,7 +274,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       auth_attrs
       |> Map.delete("scopes")
       |> Map.put("scope", scope)
-      |> Poison.encode!()
+      |> Jason.encode!()
 
     params =
       auth_attrs
@@ -338,7 +338,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   defp callback_params(%{"state" => state} = params) do
-    Map.merge(params, Poison.decode!(state))
+    Map.merge(params, Jason.decode!(state))
   end
 
   def registration_details(conn, %{"authorization" => auth_attrs}) do
