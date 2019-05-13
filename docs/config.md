@@ -105,6 +105,12 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 * `healthcheck`: if set to true, system data will be shown on ``/api/pleroma/healthcheck``.
 
+## :app_account_creation
+REST API for creating an account settings
+* `enabled`: Enable/disable registration
+* `max_requests`: Number of requests allowed for creating accounts
+* `interval`: Interval for restricting requests for one ip (seconds)
+
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 

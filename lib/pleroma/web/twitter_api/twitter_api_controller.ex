@@ -440,7 +440,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          true <- user.local,
          true <- user.info.confirmation_pending,
          true <- user.info.confirmation_token == token,
-         info_change <- User.Info.confirmation_changeset(user.info, :confirmed),
+         info_change <- User.Info.confirmation_changeset(user.info, need_confirmation: false),
          changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
          {:ok, _} <- User.update_and_set_cache(changeset) do
       conn

@@ -385,6 +385,8 @@ defmodule Pleroma.Web.Router do
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
 
+    post("/accounts", MastodonAPIController, :account_register)
+
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)
     post("/apps", MastodonAPIController, :create_app)

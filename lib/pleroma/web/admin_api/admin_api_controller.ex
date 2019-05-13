@@ -59,7 +59,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       bio: "."
     }
 
-    changeset = User.register_changeset(%User{}, user_data, confirmed: true)
+    changeset = User.register_changeset(%User{}, user_data, need_confirmation: false)
     {:ok, user} = User.register(changeset)
 
     conn

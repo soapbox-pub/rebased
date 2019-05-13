@@ -204,14 +204,15 @@ defmodule Pleroma.User do
   end
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
-    confirmation_status =
-      if opts[:confirmed] || !Pleroma.Config.get([:instance, :account_activation_required]) do
-        :confirmed
+    need_confirmation? =
+      if is_nil(opts[:need_confirmation]) do
+        Pleroma.Config.get([:instance, :account_activation_required])
       else
-        :unconfirmed
+        opts[:need_confirmation]
       end
 
-    info_change = User.Info.confirmation_changeset(%User.Info{}, confirmation_status)
+    info_change =
+      User.Info.confirmation_changeset(%User.Info{}, need_confirmation: need_confirmation?)
 
     changeset =
       struct
