@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Pleroma.Conversations do
   alias Mix.Tasks.Pleroma.Common
   alias Pleroma.Conversation
 
-  @shortdoc "Manages Pleroma users"
+  @shortdoc "Manages Pleroma conversations."
   @moduledoc """
   Manages Pleroma conversations.
 
