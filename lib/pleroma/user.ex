@@ -1014,8 +1014,6 @@ defmodule Pleroma.User do
     PleromaJobQueue.enqueue(:background, __MODULE__, [:deactivate_async, user, status])
   end
 
-  def perform(:deactivate_async, user, status), do: deactivate(user, status)
-
   def deactivate(%User{} = user, status \\ true) do
     info_cng = User.Info.set_activation_status(user.info, status)
 
@@ -1073,6 +1071,8 @@ defmodule Pleroma.User do
 
     {:ok, user}
   end
+
+  def perform(:deactivate_async, user, status), do: deactivate(user, status)
 
   @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
   def perform(:blocks_import, %User{} = blocker, blocked_identifiers)
