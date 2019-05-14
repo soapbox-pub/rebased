@@ -1085,6 +1085,22 @@ defmodule Pleroma.User do
     )
   end
 
+  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers),
+    do:
+      PleromaJobQueue.enqueue(:background, __MODULE__, [
+        :blocks_import,
+        blocker,
+        blocked_identifiers
+      ])
+
+  def follow_import(%User{} = follower, followed_identifiers) when is_list(followed_identifiers),
+    do:
+      PleromaJobQueue.enqueue(:background, __MODULE__, [
+        :follow_import,
+        follower,
+        followed_identifiers
+      ])
+
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     stream =
       ap_id

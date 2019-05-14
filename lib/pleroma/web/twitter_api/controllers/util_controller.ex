@@ -309,13 +309,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            Enum.map(lines, fn line ->
              String.split(line, ",") |> List.first()
            end)
-           |> List.delete("Account address"),
-         :ok <-
-           PleromaJobQueue.enqueue(:background, User, [
-             :follow_import,
-             follower,
-             followed_identifiers
-           ]) do
+           |> List.delete("Account address") do
+      PleromaJobQueue.enqueue(:background, User, [
+        :follow_import,
+        follower,
+        followed_identifiers
+      ])
+
       json(conn, "job started")
     end
   end
@@ -325,13 +325,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
-    with blocked_identifiers <- String.split(list),
-         :ok <-
-           PleromaJobQueue.enqueue(:background, User, [
-             :blocks_import,
-             blocker,
-             blocked_identifiers
-           ]) do
+    with blocked_identifiers <- String.split(list) do
+      PleromaJobQueue.enqueue(:background, User, [
+        :blocks_import,
+        blocker,
+        blocked_identifiers
+      ])
+
       json(conn, "job started")
     end
   end
