@@ -87,6 +87,19 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
+
+    test "it allows to address a list" do
+      user = insert(:user)
+      {:ok, list} = Pleroma.List.create("foo", user)
+
+      list_ap_id = Pleroma.List.ap_id(user, list.id)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+
+      assert activity.data["bcc"] == [list_ap_id]
+      assert activity.recipients == [list_ap_id, user.ap_id]
+    end
   end
 
   describe "reactions" do

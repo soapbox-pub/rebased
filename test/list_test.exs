@@ -113,4 +113,33 @@ defmodule Pleroma.ListTest do
     assert owned_list in lists_2
     refute not_owned_list in lists_2
   end
+
+  test "get ap_id by user nickname and list id" do
+    nickname = "foo"
+    list_id = 42
+
+    expected = Pleroma.Web.Endpoint.url() <> "/users/#{nickname}/lists/#{list_id}"
+
+    assert Pleroma.List.ap_id(%Pleroma.User{nickname: nickname}, list_id) == expected
+    assert Pleroma.List.ap_id({nickname, list_id}) == expected
+  end
+
+  test "get by ap_id" do
+    user = insert(:user)
+    {:ok, list} = Pleroma.List.create("foo", user)
+    ap_id = Pleroma.List.ap_id(user, list.id)
+
+    assert Pleroma.List.get_by_ap_id(ap_id) == list
+  end
+
+  test "memberships" do
+    user = insert(:user)
+    member = insert(:user)
+    {:ok, list} = Pleroma.List.create("foo", user)
+    {:ok, list} = Pleroma.List.follow(list, member)
+
+    list_ap_id = Pleroma.List.ap_id(user, list.id)
+
+    assert Pleroma.List.memberships(member) == [list_ap_id]
+  end
 end
