@@ -19,8 +19,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   if Pleroma.Config.oauth_consumer_enabled?(), do: plug(Ueberauth)
 
-  @expires_in Pleroma.Config.get([:oauth2, :token_expires_in], 600)
-
   plug(:fetch_session)
   plug(:fetch_flash)
 
@@ -144,14 +142,14 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   @doc "Renew access_token with refresh_token"
   def token_exchange(
         conn,
-        %{"grant_type" => "refresh_token", "refresh_token" => token} = params
+        %{"grant_type" => "refresh_token", "refresh_token" => token} = _params
       ) do
-    with %App{} = app <- get_app_from_request(conn, params),
+    with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, %{user: user} = token} <- Token.get_by_refresh_token(app, token),
          {:ok, token} <- RefreshToken.grant(token) do
       response_attrs = %{created_at: Token.Utils.format_created_at(token)}
 
-      json(conn, response_token(user, token, response_attrs))
+      json(conn, Token.Response.build(user, token, response_attrs))
     else
       _error ->
         put_status(conn, 400)
@@ -160,14 +158,14 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
-    with %App{} = app <- get_app_from_request(conn, params),
+    with {:ok, app} <- Token.Utils.fetch_app(conn),
          fixed_token = Token.Utils.fix_padding(params["code"]),
          {:ok, auth} <- Authorization.get_by_token(app, fixed_token),
          %User{} = user <- User.get_cached_by_id(auth.user_id),
          {:ok, token} <- Token.exchange_token(app, auth) do
       response_attrs = %{created_at: Token.Utils.format_created_at(token)}
 
-      json(conn, response_token(user, token, response_attrs))
+      json(conn, Token.Response.build(user, token, response_attrs))
     else
       _error ->
         put_status(conn, 400)
@@ -179,14 +177,14 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         conn,
         %{"grant_type" => "password"} = params
       ) do
-    with {_, {:ok, %User{} = user}} <- {:get_user, Authenticator.get_user(conn)},
-         %App{} = app <- get_app_from_request(conn, params),
+    with {:ok, %User{} = user} <- Authenticator.get_user(conn),
+         {:ok, app} <- Token.Utils.fetch_app(conn),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          {:user_active, true} <- {:user_active, !user.info.deactivated},
          {:ok, scopes} <- validate_scopes(app, params),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
-      json(conn, response_token(user, token))
+      json(conn, Token.Response.build(user, token))
     else
       {:auth_active, false} ->
         # Per https://github.com/tootsuite/mastodon/blob/
@@ -218,21 +216,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     token_exchange(conn, params)
   end
 
-  def token_exchange(conn, %{"grant_type" => "client_credentials"} = params) do
-    with %App{} = app <- get_app_from_request(conn, params),
+  def token_exchange(conn, %{"grant_type" => "client_credentials"} = _params) do
+    with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, auth} <- Authorization.create_authorization(app, %User{}),
-         {:ok, token} <- Token.exchange_token(app, auth),
-         {:ok, inserted_at} <- DateTime.from_naive(token.inserted_at, "Etc/UTC") do
-      response = %{
-        token_type: "Bearer",
-        access_token: token.token,
-        refresh_token: token.refresh_token,
-        created_at: DateTime.to_unix(inserted_at),
-        expires_in: 60 * 10,
-        scope: Enum.join(token.scopes, " ")
-      }
-
-      json(conn, response)
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      json(conn, Token.Response.build_for_client_credentials(token))
     else
       _error ->
         put_status(conn, 400)
@@ -244,7 +232,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   def token_exchange(conn, params), do: bad_request(conn, params)
 
   def token_revoke(conn, %{"token" => _token} = params) do
-    with %App{} = app <- get_app_from_request(conn, params),
+    with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, _token} <- RevokeToken.revoke(app, params) do
       json(conn, %{})
     else
@@ -427,33 +415,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  defp get_app_from_request(conn, params) do
-    conn
-    |> fetch_client_credentials(params)
-    |> fetch_client
-  end
-
-  defp fetch_client({id, secret}) when is_binary(id) and is_binary(secret) do
-    Repo.get_by(App, client_id: id, client_secret: secret)
-  end
-
-  defp fetch_client({_id, _secret}), do: nil
-
-  defp fetch_client_credentials(conn, params) do
-    # Per RFC 6749, HTTP Basic is preferred to body params
-    with ["Basic " <> encoded] <- get_req_header(conn, "authorization"),
-         {:ok, decoded} <- Base.decode64(encoded),
-         [id, secret] <-
-           Enum.map(
-             String.split(decoded, ":"),
-             fn s -> URI.decode_www_form(s) end
-           ) do
-      {id, secret}
-    else
-      _ -> {params["client_id"], params["client_secret"]}
-    end
-  end
-
   # Special case: Local MastodonFE
   defp redirect_uri(conn, "."), do: mastodon_api_url(conn, :login)
 
@@ -463,18 +424,6 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp put_session_registration_id(conn, registration_id),
     do: put_session(conn, :registration_id, registration_id)
-
-  defp response_token(%User{} = user, token, opts \\ %{}) do
-    %{
-      token_type: "Bearer",
-      access_token: token.token,
-      refresh_token: token.refresh_token,
-      expires_in: @expires_in,
-      scope: Enum.join(token.scopes, " "),
-      me: user.ap_id
-    }
-    |> Map.merge(opts)
-  end
 
   @spec validate_scopes(App.t(), map()) ::
           {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
