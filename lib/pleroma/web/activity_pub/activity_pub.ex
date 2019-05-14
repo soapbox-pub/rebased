@@ -752,6 +752,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(
       activity in query,
+      inner_join: o in Object,
+      on:
+        fragment(
+          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
+          o.data,
+          activity.data,
+          activity.data
+        ),
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
       where: fragment("not (? && ?)", activity.recipients, ^blocks),
       where:
@@ -761,7 +769,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data,
           ^blocks
         ),
-      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks)
+      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks),
+      where: fragment("not (split_part(?->>'actor', '/', 3) = ANY(?))", o.data, ^domain_blocks)
     )
   end
 

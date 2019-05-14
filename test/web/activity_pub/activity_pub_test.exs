@@ -474,6 +474,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
 
     refute activity in activities
+
+    followed_user = insert(:user)
+    ActivityPub.follow(user, followed_user)
+    {:ok, repeat_activity, _} = CommonAPI.repeat(activity.id, followed_user)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+
+    refute repeat_activity in activities
   end
 
   test "doesn't return muted activities" do
