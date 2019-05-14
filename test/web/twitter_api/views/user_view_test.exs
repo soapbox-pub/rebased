@@ -32,7 +32,7 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
 
   test "A user with emoji in username" do
     expected =
-      "<img height=\"32px\" width=\"32px\" alt=\"karjalanpiirakka\" title=\"karjalanpiirakka\" src=\"/file.png\" /> man"
+      "<img class=\"emoji\" alt=\"karjalanpiirakka\" title=\"karjalanpiirakka\" src=\"/file.png\" /> man"
 
     user =
       insert(:user, %{
@@ -89,27 +89,32 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "following" => false,
       "follows_you" => false,
       "statusnet_blocking" => false,
-      "rights" => %{
-        "delete_others_notice" => false,
-        "admin" => false
-      },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
       "locked" => false,
-      "default_scope" => "public",
-      "no_rich_text" => false,
       "hide_follows" => false,
       "hide_followers" => false,
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
         "tags" => []
-      }
+      },
+      "rights" => %{"admin" => false, "delete_others_notice" => false},
+      "role" => "member"
     }
 
     assert represented == UserView.render("show.json", %{user: user})
+  end
+
+  test "User exposes settings for themselves and only for themselves", %{user: user} do
+    as_user = UserView.render("show.json", %{user: user, for: user})
+    assert as_user["default_scope"] == user.info.default_scope
+    assert as_user["no_rich_text"] == user.info.no_rich_text
+    as_stranger = UserView.render("show.json", %{user: user})
+    refute as_stranger["default_scope"]
+    refute as_stranger["no_rich_text"]
   end
 
   test "A user for a given other follower", %{user: user} do
@@ -137,24 +142,20 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "following" => true,
       "follows_you" => false,
       "statusnet_blocking" => false,
-      "rights" => %{
-        "delete_others_notice" => false,
-        "admin" => false
-      },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
       "locked" => false,
-      "default_scope" => "public",
-      "no_rich_text" => false,
       "hide_follows" => false,
       "hide_followers" => false,
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
         "tags" => []
-      }
+      },
+      "rights" => %{"admin" => false, "delete_others_notice" => false},
+      "role" => "member"
     }
 
     assert represented == UserView.render("show.json", %{user: user, for: follower})
@@ -186,24 +187,20 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "following" => false,
       "follows_you" => true,
       "statusnet_blocking" => false,
-      "rights" => %{
-        "delete_others_notice" => false,
-        "admin" => false
-      },
       "statusnet_profile_url" => follower.ap_id,
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
       "locked" => false,
-      "default_scope" => "public",
-      "no_rich_text" => false,
       "hide_follows" => false,
       "hide_followers" => false,
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
         "tags" => []
-      }
+      },
+      "rights" => %{"admin" => false, "delete_others_notice" => false},
+      "role" => "member"
     }
 
     assert represented == UserView.render("show.json", %{user: follower, for: user})
@@ -272,24 +269,20 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "following" => false,
       "follows_you" => false,
       "statusnet_blocking" => true,
-      "rights" => %{
-        "delete_others_notice" => false,
-        "admin" => false
-      },
       "statusnet_profile_url" => user.ap_id,
       "cover_photo" => banner,
       "background_image" => nil,
       "is_local" => true,
       "locked" => false,
-      "default_scope" => "public",
-      "no_rich_text" => false,
       "hide_follows" => false,
       "hide_followers" => false,
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
         "tags" => []
-      }
+      },
+      "rights" => %{"admin" => false, "delete_others_notice" => false},
+      "role" => "member"
     }
 
     blocker = User.get_cached_by_id(blocker.id)

@@ -16,11 +16,11 @@ defmodule Pleroma.Mixfile do
 
       # Docs
       name: "Pleroma",
-      source_url: "https://git.pleroma.social/pleroma/pleroma",
-      source_url_pattern:
-        "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
       homepage_url: "https://pleroma.social/",
+      source_url: "https://git.pleroma.social/pleroma/pleroma",
       docs: [
+        source_url_pattern:
+          "https://git.pleroma.social/pleroma/pleroma/blob/develop/%{path}#L%{line}",
         logo: "priv/static/static/logo.png",
         extras: ["README.md", "CHANGELOG.md"] ++ Path.wildcard("docs/**/*.md"),
         groups_for_extras: [
@@ -41,7 +41,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :esshd, :quack],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -84,9 +84,10 @@ defmodule Pleroma.Mixfile do
       {:ex_aws, "~> 2.0"},
       {:ex_aws_s3, "~> 2.0"},
       {:earmark, "~> 1.3"},
+      {:bbcode, "~> 0.1"},
       {:ex_machina, "~> 2.3", only: :test},
       {:credo, "~> 0.9.3", only: [:dev, :test]},
-      {:mock, "~> 0.3.1", only: :test},
+      {:mock, "~> 0.3.3", only: :test},
       {:crypt,
        git: "https://github.com/msantos/crypt", ref: "1f2b58927ab57e72910191a7ebaeff984382a1d3"},
       {:cors_plug, "~> 1.5"},
@@ -101,7 +102,7 @@ defmodule Pleroma.Mixfile do
       {:ueberauth, "~> 0.4"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
-       ref: "90613b4bae875a3610c275b7056b61ffdd53210d"},
+       ref: "c00c4e75b35367fa42c95ffd9b8c455bf9995829"},
       {:pleroma_job_queue, "~> 0.2.0"},
       {:telemetry, "~> 0.3"},
       {:prometheus_ex, "~> 3.0"},
@@ -110,7 +111,11 @@ defmodule Pleroma.Mixfile do
       {:prometheus_ecto, "~> 1.4"},
       {:prometheus_process_collector, "~> 1.4"},
       {:recon, github: "ferd/recon", tag: "2.4.0"},
-      {:quack, "~> 0.1.1"}
+      {:quack, "~> 0.1.1"},
+      {:benchee, "~> 1.0"},
+      {:esshd, "~> 0.1.0"},
+      {:ex_rated, "~> 1.2"},
+      {:plug_static_index_html, "~> 1.0.0"}
     ] ++ oauth_deps
   end
 

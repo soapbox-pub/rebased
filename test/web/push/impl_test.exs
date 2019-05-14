@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.Push.ImplTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Object
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Push.Impl
   alias Pleroma.Web.Push.Subscription
 
@@ -52,16 +54,12 @@ defmodule Pleroma.Web.Push.ImplTest do
       data: %{alerts: %{"follow" => true, "mention" => false}}
     )
 
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "<Lorem ipsum dolor sit amet."})
+
     notif =
       insert(:notification,
         user: user,
-        activity: %Pleroma.Activity{
-          data: %{
-            "type" => "Create",
-            "actor" => user.ap_id,
-            "object" => %{"content" => "<Lorem ipsum dolor sit amet."}
-          }
-        }
+        activity: activity
       )
 
     assert Impl.perform(notif) == [:ok, :ok]
@@ -100,48 +98,65 @@ defmodule Pleroma.Web.Push.ImplTest do
   end
 
   test "renders body for create activity" do
+    user = insert(:user, nickname: "Bob")
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" =>
+          "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
+      })
+
+    object = Object.normalize(activity)
+
     assert Impl.format_body(
              %{
-               activity: %{
-                 data: %{
-                   "type" => "Create",
-                   "object" => %{
-                     "content" =>
-                       "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
-                   }
-                 }
-               }
+               activity: activity
              },
-             %{nickname: "Bob"}
+             user,
+             object
            ) ==
              "@Bob: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
   end
 
   test "renders body for follow activity" do
-    assert Impl.format_body(%{activity: %{data: %{"type" => "Follow"}}}, %{nickname: "Bob"}) ==
+    user = insert(:user, nickname: "Bob")
+    other_user = insert(:user)
+    {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
+    object = Object.normalize(activity)
+
+    assert Impl.format_body(%{activity: activity}, user, object) ==
              "@Bob has followed you"
   end
 
   test "renders body for announce activity" do
     user = insert(:user)
 
-    note =
-      insert(:note, %{
-        data: %{
-          "content" =>
-            "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
-        }
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" =>
+          "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
       })
 
-    note_activity = insert(:note_activity, %{note: note})
-    announce_activity = insert(:announce_activity, %{user: user, note_activity: note_activity})
+    {:ok, announce_activity, _} = CommonAPI.repeat(activity.id, user)
+    object = Object.normalize(activity)
 
-    assert Impl.format_body(%{activity: announce_activity}, user) ==
+    assert Impl.format_body(%{activity: announce_activity}, user, object) ==
              "@#{user.nickname} repeated: Lorem ipsum dolor sit amet, consectetur  adipiscing elit. Fusce sagittis fini..."
   end
 
   test "renders body for like activity" do
-    assert Impl.format_body(%{activity: %{data: %{"type" => "Like"}}}, %{nickname: "Bob"}) ==
+    user = insert(:user, nickname: "Bob")
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" =>
+          "<span>Lorem ipsum dolor sit amet</span>, consectetur :firefox: adipiscing elit. Fusce sagittis finibus turpis."
+      })
+
+    {:ok, activity, _} = CommonAPI.favorite(activity.id, user)
+    object = Object.normalize(activity)
+
+    assert Impl.format_body(%{activity: activity}, user, object) ==
              "@Bob has favorited your post"
   end
 end

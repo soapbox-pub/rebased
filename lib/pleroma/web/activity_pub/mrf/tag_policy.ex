@@ -5,6 +5,19 @@
 defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
   alias Pleroma.User
   @behaviour Pleroma.Web.ActivityPub.MRF
+  @moduledoc """
+     Apply policies based on user tags
+
+     This policy applies policies on a user activities depending on their tags
+     on your instance.
+
+     - `mrf_tag:media-force-nsfw`: Mark as sensitive on presence of attachments
+     - `mrf_tag:media-strip`: Remove attachments
+     - `mrf_tag:force-unlisted`: Mark as unlisted (removes from the federated timeline)
+     - `mrf_tag:sandbox`: Remove from public (local and federated) timelines
+     - `mrf_tag:disable-remote-subscription`: Reject non-local follow requests
+     - `mrf_tag:disable-any-subscription`: Reject any follow requests
+  """
 
   defp get_tags(%User{tags: tags}) when is_list(tags), do: tags
   defp get_tags(_), do: []

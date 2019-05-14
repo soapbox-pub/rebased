@@ -59,7 +59,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       bio: "."
     }
 
-    changeset = User.register_changeset(%User{}, user_data, confirmed: true)
+    changeset = User.register_changeset(%User{}, user_data, need_confirmation: false)
     {:ok, user} = User.register(changeset)
 
     conn
@@ -101,7 +101,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     search_params = %{
       query: params["query"],
       page: page,
-      page_size: page_size
+      page_size: page_size,
+      tags: params["tags"],
+      name: params["name"],
+      email: params["email"]
     }
 
     with {:ok, users, count} <- Search.user(Map.merge(search_params, filters)),
@@ -116,11 +119,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
            )
   end
 
-  @filters ~w(local external active deactivated)
-
-  defp maybe_parse_filters(filters) when is_nil(filters) or filters == "", do: %{}
+  @filters ~w(local external active deactivated is_admin is_moderator)
 
   @spec maybe_parse_filters(String.t()) :: %{required(String.t()) => true} | %{}
+  defp maybe_parse_filters(filters) when is_nil(filters) or filters == "", do: %{}
+
   defp maybe_parse_filters(filters) do
     filters
     |> String.split(",")

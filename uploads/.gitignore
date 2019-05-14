@@ -1,0 +1,3 @@
+# Git will ignore everything in this directory except this file.
+*
+!.gitignore

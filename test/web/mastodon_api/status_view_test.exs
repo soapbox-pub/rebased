@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
   use Pleroma.DataCase
 
   alias Pleroma.Activity
+  alias Pleroma.Bookmark
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -151,6 +152,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("status.json", %{activity: activity, for: user})
 
     assert status.muted == true
+  end
+
+  test "tells if the status is bookmarked" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Cute girls doing cute things"})
+    status = StatusView.render("status.json", %{activity: activity})
+
+    assert status.bookmarked == false
+
+    status = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert status.bookmarked == false
+
+    {:ok, _bookmark} = Bookmark.create(user.id, activity.id)
+
+    activity = Activity.get_by_id_with_object(activity.id)
+
+    status = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert status.bookmarked == true
   end
 
   test "a reply" do

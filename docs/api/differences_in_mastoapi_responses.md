@@ -1,6 +1,6 @@
 # Differences in Mastodon API responses from vanilla Mastodon
 
-A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma <version>)" present in `version` field in response from `/api/v1/instance` 
+A Pleroma instance can be identified by "<Mastodon version> (compatible; Pleroma <version>)" present in `version` field in response from `/api/v1/instance`
 
 ## Flake IDs
 
@@ -38,9 +38,18 @@ Has these additional fields under the `pleroma` object:
 
 - `tags`: Lists an array of tags for the user
 - `relationship{}`: Includes fields as documented for Mastodon API https://docs.joinmastodon.org/api/entities/#relationship
-- `is_moderator`: boolean, true if user is a moderator
-- `is_admin`: boolean, true if user is an admin
+- `is_moderator`: boolean, nullable,  true if user is a moderator
+- `is_admin`: boolean, nullable, true if user is an admin
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
+- `hide_followers`: boolean, true when the user has follower hiding enabled
+- `hide_follows`: boolean, true when the user has follow hiding enabled
+
+### Source
+
+Has these additional fields under the `pleroma` object:
+
+- `show_role`: boolean, nullable, true when the user wants his role (e.g admin, moderator) to be shown
+- `no_rich_text` - boolean, nullable, true when html tags are stripped from all statuses requested from the API
 
 ## Account Search
 
@@ -60,3 +69,31 @@ Additional parameters can be added to the JSON body/Form data:
 
 - `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
+
+## PATCH `/api/v1/update_credentials`
+
+Additional parameters can be added to the JSON body/Form data:
+
+- `no_rich_text` - if true, html tags are stripped from all statuses requested from the API
+- `hide_followers` - if true, user's followers will be hidden
+- `hide_follows` - if true, user's follows will be hidden
+- `hide_favorites` - if true, user's favorites timeline will be hidden
+- `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
+- `default_scope` - the scope returned under `privacy` key in Source subentity
+
+## Authentication
+
+*Pleroma supports refreshing tokens.
+
+`POST /oauth/token`
+Post here request with grant_type=refresh_token to obtain new access token. Returns an access token.
+
+## Account Registration
+`POST /api/v1/accounts`
+
+Has theses additionnal parameters (which are the same as in Pleroma-API):
+    * `fullname`: optional
+    * `bio`: optional
+    * `captcha_solution`: optional, contains provider-specific captcha solution,
+    * `captcha_token`: optional, contains provider-specific captcha token
+    * `token`: invite token required when the registerations aren't public.

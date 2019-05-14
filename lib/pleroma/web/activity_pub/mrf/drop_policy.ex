@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.DropPolicy do
   require Logger
+  @moduledoc "Drop and log everything received"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   @impl true

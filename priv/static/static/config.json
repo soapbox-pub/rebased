@@ -8,7 +8,6 @@
   "redirectRootLogin": "/main/friends",
   "chatDisabled": false,
   "showInstanceSpecificPanel": false,
-  "scopeOptionsEnabled": false,
   "formattingOptionsEnabled": false,
   "collapseMessageWithSubject": false,
   "scopeCopy": true,
@@ -21,5 +20,6 @@
   "webPushNotifications": false,
   "noAttachmentLinks": false,
   "nsfwCensorImage": "",
-  "showFeaturesPanel": true
+  "showFeaturesPanel": true,
+  "minimalScopesMode": false
 }

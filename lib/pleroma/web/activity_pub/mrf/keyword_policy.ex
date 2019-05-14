@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
+  @moduledoc "Reject or Word-Replace messages with a keyword or regex"
+
   @behaviour Pleroma.Web.ActivityPub.MRF
   defp string_matches?(string, _) when not is_binary(string) do
     false

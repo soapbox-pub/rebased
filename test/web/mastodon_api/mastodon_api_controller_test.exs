@@ -16,6 +16,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.OAuth.App
+  alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Push
   alias Pleroma.Web.TwitterAPI.TwitterAPI
@@ -300,6 +301,65 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert status["url"] != direct.data["id"]
   end
 
+  test "Conversations", %{conn: conn} do
+    user_one = insert(:user)
+    user_two = insert(:user)
+
+    {:ok, user_two} = User.follow(user_two, user_one)
+
+    {:ok, direct} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "direct"
+      })
+
+    {:ok, _follower_only} =
+      CommonAPI.post(user_one, %{
+        "status" => "Hi @#{user_two.nickname}!",
+        "visibility" => "private"
+      })
+
+    res_conn =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/conversations")
+
+    assert response = json_response(res_conn, 200)
+
+    assert [
+             %{
+               "id" => res_id,
+               "accounts" => res_accounts,
+               "last_status" => res_last_status,
+               "unread" => unread
+             }
+           ] = response
+
+    assert length(res_accounts) == 2
+    assert is_binary(res_id)
+    assert unread == true
+    assert res_last_status["id"] == direct.id
+
+    # Apparently undocumented API endpoint
+    res_conn =
+      conn
+      |> assign(:user, user_one)
+      |> post("/api/v1/conversations/#{res_id}/read")
+
+    assert response = json_response(res_conn, 200)
+    assert length(response["accounts"]) == 2
+    assert response["last_status"]["id"] == direct.id
+    assert response["unread"] == false
+
+    # (vanilla) Mastodon frontend behaviour
+    res_conn =
+      conn
+      |> assign(:user, user_one)
+      |> get("/api/v1/statuses/#{res_last_status["id"]}/context")
+
+    assert %{"ancestors" => [], "descendants" => []} == json_response(res_conn, 200)
+  end
+
   test "doesn't include DMs from blocked users", %{conn: conn} do
     blocker = insert(:user)
     blocked = insert(:user)
@@ -513,6 +573,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert response = json_response(conn, 200)
       assert response["phrase"] == filter.phrase
       assert response["context"] == filter.context
+      assert response["irreversible"] == false
       assert response["id"] != nil
       assert response["id"] != ""
     end
@@ -1022,7 +1083,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       user2 = insert(:user)
       user3 = insert(:user)
       CommonAPI.favorite(activity.id, user2)
-      {:ok, user2} = User.bookmark(user2, activity.data["object"]["id"])
+      {:ok, _bookmark} = Pleroma.Bookmark.create(user2.id, activity.id)
       {:ok, reblog_activity1, _object} = CommonAPI.repeat(activity.id, user1)
       {:ok, _, _object} = CommonAPI.repeat(activity.id, user2)
 
@@ -2214,6 +2275,78 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["locked"] == true
     end
 
+    test "updates the user's default scope", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{default_scope: "cofe"})
+
+      assert user = json_response(conn, 200)
+      assert user["source"]["privacy"] == "cofe"
+    end
+
+    test "updates the user's hide_followers status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{hide_followers: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["hide_followers"] == true
+    end
+
+    test "updates the user's hide_follows status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{hide_follows: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["hide_follows"] == true
+    end
+
+    test "updates the user's hide_favorites status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{hide_favorites: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["pleroma"]["hide_favorites"] == true
+    end
+
+    test "updates the user's show_role status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{show_role: "false"})
+
+      assert user = json_response(conn, 200)
+      assert user["source"]["pleroma"]["show_role"] == false
+    end
+
+    test "updates the user's no_rich_text status", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{no_rich_text: "true"})
+
+      assert user = json_response(conn, 200)
+      assert user["source"]["pleroma"]["no_rich_text"] == true
+    end
+
     test "updates the user's name", %{conn: conn} do
       user = insert(:user)
 
@@ -2278,6 +2411,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           assert json_response(conn, 200)
         end
       end
+    end
+
+    test "updates profile emojos", %{conn: conn} do
+      user = insert(:user)
+
+      note = "*sips :blank:*"
+      name = "I am :firefox:"
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "note" => note,
+          "display_name" => name
+        })
+
+      assert json_response(conn, 200)
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}")
+
+      assert user = json_response(conn, 200)
+
+      assert user["note"] == note
+      assert user["display_name"] == name
+      assert [%{"shortcode" => "blank"}, %{"shortcode" => "firefox"}] = user["emojis"]
     end
   end
 
@@ -3056,5 +3216,130 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     replied_to_user = User.get_by_ap_id(replied_to.data["actor"])
     assert reblogged_activity["reblog"]["in_reply_to_account_id"] == replied_to_user.id
+  end
+
+  describe "create account by app" do
+    setup do
+      enabled = Pleroma.Config.get([:app_account_creation, :enabled])
+      max_requests = Pleroma.Config.get([:app_account_creation, :max_requests])
+      interval = Pleroma.Config.get([:app_account_creation, :interval])
+
+      Pleroma.Config.put([:app_account_creation, :enabled], true)
+      Pleroma.Config.put([:app_account_creation, :max_requests], 5)
+      Pleroma.Config.put([:app_account_creation, :interval], 1)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:app_account_creation, :enabled], enabled)
+        Pleroma.Config.put([:app_account_creation, :max_requests], max_requests)
+        Pleroma.Config.put([:app_account_creation, :interval], interval)
+      end)
+
+      :ok
+    end
+
+    test "Account registration via Application", %{conn: conn} do
+      conn =
+        conn
+        |> post("/api/v1/apps", %{
+          client_name: "client_name",
+          redirect_uris: "urn:ietf:wg:oauth:2.0:oob",
+          scopes: "read, write, follow"
+        })
+
+      %{
+        "client_id" => client_id,
+        "client_secret" => client_secret,
+        "id" => _,
+        "name" => "client_name",
+        "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
+        "vapid_key" => _,
+        "website" => nil
+      } = json_response(conn, 200)
+
+      conn =
+        conn
+        |> post("/oauth/token", %{
+          grant_type: "client_credentials",
+          client_id: client_id,
+          client_secret: client_secret
+        })
+
+      assert %{"access_token" => token, "refresh_token" => refresh, "scope" => scope} =
+               json_response(conn, 200)
+
+      assert token
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      assert refresh
+      assert scope == "read write follow"
+
+      conn =
+        build_conn()
+        |> put_req_header("authorization", "Bearer " <> token)
+        |> post("/api/v1/accounts", %{
+          username: "lain",
+          email: "lain@example.org",
+          password: "PlzDontHackLain",
+          agreement: true
+        })
+
+      %{
+        "access_token" => token,
+        "created_at" => _created_at,
+        "scope" => _scope,
+        "token_type" => "Bearer"
+      } = json_response(conn, 200)
+
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      token_from_db = Repo.preload(token_from_db, :user)
+      assert token_from_db.user
+
+      assert token_from_db.user.info.confirmation_pending
+    end
+
+    test "rate limit", %{conn: conn} do
+      app_token = insert(:oauth_token, user: nil)
+
+      conn =
+        put_req_header(conn, "authorization", "Bearer " <> app_token.token)
+        |> Map.put(:remote_ip, {15, 15, 15, 15})
+
+      for i <- 1..5 do
+        conn =
+          conn
+          |> post("/api/v1/accounts", %{
+            username: "#{i}lain",
+            email: "#{i}lain@example.org",
+            password: "PlzDontHackLain",
+            agreement: true
+          })
+
+        %{
+          "access_token" => token,
+          "created_at" => _created_at,
+          "scope" => _scope,
+          "token_type" => "Bearer"
+        } = json_response(conn, 200)
+
+        token_from_db = Repo.get_by(Token, token: token)
+        assert token_from_db
+        token_from_db = Repo.preload(token_from_db, :user)
+        assert token_from_db.user
+
+        assert token_from_db.user.info.confirmation_pending
+      end
+
+      conn =
+        conn
+        |> post("/api/v1/accounts", %{
+          username: "6lain",
+          email: "6lain@example.org",
+          password: "PlzDontHackLain",
+          agreement: true
+        })
+
+      assert json_response(conn, 403) == %{"error" => "Rate limit exceeded."}
+    end
   end
 end

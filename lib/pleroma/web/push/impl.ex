@@ -21,8 +21,10 @@ defmodule Pleroma.Web.Push.Impl do
   @doc "Performs sending notifications for user subscriptions"
   @spec perform(Notification.t()) :: list(any) | :error
   def perform(
-        %{activity: %{data: %{"type" => activity_type}, id: activity_id}, user_id: user_id} =
-          notif
+        %{
+          activity: %{data: %{"type" => activity_type}, id: activity_id} = activity,
+          user_id: user_id
+        } = notif
       )
       when activity_type in @types do
     actor = User.get_cached_by_ap_id(notif.activity.data["actor"])
@@ -30,13 +32,14 @@ defmodule Pleroma.Web.Push.Impl do
     type = Activity.mastodon_notification_type(notif.activity)
     gcm_api_key = Application.get_env(:web_push_encryption, :gcm_api_key)
     avatar_url = User.avatar_url(actor)
+    object = Object.normalize(activity)
 
     for subscription <- fetch_subsriptions(user_id),
         get_in(subscription.data, ["alerts", type]) do
       %{
         title: format_title(notif),
         access_token: subscription.token.token,
-        body: format_body(notif, actor),
+        body: format_body(notif, actor, object),
         notification_id: notif.id,
         notification_type: type,
         icon: avatar_url,
@@ -95,25 +98,25 @@ defmodule Pleroma.Web.Push.Impl do
   end
 
   def format_body(
-        %{activity: %{data: %{"type" => "Create", "object" => %{"content" => content}}}},
-        actor
+        %{activity: %{data: %{"type" => "Create"}}},
+        actor,
+        %{data: %{"content" => content}}
       ) do
     "@#{actor.nickname}: #{Utils.scrub_html_and_truncate(content, 80)}"
   end
 
   def format_body(
-        %{activity: %{data: %{"type" => "Announce", "object" => activity_id}}},
-        actor
+        %{activity: %{data: %{"type" => "Announce"}}},
+        actor,
+        %{data: %{"content" => content}}
       ) do
-    %Activity{data: %{"object" => %{"id" => object_id}}} = Activity.get_by_ap_id(activity_id)
-    %Object{data: %{"content" => content}} = Object.get_by_ap_id(object_id)
-
     "@#{actor.nickname} repeated: #{Utils.scrub_html_and_truncate(content, 80)}"
   end
 
   def format_body(
         %{activity: %{data: %{"type" => type}}},
-        actor
+        actor,
+        _object
       )
       when type in ["Follow", "Like"] do
     case type do

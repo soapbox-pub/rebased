@@ -219,7 +219,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       Pleroma.Config.put([:user, :deny_follow_blocked], true)
 
       user = insert(:user)
-      target = User.get_or_fetch("http://mastodon.example.org/users/admin")
+      {:ok, target} = User.get_or_fetch("http://mastodon.example.org/users/admin")
 
       {:ok, user} = User.block(user, target)
 

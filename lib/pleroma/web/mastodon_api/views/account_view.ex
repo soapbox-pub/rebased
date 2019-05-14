@@ -113,21 +113,23 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       bot: bot,
       source: %{
         note: "",
-        privacy: user_info.default_scope,
-        sensitive: false
+        sensitive: false,
+        pleroma: %{}
       },
 
       # Pleroma extension
-      pleroma:
-        %{
-          confirmation_pending: user_info.confirmation_pending,
-          tags: user.tags,
-          is_moderator: user.info.is_moderator,
-          is_admin: user.info.is_admin,
-          relationship: relationship
-        }
-        |> with_notification_settings(user, opts[:for])
+      pleroma: %{
+        confirmation_pending: user_info.confirmation_pending,
+        tags: user.tags,
+        hide_followers: user.info.hide_followers,
+        hide_follows: user.info.hide_follows,
+        hide_favorites: user.info.hide_favorites,
+        relationship: relationship
+      }
     }
+    |> maybe_put_role(user, opts[:for])
+    |> maybe_put_settings(user, opts[:for], user_info)
+    |> maybe_put_notification_settings(user, opts[:for])
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -136,9 +138,37 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
 
   defp username_from_nickname(_), do: nil
 
-  defp with_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
-    Map.put(data, :notification_settings, user.info.notification_settings)
+  defp maybe_put_settings(
+         data,
+         %User{id: user_id} = user,
+         %User{id: user_id},
+         user_info
+       ) do
+    data
+    |> Kernel.put_in([:source, :privacy], user_info.default_scope)
+    |> Kernel.put_in([:source, :pleroma, :show_role], user.info.show_role)
+    |> Kernel.put_in([:source, :pleroma, :no_rich_text], user.info.no_rich_text)
   end
 
-  defp with_notification_settings(data, _, _), do: data
+  defp maybe_put_settings(data, _, _, _), do: data
+
+  defp maybe_put_role(data, %User{info: %{show_role: true}} = user, _) do
+    data
+    |> Kernel.put_in([:pleroma, :is_admin], user.info.is_admin)
+    |> Kernel.put_in([:pleroma, :is_moderator], user.info.is_moderator)
+  end
+
+  defp maybe_put_role(data, %User{id: user_id} = user, %User{id: user_id}) do
+    data
+    |> Kernel.put_in([:pleroma, :is_admin], user.info.is_admin)
+    |> Kernel.put_in([:pleroma, :is_moderator], user.info.is_moderator)
+  end
+
+  defp maybe_put_role(data, _, _), do: data
+
+  defp maybe_put_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
+    Kernel.put_in(data, [:pleroma, :notification_settings], user.info.notification_settings)
+  end
+
+  defp maybe_put_notification_settings(data, _, _), do: data
 end

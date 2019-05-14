@@ -13,6 +13,8 @@ defmodule Pleroma.Web.OAuth.Authorization do
   import Ecto.Changeset
   import Ecto.Query
 
+  @type t :: %__MODULE__{}
+
   schema "oauth_authorizations" do
     field(:token, :string)
     field(:scopes, {:array, :string}, default: [])
@@ -24,28 +26,45 @@ defmodule Pleroma.Web.OAuth.Authorization do
     timestamps()
   end
 
+  @spec create_authorization(App.t(), User.t() | %{}, [String.t()] | nil) ::
+          {:ok, Authorization.t()} | {:error, Changeset.t()}
   def create_authorization(%App{} = app, %User{} = user, scopes \\ nil) do
-    scopes = scopes || app.scopes
-    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
-
-    authorization = %Authorization{
-      token: token,
-      used: false,
+    %{
+      scopes: scopes || app.scopes,
       user_id: user.id,
-      app_id: app.id,
-      scopes: scopes,
-      valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10)
+      app_id: app.id
     }
-
-    Repo.insert(authorization)
+    |> create_changeset()
+    |> Repo.insert()
   end
 
+  @spec create_changeset(map()) :: Changeset.t()
+  def create_changeset(attrs \\ %{}) do
+    %Authorization{}
+    |> cast(attrs, [:user_id, :app_id, :scopes, :valid_until])
+    |> validate_required([:app_id, :scopes])
+    |> add_token()
+    |> add_lifetime()
+  end
+
+  defp add_token(changeset) do
+    token = :crypto.strong_rand_bytes(32) |> Base.url_encode64(padding: false)
+    put_change(changeset, :token, token)
+  end
+
+  defp add_lifetime(changeset) do
+    put_change(changeset, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), 60 * 10))
+  end
+
+  @spec use_changeset(Authtorizatiton.t(), map()) :: Changeset.t()
   def use_changeset(%Authorization{} = auth, params) do
     auth
     |> cast(params, [:used])
     |> validate_required([:used])
   end
 
+  @spec use_token(Authorization.t()) ::
+          {:ok, Authorization.t()} | {:error, Changeset.t()} | {:error, String.t()}
   def use_token(%Authorization{used: false, valid_until: valid_until} = auth) do
     if NaiveDateTime.diff(NaiveDateTime.utc_now(), valid_until) < 0 do
       Repo.update(use_changeset(auth, %{used: true}))
@@ -56,11 +75,19 @@ defmodule Pleroma.Web.OAuth.Authorization do
 
   def use_token(%Authorization{used: true}), do: {:error, "already used"}
 
+  @spec delete_user_authorizations(User.t()) :: {integer(), any()}
   def delete_user_authorizations(%User{id: user_id}) do
     from(
       a in Pleroma.Web.OAuth.Authorization,
       where: a.user_id == ^user_id
     )
     |> Repo.delete_all()
+  end
+
+  @doc "gets auth for app by token"
+  @spec get_by_token(App.t(), String.t()) :: {:ok, t()} | {:error, :not_found}
+  def get_by_token(%App{id: app_id} = _app, token) do
+    from(t in __MODULE__, where: t.app_id == ^app_id and t.token == ^token)
+    |> Repo.find_resource()
   end
 end

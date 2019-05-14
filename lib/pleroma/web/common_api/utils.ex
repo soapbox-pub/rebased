@@ -191,6 +191,18 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   @doc """
+  Formatting text as BBCode.
+  """
+  def format_input(text, "text/bbcode", options) do
+    text
+    |> String.replace(~r/\r/, "")
+    |> Formatter.html_escape("text/plain")
+    |> BBCode.to_html()
+    |> (fn {:ok, html} -> html end).()
+    |> Formatter.linkify(options)
+  end
+
+  @doc """
   Formatting text to html.
   """
   def format_input(text, "text/html", options) do

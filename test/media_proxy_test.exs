@@ -7,15 +7,15 @@ defmodule Pleroma.MediaProxyTest do
   import Pleroma.Web.MediaProxy
   alias Pleroma.Web.MediaProxy.MediaProxyController
 
+  setup do
+    enabled = Pleroma.Config.get([:media_proxy, :enabled])
+    on_exit(fn -> Pleroma.Config.put([:media_proxy, :enabled], enabled) end)
+    :ok
+  end
+
   describe "when enabled" do
     setup do
-      enabled = Pleroma.Config.get([:media_proxy, :enabled])
-
-      unless enabled do
-        Pleroma.Config.put([:media_proxy, :enabled], true)
-        on_exit(fn -> Pleroma.Config.put([:media_proxy, :enabled], enabled) end)
-      end
-
+      Pleroma.Config.put([:media_proxy, :enabled], true)
       :ok
     end
 
@@ -176,5 +176,14 @@ defmodule Pleroma.MediaProxyTest do
     [_, "proxy", sig, base64 | _] = URI.parse(encoded).path |> String.split("/")
     {:ok, decoded} = decode_url(sig, base64)
     decoded
+  end
+
+  test "mediaproxy whitelist" do
+    Pleroma.Config.put([:media_proxy, :enabled], true)
+    Pleroma.Config.put([:media_proxy, :whitelist], ["google.com", "feld.me"])
+    url = "https://feld.me/foo.png"
+
+    unencoded = url(url)
+    assert unencoded == url
   end
 end

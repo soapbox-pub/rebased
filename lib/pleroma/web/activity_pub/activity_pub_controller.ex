@@ -155,7 +155,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def inbox(%{assigns: %{valid_signature: true}} = conn, %{"nickname" => nickname} = params) do
     with %User{} = recipient <- User.get_cached_by_nickname(nickname),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(params["actor"]),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(params["actor"]),
          true <- Utils.recipient_in_message(recipient, actor, params),
          params <- Utils.maybe_splice_recipient(recipient.ap_id, params) do
       Federator.incoming_ap_doc(params)

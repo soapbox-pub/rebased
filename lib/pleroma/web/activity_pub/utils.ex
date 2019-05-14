@@ -682,7 +682,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def fetch_ordered_collection(from, pages_left, acc \\ []) do
     with {:ok, response} <- Tesla.get(from),
-         {:ok, collection} <- Poison.decode(response.body) do
+         {:ok, collection} <- Jason.decode(response.body) do
       case collection["type"] do
         "OrderedCollection" ->
           # If we've encountered the OrderedCollection and not the page,

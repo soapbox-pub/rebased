@@ -126,7 +126,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     proceed? = assume_yes? or Mix.shell().yes?("Continue?")
 
-    unless not proceed? do
+    if proceed? do
       Common.start_pleroma()
 
       params = %{
@@ -138,7 +138,7 @@ defmodule Mix.Tasks.Pleroma.User do
         bio: bio
       }
 
-      changeset = User.register_changeset(%User{}, params, confirmed: true)
+      changeset = User.register_changeset(%User{}, params, need_confirmation: false)
       {:ok, _user} = User.register(changeset)
 
       Mix.shell().info("User #{nickname} created")
@@ -163,7 +163,7 @@ defmodule Mix.Tasks.Pleroma.User do
     Common.start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.delete(user)
+      User.perform(:delete, user)
       Mix.shell().info("User #{nickname} deleted.")
     else
       _ ->
@@ -380,7 +380,7 @@ defmodule Mix.Tasks.Pleroma.User do
     Common.start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.delete_user_activities(user)
+      {:ok, _} = User.delete_user_activities(user)
       Mix.shell().info("User #{nickname} statuses deleted.")
     else
       _ ->

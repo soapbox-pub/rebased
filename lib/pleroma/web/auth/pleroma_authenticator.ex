@@ -8,19 +8,14 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
   alias Pleroma.Repo
   alias Pleroma.User
 
+  import Pleroma.Web.Auth.Authenticator,
+    only: [fetch_credentials: 1, fetch_user: 1]
+
   @behaviour Pleroma.Web.Auth.Authenticator
 
   def get_user(%Plug.Conn{} = conn) do
-    {name, password} =
-      case conn.params do
-        %{"authorization" => %{"name" => name, "password" => password}} ->
-          {name, password}
-
-        %{"grant_type" => "password", "username" => name, "password" => password} ->
-          {name, password}
-      end
-
-    with {_, %User{} = user} <- {:user, User.get_by_nickname_or_email(name)},
+    with {:ok, {name, password}} <- fetch_credentials(conn),
+         {_, %User{} = user} <- {:user, fetch_user(name)},
          {_, true} <- {:checkpw, Pbkdf2.checkpw(password, user.password_hash)} do
       {:ok, user}
     else
@@ -79,7 +74,7 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
                password_confirmation: random_password
              },
              external: true,
-             confirmed: true
+             need_confirmation: false
            )
            |> Repo.insert(),
          {:ok, _} <-

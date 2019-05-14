@@ -35,7 +35,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
   defp csp_string do
     scheme = Config.get([Pleroma.Web.Endpoint, :url])[:scheme]
     static_url = Pleroma.Web.Endpoint.static_url()
-    websocket_url = String.replace(static_url, "http", "ws")
+    websocket_url = Pleroma.Web.Endpoint.websocket_url()
 
     connect_src = "connect-src 'self' #{static_url} #{websocket_url}"
 
