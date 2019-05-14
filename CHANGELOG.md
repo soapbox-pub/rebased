@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth: added support for refresh tokens
 - Emoji packs and emoji pack manager
 - AdminFE: initial release with basic user management accessible at /pleroma/admin/
+- Addressable lists
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
