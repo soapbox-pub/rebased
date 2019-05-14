@@ -105,16 +105,28 @@ defmodule Pleroma.User do
   def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
 
   def user_info(%User{} = user) do
-    oneself = if user.local, do: 1, else: 0
-
     %{
-      following_count: length(user.following) - oneself,
+      following_count: following_count(user),
       note_count: user.info.note_count,
       follower_count: user.info.follower_count,
       locked: user.info.locked,
       confirmation_pending: user.info.confirmation_pending,
       default_scope: user.info.default_scope
     }
+  end
+
+  def restrict_deactivated(query) do
+    from(u in query,
+      where: not fragment("? \\? 'deactivated' AND ?->'deactivated' @> 'true'", u.info, u.info)
+    )
+  end
+
+  def following_count(%User{following: []}), do: 0
+
+  def following_count(%User{} = user) do
+    user
+    |> get_friends_query()
+    |> Repo.aggregate(:count, :id)
   end
 
   def remote_user_creation(params) do
@@ -255,7 +267,7 @@ defmodule Pleroma.User do
     candidates = Pleroma.Config.get([:instance, :autofollowed_nicknames])
 
     autofollowed_users =
-      User.Query.build(%{nickname: candidates, local: true})
+      User.Query.build(%{nickname: candidates, local: true, deactivated: false})
       |> Repo.all()
 
     follow_all(user, autofollowed_users)
@@ -576,7 +588,7 @@ defmodule Pleroma.User do
 
   @spec get_followers_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_followers_query(%User{} = user, nil) do
-    User.Query.build(%{followers: user})
+    User.Query.build(%{followers: user, deactivated: false})
   end
 
   def get_followers_query(user, page) do
@@ -601,7 +613,7 @@ defmodule Pleroma.User do
 
   @spec get_friends_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_friends_query(%User{} = user, nil) do
-    User.Query.build(%{friends: user})
+    User.Query.build(%{friends: user, deactivated: false})
   end
 
   def get_friends_query(user, page) do
@@ -691,16 +703,16 @@ defmodule Pleroma.User do
 
     info_cng = User.Info.set_note_count(user.info, note_count)
 
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    user
+    |> change()
+    |> put_embed(:info, info_cng)
+    |> update_and_set_cache()
   end
 
   def update_follower_count(%User{} = user) do
     follower_count_query =
-      User.Query.build(%{followers: user}) |> select([u], %{count: count(u.id)})
+      User.Query.build(%{followers: user, deactivated: false})
+      |> select([u], %{count: count(u.id)})
 
     User
     |> where(id: ^user.id)
@@ -725,7 +737,7 @@ defmodule Pleroma.User do
 
   @spec get_users_from_set([String.t()], boolean()) :: [User.t()]
   def get_users_from_set(ap_ids, local_only \\ true) do
-    criteria = %{ap_id: ap_ids}
+    criteria = %{ap_id: ap_ids, deactivated: false}
     criteria = if local_only, do: Map.put(criteria, :local, true), else: criteria
 
     User.Query.build(criteria)
@@ -734,7 +746,7 @@ defmodule Pleroma.User do
 
   @spec get_recipients_from_activity(Activity.t()) :: [User.t()]
   def get_recipients_from_activity(%Activity{recipients: to}) do
-    User.Query.build(%{recipients_from_activity: to, local: true})
+    User.Query.build(%{recipients_from_activity: to, local: true, deactivated: false})
     |> Repo.all()
   end
 
@@ -832,6 +844,7 @@ defmodule Pleroma.User do
           ^processed_query
         )
     )
+    |> restrict_deactivated()
   end
 
   defp trigram_search_subquery(term) do
@@ -850,6 +863,7 @@ defmodule Pleroma.User do
       },
       where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
     )
+    |> restrict_deactivated()
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
@@ -999,19 +1013,19 @@ defmodule Pleroma.User do
 
   @spec muted_users(User.t()) :: [User.t()]
   def muted_users(user) do
-    User.Query.build(%{ap_id: user.info.mutes})
+    User.Query.build(%{ap_id: user.info.mutes, deactivated: false})
     |> Repo.all()
   end
 
   @spec blocked_users(User.t()) :: [User.t()]
   def blocked_users(user) do
-    User.Query.build(%{ap_id: user.info.blocks})
+    User.Query.build(%{ap_id: user.info.blocks, deactivated: false})
     |> Repo.all()
   end
 
   @spec subscribers(User.t()) :: [User.t()]
   def subscribers(user) do
-    User.Query.build(%{ap_id: user.info.subscribers})
+    User.Query.build(%{ap_id: user.info.subscribers, deactivated: false})
     |> Repo.all()
   end
 
@@ -1039,14 +1053,27 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
+  def deactivate_async(user, status \\ true) do
+    PleromaJobQueue.enqueue(:background, __MODULE__, [:deactivate_async, user, status])
+  end
+
+  def perform(:deactivate_async, user, status), do: deactivate(user, status)
+
   def deactivate(%User{} = user, status \\ true) do
     info_cng = User.Info.set_activation_status(user.info, status)
 
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
+    with {:ok, friends} <- User.get_friends(user),
+         {:ok, followers} <- User.get_followers(user),
+         {:ok, user} <-
+           user
+           |> change()
+           |> put_embed(:info, info_cng)
+           |> update_and_set_cache() do
+      Enum.each(followers, &invalidate_cache(&1))
+      Enum.each(friends, &update_follower_count(&1))
 
-    update_and_set_cache(cng)
+      {:ok, user}
+    end
   end
 
   def update_notification_settings(%User{} = user, settings \\ %{}) do
@@ -1320,7 +1347,7 @@ defmodule Pleroma.User do
 
   @spec all_superusers() :: [User.t()]
   def all_superusers do
-    User.Query.build(%{super_users: true, local: true})
+    User.Query.build(%{super_users: true, local: true, deactivated: false})
     |> Repo.all()
   end
 

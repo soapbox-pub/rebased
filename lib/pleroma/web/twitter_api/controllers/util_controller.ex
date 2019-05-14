@@ -360,6 +360,17 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def disable_account(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+      {:ok, user} ->
+        User.deactivate_async(user)
+        json(conn, %{status: "success"})
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
   def captcha(conn, _params) do
     json(conn, Pleroma.Captcha.new())
   end

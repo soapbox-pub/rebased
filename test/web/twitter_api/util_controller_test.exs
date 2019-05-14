@@ -251,4 +251,22 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
     assert conn.status in [200, 503]
   end
+
+  describe "POST /api/pleroma/disable_account" do
+    test "it returns HTTP 200", %{conn: conn} do
+      user = insert(:user)
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post("/api/pleroma/disable_account", %{"password" => "test"})
+        |> json_response(:ok)
+
+      assert response == %{"status" => "success"}
+
+      user = User.get_cached_by_id(user.id)
+
+      assert user.info.deactivated == true
+    end
+  end
 end

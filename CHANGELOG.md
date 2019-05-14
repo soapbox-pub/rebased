@@ -64,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Deps: Updated Ecto to 3.0.7
 - Don't ship finmoji by default, they can be installed as an emoji pack
 - Admin API: Move the user related API to `api/pleroma/admin/users`
+- Hide deactivated users and their statuses
 
 ### Fixed
 - Added an FTS index on objects. Running `vacuum analyze` and setting a larger `work_mem` is recommended.

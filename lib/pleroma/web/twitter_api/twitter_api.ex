@@ -236,12 +236,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   def get_user(user \\ nil, params) do
     case params do
       %{"user_id" => user_id} ->
-        case target = User.get_cached_by_nickname_or_id(user_id) do
+        case User.get_cached_by_nickname_or_id(user_id) do
           nil ->
             {:error, "No user with such user_id"}
 
-          _ ->
-            {:ok, target}
+          %User{info: %{deactivated: true}} ->
+            {:error, "User has been disabled"}
+
+          user ->
+            {:ok, user}
         end
 
       %{"screen_name" => nickname} ->
