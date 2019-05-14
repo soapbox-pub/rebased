@@ -462,6 +462,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute Enum.member?(activities, activity_three.id)
   end
 
+  test "doesn't return activities from blocked domains" do
+    domain = "dogwhistle.zone"
+    domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
+    note = insert(:note, %{data: %{"actor" => domain_user.ap_id}})
+    activity = insert(:note_activity, %{note: note})
+    user = insert(:user)
+    {:ok, user} = User.block_domain(user, domain)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+
+    refute activity in activities
+  end
+
   test "doesn't return muted activities" do
     activity_one = insert(:note_activity)
     activity_two = insert(:note_activity)
