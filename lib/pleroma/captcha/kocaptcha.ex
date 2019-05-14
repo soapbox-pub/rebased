@@ -15,7 +15,7 @@ defmodule Pleroma.Captcha.Kocaptcha do
         %{error: "Kocaptcha service unavailable"}
 
       {:ok, res} ->
-        json_resp = Poison.decode!(res.body)
+        json_resp = Jason.decode!(res.body)
 
         %{
           type: :kocaptcha,

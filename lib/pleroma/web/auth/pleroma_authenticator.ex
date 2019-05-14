@@ -74,7 +74,7 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
                password_confirmation: random_password
              },
              external: true,
-             confirmed: true
+             need_confirmation: false
            )
            |> Repo.insert(),
          {:ok, _} <-

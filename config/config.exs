@@ -212,6 +212,11 @@ config :pleroma, :instance,
   registrations_open: true,
   federating: true,
   federation_reachability_timeout_days: 7,
+  federation_publisher_modules: [
+    Pleroma.Web.ActivityPub.Publisher,
+    Pleroma.Web.Websub,
+    Pleroma.Web.Salmon
+  ],
   allow_relay: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
@@ -233,6 +238,8 @@ config :pleroma, :instance,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
   healthcheck: false
+
+config :pleroma, :app_account_creation, enabled: false, max_requests: 5, interval: 1800
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because

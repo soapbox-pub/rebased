@@ -350,7 +350,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it creates confirmed user if :confirmed option is given" do
-      changeset = User.register_changeset(%User{}, @full_user_data, confirmed: true)
+      changeset = User.register_changeset(%User{}, @full_user_data, need_confirmation: false)
       assert changeset.valid?
 
       {:ok, user} = Repo.insert(changeset)
@@ -864,10 +864,12 @@ defmodule Pleroma.UserTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}"})
 
+      activity = Repo.preload(activity, :bookmark)
+
       [notification] = Pleroma.Notification.for_user(user2)
       assert notification.activity.id == activity.id
 
-      assert [activity] == ActivityPub.fetch_public_activities(%{})
+      assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
 
       assert [activity] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})

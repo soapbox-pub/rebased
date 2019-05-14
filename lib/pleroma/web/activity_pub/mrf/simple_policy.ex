@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   alias Pleroma.User
+  @moduledoc "Filter activities depending on their origin instance"
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   defp check_accept(%{host: actor_host} = _actor_info, object) do

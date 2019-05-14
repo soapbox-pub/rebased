@@ -8,6 +8,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Activity
   alias Pleroma.Bookmark
   alias Pleroma.Config
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Filter
   alias Pleroma.Formatter
   alias Pleroma.Notification
@@ -24,6 +25,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.AppView
+  alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.FilterView
   alias Pleroma.Web.MastodonAPI.ListView
   alias Pleroma.Web.MastodonAPI.MastodonAPI
@@ -35,12 +37,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   alias Pleroma.Web.ControllerHelper
   import Ecto.Query
 
   require Logger
+
+  plug(
+    Pleroma.Plugs.RateLimitPlug,
+    %{
+      max_requests: Config.get([:app_account_creation, :max_requests]),
+      interval: Config.get([:app_account_creation, :interval])
+    }
+    when action in [:account_register]
+  )
 
   @httpoison Application.get_env(:pleroma, :httpoison)
   @local_mastodon_name "Mastodon-Local"
@@ -48,7 +61,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   action_fallback(:errors)
 
   def create_app(conn, params) do
-    scopes = ControllerHelper.oauth_scopes(params, ["read"])
+    scopes = Scopes.fetch_scopes(params, ["read"])
 
     app_attrs =
       params
@@ -165,7 +178,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  @mastodon_api_level "2.5.0"
+  @mastodon_api_level "2.7.2"
 
   def masto_instance(conn, _params) do
     instance = Config.get(:instance)
@@ -293,8 +306,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> ActivityPub.contain_timeline(user)
       |> Enum.reverse()
 
-    user = Repo.preload(user, bookmarks: :activity)
-
     conn
     |> add_link_headers(:home_timeline, activities)
     |> put_view(StatusView)
@@ -313,8 +324,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> ActivityPub.fetch_public_activities()
       |> Enum.reverse()
 
-    user = Repo.preload(user, bookmarks: :activity)
-
     conn
     |> add_link_headers(:public_timeline, activities, false, %{"local" => local_only})
     |> put_view(StatusView)
@@ -322,8 +331,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_id(params["id"]),
-         reading_user <- Repo.preload(reading_user, :bookmarks) do
+    with %User{} = user <- User.get_cached_by_id(params["id"]) do
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 
       conn
@@ -350,8 +358,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> ActivityPub.fetch_activities_query(params)
       |> Pagination.fetch_paginated(params)
 
-    user = Repo.preload(user, bookmarks: :activity)
-
     conn
     |> add_link_headers(:dm_timeline, activities)
     |> put_view(StatusView)
@@ -361,8 +367,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def get_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{} = activity <- Activity.get_by_id_with_object(id),
          true <- Visibility.visible_for_user?(activity, user) do
-      user = Repo.preload(user, bookmarks: :activity)
-
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user})
@@ -512,8 +516,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def reblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
     with {:ok, announce, _activity} <- CommonAPI.repeat(ap_id_or_id, user),
          %Activity{} = announce <- Activity.normalize(announce.data) do
-      user = Repo.preload(user, bookmarks: :activity)
-
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: announce, for: user, as: :activity})
@@ -523,8 +525,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def unreblog_status(%{assigns: %{user: user}} = conn, %{"id" => ap_id_or_id}) do
     with {:ok, _unannounce, %{data: %{"id" => id}}} <- CommonAPI.unrepeat(ap_id_or_id, user),
          %Activity{} = activity <- Activity.get_create_by_object_ap_id_with_object(id) do
-      user = Repo.preload(user, bookmarks: :activity)
-
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
@@ -575,8 +575,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, _bookmark} <- Bookmark.create(user.id, activity.id) do
-      user = Repo.preload(user, bookmarks: :activity)
-
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
@@ -588,8 +586,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          %User{} = user <- User.get_cached_by_nickname(user.nickname),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, _bookmark} <- Bookmark.destroy(user.id, activity.id) do
-      user = Repo.preload(user, bookmarks: :activity)
-
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
@@ -1110,8 +1106,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       ActivityPub.fetch_activities([], params)
       |> Enum.reverse()
 
-    user = Repo.preload(user, bookmarks: :activity)
-
     conn
     |> add_link_headers(:favourites, activities)
     |> put_view(StatusView)
@@ -1157,7 +1151,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def bookmarks(%{assigns: %{user: user}} = conn, params) do
     user = User.get_cached_by_id(user.id)
-    user = Repo.preload(user, bookmarks: :activity)
 
     bookmarks =
       Bookmark.for_user_query(user.id)
@@ -1165,7 +1158,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     activities =
       bookmarks
-      |> Enum.map(fn b -> b.activity end)
+      |> Enum.map(fn b -> Map.put(b.activity, :bookmark, Map.delete(b, :activity)) end)
 
     conn
     |> add_link_headers(:bookmarks, bookmarks)
@@ -1273,8 +1266,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> Enum.filter(fn x -> x in user.following end)
         |> ActivityPub.fetch_activities_bounded(following, params)
         |> Enum.reverse()
-
-      user = Repo.preload(user, bookmarks: :activity)
 
       conn
       |> put_view(StatusView)
@@ -1555,7 +1546,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       user_id: user.id,
       phrase: phrase,
       context: context,
-      hide: Map.get(params, "irreversible", nil),
+      hide: Map.get(params, "irreversible", false),
       whole_word: Map.get(params, "boolean", true)
       # expires_at
     }
@@ -1709,6 +1700,78 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         conn
         |> put_status(:bad_request)
         |> json(%{error: err})
+    end
+  end
+
+  def account_register(
+        %{assigns: %{app: app}} = conn,
+        %{"username" => nickname, "email" => _, "password" => _, "agreement" => true} = params
+      ) do
+    params =
+      params
+      |> Map.take([
+        "email",
+        "captcha_solution",
+        "captcha_token",
+        "captcha_answer_data",
+        "token",
+        "password"
+      ])
+      |> Map.put("nickname", nickname)
+      |> Map.put("fullname", params["fullname"] || nickname)
+      |> Map.put("bio", params["bio"] || "")
+      |> Map.put("confirm", params["password"])
+
+    with {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
+         {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
+      json(conn, %{
+        token_type: "Bearer",
+        access_token: token.token,
+        scope: app.scopes,
+        created_at: Token.Utils.format_created_at(token)
+      })
+    else
+      {:error, errors} ->
+        conn
+        |> put_status(400)
+        |> json(Jason.encode!(errors))
+    end
+  end
+
+  def account_register(%{assigns: %{app: _app}} = conn, _params) do
+    conn
+    |> put_status(400)
+    |> json(%{error: "Missing parameters"})
+  end
+
+  def account_register(conn, _) do
+    conn
+    |> put_status(403)
+    |> json(%{error: "Invalid credentials"})
+  end
+
+  def conversations(%{assigns: %{user: user}} = conn, params) do
+    participations = Participation.for_user_with_last_activity_id(user, params)
+
+    conversations =
+      Enum.map(participations, fn participation ->
+        ConversationView.render("participation.json", %{participation: participation, user: user})
+      end)
+
+    conn
+    |> add_link_headers(:conversations, participations)
+    |> json(conversations)
+  end
+
+  def conversation_read(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
+    with %Participation{} = participation <-
+           Repo.get_by(Participation, id: participation_id, user_id: user.id),
+         {:ok, participation} <- Participation.mark_as_read(participation) do
+      participation_view =
+        ConversationView.render("participation.json", %{participation: participation, user: user})
+
+      conn
+      |> json(participation_view)
     end
   end
 

@@ -6,9 +6,11 @@ defmodule Pleroma.Activity do
   use Ecto.Schema
 
   alias Pleroma.Activity
+  alias Pleroma.Bookmark
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.User
 
   import Ecto.Changeset
   import Ecto.Query
@@ -35,6 +37,8 @@ defmodule Pleroma.Activity do
     field(:local, :boolean, default: true)
     field(:actor, :string)
     field(:recipients, {:array, :string}, default: [])
+    # This is a fake relation, do not use outside of with_preloaded_bookmark/get_bookmark
+    has_one(:bookmark, Bookmark)
     has_many(:notifications, Notification, on_delete: :delete_all)
 
     # Attention: this is a fake relation, don't try to preload it blindly and expect it to work!
@@ -73,6 +77,16 @@ defmodule Pleroma.Activity do
     |> preload([activity, object], object: object)
   end
 
+  def with_preloaded_bookmark(query, %User{} = user) do
+    from([a] in query,
+      left_join: b in Bookmark,
+      on: b.user_id == ^user.id and b.activity_id == a.id,
+      preload: [bookmark: b]
+    )
+  end
+
+  def with_preloaded_bookmark(query, _), do: query
+
   def get_by_ap_id(ap_id) do
     Repo.one(
       from(
@@ -81,6 +95,16 @@ defmodule Pleroma.Activity do
       )
     )
   end
+
+  def get_bookmark(%Activity{} = activity, %User{} = user) do
+    if Ecto.assoc_loaded?(activity.bookmark) do
+      activity.bookmark
+    else
+      Bookmark.get(user.id, activity.id)
+    end
+  end
+
+  def get_bookmark(_, _), do: nil
 
   def change(struct, params \\ %{}) do
     struct
@@ -265,6 +289,29 @@ defmodule Pleroma.Activity do
     |> where([s], s.id in ^status_ids)
     |> where([s], s.actor == ^actor)
     |> Repo.all()
+  end
+
+  def follow_requests_for_actor(%Pleroma.User{ap_id: ap_id}) do
+    from(
+      a in Activity,
+      where:
+        fragment(
+          "? ->> 'type' = 'Follow'",
+          a.data
+        ),
+      where:
+        fragment(
+          "? ->> 'state' = 'pending'",
+          a.data
+        ),
+      where:
+        fragment(
+          "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
+          a.data,
+          a.data,
+          ^ap_id
+        )
+    )
   end
 
   @spec query_by_actor(actor()) :: Ecto.Query.t()

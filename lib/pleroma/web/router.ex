@@ -146,34 +146,52 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma/admin", Pleroma.Web.AdminAPI do
     pipe_through([:admin_api, :oauth_write])
 
-    post("/user/follow", AdminAPIController, :user_follow)
-    post("/user/unfollow", AdminAPIController, :user_unfollow)
+    post("/users/follow", AdminAPIController, :user_follow)
+    post("/users/unfollow", AdminAPIController, :user_unfollow)
 
-    get("/users", AdminAPIController, :list_users)
-    get("/users/:nickname", AdminAPIController, :user_show)
-
+    # TODO: to be removed at version 1.0
     delete("/user", AdminAPIController, :user_delete)
-    patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     post("/user", AdminAPIController, :user_create)
+
+    delete("/users", AdminAPIController, :user_delete)
+    post("/users", AdminAPIController, :user_create)
+    patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
 
+    # TODO: to be removed at version 1.0
     get("/permission_group/:nickname", AdminAPIController, :right_get)
     get("/permission_group/:nickname/:permission_group", AdminAPIController, :right_get)
     post("/permission_group/:nickname/:permission_group", AdminAPIController, :right_add)
     delete("/permission_group/:nickname/:permission_group", AdminAPIController, :right_delete)
 
-    put("/activation_status/:nickname", AdminAPIController, :set_activation_status)
+    get("/users/:nickname/permission_group", AdminAPIController, :right_get)
+    get("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_get)
+    post("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_add)
+
+    delete(
+      "/users/:nickname/permission_group/:permission_group",
+      AdminAPIController,
+      :right_delete
+    )
+
+    put("/users/:nickname/activation_status", AdminAPIController, :set_activation_status)
 
     post("/relay", AdminAPIController, :relay_follow)
     delete("/relay", AdminAPIController, :relay_unfollow)
 
-    get("/invite_token", AdminAPIController, :get_invite_token)
-    get("/invites", AdminAPIController, :invites)
-    post("/revoke_invite", AdminAPIController, :revoke_invite)
-    post("/email_invite", AdminAPIController, :email_invite)
+    get("/users/invite_token", AdminAPIController, :get_invite_token)
+    get("/users/invites", AdminAPIController, :invites)
+    post("/users/revoke_invite", AdminAPIController, :revoke_invite)
+    post("/users/email_invite", AdminAPIController, :email_invite)
 
+    # TODO: to be removed at version 1.0
     get("/password_reset", AdminAPIController, :get_password_reset)
+
+    get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
+
+    get("/users", AdminAPIController, :list_users)
+    get("/users/:nickname", AdminAPIController, :user_show)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
@@ -277,6 +295,9 @@ defmodule Pleroma.Web.Router do
 
       get("/suggestions", MastodonAPIController, :suggestions)
 
+      get("/conversations", MastodonAPIController, :conversations)
+      post("/conversations/:id/read", MastodonAPIController, :conversation_read)
+
       get("/endorsements", MastodonAPIController, :empty_array)
 
       get("/pleroma/flavour", MastodonAPIController, :get_flavour)
@@ -364,6 +385,8 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:api)
+
+    post("/accounts", MastodonAPIController, :account_register)
 
     get("/instance", MastodonAPIController, :masto_instance)
     get("/instance/peers", MastodonAPIController, :peers)

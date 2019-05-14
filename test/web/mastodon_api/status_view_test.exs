@@ -168,6 +168,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     {:ok, _bookmark} = Bookmark.create(user.id, activity.id)
 
+    activity = Activity.get_by_id_with_object(activity.id)
+
     status = StatusView.render("status.json", %{activity: activity, for: user})
 
     assert status.bookmarked == true

@@ -21,14 +21,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma API: Healthcheck endpoint
 - Admin API: Endpoints for listing/revoking invite tokens
 - Admin API: Endpoints for making users follow/unfollow each other
+- Admin API: added filters (role, tags, email, name) for users endpoint
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
 - Mastodon API: `/api/v1/pleroma/accounts/:id/favourites` (API extension)
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
+- Mastodon API: REST API for creating an account
 - ActivityPub C2S: OAuth endpoints
 - Metadata RelMe provider
 - OAuth: added support for refresh tokens
 - Emoji packs and emoji pack manager
+- AdminFE: initial release with basic user management accessible at /pleroma/admin/
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
@@ -56,10 +59,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `with_muted` parameter to timeline endpoints
 - Mastodon API: Actual reblog hiding instead of a dummy
 - Mastodon API: Remove attachment limit in the Status entity
+- Mastodon API: Added support max_id & since_id for bookmark timeline endpoints.
 - Deps: Updated Cowboy to 2.6
 - Deps: Updated Ecto to 3.0.7
 - Don't ship finmoji by default, they can be installed as an emoji pack
-- Mastodon API: Added support max_id & since_id for bookmark timeline endpoints.
+- Admin API: Move the user related API to `api/pleroma/admin/users`
 
 ### Fixed
 - Added an FTS index on objects. Running `vacuum analyze` and setting a larger `work_mem` is recommended.
@@ -90,6 +94,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Handling of `reblogs` in `/api/v1/accounts/:id/follow`
 - Mastodon API: Correct `reblogged`, `favourited`, and `bookmarked` values in the reblog status JSON
 - Mastodon API: Exposing default scope of the user to anyone
+- Mastodon API: Make `irreversible` field default to `false` [`POST /api/v1/filters`]
 
 ## [0.9.9999] - 2019-04-05
 ### Security
