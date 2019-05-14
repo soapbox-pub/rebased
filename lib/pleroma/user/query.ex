@@ -119,9 +119,7 @@ defmodule Pleroma.User.Query do
   end
 
   defp compose_query({:deactivated, false}, query) do
-    from(u in query,
-      where: not fragment("? \\? 'deactivated' AND ?->'deactivated' @> 'true'", u.info, u.info)
-    )
+    User.restrict_deactivated(query)
   end
 
   defp compose_query({:deactivated, true}, query) do

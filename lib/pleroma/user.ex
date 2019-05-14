@@ -115,7 +115,7 @@ defmodule Pleroma.User do
     }
   end
 
-  defp restrict_deactivated(query) do
+  def restrict_deactivated(query) do
     from(u in query,
       where: not fragment("? \\? 'deactivated' AND ?->'deactivated' @> 'true'", u.info, u.info)
     )
