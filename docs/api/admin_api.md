@@ -107,14 +107,14 @@ Authentication is required and the user must be an admin.
 - Method: `PUT`
 - Params:
   - `nicknames` (array)
-  - `tags`
+  - `tags` (array)
 
 ### Untag a list of users
 
 - Method: `DELETE`
 - Params:
   - `nicknames` (array)
-  - `tags`
+  - `tags` (array)
 
 ## `/api/pleroma/admin/users/:nickname/permission_group`
 
