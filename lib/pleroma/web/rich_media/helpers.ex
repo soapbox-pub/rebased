@@ -34,4 +34,6 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   end
 
   def fetch_data_for_activity(_), do: %{}
+
+  def perform(:fetch, %Activity{} = activity), do: fetch_data_for_activity(activity)
 end

@@ -132,7 +132,10 @@ defmodule Pleroma.Activity do
   end
 
   def get_by_id(id) do
-    Repo.get(Activity, id)
+    Activity
+    |> where([a], a.id == ^id)
+    |> restrict_deactivated_users()
+    |> Repo.one()
   end
 
   def get_by_id_with_object(id) do
@@ -200,6 +203,7 @@ defmodule Pleroma.Activity do
 
   def get_create_by_object_ap_id(ap_id) when is_binary(ap_id) do
     create_by_object_ap_id(ap_id)
+    |> restrict_deactivated_users()
     |> Repo.one()
   end
 
@@ -313,5 +317,15 @@ defmodule Pleroma.Activity do
   @spec query_by_actor(actor()) :: Ecto.Query.t()
   def query_by_actor(actor) do
     from(a in Activity, where: a.actor == ^actor)
+  end
+
+  def restrict_deactivated_users(query) do
+    from(activity in query,
+      where:
+        fragment(
+          "? not in (SELECT ap_id FROM users WHERE info->'deactivated' @> 'true')",
+          activity.actor
+        )
+    )
   end
 end

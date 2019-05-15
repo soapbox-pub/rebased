@@ -132,9 +132,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
-      Task.start(fn ->
-        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-      end)
+      PleromaJobQueue.enqueue(:background, Pleroma.Web.RichMedia.Helpers, [:fetch, activity])
 
       Notification.create_notifications(activity)
 
@@ -851,6 +849,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
+    |> Activity.restrict_deactivated_users()
   end
 
   def fetch_activities(recipients, opts \\ %{}) do

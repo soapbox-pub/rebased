@@ -309,8 +309,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            Enum.map(lines, fn line ->
              String.split(line, ",") |> List.first()
            end)
-           |> List.delete("Account address"),
-         {:ok, _} = Task.start(fn -> User.follow_import(follower, followed_identifiers) end) do
+           |> List.delete("Account address") do
+      PleromaJobQueue.enqueue(:background, User, [
+        :follow_import,
+        follower,
+        followed_identifiers
+      ])
+
       json(conn, "job started")
     end
   end
@@ -320,8 +325,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
-    with blocked_identifiers <- String.split(list),
-         {:ok, _} = Task.start(fn -> User.blocks_import(blocker, blocked_identifiers) end) do
+    with blocked_identifiers <- String.split(list) do
+      PleromaJobQueue.enqueue(:background, User, [
+        :blocks_import,
+        blocker,
+        blocked_identifiers
+      ])
+
       json(conn, "job started")
     end
   end
@@ -353,6 +363,17 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
       {:ok, user} ->
         User.delete(user)
+        json(conn, %{status: "success"})
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
+  def disable_account(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+      {:ok, user} ->
+        User.deactivate_async(user)
         json(conn, %{status: "success"})
 
       {:error, msg} ->

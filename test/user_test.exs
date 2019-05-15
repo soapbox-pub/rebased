@@ -8,6 +8,7 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   use Pleroma.DataCase
@@ -213,8 +214,8 @@ defmodule Pleroma.UserTest do
   test "fetches correct profile for nickname beginning with number" do
     # Use old-style integer ID to try to reproduce the problem
     user = insert(:user, %{id: 1080})
-    userwithnumbers = insert(:user, %{nickname: "#{user.id}garbage"})
-    assert userwithnumbers == User.get_cached_by_nickname_or_id(userwithnumbers.nickname)
+    user_with_numbers = insert(:user, %{nickname: "#{user.id}garbage"})
+    assert user_with_numbers == User.get_cached_by_nickname_or_id(user_with_numbers.nickname)
   end
 
   describe "user registration" do
@@ -816,13 +817,73 @@ defmodule Pleroma.UserTest do
     assert addressed in recipients
   end
 
-  test ".deactivate can de-activate then re-activate a user" do
-    user = insert(:user)
-    assert false == user.info.deactivated
-    {:ok, user} = User.deactivate(user)
-    assert true == user.info.deactivated
-    {:ok, user} = User.deactivate(user, false)
-    assert false == user.info.deactivated
+  describe ".deactivate" do
+    test "can de-activate then re-activate a user" do
+      user = insert(:user)
+      assert false == user.info.deactivated
+      {:ok, user} = User.deactivate(user)
+      assert true == user.info.deactivated
+      {:ok, user} = User.deactivate(user, false)
+      assert false == user.info.deactivated
+    end
+
+    test "hide a user from followers " do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user} = User.follow(user, user2)
+      {:ok, _user} = User.deactivate(user)
+
+      info = User.get_cached_user_info(user2)
+
+      assert info.follower_count == 0
+      assert {:ok, []} = User.get_followers(user2)
+    end
+
+    test "hide a user from friends" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user2} = User.follow(user2, user)
+      assert User.following_count(user2) == 1
+
+      {:ok, _user} = User.deactivate(user)
+
+      info = User.get_cached_user_info(user2)
+
+      assert info.following_count == 0
+      assert User.following_count(user2) == 0
+      assert {:ok, []} = User.get_friends(user2)
+    end
+
+    test "hide a user's statuses from timelines and notifications" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user2} = User.follow(user2, user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}"})
+
+      activity = Repo.preload(activity, :bookmark)
+
+      [notification] = Pleroma.Notification.for_user(user2)
+      assert notification.activity.id == activity.id
+
+      assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
+
+      assert [activity] ==
+               ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
+               |> ActivityPub.contain_timeline(user2)
+
+      {:ok, _user} = User.deactivate(user)
+
+      assert [] == ActivityPub.fetch_public_activities(%{})
+      assert [] == Pleroma.Notification.for_user(user2)
+
+      assert [] ==
+               ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
+               |> ActivityPub.contain_timeline(user2)
+    end
   end
 
   test ".delete_user_activities deletes all create activities" do

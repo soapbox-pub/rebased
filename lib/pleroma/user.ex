@@ -105,16 +105,28 @@ defmodule Pleroma.User do
   def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
 
   def user_info(%User{} = user) do
-    oneself = if user.local, do: 1, else: 0
-
     %{
-      following_count: length(user.following) - oneself,
+      following_count: following_count(user),
       note_count: user.info.note_count,
       follower_count: user.info.follower_count,
       locked: user.info.locked,
       confirmation_pending: user.info.confirmation_pending,
       default_scope: user.info.default_scope
     }
+  end
+
+  def restrict_deactivated(query) do
+    from(u in query,
+      where: not fragment("? \\? 'deactivated' AND ?->'deactivated' @> 'true'", u.info, u.info)
+    )
+  end
+
+  def following_count(%User{following: []}), do: 0
+
+  def following_count(%User{} = user) do
+    user
+    |> get_friends_query()
+    |> Repo.aggregate(:count, :id)
   end
 
   def remote_user_creation(params) do
@@ -255,7 +267,7 @@ defmodule Pleroma.User do
     candidates = Pleroma.Config.get([:instance, :autofollowed_nicknames])
 
     autofollowed_users =
-      User.Query.build(%{nickname: candidates, local: true})
+      User.Query.build(%{nickname: candidates, local: true, deactivated: false})
       |> Repo.all()
 
     follow_all(user, autofollowed_users)
@@ -413,24 +425,6 @@ defmodule Pleroma.User do
     Enum.member?(follower.following, followed.follower_address)
   end
 
-  def follow_import(%User{} = follower, followed_identifiers)
-      when is_list(followed_identifiers) do
-    Enum.map(
-      followed_identifiers,
-      fn followed_identifier ->
-        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
-             {:ok, follower} <- maybe_direct_follow(follower, followed),
-             {:ok, _} <- ActivityPub.follow(follower, followed) do
-          followed
-        else
-          err ->
-            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
-  end
-
   def locked?(%User{} = user) do
     user.info.locked || false
   end
@@ -552,8 +546,7 @@ defmodule Pleroma.User do
         with [_nick, _domain] <- String.split(nickname, "@"),
              {:ok, user} <- fetch_by_nickname(nickname) do
           if Pleroma.Config.get([:fetch_initial_posts, :enabled]) do
-            # TODO turn into job
-            {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
+            fetch_initial_posts(user)
           end
 
           {:ok, user}
@@ -564,19 +557,12 @@ defmodule Pleroma.User do
   end
 
   @doc "Fetch some posts when the user has just been federated with"
-  def fetch_initial_posts(user) do
-    pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
-
-    Enum.each(
-      # Insert all the posts in reverse order, so they're in the right order on the timeline
-      Enum.reverse(Utils.fetch_ordered_collection(user.info.source_data["outbox"], pages)),
-      &Pleroma.Web.Federator.incoming_ap_doc/1
-    )
-  end
+  def fetch_initial_posts(user),
+    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:fetch_initial_posts, user])
 
   @spec get_followers_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_followers_query(%User{} = user, nil) do
-    User.Query.build(%{followers: user})
+    User.Query.build(%{followers: user, deactivated: false})
   end
 
   def get_followers_query(user, page) do
@@ -601,7 +587,7 @@ defmodule Pleroma.User do
 
   @spec get_friends_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
   def get_friends_query(%User{} = user, nil) do
-    User.Query.build(%{friends: user})
+    User.Query.build(%{friends: user, deactivated: false})
   end
 
   def get_friends_query(user, page) do
@@ -691,16 +677,16 @@ defmodule Pleroma.User do
 
     info_cng = User.Info.set_note_count(user.info, note_count)
 
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
-
-    update_and_set_cache(cng)
+    user
+    |> change()
+    |> put_embed(:info, info_cng)
+    |> update_and_set_cache()
   end
 
   def update_follower_count(%User{} = user) do
     follower_count_query =
-      User.Query.build(%{followers: user}) |> select([u], %{count: count(u.id)})
+      User.Query.build(%{followers: user, deactivated: false})
+      |> select([u], %{count: count(u.id)})
 
     User
     |> where(id: ^user.id)
@@ -725,7 +711,7 @@ defmodule Pleroma.User do
 
   @spec get_users_from_set([String.t()], boolean()) :: [User.t()]
   def get_users_from_set(ap_ids, local_only \\ true) do
-    criteria = %{ap_id: ap_ids}
+    criteria = %{ap_id: ap_ids, deactivated: false}
     criteria = if local_only, do: Map.put(criteria, :local, true), else: criteria
 
     User.Query.build(criteria)
@@ -734,7 +720,7 @@ defmodule Pleroma.User do
 
   @spec get_recipients_from_activity(Activity.t()) :: [User.t()]
   def get_recipients_from_activity(%Activity{recipients: to}) do
-    User.Query.build(%{recipients_from_activity: to, local: true})
+    User.Query.build(%{recipients_from_activity: to, local: true, deactivated: false})
     |> Repo.all()
   end
 
@@ -832,6 +818,7 @@ defmodule Pleroma.User do
           ^processed_query
         )
     )
+    |> restrict_deactivated()
   end
 
   defp trigram_search_subquery(term) do
@@ -850,23 +837,7 @@ defmodule Pleroma.User do
       },
       where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
     )
-  end
-
-  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
-    Enum.map(
-      blocked_identifiers,
-      fn blocked_identifier ->
-        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
-             {:ok, blocker} <- block(blocker, blocked),
-             {:ok, _} <- ActivityPub.block(blocker, blocked) do
-          blocked
-        else
-          err ->
-            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
-            err
-        end
-      end
-    )
+    |> restrict_deactivated()
   end
 
   def mute(muter, %User{ap_id: ap_id}) do
@@ -999,19 +970,19 @@ defmodule Pleroma.User do
 
   @spec muted_users(User.t()) :: [User.t()]
   def muted_users(user) do
-    User.Query.build(%{ap_id: user.info.mutes})
+    User.Query.build(%{ap_id: user.info.mutes, deactivated: false})
     |> Repo.all()
   end
 
   @spec blocked_users(User.t()) :: [User.t()]
   def blocked_users(user) do
-    User.Query.build(%{ap_id: user.info.blocks})
+    User.Query.build(%{ap_id: user.info.blocks, deactivated: false})
     |> Repo.all()
   end
 
   @spec subscribers(User.t()) :: [User.t()]
   def subscribers(user) do
-    User.Query.build(%{ap_id: user.info.subscribers})
+    User.Query.build(%{ap_id: user.info.subscribers, deactivated: false})
     |> Repo.all()
   end
 
@@ -1039,14 +1010,25 @@ defmodule Pleroma.User do
     update_and_set_cache(cng)
   end
 
+  def deactivate_async(user, status \\ true) do
+    PleromaJobQueue.enqueue(:background, __MODULE__, [:deactivate_async, user, status])
+  end
+
   def deactivate(%User{} = user, status \\ true) do
     info_cng = User.Info.set_activation_status(user.info, status)
 
-    cng =
-      change(user)
-      |> put_embed(:info, info_cng)
+    with {:ok, friends} <- User.get_friends(user),
+         {:ok, followers} <- User.get_followers(user),
+         {:ok, user} <-
+           user
+           |> change()
+           |> put_embed(:info, info_cng)
+           |> update_and_set_cache() do
+      Enum.each(followers, &invalidate_cache(&1))
+      Enum.each(friends, &update_follower_count(&1))
 
-    update_and_set_cache(cng)
+      {:ok, user}
+    end
   end
 
   def update_notification_settings(%User{} = user, settings \\ %{}) do
@@ -1076,6 +1058,75 @@ defmodule Pleroma.User do
 
     delete_user_activities(user)
   end
+
+  @spec perform(atom(), User.t()) :: {:ok, User.t()}
+  def perform(:fetch_initial_posts, %User{} = user) do
+    pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
+
+    Enum.each(
+      # Insert all the posts in reverse order, so they're in the right order on the timeline
+      Enum.reverse(Utils.fetch_ordered_collection(user.info.source_data["outbox"], pages)),
+      &Pleroma.Web.Federator.incoming_ap_doc/1
+    )
+
+    {:ok, user}
+  end
+
+  def perform(:deactivate_async, user, status), do: deactivate(user, status)
+
+  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
+  def perform(:blocks_import, %User{} = blocker, blocked_identifiers)
+      when is_list(blocked_identifiers) do
+    Enum.map(
+      blocked_identifiers,
+      fn blocked_identifier ->
+        with {:ok, %User{} = blocked} <- get_or_fetch(blocked_identifier),
+             {:ok, blocker} <- block(blocker, blocked),
+             {:ok, _} <- ActivityPub.block(blocker, blocked) do
+          blocked
+        else
+          err ->
+            Logger.debug("blocks_import failed for #{blocked_identifier} with: #{inspect(err)}")
+            err
+        end
+      end
+    )
+  end
+
+  @spec perform(atom(), User.t(), list()) :: list() | {:error, any()}
+  def perform(:follow_import, %User{} = follower, followed_identifiers)
+      when is_list(followed_identifiers) do
+    Enum.map(
+      followed_identifiers,
+      fn followed_identifier ->
+        with {:ok, %User{} = followed} <- get_or_fetch(followed_identifier),
+             {:ok, follower} <- maybe_direct_follow(follower, followed),
+             {:ok, _} <- ActivityPub.follow(follower, followed) do
+          followed
+        else
+          err ->
+            Logger.debug("follow_import failed for #{followed_identifier} with: #{inspect(err)}")
+            err
+        end
+      end
+    )
+  end
+
+  def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers),
+    do:
+      PleromaJobQueue.enqueue(:background, __MODULE__, [
+        :blocks_import,
+        blocker,
+        blocked_identifiers
+      ])
+
+  def follow_import(%User{} = follower, followed_identifiers) when is_list(followed_identifiers),
+    do:
+      PleromaJobQueue.enqueue(:background, __MODULE__, [
+        :follow_import,
+        follower,
+        followed_identifiers
+      ])
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do
     stream =
@@ -1130,8 +1181,8 @@ defmodule Pleroma.User do
       resp = fetch_by_ap_id(ap_id)
 
       if should_fetch_initial do
-        with {:ok, %User{} = user} = resp do
-          {:ok, _} = Task.start(__MODULE__, :fetch_initial_posts, [user])
+        with {:ok, %User{} = user} <- resp do
+          fetch_initial_posts(user)
         end
       end
 
@@ -1320,7 +1371,7 @@ defmodule Pleroma.User do
 
   @spec all_superusers() :: [User.t()]
   def all_superusers do
-    User.Query.build(%{super_users: true, local: true})
+    User.Query.build(%{super_users: true, local: true, deactivated: false})
     |> Repo.all()
   end
 
