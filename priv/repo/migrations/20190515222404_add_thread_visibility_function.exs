@@ -21,8 +21,9 @@ defmodule Pleroma.Repo.Migrations.AddThreadVisibilityFunction do
 
       LOOP
         --- Ensure that we have an activity before continuing.
+        --- If we don't, the thread is not satisfiable.
         IF activity IS NULL THEN
-          RETURN true;
+          RETURN false;
         END IF;
 
         --- We only care about Create activities.
