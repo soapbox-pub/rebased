@@ -253,25 +253,6 @@ config :pleroma, :markup,
     Pleroma.HTML.Scrubber.Default
   ]
 
-# Deprecated, will be gone in 1.0
-config :pleroma, :fe,
-  theme: "pleroma-dark",
-  logo: "/static/logo.png",
-  logo_mask: true,
-  logo_margin: "0.1em",
-  background: "/static/aurora_borealis.jpg",
-  redirect_root_no_login: "/main/all",
-  redirect_root_login: "/main/friends",
-  show_instance_panel: true,
-  scope_options_enabled: false,
-  formatting_options_enabled: false,
-  collapse_message_with_subject: false,
-  hide_post_stats: false,
-  hide_user_stats: false,
-  scope_copy: true,
-  subject_line_behavior: "email",
-  always_show_subject_input: true
-
 config :pleroma, :frontend_configurations,
   pleroma_fe: %{
     theme: "pleroma-dark",
