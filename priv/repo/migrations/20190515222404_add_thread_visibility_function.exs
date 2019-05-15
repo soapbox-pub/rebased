@@ -10,8 +10,8 @@ defmodule Pleroma.Repo.Migrations.AddThreadVisibilityFunction do
       child objects%ROWTYPE;
       activity activities%ROWTYPE;
       actor_user users%ROWTYPE;
-      author users%ROWTYPE;
       author_fa varchar;
+      valid_recipients varchar[];
     BEGIN
       --- Fetch our actor.
       SELECT * INTO actor_user FROM users WHERE users.ap_id = actor;
@@ -36,26 +36,17 @@ defmodule Pleroma.Repo.Migrations.AddThreadVisibilityFunction do
         INNER JOIN activities ON COALESCE(activities.data->'object'->>'id', activities.data->>'object') = objects.data->>'id'
         WHERE COALESCE(activity.data->'object'->>'id', activity.data->>'object') = objects.data->>'id';
 
-        --- Fetch the author.
-        SELECT * INTO author FROM users WHERE users.ap_id = activity.actor;
+        --- Fetch the author's AS2 following collection.
+        SELECT COALESCE(author.follower_address, '') INTO author_fa FROM users WHERE users.ap_id = activity.actor;
 
-        --- Prepare author's AS2 followers collection.
-        SELECT COALESCE(author.follower_address, '') INTO author_fa;
+        --- Prepare valid recipients array.
+        valid_recipients := ARRAY[actor, public];
+        IF ARRAY[author_fa] && actor_user.following THEN
+          valid_recipients := valid_recipients || author_fa;
+        END IF;
 
         --- Check visibility.
-        IF activity.actor = actor THEN
-          --- activity visible
-          NULL;
-        ELSIF ARRAY[public] && activity.recipients THEN
-          --- activity visible
-          NULL;
-        ELSIF ARRAY[author_fa] && activity.recipients AND ARRAY[author_fa] && actor_user.following THEN
-          --- activity visible
-          NULL;
-        ELSIF ARRAY[actor] && activity.recipients THEN
-          --- activity visible
-          NULL;
-        ELSE
+        IF NOT valid_recipients && activity.recipients THEN
           --- activity not visible, break out of the loop
           RETURN false;
         END IF;
