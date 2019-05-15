@@ -540,8 +540,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
             )
         )
 
-      Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
       query
     else
       Logger.error("Could not restrict visibility to #{visibility}")
@@ -556,8 +554,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         where:
           fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
       )
-
-    Ecto.Adapters.SQL.to_sql(:all, Repo, query)
 
     query
   end
@@ -575,8 +571,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         a in query,
         where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
       )
-
-    Ecto.Adapters.SQL.to_sql(:all, Repo, query)
 
     query
   end
