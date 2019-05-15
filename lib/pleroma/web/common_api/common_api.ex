@@ -126,22 +126,30 @@ defmodule Pleroma.Web.CommonAPI do
         "public"
 
       in_reply_to ->
-        # XXX: these heuristics should be moved out of MastodonAPI.
-        with %Object{} = object <- Object.normalize(in_reply_to) do
-          Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
-        end
+        get_replied_to_visibility(in_reply_to)
     end
   end
 
   def get_visibility(_), do: "public"
 
+  def get_replied_to_visibility(nil), do: nil
+
+  def get_replied_to_visibility(activity) do
+    with %Object{} = object <- Object.normalize(activity) do
+      Pleroma.Web.ActivityPub.Visibility.get_visibility(object)
+    end
+  end
+
   def post(user, %{"status" => status} = data) do
-    visibility = get_visibility(data)
     limit = Pleroma.Config.get([:instance, :limit])
 
     with status <- String.trim(status),
          attachments <- attachments_from_ids(data),
+         visibility <- get_visibility(data),
          in_reply_to <- get_replied_to_activity(data["in_reply_to_status_id"]),
+         in_reply_to_visibility <- get_replied_to_visibility(in_reply_to),
+         {_, false} <-
+           {:private_to_public, in_reply_to_visibility == "direct" && visibility != "direct"},
          {content_html, mentions, tags} <-
            make_content_html(
              status,
@@ -185,6 +193,8 @@ defmodule Pleroma.Web.CommonAPI do
         )
 
       res
+    else
+      e -> {:error, e}
     end
   end
 
