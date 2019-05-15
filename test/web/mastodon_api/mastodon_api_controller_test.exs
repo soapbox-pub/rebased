@@ -81,6 +81,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end)
   end
 
+  test "the public timeline when public is set to false", %{conn: conn} do
+    public = Pleroma.Config.get([:instance, :public])
+    Pleroma.Config.put([:instance, :public], false)
+
+    on_exit(fn ->
+      Pleroma.Config.put([:instance, :public], public)
+    end)
+
+    assert conn
+           |> get("/api/v1/timelines/public", %{"local" => "False"})
+           |> json_response(403) == %{"error" => "This resource requires authentication."}
+  end
+
   test "posting a status", %{conn: conn} do
     user = insert(:user)
 
