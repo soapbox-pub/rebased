@@ -116,21 +116,16 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def get_visibility(%{"visibility" => visibility})
+  def get_visibility(%{"visibility" => visibility}, in_reply_to)
       when visibility in ~w{public unlisted private direct},
-      do: visibility
+      do: {visibility, get_replied_to_visibility(in_reply_to)}
 
-  def get_visibility(%{"in_reply_to_status_id" => status_id}) when not is_nil(status_id) do
-    case get_replied_to_activity(status_id) do
-      nil ->
-        "public"
-
-      in_reply_to ->
-        get_replied_to_visibility(in_reply_to)
-    end
+  def get_visibility(_, in_reply_to) when not is_nil(in_reply_to) do
+    visibility = get_replied_to_visibility(in_reply_to)
+    {visibility, visibility}
   end
 
-  def get_visibility(_), do: "public"
+  def get_visibility(_, in_reply_to), do: {"public", get_replied_to_visibility(in_reply_to)}
 
   def get_replied_to_visibility(nil), do: nil
 
@@ -145,9 +140,8 @@ defmodule Pleroma.Web.CommonAPI do
 
     with status <- String.trim(status),
          attachments <- attachments_from_ids(data),
-         visibility <- get_visibility(data),
          in_reply_to <- get_replied_to_activity(data["in_reply_to_status_id"]),
-         in_reply_to_visibility <- get_replied_to_visibility(in_reply_to),
+         {visibility, in_reply_to_visibility} <- get_visibility(data, in_reply_to),
          {_, false} <-
            {:private_to_public, in_reply_to_visibility == "direct" && visibility != "direct"},
          {content_html, mentions, tags} <-
