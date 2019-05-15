@@ -37,7 +37,7 @@ defmodule Pleroma.Repo.Migrations.AddThreadVisibilityFunction do
         WHERE COALESCE(activity.data->'object'->>'id', activity.data->>'object') = objects.data->>'id';
 
         --- Fetch the author's AS2 following collection.
-        SELECT COALESCE(author.follower_address, '') INTO author_fa FROM users WHERE users.ap_id = activity.actor;
+        SELECT COALESCE(users.follower_address, '') INTO author_fa FROM users WHERE users.ap_id = activity.actor;
 
         --- Prepare valid recipients array.
         valid_recipients := ARRAY[actor, public];
