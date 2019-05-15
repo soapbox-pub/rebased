@@ -750,16 +750,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     blocks = info.blocks || []
     domain_blocks = info.domain_blocks || []
 
+    query =
+      if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
+
     from(
-      activity in query,
-      inner_join: o in Object,
-      on:
-        fragment(
-          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
-          o.data,
-          activity.data,
-          activity.data
-        ),
+      [activity, object: o] in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
       where: fragment("not (? && ?)", activity.recipients, ^blocks),
       where:

@@ -60,21 +60,24 @@ defmodule Pleroma.Activity do
     timestamps()
   end
 
-  def with_preloaded_object(query) do
-    query
-    |> join(
-      :inner,
-      [activity],
-      o in Object,
+  def with_joined_object(query) do
+    join(query, :inner, [activity], o in Object,
       on:
         fragment(
           "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
           o.data,
           activity.data,
           activity.data
-        )
+        ),
+      as: :object
     )
-    |> preload([activity, object], object: object)
+  end
+
+  def with_preloaded_object(query) do
+    query
+    |> has_named_binding?(:object)
+    |> if(do: query, else: with_joined_object(query))
+    |> preload([activity, object: object], object: object)
   end
 
   def with_preloaded_bookmark(query, %User{} = user) do
