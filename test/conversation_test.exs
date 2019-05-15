@@ -4,7 +4,9 @@
 
 defmodule Pleroma.ConversationTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
   alias Pleroma.Conversation
+  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -153,5 +155,41 @@ defmodule Pleroma.ConversationTest do
       CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "public"})
 
     assert {:error, _} = Conversation.create_or_bump_for(activity)
+  end
+
+  test "create_or_bump_for does not normalize objects before checking the activity type" do
+    note = insert(:note)
+    note_id = note.data["id"]
+    Repo.delete(note)
+    refute Object.get_by_ap_id(note_id)
+
+    Tesla.Mock.mock(fn env ->
+      case env.url do
+        ^note_id ->
+          # TODO: add attributedTo and tag to the note factory
+          body =
+            note.data
+            |> Map.put("attributedTo", note.data["actor"])
+            |> Map.put("tag", [])
+            |> Jason.encode!()
+
+          %Tesla.Env{status: 200, body: body}
+      end
+    end)
+
+    undo = %Activity{
+      id: "fake",
+      data: %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "actor" => note.data["actor"],
+        "to" => [note.data["actor"]],
+        "object" => note_id,
+        "type" => "Undo"
+      }
+    }
+
+    Conversation.create_or_bump_for(undo)
+
+    refute Object.get_by_ap_id(note_id)
   end
 end

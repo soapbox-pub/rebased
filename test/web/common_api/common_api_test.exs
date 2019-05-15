@@ -87,6 +87,28 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
+
+    test "it does not allow replies to direct messages that are not direct messages themselves" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "suya..", "visibility" => "direct"})
+
+      assert {:ok, _} =
+               CommonAPI.post(user, %{
+                 "status" => "suya..",
+                 "visibility" => "direct",
+                 "in_reply_to_status_id" => activity.id
+               })
+
+      Enum.each(["public", "private", "unlisted"], fn visibility ->
+        assert {:error, {:private_to_public, _}} =
+                 CommonAPI.post(user, %{
+                   "status" => "suya..",
+                   "visibility" => visibility,
+                   "in_reply_to_status_id" => activity.id
+                 })
+      end)
+    end
   end
 
   describe "reactions" do

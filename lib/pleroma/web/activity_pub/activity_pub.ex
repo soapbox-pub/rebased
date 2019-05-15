@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Conversation
-  alias Pleroma.Instances
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
@@ -15,7 +14,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.Federator
   alias Pleroma.Web.WebFinger
 
   import Ecto.Query
@@ -23,8 +21,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   import Pleroma.Web.ActivityPub.Visibility
 
   require Logger
-
-  @httpoison Application.get_env(:pleroma, :httpoison)
 
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
@@ -137,9 +133,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
-      Task.start(fn ->
-        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-      end)
+      PleromaJobQueue.enqueue(:background, Pleroma.Web.RichMedia.Helpers, [:fetch, activity])
 
       Notification.create_notifications(activity)
 
@@ -848,6 +842,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
+    |> Activity.restrict_deactivated_users()
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
@@ -948,89 +943,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       make_user_from_ap_id(ap_id)
     else
       _e -> {:error, "No AP id in WebFinger"}
-    end
-  end
-
-  def should_federate?(inbox, public) do
-    if public do
-      true
-    else
-      inbox_info = URI.parse(inbox)
-      !Enum.member?(Pleroma.Config.get([:instance, :quarantined_instances], []), inbox_info.host)
-    end
-  end
-
-  def publish(actor, activity) do
-    remote_followers =
-      if actor.follower_address in activity.recipients do
-        {:ok, followers} = User.get_followers(actor)
-        followers |> Enum.filter(&(!&1.local))
-      else
-        []
-      end
-
-    public = is_public?(activity)
-
-    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
-    json = Jason.encode!(data)
-
-    (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
-    |> Enum.filter(fn user -> User.ap_enabled?(user) end)
-    |> Enum.map(fn %{info: %{source_data: data}} ->
-      (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
-    end)
-    |> Enum.uniq()
-    |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
-    |> Instances.filter_reachable()
-    |> Enum.each(fn {inbox, unreachable_since} ->
-      Federator.publish_single_ap(%{
-        inbox: inbox,
-        json: json,
-        actor: actor,
-        id: activity.data["id"],
-        unreachable_since: unreachable_since
-      })
-    end)
-  end
-
-  def publish_one(%{inbox: inbox, json: json, actor: actor, id: id} = params) do
-    Logger.info("Federating #{id} to #{inbox}")
-    host = URI.parse(inbox).host
-
-    digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
-
-    date =
-      NaiveDateTime.utc_now()
-      |> Timex.format!("{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
-
-    signature =
-      Pleroma.Web.HTTPSignatures.sign(actor, %{
-        host: host,
-        "content-length": byte_size(json),
-        digest: digest,
-        date: date
-      })
-
-    with {:ok, %{status: code}} when code in 200..299 <-
-           result =
-             @httpoison.post(
-               inbox,
-               json,
-               [
-                 {"Content-Type", "application/activity+json"},
-                 {"Date", date},
-                 {"signature", signature},
-                 {"digest", digest}
-               ]
-             ) do
-      if !Map.has_key?(params, :unreachable_since) || params[:unreachable_since],
-        do: Instances.set_reachable(inbox)
-
-      result
-    else
-      {_post_result, response} ->
-        unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
-        {:error, response}
     end
   end
 

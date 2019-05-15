@@ -58,7 +58,7 @@ defmodule Pleroma.Web.FederatorTest do
 
   describe "Targets reachability filtering in `publish`" do
     test_with_mock "it federates only to reachable instances via AP",
-                   Federator,
+                   Pleroma.Web.ActivityPub.Publisher,
                    [:passthrough],
                    [] do
       user = insert(:user)
@@ -88,13 +88,18 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
-      assert called(Federator.publish_single_ap(%{inbox: inbox1, unreachable_since: dt}))
+      assert called(
+               Pleroma.Web.ActivityPub.Publisher.publish_one(%{
+                 inbox: inbox1,
+                 unreachable_since: dt
+               })
+             )
 
-      refute called(Federator.publish_single_ap(%{inbox: inbox2}))
+      refute called(Pleroma.Web.ActivityPub.Publisher.publish_one(%{inbox: inbox2}))
     end
 
     test_with_mock "it federates only to reachable instances via Websub",
-                   Federator,
+                   Pleroma.Web.Websub,
                    [:passthrough],
                    [] do
       user = insert(:user)
@@ -122,17 +127,17 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} = CommonAPI.post(user, %{"status" => "HI"})
 
       assert called(
-               Federator.publish_single_websub(%{
+               Pleroma.Web.Websub.publish_one(%{
                  callback: sub2.callback,
                  unreachable_since: dt
                })
              )
 
-      refute called(Federator.publish_single_websub(%{callback: sub1.callback}))
+      refute called(Pleroma.Web.Websub.publish_one(%{callback: sub1.callback}))
     end
 
     test_with_mock "it federates only to reachable instances via Salmon",
-                   Federator,
+                   Pleroma.Web.Salmon,
                    [:passthrough],
                    [] do
       user = insert(:user)
@@ -162,13 +167,13 @@ defmodule Pleroma.Web.FederatorTest do
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
       assert called(
-               Federator.publish_single_salmon(%{
+               Pleroma.Web.Salmon.publish_one(%{
                  recipient: remote_user2,
                  unreachable_since: dt
                })
              )
 
-      refute called(Federator.publish_single_websub(%{recipient: remote_user1}))
+      refute called(Pleroma.Web.Salmon.publish_one(%{recipient: remote_user1}))
     end
   end
 

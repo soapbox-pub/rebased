@@ -173,8 +173,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   def config(conn, _params) do
     instance = Pleroma.Config.get(:instance)
-    instance_fe = Pleroma.Config.get(:fe)
-    instance_chat = Pleroma.Config.get(:chat)
 
     case get_format(conn) do
       "xml" ->
@@ -219,31 +217,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
             if(Pleroma.Config.get([:instance, :safe_dm_mentions]), do: "1", else: "0")
         }
 
-        pleroma_fe =
-          if instance_fe do
-            %{
-              theme: Keyword.get(instance_fe, :theme),
-              background: Keyword.get(instance_fe, :background),
-              logo: Keyword.get(instance_fe, :logo),
-              logoMask: Keyword.get(instance_fe, :logo_mask),
-              logoMargin: Keyword.get(instance_fe, :logo_margin),
-              redirectRootNoLogin: Keyword.get(instance_fe, :redirect_root_no_login),
-              redirectRootLogin: Keyword.get(instance_fe, :redirect_root_login),
-              chatDisabled: !Keyword.get(instance_chat, :enabled),
-              showInstanceSpecificPanel: Keyword.get(instance_fe, :show_instance_panel),
-              scopeOptionsEnabled: Keyword.get(instance_fe, :scope_options_enabled),
-              formattingOptionsEnabled: Keyword.get(instance_fe, :formatting_options_enabled),
-              collapseMessageWithSubject:
-                Keyword.get(instance_fe, :collapse_message_with_subject),
-              hidePostStats: Keyword.get(instance_fe, :hide_post_stats),
-              hideUserStats: Keyword.get(instance_fe, :hide_user_stats),
-              scopeCopy: Keyword.get(instance_fe, :scope_copy),
-              subjectLineBehavior: Keyword.get(instance_fe, :subject_line_behavior),
-              alwaysShowSubjectInput: Keyword.get(instance_fe, :always_show_subject_input)
-            }
-          else
-            Pleroma.Config.get([:frontend_configurations, :pleroma_fe])
-          end
+        pleroma_fe = Pleroma.Config.get([:frontend_configurations, :pleroma_fe])
 
         managed_config = Keyword.get(instance, :managed_config)
 
@@ -309,8 +283,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
            Enum.map(lines, fn line ->
              String.split(line, ",") |> List.first()
            end)
-           |> List.delete("Account address"),
-         {:ok, _} = Task.start(fn -> User.follow_import(follower, followed_identifiers) end) do
+           |> List.delete("Account address") do
+      PleromaJobQueue.enqueue(:background, User, [
+        :follow_import,
+        follower,
+        followed_identifiers
+      ])
+
       json(conn, "job started")
     end
   end
@@ -320,8 +299,13 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def blocks_import(%{assigns: %{user: blocker}} = conn, %{"list" => list}) do
-    with blocked_identifiers <- String.split(list),
-         {:ok, _} = Task.start(fn -> User.blocks_import(blocker, blocked_identifiers) end) do
+    with blocked_identifiers <- String.split(list) do
+      PleromaJobQueue.enqueue(:background, User, [
+        :blocks_import,
+        blocker,
+        blocked_identifiers
+      ])
+
       json(conn, "job started")
     end
   end
@@ -353,6 +337,17 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
       {:ok, user} ->
         User.delete(user)
+        json(conn, %{status: "success"})
+
+      {:error, msg} ->
+        json(conn, %{error: msg})
+    end
+  end
+
+  def disable_account(%{assigns: %{user: user}} = conn, params) do
+    case CommonAPI.Utils.confirm_current_password(user, params["password"]) do
+      {:ok, user} ->
+        User.deactivate_async(user)
         json(conn, %{status: "success"})
 
       {:error, msg} ->

@@ -105,4 +105,16 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     Cachex.clear(:user_cache)
     refute Visibility.is_private?(direct)
   end
+
+  test "get_visibility", %{
+    public: public,
+    private: private,
+    direct: direct,
+    unlisted: unlisted
+  } do
+    assert Visibility.get_visibility(public) == "public"
+    assert Visibility.get_visibility(private) == "private"
+    assert Visibility.get_visibility(direct) == "direct"
+    assert Visibility.get_visibility(unlisted) == "unlisted"
+  end
 end

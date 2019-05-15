@@ -8,6 +8,8 @@ defmodule Pleroma.User.Info do
 
   alias Pleroma.User.Info
 
+  @type t :: %__MODULE__{}
+
   embedded_schema do
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
@@ -210,21 +212,23 @@ defmodule Pleroma.User.Info do
     ])
   end
 
-  def confirmation_changeset(info, :confirmed) do
-    confirmation_changeset(info, %{
-      confirmation_pending: false,
-      confirmation_token: nil
-    })
-  end
+  @spec confirmation_changeset(Info.t(), keyword()) :: Ecto.Changerset.t()
+  def confirmation_changeset(info, opts) do
+    need_confirmation? = Keyword.get(opts, :need_confirmation)
 
-  def confirmation_changeset(info, :unconfirmed) do
-    confirmation_changeset(info, %{
-      confirmation_pending: true,
-      confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
-    })
-  end
+    params =
+      if need_confirmation? do
+        %{
+          confirmation_pending: true,
+          confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+        }
+      else
+        %{
+          confirmation_pending: false,
+          confirmation_token: nil
+        }
+      end
 
-  def confirmation_changeset(info, params) do
     cast(info, params, [:confirmation_pending, :confirmation_token])
   end
 

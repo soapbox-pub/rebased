@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
   use Pleroma.Web.ConnCase
-  alias Pleroma.Web.HTTPSignatures
   alias Pleroma.Web.Plugs.HTTPSignaturePlug
 
   import Plug.Conn

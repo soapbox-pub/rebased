@@ -12,7 +12,7 @@ For clients it supports both the [GNU Social API with Qvitter extensions](https:
 
 - [Client Applications for Pleroma](https://docs-develop.pleroma.social/clients.html)
 
-No release has been made yet, but several servers have been online for months already. If you want to run your own server, feel free to contact us at @lain@pleroma.soykaf.com or in our dev chat at #pleroma on freenode or via matrix at <https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org>.
+If you want to run your own server, feel free to contact us at @lain@pleroma.soykaf.com or in our dev chat at #pleroma on freenode or via matrix at <https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org>.
 
 ## Installation
 
