@@ -16,6 +16,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
+  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
+
   # TODO: Add cached version.
   defp get_replied_to_activities(activities) do
     activities
@@ -337,30 +339,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
     else
       nil
-    end
-  end
-
-  def get_visibility(object) do
-    public = "https://www.w3.org/ns/activitystreams#Public"
-    to = object.data["to"] || []
-    cc = object.data["cc"] || []
-
-    cond do
-      public in to ->
-        "public"
-
-      public in cc ->
-        "unlisted"
-
-      # this should use the sql for the object's activity
-      Enum.any?(to, &String.contains?(&1, "/followers")) ->
-        "private"
-
-      length(cc) > 0 ->
-        "private"
-
-      true ->
-        "direct"
     end
   end
 

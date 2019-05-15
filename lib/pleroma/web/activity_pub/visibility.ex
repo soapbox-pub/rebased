@@ -58,4 +58,28 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
         visible_for_user?(tail, user)
     end
   end
+
+  def get_visibility(object) do
+    public = "https://www.w3.org/ns/activitystreams#Public"
+    to = object.data["to"] || []
+    cc = object.data["cc"] || []
+
+    cond do
+      public in to ->
+        "public"
+
+      public in cc ->
+        "unlisted"
+
+      # this should use the sql for the object's activity
+      Enum.any?(to, &String.contains?(&1, "/followers")) ->
+        "private"
+
+      length(cc) > 0 ->
+        "private"
+
+      true ->
+        "direct"
+    end
+  end
 end
