@@ -113,6 +113,23 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert Enum.at(object.data["tag"], 2) == "moo"
     end
 
+    test "it works for incoming questions" do
+      data = File.read!("test/fixtures/mastodon-question-activity.json") |> Poison.decode!()
+
+      {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
+
+      object = Object.normalize(activity)
+
+      assert Enum.all?(object.data["oneOf"], fn choice ->
+               choice["name"] in [
+                 "Dunno",
+                 "Everyone knows that!",
+                 "25 char limit is dumb",
+                 "I can't even fit a funny"
+               ]
+             end)
+    end
+
     test "it works for incoming notices with contentMap" do
       data =
         File.read!("test/fixtures/mastodon-post-activity-contentmap.json") |> Poison.decode!()

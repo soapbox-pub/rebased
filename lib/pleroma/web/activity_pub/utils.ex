@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   require Logger
 
-  @supported_object_types ["Article", "Note", "Video", "Page"]
+  @supported_object_types ["Article", "Note", "Video", "Page", "Question"]
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
