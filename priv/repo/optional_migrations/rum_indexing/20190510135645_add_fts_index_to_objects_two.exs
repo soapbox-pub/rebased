@@ -2,6 +2,7 @@ defmodule Pleroma.Repo.Migrations.AddFtsIndexToObjectsTwo do
   use Ecto.Migration
 
   def up do
+    execute("create extension if not exists rum")
     drop_if_exists index(:objects, ["(to_tsvector('english', data->>'content'))"], using: :gin, name: :objects_fts)
     alter table(:objects) do
       add(:fts_content, :tsvector)
@@ -19,6 +20,7 @@ defmodule Pleroma.Repo.Migrations.AddFtsIndexToObjectsTwo do
     FOR EACH ROW EXECUTE PROCEDURE objects_fts_update()")
 
     execute("UPDATE objects SET updated_at = NOW()")
+    execute("vacuum analyze")
   end
 
   def down do
@@ -29,5 +31,6 @@ defmodule Pleroma.Repo.Migrations.AddFtsIndexToObjectsTwo do
       remove(:fts_content, :tsvector)
     end
     create index(:objects, ["(to_tsvector('english', data->>'content'))"], using: :gin, name: :objects_fts)
+    execute("vacuum analyze")
   end
 end
