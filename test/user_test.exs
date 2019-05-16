@@ -626,6 +626,37 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "remove duplicates from following list" do
+    test "it removes duplicates" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, %User{following: following} = follower} = User.follow(follower, user)
+      assert length(following) == 2
+
+      {:ok, follower} =
+        follower
+        |> User.update_changeset(%{following: following ++ following})
+        |> Repo.update()
+
+      assert length(follower.following) == 4
+
+      {:ok, follower} = User.remove_duplicated_following(follower)
+      assert length(follower.following) == 2
+    end
+
+    test "it does nothing when following is uniq" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, follower} = User.follow(follower, user)
+      assert length(follower.following) == 2
+
+      {:ok, follower} = User.remove_duplicated_following(follower)
+      assert length(follower.following) == 2
+    end
+  end
+
   describe "follow_import" do
     test "it imports user followings from list" do
       [user1, user2, user3] = insert_list(3, :user)

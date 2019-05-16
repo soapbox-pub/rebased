@@ -166,7 +166,7 @@ defmodule Pleroma.User do
 
   def update_changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:bio, :name, :avatar])
+    |> cast(params, [:bio, :name, :avatar, :following])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
@@ -706,6 +706,18 @@ defmodule Pleroma.User do
     |> case do
       {1, [user]} -> set_cache(user)
       _ -> {:error, user}
+    end
+  end
+
+  def remove_duplicated_following(%User{following: following} = user) do
+    uniq_following = Enum.uniq(following)
+
+    if length(following) == length(uniq_following) do
+      {:ok, user}
+    else
+      user
+      |> update_changeset(%{following: uniq_following})
+      |> update_and_set_cache()
     end
   end
 
