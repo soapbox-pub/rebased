@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
 - Configuration: Media proxy `whitelist` option
+- Configuration: `report_uri` option
 - Pleroma API: User subscriptions
 - Pleroma API: Healthcheck endpoint
 - Admin API: Endpoints for listing/revoking invite tokens
@@ -98,7 +99,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Make `irreversible` field default to `false` [`POST /api/v1/filters`]
 
 ## Removed
-- Configuration: `config :pleroma, :fe` in favor of the more flexible `config :pleroma, :frontend_configurations` 
+- Configuration: `config :pleroma, :fe` in favor of the more flexible `config :pleroma, :frontend_configurations`
 
 ## [0.9.9999] - 2019-04-05
 ### Security
