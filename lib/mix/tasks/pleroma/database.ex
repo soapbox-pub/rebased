@@ -4,6 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.Database do
   alias Mix.Tasks.Pleroma.Common
+  alias Pleroma.Conversation
   require Logger
   use Mix.Task
 
@@ -19,6 +20,11 @@ defmodule Mix.Tasks.Pleroma.Database do
 
     Options:
     - `--vacuum` - run `VACUUM FULL` after the embedded objects are replaced with their references
+
+  ## Create a conversation for all existing DMs. Can be safely re-run.
+
+      mix pleroma.database bump_all_conversations
+
   """
   def run(["remove_embedded_objects" | args]) do
     {options, [], []} =
@@ -47,5 +53,10 @@ defmodule Mix.Tasks.Pleroma.Database do
         timeout: :infinity
       )
     end
+  end
+
+  def run(["bump_all_conversations"]) do
+    Common.start_pleroma()
+    Conversation.bump_for_all_activities()
   end
 end
