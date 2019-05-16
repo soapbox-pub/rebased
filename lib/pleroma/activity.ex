@@ -111,7 +111,7 @@ defmodule Pleroma.Activity do
 
   def change(struct, params \\ %{}) do
     struct
-    |> cast(params, [:data])
+    |> cast(params, [:data, :recipients])
     |> validate_required([:data])
     |> unique_constraint(:ap_id, name: :activities_unique_apid_index)
   end

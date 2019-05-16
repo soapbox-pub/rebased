@@ -703,6 +703,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_type(query, _), do: query
 
+  defp restrict_state(query, %{"state" => state}) do
+    from(activity in query, where: fragment("?->>'state' = ?", activity.data, ^state))
+  end
+
+  defp restrict_state(query, _), do: query
+
   defp restrict_favorited_by(query, %{"favorited_by" => ap_id}) do
     from(
       activity in query,
@@ -855,6 +861,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_local(opts)
     |> restrict_actor(opts)
     |> restrict_type(opts)
+    |> restrict_state(opts)
     |> restrict_favorited_by(opts)
     |> restrict_blocked(opts)
     |> restrict_muted(opts)
