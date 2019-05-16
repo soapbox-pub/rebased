@@ -286,7 +286,8 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``sts``: Whether to additionally send a `Strict-Transport-Security` header
 * ``sts_max_age``: The maximum age for the `Strict-Transport-Security` header if sent
 * ``ct_max_age``: The maximum age for the `Expect-CT` header if sent
-* ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
+* ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`
+* ``report_uri``: Adds the specified url to `report-uri` and `report-to` group in CSP header.
 
 ## :mrf_user_allowlist
 

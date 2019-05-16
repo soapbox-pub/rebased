@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
 - Configuration: Media proxy `whitelist` option
+- Configuration: `report_uri` option
 - Pleroma API: User subscriptions
 - Pleroma API: Healthcheck endpoint
 - Admin API: Endpoints for listing/revoking invite tokens
