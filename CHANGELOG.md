@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - A [job queue](https://git.pleroma.social/pleroma/pleroma_job_queue) for federation, emails, web push, etc.
 - [Prometheus](https://prometheus.io/) metrics
 - Support for Mastodon's remote interaction
+- Mix Tasks: `mix pleroma.database bump_all_conversations`
 - Mix Tasks: `mix pleroma.database remove_embedded_objects`
 - Mix Tasks: `mix pleroma.user toggle_confirmed`
 - Federation: Support for reports
