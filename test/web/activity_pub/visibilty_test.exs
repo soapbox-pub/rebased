@@ -96,6 +96,16 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     refute Visibility.visible_for_user?(direct, unrelated)
   end
 
+  test "doesn't die when the user doesn't exist",
+       %{
+         direct: direct,
+         user: user
+       } do
+    Repo.delete(user)
+    Cachex.clear(:user_cache)
+    refute Visibility.is_private?(direct)
+  end
+
   test "get_visibility", %{
     public: public,
     private: private,

@@ -974,4 +974,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def contain_activity(%Activity{} = activity, %User{} = user) do
     contain_broken_threads(activity, user)
   end
+
+  def fetch_direct_messages_query do
+    Activity
+    |> restrict_type(%{"type" => "Create"})
+    |> restrict_visibility(%{visibility: "direct"})
+    |> order_by([activity], asc: activity.id)
+  end
 end

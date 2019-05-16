@@ -14,11 +14,12 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   end
 
   def is_private?(activity) do
-    unless is_public?(activity) do
-      follower_address = User.get_cached_by_ap_id(activity.data["actor"]).follower_address
-      Enum.any?(activity.data["to"], &(&1 == follower_address))
+    with false <- is_public?(activity),
+         %User{follower_address: follower_address} <-
+           User.get_cached_by_ap_id(activity.data["actor"]) do
+      follower_address in activity.data["to"]
     else
-      false
+      _ -> false
     end
   end
 
