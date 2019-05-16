@@ -873,7 +873,6 @@ defmodule Pleroma.UserTest do
 
       assert [activity] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
-               |> ActivityPub.contain_timeline(user2)
 
       {:ok, _user} = User.deactivate(user)
 
@@ -882,7 +881,6 @@ defmodule Pleroma.UserTest do
 
       assert [] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
-               |> ActivityPub.contain_timeline(user2)
     end
   end
 
@@ -1203,5 +1201,23 @@ defmodule Pleroma.UserTest do
     user_show = Pleroma.Web.TwitterAPI.UserView.render("show.json", %{user: user})
 
     assert Map.get(user_show, "followers_count") == 2
+  end
+
+  describe "toggle_confirmation/1" do
+    test "if user is confirmed" do
+      user = insert(:user, info: %{confirmation_pending: false})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      assert user.info.confirmation_pending
+      assert user.info.confirmation_token
+    end
+
+    test "if user is unconfirmed" do
+      user = insert(:user, info: %{confirmation_pending: true, confirmation_token: "some token"})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      refute user.info.confirmation_pending
+      refute user.info.confirmation_token
+    end
   end
 end

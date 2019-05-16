@@ -31,7 +31,7 @@ defmodule Pleroma.Web.Federator.Publisher do
   """
   @spec enqueue_one(module(), Map.t()) :: :ok
   def enqueue_one(module, %{} = params),
-    do: PleromaJobQueue.enqueue(:federation_outgoing, __MODULE__, [:publish_one, module, params])
+    do: PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_one, module, params])
 
   @spec perform(atom(), module(), any()) :: {:ok, any()} | {:error, any()}
   def perform(:publish_one, module, params) do

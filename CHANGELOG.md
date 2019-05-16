@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [Prometheus](https://prometheus.io/) metrics
 - Support for Mastodon's remote interaction
 - Mix Tasks: `mix pleroma.database remove_embedded_objects`
+- Mix Tasks: `mix pleroma.user toggle_confirmed`
 - Federation: Support for reports
 - Configuration: `safe_dm_mentions` option
 - Configuration: `link_name` option
@@ -98,7 +99,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Make `irreversible` field default to `false` [`POST /api/v1/filters`]
 
 ## Removed
-- Configuration: `config :pleroma, :fe` in favor of the more flexible `config :pleroma, :frontend_configurations` 
+- Configuration: `config :pleroma, :fe` in favor of the more flexible `config :pleroma, :frontend_configurations`
 
 ## [0.9.9999] - 2019-04-05
 ### Security

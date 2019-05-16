@@ -212,7 +212,7 @@ defmodule Pleroma.User.Info do
     ])
   end
 
-  @spec confirmation_changeset(Info.t(), keyword()) :: Ecto.Changerset.t()
+  @spec confirmation_changeset(Info.t(), keyword()) :: Changeset.t()
   def confirmation_changeset(info, opts) do
     need_confirmation? = Keyword.get(opts, :need_confirmation)
 

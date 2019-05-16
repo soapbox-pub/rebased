@@ -527,17 +527,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_visibility(query, %{visibility: visibility})
        when is_list(visibility) do
     if Enum.all?(visibility, &(&1 in @valid_visibilities)) do
-      from(
-        a in query,
-        where:
-          fragment(
-            "activity_visibility(?, ?, ?) = ANY (?)",
-            a.actor,
-            a.recipients,
-            a.data,
-            ^visibility
-          )
-      )
+      query =
+        from(
+          a in query,
+          where:
+            fragment(
+              "activity_visibility(?, ?, ?) = ANY (?)",
+              a.actor,
+              a.recipients,
+              a.data,
+              ^visibility
+            )
+        )
+
+      query
     else
       Logger.error("Could not restrict visibility to #{visibility}")
     end
@@ -545,11 +548,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_visibility(query, %{visibility: visibility})
        when visibility in @valid_visibilities do
-    from(
-      a in query,
-      where:
-        fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
-    )
+    query =
+      from(
+        a in query,
+        where:
+          fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
+      )
+
+    query
   end
 
   defp restrict_visibility(_query, %{visibility: visibility})
@@ -558,6 +564,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_visibility(query, _visibility), do: query
+
+  defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}) do
+    query =
+      from(
+        a in query,
+        where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
+      )
+
+    query
+  end
+
+  defp restrict_thread_visibility(query, _), do: query
 
   def fetch_user_activities(user, reading_user, params \\ %{}) do
     params =
@@ -838,6 +856,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_muted(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
+    |> restrict_thread_visibility(opts)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
@@ -954,14 +973,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   # do post-processing on a specific activity
   def contain_activity(%Activity{} = activity, %User{} = user) do
     contain_broken_threads(activity, user)
-  end
-
-  # do post-processing on a timeline
-  def contain_timeline(timeline, user) do
-    timeline
-    |> Enum.filter(fn activity ->
-      contain_activity(activity, user)
-    end)
   end
 
   def fetch_direct_messages_query do

@@ -960,17 +960,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           "in_reply_to_status_id" => private_activity_2.id
         })
 
-      activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
+      activities =
+        ActivityPub.fetch_activities([user1.ap_id | user1.following])
+        |> Enum.map(fn a -> a.id end)
 
       private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
 
-      assert [public_activity, private_activity_1, private_activity_3] == activities
+      assert [public_activity.id, private_activity_1.id, private_activity_3.id] == activities
 
       assert length(activities) == 3
 
-      activities = ActivityPub.contain_timeline(activities, user1)
+      activities =
+        ActivityPub.fetch_activities([user1.ap_id | user1.following], %{"user" => user1})
+        |> Enum.map(fn a -> a.id end)
 
-      assert [public_activity, private_activity_1] == activities
+      assert [public_activity.id, private_activity_1.id] == activities
       assert length(activities) == 2
     end
   end
