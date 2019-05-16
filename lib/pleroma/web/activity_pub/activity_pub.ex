@@ -540,8 +540,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
             )
         )
 
-      Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
       query
     else
       Logger.error("Could not restrict visibility to #{visibility}")
@@ -557,8 +555,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
       )
 
-    Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
     query
   end
 
@@ -568,6 +564,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_visibility(query, _visibility), do: query
+
+  defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}) do
+    query =
+      from(
+        a in query,
+        where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
+      )
+
+    query
+  end
+
+  defp restrict_thread_visibility(query, _), do: query
 
   def fetch_user_activities(user, reading_user, params \\ %{}) do
     params =
@@ -848,6 +856,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_muted(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
+    |> restrict_thread_visibility(opts)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
@@ -964,13 +973,5 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   # do post-processing on a specific activity
   def contain_activity(%Activity{} = activity, %User{} = user) do
     contain_broken_threads(activity, user)
-  end
-
-  # do post-processing on a timeline
-  def contain_timeline(timeline, user) do
-    timeline
-    |> Enum.filter(fn activity ->
-      contain_activity(activity, user)
-    end)
   end
 end

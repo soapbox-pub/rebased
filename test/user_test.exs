@@ -873,7 +873,6 @@ defmodule Pleroma.UserTest do
 
       assert [activity] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
-               |> ActivityPub.contain_timeline(user2)
 
       {:ok, _user} = User.deactivate(user)
 
@@ -882,7 +881,6 @@ defmodule Pleroma.UserTest do
 
       assert [] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
-               |> ActivityPub.contain_timeline(user2)
     end
   end
 

@@ -38,7 +38,8 @@ defmodule Pleroma.Filter do
     query =
       from(
         f in Pleroma.Filter,
-        where: f.user_id == ^user_id
+        where: f.user_id == ^user_id,
+        order_by: [desc: :id]
       )
 
     Repo.all(query)
