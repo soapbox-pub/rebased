@@ -43,7 +43,7 @@ defmodule Pleroma.Factory do
   def note_factory(attrs \\ %{}) do
     text = sequence(:text, &"This is :moominmamma: note #{&1}")
 
-    user = insert(:user)
+    user = attrs[:user] || insert(:user)
 
     data = %{
       "type" => "Note",
@@ -113,7 +113,8 @@ defmodule Pleroma.Factory do
   end
 
   def note_activity_factory(attrs \\ %{}) do
-    note = attrs[:note] || insert(:note)
+    user = attrs[:user] || insert(:user)
+    note = attrs[:note] || insert(:note, user: user)
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),

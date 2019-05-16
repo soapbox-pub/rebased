@@ -4,11 +4,16 @@
 
 defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   use Pleroma.Web, :controller
+  alias Pleroma.Activity
   alias Pleroma.User
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.AdminAPI.Search
+  alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MastodonAPI.StatusView
 
   import Pleroma.Web.ControllerHelper, only: [json_response: 3]
 
@@ -287,10 +292,86 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json(token.token)
   end
 
+  def list_reports(conn, params) do
+    params =
+      params
+      |> Map.put("type", "Flag")
+      |> Map.put("skip_preload", true)
+
+    reports =
+      []
+      |> ActivityPub.fetch_activities(params)
+      |> Enum.reverse()
+
+    conn
+    |> put_view(ReportView)
+    |> render("index.json", %{reports: reports})
+  end
+
+  def report_show(conn, %{"id" => id}) do
+    with %Activity{} = report <- Activity.get_by_id(id) do
+      conn
+      |> put_view(ReportView)
+      |> render("show.json", %{report: report})
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
+  def report_update_state(conn, %{"id" => id, "state" => state}) do
+    with {:ok, report} <- CommonAPI.update_report_state(id, state) do
+      conn
+      |> put_view(ReportView)
+      |> render("show.json", %{report: report})
+    end
+  end
+
+  def report_respond(%{assigns: %{user: user}} = conn, %{"id" => id} = params) do
+    with false <- is_nil(params["status"]),
+         %Activity{} <- Activity.get_by_id(id) do
+      params =
+        params
+        |> Map.put("in_reply_to_status_id", id)
+        |> Map.put("visibility", "direct")
+
+      {:ok, activity} = CommonAPI.post(user, params)
+
+      conn
+      |> put_view(StatusView)
+      |> render("status.json", %{activity: activity})
+    else
+      true ->
+        {:param_cast, nil}
+
+      nil ->
+        {:error, :not_found}
+    end
+  end
+
+  def status_update(conn, %{"id" => id} = params) do
+    with {:ok, activity} <- CommonAPI.update_activity_scope(id, params) do
+      conn
+      |> put_view(StatusView)
+      |> render("status.json", %{activity: activity})
+    end
+  end
+
+  def status_delete(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
+      json(conn, %{})
+    end
+  end
+
   def errors(conn, {:error, :not_found}) do
     conn
     |> put_status(404)
     |> json("Not found")
+  end
+
+  def errors(conn, {:error, reason}) do
+    conn
+    |> put_status(400)
+    |> json(reason)
   end
 
   def errors(conn, {:param_cast, _}) do

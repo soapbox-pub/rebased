@@ -2129,7 +2129,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
         |> json_response(:ok)
 
-      assert length(anonymous_response) == 0
+      assert Enum.empty?(anonymous_response)
     end
 
     test "does not return others' favorited DM when user is not one of recipients", %{
@@ -2153,7 +2153,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/pleroma/accounts/#{user.id}/favourites")
         |> json_response(:ok)
 
-      assert length(response) == 0
+      assert Enum.empty?(response)
     end
 
     test "paginates favorites using since_id and max_id", %{
