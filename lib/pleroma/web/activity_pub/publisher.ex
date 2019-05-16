@@ -54,7 +54,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       |> Timex.format!("{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
 
     signature =
-      Pleroma.Web.HTTPSignatures.sign(actor, %{
+      Pleroma.Signature.sign(actor, %{
         host: host,
         "content-length": byte_size(json),
         digest: digest,

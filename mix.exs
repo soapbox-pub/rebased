@@ -13,6 +13,7 @@ defmodule Pleroma.Mixfile do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      test_coverage: [tool: ExCoveralls],
 
       # Docs
       name: "Pleroma",
@@ -103,6 +104,9 @@ defmodule Pleroma.Mixfile do
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
        ref: "c00c4e75b35367fa42c95ffd9b8c455bf9995829"},
+      {:http_signatures,
+       git: "https://git.pleroma.social/pleroma/http_signatures.git",
+       ref: "9789401987096ead65646b52b5a2ca6bf52fc531"},
       {:pleroma_job_queue, "~> 0.2.0"},
       {:telemetry, "~> 0.3"},
       {:prometheus_ex, "~> 3.0"},
@@ -115,7 +119,8 @@ defmodule Pleroma.Mixfile do
       {:benchee, "~> 1.0"},
       {:esshd, "~> 0.1.0"},
       {:ex_rated, "~> 1.2"},
-      {:plug_static_index_html, "~> 1.0.0"}
+      {:plug_static_index_html, "~> 1.0.0"},
+      {:excoveralls, "~> 0.11.1", only: :test}
     ] ++ oauth_deps
   end
 

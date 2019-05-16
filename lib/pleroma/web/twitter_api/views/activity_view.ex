@@ -310,7 +310,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "tags" => tags,
       "activity_type" => "post",
       "possibly_sensitive" => possibly_sensitive,
-      "visibility" => StatusView.get_visibility(object),
+      "visibility" => Pleroma.Web.ActivityPub.Visibility.get_visibility(object),
       "summary" => summary,
       "summary_html" => summary |> Formatter.emojify(object.data["emoji"]),
       "card" => card,

@@ -116,36 +116,39 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  def get_visibility(%{"visibility" => visibility})
+  def get_visibility(%{"visibility" => visibility}, in_reply_to)
       when visibility in ~w{public unlisted private direct},
-      do: visibility
+      do: {visibility, get_replied_to_visibility(in_reply_to)}
 
-  def get_visibility(%{"visibility" => "list:" <> list_id}) do
-    {:list, String.to_integer(list_id)}
+  def get_visibility(%{"visibility" => "list:" <> list_id}, in_reply_to) do
+    visibility = {:list, String.to_integer(list_id)}
+    {visibility, get_replied_to_visibility(in_reply_to)}
   end
 
-  def get_visibility(%{"in_reply_to_status_id" => status_id}) when not is_nil(status_id) do
-    case get_replied_to_activity(status_id) do
-      nil ->
-        "public"
+  def get_visibility(_, in_reply_to) when not is_nil(in_reply_to) do
+    visibility = get_replied_to_visibility(in_reply_to)
+    {visibility, visibility}
+  end
 
-      in_reply_to ->
-        # XXX: these heuristics should be moved out of MastodonAPI.
-        with %Object{} = object <- Object.normalize(in_reply_to) do
-          Pleroma.Web.MastodonAPI.StatusView.get_visibility(object)
-        end
+  def get_visibility(_, in_reply_to), do: {"public", get_replied_to_visibility(in_reply_to)}
+
+  def get_replied_to_visibility(nil), do: nil
+
+  def get_replied_to_visibility(activity) do
+    with %Object{} = object <- Object.normalize(activity) do
+      Pleroma.Web.ActivityPub.Visibility.get_visibility(object)
     end
   end
 
-  def get_visibility(_), do: "public"
-
   def post(user, %{"status" => status} = data) do
-    visibility = get_visibility(data)
     limit = Pleroma.Config.get([:instance, :limit])
 
     with status <- String.trim(status),
          attachments <- attachments_from_ids(data),
          in_reply_to <- get_replied_to_activity(data["in_reply_to_status_id"]),
+         {visibility, in_reply_to_visibility} <- get_visibility(data, in_reply_to),
+         {_, false} <-
+           {:private_to_public, in_reply_to_visibility == "direct" && visibility != "direct"},
          {content_html, mentions, tags} <-
            make_content_html(
              status,
@@ -187,6 +190,8 @@ defmodule Pleroma.Web.CommonAPI do
         },
         Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
       )
+    else
+      e -> {:error, e}
     end
   end
 
