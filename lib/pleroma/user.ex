@@ -1378,4 +1378,17 @@ defmodule Pleroma.User do
   def showing_reblogs?(%User{} = user, %User{} = target) do
     target.ap_id not in user.info.muted_reblogs
   end
+
+  @spec toggle_confirmation(User.t()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def toggle_confirmation(%User{} = user) do
+    need_confirmation? = !user.info.confirmation_pending
+
+    info_changeset =
+      User.Info.confirmation_changeset(user.info, need_confirmation: need_confirmation?)
+
+    user
+    |> change()
+    |> put_embed(:info, info_changeset)
+    |> update_and_set_cache()
+  end
 end

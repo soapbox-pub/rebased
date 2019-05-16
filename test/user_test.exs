@@ -1204,4 +1204,22 @@ defmodule Pleroma.UserTest do
 
     assert Map.get(user_show, "followers_count") == 2
   end
+
+  describe "toggle_confirmation/1" do
+    test "if user is confirmed" do
+      user = insert(:user, info: %{confirmation_pending: false})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      assert user.info.confirmation_pending
+      assert user.info.confirmation_token
+    end
+
+    test "if user is unconfirmed" do
+      user = insert(:user, info: %{confirmation_pending: true, confirmation_token: "some token"})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      refute user.info.confirmation_pending
+      refute user.info.confirmation_token
+    end
+  end
 end
