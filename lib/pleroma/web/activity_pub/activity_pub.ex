@@ -758,8 +758,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     blocks = info.blocks || []
     domain_blocks = info.domain_blocks || []
 
+    query =
+      if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
+
     from(
-      activity in query,
+      [activity, object: o] in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
       where: fragment("not (? && ?)", activity.recipients, ^blocks),
       where:
@@ -769,7 +772,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data,
           ^blocks
         ),
-      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks)
+      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks),
+      where: fragment("not (split_part(?->>'actor', '/', 3) = ANY(?))", o.data, ^domain_blocks)
     )
   end
 
