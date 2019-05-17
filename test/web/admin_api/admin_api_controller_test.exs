@@ -31,12 +31,87 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> assign(:user, admin)
         |> put_req_header("accept", "application/json")
         |> post("/api/pleroma/admin/users", %{
-          "nickname" => "lain",
-          "email" => "lain@example.org",
-          "password" => "test"
+          "users" => [
+            %{
+              "nickname" => "lain",
+              "email" => "lain@example.org",
+              "password" => "test"
+            }
+          ]
         })
 
-      assert json_response(conn, 200) == "lain"
+      assert json_response(conn, 200) == [
+               %{
+                 "code" => 201,
+                 "data" => %{
+                   "email" => "lain@example.org",
+                   "nickname" => "lain"
+                 },
+                 "type" => "success"
+               }
+             ]
+    end
+
+    test "Cannot create user with exisiting email" do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> post("/api/pleroma/admin/users", %{
+          "users" => [
+            %{
+              "nickname" => "lain",
+              "email" => user.email,
+              "password" => "test"
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == [
+               %{
+                 "code" => 409,
+                 "data" => %{
+                   "email" => user.email,
+                   "nickname" => "lain"
+                 },
+                 "error" => "email has already been taken",
+                 "type" => "error"
+               }
+             ]
+    end
+
+    test "Cannot create user with exisiting nickname" do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> post("/api/pleroma/admin/users", %{
+          "users" => [
+            %{
+              "nickname" => user.nickname,
+              "email" => "someuser@plerama.social",
+              "password" => "test"
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == [
+               %{
+                 "code" => 409,
+                 "data" => %{
+                   "email" => "someuser@plerama.social",
+                   "nickname" => user.nickname
+                 },
+                 "error" => "nickname has already been taken",
+                 "type" => "error"
+               }
+             ]
     end
   end
 

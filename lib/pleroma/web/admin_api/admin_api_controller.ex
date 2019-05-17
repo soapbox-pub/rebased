@@ -46,24 +46,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json("ok")
   end
 
-  def user_create(
-        conn,
-        %{"nickname" => nickname, "email" => email, "password" => password}
-      ) do
-    user_data = %{
-      nickname: nickname,
-      name: nickname,
-      email: email,
-      password: password,
-      password_confirmation: password,
-      bio: "."
-    }
+  def users_create(conn, %{"users" => users}) do
+    result =
+      Enum.map(users, fn %{"nickname" => nickname, "email" => email, "password" => password} ->
+        user_data = %{
+          nickname: nickname,
+          name: nickname,
+          email: email,
+          password: password,
+          password_confirmation: password,
+          bio: "."
+        }
 
-    changeset = User.register_changeset(%User{}, user_data, need_confirmation: false)
-    {:ok, user} = User.register(changeset)
+        changeset = User.register_changeset(%User{}, user_data, need_confirmation: false)
+
+        case User.register(changeset) do
+          {:ok, user} ->
+            AccountView.render("created.json", %{user: user})
+
+          {:error, changeset} ->
+            AccountView.render("create-error.json", %{changeset: changeset})
+        end
+      end)
 
     conn
-    |> json(user.nickname)
+    |> json(result)
   end
 
   def user_show(conn, %{"nickname" => nickname}) do
