@@ -465,6 +465,8 @@ config :pleroma, :oauth2,
   token_expires_in: 600,
   issue_new_refresh_token: true
 
+config :pleroma, :database, rum_enabled: false
+
 config :http_signatures,
   adapter: Pleroma.Signature
 

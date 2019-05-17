@@ -1009,6 +1009,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def status_search_query_with_gin(q, query) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
+          o.data,
+          ^query
+        ),
+      order_by: [desc: :id]
+    )
+  end
+
+  def status_search_query_with_rum(q, query) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "? @@ plainto_tsquery('english', ?)",
+          o.fts_content,
+          ^query
+        ),
+      order_by: [fragment("? <=> now()::date", o.inserted_at)]
+    )
+  end
+
   def status_search(user, query) do
     fetched =
       if Regex.match?(~r/https?:/, query) do
@@ -1022,19 +1046,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end || []
 
     q =
-      from(
-        [a, o] in Activity.with_preloaded_object(Activity),
+      from([a, o] in Activity.with_preloaded_object(Activity),
         where: fragment("?->>'type' = 'Create'", a.data),
         where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
-        where:
-          fragment(
-            "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
-            o.data,
-            ^query
-          ),
-        limit: 20,
-        order_by: [desc: :id]
+        limit: 20
       )
+
+    q =
+      if Pleroma.Config.get([:database, :rum_enabled]) do
+        status_search_query_with_rum(q, query)
+      else
+        status_search_query_with_gin(q, query)
+      end
 
     Repo.all(q) ++ fetched
   end
