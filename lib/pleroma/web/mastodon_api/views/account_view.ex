@@ -40,7 +40,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     follow_activity = Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, target)
 
     requested =
-      if follow_activity and !User.following?(target, user) do
+      if follow_activity && !User.following?(target, user) do
         follow_activity.data["state"] == "pending"
       else
         false
