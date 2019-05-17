@@ -22,7 +22,7 @@ defmodule Pleroma.Web.OAuth.Token do
     field(:refresh_token, :string)
     field(:scopes, {:array, :string}, default: [])
     field(:valid_until, :naive_datetime_usec)
-    belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     belongs_to(:app, App)
 
     timestamps()
@@ -45,12 +45,16 @@ defmodule Pleroma.Web.OAuth.Token do
     |> Repo.find_resource()
   end
 
+  @spec exchange_token(App.t(), Authorization.t()) ::
+          {:ok, Token.t()} | {:error, Changeset.t()}
   def exchange_token(app, auth) do
     with {:ok, auth} <- Authorization.use_token(auth),
          true <- auth.app_id == app.id do
+      user = if auth.user_id, do: User.get_cached_by_id(auth.user_id), else: %User{}
+
       create_token(
         app,
-        User.get_cached_by_id(auth.user_id),
+        user,
         %{scopes: auth.scopes}
       )
     end
@@ -81,12 +85,13 @@ defmodule Pleroma.Web.OAuth.Token do
     |> validate_required([:valid_until])
   end
 
+  @spec create_token(App.t(), User.t(), map()) :: {:ok, Token} | {:error, Changeset.t()}
   def create_token(%App{} = app, %User{} = user, attrs \\ %{}) do
     %__MODULE__{user_id: user.id, app_id: app.id}
     |> cast(%{scopes: attrs[:scopes] || app.scopes}, [:scopes])
-    |> validate_required([:scopes, :user_id, :app_id])
+    |> validate_required([:scopes, :app_id])
     |> put_valid_until(attrs)
-    |> put_token
+    |> put_token()
     |> put_refresh_token(attrs)
     |> Repo.insert()
   end

@@ -8,6 +8,7 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   use Pleroma.DataCase
@@ -213,8 +214,8 @@ defmodule Pleroma.UserTest do
   test "fetches correct profile for nickname beginning with number" do
     # Use old-style integer ID to try to reproduce the problem
     user = insert(:user, %{id: 1080})
-    userwithnumbers = insert(:user, %{nickname: "#{user.id}garbage"})
-    assert userwithnumbers == User.get_cached_by_nickname_or_id(userwithnumbers.nickname)
+    user_with_numbers = insert(:user, %{nickname: "#{user.id}garbage"})
+    assert user_with_numbers == User.get_cached_by_nickname_or_id(user_with_numbers.nickname)
   end
 
   describe "user registration" do
@@ -276,7 +277,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts certain nicknames" do
-      [restricted_name | _] = Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
+      [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
       assert is_bitstring(restricted_name)
 
@@ -349,7 +350,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it creates confirmed user if :confirmed option is given" do
-      changeset = User.register_changeset(%User{}, @full_user_data, confirmed: true)
+      changeset = User.register_changeset(%User{}, @full_user_data, need_confirmation: false)
       assert changeset.valid?
 
       {:ok, user} = Repo.insert(changeset)
@@ -625,6 +626,37 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "remove duplicates from following list" do
+    test "it removes duplicates" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, %User{following: following} = follower} = User.follow(follower, user)
+      assert length(following) == 2
+
+      {:ok, follower} =
+        follower
+        |> User.update_changeset(%{following: following ++ following})
+        |> Repo.update()
+
+      assert length(follower.following) == 4
+
+      {:ok, follower} = User.remove_duplicated_following(follower)
+      assert length(follower.following) == 2
+    end
+
+    test "it does nothing when following is uniq" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, follower} = User.follow(follower, user)
+      assert length(follower.following) == 2
+
+      {:ok, follower} = User.remove_duplicated_following(follower)
+      assert length(follower.following) == 2
+    end
+  end
+
   describe "follow_import" do
     test "it imports user followings from list" do
       [user1, user2, user3] = insert_list(3, :user)
@@ -816,13 +848,71 @@ defmodule Pleroma.UserTest do
     assert addressed in recipients
   end
 
-  test ".deactivate can de-activate then re-activate a user" do
-    user = insert(:user)
-    assert false == user.info.deactivated
-    {:ok, user} = User.deactivate(user)
-    assert true == user.info.deactivated
-    {:ok, user} = User.deactivate(user, false)
-    assert false == user.info.deactivated
+  describe ".deactivate" do
+    test "can de-activate then re-activate a user" do
+      user = insert(:user)
+      assert false == user.info.deactivated
+      {:ok, user} = User.deactivate(user)
+      assert true == user.info.deactivated
+      {:ok, user} = User.deactivate(user, false)
+      assert false == user.info.deactivated
+    end
+
+    test "hide a user from followers " do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user} = User.follow(user, user2)
+      {:ok, _user} = User.deactivate(user)
+
+      info = User.get_cached_user_info(user2)
+
+      assert info.follower_count == 0
+      assert {:ok, []} = User.get_followers(user2)
+    end
+
+    test "hide a user from friends" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user2} = User.follow(user2, user)
+      assert User.following_count(user2) == 1
+
+      {:ok, _user} = User.deactivate(user)
+
+      info = User.get_cached_user_info(user2)
+
+      assert info.following_count == 0
+      assert User.following_count(user2) == 0
+      assert {:ok, []} = User.get_friends(user2)
+    end
+
+    test "hide a user's statuses from timelines and notifications" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user2} = User.follow(user2, user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}"})
+
+      activity = Repo.preload(activity, :bookmark)
+
+      [notification] = Pleroma.Notification.for_user(user2)
+      assert notification.activity.id == activity.id
+
+      assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
+
+      assert [activity] ==
+               ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
+
+      {:ok, _user} = User.deactivate(user)
+
+      assert [] == ActivityPub.fetch_public_activities(%{})
+      assert [] == Pleroma.Notification.for_user(user2)
+
+      assert [] ==
+               ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
+    end
   end
 
   test ".delete_user_activities deletes all create activities" do
@@ -1133,14 +1223,32 @@ defmodule Pleroma.UserTest do
     follower2 = insert(:user)
     follower3 = insert(:user)
 
-    {:ok, follower} = Pleroma.User.follow(follower, user)
-    {:ok, _follower2} = Pleroma.User.follow(follower2, user)
-    {:ok, _follower3} = Pleroma.User.follow(follower3, user)
+    {:ok, follower} = User.follow(follower, user)
+    {:ok, _follower2} = User.follow(follower2, user)
+    {:ok, _follower3} = User.follow(follower3, user)
 
-    {:ok, _} = Pleroma.User.block(user, follower)
+    {:ok, _} = User.block(user, follower)
 
     user_show = Pleroma.Web.TwitterAPI.UserView.render("show.json", %{user: user})
 
     assert Map.get(user_show, "followers_count") == 2
+  end
+
+  describe "toggle_confirmation/1" do
+    test "if user is confirmed" do
+      user = insert(:user, info: %{confirmation_pending: false})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      assert user.info.confirmation_pending
+      assert user.info.confirmation_token
+    end
+
+    test "if user is unconfirmed" do
+      user = insert(:user, info: %{confirmation_pending: true, confirmation_token: "some token"})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      refute user.info.confirmation_pending
+      refute user.info.confirmation_token
+    end
   end
 end

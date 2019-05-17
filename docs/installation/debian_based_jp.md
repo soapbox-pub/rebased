@@ -14,6 +14,7 @@
 - erlang-dev
 - erlang-tools
 - erlang-parsetools
+- erlang-ssh
 - erlang-xmerl (Jessieではバックポートからインストールすること！)
 - git
 - build-essential
@@ -44,7 +45,7 @@ wget -P /tmp/ https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
 
 * ElixirとErlangをインストールします、
 ```
-apt update && apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools
+apt update && apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
 ```
 
 ### Pleroma BE (バックエンド) をインストールします

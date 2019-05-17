@@ -4,10 +4,32 @@
 
 defmodule Pleroma.ConversationTest do
   use Pleroma.DataCase
+  alias Pleroma.Activity
   alias Pleroma.Conversation
+  alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  test "it goes through old direct conversations" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{"visibility" => "direct", "status" => "hey @#{other_user.nickname}"})
+
+    Repo.delete_all(Conversation)
+    Repo.delete_all(Conversation.Participation)
+
+    refute Repo.one(Conversation)
+
+    Conversation.bump_for_all_activities()
+
+    assert Repo.one(Conversation)
+    [participation, _p2] = Repo.all(Conversation.Participation)
+
+    assert participation.read
+  end
 
   test "it creates a conversation for given ap_id" do
     assert {:ok, %Conversation{} = conversation} =
@@ -133,5 +155,41 @@ defmodule Pleroma.ConversationTest do
       CommonAPI.post(har, %{"status" => "Hey @#{jafnhar.nickname}", "visibility" => "public"})
 
     assert {:error, _} = Conversation.create_or_bump_for(activity)
+  end
+
+  test "create_or_bump_for does not normalize objects before checking the activity type" do
+    note = insert(:note)
+    note_id = note.data["id"]
+    Repo.delete(note)
+    refute Object.get_by_ap_id(note_id)
+
+    Tesla.Mock.mock(fn env ->
+      case env.url do
+        ^note_id ->
+          # TODO: add attributedTo and tag to the note factory
+          body =
+            note.data
+            |> Map.put("attributedTo", note.data["actor"])
+            |> Map.put("tag", [])
+            |> Jason.encode!()
+
+          %Tesla.Env{status: 200, body: body}
+      end
+    end)
+
+    undo = %Activity{
+      id: "fake",
+      data: %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "actor" => note.data["actor"],
+        "to" => [note.data["actor"]],
+        "object" => note_id,
+        "type" => "Undo"
+      }
+    }
+
+    Conversation.create_or_bump_for(undo)
+
+    refute Object.get_by_ap_id(note_id)
   end
 end

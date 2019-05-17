@@ -35,6 +35,7 @@ defmodule Pleroma.XmlBuilder do
   defp make_open_tag(tag, attributes) do
     attributes_string =
       for {attribute, value} <- attributes do
+        value = String.replace(value, "\"", "&quot;")
         "#{attribute}=\"#{value}\""
       end
       |> Enum.join(" ")

@@ -12,8 +12,12 @@ defmodule Pleroma.Config do
   def get([key], default), do: get(key, default)
 
   def get([parent_key | keys], default) do
-    Application.get_env(:pleroma, parent_key)
-    |> get_in(keys) || default
+    case :pleroma
+         |> Application.get_env(parent_key)
+         |> get_in(keys) do
+      nil -> default
+      any -> any
+    end
   end
 
   def get(key, default) do
