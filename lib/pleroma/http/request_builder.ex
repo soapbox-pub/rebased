@@ -45,8 +45,9 @@ defmodule Pleroma.HTTP.RequestBuilder do
   Add headers to the request
   """
   @spec headers(map(), list(tuple)) :: map()
-  def headers(request, h) do
-    Map.put_new(request, :headers, h)
+  def headers(request, header_list) do
+    header_list = header_list ++ [{"User-Agent", Pleroma.Application.user_agent()}]
+    Map.put_new(request, :headers, header_list)
   end
 
   @doc """
