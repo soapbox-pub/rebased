@@ -52,6 +52,7 @@ unit-testing:
     - mix ecto.create
     - mix ecto.migrate
     - mix test --trace --preload-modules
+    - mix coveralls
 
 lint:
   stage: test

@@ -406,8 +406,7 @@ config :pleroma_job_queue, :queues,
   mailer: 10,
   transmogrifier: 20,
   scheduled_activities: 10,
-  background: 5,
-  user: 10
+  background: 5
 
 config :pleroma, :fetch_initial_posts,
   enabled: false,
@@ -465,6 +464,9 @@ config :pleroma, Pleroma.ScheduledActivity,
 config :pleroma, :oauth2,
   token_expires_in: 600,
   issue_new_refresh_token: true
+
+config :http_signatures,
+  adapter: Pleroma.Signature
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -24,7 +24,7 @@ Authentication is required and the user must be an admin.
 - Example: `https://mypleroma.org/api/pleroma/admin/users?query=john&filters=local,active&page=1&page_size=10&tags[]=some_tag&tags[]=another_tag&name=display_name&email=email@example.com`
 - Response:
 
-```JSON
+```json
 {
   "page_size": integer,
   "count": integer,
@@ -92,7 +92,7 @@ Authentication is required and the user must be an admin.
   - `nickname`
 - Response: User’s object
 
-```JSON
+```json
 {
   "deactivated": bool,
   "id": integer,
@@ -106,15 +106,15 @@ Authentication is required and the user must be an admin.
 
 - Method: `PUT`
 - Params:
-  - `nickname`
-  - `tags`
+  - `nicknames` (array)
+  - `tags` (array)
 
 ### Untag a list of users
 
 - Method: `DELETE`
 - Params:
-  - `nickname`
-  - `tags`
+  - `nicknames` (array)
+  - `tags` (array)
 
 ## `/api/pleroma/admin/users/:nickname/permission_group`
 
@@ -124,7 +124,7 @@ Authentication is required and the user must be an admin.
 - Params: none
 - Response:
 
-```JSON
+```json
 {
   "is_moderator": bool,
   "is_admin": bool
@@ -141,7 +141,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params: none
 - Response:
 
-```JSON
+```json
 {
   "is_moderator": bool,
   "is_admin": bool
@@ -223,7 +223,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params: none
 - Response:
 
-```JSON
+```json
 {
 
   "invites": [
@@ -250,7 +250,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `token`
 - Response:
 
-```JSON
+```json
 {
   "id": integer,
   "token": string,
@@ -280,3 +280,280 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Methods: `GET`
 - Params: none
 - Response: password reset token (base64 string)
+
+## `/api/pleroma/admin/reports`
+### Get a list of reports
+- Method `GET`
+- Params:
+  - `state`: optional, the state of reports. Valid values are `open`, `closed` and `resolved`
+  - `limit`: optional, the number of records to retrieve
+  - `since_id`: optional, returns results that are more recent than the specified id
+  - `max_id`: optional, returns results that are older than the specified id
+- Response: 
+  - On failure: 403 Forbidden error `{"error": "error_msg"}` when requested by anonymous or non-admin
+  - On success: JSON, returns a list of reports, where:
+    - `account`: the user who has been reported
+    - `actor`: the user who has sent the report
+    - `statuses`: list of statuses that have been included to the report
+
+```json
+{
+  "reports": [
+    {
+      "account": {
+        "acct": "user",
+        "avatar": "https://pleroma.example.org/images/avi.png",
+        "avatar_static": "https://pleroma.example.org/images/avi.png",
+        "bot": false,
+        "created_at": "2019-04-23T17:32:04.000Z",
+        "display_name": "User",
+        "emojis": [],
+        "fields": [],
+        "followers_count": 1,
+        "following_count": 1,
+        "header": "https://pleroma.example.org/images/banner.png",
+        "header_static": "https://pleroma.example.org/images/banner.png",
+        "id": "9i6dAJqSGSKMzLG2Lo",
+        "locked": false,
+        "note": "",
+        "pleroma": {
+          "confirmation_pending": false,
+          "hide_favorites": true,
+          "hide_followers": false,
+          "hide_follows": false,
+          "is_admin": false,
+          "is_moderator": false,
+          "relationship": {},
+          "tags": []
+        },
+        "source": {
+          "note": "",
+          "pleroma": {},
+          "sensitive": false
+        },
+        "statuses_count": 3,
+        "url": "https://pleroma.example.org/users/user",
+        "username": "user"
+      },
+      "actor": {
+        "acct": "lain",
+        "avatar": "https://pleroma.example.org/images/avi.png",
+        "avatar_static": "https://pleroma.example.org/images/avi.png",
+        "bot": false,
+        "created_at": "2019-03-28T17:36:03.000Z",
+        "display_name": "Roger Braun",
+        "emojis": [],
+        "fields": [],
+        "followers_count": 1,
+        "following_count": 1,
+        "header": "https://pleroma.example.org/images/banner.png",
+        "header_static": "https://pleroma.example.org/images/banner.png",
+        "id": "9hEkA5JsvAdlSrocam",
+        "locked": false,
+        "note": "",
+        "pleroma": {
+          "confirmation_pending": false,
+          "hide_favorites": false,
+          "hide_followers": false,
+          "hide_follows": false,
+          "is_admin": false,
+          "is_moderator": false,
+          "relationship": {},
+          "tags": []
+        },
+        "source": {
+          "note": "",
+          "pleroma": {},
+          "sensitive": false
+        },
+        "statuses_count": 1,
+        "url": "https://pleroma.example.org/users/lain",
+        "username": "lain"
+      },
+      "content": "Please delete it",
+      "created_at": "2019-04-29T19:48:15.000Z",
+      "id": "9iJGOv1j8hxuw19bcm",
+      "state": "open",
+      "statuses": [
+        {
+          "account": { ... },
+          "application": {
+            "name": "Web",
+            "website": null
+          },
+          "bookmarked": false,
+          "card": null,
+          "content": "<span class=\"h-card\"><a data-user=\"9hEkA5JsvAdlSrocam\" class=\"u-url mention\" href=\"https://pleroma.example.org/users/lain\">@<span>lain</span></a></span> click on my link <a href=\"https://www.google.com/\">https://www.google.com/</a>",
+          "created_at": "2019-04-23T19:15:47.000Z",
+          "emojis": [],
+          "favourited": false,
+          "favourites_count": 0,
+          "id": "9i6mQ9uVrrOmOime8m",
+          "in_reply_to_account_id": null,
+          "in_reply_to_id": null,
+          "language": null,
+          "media_attachments": [],
+          "mentions": [
+            {
+              "acct": "lain",
+              "id": "9hEkA5JsvAdlSrocam",
+              "url": "https://pleroma.example.org/users/lain",
+              "username": "lain"
+            },
+            {
+              "acct": "user",
+              "id": "9i6dAJqSGSKMzLG2Lo",
+              "url": "https://pleroma.example.org/users/user",
+              "username": "user"
+            }
+          ],
+          "muted": false,
+          "pinned": false,
+          "pleroma": {
+            "content": {
+              "text/plain": "@lain click on my link https://www.google.com/"
+            },
+            "conversation_id": 28,
+            "in_reply_to_account_acct": null,
+            "local": true,
+            "spoiler_text": {
+              "text/plain": ""
+            }
+          },
+          "reblog": null,
+          "reblogged": false,
+          "reblogs_count": 0,
+          "replies_count": 0,
+          "sensitive": false,
+          "spoiler_text": "",
+          "tags": [],
+          "uri": "https://pleroma.example.org/objects/8717b90f-8e09-4b58-97b0-e3305472b396",
+          "url": "https://pleroma.example.org/notice/9i6mQ9uVrrOmOime8m",
+          "visibility": "direct"
+        }
+      ]
+    }
+  ]
+}
+```
+
+## `/api/pleroma/admin/reports/:id`
+### Get an individual report
+- Method `GET`
+- Params:
+  - `id`
+- Response:
+  - On failure: 
+    - 403 Forbidden `{"error": "error_msg"}`
+    - 404 Not Found `"Not found"`
+  - On success: JSON, Report object (see above)
+
+## `/api/pleroma/admin/reports/:id`
+### Change the state of the report
+- Method `PUT`
+- Params:
+  - `id`
+  - `state`: required, the new state. Valid values are `open`, `closed` and `resolved`
+- Response: 
+  - On failure: 
+    - 400 Bad Request `"Unsupported state"`
+    - 403 Forbidden `{"error": "error_msg"}`
+    - 404 Not Found `"Not found"`
+  - On success: JSON, Report object (see above)
+
+## `/api/pleroma/admin/reports/:id/respond`
+### Respond to a report
+- Method `POST`
+- Params:
+  - `id`
+  - `status`: required, the message
+- Response: 
+  - On failure: 
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing 
+    - 403 Forbidden `{"error": "error_msg"}` 
+    - 404 Not Found `"Not found"`
+  - On success: JSON, created Mastodon Status entity
+
+```json
+{
+  "account": { ... },
+  "application": {
+    "name": "Web",
+    "website": null
+  },
+  "bookmarked": false,
+  "card": null,
+  "content": "Your claim is going to be closed",
+  "created_at": "2019-05-11T17:13:03.000Z",
+  "emojis": [],
+  "favourited": false,
+  "favourites_count": 0,
+  "id": "9ihuiSL1405I65TmEq",
+  "in_reply_to_account_id": null,
+  "in_reply_to_id": null,
+  "language": null,
+  "media_attachments": [],
+  "mentions": [
+    {
+      "acct": "user",
+      "id": "9i6dAJqSGSKMzLG2Lo",
+      "url": "https://pleroma.example.org/users/user",
+      "username": "user"
+    },
+    {
+      "acct": "admin",
+      "id": "9hEkA5JsvAdlSrocam",
+      "url": "https://pleroma.example.org/users/admin",
+      "username": "admin"
+    }
+  ],
+  "muted": false,
+  "pinned": false,
+  "pleroma": {
+    "content": {
+      "text/plain": "Your claim is going to be closed"
+    },
+    "conversation_id": 35,
+    "in_reply_to_account_acct": null,
+    "local": true,
+    "spoiler_text": {
+      "text/plain": ""
+    }
+  },
+  "reblog": null,
+  "reblogged": false,
+  "reblogs_count": 0,
+  "replies_count": 0,
+  "sensitive": false,
+  "spoiler_text": "",
+  "tags": [],
+  "uri": "https://pleroma.example.org/objects/cab0836d-9814-46cd-a0ea-529da9db5fcb",
+  "url": "https://pleroma.example.org/notice/9ihuiSL1405I65TmEq",
+  "visibility": "direct"
+}
+```
+
+## `/api/pleroma/admin/statuses/:id`
+### Change the scope of an individual reported status
+- Method `PUT`
+- Params:
+  - `id`
+  - `sensitive`: optional, valid values are `true` or `false`
+  - `visibility`: optional, valid values are `public`, `private` and `unlisted`
+- Response: 
+  - On failure: 
+    - 400 Bad Request `"Unsupported visibility"`
+    - 403 Forbidden `{"error": "error_msg"}` 
+    - 404 Not Found `"Not found"`
+  - On success: JSON, Mastodon Status entity
+
+## `/api/pleroma/admin/statuses/:id`
+### Delete an individual reported status
+- Method `DELETE`
+- Params:
+  - `id`
+- Response: 
+  - On failure: 
+    - 403 Forbidden `{"error": "error_msg"}` 
+    - 404 Not Found `"Not found"`
+  - On success: 200 OK `{}`

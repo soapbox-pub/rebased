@@ -55,7 +55,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     object =
       if Enum.member?(Pleroma.Config.get([:mrf_simple, :media_nsfw]), actor_host) do
         tags = (child_object["tag"] || []) ++ ["nsfw"]
-        child_object = Map.put(child_object, "tags", tags)
+        child_object = Map.put(child_object, "tag", tags)
         child_object = Map.put(child_object, "sensitive", true)
         Map.put(object, "object", child_object)
       else

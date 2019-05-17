@@ -462,6 +462,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute Enum.member?(activities, activity_three.id)
   end
 
+  test "doesn't return activities from blocked domains" do
+    domain = "dogwhistle.zone"
+    domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
+    note = insert(:note, %{data: %{"actor" => domain_user.ap_id}})
+    activity = insert(:note_activity, %{note: note})
+    user = insert(:user)
+    {:ok, user} = User.block_domain(user, domain)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+
+    refute activity in activities
+
+    followed_user = insert(:user)
+    ActivityPub.follow(user, followed_user)
+    {:ok, repeat_activity, _} = CommonAPI.repeat(activity.id, followed_user)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+
+    refute repeat_activity in activities
+  end
+
   test "doesn't return muted activities" do
     activity_one = insert(:note_activity)
     activity_two = insert(:note_activity)
@@ -960,17 +983,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           "in_reply_to_status_id" => private_activity_2.id
         })
 
-      activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
+      activities =
+        ActivityPub.fetch_activities([user1.ap_id | user1.following])
+        |> Enum.map(fn a -> a.id end)
 
       private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
 
-      assert [public_activity, private_activity_1, private_activity_3] == activities
+      assert [public_activity.id, private_activity_1.id, private_activity_3.id] == activities
 
       assert length(activities) == 3
 
-      activities = ActivityPub.contain_timeline(activities, user1)
+      activities =
+        ActivityPub.fetch_activities([user1.ap_id | user1.following], %{"user" => user1})
+        |> Enum.map(fn a -> a.id end)
 
-      assert [public_activity, private_activity_1] == activities
+      assert [public_activity.id, private_activity_1.id] == activities
       assert length(activities) == 2
     end
   end

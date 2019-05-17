@@ -277,7 +277,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts certain nicknames" do
-      [restricted_name | _] = Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
+      [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
       assert is_bitstring(restricted_name)
 
@@ -626,6 +626,37 @@ defmodule Pleroma.UserTest do
     end
   end
 
+  describe "remove duplicates from following list" do
+    test "it removes duplicates" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, %User{following: following} = follower} = User.follow(follower, user)
+      assert length(following) == 2
+
+      {:ok, follower} =
+        follower
+        |> User.update_changeset(%{following: following ++ following})
+        |> Repo.update()
+
+      assert length(follower.following) == 4
+
+      {:ok, follower} = User.remove_duplicated_following(follower)
+      assert length(follower.following) == 2
+    end
+
+    test "it does nothing when following is uniq" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, follower} = User.follow(follower, user)
+      assert length(follower.following) == 2
+
+      {:ok, follower} = User.remove_duplicated_following(follower)
+      assert length(follower.following) == 2
+    end
+  end
+
   describe "follow_import" do
     test "it imports user followings from list" do
       [user1, user2, user3] = insert_list(3, :user)
@@ -873,7 +904,6 @@ defmodule Pleroma.UserTest do
 
       assert [activity] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
-               |> ActivityPub.contain_timeline(user2)
 
       {:ok, _user} = User.deactivate(user)
 
@@ -882,7 +912,6 @@ defmodule Pleroma.UserTest do
 
       assert [] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
-               |> ActivityPub.contain_timeline(user2)
     end
   end
 
@@ -1194,14 +1223,32 @@ defmodule Pleroma.UserTest do
     follower2 = insert(:user)
     follower3 = insert(:user)
 
-    {:ok, follower} = Pleroma.User.follow(follower, user)
-    {:ok, _follower2} = Pleroma.User.follow(follower2, user)
-    {:ok, _follower3} = Pleroma.User.follow(follower3, user)
+    {:ok, follower} = User.follow(follower, user)
+    {:ok, _follower2} = User.follow(follower2, user)
+    {:ok, _follower3} = User.follow(follower3, user)
 
-    {:ok, _} = Pleroma.User.block(user, follower)
+    {:ok, _} = User.block(user, follower)
 
     user_show = Pleroma.Web.TwitterAPI.UserView.render("show.json", %{user: user})
 
     assert Map.get(user_show, "followers_count") == 2
+  end
+
+  describe "toggle_confirmation/1" do
+    test "if user is confirmed" do
+      user = insert(:user, info: %{confirmation_pending: false})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      assert user.info.confirmation_pending
+      assert user.info.confirmation_token
+    end
+
+    test "if user is unconfirmed" do
+      user = insert(:user, info: %{confirmation_pending: true, confirmation_token: "some token"})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      refute user.info.confirmation_pending
+      refute user.info.confirmation_token
+    end
   end
 end

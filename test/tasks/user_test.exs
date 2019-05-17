@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.UserTest do
+  alias Pleroma.Repo
   alias Pleroma.User
   use Pleroma.DataCase
 
@@ -336,6 +337,33 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert :ok == Mix.Tasks.Pleroma.User.run(["delete_activities", nickname])
       assert_received {:mix_shell, :info, [message]}
       assert message == "User #{nickname} statuses deleted."
+    end
+  end
+
+  describe "running toggle_confirmed" do
+    test "user is confirmed" do
+      %{id: id, nickname: nickname} = insert(:user, info: %{confirmation_pending: false})
+
+      assert :ok = Mix.Tasks.Pleroma.User.run(["toggle_confirmed", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "#{nickname} needs confirmation."
+
+      user = Repo.get(User, id)
+      assert user.info.confirmation_pending
+      assert user.info.confirmation_token
+    end
+
+    test "user is not confirmed" do
+      %{id: id, nickname: nickname} =
+        insert(:user, info: %{confirmation_pending: true, confirmation_token: "some token"})
+
+      assert :ok = Mix.Tasks.Pleroma.User.run(["toggle_confirmed", nickname])
+      assert_received {:mix_shell, :info, [message]}
+      assert message == "#{nickname} doesn't need confirmation."
+
+      user = Repo.get(User, id)
+      refute user.info.confirmation_pending
+      refute user.info.confirmation_token
     end
   end
 end

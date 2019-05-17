@@ -31,7 +31,7 @@ defmodule Pleroma.Web.Federator.Publisher do
   """
   @spec enqueue_one(module(), Map.t()) :: :ok
   def enqueue_one(module, %{} = params),
-    do: PleromaJobQueue.enqueue(:federation_outgoing, __MODULE__, [:publish_one, module, params])
+    do: PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_one, module, params])
 
   @spec perform(atom(), module(), any()) :: {:ok, any()} | {:error, any()}
   def perform(:publish_one, module, params) do
@@ -52,9 +52,9 @@ defmodule Pleroma.Web.Federator.Publisher do
   @doc """
   Relays an activity to all specified peers.
   """
-  @callback publish(Pleroma.User.t(), Pleroma.Activity.t()) :: :ok | {:error, any()}
+  @callback publish(User.t(), Activity.t()) :: :ok | {:error, any()}
 
-  @spec publish(Pleroma.User.t(), Pleroma.Activity.t()) :: :ok
+  @spec publish(User.t(), Activity.t()) :: :ok
   def publish(%User{} = user, %Activity{} = activity) do
     Config.get([:instance, :federation_publisher_modules])
     |> Enum.each(fn module ->
@@ -70,9 +70,9 @@ defmodule Pleroma.Web.Federator.Publisher do
   @doc """
   Gathers links used by an outgoing federation module for WebFinger output.
   """
-  @callback gather_webfinger_links(Pleroma.User.t()) :: list()
+  @callback gather_webfinger_links(User.t()) :: list()
 
-  @spec gather_webfinger_links(Pleroma.User.t()) :: list()
+  @spec gather_webfinger_links(User.t()) :: list()
   def gather_webfinger_links(%User{} = user) do
     Config.get([:instance, :federation_publisher_modules])
     |> Enum.reduce([], fn module, links ->

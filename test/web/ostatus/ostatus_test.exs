@@ -355,7 +355,7 @@ defmodule Pleroma.Web.OStatusTest do
 
       {:ok, user} = OStatus.find_or_make_user(uri)
 
-      user = Pleroma.User.get_cached_by_id(user.id)
+      user = User.get_cached_by_id(user.id)
       assert user.name == "Constance Variable"
       assert user.nickname == "lambadalambda@social.heldscal.la"
       assert user.local == false
@@ -374,7 +374,7 @@ defmodule Pleroma.Web.OStatusTest do
       {:ok, user} = OStatus.find_or_make_user(uri)
 
       assert user.info ==
-               %Pleroma.User.Info{
+               %User.Info{
                  id: user.info.id,
                  ap_enabled: false,
                  background: %{},

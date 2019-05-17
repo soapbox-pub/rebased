@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Web.Plugs.HTTPSignaturePlug do
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.HTTPSignatures
   import Plug.Conn
   require Logger
 
