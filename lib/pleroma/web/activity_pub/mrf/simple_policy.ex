@@ -48,10 +48,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          %{host: actor_host} = _actor_info,
          %{
            "type" => "Create",
-           "object" => %{"attachment" => child_attachment} = child_object
+           "object" => child_object
          } = object
-       )
-       when length(child_attachment) > 0 do
+       ) do
     object =
       if Enum.member?(Pleroma.Config.get([:mrf_simple, :media_nsfw]), actor_host) do
         tags = (child_object["tag"] || []) ++ ["nsfw"]
