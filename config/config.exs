@@ -192,6 +192,7 @@ config :tesla, adapter: Tesla.Adapter.Hackney
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
   proxy_url: nil,
+  send_user_agent: true,
   adapter: [
     ssl_options: [
       # We don't support TLS v1.3 yet
