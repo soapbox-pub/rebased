@@ -407,7 +407,7 @@ defmodule Pleroma.Web.OStatusTest do
       {:ok, user} = OStatus.find_or_make_user(uri)
       old_name = user.name
       old_bio = user.bio
-      change = Ecto.Changeset.change(user, %{avatar: nil, bio: nil, old_name: nil})
+      change = Ecto.Changeset.change(user, %{avatar: nil, bio: nil, name: nil})
 
       {:ok, user} = Repo.update(change)
       refute user.avatar

@@ -1144,7 +1144,6 @@ defmodule Pleroma.User do
     stream =
       ap_id
       |> Activity.query_by_actor()
-      |> Activity.with_preloaded_object()
       |> Repo.stream()
 
     Repo.transaction(fn -> Enum.each(stream, &delete_activity(&1)) end, timeout: :infinity)
