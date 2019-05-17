@@ -55,7 +55,7 @@ defmodule Pleroma.User do
     field(:last_refreshed_at, :naive_datetime_usec)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
-    embeds_one(:info, Pleroma.User.Info)
+    embeds_one(:info, User.Info)
 
     timestamps()
   end
@@ -233,7 +233,7 @@ defmodule Pleroma.User do
       |> validate_confirmation(:password)
       |> unique_constraint(:email)
       |> unique_constraint(:nickname)
-      |> validate_exclusion(:nickname, Pleroma.Config.get([Pleroma.User, :restricted_nicknames]))
+      |> validate_exclusion(:nickname, Pleroma.Config.get([User, :restricted_nicknames]))
       |> validate_format(:nickname, local_nickname_regex())
       |> validate_format(:email, @email_regex)
       |> validate_length(:bio, max: 1000)
@@ -278,7 +278,7 @@ defmodule Pleroma.User do
     with {:ok, user} <- Repo.insert(changeset),
          {:ok, user} <- autofollow_users(user),
          {:ok, user} <- set_cache(user),
-         {:ok, _} <- Pleroma.User.WelcomeMessage.post_welcome_message_to_user(user),
+         {:ok, _} <- User.WelcomeMessage.post_welcome_message_to_user(user),
          {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end

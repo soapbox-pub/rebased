@@ -277,7 +277,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts certain nicknames" do
-      [restricted_name | _] = Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
+      [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
       assert is_bitstring(restricted_name)
 
@@ -1223,11 +1223,11 @@ defmodule Pleroma.UserTest do
     follower2 = insert(:user)
     follower3 = insert(:user)
 
-    {:ok, follower} = Pleroma.User.follow(follower, user)
-    {:ok, _follower2} = Pleroma.User.follow(follower2, user)
-    {:ok, _follower3} = Pleroma.User.follow(follower3, user)
+    {:ok, follower} = User.follow(follower, user)
+    {:ok, _follower2} = User.follow(follower2, user)
+    {:ok, _follower3} = User.follow(follower3, user)
 
-    {:ok, _} = Pleroma.User.block(user, follower)
+    {:ok, _} = User.block(user, follower)
 
     user_show = Pleroma.Web.TwitterAPI.UserView.render("show.json", %{user: user})
 

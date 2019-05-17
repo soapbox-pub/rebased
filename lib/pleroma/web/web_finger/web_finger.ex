@@ -99,7 +99,7 @@ defmodule Pleroma.Web.WebFinger do
 
       info_cng =
         info
-        |> Pleroma.User.Info.set_keys(pem)
+        |> User.Info.set_keys(pem)
 
       cng =
         Ecto.Changeset.change(user)
