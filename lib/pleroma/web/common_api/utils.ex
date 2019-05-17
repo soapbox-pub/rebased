@@ -232,7 +232,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "cc" => cc,
       "content" => content_html,
       "summary" => cw,
-      "sensitive" => sensitive,
+      "sensitive" => !Enum.member?(["false", "False", "0", false], sensitive),
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,
