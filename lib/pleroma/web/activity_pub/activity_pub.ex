@@ -881,14 +881,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_update_cc(list_memberships, opts["user"])
   end
 
-  defp maybe_update_cc(activities, [], _), do: activities
-  defp maybe_update_cc(activities, _, nil), do: activities
-
-  defp maybe_update_cc(activities, list_memberships, user) do
+  defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
+       when is_list(list_memberships) and length(list_memberships) > 0 do
     Enum.map(activities, fn
-      %{data: %{"bcc" => bcc}} = activity when is_list(bcc) ->
+      %{data: %{"bcc" => bcc}} = activity when is_list(bcc) and length(bcc) > 0 ->
         if Enum.any?(bcc, &(&1 in list_memberships)) do
-          update_in(activity.data["cc"], &[user.ap_id | &1])
+          update_in(activity.data["cc"], &[user_ap_id | &1])
         else
           activity
         end
@@ -897,6 +895,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         activity
     end)
   end
+
+  defp maybe_update_cc(activities, _, _), do: activities
 
   def fetch_activities_bounded(recipients_to, recipients_cc, opts \\ %{}) do
     fetch_activities_query([], opts)
