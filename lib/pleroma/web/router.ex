@@ -704,6 +704,11 @@ defmodule Pleroma.Web.Router do
     end
   end
 
+  scope "/", Pleroma.Web.MongooseIM do
+    get("/user_exists", MongooseIMController, :user_exists)
+    get("/check_password", MongooseIMController, :check_password)
+  end
+
   scope "/", Fallback do
     get("/registration/:token", RedirectController, :registration_page)
     get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
