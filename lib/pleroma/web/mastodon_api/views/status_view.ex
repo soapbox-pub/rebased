@@ -232,6 +232,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       spoiler_text: summary_html,
       visibility: get_visibility(object),
       media_attachments: attachments,
+      poll: render("poll.json", %{object: object, for: opts[:for]}),
       mentions: mentions,
       tags: build_tags(tags),
       application: %{
@@ -319,6 +320,57 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       description: attachment["name"],
       pleroma: %{mime_type: media_type}
     }
+  end
+
+  # TODO: Add tests for this view
+  def render("poll.json", %{object: object} = opts) do
+    {multiple, options} =
+      case object.data do
+        %{"anyOf" => options} when is_list(options) -> {true, options}
+        %{"oneOf" => options} when is_list(options) -> {false, options}
+        _ -> {nil, nil}
+      end
+
+    if options do
+      end_time =
+        (object.data["closed"] || object.data["endTime"])
+        |> NaiveDateTime.from_iso8601!()
+
+      votes_count = object.data["votes_count"] || 0
+
+      expired =
+        end_time
+        |> NaiveDateTime.compare(NaiveDateTime.utc_now())
+        |> case do
+          :lt -> true
+          _ -> false
+        end
+
+      options =
+        Enum.map(options, fn %{"name" => name} = option ->
+          name =
+            HTML.filter_tags(
+              name,
+              User.html_filter_policy(opts[:for])
+            )
+
+          %{title: name, votes_count: option["replies"]["votes_count"] || 0}
+        end)
+
+      %{
+        # Mastodon uses separate ids for polls, but an object can't have more than one poll embedded so object id is fine
+        id: object.id,
+        expires_at: Utils.to_masto_date(end_time),
+        expired: expired,
+        multiple: multiple,
+        votes_count: votes_count,
+        options: options,
+        voted: false,
+        emojis: build_emojis(object.data["emoji"])
+      }
+    else
+      nil
+    end
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
