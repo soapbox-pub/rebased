@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.MongooseIM.MongooseIMController do
   use Pleroma.Web, :controller
   alias Comeonin.Pbkdf2
-  alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.User
 
   def user_exists(conn, %{"user" => username}) do
     with %User{} <- Repo.get_by(User, nickname: username, local: true) do
