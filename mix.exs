@@ -67,7 +67,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_sql,
        git: "https://github.com/elixir-ecto/ecto_sql",
-       ref: "e839a9a327b632d73533ac8105ba360bc831cf83",
+       ref: "14cb065a74c488d737d973f7a91bc036c6245f78",
        override: true},
       {:postgrex, ">= 0.13.5"},
       {:gettext, "~> 0.15"},
