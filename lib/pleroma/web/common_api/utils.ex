@@ -105,7 +105,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   def to_for_user_and_mentions(_user, _mentions, _inReplyTo, _), do: {[], []}
 
   def bcc_for_list(user, {:list, list_id}) do
-    [Pleroma.List.ap_id(user, list_id)]
+    list = Pleroma.List.get(list_id, user)
+    [list.ap_id]
   end
 
   def bcc_for_list(_, _), do: []

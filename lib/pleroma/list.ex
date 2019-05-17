@@ -12,12 +12,11 @@ defmodule Pleroma.List do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  @ap_id_regex ~r/^\/users\/(?<nickname>\w+)\/lists\/(?<list_id>\d+)/
-
   schema "lists" do
     belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:title, :string)
     field(:following, {:array, :string}, default: [])
+    field(:ap_id, :string)
 
     timestamps()
   end
@@ -33,12 +32,6 @@ defmodule Pleroma.List do
     |> cast(attrs, [:following])
     |> validate_required([:following])
   end
-
-  def ap_id(%User{nickname: nickname}, list_id) do
-    Pleroma.Web.Endpoint.url() <> "/users/#{nickname}/lists/#{list_id}"
-  end
-
-  def ap_id({nickname, list_id}), do: ap_id(%User{nickname: nickname}, list_id)
 
   def for_user(user, _opts) do
     query =
@@ -64,16 +57,7 @@ defmodule Pleroma.List do
   end
 
   def get_by_ap_id(ap_id) do
-    host = Pleroma.Web.Endpoint.host()
-
-    with %{host: ^host, path: path} <- URI.parse(ap_id),
-         %{"list_id" => list_id, "nickname" => nickname} <-
-           Regex.named_captures(@ap_id_regex, path),
-         %User{} = user <- User.get_cached_by_nickname(nickname) do
-      get(list_id, user)
-    else
-      _ -> nil
-    end
+    Repo.get_by(__MODULE__, ap_id: ap_id)
   end
 
   def get_following(%Pleroma.List{following: following} = _list) do
@@ -126,7 +110,14 @@ defmodule Pleroma.List do
 
   def create(title, %User{} = creator) do
     list = %Pleroma.List{user_id: creator.id, title: title}
-    Repo.insert(list)
+
+    Repo.transaction(fn ->
+      list = Repo.insert!(list)
+
+      list
+      |> change(ap_id: "#{creator.ap_id}/lists/#{list.id}")
+      |> Repo.update!()
+    end)
   end
 
   def follow(%Pleroma.List{following: following} = list, %User{} = followed) do
@@ -150,10 +141,8 @@ defmodule Pleroma.List do
   def memberships(%User{follower_address: follower_address}) do
     Pleroma.List
     |> where([l], ^follower_address in l.following)
-    |> join(:inner, [l], u in User, on: l.user_id == u.id)
-    |> select([l, u], {u.nickname, l.id})
+    |> select([l], l.ap_id)
     |> Repo.all()
-    |> Enum.map(&ap_id/1)
   end
 
   def memberships(_), do: []
