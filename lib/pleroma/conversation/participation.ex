@@ -22,15 +22,17 @@ defmodule Pleroma.Conversation.Participation do
 
   def creation_cng(struct, params) do
     struct
-    |> cast(params, [:user_id, :conversation_id])
+    |> cast(params, [:user_id, :conversation_id, :read])
     |> validate_required([:user_id, :conversation_id])
   end
 
-  def create_for_user_and_conversation(user, conversation) do
+  def create_for_user_and_conversation(user, conversation, opts \\ []) do
+    read = !!opts[:read]
+
     %__MODULE__{}
-    |> creation_cng(%{user_id: user.id, conversation_id: conversation.id})
+    |> creation_cng(%{user_id: user.id, conversation_id: conversation.id, read: read})
     |> Repo.insert(
-      on_conflict: [set: [read: false, updated_at: NaiveDateTime.utc_now()]],
+      on_conflict: [set: [read: read, updated_at: NaiveDateTime.utc_now()]],
       returning: true,
       conflict_target: [:user_id, :conversation_id]
     )

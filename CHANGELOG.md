@@ -10,18 +10,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - A [job queue](https://git.pleroma.social/pleroma/pleroma_job_queue) for federation, emails, web push, etc.
 - [Prometheus](https://prometheus.io/) metrics
 - Support for Mastodon's remote interaction
+- Mix Tasks: `mix pleroma.database bump_all_conversations`
 - Mix Tasks: `mix pleroma.database remove_embedded_objects`
+- Mix Tasks: `mix pleroma.database update_users_following_followers_counts`
+- Mix Tasks: `mix pleroma.user toggle_confirmed`
 - Federation: Support for reports
 - Configuration: `safe_dm_mentions` option
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
 - Configuration: Media proxy `whitelist` option
+- Configuration: `report_uri` option
 - Pleroma API: User subscriptions
 - Pleroma API: Healthcheck endpoint
 - Admin API: Endpoints for listing/revoking invite tokens
 - Admin API: Endpoints for making users follow/unfollow each other
 - Admin API: added filters (role, tags, email, name) for users endpoint
+- Admin API: Endpoints for managing reports
+- Admin API: Endpoints for deleting and changing the scope of individual reported statuses
 - AdminFE: initial release with basic user management accessible at /pleroma/admin/
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
@@ -99,7 +105,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Make `irreversible` field default to `false` [`POST /api/v1/filters`]
 
 ## Removed
-- Configuration: `config :pleroma, :fe` in favor of the more flexible `config :pleroma, :frontend_configurations` 
+- Configuration: `config :pleroma, :fe` in favor of the more flexible `config :pleroma, :frontend_configurations`
 
 ## [0.9.9999] - 2019-04-05
 ### Security

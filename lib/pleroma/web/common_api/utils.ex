@@ -246,13 +246,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
-    if in_reply_to do
-      in_reply_to_object = Object.normalize(in_reply_to)
-
-      object
-      |> Map.put("inReplyTo", in_reply_to_object.data["id"])
+    with false <- is_nil(in_reply_to),
+         %Object{} = in_reply_to_object <- Object.normalize(in_reply_to) do
+      Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
     else
-      object
+      _ -> object
     end
   end
 

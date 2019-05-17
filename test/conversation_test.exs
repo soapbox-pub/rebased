@@ -11,6 +11,26 @@ defmodule Pleroma.ConversationTest do
 
   import Pleroma.Factory
 
+  test "it goes through old direct conversations" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{"visibility" => "direct", "status" => "hey @#{other_user.nickname}"})
+
+    Repo.delete_all(Conversation)
+    Repo.delete_all(Conversation.Participation)
+
+    refute Repo.one(Conversation)
+
+    Conversation.bump_for_all_activities()
+
+    assert Repo.one(Conversation)
+    [participation, _p2] = Repo.all(Conversation.Participation)
+
+    assert participation.read
+  end
+
   test "it creates a conversation for given ap_id" do
     assert {:ok, %Conversation{} = conversation} =
              Conversation.create_for_ap_id("https://some_ap_id")

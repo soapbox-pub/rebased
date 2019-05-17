@@ -539,8 +539,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
             )
         )
 
-      Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
       query
     else
       Logger.error("Could not restrict visibility to #{visibility}")
@@ -556,8 +554,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
       )
 
-    Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
     query
   end
 
@@ -567,6 +563,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_visibility(query, _visibility), do: query
+
+  defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}) do
+    query =
+      from(
+        a in query,
+        where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
+      )
+
+    query
+  end
+
+  defp restrict_thread_visibility(query, _), do: query
 
   def fetch_user_activities(user, reading_user, params \\ %{}) do
     params =
@@ -694,6 +702,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_type(query, _), do: query
 
+  defp restrict_state(query, %{"state" => state}) do
+    from(activity in query, where: fragment("?->>'state' = ?", activity.data, ^state))
+  end
+
+  defp restrict_state(query, _), do: query
+
   defp restrict_favorited_by(query, %{"favorited_by" => ap_id}) do
     from(
       activity in query,
@@ -749,8 +763,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     blocks = info.blocks || []
     domain_blocks = info.domain_blocks || []
 
+    query =
+      if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
+
     from(
-      activity in query,
+      [activity, object: o] in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
       where: fragment("not (? && ?)", activity.recipients, ^blocks),
       where:
@@ -760,7 +777,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data,
           ^blocks
         ),
-      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks)
+      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks),
+      where: fragment("not (split_part(?->>'actor', '/', 3) = ANY(?))", o.data, ^domain_blocks)
     )
   end
 
@@ -840,11 +858,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_local(opts)
     |> restrict_actor(opts)
     |> restrict_type(opts)
+    |> restrict_state(opts)
     |> restrict_favorited_by(opts)
     |> restrict_blocked(opts)
     |> restrict_muted(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
+    |> restrict_thread_visibility(opts)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
@@ -983,11 +1003,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     contain_broken_threads(activity, user)
   end
 
-  # do post-processing on a timeline
-  def contain_timeline(timeline, user) do
-    timeline
-    |> Enum.filter(fn activity ->
-      contain_activity(activity, user)
-    end)
+  def fetch_direct_messages_query do
+    Activity
+    |> restrict_type(%{"type" => "Create"})
+    |> restrict_visibility(%{visibility: "direct"})
+    |> order_by([activity], asc: activity.id)
   end
 end

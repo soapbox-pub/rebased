@@ -303,7 +303,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     activities =
       [user.ap_id | user.following]
       |> ActivityPub.fetch_activities(params)
-      |> ActivityPub.contain_timeline(user)
       |> Enum.reverse()
 
     conn
@@ -1223,7 +1222,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     accounts
     |> Enum.each(fn account_id ->
       with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-           %User{} = followed <- Pleroma.User.get_cached_by_id(account_id) do
+           %User{} = followed <- User.get_cached_by_id(account_id) do
         Pleroma.List.unfollow(list, followed)
       end
     end)

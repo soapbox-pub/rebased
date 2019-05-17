@@ -29,7 +29,7 @@ defmodule Pleroma.Emails.AdminEmail do
       end
 
     statuses_html =
-      if length(statuses) > 0 do
+      if is_list(statuses) && length(statuses) > 0 do
         statuses_list_html =
           statuses
           |> Enum.map(fn
