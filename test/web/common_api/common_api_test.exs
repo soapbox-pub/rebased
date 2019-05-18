@@ -87,6 +87,28 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
+
+    test "it does not allow replies to direct messages that are not direct messages themselves" do
+      user = insert(:user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "suya..", "visibility" => "direct"})
+
+      assert {:ok, _} =
+               CommonAPI.post(user, %{
+                 "status" => "suya..",
+                 "visibility" => "direct",
+                 "in_reply_to_status_id" => activity.id
+               })
+
+      Enum.each(["public", "private", "unlisted"], fn visibility ->
+        assert {:error, {:private_to_public, _}} =
+                 CommonAPI.post(user, %{
+                   "status" => "suya..",
+                   "visibility" => visibility,
+                   "in_reply_to_status_id" => activity.id
+                 })
+      end)
+    end
   end
 
   describe "reactions" do
@@ -239,9 +261,40 @@ defmodule Pleroma.Web.CommonAPITest do
                data: %{
                  "type" => "Flag",
                  "content" => ^comment,
-                 "object" => [^target_ap_id, ^activity_ap_id]
+                 "object" => [^target_ap_id, ^activity_ap_id],
+                 "state" => "open"
                }
              } = flag_activity
+    end
+
+    test "updates report state" do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %Activity{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel offended",
+          "status_ids" => [activity.id]
+        })
+
+      {:ok, report} = CommonAPI.update_report_state(report_id, "resolved")
+
+      assert report.data["state"] == "resolved"
+    end
+
+    test "does not update report state when state is unsupported" do
+      [reporter, target_user] = insert_pair(:user)
+      activity = insert(:note_activity, user: target_user)
+
+      {:ok, %Activity{id: report_id}} =
+        CommonAPI.report(reporter, %{
+          "account_id" => target_user.id,
+          "comment" => "I feel offended",
+          "status_ids" => [activity.id]
+        })
+
+      assert CommonAPI.update_report_state(report_id, "test") == {:error, "Unsupported state"}
     end
   end
 
@@ -257,14 +310,14 @@ defmodule Pleroma.Web.CommonAPITest do
     test "add a reblog mute", %{muter: muter, muted: muted} do
       {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
 
-      assert Pleroma.User.showing_reblogs?(muter, muted) == false
+      assert User.showing_reblogs?(muter, muted) == false
     end
 
     test "remove a reblog mute", %{muter: muter, muted: muted} do
       {:ok, muter} = CommonAPI.hide_reblogs(muter, muted)
       {:ok, muter} = CommonAPI.show_reblogs(muter, muted)
 
-      assert Pleroma.User.showing_reblogs?(muter, muted) == true
+      assert User.showing_reblogs?(muter, muted) == true
     end
   end
 end

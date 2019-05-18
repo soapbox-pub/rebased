@@ -139,8 +139,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     {poll, mentions, tags}
   end
 
-  def make_poll_data(data, mentions, tags) do
-    IO.inspect(data, label: "data")
+  def make_poll_data(_data, mentions, tags) do
     {%{}, mentions, tags}
   end
 
@@ -266,16 +265,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         tags,
         cw \\ nil,
         cc \\ [],
+        sensitive \\ false,
         merge \\ %{}
       ) do
-    IO.inspect(merge, label: "merge")
-
     object = %{
       "type" => "Note",
       "to" => to,
       "cc" => cc,
       "content" => content_html,
       "summary" => cw,
+      "sensitive" => !Enum.member?(["false", "False", "0", false], sensitive),
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,
@@ -283,13 +282,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     }
 
     object =
-      if in_reply_to do
-        in_reply_to_object = Object.normalize(in_reply_to)
-
-        object
-        |> Map.put("inReplyTo", in_reply_to_object.data["id"])
+      with false <- is_nil(in_reply_to),
+           %Object{} = in_reply_to_object <- Object.normalize(in_reply_to) do
+        Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
       else
-        object
+        _ -> object
       end
 
     Map.merge(object, merge)

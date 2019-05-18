@@ -39,11 +39,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Scopes
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   alias Pleroma.Web.ControllerHelper
   import Ecto.Query
 
   require Logger
+
+  plug(
+    Pleroma.Plugs.RateLimitPlug,
+    %{
+      max_requests: Config.get([:app_account_creation, :max_requests]),
+      interval: Config.get([:app_account_creation, :interval])
+    }
+    when action in [:account_register]
+  )
 
   @httpoison Application.get_env(:pleroma, :httpoison)
   @local_mastodon_name "Mastodon-Local"
@@ -168,7 +178,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  @mastodon_api_level "2.6.5"
+  @mastodon_api_level "2.7.2"
 
   def masto_instance(conn, _params) do
     instance = Config.get(:instance)
@@ -293,7 +303,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     activities =
       [user.ap_id | user.following]
       |> ActivityPub.fetch_activities(params)
-      |> ActivityPub.contain_timeline(user)
       |> Enum.reverse()
 
     conn
@@ -1000,6 +1009,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def status_search_query_with_gin(q, query) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
+          o.data,
+          ^query
+        ),
+      order_by: [desc: :id]
+    )
+  end
+
+  def status_search_query_with_rum(q, query) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "? @@ plainto_tsquery('english', ?)",
+          o.fts_content,
+          ^query
+        ),
+      order_by: [fragment("? <=> now()::date", o.inserted_at)]
+    )
+  end
+
   def status_search(user, query) do
     fetched =
       if Regex.match?(~r/https?:/, query) do
@@ -1013,19 +1046,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end || []
 
     q =
-      from(
-        [a, o] in Activity.with_preloaded_object(Activity),
+      from([a, o] in Activity.with_preloaded_object(Activity),
         where: fragment("?->>'type' = 'Create'", a.data),
         where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
-        where:
-          fragment(
-            "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
-            o.data,
-            ^query
-          ),
-        limit: 20,
-        order_by: [desc: :id]
+        limit: 20
       )
+
+    q =
+      if Pleroma.Config.get([:database, :rum_enabled]) do
+        status_search_query_with_rum(q, query)
+      else
+        status_search_query_with_gin(q, query)
+      end
 
     Repo.all(q) ++ fetched
   end
@@ -1213,7 +1245,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     accounts
     |> Enum.each(fn account_id ->
       with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-           %User{} = followed <- Pleroma.User.get_cached_by_id(account_id) do
+           %User{} = followed <- User.get_cached_by_id(account_id) do
         Pleroma.List.unfollow(list, followed)
       end
     end)
@@ -1536,7 +1568,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       user_id: user.id,
       phrase: phrase,
       context: context,
-      hide: Map.get(params, "irreversible", nil),
+      hide: Map.get(params, "irreversible", false),
       whole_word: Map.get(params, "boolean", true)
       # expires_at
     }
@@ -1691,6 +1723,53 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> put_status(:bad_request)
         |> json(%{error: err})
     end
+  end
+
+  def account_register(
+        %{assigns: %{app: app}} = conn,
+        %{"username" => nickname, "email" => _, "password" => _, "agreement" => true} = params
+      ) do
+    params =
+      params
+      |> Map.take([
+        "email",
+        "captcha_solution",
+        "captcha_token",
+        "captcha_answer_data",
+        "token",
+        "password"
+      ])
+      |> Map.put("nickname", nickname)
+      |> Map.put("fullname", params["fullname"] || nickname)
+      |> Map.put("bio", params["bio"] || "")
+      |> Map.put("confirm", params["password"])
+
+    with {:ok, user} <- TwitterAPI.register_user(params, need_confirmation: true),
+         {:ok, token} <- Token.create_token(app, user, %{scopes: app.scopes}) do
+      json(conn, %{
+        token_type: "Bearer",
+        access_token: token.token,
+        scope: app.scopes,
+        created_at: Token.Utils.format_created_at(token)
+      })
+    else
+      {:error, errors} ->
+        conn
+        |> put_status(400)
+        |> json(Jason.encode!(errors))
+    end
+  end
+
+  def account_register(%{assigns: %{app: _app}} = conn, _params) do
+    conn
+    |> put_status(400)
+    |> json(%{error: "Missing parameters"})
+  end
+
+  def account_register(conn, _) do
+    conn
+    |> put_status(403)
+    |> json(%{error: "Invalid credentials"})
   end
 
   def conversations(%{assigns: %{user: user}} = conn, params) do

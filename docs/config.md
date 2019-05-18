@@ -105,6 +105,12 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 * `healthcheck`: if set to true, system data will be shown on ``/api/pleroma/healthcheck``.
 
+## :app_account_creation
+REST API for creating an account settings
+* `enabled`: Enable/disable registration
+* `max_requests`: Number of requests allowed for creating accounts
+* `interval`: Interval for restricting requests for one ip (seconds)
+
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
@@ -280,7 +286,8 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``sts``: Whether to additionally send a `Strict-Transport-Security` header
 * ``sts_max_age``: The maximum age for the `Strict-Transport-Security` header if sent
 * ``ct_max_age``: The maximum age for the `Expect-CT` header if sent
-* ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
+* ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`
+* ``report_uri``: Adds the specified url to `report-uri` and `report-to` group in CSP header.
 
 ## :mrf_user_allowlist
 
@@ -537,3 +544,18 @@ Configure OAuth 2 provider capabilities:
 * `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
 * `default_manifest`: Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download. Currently only one manifest can be added (no arrays).
+
+## Database options
+
+### RUM indexing for full text search
+* `rum_enabled`: If RUM indexes should be used. Defaults to `false`.
+
+RUM indexes are an alternative indexing scheme that is not included in PostgreSQL by default. While they may eventually be mainlined, for now they have to be installed as a PostgreSQL extension from https://github.com/postgrespro/rum.
+
+Their advantage over the standard GIN indexes is that they allow efficient ordering of search results by timestamp, which makes search queries a lot faster on larger servers, by one or two orders of magnitude. They take up around 3 times as much space as GIN indexes.
+
+To enable them, both the `rum_enabled` flag has to be set and the following special migration has to be run:
+
+`mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/`
+
+This will probably take a long time.

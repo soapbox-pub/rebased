@@ -59,6 +59,16 @@ config :pleroma, Pleroma.ScheduledActivity,
   total_user_limit: 3,
   enabled: false
 
+config :pleroma, :app_account_creation, max_requests: 5
+
+config :pleroma, :http_security, report_uri: "https://endpoint.com"
+
+config :pleroma, :http, send_user_agent: false
+
+rum_enabled = System.get_env("RUM_ENABLED") == "true"
+config :pleroma, :database, rum_enabled: rum_enabled
+IO.puts("RUM enabled: #{rum_enabled}")
+
 try do
   import_config "test.secret.exs"
 rescue
