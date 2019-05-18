@@ -149,6 +149,7 @@ defmodule Pleroma.Web.CommonAPI do
              data,
              visibility
            ),
+         {poll, mentions, tags} <- make_poll_data(data, mentions, tags),
          {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"] || "",
@@ -164,7 +165,8 @@ defmodule Pleroma.Web.CommonAPI do
              in_reply_to,
              tags,
              cw,
-             cc
+             cc,
+             poll
            ),
          object <-
            Map.put(

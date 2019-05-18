@@ -132,6 +132,28 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute id == third_id
   end
 
+  test "posting a poll", %{conn: conn} do
+    user = insert(:user)
+    time = NaiveDateTime.utc_now()
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/statuses", %{
+        "status" => "Who is the best girl?",
+        "poll" => %{"options" => ["Rei", "Asuka", "Misato"], "expires_in" => 420}
+      })
+
+    response = json_response(conn, 200)
+
+    assert Enum.all?(response["poll"]["options"], fn %{"title" => title} ->
+             title in ["Rei", "Asuka", "Misato"]
+           end)
+
+    assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
+    refute response["poll"]["expred"]
+  end
+
   test "posting a sensitive status", %{conn: conn} do
     user = insert(:user)
 

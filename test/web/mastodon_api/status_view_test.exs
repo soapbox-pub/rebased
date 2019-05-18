@@ -103,6 +103,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       muted: false,
       pinned: false,
       sensitive: false,
+      poll: nil,
       spoiler_text: HtmlSanitizeEx.basic_html(note.data["object"]["summary"]),
       visibility: "public",
       media_attachments: [],

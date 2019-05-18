@@ -102,6 +102,48 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
+  def make_poll_data(
+        %{"poll" => %{"options" => options, "expires_in" => expires_in}} = data,
+        mentions,
+        tags
+      )
+      when is_list(options) and is_integer(expires_in) do
+    content_type = get_content_type(data["content_type"])
+    # XXX: There is probably a more performant/cleaner way to do this
+    {poll, {mentions, tags}} =
+      Enum.map_reduce(options, {mentions, tags}, fn option, {mentions, tags} ->
+        # TODO: Custom emoji
+        {option, mentions_merge, tags_merge} = format_input(option, content_type)
+        mentions = mentions ++ mentions_merge
+        tags = tags ++ tags_merge
+
+        {%{
+           "name" => option,
+           "type" => "Note",
+           "replies" => %{"type" => "Collection", "totalItems" => 0}
+         }, {mentions, tags}}
+      end)
+
+    end_time =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(expires_in)
+      |> NaiveDateTime.to_iso8601()
+
+    poll =
+      if Pleroma.Web.ControllerHelper.truthy_param?(data["poll"]["multiple"]) do
+        %{"type" => "Question", "anyOf" => poll, "closed" => end_time}
+      else
+        %{"type" => "Question", "oneOf" => poll, "closed" => end_time}
+      end
+
+    {poll, mentions, tags}
+  end
+
+  def make_poll_data(data, mentions, tags) do
+    IO.inspect(data, label: "data")
+    {%{}, mentions, tags}
+  end
+
   def make_content_html(
         status,
         attachments,
@@ -223,8 +265,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         in_reply_to,
         tags,
         cw \\ nil,
-        cc \\ []
+        cc \\ [],
+        merge \\ %{}
       ) do
+    IO.inspect(merge, label: "merge")
+
     object = %{
       "type" => "Note",
       "to" => to,
@@ -237,14 +282,17 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
-    if in_reply_to do
-      in_reply_to_object = Object.normalize(in_reply_to)
+    object =
+      if in_reply_to do
+        in_reply_to_object = Object.normalize(in_reply_to)
 
-      object
-      |> Map.put("inReplyTo", in_reply_to_object.data["id"])
-    else
-      object
-    end
+        object
+        |> Map.put("inReplyTo", in_reply_to_object.data["id"])
+      else
+        object
+      end
+
+    Map.merge(object, merge)
   end
 
   def format_naive_asctime(date) do
