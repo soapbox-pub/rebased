@@ -94,6 +94,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     {:ok, object}
   end
 
+  defp check_report_removal(%{host: actor_host} = _actor_info, %{"type" => "Flag"} = object) do
+    if actor_host in Pleroma.Config.get([:mrf_simple, :report_removal]) do
+      {:reject, nil}
+    else
+      {:ok, object}
+    end
+  end
+
+  defp check_report_removal(_actor_info, object), do: {:ok, object}
+
   @impl true
   def filter(object) do
     actor_info = URI.parse(object["actor"])
@@ -102,7 +112,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_reject(actor_info, object),
          {:ok, object} <- check_media_removal(actor_info, object),
          {:ok, object} <- check_media_nsfw(actor_info, object),
-         {:ok, object} <- check_ftl_removal(actor_info, object) do
+         {:ok, object} <- check_ftl_removal(actor_info, object),
+         {:ok, object} <- check_report_removal(actor_info, object) do
       {:ok, object}
     else
       _e -> {:reject, nil}

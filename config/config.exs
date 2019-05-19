@@ -298,6 +298,7 @@ config :pleroma, :mrf_simple,
   media_removal: [],
   media_nsfw: [],
   federated_timeline_removal: [],
+  report_removal: [],
   reject: [],
   accept: []
 

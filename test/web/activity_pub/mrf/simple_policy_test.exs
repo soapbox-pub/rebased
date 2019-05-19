@@ -15,6 +15,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       media_removal: [],
       media_nsfw: [],
       federated_timeline_removal: [],
+      report_removal: [],
       reject: [],
       accept: []
     )
@@ -82,6 +83,33 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
         "tag" => ["foo"],
         "sensitive" => false
       }
+    }
+  end
+
+  describe "when :report_removal" do
+    test "is empty" do
+      Config.put([:mrf_simple, :report_removal], [])
+      report_message = build_report_message()
+      local_message = build_local_message()
+
+      assert SimplePolicy.filter(report_message) == {:ok, report_message}
+      assert SimplePolicy.filter(local_message) == {:ok, local_message}
+    end
+
+    test "has a matching host" do
+      Config.put([:mrf_simple, :report_removal], ["remote.instance"])
+      report_message = build_report_message()
+      local_message = build_local_message()
+
+      assert SimplePolicy.filter(report_message) == {:reject, nil}
+      assert SimplePolicy.filter(local_message) == {:ok, local_message}
+    end
+  end
+
+  defp build_report_message do
+    %{
+      "actor" => "https://remote.instance/users/bob",
+      "type" => "Flag"
     }
   end
 
