@@ -325,7 +325,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   end
 
   # TODO: Add tests for this view
-  def render("poll.json", %{object: object} = opts) do
+  def render("poll.json", %{object: object} = _opts) do
     {multiple, options} =
       case object.data do
         %{"anyOf" => options} when is_list(options) -> {true, options}
@@ -350,13 +350,10 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
       options =
         Enum.map(options, fn %{"name" => name} = option ->
-          name =
-            HTML.filter_tags(
-              name,
-              User.html_filter_policy(opts[:for])
-            )
-
-          %{title: name, votes_count: option["replies"]["votes_count"] || 0}
+          %{
+            title: HTML.strip_tags(name),
+            votes_count: option["replies"]["votes_count"] || 0
+          }
         end)
 
       %{
@@ -367,6 +364,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         multiple: multiple,
         votes_count: votes_count,
         options: options,
+        # TODO: Actually check for a vote
         voted: false,
         emojis: build_emojis(object.data["emoji"])
       }

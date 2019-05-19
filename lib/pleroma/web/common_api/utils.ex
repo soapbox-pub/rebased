@@ -102,26 +102,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def make_poll_data(
-        %{"poll" => %{"options" => options, "expires_in" => expires_in}} = data,
-        mentions,
-        tags
-      )
+  def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
       when is_list(options) and is_integer(expires_in) do
-    content_type = get_content_type(data["content_type"])
-    # XXX: There is probably a more performant/cleaner way to do this
-    {poll, {mentions, tags}} =
-      Enum.map_reduce(options, {mentions, tags}, fn option, {mentions, tags} ->
-        # TODO: Custom emoji
-        {option, mentions_merge, tags_merge} = format_input(option, content_type)
-        mentions = mentions ++ mentions_merge
-        tags = tags ++ tags_merge
-
+    {poll, emoji} =
+      Enum.map_reduce(options, %{}, fn option, emoji ->
         {%{
            "name" => option,
            "type" => "Note",
            "replies" => %{"type" => "Collection", "totalItems" => 0}
-         }, {mentions, tags}}
+         }, Map.merge(emoji, Formatter.get_emoji_map(option))}
       end)
 
     end_time =
@@ -136,11 +125,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         %{"type" => "Question", "oneOf" => poll, "closed" => end_time}
       end
 
-    {poll, mentions, tags}
+    {poll, emoji}
   end
 
-  def make_poll_data(_data, mentions, tags) do
-    {%{}, mentions, tags}
+  def make_poll_data(_data) do
+    {%{}, %{}}
   end
 
   def make_content_html(
