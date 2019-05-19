@@ -820,6 +820,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp restrict_poll_replies(query, %{"include_poll_replies" => "true"}), do: query
+
+  defp restrict_poll_replies(query, _) do
+    if has_named_binding?(query, :object) do
+      from([activity, object: o] in query, where: fragment("?->'name' is null", o.data))
+    else
+      query
+    end
+  end
+
   defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
 
   defp maybe_preload_objects(query, _) do
@@ -873,6 +883,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
     |> Activity.restrict_deactivated_users()
+    |> restrict_poll_replies(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
