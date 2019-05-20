@@ -902,7 +902,7 @@ defmodule Pleroma.UserTest do
 
       assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
 
-      assert [activity] ==
+      assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
 
       {:ok, _user} = User.deactivate(user)
