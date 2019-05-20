@@ -707,6 +707,40 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def set_mascot(%{assigns: %{user: user}} = conn, %{"file" => file}) do
+    with {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)),
+         %{} = attachment_data <- Map.put(object.data, "id", object.id),
+         %{type: type} = rendered <-
+           StatusView.render("attachment.json", %{attachment: attachment_data}) do
+      # Reject if not an image
+      if type == "image" do
+        # Sure!
+        # Save to the user's info
+        info_changeset = User.Info.mascot_update(user.info, rendered)
+
+        user_changeset =
+          user
+          |> Ecto.Changeset.change()
+          |> Ecto.Changeset.put_embed(:info, info_changeset)
+
+        {:ok, _user} = User.update_and_set_cache(user_changeset)
+
+        conn
+        |> json(rendered)
+      else
+        conn
+        |> send_resp(415, Jason.encode!(%{"error" => "mascots can only be images"}))
+      end
+    end
+  end
+
+  def get_mascot(%{assigns: %{user: user}} = conn, _params) do
+    %{info: %{mascot: mascot}} = user
+
+    conn
+    |> json(mascot)
+  end
+
   def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{data: %{"object" => object}} <- Repo.get(Activity, id),
          %Object{data: %{"likes" => likes}} <- Object.normalize(object) do
@@ -1329,7 +1363,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             display_sensitive_media: false,
             reduce_motion: false,
             max_toot_chars: limit,
-            mascot: "/images/pleroma-fox-tan-smol.png"
+            mascot: Map.get(user.info.mascot, "url", "/images/pleroma-fox-tan-smol.png")
           },
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),
