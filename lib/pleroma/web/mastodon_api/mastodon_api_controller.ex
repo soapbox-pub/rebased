@@ -729,6 +729,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> json(rendered)
       else
         conn
+        |> put_resp_content_type("application/json")
         |> send_resp(415, Jason.encode!(%{"error" => "mascots can only be images"}))
       end
     end
