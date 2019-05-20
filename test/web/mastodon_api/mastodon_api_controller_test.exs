@@ -1503,10 +1503,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       filename: "an_image.jpg"
     }
 
-    conn = 
+    conn =
       build_conn()
       |> assign(:user, user)
       |> put("/api/v1/pleroma/mascot", %{"file" => file})
+
     assert json_response(conn, 200)
 
     user = User.get_cached_by_id(user.id)
