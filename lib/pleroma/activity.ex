@@ -10,6 +10,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ThreadMute
   alias Pleroma.User
 
   import Ecto.Changeset
@@ -37,6 +38,7 @@ defmodule Pleroma.Activity do
     field(:local, :boolean, default: true)
     field(:actor, :string)
     field(:recipients, {:array, :string}, default: [])
+    field(:thread_muted?, :boolean, virtual: true)
     # This is a fake relation, do not use outside of with_preloaded_bookmark/get_bookmark
     has_one(:bookmark, Bookmark)
     has_many(:notifications, Notification, on_delete: :delete_all)
@@ -89,6 +91,16 @@ defmodule Pleroma.Activity do
   end
 
   def with_preloaded_bookmark(query, _), do: query
+
+  def with_set_thread_muted_field(query, %User{} = user) do
+    from([a] in query,
+      left_join: tm in ThreadMute,
+      on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data),
+      select: %Activity{a | thread_muted?: not is_nil(tm.id)}
+    )
+  end
+
+  def with_set_thread_muted_field(query, _), do: query
 
   def get_by_ap_id(ap_id) do
     Repo.one(
