@@ -352,6 +352,9 @@ defmodule Pleroma.Web.Router do
 
       post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
 
+      get("/pleroma/mascot", MastodonAPIController, :get_mascot)
+      put("/pleroma/mascot", MastodonAPIController, :set_mascot)
+
       post("/reports", MastodonAPIController, :reports)
     end
 

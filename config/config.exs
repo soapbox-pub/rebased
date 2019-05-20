@@ -276,6 +276,19 @@ config :pleroma, :frontend_configurations,
     showInstanceSpecificPanel: true
   }
 
+config :pleroma, :assets,
+  mascots: [
+    pleroma_fox_tan: %{
+      url: "/images/pleroma-fox-tan-smol.png",
+      mime_type: "image/png"
+    },
+    pleroma_fox_tan_shy: %{
+      url: "/images/pleroma-fox-tan-shy.png",
+      mime_type: "image/png"
+    }
+  ],
+  default_mascot: :pleroma_fox_tan
+
 config :pleroma, :activitypub,
   accept_blocks: true,
   unfollow_blocked: true,
