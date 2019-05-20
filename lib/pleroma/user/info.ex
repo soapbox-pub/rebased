@@ -46,12 +46,12 @@ defmodule Pleroma.User.Info do
 
     field(:mascot, :map,
       default: %{
-        id: "pleromatan",
-        url: "/images/pleroma-fox-tan-smol.png",
-        type: "image",
-        preview_url: "/images/pleroma-fox-tan-smol.png",
-        pleroma: %{
-          mime_type: "image/png"
+        "id" => "pleromatan",
+        "url" => "/images/pleroma-fox-tan-smol.png",
+        "type" => "image",
+        "preview_url" => "/images/pleroma-fox-tan-smol.png",
+        "pleroma" => %{
+          "mime_type" => "image/png"
         }
       }
     )
