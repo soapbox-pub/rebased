@@ -736,7 +736,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def get_mascot(%{assigns: %{user: user}} = conn, _params) do
-    %{info: %{mascot: mascot}} = user
+    mascot = User.get_mascot(user)
 
     conn
     |> json(mascot)
@@ -1364,7 +1364,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             display_sensitive_media: false,
             reduce_motion: false,
             max_toot_chars: limit,
-            mascot: Map.get(user.info.mascot, "url", "/images/pleroma-fox-tan-smol.png")
+            mascot: User.get_mascot(user)["url"]
           },
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),

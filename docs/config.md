@@ -203,6 +203,16 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `hide_post_stats`: Hide notices statistics(repeats, favorites, …)
 * `hide_user_stats`: Hide profile statistics(posts, posts per day, followers, followings, …)
 
+## :assets
+
+This section configures assets to be used with various frontends. Currently the only option
+relates to mascots on the mastodon frontend
+
+* `mascots`: KeywordList of mascots, each element __MUST__ contain both a `url` and a
+  `mime_type` key.
+* `default_mascot`: An element from `mascots` - This will be used as the default mascot
+  on MastoFE (default: `:pleroma_fox_tan`)
+
 ## :mrf_simple
 * `media_removal`: List of instances to remove medias from
 * `media_nsfw`: List of instances to put medias as NSFW(sensitive) from

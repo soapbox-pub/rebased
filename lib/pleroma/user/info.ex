@@ -43,19 +43,7 @@ defmodule Pleroma.User.Info do
     field(:hide_favorites, :boolean, default: true)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
-
-    field(:mascot, :map,
-      default: %{
-        "id" => "pleromatan",
-        "url" => "/images/pleroma-fox-tan-smol.png",
-        "type" => "image",
-        "preview_url" => "/images/pleroma-fox-tan-smol.png",
-        "pleroma" => %{
-          "mime_type" => "image/png"
-        }
-      }
-    )
-
+    field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
 
     field(:notification_settings, :map,
