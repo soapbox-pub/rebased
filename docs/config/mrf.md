@@ -5,11 +5,12 @@ Possible uses include:
 
 * marking incoming messages with media from a given account or instance as sensitive
 * rejecting messages from a specific instance
+* rejecting reports (flags) from a specific instance
 * removing/unlisting messages from the public timelines
 * removing media from messages
 * sending only public messages to a specific instance
 
-The MRF provides user-configurable policies.  The default policy is `NoOpPolicy`, which disables the MRF functionality.  Pleroma also includes an easy to use policy called `SimplePolicy` which maps messages matching certain pre-defined criterion to actions built into the policy module.  
+The MRF provides user-configurable policies.  The default policy is `NoOpPolicy`, which disables the MRF functionality.  Pleroma also includes an easy to use policy called `SimplePolicy` which maps messages matching certain pre-defined criterion to actions built into the policy module.
 It is possible to use multiple, active MRF policies at the same time.
 
 ## Quarantine Instances
@@ -41,12 +42,13 @@ Once `SimplePolicy` is enabled, you can configure various groups in the `:mrf_si
 * `media_nsfw`: Servers in this group will have the #nsfw tag and sensitive setting injected into incoming messages which contain media.
 * `reject`: Servers in this group will have their messages rejected.
 * `federated_timeline_removal`: Servers in this group will have their messages unlisted from the public timelines by flipping the `to` and `cc` fields.
+* `report_removal`: Servers in this group will have their reports (flags) rejected.
 
 Servers should be configured as lists.
 
 ### Example
 
-This example will enable `SimplePolicy`, block media from `illegalporn.biz`, mark media as NSFW from `porn.biz` and `porn.business`, reject messages from `spam.com` and remove messages from `spam.university` from the federated timeline:
+This example will enable `SimplePolicy`, block media from `illegalporn.biz`, mark media as NSFW from `porn.biz` and `porn.business`, reject messages from `spam.com`, remove messages from `spam.university` from the federated timeline and block reports (flags) from `whiny.whiner`:
 
 ```
 config :pleroma, :instance,
@@ -56,7 +58,8 @@ config :pleroma, :mrf_simple,
   media_removal: ["illegalporn.biz"],
   media_nsfw: ["porn.biz", "porn.business"],
   reject: ["spam.com"],
-  federated_timeline_removal: ["spam.university"]
+  federated_timeline_removal: ["spam.university"],
+  report_removal: ["whiny.whiner"]
 
 ```
 
