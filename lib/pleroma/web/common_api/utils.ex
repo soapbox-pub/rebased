@@ -157,7 +157,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def make_poll_data(%{"poll" => _}) do
+  def make_poll_data(%{"poll" => poll}) when is_map(poll) do
     "Invalid poll"
   end
 
