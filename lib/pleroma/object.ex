@@ -188,4 +188,34 @@ defmodule Pleroma.Object do
       _ -> {:error, "Not found"}
     end
   end
+
+  def increase_vote_count(ap_id, name) do
+    with %Object{} = object <- Object.normalize(ap_id),
+         "Question" <- object.data["type"] do
+      multiple = Map.has_key?(object.data, "anyOf")
+
+      options =
+        (object.data["anyOf"] || object.data["oneOf"] || [])
+        |> Enum.map(fn
+          %{"name" => ^name} = option ->
+            Kernel.update_in(option["replies"]["totalItems"], &(&1 + 1))
+
+          option ->
+            option
+        end)
+
+      data =
+        if multiple do
+          Map.put(object.data, "anyOf", options)
+        else
+          Map.put(object.data, "oneOf", options)
+        end
+
+      object
+      |> Object.change(%{data: data})
+      |> update_and_set_cache()
+    else
+      _ -> :noop
+    end
+  end
 end

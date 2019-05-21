@@ -130,6 +130,37 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              end)
     end
 
+    test "in increments vote counters on question activities" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "suya...",
+          "poll" => %{"options" => ["suya", "suya.", "suya.."], "expires_in" => 10}
+        })
+
+      object = Object.normalize(activity)
+
+      data =
+        File.read!("test/fixtures/mastodon-vote.json")
+        |> Poison.decode!()
+        |> Kernel.put_in(["to"], user.ap_id)
+        |> Kernel.put_in(["object", "inReplyTo"], object.data["id"])
+        |> Kernel.put_in(["object", "to"], user.ap_id)
+
+      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
+
+      object = Object.get_by_ap_id(object.data["id"])
+
+      assert Enum.any?(
+               object.data["oneOf"],
+               fn
+                 %{"name" => "suya..", "replies" => %{"totalItems" => 1}} -> true
+                 _ -> false
+               end
+             )
+    end
+
     test "it works for incoming notices with contentMap" do
       data =
         File.read!("test/fixtures/mastodon-post-activity-contentmap.json") |> Poison.decode!()

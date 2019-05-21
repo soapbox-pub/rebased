@@ -108,6 +108,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def decrease_replies_count_if_reply(_object), do: :noop
 
+  def increase_poll_votes_if_vote(%{
+        "object" => %{"inReplyTo" => reply_ap_id, "name" => name},
+        "type" => "Create"
+      }) do
+    Object.increase_vote_count(reply_ap_id, name)
+  end
+
+  def increase_poll_votes_if_vote(_create_data), do: :noop
+
   def insert(map, local \\ true, fake \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
@@ -235,6 +244,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
+         _ <- increase_poll_votes_if_vote(create_data),
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
