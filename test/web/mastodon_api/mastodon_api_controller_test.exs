@@ -181,7 +181,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           "poll" => %{"options" => Enum.map(0..limit, fn _ -> "desu" end), "expires_in" => 1}
         })
 
-      %{"error" => error} = json_response(conn, 401)
+      %{"error" => error} = json_response(conn, 422)
       assert error == "Poll can't contain more than #{limit} options"
     end
 
@@ -200,7 +200,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           }
         })
 
-      %{"error" => error} = json_response(conn, 401)
+      %{"error" => error} = json_response(conn, 422)
       assert error == "Poll options cannot be longer than #{limit} characters each"
     end
 
@@ -219,7 +219,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           }
         })
 
-      %{"error" => error} = json_response(conn, 401)
+      %{"error" => error} = json_response(conn, 422)
       assert error == "Expiration date is too soon"
     end
 
@@ -238,7 +238,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           }
         })
 
-      %{"error" => error} = json_response(conn, 401)
+      %{"error" => error} = json_response(conn, 422)
       assert error == "Expiration date is too far in the future"
     end
   end

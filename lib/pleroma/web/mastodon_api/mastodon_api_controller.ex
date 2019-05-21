@@ -488,12 +488,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       case get_cached_status_or_post(conn, params) do
         {:ignore, message} ->
           conn
-          |> put_status(401)
+          |> put_status(422)
           |> json(%{error: message})
 
         {:error, message} ->
           conn
-          |> put_status(401)
+          |> put_status(422)
           |> json(%{error: message})
 
         {_, activity} ->
