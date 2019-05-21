@@ -103,12 +103,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
-      when is_list(options) and is_integer(expires_in) do
+      when is_list(options) do
     %{max_expiration: max_expiration, min_expiration: min_expiration} =
       limits = Pleroma.Config.get([:instance, :poll_limits])
 
     # XXX: There is probably a cleaner way of doing this
     try do
+      # In some cases mastofe sends out strings instead of integers
+      expires_in = if is_binary(expires_in), do: String.to_integer(expires_in), else: expires_in
+
       if Enum.count(options) > limits.max_options do
         raise ArgumentError, message: "Poll can't contain more than #{limits.max_options} options"
       end
