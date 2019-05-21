@@ -491,6 +491,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(activity in Activity)
     |> restrict_blocked(opts)
+    |> restrict_poll_replies(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> where(
       [activity],
