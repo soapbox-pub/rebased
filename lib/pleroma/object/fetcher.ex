@@ -8,6 +8,19 @@ defmodule Pleroma.Object.Fetcher do
 
   @httpoison Application.get_env(:pleroma, :httpoison)
 
+  defp reinject_object(data) do
+    Logger.debug("Reinjecting object #{data["id"]}")
+
+    with data <- Transmogrifier.fix_object(data),
+         {:ok, object} <- Object.create(data) do
+      {:ok, object}
+    else
+      e ->
+        Logger.error("Error while processing object: #{inspect(e)}")
+        {:error, e}
+    end
+  end
+
   # TODO:
   # This will create a Create activity, which we need internally at the moment.
   def fetch_object_from_id(id) do
@@ -26,11 +39,16 @@ defmodule Pleroma.Object.Fetcher do
              "object" => data
            },
            :ok <- Containment.contain_origin(id, params),
-           {:ok, activity} <- Transmogrifier.handle_incoming(params) do
-        {:ok, Object.normalize(activity, false)}
+           {:ok, activity} <- Transmogrifier.handle_incoming(params),
+           {:object, _data, %Object{} = object} <-
+             {:object, data, Object.normalize(activity, false)} do
+        {:ok, object}
       else
         {:error, {:reject, nil}} ->
           {:reject, nil}
+
+        {:object, data, nil} ->
+          reinject_object(data)
 
         object = %Object{} ->
           {:ok, object}
