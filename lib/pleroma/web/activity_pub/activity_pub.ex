@@ -192,40 +192,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
     if activity.data["type"] in ["Create", "Announce", "Delete"] do
-      Pleroma.Web.Streamer.stream("user", activity)
-      Pleroma.Web.Streamer.stream("list", activity)
+      object = Object.normalize(activity)
+      # Do not stream out poll replies
+      unless object.data["name"] do
+        Pleroma.Web.Streamer.stream("user", activity)
+        Pleroma.Web.Streamer.stream("list", activity)
 
-      if Enum.member?(activity.data["to"], public) do
-        Pleroma.Web.Streamer.stream("public", activity)
+        if Enum.member?(activity.data["to"], public) do
+          Pleroma.Web.Streamer.stream("public", activity)
 
-        if activity.local do
-          Pleroma.Web.Streamer.stream("public:local", activity)
-        end
+          if activity.local do
+            Pleroma.Web.Streamer.stream("public:local", activity)
+          end
 
-        if activity.data["type"] in ["Create"] do
-          object = Object.normalize(activity)
+          if activity.data["type"] in ["Create"] do
+            object.data
+            |> Map.get("tag", [])
+            |> Enum.filter(fn tag -> is_bitstring(tag) end)
+            |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
 
-          object.data
-          |> Map.get("tag", [])
-          |> Enum.filter(fn tag -> is_bitstring(tag) end)
-          |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
+            if object.data["attachment"] != [] do
+              Pleroma.Web.Streamer.stream("public:media", activity)
 
-          if object.data["attachment"] != [] do
-            Pleroma.Web.Streamer.stream("public:media", activity)
-
-            if activity.local do
-              Pleroma.Web.Streamer.stream("public:local:media", activity)
+              if activity.local do
+                Pleroma.Web.Streamer.stream("public:local:media", activity)
+              end
             end
           end
+        else
+          # TODO: Write test, replace with visibility test
+          if !Enum.member?(activity.data["cc"] || [], public) &&
+               !Enum.member?(
+                 activity.data["to"],
+                 User.get_cached_by_ap_id(activity.data["actor"]).follower_address
+               ),
+             do: Pleroma.Web.Streamer.stream("direct", activity)
         end
-      else
-        # TODO: Write test, replace with visibility test
-        if !Enum.member?(activity.data["cc"] || [], public) &&
-             !Enum.member?(
-               activity.data["to"],
-               User.get_cached_by_ap_id(activity.data["actor"]).follower_address
-             ),
-           do: Pleroma.Web.Streamer.stream("direct", activity)
       end
     end
   end
