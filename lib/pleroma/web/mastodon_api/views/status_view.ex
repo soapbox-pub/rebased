@@ -338,8 +338,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         (object.data["closed"] || object.data["endTime"])
         |> NaiveDateTime.from_iso8601!()
 
-      votes_count = object.data["votes_count"] || 0
-
       expired =
         end_time
         |> NaiveDateTime.compare(NaiveDateTime.utc_now())
@@ -348,12 +346,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
           _ -> false
         end
 
-      options =
-        Enum.map(options, fn %{"name" => name} = option ->
-          %{
-            title: HTML.strip_tags(name),
-            votes_count: option["replies"]["votes_count"] || 0
-          }
+      {options, votes_count} =
+        Enum.map_reduce(options, 0, fn %{"name" => name} = option, count ->
+          current_count = option["replies"]["totalItems"] || 0
+
+          {%{
+             title: HTML.strip_tags(name),
+             votes_count: current_count
+           }, current_count + count}
         end)
 
       %{
