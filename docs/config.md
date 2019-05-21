@@ -104,6 +104,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 * `healthcheck`: if set to true, system data will be shown on ``/api/pleroma/healthcheck``.
+* `remote_post_retention_days`: the default amount of days to retain remote posts when pruning the database
 
 ## :app_account_creation
 REST API for creating an account settings

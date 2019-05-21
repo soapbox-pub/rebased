@@ -23,6 +23,10 @@ defmodule Mix.Tasks.Pleroma.Database do
     Options:
     - `--vacuum` - run `VACUUM FULL` after the embedded objects are replaced with their references
 
+  ## Prune old objects from the database
+
+      mix pleroma.database prune_objects
+
   ## Create a conversation for all existing DMs. Can be safely re-run.
 
       mix pleroma.database bump_all_conversations
@@ -71,5 +75,41 @@ defmodule Mix.Tasks.Pleroma.Database do
     users = Repo.all(User)
     Enum.each(users, &User.remove_duplicated_following/1)
     Enum.each(users, &User.update_follower_count/1)
+  end
+
+  def run(["prune_objects" | args]) do
+    {options, [], []} =
+      OptionParser.parse(
+        args,
+        strict: [
+          vacuum: :boolean
+        ]
+      )
+
+    Common.start_pleroma()
+
+    deadline = Pleroma.Config.get([:instance, :remote_post_retention_days])
+
+    Logger.info("Pruning objects older than #{deadline} days")
+
+    time_deadline =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(-(deadline * 86_400))
+
+    Repo.query!(
+      "DELETE FROM objects WHERE inserted_at < $1 AND split_part(data->>'actor', '/', 3) != $2",
+      [time_deadline, Pleroma.Web.Endpoint.host()],
+      timeout: :infinity
+    )
+
+    if Keyword.get(options, :vacuum) do
+      Logger.info("Runnning VACUUM FULL")
+
+      Repo.query!(
+        "vacuum full;",
+        [],
+        timeout: :infinity
+      )
+    end
   end
 end
