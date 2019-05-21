@@ -146,26 +146,101 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute id == third_id
   end
 
-  test "posting a poll", %{conn: conn} do
-    user = insert(:user)
-    time = NaiveDateTime.utc_now()
+  describe "posting polls" do
+    test "posting a poll", %{conn: conn} do
+      user = insert(:user)
+      time = NaiveDateTime.utc_now()
 
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{
-        "status" => "Who is the best girl?",
-        "poll" => %{"options" => ["Rei", "Asuka", "Misato"], "expires_in" => 420}
-      })
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{"options" => ["Rei", "Asuka", "Misato"], "expires_in" => 420}
+        })
 
-    response = json_response(conn, 200)
+      response = json_response(conn, 200)
 
-    assert Enum.all?(response["poll"]["options"], fn %{"title" => title} ->
-             title in ["Rei", "Asuka", "Misato"]
-           end)
+      assert Enum.all?(response["poll"]["options"], fn %{"title" => title} ->
+               title in ["Rei", "Asuka", "Misato"]
+             end)
 
-    assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
-    refute response["poll"]["expred"]
+      assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
+      refute response["poll"]["expred"]
+    end
+
+    test "option limit is enforced", %{conn: conn} do
+      user = insert(:user)
+      limit = Pleroma.Config.get([:instance, :poll_limits, :max_options])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "desu~",
+          "poll" => %{"options" => Enum.map(0..limit, fn _ -> "desu" end), "expires_in" => 1}
+        })
+
+      %{"error" => error} = json_response(conn, 401)
+      assert error == "Poll can't contain more than #{limit} options"
+    end
+
+    test "option character limit is enforced", %{conn: conn} do
+      user = insert(:user)
+      limit = Pleroma.Config.get([:instance, :poll_limits, :max_option_chars])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "...",
+          "poll" => %{
+            "options" => [Enum.reduce(0..limit, "", fn _, acc -> acc <> "." end)],
+            "expires_in" => 1
+          }
+        })
+
+      %{"error" => error} = json_response(conn, 401)
+      assert error == "Poll options cannot be longer than #{limit} characters each"
+    end
+
+    test "minimal date limit is enforced", %{conn: conn} do
+      user = insert(:user)
+      limit = Pleroma.Config.get([:instance, :poll_limits, :min_expiration])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "imagine arbitrary limits",
+          "poll" => %{
+            "options" => ["this post was made by pleroma gang"],
+            "expires_in" => limit - 1
+          }
+        })
+
+      %{"error" => error} = json_response(conn, 401)
+      assert error == "Expiration date is too soon"
+    end
+
+    test "maximum date limit is enforced", %{conn: conn} do
+      user = insert(:user)
+      limit = Pleroma.Config.get([:instance, :poll_limits, :max_expiration])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "imagine arbitrary limits",
+          "poll" => %{
+            "options" => ["this post was made by pleroma gang"],
+            "expires_in" => limit + 1
+          }
+        })
+
+      %{"error" => error} = json_response(conn, 401)
+      assert error == "Expiration date is too far in the future"
+    end
   end
 
   test "posting a sensitive status", %{conn: conn} do

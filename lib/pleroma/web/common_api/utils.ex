@@ -104,28 +104,61 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
       when is_list(options) and is_integer(expires_in) do
-    {poll, emoji} =
-      Enum.map_reduce(options, %{}, fn option, emoji ->
-        {%{
-           "name" => option,
-           "type" => "Note",
-           "replies" => %{"type" => "Collection", "totalItems" => 0}
-         }, Map.merge(emoji, Formatter.get_emoji_map(option))}
-      end)
+    %{max_expiration: max_expiration, min_expiration: min_expiration} =
+      limits = Pleroma.Config.get([:instance, :poll_limits])
 
-    end_time =
-      NaiveDateTime.utc_now()
-      |> NaiveDateTime.add(expires_in)
-      |> NaiveDateTime.to_iso8601()
-
-    poll =
-      if Pleroma.Web.ControllerHelper.truthy_param?(data["poll"]["multiple"]) do
-        %{"type" => "Question", "anyOf" => poll, "closed" => end_time}
-      else
-        %{"type" => "Question", "oneOf" => poll, "closed" => end_time}
+    # XXX: There is probably a cleaner way of doing this
+    try do
+      if Enum.count(options) > limits.max_options do
+        raise ArgumentError, message: "Poll can't contain more than #{limits.max_options} options"
       end
 
-    {poll, emoji}
+      {poll, emoji} =
+        Enum.map_reduce(options, %{}, fn option, emoji ->
+          if String.length(option) > limits.max_option_chars do
+            raise ArgumentError,
+              message:
+                "Poll options cannot be longer than #{limits.max_option_chars} characters each"
+          end
+
+          {%{
+             "name" => option,
+             "type" => "Note",
+             "replies" => %{"type" => "Collection", "totalItems" => 0}
+           }, Map.merge(emoji, Formatter.get_emoji_map(option))}
+        end)
+
+      case expires_in do
+        expires_in when expires_in > max_expiration ->
+          raise ArgumentError, message: "Expiration date is too far in the future"
+
+        expires_in when expires_in < min_expiration ->
+          raise ArgumentError, message: "Expiration date is too soon"
+
+        _ ->
+          :noop
+      end
+
+      end_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(expires_in)
+        |> NaiveDateTime.to_iso8601()
+
+      poll =
+        if Pleroma.Web.ControllerHelper.truthy_param?(data["poll"]["multiple"]) do
+          %{"type" => "Question", "anyOf" => poll, "closed" => end_time}
+        else
+          %{"type" => "Question", "oneOf" => poll, "closed" => end_time}
+        end
+
+      {poll, emoji}
+    rescue
+      e in ArgumentError -> e.message
+    end
+  end
+
+  def make_poll_data(%{"poll" => _}) do
+    "Invalid poll"
   end
 
   def make_poll_data(_data) do
