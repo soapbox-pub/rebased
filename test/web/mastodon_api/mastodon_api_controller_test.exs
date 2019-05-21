@@ -3453,4 +3453,48 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert json_response(conn, 403) == %{"error" => "Rate limit exceeded."}
     end
   end
+
+  describe "GET /api/v1/polls/:id" do
+    test "returns poll entity for object id", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "Pleroma does",
+          "poll" => %{"options" => ["what Mastodon't", "n't what Mastodoes"], "expires_in" => 20}
+        })
+
+      object = Object.normalize(activity)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/polls/#{object.id}")
+
+      response = json_response(conn, 200)
+      id = object.id
+      assert %{"id" => ^id, "expired" => false, "multiple" => false} = response
+    end
+
+    test "does not expose polls for private statuses", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "Pleroma does",
+          "poll" => %{"options" => ["what Mastodon't", "n't what Mastodoes"], "expires_in" => 20},
+          "visibility" => "private"
+        })
+
+      object = Object.normalize(activity)
+
+      conn =
+        conn
+        |> assign(:user, other_user)
+        |> get("/api/v1/polls/#{object.id}")
+
+      assert json_response(conn, 404)
+    end
+  end
 end

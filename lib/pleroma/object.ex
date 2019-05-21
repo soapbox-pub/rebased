@@ -35,6 +35,9 @@ defmodule Pleroma.Object do
     |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
   end
 
+  def get_by_id(nil), do: nil
+  def get_by_id(id), do: Repo.get(Object, id)
+
   def get_by_ap_id(nil), do: nil
 
   def get_by_ap_id(ap_id) do

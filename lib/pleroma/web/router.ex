@@ -423,6 +423,8 @@ defmodule Pleroma.Web.Router do
       get("/statuses/:id", MastodonAPIController, :get_status)
       get("/statuses/:id/context", MastodonAPIController, :get_context)
 
+      get("/polls/:id", MastodonAPIController, :get_poll)
+
       get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
       get("/accounts/:id/followers", MastodonAPIController, :followers)
       get("/accounts/:id/following", MastodonAPIController, :following)
