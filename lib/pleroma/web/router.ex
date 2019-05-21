@@ -710,6 +710,7 @@ defmodule Pleroma.Web.Router do
   scope "/", Fallback do
     get("/registration/:token", RedirectController, :registration_page)
     get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
+    get("/api*path", RedirectController, :api_not_implemented)
     get("/*path", RedirectController, :redirector)
 
     options("/*path", RedirectController, :empty)
@@ -720,6 +721,12 @@ defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.Metadata
+
+  def api_not_implemented(conn, _params) do
+    conn
+    |> put_status(404)
+    |> json(%{error: "Not implemented"})
+  end
 
   def redirector(conn, _params, code \\ 200) do
     conn
