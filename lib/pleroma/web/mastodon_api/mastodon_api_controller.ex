@@ -197,7 +197,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       languages: ["en"],
       registrations: Pleroma.Config.get([:instance, :registrations_open]),
       # Extra (not present in Mastodon):
-      max_toot_chars: Keyword.get(instance, :limit)
+      max_toot_chars: Keyword.get(instance, :limit),
+      poll_limits: Keyword.get(instance, :poll_limits)
     }
 
     json(conn, response)
@@ -1331,6 +1332,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             max_toot_chars: limit,
             mascot: "/images/pleroma-fox-tan-smol.png"
           },
+          poll_limits: Config.get([:instance, :poll_limits]),
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),
             admin: present?(user.info.is_admin)

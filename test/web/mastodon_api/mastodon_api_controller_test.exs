@@ -2494,7 +2494,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
              "stats" => _,
              "thumbnail" => _,
              "languages" => _,
-             "registrations" => _
+             "registrations" => _,
+             "poll_limits" => _
            } = result
 
     assert email == from_config_email
