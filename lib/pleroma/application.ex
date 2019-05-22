@@ -110,6 +110,7 @@ defmodule Pleroma.Application do
         hackney_pool_children() ++
         [
           worker(Pleroma.Web.Federator.RetryQueue, []),
+          worker(Pleroma.Web.OAuth.Token.CleanWorker, []),
           worker(Pleroma.Stats, []),
           worker(Task, [&Pleroma.Web.Push.init/0], restart: :temporary, id: :web_push_init),
           worker(Task, [&Pleroma.Web.Federator.init/0], restart: :temporary, id: :federator_init)
