@@ -74,6 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Hide deactivated users and their statuses
 - Posts which are marked sensitive or tagged nsfw no longer have link previews.
 - HTTP connection timeout is now set to 10 seconds.
+- Respond with a 404 Not implemented JSON error message when requested API is not implemented
 
 ### Fixed
 - Added an FTS index on objects. Running `vacuum analyze` and setting a larger `work_mem` is recommended.
