@@ -42,6 +42,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Emoji packs and emoji pack manager
 - Object pruning (`mix pleroma.database prune_objects`)
 - OAuth: added job to clean expired access tokens
+- MRF: Support for rejecting reports from specific instances (`mrf_simple`)
+- MRF: Support for stripping avatars and banner images from specific instances (`mrf_simple`)
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer

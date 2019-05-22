@@ -220,6 +220,9 @@ relates to mascots on the mastodon frontend
 * `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline
 * `reject`: List of instances to reject any activities from
 * `accept`: List of instances to accept any activities from
+* `report_removal`: List of instances to reject reports from
+* `avatar_removal`: List of instances to strip avatars from
+* `banner_removal`: List of instances to strip banners from
 
 ## :mrf_rejectnonpublic
 * `allow_followersonly`: whether to allow followers-only posts
