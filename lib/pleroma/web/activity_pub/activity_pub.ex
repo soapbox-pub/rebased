@@ -194,7 +194,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     if activity.data["type"] in ["Create", "Announce", "Delete"] do
       object = Object.normalize(activity)
       # Do not stream out poll replies
-      unless object.data["name"] do
+      unless object.data["type"] == "Answer" do
         Pleroma.Web.Streamer.stream("user", activity)
         Pleroma.Web.Streamer.stream("list", activity)
 
@@ -493,7 +493,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(activity in Activity)
     |> restrict_blocked(opts)
-    |> restrict_poll_replies(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> where(
       [activity],
@@ -833,16 +832,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
-  defp restrict_poll_replies(query, %{"include_poll_replies" => "true"}), do: query
-
-  defp restrict_poll_replies(query, _) do
-    if has_named_binding?(query, :object) do
-      from([activity, object: o] in query, where: fragment("?->'name' is null", o.data))
-    else
-      query
-    end
-  end
-
   defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
 
   defp maybe_preload_objects(query, _) do
@@ -896,7 +885,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
     |> Activity.restrict_deactivated_users()
-    |> restrict_poll_replies(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do

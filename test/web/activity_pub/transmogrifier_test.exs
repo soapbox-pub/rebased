@@ -130,7 +130,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              end)
     end
 
-    test "in increments vote counters on question activities" do
+    test "it rewrites Note votes to Answers and increments vote counters on question activities" do
       user = insert(:user)
 
       {:ok, activity} =
@@ -148,8 +148,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Kernel.put_in(["object", "inReplyTo"], object.data["id"])
         |> Kernel.put_in(["object", "to"], user.ap_id)
 
-      {:ok, %Activity{local: false}} = Transmogrifier.handle_incoming(data)
-
+      {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
+      answer_object = Object.normalize(activity)
+      assert answer_object.data["type"] == "Answer"
       object = Object.get_by_ap_id(object.data["id"])
 
       assert Enum.any?(
@@ -1256,5 +1257,29 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       {:ok, _} = Transmogrifier.prepare_outgoing(activity.data)
     end
+  end
+
+  test "Rewrites Answers to Notes" do
+    user = insert(:user)
+
+    {:ok, poll_activity} =
+      CommonAPI.post(user, %{
+        "status" => "suya...",
+        "poll" => %{"options" => ["suya", "suya.", "suya.."], "expires_in" => 10}
+      })
+
+    poll_object = Object.normalize(poll_activity)
+    # TODO: Replace with CommonAPI vote creation when implemented
+    data =
+      File.read!("test/fixtures/mastodon-vote.json")
+      |> Poison.decode!()
+      |> Kernel.put_in(["to"], user.ap_id)
+      |> Kernel.put_in(["object", "inReplyTo"], poll_object.data["id"])
+      |> Kernel.put_in(["object", "to"], user.ap_id)
+
+    {:ok, %Activity{local: false} = activity} = Transmogrifier.handle_incoming(data)
+    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
+
+    assert data["object"]["type"] == "Note"
   end
 end

@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   require Logger
 
-  @supported_object_types ["Article", "Note", "Video", "Page", "Question"]
+  @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer"]
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
 

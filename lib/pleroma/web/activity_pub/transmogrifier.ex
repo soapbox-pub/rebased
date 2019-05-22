@@ -35,6 +35,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_likes
     |> fix_addressing
     |> fix_summary
+    |> fix_type
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -328,6 +329,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_content_map(object), do: object
 
+  def fix_type(%{"inReplyTo" => reply_id} = object) when is_binary(reply_id) do
+    reply = Object.normalize(reply_id)
+
+    if reply.data["type"] == "Question" and object["name"] do
+      Map.put(object, "type", "Answer")
+    else
+      object
+    end
+  end
+
+  def fix_type(object), do: object
+
   defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
     with true <- id =~ "follows",
          %User{local: true} = follower <- User.get_cached_by_ap_id(follower_id),
@@ -398,7 +411,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - tags
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
-      when objtype in ["Article", "Note", "Video", "Page", "Question"] do
+      when objtype in ["Article", "Note", "Video", "Page", "Question", "Answer"] do
     actor = Containment.get_actor(data)
 
     data =
@@ -731,6 +744,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> set_reply_to_uri
     |> strip_internal_fields
     |> strip_internal_tags
+    |> set_type
   end
 
   #  @doc
@@ -894,6 +908,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     tags = object["tag"] || []
     Map.put(object, "sensitive", "nsfw" in tags)
   end
+
+  def set_type(%{"type" => "Answer"} = object) do
+    Map.put(object, "type", "Note")
+  end
+
+  def set_type(object), do: object
 
   def add_attributed_to(object) do
     attributed_to = object["attributedTo"] || object["actor"]
