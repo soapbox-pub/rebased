@@ -5,6 +5,7 @@
 defmodule Mix.Tasks.Pleroma.Database do
   alias Mix.Tasks.Pleroma.Common
   alias Pleroma.Conversation
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   require Logger
@@ -78,6 +79,8 @@ defmodule Mix.Tasks.Pleroma.Database do
   end
 
   def run(["prune_objects" | args]) do
+    import Ecto.Query
+
     {options, [], []} =
       OptionParser.parse(
         args,
@@ -96,11 +99,15 @@ defmodule Mix.Tasks.Pleroma.Database do
       NaiveDateTime.utc_now()
       |> NaiveDateTime.add(-(deadline * 86_400))
 
-    Repo.query!(
-      "DELETE FROM objects WHERE inserted_at < $1 AND split_part(data->>'actor', '/', 3) != $2",
-      [time_deadline, Pleroma.Web.Endpoint.host()],
-      timeout: :infinity
+    public = "https://www.w3.org/ns/activitystreams#Public"
+
+    from(o in Object,
+      where: fragment("?->'to' \\? ? OR ?->'cc' \\? ?", o.data, ^public, o.data, ^public),
+      where: o.inserted_at < ^time_deadline,
+      where:
+        fragment("split_part(?->>'actor', '/', 3) != ?", o.data, ^Pleroma.Web.Endpoint.host())
     )
+    |> Repo.delete_all()
 
     if Keyword.get(options, :vacuum) do
       Logger.info("Runnning VACUUM FULL")
