@@ -17,7 +17,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       federated_timeline_removal: [],
       report_removal: [],
       reject: [],
-      accept: []
+      accept: [],
+      avatar_removal: [],
+      banner_removal: []
     )
 
     on_exit(fn ->
@@ -206,6 +208,60 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
     end
   end
 
+  describe "when :avatar_removal" do
+    test "is empty" do
+      Config.put([:mrf_simple, :avatar_removal], [])
+
+      remote_user = build_remote_user()
+
+      assert SimplePolicy.filter(remote_user) == {:ok, remote_user}
+    end
+
+    test "is not empty but it doesn't have a matching host" do
+      Config.put([:mrf_simple, :avatar_removal], ["non.matching.remote"])
+
+      remote_user = build_remote_user()
+
+      assert SimplePolicy.filter(remote_user) == {:ok, remote_user}
+    end
+
+    test "has a matching host" do
+      Config.put([:mrf_simple, :avatar_removal], ["remote.instance"])
+
+      remote_user = build_remote_user()
+      {:ok, filtered} = SimplePolicy.filter(remote_user)
+
+      refute filtered["icon"]
+    end
+  end
+
+  describe "when :banner_removal" do
+    test "is empty" do
+      Config.put([:mrf_simple, :banner_removal], [])
+
+      remote_user = build_remote_user()
+
+      assert SimplePolicy.filter(remote_user) == {:ok, remote_user}
+    end
+
+    test "is not empty but it doesn't have a matching host" do
+      Config.put([:mrf_simple, :banner_removal], ["non.matching.remote"])
+
+      remote_user = build_remote_user()
+
+      assert SimplePolicy.filter(remote_user) == {:ok, remote_user}
+    end
+
+    test "has a matching host" do
+      Config.put([:mrf_simple, :banner_removal], ["remote.instance"])
+
+      remote_user = build_remote_user()
+      {:ok, filtered} = SimplePolicy.filter(remote_user)
+
+      refute filtered["image"]
+    end
+  end
+
   defp build_local_message do
     %{
       "actor" => "#{Pleroma.Web.base_url()}/users/alice",
@@ -216,5 +272,20 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
   defp build_remote_message do
     %{"actor" => "https://remote.instance/users/bob"}
+  end
+
+  defp build_remote_user do
+    %{
+      "id" => "https://remote.instance/users/bob",
+      "icon" => %{
+        "url" => "http://example.com/image.jpg",
+        "type" => "Image"
+      },
+      "image" => %{
+        "url" => "http://example.com/image.jpg",
+        "type" => "Image"
+      },
+      "type" => "Person"
+    }
   end
 end
