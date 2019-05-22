@@ -456,6 +456,16 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     end
   end
 
+  def update_avatar(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
+    change = Changeset.change(user, %{avatar: nil})
+    {:ok, user} = User.update_and_set_cache(change)
+    CommonAPI.update(user)
+
+    conn
+    |> put_view(UserView)
+    |> render("show.json", %{user: user, for: user})
+  end
+
   def update_avatar(%{assigns: %{user: user}} = conn, params) do
     {:ok, object} = ActivityPub.upload(params, type: :avatar)
     change = Changeset.change(user, %{avatar: object.data})
@@ -467,6 +477,19 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     |> render("show.json", %{user: user, for: user})
   end
 
+  def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
+    with new_info <- %{"banner" => %{}},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
+      CommonAPI.update(user)
+      response = %{url: nil} |> Jason.encode!()
+
+      conn
+      |> json_reply(200, response)
+    end
+  end
+
   def update_banner(%{assigns: %{user: user}} = conn, params) do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
          new_info <- %{"banner" => object.data},
@@ -476,6 +499,18 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       CommonAPI.update(user)
       %{"url" => [%{"href" => href} | _]} = object.data
       response = %{url: href} |> Jason.encode!()
+
+      conn
+      |> json_reply(200, response)
+    end
+  end
+
+  def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
+    with new_info <- %{"background" => %{}},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
+      response = %{url: nil} |> Jason.encode!()
 
       conn
       |> json_reply(200, response)

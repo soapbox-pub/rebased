@@ -38,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Metadata: RelMe provider
 - OAuth: added support for refresh tokens
 - Emoji packs and emoji pack manager
+- Ability to reset avatar, profile banner and backgroud
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
