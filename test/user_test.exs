@@ -1251,4 +1251,19 @@ defmodule Pleroma.UserTest do
       refute user.info.confirmation_token
     end
   end
+
+  describe "ensure_keys_present" do
+    test "it creates keys for a user and stores them in info" do
+      user = insert(:user)
+      refute is_binary(user.info.keys)
+      {:ok, user} = User.ensure_keys_present(user)
+      assert is_binary(user.info.keys)
+    end
+
+    test "it doesn't create keys if there already are some" do
+      user = insert(:user, %{info: %{keys: "xxx"}})
+      {:ok, user} = User.ensure_keys_present(user)
+      assert user.info.keys == "xxx"
+    end
+  end
 end

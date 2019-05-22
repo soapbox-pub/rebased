@@ -1005,7 +1005,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "update" do
     test "it creates an update activity with the new user data" do
       user = insert(:user)
-      {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+      {:ok, user} = User.ensure_keys_present(user)
       user_data = Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
 
       {:ok, update} =

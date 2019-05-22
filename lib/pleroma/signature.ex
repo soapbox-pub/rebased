@@ -5,11 +5,10 @@
 defmodule Pleroma.Signature do
   @behaviour HTTPSignatures.Adapter
 
+  alias Pleroma.Keys
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.Salmon
-  alias Pleroma.Web.WebFinger
 
   def fetch_public_key(conn) do
     with actor_id <- Utils.get_ap_id(conn.params["actor"]),
@@ -33,8 +32,8 @@ defmodule Pleroma.Signature do
   end
 
   def sign(%User{} = user, headers) do
-    with {:ok, %{info: %{keys: keys}}} <- WebFinger.ensure_keys_present(user),
-         {:ok, private_key, _} <- Salmon.keys_from_pem(keys) do
+    with {:ok, %{info: %{keys: keys}}} <- User.ensure_keys_present(user),
+         {:ok, private_key, _} <- Keys.keys_from_pem(keys) do
       HTTPSignatures.sign(private_key, user.ap_id <> "#main-key", headers)
     end
   end
