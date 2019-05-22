@@ -10,8 +10,8 @@ defmodule Pleroma.Web.Salmon do
   use Bitwise
 
   alias Pleroma.Activity
-  alias Pleroma.Keys
   alias Pleroma.Instances
+  alias Pleroma.Keys
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator.Publisher
