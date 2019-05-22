@@ -357,7 +357,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         end)
 
       %{
-        # Mastodon uses separate ids for polls, but an object can't have more than one poll embedded so object id is fine
+        # Mastodon uses separate ids for polls, but an object can't have
+        # more than one poll embedded so object id is fine
         id: object.id,
         expires_at: Utils.to_masto_date(end_time),
         expired: expired,
