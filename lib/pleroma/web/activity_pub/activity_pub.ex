@@ -492,6 +492,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
 
     from(activity in Activity)
+    |> Activity.with_preloaded_object()
+    |> exclude_poll_votes(opts)
     |> restrict_blocked(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> where(
@@ -832,6 +834,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp exclude_poll_votes(query, %{"include_poll_votes" => "true"}), do: query
+
+  defp exclude_poll_votes(query, _) do
+    if has_named_binding?(query, :object) do
+      from([activity, object: o] in query,
+        where: fragment("not(?->>'type' = ?)", o.data, "Answer")
+      )
+    else
+      query
+    end
+  end
+
   defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
 
   defp maybe_preload_objects(query, _) do
@@ -865,6 +879,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
     |> maybe_order(opts)
+    |> exclude_poll_votes(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
