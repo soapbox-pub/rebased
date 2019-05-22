@@ -8,7 +8,7 @@ defmodule Pleroma.Formatter do
   alias Pleroma.User
   alias Pleroma.Web.MediaProxy
 
-  @safe_mention_regex ~r/^(\s*(?<mentions>@.+?\s+)+)(?<rest>.*)/
+  @safe_mention_regex ~r/^(\s*(?<mentions>@.+?\s+)+)(?<rest>.*)/s
   @link_regex ~r"((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~%:/?#[\]@!\$&'\(\)\*\+,;=.]+)|[0-9a-z+\-\.]+:[0-9a-z$-_.+!*'(),]+"ui
   @markdown_characters_regex ~r/(`|\*|_|{|}|[|]|\(|\)|#|\+|-|\.|!)/
 
