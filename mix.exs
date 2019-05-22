@@ -40,18 +40,9 @@ defmodule Pleroma.Mixfile do
   #
   # Type `mix help compile.app` for more information.
   def application do
-    extra_applications = [:logger, :runtime_tools, :comeonin, :quack]
-
-    extra_applications =
-      if Application.get_env(:esshd, :enabled, false) do
-        [:esshd | extra_applications]
-      else
-        extra_applications
-      end
-
     [
       mod: {Pleroma.Application, []},
-      extra_applications: extra_applications,
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -129,7 +120,7 @@ defmodule Pleroma.Mixfile do
       {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"},
       {:benchee, "~> 1.0"},
-      {:esshd, "~> 0.1.0"},
+      {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_rated, "~> 1.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test}
