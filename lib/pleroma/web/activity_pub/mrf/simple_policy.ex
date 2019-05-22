@@ -104,6 +104,26 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
 
   defp check_report_removal(_actor_info, object), do: {:ok, object}
 
+  defp check_avatar_removal(%{host: actor_host} = _actor_info, %{"icon" => _icon} = object) do
+    if actor_host in Pleroma.Config.get([:mrf_simple, :avatar_removal]) do
+      {:ok, Map.delete(object, "icon")}
+    else
+      {:ok, object}
+    end
+  end
+
+  defp check_avatar_removal(_actor_info, object), do: {:ok, object}
+
+  defp check_banner_removal(%{host: actor_host} = _actor_info, %{"image" => _image} = object) do
+    if actor_host in Pleroma.Config.get([:mrf_simple, :banner_removal]) do
+      {:ok, Map.delete(object, "image")}
+    else
+      {:ok, object}
+    end
+  end
+
+  defp check_banner_removal(_actor_info, object), do: {:ok, object}
+
   @impl true
   def filter(%{"actor" => actor} = object) do
     actor_info = URI.parse(actor)
@@ -114,6 +134,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          {:ok, object} <- check_media_nsfw(actor_info, object),
          {:ok, object} <- check_ftl_removal(actor_info, object),
          {:ok, object} <- check_report_removal(actor_info, object) do
+      {:ok, object}
+    else
+      _e -> {:reject, nil}
+    end
+  end
+
+  def filter(%{"id" => actor, "type" => obj_type} = object)
+      when obj_type in ["Application", "Group", "Organization", "Person", "Service"] do
+    actor_info = URI.parse(actor)
+
+    with {:ok, object} <- check_avatar_removal(actor_info, object),
+         {:ok, object} <- check_banner_removal(actor_info, object) do
       {:ok, object}
     else
       _e -> {:reject, nil}
