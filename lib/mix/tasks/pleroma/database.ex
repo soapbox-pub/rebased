@@ -107,7 +107,7 @@ defmodule Mix.Tasks.Pleroma.Database do
       where:
         fragment("split_part(?->>'actor', '/', 3) != ?", o.data, ^Pleroma.Web.Endpoint.host())
     )
-    |> Repo.delete_all()
+    |> Repo.delete_all(timeout: :infinity)
 
     if Keyword.get(options, :vacuum) do
       Logger.info("Runnning VACUUM FULL")
