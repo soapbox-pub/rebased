@@ -41,11 +41,13 @@ defmodule Pleroma.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     extra_applications = [:logger, :runtime_tools, :comeonin, :quack]
-    extra_applications = if Application.get_env(:esshd, :enabled, false) do
-      [:esshd | extra_applications]
-    else
-      extra_applications
-    end
+
+    extra_applications =
+      if Application.get_env(:esshd, :enabled, false) do
+        [:esshd | extra_applications]
+      else
+        extra_applications
+      end
 
     [
       mod: {Pleroma.Application, []},
