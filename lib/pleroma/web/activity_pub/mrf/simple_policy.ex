@@ -105,8 +105,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   defp check_report_removal(_actor_info, object), do: {:ok, object}
 
   @impl true
-  def filter(object) do
-    actor_info = URI.parse(object["actor"])
+  def filter(%{"actor" => actor} = object) do
+    actor_info = URI.parse(actor)
 
     with {:ok, object} <- check_accept(actor_info, object),
          {:ok, object} <- check_reject(actor_info, object),
@@ -119,4 +119,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
       _e -> {:reject, nil}
     end
   end
+
+  def filter(object), do: {:ok, object}
 end
