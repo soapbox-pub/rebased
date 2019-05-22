@@ -314,7 +314,9 @@ config :pleroma, :mrf_simple,
   federated_timeline_removal: [],
   report_removal: [],
   reject: [],
-  accept: []
+  accept: [],
+  avatar_removal: [],
+  banner_removal: []
 
 config :pleroma, :mrf_keyword,
   reject: [],
