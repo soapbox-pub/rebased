@@ -206,6 +206,15 @@ defmodule Pleroma.FormatterTest do
       assert mentions == []
       assert expected_text == text
     end
+
+    test "given the 'safe_mention' option, it will keep text after newlines" do
+      user = insert(:user)
+      text = " @#{user.nickname}\n hey dude\n\nhow are you doing?"
+
+      {expected_text, _, _} = Formatter.linkify(text, safe_mention: true)
+
+      assert expected_text =~ "how are you doing?"
+    end
   end
 
   describe ".parse_tags" do
