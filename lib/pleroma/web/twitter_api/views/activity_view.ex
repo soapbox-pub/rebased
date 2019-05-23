@@ -284,6 +284,12 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
         Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
       )
 
+    thread_muted? =
+      case activity.thread_muted? do
+        thread_muted? when is_boolean(thread_muted?) -> thread_muted?
+        nil -> CommonAPI.thread_muted?(user, activity)
+      end
+
     %{
       "id" => activity.id,
       "uri" => object.data["id"],
@@ -314,7 +320,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "summary" => summary,
       "summary_html" => summary |> Formatter.emojify(object.data["emoji"]),
       "card" => card,
-      "muted" => CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user)
+      "muted" => thread_muted? || User.mutes?(opts[:for], user)
     }
   end
 

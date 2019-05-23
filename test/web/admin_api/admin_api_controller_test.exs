@@ -397,14 +397,14 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
-  test "/api/pleroma/admin/invite_token" do
+  test "/api/pleroma/admin/users/invite_token" do
     admin = insert(:user, info: %{is_admin: true})
 
     conn =
       build_conn()
       |> assign(:user, admin)
       |> put_req_header("accept", "application/json")
-      |> get("/api/pleroma/admin/invite_token")
+      |> get("/api/pleroma/admin/users/invite_token")
 
     assert conn.status == 200
   end

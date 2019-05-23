@@ -87,4 +87,23 @@ defmodule Pleroma.Object.FetcherTest do
         )
     end
   end
+
+  describe "pruning" do
+    test "it can refetch pruned objects" do
+      object_id = "http://mastodon.example.org/@admin/99541947525187367"
+
+      {:ok, object} = Fetcher.fetch_object_from_id(object_id)
+
+      assert object
+
+      {:ok, _object} = Object.prune(object)
+
+      refute Object.get_by_ap_id(object_id)
+
+      {:ok, %Object{} = object_two} = Fetcher.fetch_object_from_id(object_id)
+
+      assert object.data["id"] == object_two.data["id"]
+      assert object.id != object_two.id
+    end
+  end
 end

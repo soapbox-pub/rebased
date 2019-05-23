@@ -223,7 +223,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         in_reply_to,
         tags,
         cw \\ nil,
-        cc \\ []
+        cc \\ [],
+        sensitive \\ false
       ) do
     object = %{
       "type" => "Note",
@@ -231,6 +232,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "cc" => cc,
       "content" => content_html,
       "summary" => cw,
+      "sensitive" => !Enum.member?(["false", "False", "0", false], sensitive),
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,

@@ -902,7 +902,7 @@ defmodule Pleroma.UserTest do
 
       assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
 
-      assert [activity] ==
+      assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
                ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
 
       {:ok, _user} = User.deactivate(user)
@@ -1249,6 +1249,21 @@ defmodule Pleroma.UserTest do
 
       refute user.info.confirmation_pending
       refute user.info.confirmation_token
+    end
+  end
+
+  describe "ensure_keys_present" do
+    test "it creates keys for a user and stores them in info" do
+      user = insert(:user)
+      refute is_binary(user.info.keys)
+      {:ok, user} = User.ensure_keys_present(user)
+      assert is_binary(user.info.keys)
+    end
+
+    test "it doesn't create keys if there already are some" do
+      user = insert(:user, %{info: %{keys: "xxx"}})
+      {:ok, user} = User.ensure_keys_present(user)
+      assert user.info.keys == "xxx"
     end
   end
 end

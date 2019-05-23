@@ -69,4 +69,17 @@ defmodule Pleroma.Web.OAuth.TokenTest do
 
     assert tokens == 2
   end
+
+  test "deletes expired tokens" do
+    insert(:oauth_token, valid_until: Timex.shift(Timex.now(), days: -3))
+    insert(:oauth_token, valid_until: Timex.shift(Timex.now(), days: -3))
+    t3 = insert(:oauth_token)
+    t4 = insert(:oauth_token, valid_until: Timex.shift(Timex.now(), minutes: 10))
+    {tokens, _} = Token.delete_expired_tokens()
+    assert tokens == 2
+    available_tokens = Pleroma.Repo.all(Token)
+
+    token_ids = available_tokens |> Enum.map(& &1.id)
+    assert token_ids == [t3.id, t4.id]
+  end
 end
