@@ -492,7 +492,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
 
     from(activity in Activity)
-    |> Activity.with_preloaded_object()
+    |> maybe_preload_objects(opts)
     |> exclude_poll_votes(opts)
     |> restrict_blocked(opts)
     |> restrict_recipients(recipients, opts["user"])
@@ -513,7 +513,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def fetch_activities_for_context(context, opts \\ %{}) do
     context
     |> fetch_activities_for_context_query(opts)
-    |> Activity.with_preloaded_object()
     |> Repo.all()
   end
 
@@ -521,7 +520,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           Pleroma.FlakeId.t() | nil
   def fetch_latest_activity_id_for_context(context, opts \\ %{}) do
     context
-    |> fetch_activities_for_context_query(opts)
+    |> fetch_activities_for_context_query(Map.merge(%{"skip_preload" => true}, opts))
     |> limit(1)
     |> select([a], a.id)
     |> Repo.one()
