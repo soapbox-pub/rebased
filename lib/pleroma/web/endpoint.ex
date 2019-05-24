@@ -16,17 +16,32 @@ defmodule Pleroma.Web.Endpoint do
 
   plug(Pleroma.Plugs.UploadedMedia)
 
+  @static_cache_control "public, no-cache"
+
   # InstanceStatic needs to be before Plug.Static to be able to override shipped-static files
   # If you're adding new paths to `only:` you'll need to configure them in InstanceStatic as well
-  plug(Pleroma.Plugs.InstanceStatic, at: "/")
+  # Cache-control headers are duplicated in case we turn off etags in the future
+  plug(Pleroma.Plugs.InstanceStatic,
+    at: "/",
+    gzip: true,
+    cache_control_for_etags: @static_cache_control,
+    headers: %{
+      "cache-control" => @static_cache_control
+    }
+  )
 
   plug(
     Plug.Static,
     at: "/",
     from: :pleroma,
     only:
-      ~w(index.html robots.txt static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc)
+      ~w(index.html robots.txt static finmoji emoji packs sounds images instance sw.js sw-pleroma.js favicon.png schemas doc),
     # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
+    gzip: true,
+    cache_control_for_etags: @static_cache_control,
+    headers: %{
+      "cache-control" => @static_cache_control
+    }
   )
 
   plug(Plug.Static.IndexHtml, at: "/pleroma/admin/")
