@@ -1193,6 +1193,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
 
     activity = Repo.preload(activity, :bookmark)
+    activity = %Activity{activity | thread_muted?: !!activity.thread_muted?}
 
     assert ActivityPub.fetch_activities([], %{"user" => user}) == [activity]
   end
