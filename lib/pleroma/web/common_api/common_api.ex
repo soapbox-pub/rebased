@@ -163,6 +163,7 @@ defmodule Pleroma.Web.CommonAPI do
          bcc <- bcc_for_list(user, visibility),
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"] || "",
+         sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
          full_payload <- String.trim(status <> cw),
          length when length in 1..limit <- String.length(full_payload),
          object <-
@@ -175,7 +176,8 @@ defmodule Pleroma.Web.CommonAPI do
              in_reply_to,
              tags,
              cw,
-             cc
+             cc,
+             sensitive
            ),
          object <-
            Map.put(

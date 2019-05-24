@@ -707,6 +707,41 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def set_mascot(%{assigns: %{user: user}} = conn, %{"file" => file}) do
+    with {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)),
+         %{} = attachment_data <- Map.put(object.data, "id", object.id),
+         %{type: type} = rendered <-
+           StatusView.render("attachment.json", %{attachment: attachment_data}) do
+      # Reject if not an image
+      if type == "image" do
+        # Sure!
+        # Save to the user's info
+        info_changeset = User.Info.mascot_update(user.info, rendered)
+
+        user_changeset =
+          user
+          |> Ecto.Changeset.change()
+          |> Ecto.Changeset.put_embed(:info, info_changeset)
+
+        {:ok, _user} = User.update_and_set_cache(user_changeset)
+
+        conn
+        |> json(rendered)
+      else
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(415, Jason.encode!(%{"error" => "mascots can only be images"}))
+      end
+    end
+  end
+
+  def get_mascot(%{assigns: %{user: user}} = conn, _params) do
+    mascot = User.get_mascot(user)
+
+    conn
+    |> json(mascot)
+  end
+
   def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with %Activity{data: %{"object" => object}} <- Repo.get(Activity, id),
          %Object{data: %{"likes" => likes}} <- Object.normalize(object) do
@@ -1009,6 +1044,30 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def status_search_query_with_gin(q, query) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
+          o.data,
+          ^query
+        ),
+      order_by: [desc: :id]
+    )
+  end
+
+  def status_search_query_with_rum(q, query) do
+    from([a, o] in q,
+      where:
+        fragment(
+          "? @@ plainto_tsquery('english', ?)",
+          o.fts_content,
+          ^query
+        ),
+      order_by: [fragment("? <=> now()::date", o.inserted_at)]
+    )
+  end
+
   def status_search(user, query) do
     fetched =
       if Regex.match?(~r/https?:/, query) do
@@ -1022,19 +1081,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end || []
 
     q =
-      from(
-        [a, o] in Activity.with_preloaded_object(Activity),
+      from([a, o] in Activity.with_preloaded_object(Activity),
         where: fragment("?->>'type' = 'Create'", a.data),
         where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
-        where:
-          fragment(
-            "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
-            o.data,
-            ^query
-          ),
-        limit: 20,
-        order_by: [desc: :id]
+        limit: 20
       )
+
+    q =
+      if Pleroma.Config.get([:database, :rum_enabled]) do
+        status_search_query_with_rum(q, query)
+      else
+        status_search_query_with_gin(q, query)
+      end
 
     Repo.all(q) ++ fetched
   end
@@ -1306,7 +1364,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             display_sensitive_media: false,
             reduce_motion: false,
             max_toot_chars: limit,
-            mascot: "/images/pleroma-fox-tan-smol.png"
+            mascot: User.get_mascot(user)["url"]
           },
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),

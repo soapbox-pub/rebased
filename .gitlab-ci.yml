@@ -45,7 +45,8 @@ docs-build:
 unit-testing:
   stage: test
   services:
-  - name: postgres:9.6.2
+  - name: lainsoykaf/postgres-with-rum
+    alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
     - mix deps.get
@@ -53,6 +54,21 @@ unit-testing:
     - mix ecto.migrate
     - mix test --trace --preload-modules
     - mix coveralls
+
+unit-testing-rum:
+  stage: test
+  services:
+  - name: lainsoykaf/postgres-with-rum
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  variables:
+    RUM_ENABLED: "true"
+  script:
+    - mix deps.get
+    - mix ecto.create
+    - mix ecto.migrate
+    - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
+    - mix test --trace --preload-modules
 
 lint:
   stage: test
@@ -64,7 +80,6 @@ analysis:
   script:
     - mix deps.get
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
-
 
 docs-deploy:
   stage: deploy

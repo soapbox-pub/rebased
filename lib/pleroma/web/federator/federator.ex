@@ -11,7 +11,6 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.Federator.RetryQueue
-  alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Websub
 
   require Logger
@@ -77,9 +76,8 @@ defmodule Pleroma.Web.Federator do
   def perform(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
 
-    with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      {:ok, actor} = WebFinger.ensure_keys_present(actor)
-
+    with %User{} = actor <- User.get_cached_by_ap_id(activity.data["actor"]),
+         {:ok, actor} <- User.ensure_keys_present(actor) do
       Publisher.publish(actor, activity)
     end
   end

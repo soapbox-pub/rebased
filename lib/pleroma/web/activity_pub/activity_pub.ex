@@ -833,6 +833,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_bookmark(opts["user"])
   end
 
+  defp maybe_set_thread_muted_field(query, %{"skip_preload" => true}), do: query
+
+  defp maybe_set_thread_muted_field(query, opts) do
+    query
+    |> Activity.with_set_thread_muted_field(opts["user"])
+  end
+
   defp maybe_order(query, %{order: :desc}) do
     query
     |> order_by(desc: :id)
@@ -849,6 +856,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     Activity
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
+    |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
@@ -918,7 +926,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def user_data_from_user_object(data) do
+  defp object_to_user_data(data) do
     avatar =
       data["icon"]["url"] &&
         %{
@@ -965,9 +973,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, user_data}
   end
 
+  def user_data_from_user_object(data) do
+    with {:ok, data} <- MRF.filter(data),
+         {:ok, data} <- object_to_user_data(data) do
+      {:ok, data}
+    else
+      e -> {:error, e}
+    end
+  end
+
   def fetch_and_prepare_user_from_ap_id(ap_id) do
-    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id) do
-      user_data_from_user_object(data)
+    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
+         {:ok, data} <- user_data_from_user_object(data) do
+      {:ok, data}
     else
       e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
     end
