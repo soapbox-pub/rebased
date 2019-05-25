@@ -1,12 +1,11 @@
 defmodule Pleroma.Object.Fetcher do
+  alias Pleroma.HTTP
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.OStatus
 
   require Logger
-
-  @httpoison Application.get_env(:pleroma, :httpoison)
 
   defp reinject_object(data) do
     Logger.debug("Reinjecting object #{data["id"]}")
@@ -78,7 +77,7 @@ defmodule Pleroma.Object.Fetcher do
 
     with true <- String.starts_with?(id, "http"),
          {:ok, %{body: body, status: code}} when code in 200..299 <-
-           @httpoison.get(
+           HTTP.get(
              id,
              [{:Accept, "application/activity+json"}]
            ),

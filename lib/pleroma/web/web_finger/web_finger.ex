@@ -3,8 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFinger do
-  @httpoison Application.get_env(:pleroma, :httpoison)
-
+  alias Pleroma.HTTP
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.Federator.Publisher
@@ -176,11 +175,11 @@ defmodule Pleroma.Web.WebFinger do
 
   def find_lrdd_template(domain) do
     with {:ok, %{status: status, body: body}} when status in 200..299 <-
-           @httpoison.get("http://#{domain}/.well-known/host-meta", []) do
+           HTTP.get("http://#{domain}/.well-known/host-meta", []) do
       get_template_from_xml(body)
     else
       _ ->
-        with {:ok, %{body: body}} <- @httpoison.get("https://#{domain}/.well-known/host-meta", []) do
+        with {:ok, %{body: body}} <- HTTP.get("https://#{domain}/.well-known/host-meta", []) do
           get_template_from_xml(body)
         else
           e -> {:error, "Can't find LRDD template: #{inspect(e)}"}
@@ -209,7 +208,7 @@ defmodule Pleroma.Web.WebFinger do
       end
 
     with response <-
-           @httpoison.get(
+           HTTP.get(
              address,
              Accept: "application/xrd+xml,application/jrd+json"
            ),
