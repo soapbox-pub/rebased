@@ -12,8 +12,6 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.Federator.Publisher
 
-  plug(Pleroma.Web.FederatingPlug)
-
   def schemas(conn, _params) do
     response = %{
       links: [
