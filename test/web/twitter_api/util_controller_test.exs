@@ -110,8 +110,14 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       user = Repo.get(User, user.id)
 
-      assert %{"remote" => false, "local" => true, "followers" => false, "follows" => true} ==
-               user.info.notification_settings
+      assert %{
+               "remote" => false,
+               "local" => true,
+               "followers" => false,
+               "follows" => true,
+               "non_follows" => true,
+               "non_followers" => true
+             } == user.info.notification_settings
     end
   end
 
