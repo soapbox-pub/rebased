@@ -75,6 +75,11 @@ defmodule Pleroma.User.Info do
   end
 
   def update_notification_settings(info, settings) do
+    settings =
+      settings
+      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
+      |> Map.new()
+
     notification_settings =
       info.notification_settings
       |> Map.merge(settings)
