@@ -113,11 +113,25 @@ defmodule Pleroma.NotificationTest do
       assert nil == Notification.create_notification(activity, followed)
     end
 
+    test "it disables notifications from non-followers" do
+      follower = insert(:user)
+      followed = insert(:user, info: %{notification_settings: %{"non_followers" => false}})
+      {:ok, activity} = CommonAPI.post(follower, %{"status" => "hey @#{followed.nickname}"})
+      assert nil == Notification.create_notification(activity, followed)
+    end
+
     test "it disables notifications from people the user follows" do
       follower = insert(:user, info: %{notification_settings: %{"follows" => false}})
       followed = insert(:user)
       User.follow(follower, followed)
       follower = Repo.get(User, follower.id)
+      {:ok, activity} = CommonAPI.post(followed, %{"status" => "hey @#{follower.nickname}"})
+      assert nil == Notification.create_notification(activity, follower)
+    end
+
+    test "it disables notifications from people the user does not follow" do
+      follower = insert(:user, info: %{notification_settings: %{"non_follows" => false}})
+      followed = insert(:user)
       {:ok, activity} = CommonAPI.post(followed, %{"status" => "hey @#{follower.nickname}"})
       assert nil == Notification.create_notification(activity, follower)
     end
