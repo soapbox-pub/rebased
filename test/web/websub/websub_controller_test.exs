@@ -52,7 +52,7 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
   end
 
   describe "websub_incoming" do
-    test "handles incoming feed updates", %{conn: conn} do
+    test "accepts incoming feed updates", %{conn: conn} do
       websub = insert(:websub_client_subscription)
       doc = "some stuff"
       signature = Websub.sign(websub.secret, doc)
@@ -64,8 +64,6 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
         |> post("/push/subscriptions/#{websub.id}", doc)
 
       assert response(conn, 200) == "OK"
-
-      assert length(Repo.all(Activity)) == 1
     end
 
     test "rejects incoming feed updates with the wrong signature", %{conn: conn} do
@@ -80,8 +78,6 @@ defmodule Pleroma.Web.Websub.WebsubControllerTest do
         |> post("/push/subscriptions/#{websub.id}", doc)
 
       assert response(conn, 500) == "Error"
-
-      assert Enum.empty?(Repo.all(Activity))
     end
   end
 end
