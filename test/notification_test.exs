@@ -78,33 +78,6 @@ defmodule Pleroma.NotificationTest do
       assert nil == Notification.create_notification(activity, muter)
     end
 
-    test "it disables notifications from people on remote instances" do
-      user = insert(:user, info: %{notification_settings: %{"remote" => false}})
-      other_user = insert(:user)
-
-      create_activity = %{
-        "@context" => "https://www.w3.org/ns/activitystreams",
-        "type" => "Create",
-        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-        "actor" => other_user.ap_id,
-        "object" => %{
-          "type" => "Note",
-          "content" => "Hi @#{user.nickname}",
-          "attributedTo" => other_user.ap_id
-        }
-      }
-
-      {:ok, %{local: false} = activity} = Transmogrifier.handle_incoming(create_activity)
-      assert nil == Notification.create_notification(activity, user)
-    end
-
-    test "it disables notifications from people on the local instance" do
-      user = insert(:user, info: %{notification_settings: %{"local" => false}})
-      other_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
-      assert nil == Notification.create_notification(activity, user)
-    end
-
     test "it disables notifications from followers" do
       follower = insert(:user)
       followed = insert(:user, info: %{notification_settings: %{"followers" => false}})
