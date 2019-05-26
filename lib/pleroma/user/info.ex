@@ -48,8 +48,6 @@ defmodule Pleroma.User.Info do
 
     field(:notification_settings, :map,
       default: %{
-        "remote" => true,
-        "local" => true,
         "followers" => true,
         "follows" => true,
         "non_follows" => true,
@@ -83,7 +81,7 @@ defmodule Pleroma.User.Info do
     notification_settings =
       info.notification_settings
       |> Map.merge(settings)
-      |> Map.take(["remote", "local", "followers", "follows", "non_follows", "non_followers"])
+      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
 
     params = %{notification_settings: notification_settings}
 

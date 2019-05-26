@@ -169,7 +169,6 @@ defmodule Pleroma.Notification do
     [
       :self,
       :blocked,
-      :local,
       :muted,
       :followers,
       :follows,
@@ -188,12 +187,6 @@ defmodule Pleroma.Notification do
     actor = activity.data["actor"]
     User.blocks?(user, %{ap_id: actor})
   end
-
-  def skip?(:local, %{local: true}, %{info: %{notification_settings: %{"local" => false}}}),
-    do: true
-
-  def skip?(:local, %{local: false}, %{info: %{notification_settings: %{"remote" => false}}}),
-    do: true
 
   def skip?(:muted, activity, user) do
     actor = activity.data["actor"]
