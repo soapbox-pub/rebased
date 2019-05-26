@@ -74,8 +74,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
                actor_host
              ),
            user <- User.get_cached_by_ap_id(object["actor"]),
-           true <- "https://www.w3.org/ns/activitystreams#Public" in object["to"],
-           true <- user.follower_address in object["cc"] do
+           true <- "https://www.w3.org/ns/activitystreams#Public" in object["to"] do
         to =
           List.delete(object["to"], "https://www.w3.org/ns/activitystreams#Public") ++
             [user.follower_address]
