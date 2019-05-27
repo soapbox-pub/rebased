@@ -24,6 +24,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   import ExUnit.CaptureLog
   import Tesla.Mock
 
+  @image "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
+
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
@@ -475,6 +477,101 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     }
 
     assert expected == json_response(conn, 200)
+  end
+
+  test "user avatar can be set", %{conn: conn} do
+    user = insert(:user)
+    avatar_image = File.read!("test/fixtures/avatar_data_uri")
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_avatar", %{img: avatar_image})
+
+    user = refresh_record(user)
+
+    assert %{
+             "name" => _,
+             "type" => _,
+             "url" => [
+               %{
+                 "href" => _,
+                 "mediaType" => _,
+                 "type" => _
+               }
+             ]
+           } = user.avatar
+
+    assert %{"url" => _} = json_response(conn, 200)
+  end
+
+  test "user avatar can be reset", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_avatar", %{img: ""})
+
+    user = User.get_cached_by_id(user.id)
+
+    assert user.avatar == nil
+
+    assert %{"url" => nil} = json_response(conn, 200)
+  end
+
+  test "can set profile banner", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_banner", %{"banner" => @image})
+
+    user = refresh_record(user)
+    assert user.info.banner["type"] == "Image"
+
+    assert %{"url" => _} = json_response(conn, 200)
+  end
+
+  test "can reset profile banner", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_banner", %{"banner" => ""})
+
+    user = refresh_record(user)
+    assert user.info.banner == %{}
+
+    assert %{"url" => nil} = json_response(conn, 200)
+  end
+
+  test "background image can be set", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_background", %{"img" => @image})
+
+    user = refresh_record(user)
+    assert user.info.background["type"] == "Image"
+    assert %{"url" => _} = json_response(conn, 200)
+  end
+
+  test "background image can be reset", %{conn: conn} do
+    user = insert(:user)
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> patch("/api/v1/accounts/update_background", %{"img" => ""})
+
+    user = refresh_record(user)
+    assert user.info.background == %{}
+    assert %{"url" => nil} = json_response(conn, 200)
   end
 
   test "creates an oauth app", %{conn: conn} do
