@@ -437,27 +437,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user = insert(:user, local: false, tags: ["foo", "bar"])
       conn = get(conn, "/api/pleroma/admin/users?page=1")
 
+      users =
+        [
+          %{
+            "deactivated" => admin.info.deactivated,
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "local" => true,
+            "tags" => []
+          },
+          %{
+            "deactivated" => user.info.deactivated,
+            "id" => user.id,
+            "nickname" => user.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => false,
+            "tags" => ["foo", "bar"]
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
       assert json_response(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => admin.info.deactivated,
-                   "id" => admin.id,
-                   "nickname" => admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => true,
-                   "tags" => []
-                 },
-                 %{
-                   "deactivated" => user.info.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => false,
-                   "tags" => ["foo", "bar"]
-                 }
-               ]
+               "users" => users
              }
     end
 
@@ -659,35 +663,39 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> assign(:user, admin)
         |> get("/api/pleroma/admin/users?filters=local")
 
+      users =
+        [
+          %{
+            "deactivated" => user.info.deactivated,
+            "id" => user.id,
+            "nickname" => user.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => true,
+            "tags" => []
+          },
+          %{
+            "deactivated" => admin.info.deactivated,
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "local" => true,
+            "tags" => []
+          },
+          %{
+            "deactivated" => false,
+            "id" => old_admin.id,
+            "local" => true,
+            "nickname" => old_admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "tags" => []
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
       assert json_response(conn, 200) == %{
                "count" => 3,
                "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.info.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => []
-                 },
-                 %{
-                   "deactivated" => admin.info.deactivated,
-                   "id" => admin.id,
-                   "nickname" => admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => true,
-                   "tags" => []
-                 },
-                 %{
-                   "deactivated" => false,
-                   "id" => old_admin.id,
-                   "local" => true,
-                   "nickname" => old_admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "tags" => []
-                 }
-               ]
+               "users" => users
              }
     end
 
@@ -698,27 +706,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?filters=is_admin")
 
+      users =
+        [
+          %{
+            "deactivated" => false,
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "local" => admin.local,
+            "tags" => []
+          },
+          %{
+            "deactivated" => false,
+            "id" => second_admin.id,
+            "nickname" => second_admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "local" => second_admin.local,
+            "tags" => []
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
       assert json_response(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => false,
-                   "id" => admin.id,
-                   "nickname" => admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => admin.local,
-                   "tags" => []
-                 },
-                 %{
-                   "deactivated" => false,
-                   "id" => second_admin.id,
-                   "nickname" => second_admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => second_admin.local,
-                   "tags" => []
-                 }
-               ]
+               "users" => users
              }
     end
 
@@ -753,27 +765,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?tags[]=first&tags[]=second")
 
+      users =
+        [
+          %{
+            "deactivated" => false,
+            "id" => user1.id,
+            "nickname" => user1.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => user1.local,
+            "tags" => ["first"]
+          },
+          %{
+            "deactivated" => false,
+            "id" => user2.id,
+            "nickname" => user2.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => user2.local,
+            "tags" => ["second"]
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
       assert json_response(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => false,
-                   "id" => user1.id,
-                   "nickname" => user1.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => user1.local,
-                   "tags" => ["first"]
-                 },
-                 %{
-                   "deactivated" => false,
-                   "id" => user2.id,
-                   "nickname" => user2.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => user2.local,
-                   "tags" => ["second"]
-                 }
-               ]
+               "users" => users
              }
     end
 
