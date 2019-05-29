@@ -1084,7 +1084,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       from([a, o] in Activity.with_preloaded_object(Activity),
         where: fragment("?->>'type' = 'Create'", a.data),
         where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
-        limit: 20
+        limit: 40
       )
 
     q =
