@@ -2,7 +2,7 @@ defmodule Pleroma.DigestEmailWorker do
   import Ecto.Query
 
   def run do
-    config = Application.get_env(:pleroma, :email_notifications)[:digest]
+    config = Pleroma.Config.get([:email_notifications, :digest])
     negative_interval = -Map.fetch!(config, :interval)
     inactivity_threshold = Map.fetch!(config, :inactivity_threshold)
     inactive_users_query = Pleroma.User.list_inactive_users_query(inactivity_threshold)
