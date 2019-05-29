@@ -5,31 +5,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [unreleased]
 ### Added
+- Optional SSH access mode. (Needs `erlang-ssh` package on some distributions).
+- [MongooseIM](https://github.com/esl/MongooseIM) http authentication support.
 - LDAP authentication
 - External OAuth provider authentication
 - A [job queue](https://git.pleroma.social/pleroma/pleroma_job_queue) for federation, emails, web push, etc.
 - [Prometheus](https://prometheus.io/) metrics
 - Support for Mastodon's remote interaction
+- Mix Tasks: `mix pleroma.database bump_all_conversations`
 - Mix Tasks: `mix pleroma.database remove_embedded_objects`
+- Mix Tasks: `mix pleroma.database update_users_following_followers_counts`
+- Mix Tasks: `mix pleroma.user toggle_confirmed`
 - Federation: Support for reports
 - Configuration: `safe_dm_mentions` option
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
 - Configuration: Media proxy `whitelist` option
+- Configuration: `report_uri` option
 - Pleroma API: User subscriptions
 - Pleroma API: Healthcheck endpoint
+- Pleroma API: `/api/v1/pleroma/mascot` per-user frontend mascot configuration endpoints
 - Admin API: Endpoints for listing/revoking invite tokens
 - Admin API: Endpoints for making users follow/unfollow each other
 - Admin API: added filters (role, tags, email, name) for users endpoint
+- Admin API: Endpoints for managing reports
+- Admin API: Endpoints for deleting and changing the scope of individual reported statuses
+- AdminFE: initial release with basic user management accessible at /pleroma/admin/
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
 - Mastodon API: `/api/v1/pleroma/accounts/:id/favourites` (API extension)
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
+- Mastodon API: `POST /api/v1/accounts` (account creation API)
 - ActivityPub C2S: OAuth endpoints
-- Metadata RelMe provider
+- Metadata: RelMe provider
 - OAuth: added support for refresh tokens
 - Emoji packs and emoji pack manager
+- Object pruning (`mix pleroma.database prune_objects`)
+- OAuth: added job to clean expired access tokens
+- MRF: Support for rejecting reports from specific instances (`mrf_simple`)
+- MRF: Support for stripping avatars and banner images from specific instances (`mrf_simple`)
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
@@ -42,8 +57,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Federation: Removed `inReplyToStatusId` from objects
 - Configuration: Dedupe enabled by default
 - Configuration: Added `extra_cookie_attrs` for setting non-standard cookie attributes. Defaults to ["SameSite=Lax"] so that remote follows work.
-- Pleroma API: Support for emoji tags in `/api/pleroma/emoji` resulting in a breaking API change
 - Timelines: Messages involving people you have blocked will be excluded from the timeline in all cases instead of just repeats.
+- Admin API: Move the user related API to `api/pleroma/admin/users`
+- Pleroma API: Support for emoji tags in `/api/pleroma/emoji` resulting in a breaking API change
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`
 - Mastodon API: Provide plaintext versions of cw/content in the Status entity
@@ -57,17 +73,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `with_muted` parameter to timeline endpoints
 - Mastodon API: Actual reblog hiding instead of a dummy
 - Mastodon API: Remove attachment limit in the Status entity
+- Mastodon API: Added support max_id & since_id for bookmark timeline endpoints.
 - Deps: Updated Cowboy to 2.6
 - Deps: Updated Ecto to 3.0.7
 - Don't ship finmoji by default, they can be installed as an emoji pack
-- Mastodon API: Added support max_id & since_id for bookmark timeline endpoints.
+- Hide deactivated users and their statuses
+- Posts which are marked sensitive or tagged nsfw no longer have link previews.
+- HTTP connection timeout is now set to 10 seconds.
+- Respond with a 404 Not implemented JSON error message when requested API is not implemented
 
 ### Fixed
 - Added an FTS index on objects. Running `vacuum analyze` and setting a larger `work_mem` is recommended.
 - Followers counter not being updated when a follower is blocked
 - Deactivated users being able to request an access token
 - Limit on request body in rich media/relme parsers being ignored resulting in a possible memory leak
-- proper Twitter Card generation instead of a dummy
+- Proper Twitter Card generation instead of a dummy
 - Deletions failing for users with a large number of posts
 - NodeInfo: Include admins in `staffAccounts`
 - ActivityPub: Crashing when requesting empty local user's outbox
@@ -91,6 +111,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Handling of `reblogs` in `/api/v1/accounts/:id/follow`
 - Mastodon API: Correct `reblogged`, `favourited`, and `bookmarked` values in the reblog status JSON
 - Mastodon API: Exposing default scope of the user to anyone
+- Mastodon API: Make `irreversible` field default to `false` [`POST /api/v1/filters`]
+- User-Agent is now sent correctly for all HTTP requests.
+- MRF: Simple policy now properly delists imported or relayed statuses
+
+## Removed
+- Configuration: `config :pleroma, :fe` in favor of the more flexible `config :pleroma, :frontend_configurations`
 
 ## [0.9.9999] - 2019-04-05
 ### Security

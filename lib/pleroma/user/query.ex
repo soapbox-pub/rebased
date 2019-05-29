@@ -118,7 +118,11 @@ defmodule Pleroma.User.Query do
     |> where([u], not is_nil(u.nickname))
   end
 
-  defp compose_query({:deactivated, _}, query) do
+  defp compose_query({:deactivated, false}, query) do
+    User.restrict_deactivated(query)
+  end
+
+  defp compose_query({:deactivated, true}, query) do
     where(query, [u], fragment("?->'deactivated' @> 'true'", u.info))
     |> where([u], not is_nil(u.nickname))
   end

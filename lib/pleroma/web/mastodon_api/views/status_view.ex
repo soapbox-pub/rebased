@@ -16,6 +16,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
+  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
+
   # TODO: Add cached version.
   defp get_replied_to_activities(activities) do
     activities
@@ -155,6 +157,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     bookmarked = Activity.get_bookmark(activity, opts[:for]) != nil
 
+    thread_muted? =
+      case activity.thread_muted? do
+        thread_muted? when is_boolean(thread_muted?) -> thread_muted?
+        nil -> CommonAPI.thread_muted?(user, activity)
+      end
+
     attachment_data = object.data["attachment"] || []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
 
@@ -226,7 +234,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: reblogged?(activity, opts[:for]),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
-      muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),
+      muted: thread_muted? || User.mutes?(opts[:for], user),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
       spoiler_text: summary_html,
@@ -337,30 +345,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
     else
       nil
-    end
-  end
-
-  def get_visibility(object) do
-    public = "https://www.w3.org/ns/activitystreams#Public"
-    to = object.data["to"] || []
-    cc = object.data["cc"] || []
-
-    cond do
-      public in to ->
-        "public"
-
-      public in cc ->
-        "unlisted"
-
-      # this should use the sql for the object's activity
-      Enum.any?(to, &String.contains?(&1, "/followers")) ->
-        "private"
-
-      length(cc) > 0 ->
-        "private"
-
-      true ->
-        "direct"
     end
   end
 

@@ -35,6 +35,13 @@ defmodule Pleroma.Notification do
   def for_user_query(user) do
     Notification
     |> where(user_id: ^user.id)
+    |> where(
+      [n, a],
+      fragment(
+        "? not in (SELECT ap_id FROM users WHERE info->'deactivated' @> 'true')",
+        a.actor
+      )
+    )
     |> join(:inner, [n], activity in assoc(n, :activity))
     |> join(:left, [n, a], object in Object,
       on:

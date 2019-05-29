@@ -10,8 +10,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.MRF
-
-  plug(Pleroma.Web.FederatingPlug)
+  alias Pleroma.Web.Federator.Publisher
 
   def schemas(conn, _params) do
     response = %{
@@ -137,7 +136,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         name: Pleroma.Application.name() |> String.downcase(),
         version: Pleroma.Application.version()
       },
-      protocols: ["ostatus", "activitypub"],
+      protocols: Publisher.gather_nodeinfo_protocol_names(),
       services: %{
         inbound: [],
         outbound: []

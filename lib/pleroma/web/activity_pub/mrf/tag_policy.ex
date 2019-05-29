@@ -31,7 +31,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
 
     object =
       object
-      |> Map.put("tags", tags)
+      |> Map.put("tag", tags)
       |> Map.put("sensitive", true)
 
     message = Map.put(message, "object", object)

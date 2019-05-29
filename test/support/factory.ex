@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Factory do
   use ExMachina.Ecto, repo: Pleroma.Repo
+  alias Pleroma.User
 
   def participation_factory do
     conversation = insert(:conversation)
@@ -23,7 +24,7 @@ defmodule Pleroma.Factory do
   end
 
   def user_factory do
-    user = %Pleroma.User{
+    user = %User{
       name: sequence(:name, &"Test テスト User #{&1}"),
       email: sequence(:email, &"user#{&1}@example.com"),
       nickname: sequence(:nickname, &"nick#{&1}"),
@@ -35,16 +36,16 @@ defmodule Pleroma.Factory do
 
     %{
       user
-      | ap_id: Pleroma.User.ap_id(user),
-        follower_address: Pleroma.User.ap_followers(user),
-        following: [Pleroma.User.ap_id(user)]
+      | ap_id: User.ap_id(user),
+        follower_address: User.ap_followers(user),
+        following: [User.ap_id(user)]
     }
   end
 
   def note_factory(attrs \\ %{}) do
     text = sequence(:text, &"This is :moominmamma: note #{&1}")
 
-    user = insert(:user)
+    user = attrs[:user] || insert(:user)
 
     data = %{
       "type" => "Note",
@@ -114,7 +115,8 @@ defmodule Pleroma.Factory do
   end
 
   def note_activity_factory(attrs \\ %{}) do
-    note = attrs[:note] || insert(:note)
+    user = attrs[:user] || insert(:user)
+    note = attrs[:note] || insert(:note, user: user)
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),

@@ -4,10 +4,15 @@
 
 defmodule Pleroma.Web.Websub do
   alias Ecto.Changeset
+  alias Pleroma.Activity
+  alias Pleroma.HTTP
   alias Pleroma.Instances
   alias Pleroma.Repo
+  alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Federator
+  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.OStatus.FeedRepresenter
   alias Pleroma.Web.Router.Helpers
@@ -18,9 +23,9 @@ defmodule Pleroma.Web.Websub do
 
   import Ecto.Query
 
-  @httpoison Application.get_env(:pleroma, :httpoison)
+  @behaviour Pleroma.Web.Federator.Publisher
 
-  def verify(subscription, getter \\ &@httpoison.get/3) do
+  def verify(subscription, getter \\ &HTTP.get/3) do
     challenge = Base.encode16(:crypto.strong_rand_bytes(8))
     lease_seconds = NaiveDateTime.diff(subscription.valid_until, subscription.updated_at)
     lease_seconds = lease_seconds |> to_string
@@ -56,6 +61,13 @@ defmodule Pleroma.Web.Websub do
     "Undo",
     "Delete"
   ]
+
+  def is_representable?(%Activity{data: %{"type" => type}} = activity)
+      when type in @supported_activities,
+      do: Visibility.is_public?(activity)
+
+  def is_representable?(_), do: false
+
   def publish(topic, user, %{data: %{"type" => type}} = activity)
       when type in @supported_activities do
     response =
@@ -88,11 +100,13 @@ defmodule Pleroma.Web.Websub do
         unreachable_since: reachable_callbacks_metadata[sub.callback]
       }
 
-      Federator.publish_single_websub(data)
+      Publisher.enqueue_one(__MODULE__, data)
     end)
   end
 
   def publish(_, _, _), do: ""
+
+  def publish(actor, activity), do: publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
 
   def sign(secret, doc) do
     :crypto.hmac(:sha, secret, to_string(doc)) |> Base.encode16() |> String.downcase()
@@ -192,7 +206,7 @@ defmodule Pleroma.Web.Websub do
     requester.(subscription)
   end
 
-  def gather_feed_data(topic, getter \\ &@httpoison.get/1) do
+  def gather_feed_data(topic, getter \\ &HTTP.get/1) do
     with {:ok, response} <- getter.(topic),
          status when status in 200..299 <- response.status,
          body <- response.body,
@@ -221,7 +235,7 @@ defmodule Pleroma.Web.Websub do
     end
   end
 
-  def request_subscription(websub, poster \\ &@httpoison.post/3, timeout \\ 10_000) do
+  def request_subscription(websub, poster \\ &HTTP.post/3, timeout \\ 10_000) do
     data = [
       "hub.mode": "subscribe",
       "hub.topic": websub.topic,
@@ -279,7 +293,7 @@ defmodule Pleroma.Web.Websub do
     Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
 
     with {:ok, %{status: code}} when code in 200..299 <-
-           @httpoison.post(
+           HTTP.post(
              callback,
              xml,
              [
@@ -299,4 +313,20 @@ defmodule Pleroma.Web.Websub do
         {:error, response}
     end
   end
+
+  def gather_webfinger_links(%User{} = user) do
+    [
+      %{
+        "rel" => "http://schemas.google.com/g/2010#updates-from",
+        "type" => "application/atom+xml",
+        "href" => OStatus.feed_path(user)
+      },
+      %{
+        "rel" => "http://ostatus.org/schema/1.0/subscribe",
+        "template" => OStatus.remote_follow_path()
+      }
+    ]
+  end
+
+  def gather_nodeinfo_protocol_names, do: ["ostatus"]
 end

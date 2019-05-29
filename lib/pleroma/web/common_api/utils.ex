@@ -223,7 +223,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         in_reply_to,
         tags,
         cw \\ nil,
-        cc \\ []
+        cc \\ [],
+        sensitive \\ false
       ) do
     object = %{
       "type" => "Note",
@@ -231,19 +232,18 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "cc" => cc,
       "content" => content_html,
       "summary" => cw,
+      "sensitive" => !Enum.member?(["false", "False", "0", false], sensitive),
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
-    if in_reply_to do
-      in_reply_to_object = Object.normalize(in_reply_to)
-
-      object
-      |> Map.put("inReplyTo", in_reply_to_object.data["id"])
+    with false <- is_nil(in_reply_to),
+         %Object{} = in_reply_to_object <- Object.normalize(in_reply_to) do
+      Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
     else
-      object
+      _ -> object
     end
   end
 

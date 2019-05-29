@@ -10,7 +10,9 @@ example.tld  {
 
   gzip
 
-  proxy / localhost:4000 {
+  # this is explicitly IPv4 since Pleroma.Web.Endpoint binds on IPv4 only
+  # and `localhost.` resolves to [::0] on some systems: see issue #930
+  proxy / 127.0.0.1:4000 {
     websocket
     transparent
   }

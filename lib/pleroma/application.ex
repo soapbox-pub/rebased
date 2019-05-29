@@ -111,6 +111,7 @@ defmodule Pleroma.Application do
         hackney_pool_children() ++
         [
           worker(Pleroma.Web.Federator.RetryQueue, []),
+          worker(Pleroma.Web.OAuth.Token.CleanWorker, []),
           worker(Pleroma.Stats, []),
           worker(Task, [&Pleroma.Web.Push.init/0], restart: :temporary, id: :web_push_init),
           worker(Task, [&Pleroma.Web.Federator.init/0], restart: :temporary, id: :federator_init)
@@ -134,19 +135,22 @@ defmodule Pleroma.Application do
   defp setup_instrumenters do
     require Prometheus.Registry
 
-    :ok =
-      :telemetry.attach(
-        "prometheus-ecto",
-        [:pleroma, :repo, :query],
-        &Pleroma.Repo.Instrumenter.handle_event/4,
-        %{}
-      )
+    if Application.get_env(:prometheus, Pleroma.Repo.Instrumenter) do
+      :ok =
+        :telemetry.attach(
+          "prometheus-ecto",
+          [:pleroma, :repo, :query],
+          &Pleroma.Repo.Instrumenter.handle_event/4,
+          %{}
+        )
+
+      Pleroma.Repo.Instrumenter.setup()
+    end
 
     Prometheus.Registry.register_collector(:prometheus_process_collector)
     Pleroma.Web.Endpoint.MetricsExporter.setup()
     Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
     Pleroma.Web.Endpoint.Instrumenter.setup()
-    Pleroma.Repo.Instrumenter.setup()
   end
 
   def enabled_hackney_pools do

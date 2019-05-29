@@ -44,6 +44,7 @@ defmodule Pleroma.User.Info do
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
     field(:email_notifications, :map, default: %{"digest" => false})
+    field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
 
     field(:notification_settings, :map,
@@ -237,21 +238,23 @@ defmodule Pleroma.User.Info do
     ])
   end
 
-  def confirmation_changeset(info, :confirmed) do
-    confirmation_changeset(info, %{
-      confirmation_pending: false,
-      confirmation_token: nil
-    })
-  end
+  @spec confirmation_changeset(Info.t(), keyword()) :: Changeset.t()
+  def confirmation_changeset(info, opts) do
+    need_confirmation? = Keyword.get(opts, :need_confirmation)
 
-  def confirmation_changeset(info, :unconfirmed) do
-    confirmation_changeset(info, %{
-      confirmation_pending: true,
-      confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
-    })
-  end
+    params =
+      if need_confirmation? do
+        %{
+          confirmation_pending: true,
+          confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+        }
+      else
+        %{
+          confirmation_pending: false,
+          confirmation_token: nil
+        }
+      end
 
-  def confirmation_changeset(info, params) do
     cast(info, params, [:confirmation_pending, :confirmation_token])
   end
 
@@ -269,6 +272,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:flavour])
     |> validate_required([:flavour])
+  end
+
+  def mascot_update(info, url) do
+    params = %{mascot: url}
+
+    info
+    |> cast(params, [:mascot])
+    |> validate_required([:mascot])
   end
 
   def set_source_data(info, source_data) do

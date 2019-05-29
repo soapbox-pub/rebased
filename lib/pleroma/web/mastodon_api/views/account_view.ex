@@ -40,7 +40,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     follow_activity = Pleroma.Web.ActivityPub.Utils.fetch_latest_follow(user, target)
 
     requested =
-      if follow_activity do
+      if follow_activity && !User.following?(target, user) do
         follow_activity.data["state"] == "pending"
       else
         false
@@ -112,7 +112,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       fields: fields,
       bot: bot,
       source: %{
-        note: "",
+        note: HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
         sensitive: false,
         pleroma: %{}
       },

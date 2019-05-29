@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
   alias Pleroma.Conversation
-  alias Pleroma.Instances
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
@@ -15,7 +14,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
-  alias Pleroma.Web.Federator
   alias Pleroma.Web.WebFinger
 
   import Ecto.Query
@@ -23,8 +21,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   import Pleroma.Web.ActivityPub.Visibility
 
   require Logger
-
-  @httpoison Application.get_env(:pleroma, :httpoison)
 
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
@@ -137,9 +133,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
-      Task.start(fn ->
-        Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-      end)
+      PleromaJobQueue.enqueue(:background, Pleroma.Web.RichMedia.Helpers, [:fetch, activity])
 
       Notification.create_notifications(activity)
 
@@ -546,8 +540,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
             )
         )
 
-      Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
       query
     else
       Logger.error("Could not restrict visibility to #{visibility}")
@@ -563,8 +555,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
       )
 
-    Ecto.Adapters.SQL.to_sql(:all, Repo, query)
-
     query
   end
 
@@ -574,6 +564,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_visibility(query, _visibility), do: query
+
+  defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}) do
+    query =
+      from(
+        a in query,
+        where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
+      )
+
+    query
+  end
+
+  defp restrict_thread_visibility(query, _), do: query
 
   def fetch_user_activities(user, reading_user, params \\ %{}) do
     params =
@@ -701,6 +703,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_type(query, _), do: query
 
+  defp restrict_state(query, %{"state" => state}) do
+    from(activity in query, where: fragment("?->>'state' = ?", activity.data, ^state))
+  end
+
+  defp restrict_state(query, _), do: query
+
   defp restrict_favorited_by(query, %{"favorited_by" => ap_id}) do
     from(
       activity in query,
@@ -756,8 +764,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     blocks = info.blocks || []
     domain_blocks = info.domain_blocks || []
 
+    query =
+      if has_named_binding?(query, :object), do: query, else: Activity.with_joined_object(query)
+
     from(
-      activity in query,
+      [activity, object: o] in query,
       where: fragment("not (? = ANY(?))", activity.actor, ^blocks),
       where: fragment("not (? && ?)", activity.recipients, ^blocks),
       where:
@@ -767,7 +778,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity.data,
           ^blocks
         ),
-      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks)
+      where: fragment("not (split_part(?, '/', 3) = ANY(?))", activity.actor, ^domain_blocks),
+      where: fragment("not (split_part(?->>'actor', '/', 3) = ANY(?))", o.data, ^domain_blocks)
     )
   end
 
@@ -822,6 +834,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_bookmark(opts["user"])
   end
 
+  defp maybe_set_thread_muted_field(query, %{"skip_preload" => true}), do: query
+
+  defp maybe_set_thread_muted_field(query, opts) do
+    query
+    |> Activity.with_set_thread_muted_field(opts["user"])
+  end
+
   defp maybe_order(query, %{order: :desc}) do
     query
     |> order_by(desc: :id)
@@ -840,6 +859,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     base_query
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
+    |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
@@ -849,15 +869,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_local(opts)
     |> restrict_actor(opts)
     |> restrict_type(opts)
+    |> restrict_state(opts)
     |> restrict_favorited_by(opts)
     |> restrict_blocked(opts)
     |> restrict_muted(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
+    |> restrict_thread_visibility(opts)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
+    |> Activity.restrict_deactivated_users()
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
@@ -886,7 +909,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def user_data_from_user_object(data) do
+  defp object_to_user_data(data) do
     avatar =
       data["icon"]["url"] &&
         %{
@@ -933,9 +956,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, user_data}
   end
 
+  def user_data_from_user_object(data) do
+    with {:ok, data} <- MRF.filter(data),
+         {:ok, data} <- object_to_user_data(data) do
+      {:ok, data}
+    else
+      e -> {:error, e}
+    end
+  end
+
   def fetch_and_prepare_user_from_ap_id(ap_id) do
-    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id) do
-      user_data_from_user_object(data)
+    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
+         {:ok, data} <- user_data_from_user_object(data) do
+      {:ok, data}
     else
       e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
     end
@@ -961,89 +994,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def should_federate?(inbox, public) do
-    if public do
-      true
-    else
-      inbox_info = URI.parse(inbox)
-      !Enum.member?(Pleroma.Config.get([:instance, :quarantined_instances], []), inbox_info.host)
-    end
-  end
-
-  def publish(actor, activity) do
-    remote_followers =
-      if actor.follower_address in activity.recipients do
-        {:ok, followers} = User.get_followers(actor)
-        followers |> Enum.filter(&(!&1.local))
-      else
-        []
-      end
-
-    public = is_public?(activity)
-
-    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
-    json = Jason.encode!(data)
-
-    (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
-    |> Enum.filter(fn user -> User.ap_enabled?(user) end)
-    |> Enum.map(fn %{info: %{source_data: data}} ->
-      (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
-    end)
-    |> Enum.uniq()
-    |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
-    |> Instances.filter_reachable()
-    |> Enum.each(fn {inbox, unreachable_since} ->
-      Federator.publish_single_ap(%{
-        inbox: inbox,
-        json: json,
-        actor: actor,
-        id: activity.data["id"],
-        unreachable_since: unreachable_since
-      })
-    end)
-  end
-
-  def publish_one(%{inbox: inbox, json: json, actor: actor, id: id} = params) do
-    Logger.info("Federating #{id} to #{inbox}")
-    host = URI.parse(inbox).host
-
-    digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
-
-    date =
-      NaiveDateTime.utc_now()
-      |> Timex.format!("{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
-
-    signature =
-      Pleroma.Web.HTTPSignatures.sign(actor, %{
-        host: host,
-        "content-length": byte_size(json),
-        digest: digest,
-        date: date
-      })
-
-    with {:ok, %{status: code}} when code in 200..299 <-
-           result =
-             @httpoison.post(
-               inbox,
-               json,
-               [
-                 {"Content-Type", "application/activity+json"},
-                 {"Date", date},
-                 {"signature", signature},
-                 {"digest", digest}
-               ]
-             ) do
-      if !Map.has_key?(params, :unreachable_since) || params[:unreachable_since],
-        do: Instances.set_reachable(inbox)
-
-      result
-    else
-      {_post_result, response} ->
-        unless params[:unreachable_since], do: Instances.set_unreachable(inbox)
-        {:error, response}
-    end
-  end
-
   # filter out broken threads
   def contain_broken_threads(%Activity{} = activity, %User{} = user) do
     entire_thread_visible_for_user?(activity, user)
@@ -1054,11 +1004,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     contain_broken_threads(activity, user)
   end
 
-  # do post-processing on a timeline
-  def contain_timeline(timeline, user) do
-    timeline
-    |> Enum.filter(fn activity ->
-      contain_activity(activity, user)
-    end)
+  def fetch_direct_messages_query do
+    Activity
+    |> restrict_type(%{"type" => "Create"})
+    |> restrict_visibility(%{visibility: "direct"})
+    |> order_by([activity], asc: activity.id)
   end
 end

@@ -18,14 +18,17 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     end
   end
 
-  defp get_in_reply_to(%{"object" => %{"inReplyTo" => in_reply_to}}) do
-    [
-      {:"thr:in-reply-to",
-       [ref: to_charlist(in_reply_to), href: to_charlist(get_href(in_reply_to))], []}
-    ]
+  defp get_in_reply_to(activity) do
+    with %Object{data: %{"inReplyTo" => in_reply_to}} <- Object.normalize(activity) do
+      [
+        {:"thr:in-reply-to",
+         [ref: to_charlist(in_reply_to), href: to_charlist(get_href(in_reply_to))], []}
+      ]
+    else
+      _ ->
+        []
+    end
   end
-
-  defp get_in_reply_to(_), do: []
 
   defp get_mentions(to) do
     Enum.map(to, fn id ->
@@ -98,7 +101,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
          []}
       end)
 
-    in_reply_to = get_in_reply_to(activity.data)
+    in_reply_to = get_in_reply_to(activity)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
     mentions = activity.recipients |> get_mentions
 
@@ -146,7 +149,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     updated_at = activity.data["published"]
     inserted_at = activity.data["published"]
 
-    _in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
     mentions = activity.recipients |> get_mentions
 
@@ -177,7 +179,6 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     updated_at = activity.data["published"]
     inserted_at = activity.data["published"]
 
-    _in_reply_to = get_in_reply_to(activity.data)
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
     retweeted_activity = Activity.get_create_by_object_ap_id(activity.data["object"])

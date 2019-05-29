@@ -3,19 +3,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.OStatus do
-  @httpoison Application.get_env(:pleroma, :httpoison)
-
   import Ecto.Query
   import Pleroma.Web.XML
   require Logger
 
   alias Pleroma.Activity
+  alias Pleroma.HTTP
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.OStatus.DeleteHandler
   alias Pleroma.Web.OStatus.FollowHandler
   alias Pleroma.Web.OStatus.NoteHandler
@@ -30,7 +30,7 @@ defmodule Pleroma.Web.OStatus do
       is_nil(object) ->
         false
 
-      object.data["type"] == "Note" ->
+      Visibility.is_public?(activity) && object.data["type"] == "Note" ->
         true
 
       true ->
@@ -362,7 +362,7 @@ defmodule Pleroma.Web.OStatus do
   def fetch_activity_from_atom_url(url) do
     with true <- String.starts_with?(url, "http"),
          {:ok, %{body: body, status: code}} when code in 200..299 <-
-           @httpoison.get(
+           HTTP.get(
              url,
              [{:Accept, "application/atom+xml"}]
            ) do
@@ -379,7 +379,7 @@ defmodule Pleroma.Web.OStatus do
     Logger.debug("Trying to fetch #{url}")
 
     with true <- String.starts_with?(url, "http"),
-         {:ok, %{body: body}} <- @httpoison.get(url, []),
+         {:ok, %{body: body}} <- HTTP.get(url, []),
          {:ok, atom_url} <- get_atom_url(body) do
       fetch_activity_from_atom_url(atom_url)
     else

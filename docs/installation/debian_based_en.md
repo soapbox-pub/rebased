@@ -12,6 +12,7 @@ This guide will assume you are on Debian Stretch. This guide should also work wi
 * `erlang-tools`
 * `erlang-parsetools`
 * `erlang-eldap`, if you want to enable ldap authenticator
+* `erlang-ssh`
 * `erlang-xmerl`
 * `git`
 * `build-essential`
@@ -49,7 +50,7 @@ sudo dpkg -i /tmp/erlang-solutions_1.0_all.deb
 
 ```shell
 sudo apt update
-sudo apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools
+sudo apt install elixir erlang-dev erlang-parsetools erlang-xmerl erlang-tools erlang-ssh
 ```
 
 ### Install PleromaBE

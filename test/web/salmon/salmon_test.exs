@@ -5,9 +5,12 @@
 defmodule Pleroma.Web.Salmon.SalmonTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Keys
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.Salmon
+  import Mock
   import Pleroma.Factory
 
   @magickey "RSA.pu0s-halox4tu7wmES1FVSx6u-4wc0YrUFXcqWXZG4-27UmbCOpMQftRCldNRfyA-qLbz-eqiwQhh-1EwUvjsD4cYbAHNGHwTvDOyx5AKthQUP44ykPv7kjKGh3DWKySJvcs9tlUG87hlo7AvnMo9pwRS_Zz2CacQ-MKaXyDepk=.AQAB"
@@ -32,12 +35,6 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     assert Salmon.decode_and_validate(@wrong_magickey, salmon) == :error
   end
 
-  test "generates an RSA private key pem" do
-    {:ok, key} = Salmon.generate_rsa_pem()
-    assert is_binary(key)
-    assert Regex.match?(~r/RSA/, key)
-  end
-
   test "it encodes a magic key from a public key" do
     key = Salmon.decode_key(@magickey)
     magic_key = Salmon.encode_key(key)
@@ -49,18 +46,10 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     _key = Salmon.decode_key(@magickey_friendica)
   end
 
-  test "returns a public and private key from a pem" do
-    pem = File.read!("test/fixtures/private_key.pem")
-    {:ok, private, public} = Salmon.keys_from_pem(pem)
-
-    assert elem(private, 0) == :RSAPrivateKey
-    assert elem(public, 0) == :RSAPublicKey
-  end
-
   test "encodes an xml payload with a private key" do
     doc = File.read!("test/fixtures/incoming_note_activity.xml")
     pem = File.read!("test/fixtures/private_key.pem")
-    {:ok, private, public} = Salmon.keys_from_pem(pem)
+    {:ok, private, public} = Keys.keys_from_pem(pem)
 
     # Let's try a roundtrip.
     {:ok, salmon} = Salmon.encode(private, doc)
@@ -77,7 +66,10 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
              "RSA.uzg6r1peZU0vXGADWxGJ0PE34WvmhjUmydbX5YYdOiXfODVLwCMi1umGoqUDm-mRu4vNEdFBVJU1CpFA7dKzWgIsqsa501i2XqElmEveXRLvNRWFB6nG03Q5OUY2as8eE54BJm0p20GkMfIJGwP6TSFb-ICp3QjzbatuSPJ6xCE=.AQAB"
   end
 
-  test "it pushes an activity to remote accounts it's addressed to" do
+  test_with_mock "it pushes an activity to remote accounts it's addressed to",
+                 Publisher,
+                 [:passthrough],
+                 [] do
     user_data = %{
       info: %{
         salmon: "http://test-example.org/salmon"
@@ -100,12 +92,10 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
 
     {:ok, activity} = Repo.insert(%Activity{data: activity_data, recipients: activity_data["to"]})
     user = User.get_cached_by_ap_id(activity.data["actor"])
-    {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+    {:ok, user} = User.ensure_keys_present(user)
 
-    poster = fn url, _data, _headers ->
-      assert url == "http://test-example.org/salmon"
-    end
+    Salmon.publish(user, activity)
 
-    Salmon.publish(user, activity, poster)
+    assert called(Publisher.enqueue_one(Salmon, %{recipient: mentioned_user}))
   end
 end
