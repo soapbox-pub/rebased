@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   plug(:relay_active? when action in [:relay])
 
   def relay_active?(conn, _) do
-    if Keyword.get(Application.get_env(:pleroma, :instance), :allow_relay) do
+    if Pleroma.Config.get([:instance, :allow_relay]) do
       conn
     else
       conn
