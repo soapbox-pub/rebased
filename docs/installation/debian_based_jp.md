@@ -69,7 +69,7 @@ cd ~
 
 *  Gitリポジトリをクローンします。
 ```
-git clone https://git.pleroma.social/pleroma/pleroma
+ git clone -b master https://git.pleroma.social/pleroma/pleroma
 ```
 
 *  新しいディレクトリに移動します。
