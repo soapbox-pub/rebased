@@ -112,6 +112,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Correct `reblogged`, `favourited`, and `bookmarked` values in the reblog status JSON
 - Mastodon API: Exposing default scope of the user to anyone
 - Mastodon API: Make `irreversible` field default to `false` [`POST /api/v1/filters`]
+- Mastodon API: Replace missing non-nullable Card attributes with empty strings
 - User-Agent is now sent correctly for all HTTP requests.
 - MRF: Simple policy now properly delists imported or relayed statuses
 

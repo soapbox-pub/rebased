@@ -37,7 +37,10 @@ defmodule Pleroma.Web.RichMedia.Parser do
     try do
       {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
 
-      html |> maybe_parse() |> clean_parsed_data() |> check_parsed_data()
+      html
+      |> maybe_parse()
+      |> clean_parsed_data()
+      |> check_parsed_data()
     rescue
       e ->
         {:error, "Parsing error: #{inspect(e)}"}
