@@ -17,9 +17,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   end
 
   def get_policies do
-    Application.get_env(:pleroma, :instance, [])
-    |> Keyword.get(:rewrite_policy, [])
-    |> get_policies()
+    Pleroma.Config.get([:instance, :rewrite_policy], []) |> get_policies()
   end
 
   defp get_policies(policy) when is_atom(policy), do: [policy]

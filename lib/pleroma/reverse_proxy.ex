@@ -61,7 +61,7 @@ defmodule Pleroma.ReverseProxy do
   * `http`: options for [hackney](https://github.com/benoitc/hackney).
 
   """
-  @hackney Application.get_env(:pleroma, :hackney, :hackney)
+  @hackney Pleroma.Config.get(:hackney, :hackney)
 
   @default_hackney_options []
 

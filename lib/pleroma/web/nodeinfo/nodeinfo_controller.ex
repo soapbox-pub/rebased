@@ -32,20 +32,15 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   # returns a nodeinfo 2.0 map, since 2.1 just adds a repository field
   # under software.
   def raw_nodeinfo do
-    instance = Application.get_env(:pleroma, :instance)
-    media_proxy = Application.get_env(:pleroma, :media_proxy)
-    suggestions = Application.get_env(:pleroma, :suggestions)
-    chat = Application.get_env(:pleroma, :chat)
-    gopher = Application.get_env(:pleroma, :gopher)
     stats = Stats.get_stats()
 
     mrf_simple =
-      Application.get_env(:pleroma, :mrf_simple)
+      Config.get(:mrf_simple)
       |> Enum.into(%{})
 
     # This horror is needed to convert regex sigils to strings
     mrf_keyword =
-      Application.get_env(:pleroma, :mrf_keyword, [])
+      Config.get(:mrf_keyword, [])
       |> Enum.map(fn {key, value} ->
         {key,
          Enum.map(value, fn
@@ -74,14 +69,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       MRF.get_policies()
       |> Enum.map(fn policy -> to_string(policy) |> String.split(".") |> List.last() end)
 
-    quarantined = Keyword.get(instance, :quarantined_instances)
-
-    quarantined =
-      if is_list(quarantined) do
-        quarantined
-      else
-        []
-      end
+    quarantined = Config.get([:instance, :quarantined_instances], [])
 
     staff_accounts =
       User.all_superusers()
@@ -92,7 +80,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
       |> Enum.into(%{}, fn {k, v} -> {k, length(v)} end)
 
     federation_response =
-      if Keyword.get(instance, :mrf_transparency) do
+      if Config.get([:instance, :mrf_transparency]) do
         %{
           mrf_policies: mrf_policies,
           mrf_simple: mrf_simple,
@@ -109,22 +97,22 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         "pleroma_api",
         "mastodon_api",
         "mastodon_api_streaming",
-        if Keyword.get(media_proxy, :enabled) do
+        if Config.get([:media_proxy, :enabled]) do
           "media_proxy"
         end,
-        if Keyword.get(gopher, :enabled) do
+        if Config.get([:gopher, :enabled]) do
           "gopher"
         end,
-        if Keyword.get(chat, :enabled) do
+        if Config.get([:chat, :enabled]) do
           "chat"
         end,
-        if Keyword.get(suggestions, :enabled) do
+        if Config.get([:suggestions, :enabled]) do
           "suggestions"
         end,
-        if Keyword.get(instance, :allow_relay) do
+        if Config.get([:instance, :allow_relay]) do
           "relay"
         end,
-        if Keyword.get(instance, :safe_dm_mentions) do
+        if Config.get([:instance, :safe_dm_mentions]) do
           "safe_dm_mentions"
         end
       ]
@@ -141,7 +129,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         inbound: [],
         outbound: []
       },
-      openRegistrations: Keyword.get(instance, :registrations_open),
+      openRegistrations: Config.get([:instance, :registrations_open]),
       usage: %{
         users: %{
           total: stats.user_count || 0
@@ -149,29 +137,29 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         localPosts: stats.status_count || 0
       },
       metadata: %{
-        nodeName: Keyword.get(instance, :name),
-        nodeDescription: Keyword.get(instance, :description),
-        private: !Keyword.get(instance, :public, true),
+        nodeName: Config.get([:instance, :name]),
+        nodeDescription: Config.get([:instance, :description]),
+        private: !Config.get([:instance, :public], true),
         suggestions: %{
-          enabled: Keyword.get(suggestions, :enabled, false),
-          thirdPartyEngine: Keyword.get(suggestions, :third_party_engine, ""),
-          timeout: Keyword.get(suggestions, :timeout, 5000),
-          limit: Keyword.get(suggestions, :limit, 23),
-          web: Keyword.get(suggestions, :web, "")
+          enabled: Config.get([:suggestions, :enabled], false),
+          thirdPartyEngine: Config.get([:suggestions, :third_party_engine], ""),
+          timeout: Config.get([:suggestions, :timeout], 5000),
+          limit: Config.get([:suggestions, :limit], 23),
+          web: Config.get([:suggestions, :web], "")
         },
         staffAccounts: staff_accounts,
         federation: federation_response,
-        postFormats: Keyword.get(instance, :allowed_post_formats),
+        postFormats: Config.get([:instance, :allowed_post_formats]),
         uploadLimits: %{
-          general: Keyword.get(instance, :upload_limit),
-          avatar: Keyword.get(instance, :avatar_upload_limit),
-          banner: Keyword.get(instance, :banner_upload_limit),
-          background: Keyword.get(instance, :background_upload_limit)
+          general: Config.get([:instance, :upload_limit]),
+          avatar: Config.get([:instance, :avatar_upload_limit]),
+          banner: Config.get([:instance, :banner_upload_limit]),
+          background: Config.get([:instance, :background_upload_limit])
         },
-        accountActivationRequired: Keyword.get(instance, :account_activation_required, false),
-        invitesEnabled: Keyword.get(instance, :invites_enabled, false),
+        accountActivationRequired: Config.get([:instance, :account_activation_required], false),
+        invitesEnabled: Config.get([:instance, :invites_enabled], false),
         features: features,
-        restrictedNicknames: Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
+        restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames])
       }
     }
   end
