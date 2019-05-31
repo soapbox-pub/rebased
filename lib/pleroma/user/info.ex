@@ -45,6 +45,7 @@ defmodule Pleroma.User.Info do
     field(:flavour, :string, default: nil)
     field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
+    field(:pleroma_settings_store, :map, default: %{})
 
     field(:notification_settings, :map,
       default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
