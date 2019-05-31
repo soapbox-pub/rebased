@@ -130,7 +130,9 @@ defmodule Pleroma.ActivityTest do
       remote_activity: remote_activity,
       user: user
     } do
-      assert [^remote_activity, ^local_activity] = Activity.search(user, "find me")
+      activities = Enum.sort_by(Activity.search(user, "find me"), & &1.id)
+
+      assert [^local_activity, ^remote_activity] = activities
     end
 
     test "find only local statuses for unauthenticated users", %{local_activity: local_activity} do
