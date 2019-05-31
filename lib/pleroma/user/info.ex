@@ -210,7 +210,8 @@ defmodule Pleroma.User.Info do
       :hide_followers,
       :hide_favorites,
       :background,
-      :show_role
+      :show_role,
+      :pleroma_settings_store
     ])
   end
 
