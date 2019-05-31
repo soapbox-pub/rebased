@@ -1456,7 +1456,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  @supported_flavours ["glitch", "vanilla"]
+  # Note: vanilla is fully unsupported
+  @supported_flavours ["glitch"]
 
   def set_flavour(%{assigns: %{user: user}} = conn, %{"flavour" => flavour} = _params)
       when flavour in @supported_flavours do
