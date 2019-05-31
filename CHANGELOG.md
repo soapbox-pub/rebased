@@ -119,6 +119,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## Removed
 - Configuration: `config :pleroma, :fe` in favor of the more flexible `config :pleroma, :frontend_configurations`
 
+## [0.9.99999] - 2019-05-31
+### Security
+- Mastodon API: Fix lists leaking private posts
+
 ## [0.9.9999] - 2019-04-05
 ### Security
 - Mastodon API: Fix content warnings skipping HTML sanitization

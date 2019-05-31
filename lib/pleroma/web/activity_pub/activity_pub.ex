@@ -649,20 +649,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_tag(query, _), do: query
 
-  defp restrict_to_cc(query, recipients_to, recipients_cc) do
-    from(
-      activity in query,
-      where:
-        fragment(
-          "(?->'to' \\?| ?) or (?->'cc' \\?| ?)",
-          activity.data,
-          ^recipients_to,
-          activity.data,
-          ^recipients_cc
-        )
-    )
-  end
-
   defp restrict_recipients(query, [], _user), do: query
 
   defp restrict_recipients(query, recipients, nil) do
@@ -885,9 +871,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
-  def fetch_activities_bounded(recipients_to, recipients_cc, opts \\ %{}) do
+  def fetch_activities_bounded_query(query, recipients, recipients_with_public) do
+    from(activity in query,
+      where:
+        fragment("? && ?", activity.recipients, ^recipients) or
+          (fragment("? && ?", activity.recipients, ^recipients_with_public) and
+             "https://www.w3.org/ns/activitystreams#Public" in activity.recipients)
+    )
+  end
+
+  def fetch_activities_bounded(recipients, recipients_with_public, opts \\ %{}) do
     fetch_activities_query([], opts)
-    |> restrict_to_cc(recipients_to, recipients_cc)
+    |> fetch_activities_bounded_query(recipients, recipients_with_public)
     |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
   end

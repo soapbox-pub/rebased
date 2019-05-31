@@ -1209,4 +1209,44 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, _} = Transmogrifier.prepare_outgoing(activity.data)
     end
   end
+
+  describe "fix_explicit_addressing" do
+    test "moves non-explicitly mentioned actors to cc" do
+      user = insert(:user)
+
+      explicitly_mentioned_actors = [
+        "https://pleroma.gold/users/user1",
+        "https://pleroma.gold/user2"
+      ]
+
+      object = %{
+        "actor" => user.ap_id,
+        "to" => explicitly_mentioned_actors ++ ["https://social.beepboop.ga/users/dirb"],
+        "cc" => [],
+        "tag" =>
+          Enum.map(explicitly_mentioned_actors, fn href ->
+            %{"type" => "Mention", "href" => href}
+          end)
+      }
+
+      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      assert Enum.all?(explicitly_mentioned_actors, &(&1 in fixed_object["to"]))
+      refute "https://social.beepboop.ga/users/dirb" in fixed_object["to"]
+      assert "https://social.beepboop.ga/users/dirb" in fixed_object["cc"]
+    end
+
+    test "does not move actor's follower collection to cc" do
+      user = insert(:user)
+
+      object = %{
+        "actor" => user.ap_id,
+        "to" => [user.follower_address],
+        "cc" => []
+      }
+
+      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+      assert user.follower_address in fixed_object["to"]
+      refute user.follower_address in fixed_object["cc"]
+    end
+  end
 end
