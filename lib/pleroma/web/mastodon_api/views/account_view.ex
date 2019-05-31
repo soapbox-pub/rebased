@@ -157,7 +157,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
          with_pleroma_settings: true
        }) do
     data
-    |> Kernel.put_in([:pleroma, :settings], info.pleroma_settings_store)
+    |> Kernel.put_in([:pleroma, :settings_store], info.pleroma_settings_store)
   end
 
   defp maybe_put_settings_store(data, _, _, _), do: data

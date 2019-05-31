@@ -246,12 +246,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     result =
       AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
 
-    assert result.pleroma.settings == %{:fe => "test"}
+    assert result.pleroma.settings_store == %{:fe => "test"}
 
     result = AccountView.render("account.json", %{user: user, with_pleroma_settings: true})
-    assert result.pleroma[:settings] == nil
+    assert result.pleroma[:settings_store] == nil
 
     result = AccountView.render("account.json", %{user: user, for: user})
-    assert result.pleroma[:settings] == nil
+    assert result.pleroma[:settings_store] == nil
   end
 end
