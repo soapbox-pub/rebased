@@ -157,6 +157,12 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     bookmarked = Activity.get_bookmark(activity, opts[:for]) != nil
 
+    thread_muted? =
+      case activity.thread_muted? do
+        thread_muted? when is_boolean(thread_muted?) -> thread_muted?
+        nil -> CommonAPI.thread_muted?(user, activity)
+      end
+
     attachment_data = object.data["attachment"] || []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
 
@@ -228,7 +234,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: reblogged?(activity, opts[:for]),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
-      muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),
+      muted: thread_muted? || User.mutes?(opts[:for], user),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
       spoiler_text: summary_html,
@@ -284,8 +290,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
       image: image_url |> MediaProxy.url(),
-      title: rich_media[:title],
-      description: rich_media[:description],
+      title: rich_media[:title] || "",
+      description: rich_media[:description] || "",
       pleroma: %{
         opengraph: rich_media
       }

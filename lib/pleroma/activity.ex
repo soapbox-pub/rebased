@@ -10,6 +10,7 @@ defmodule Pleroma.Activity do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.ThreadMute
   alias Pleroma.User
 
   import Ecto.Changeset
@@ -37,6 +38,7 @@ defmodule Pleroma.Activity do
     field(:local, :boolean, default: true)
     field(:actor, :string)
     field(:recipients, {:array, :string}, default: [])
+    field(:thread_muted?, :boolean, virtual: true)
     # This is a fake relation, do not use outside of with_preloaded_bookmark/get_bookmark
     has_one(:bookmark, Bookmark)
     has_many(:notifications, Notification, on_delete: :delete_all)
@@ -60,21 +62,24 @@ defmodule Pleroma.Activity do
     timestamps()
   end
 
-  def with_preloaded_object(query) do
-    query
-    |> join(
-      :inner,
-      [activity],
-      o in Object,
+  def with_joined_object(query) do
+    join(query, :inner, [activity], o in Object,
       on:
         fragment(
           "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
           o.data,
           activity.data,
           activity.data
-        )
+        ),
+      as: :object
     )
-    |> preload([activity, object], object: object)
+  end
+
+  def with_preloaded_object(query) do
+    query
+    |> has_named_binding?(:object)
+    |> if(do: query, else: with_joined_object(query))
+    |> preload([activity, object: object], object: object)
   end
 
   def with_preloaded_bookmark(query, %User{} = user) do
@@ -86,6 +91,16 @@ defmodule Pleroma.Activity do
   end
 
   def with_preloaded_bookmark(query, _), do: query
+
+  def with_set_thread_muted_field(query, %User{} = user) do
+    from([a] in query,
+      left_join: tm in ThreadMute,
+      on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data),
+      select: %Activity{a | thread_muted?: not is_nil(tm.id)}
+    )
+  end
+
+  def with_set_thread_muted_field(query, _), do: query
 
   def get_by_ap_id(ap_id) do
     Repo.one(
@@ -108,7 +123,7 @@ defmodule Pleroma.Activity do
 
   def change(struct, params \\ %{}) do
     struct
-    |> cast(params, [:data])
+    |> cast(params, [:data, :recipients])
     |> validate_required([:data])
     |> unique_constraint(:ap_id, name: :activities_unique_apid_index)
   end

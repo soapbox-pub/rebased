@@ -5,7 +5,6 @@
 defmodule Pleroma.Web.OAuth.Token do
   use Ecto.Schema
 
-  import Ecto.Query
   import Ecto.Changeset
 
   alias Pleroma.Repo
@@ -13,6 +12,7 @@ defmodule Pleroma.Web.OAuth.Token do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Web.OAuth.Token.Query
 
   @expires_in Pleroma.Config.get([:oauth2, :token_expires_in], 600)
   @type t :: %__MODULE__{}
@@ -22,7 +22,7 @@ defmodule Pleroma.Web.OAuth.Token do
     field(:refresh_token, :string)
     field(:scopes, {:array, :string}, default: [])
     field(:valid_until, :naive_datetime_usec)
-    belongs_to(:user, Pleroma.User, type: Pleroma.FlakeId)
+    belongs_to(:user, User, type: Pleroma.FlakeId)
     belongs_to(:app, App)
 
     timestamps()
@@ -31,17 +31,17 @@ defmodule Pleroma.Web.OAuth.Token do
   @doc "Gets token for app by access token"
   @spec get_by_token(App.t(), String.t()) :: {:ok, t()} | {:error, :not_found}
   def get_by_token(%App{id: app_id} = _app, token) do
-    from(t in __MODULE__, where: t.app_id == ^app_id and t.token == ^token)
+    Query.get_by_app(app_id)
+    |> Query.get_by_token(token)
     |> Repo.find_resource()
   end
 
   @doc "Gets token for app by refresh token"
   @spec get_by_refresh_token(App.t(), String.t()) :: {:ok, t()} | {:error, :not_found}
   def get_by_refresh_token(%App{id: app_id} = _app, token) do
-    from(t in __MODULE__,
-      where: t.app_id == ^app_id and t.refresh_token == ^token,
-      preload: [:user]
-    )
+    Query.get_by_app(app_id)
+    |> Query.get_by_refresh_token(token)
+    |> Query.preload([:user])
     |> Repo.find_resource()
   end
 
@@ -97,29 +97,25 @@ defmodule Pleroma.Web.OAuth.Token do
   end
 
   def delete_user_tokens(%User{id: user_id}) do
-    from(
-      t in Token,
-      where: t.user_id == ^user_id
-    )
+    Query.get_by_user(user_id)
     |> Repo.delete_all()
   end
 
   def delete_user_token(%User{id: user_id}, token_id) do
-    from(
-      t in Token,
-      where: t.user_id == ^user_id,
-      where: t.id == ^token_id
-    )
+    Query.get_by_user(user_id)
+    |> Query.get_by_id(token_id)
+    |> Repo.delete_all()
+  end
+
+  def delete_expired_tokens do
+    Query.get_expired_tokens()
     |> Repo.delete_all()
   end
 
   def get_user_tokens(%User{id: user_id}) do
-    from(
-      t in Token,
-      where: t.user_id == ^user_id
-    )
+    Query.get_by_user(user_id)
+    |> Query.preload([:app])
     |> Repo.all()
-    |> Repo.preload(:app)
   end
 
   def is_expired?(%__MODULE__{valid_until: valid_until}) do

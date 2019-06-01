@@ -1,4 +1,5 @@
 defmodule Pleroma.Object.Fetcher do
+  alias Pleroma.HTTP
   alias Pleroma.Object
   alias Pleroma.Object.Containment
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -6,7 +7,18 @@ defmodule Pleroma.Object.Fetcher do
 
   require Logger
 
-  @httpoison Application.get_env(:pleroma, :httpoison)
+  defp reinject_object(data) do
+    Logger.debug("Reinjecting object #{data["id"]}")
+
+    with data <- Transmogrifier.fix_object(data),
+         {:ok, object} <- Object.create(data) do
+      {:ok, object}
+    else
+      e ->
+        Logger.error("Error while processing object: #{inspect(e)}")
+        {:error, e}
+    end
+  end
 
   # TODO:
   # This will create a Create activity, which we need internally at the moment.
@@ -26,11 +38,16 @@ defmodule Pleroma.Object.Fetcher do
              "object" => data
            },
            :ok <- Containment.contain_origin(id, params),
-           {:ok, activity} <- Transmogrifier.handle_incoming(params) do
-        {:ok, Object.normalize(activity, false)}
+           {:ok, activity} <- Transmogrifier.handle_incoming(params),
+           {:object, _data, %Object{} = object} <-
+             {:object, data, Object.normalize(activity, false)} do
+        {:ok, object}
       else
         {:error, {:reject, nil}} ->
           {:reject, nil}
+
+        {:object, data, nil} ->
+          reinject_object(data)
 
         object = %Object{} ->
           {:ok, object}
@@ -60,7 +77,7 @@ defmodule Pleroma.Object.Fetcher do
 
     with true <- String.starts_with?(id, "http"),
          {:ok, %{body: body, status: code}} when code in 200..299 <-
-           @httpoison.get(
+           HTTP.get(
              id,
              [{:Accept, "application/activity+json"}]
            ),

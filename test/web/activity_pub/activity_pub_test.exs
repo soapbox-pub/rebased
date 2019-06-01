@@ -462,6 +462,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     refute Enum.member?(activities, activity_three.id)
   end
 
+  test "doesn't return activities from blocked domains" do
+    domain = "dogwhistle.zone"
+    domain_user = insert(:user, %{ap_id: "https://#{domain}/@pundit"})
+    note = insert(:note, %{data: %{"actor" => domain_user.ap_id}})
+    activity = insert(:note_activity, %{note: note})
+    user = insert(:user)
+    {:ok, user} = User.block_domain(user, domain)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+
+    refute activity in activities
+
+    followed_user = insert(:user)
+    ActivityPub.follow(user, followed_user)
+    {:ok, repeat_activity, _} = CommonAPI.repeat(activity.id, followed_user)
+
+    activities =
+      ActivityPub.fetch_activities([], %{"blocking_user" => user, "skip_preload" => true})
+
+    refute repeat_activity in activities
+  end
+
   test "doesn't return muted activities" do
     activity_one = insert(:note_activity)
     activity_two = insert(:note_activity)
@@ -960,17 +983,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           "in_reply_to_status_id" => private_activity_2.id
         })
 
-      activities = ActivityPub.fetch_activities([user1.ap_id | user1.following])
+      activities =
+        ActivityPub.fetch_activities([user1.ap_id | user1.following])
+        |> Enum.map(fn a -> a.id end)
 
       private_activity_1 = Activity.get_by_ap_id_with_object(private_activity_1.data["id"])
 
-      assert [public_activity, private_activity_1, private_activity_3] == activities
+      assert [public_activity.id, private_activity_1.id, private_activity_3.id] == activities
 
       assert length(activities) == 3
 
-      activities = ActivityPub.contain_timeline(activities, user1)
+      activities =
+        ActivityPub.fetch_activities([user1.ap_id | user1.following], %{"user" => user1})
+        |> Enum.map(fn a -> a.id end)
 
-      assert [public_activity, private_activity_1] == activities
+      assert [public_activity.id, private_activity_1.id] == activities
       assert length(activities) == 2
     end
   end
@@ -978,7 +1005,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "update" do
     test "it creates an update activity with the new user data" do
       user = insert(:user)
-      {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+      {:ok, user} = User.ensure_keys_present(user)
       user_data = Pleroma.Web.ActivityPub.UserView.render("user.json", %{user: user})
 
       {:ok, update} =
@@ -1158,5 +1185,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   def data_uri do
     File.read!("test/fixtures/avatar_data_uri")
+  end
+
+  describe "fetch_activities_bounded" do
+    test "fetches private posts for followed users" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "thought I looked cute might delete later :3",
+          "visibility" => "private"
+        })
+
+      [result] = ActivityPub.fetch_activities_bounded([user.follower_address], [])
+      assert result.id == activity.id
+    end
+
+    test "fetches only public posts for other users" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe", "visibility" => "public"})
+
+      {:ok, _private_activity} =
+        CommonAPI.post(user, %{
+          "status" => "why is tenshi eating a corndog so cute?",
+          "visibility" => "private"
+        })
+
+      [result] = ActivityPub.fetch_activities_bounded([], [user.follower_address])
+      assert result.id == activity.id
+    end
   end
 end

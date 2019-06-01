@@ -19,10 +19,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
   end
 
   @impl true
-  def filter(object) do
-    actor_info = URI.parse(object["actor"])
+  def filter(%{"actor" => actor} = object) do
+    actor_info = URI.parse(actor)
     allow_list = Config.get([:mrf_user_allowlist, String.to_atom(actor_info.host)], [])
 
     filter_by_list(object, allow_list)
   end
+
+  def filter(object), do: {:ok, object}
 end

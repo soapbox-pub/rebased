@@ -101,9 +101,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
 
-    activities =
-      ActivityPub.fetch_activities([user.ap_id | user.following], params)
-      |> ActivityPub.contain_timeline(user)
+    activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
 
     conn
     |> put_view(ActivityView)
@@ -730,7 +728,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def only_if_public_instance(%{assigns: %{user: %User{}}} = conn, _), do: conn
 
   def only_if_public_instance(conn, _) do
-    if Keyword.get(Application.get_env(:pleroma, :instance), :public) do
+    if Pleroma.Config.get([:instance, :public]) do
       conn
     else
       conn

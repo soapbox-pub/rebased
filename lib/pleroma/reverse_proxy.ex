@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy do
+  alias Pleroma.HTTP
+
   @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since) ++
                       ~w(if-unmodified-since if-none-match if-range range)
   @resp_cache_headers ~w(etag date last-modified cache-control)
@@ -59,8 +61,7 @@ defmodule Pleroma.ReverseProxy do
   * `http`: options for [hackney](https://github.com/benoitc/hackney).
 
   """
-  @hackney Application.get_env(:pleroma, :hackney, :hackney)
-  @httpoison Application.get_env(:pleroma, :httpoison, HTTPoison)
+  @hackney Pleroma.Config.get(:hackney, :hackney)
 
   @default_hackney_options []
 
@@ -97,7 +98,7 @@ defmodule Pleroma.ReverseProxy do
     hackney_opts =
       @default_hackney_options
       |> Keyword.merge(Keyword.get(opts, :http, []))
-      |> @httpoison.process_request_options()
+      |> HTTP.process_request_options()
 
     req_headers = build_req_headers(conn.req_headers, opts)
 

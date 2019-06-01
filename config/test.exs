@@ -39,8 +39,6 @@ config :pleroma, Pleroma.Repo,
 # Reduce hash rounds for testing
 config :pbkdf2_elixir, rounds: 1
 
-config :pleroma, :websub, Pleroma.Web.WebsubMock
-config :pleroma, :ostatus, Pleroma.Web.OStatusMock
 config :tesla, adapter: Tesla.Mock
 config :pleroma, :rich_media, enabled: false
 
@@ -60,6 +58,14 @@ config :pleroma, Pleroma.ScheduledActivity,
   enabled: false
 
 config :pleroma, :app_account_creation, max_requests: 5
+
+config :pleroma, :http_security, report_uri: "https://endpoint.com"
+
+config :pleroma, :http, send_user_agent: false
+
+rum_enabled = System.get_env("RUM_ENABLED") == "true"
+config :pleroma, :database, rum_enabled: rum_enabled
+IO.puts("RUM enabled: #{rum_enabled}")
 
 try do
   import_config "test.secret.exs"

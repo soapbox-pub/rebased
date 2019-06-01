@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Salmon.SalmonTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Keys
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.Federator.Publisher
@@ -34,12 +35,6 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     assert Salmon.decode_and_validate(@wrong_magickey, salmon) == :error
   end
 
-  test "generates an RSA private key pem" do
-    {:ok, key} = Salmon.generate_rsa_pem()
-    assert is_binary(key)
-    assert Regex.match?(~r/RSA/, key)
-  end
-
   test "it encodes a magic key from a public key" do
     key = Salmon.decode_key(@magickey)
     magic_key = Salmon.encode_key(key)
@@ -51,18 +46,10 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
     _key = Salmon.decode_key(@magickey_friendica)
   end
 
-  test "returns a public and private key from a pem" do
-    pem = File.read!("test/fixtures/private_key.pem")
-    {:ok, private, public} = Salmon.keys_from_pem(pem)
-
-    assert elem(private, 0) == :RSAPrivateKey
-    assert elem(public, 0) == :RSAPublicKey
-  end
-
   test "encodes an xml payload with a private key" do
     doc = File.read!("test/fixtures/incoming_note_activity.xml")
     pem = File.read!("test/fixtures/private_key.pem")
-    {:ok, private, public} = Salmon.keys_from_pem(pem)
+    {:ok, private, public} = Keys.keys_from_pem(pem)
 
     # Let's try a roundtrip.
     {:ok, salmon} = Salmon.encode(private, doc)
@@ -105,7 +92,7 @@ defmodule Pleroma.Web.Salmon.SalmonTest do
 
     {:ok, activity} = Repo.insert(%Activity{data: activity_data, recipients: activity_data["to"]})
     user = User.get_cached_by_ap_id(activity.data["actor"])
-    {:ok, user} = Pleroma.Web.WebFinger.ensure_keys_present(user)
+    {:ok, user} = User.ensure_keys_present(user)
 
     Salmon.publish(user, activity)
 

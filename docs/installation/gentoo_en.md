@@ -106,7 +106,7 @@ It is highly recommended you use your own fork for the `https://path/to/repo` pa
 
 ```shell
  pleroma$ cd ~
- pleroma$ git clone https://path/to/repo
+ pleroma$ git clone -b master https://path/to/repo
 ```
 
 * Change to the new directory:

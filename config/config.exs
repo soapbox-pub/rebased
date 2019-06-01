@@ -48,7 +48,8 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo,
   types: Pleroma.PostgresTypes,
-  telemetry_event: [Pleroma.Repo.Instrumenter]
+  telemetry_event: [Pleroma.Repo.Instrumenter],
+  migration_lock: nil
 
 config :pleroma, Pleroma.Captcha,
   enabled: false,
@@ -183,14 +184,12 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :pleroma, :websub, Pleroma.Web.Websub
-config :pleroma, :ostatus, Pleroma.Web.OStatus
-config :pleroma, :httpoison, Pleroma.HTTP
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
   proxy_url: nil,
+  send_user_agent: true,
   adapter: [
     ssl_options: [
       # We don't support TLS v1.3 yet
@@ -237,7 +236,8 @@ config :pleroma, :instance,
   welcome_message: nil,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
-  healthcheck: false
+  healthcheck: false,
+  remote_post_retention_days: 90
 
 config :pleroma, :app_account_creation, enabled: true, max_requests: 25, interval: 1800
 
@@ -274,6 +274,19 @@ config :pleroma, :frontend_configurations,
     showInstanceSpecificPanel: true
   }
 
+config :pleroma, :assets,
+  mascots: [
+    pleroma_fox_tan: %{
+      url: "/images/pleroma-fox-tan-smol.png",
+      mime_type: "image/png"
+    },
+    pleroma_fox_tan_shy: %{
+      url: "/images/pleroma-fox-tan-shy.png",
+      mime_type: "image/png"
+    }
+  ],
+  default_mascot: :pleroma_fox_tan
+
 config :pleroma, :activitypub,
   accept_blocks: true,
   unfollow_blocked: true,
@@ -296,8 +309,11 @@ config :pleroma, :mrf_simple,
   media_removal: [],
   media_nsfw: [],
   federated_timeline_removal: [],
+  report_removal: [],
   reject: [],
-  accept: []
+  accept: [],
+  avatar_removal: [],
+  banner_removal: []
 
 config :pleroma, :mrf_keyword,
   reject: [],
@@ -368,6 +384,7 @@ config :pleroma, Pleroma.User,
     "activities",
     "api",
     "auth",
+    "check_password",
     "dev",
     "friend-requests",
     "inbox",
@@ -388,6 +405,7 @@ config :pleroma, Pleroma.User,
     "status",
     "tag",
     "user-search",
+    "user_exists",
     "users",
     "web"
   ]
@@ -462,7 +480,11 @@ config :pleroma, Pleroma.ScheduledActivity,
 
 config :pleroma, :oauth2,
   token_expires_in: 600,
-  issue_new_refresh_token: true
+  issue_new_refresh_token: true,
+  clean_expired_tokens: false,
+  clean_expired_tokens_interval: 86_400_000
+
+config :pleroma, :database, rum_enabled: false
 
 config :http_signatures,
   adapter: Pleroma.Signature

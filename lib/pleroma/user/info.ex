@@ -43,6 +43,7 @@ defmodule Pleroma.User.Info do
     field(:hide_favorites, :boolean, default: true)
     field(:pinned_activities, {:array, :string}, default: [])
     field(:flavour, :string, default: nil)
+    field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
 
     field(:notification_settings, :map,
@@ -212,7 +213,7 @@ defmodule Pleroma.User.Info do
     ])
   end
 
-  @spec confirmation_changeset(Info.t(), keyword()) :: Ecto.Changerset.t()
+  @spec confirmation_changeset(Info.t(), keyword()) :: Changeset.t()
   def confirmation_changeset(info, opts) do
     need_confirmation? = Keyword.get(opts, :need_confirmation)
 
@@ -246,6 +247,14 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:flavour])
     |> validate_required([:flavour])
+  end
+
+  def mascot_update(info, url) do
+    params = %{mascot: url}
+
+    info
+    |> cast(params, [:mascot])
+    |> validate_required([:mascot])
   end
 
   def set_source_data(info, source_data) do

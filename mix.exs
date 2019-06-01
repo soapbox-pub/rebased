@@ -42,7 +42,7 @@ defmodule Pleroma.Mixfile do
   def application do
     [
       mod: {Pleroma.Application, []},
-      extra_applications: [:logger, :runtime_tools, :comeonin, :esshd, :quack],
+      extra_applications: [:logger, :runtime_tools, :comeonin, :quack],
       included_applications: [:ex_syslogger]
     ]
   end
@@ -66,7 +66,7 @@ defmodule Pleroma.Mixfile do
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
-      {:ecto_sql, "~>3.0.5"},
+      {:ecto_sql, "~> 3.1"},
       {:postgrex, ">= 0.13.5"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
@@ -117,7 +117,7 @@ defmodule Pleroma.Mixfile do
       {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"},
       {:benchee, "~> 1.0"},
-      {:esshd, "~> 0.1.0"},
+      {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_rated, "~> 1.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test}

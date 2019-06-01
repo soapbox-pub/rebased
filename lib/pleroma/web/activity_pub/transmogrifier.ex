@@ -11,7 +11,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Object.Containment
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
@@ -94,7 +93,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       object
       |> Utils.determine_explicit_mentions()
 
-    explicit_mentions = explicit_mentions ++ ["https://www.w3.org/ns/activitystreams#Public"]
+    follower_collection = User.get_cached_by_ap_id(Containment.get_actor(object)).follower_address
+
+    explicit_mentions =
+      explicit_mentions ++ ["https://www.w3.org/ns/activitystreams#Public", follower_collection]
 
     object
     |> fix_explicit_addressing(explicit_mentions)

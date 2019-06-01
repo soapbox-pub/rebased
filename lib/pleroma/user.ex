@@ -10,6 +10,7 @@ defmodule Pleroma.User do
 
   alias Comeonin.Pbkdf2
   alias Pleroma.Activity
+  alias Pleroma.Keys
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Registration
@@ -55,7 +56,7 @@ defmodule Pleroma.User do
     field(:last_refreshed_at, :naive_datetime_usec)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
-    embeds_one(:info, Pleroma.User.Info)
+    embeds_one(:info, User.Info)
 
     timestamps()
   end
@@ -166,7 +167,7 @@ defmodule Pleroma.User do
 
   def update_changeset(struct, params \\ %{}) do
     struct
-    |> cast(params, [:bio, :name, :avatar])
+    |> cast(params, [:bio, :name, :avatar, :following])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
@@ -233,7 +234,7 @@ defmodule Pleroma.User do
       |> validate_confirmation(:password)
       |> unique_constraint(:email)
       |> unique_constraint(:nickname)
-      |> validate_exclusion(:nickname, Pleroma.Config.get([Pleroma.User, :restricted_nicknames]))
+      |> validate_exclusion(:nickname, Pleroma.Config.get([User, :restricted_nicknames]))
       |> validate_format(:nickname, local_nickname_regex())
       |> validate_format(:email, @email_regex)
       |> validate_length(:bio, max: 1000)
@@ -284,7 +285,7 @@ defmodule Pleroma.User do
   def post_register_action(%User{} = user) do
     with {:ok, user} <- autofollow_users(user),
          {:ok, user} <- set_cache(user),
-         {:ok, _} <- Pleroma.User.WelcomeMessage.post_welcome_message_to_user(user),
+         {:ok, _} <- User.WelcomeMessage.post_welcome_message_to_user(user),
          {:ok, _} <- try_send_confirmation_email(user) do
       {:ok, user}
     end
@@ -371,9 +372,7 @@ defmodule Pleroma.User do
   end
 
   def follow(%User{} = follower, %User{info: info} = followed) do
-    user_config = Application.get_env(:pleroma, :user)
-    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
-
+    deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
     ap_followers = followed.follower_address
 
     cond do
@@ -715,6 +714,18 @@ defmodule Pleroma.User do
     end
   end
 
+  def remove_duplicated_following(%User{following: following} = user) do
+    uniq_following = Enum.uniq(following)
+
+    if length(following) == length(uniq_following) do
+      {:ok, user}
+    else
+      user
+      |> update_changeset(%{following: uniq_following})
+      |> update_and_set_cache()
+    end
+  end
+
   @spec get_users_from_set([String.t()], boolean()) :: [User.t()]
   def get_users_from_set(ap_ids, local_only \\ true) do
     criteria = %{ap_id: ap_ids, deactivated: false}
@@ -753,7 +764,7 @@ defmodule Pleroma.User do
 
     from(s in subquery(boost_search_rank_query(distinct_query, for_user)),
       order_by: [desc: s.search_rank],
-      limit: 20
+      limit: 40
     )
   end
 
@@ -1138,7 +1149,6 @@ defmodule Pleroma.User do
     stream =
       ap_id
       |> Activity.query_by_actor()
-      |> Activity.with_preloaded_object()
       |> Repo.stream()
 
     Repo.transaction(fn -> Enum.each(stream, &delete_activity(&1)) end, timeout: :infinity)
@@ -1383,5 +1393,58 @@ defmodule Pleroma.User do
 
   def showing_reblogs?(%User{} = user, %User{} = target) do
     target.ap_id not in user.info.muted_reblogs
+  end
+
+  @spec toggle_confirmation(User.t()) :: {:ok, User.t()} | {:error, Changeset.t()}
+  def toggle_confirmation(%User{} = user) do
+    need_confirmation? = !user.info.confirmation_pending
+
+    info_changeset =
+      User.Info.confirmation_changeset(user.info, need_confirmation: need_confirmation?)
+
+    user
+    |> change()
+    |> put_embed(:info, info_changeset)
+    |> update_and_set_cache()
+  end
+
+  def get_mascot(%{info: %{mascot: %{} = mascot}}) when not is_nil(mascot) do
+    mascot
+  end
+
+  def get_mascot(%{info: %{mascot: mascot}}) when is_nil(mascot) do
+    # use instance-default
+    config = Pleroma.Config.get([:assets, :mascots])
+    default_mascot = Pleroma.Config.get([:assets, :default_mascot])
+    mascot = Keyword.get(config, default_mascot)
+
+    %{
+      "id" => "default-mascot",
+      "url" => mascot[:url],
+      "preview_url" => mascot[:url],
+      "pleroma" => %{
+        "mime_type" => mascot[:mime_type]
+      }
+    }
+  end
+
+  def ensure_keys_present(user) do
+    info = user.info
+
+    if info.keys do
+      {:ok, user}
+    else
+      {:ok, pem} = Keys.generate_rsa_pem()
+
+      info_cng =
+        info
+        |> User.Info.set_keys(pem)
+
+      cng =
+        Ecto.Changeset.change(user)
+        |> Ecto.Changeset.put_embed(:info, info_cng)
+
+      update_and_set_cache(cng)
+    end
   end
 end

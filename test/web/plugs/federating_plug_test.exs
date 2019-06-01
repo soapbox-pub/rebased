@@ -6,11 +6,7 @@ defmodule Pleroma.Web.FederatingPlugTest do
   use Pleroma.Web.ConnCase
 
   test "returns and halt the conn when federating is disabled" do
-    instance =
-      Application.get_env(:pleroma, :instance)
-      |> Keyword.put(:federating, false)
-
-    Application.put_env(:pleroma, :instance, instance)
+    Pleroma.Config.put([:instance, :federating], false)
 
     conn =
       build_conn()
@@ -19,11 +15,7 @@ defmodule Pleroma.Web.FederatingPlugTest do
     assert conn.status == 404
     assert conn.halted
 
-    instance =
-      Application.get_env(:pleroma, :instance)
-      |> Keyword.put(:federating, true)
-
-    Application.put_env(:pleroma, :instance, instance)
+    Pleroma.Config.put([:instance, :federating], true)
   end
 
   test "does nothing when federating is enabled" do

@@ -45,7 +45,8 @@ docs-build:
 unit-testing:
   stage: test
   services:
-  - name: postgres:9.6.2
+  - name: lainsoykaf/postgres-with-rum
+    alias: postgres
     command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
   script:
     - mix deps.get
@@ -53,6 +54,21 @@ unit-testing:
     - mix ecto.migrate
     - mix test --trace --preload-modules
     - mix coveralls
+
+unit-testing-rum:
+  stage: test
+  services:
+  - name: lainsoykaf/postgres-with-rum
+    alias: postgres
+    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off"]
+  variables:
+    RUM_ENABLED: "true"
+  script:
+    - mix deps.get
+    - mix ecto.create
+    - mix ecto.migrate
+    - "mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
+    - mix test --trace --preload-modules
 
 lint:
   stage: test
@@ -64,7 +80,6 @@ analysis:
   script:
     - mix deps.get
     - mix credo --strict --only=warnings,todo,fixme,consistency,readability
-
 
 docs-deploy:
   stage: deploy
@@ -80,3 +95,50 @@ docs-deploy:
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - rsync -hrvz --delete -e "ssh -p ${SSH_PORT}" priv/static/doc/ "${SSH_USER_HOST_LOCATION}/${CI_COMMIT_REF_NAME}"
+
+review_app:
+  image: alpine:3.9
+  stage: deploy
+  before_script:
+    - apk update && apk add openssh-client git
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: https://$CI_ENVIRONMENT_SLUG.pleroma.online/
+    on_stop: stop_review_app
+  only:
+    - branches
+  except:
+    - master
+    - develop
+  script:
+    - echo "$CI_ENVIRONMENT_SLUG"
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
+    - (ssh -t dokku@pleroma.online -- apps:create "$CI_ENVIRONMENT_SLUG") || true
+    - ssh -t dokku@pleroma.online -- config:set "$CI_ENVIRONMENT_SLUG" APP_NAME="$CI_ENVIRONMENT_SLUG" APP_HOST="$CI_ENVIRONMENT_SLUG.pleroma.online" MIX_ENV=dokku
+    - (ssh -t dokku@pleroma.online -- postgres:create $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db) || true
+    - (ssh -t dokku@pleroma.online -- postgres:link $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db "$CI_ENVIRONMENT_SLUG") || true
+    - (ssh -t dokku@pleroma.online -- certs:add "$CI_ENVIRONMENT_SLUG" /home/dokku/server.crt /home/dokku/server.key) || true
+    - (git remote add dokku dokku@pleroma.online:$CI_ENVIRONMENT_SLUG) || true
+    - git push -f dokku $CI_COMMIT_SHA:refs/heads/master
+
+stop_review_app:
+  image: alpine:3.9
+  stage: deploy
+  before_script:
+    - apk update && apk add openssh-client git
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    action: stop
+  script:
+    - echo "$CI_ENVIRONMENT_SLUG"
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
+    - ssh -t dokku@pleroma.online -- --force apps:destroy "$CI_ENVIRONMENT_SLUG"
+    - ssh -t dokku@pleroma.online -- --force postgres:destroy $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db

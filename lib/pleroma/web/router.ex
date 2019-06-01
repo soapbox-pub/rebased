@@ -194,6 +194,14 @@ defmodule Pleroma.Web.Router do
 
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
+
+    get("/reports", AdminAPIController, :list_reports)
+    get("/reports/:id", AdminAPIController, :report_show)
+    put("/reports/:id", AdminAPIController, :report_update_state)
+    post("/reports/:id/respond", AdminAPIController, :report_respond)
+
+    put("/statuses/:id", AdminAPIController, :status_update)
+    delete("/statuses/:id", AdminAPIController, :status_delete)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
@@ -343,6 +351,9 @@ defmodule Pleroma.Web.Router do
       delete("/filters/:id", MastodonAPIController, :delete_filter)
 
       post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
+
+      get("/pleroma/mascot", MastodonAPIController, :get_mascot)
+      put("/pleroma/mascot", MastodonAPIController, :set_mascot)
 
       post("/reports", MastodonAPIController, :reports)
     end
@@ -696,9 +707,15 @@ defmodule Pleroma.Web.Router do
     end
   end
 
+  scope "/", Pleroma.Web.MongooseIM do
+    get("/user_exists", MongooseIMController, :user_exists)
+    get("/check_password", MongooseIMController, :check_password)
+  end
+
   scope "/", Fallback do
     get("/registration/:token", RedirectController, :registration_page)
     get("/:maybe_nickname_or_id", RedirectController, :redirector_with_meta)
+    get("/api*path", RedirectController, :api_not_implemented)
     get("/*path", RedirectController, :redirector)
 
     options("/*path", RedirectController, :empty)
@@ -709,6 +726,12 @@ defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
   alias Pleroma.User
   alias Pleroma.Web.Metadata
+
+  def api_not_implemented(conn, _params) do
+    conn
+    |> put_status(404)
+    |> json(%{error: "Not implemented"})
+  end
 
   def redirector(conn, _params, code \\ 200) do
     conn

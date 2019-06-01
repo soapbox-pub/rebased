@@ -20,6 +20,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   require Logger
 
   @supported_object_types ["Article", "Note", "Video", "Page"]
+  @supported_report_states ~w(open closed resolved)
+  @valid_visibilities ~w(public unlisted private direct)
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
@@ -670,7 +672,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => params.actor.ap_id,
       "content" => params.content,
       "object" => object,
-      "context" => params.context
+      "context" => params.context,
+      "state" => "open"
     }
     |> Map.merge(additional)
   end
@@ -711,6 +714,79 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         _ ->
           {:error, "Not an OrderedCollection or OrderedCollectionPage"}
       end
+    end
+  end
+
+  #### Report-related helpers
+
+  def update_report_state(%Activity{} = activity, state) when state in @supported_report_states do
+    with new_data <- Map.put(activity.data, "state", state),
+         changeset <- Changeset.change(activity, data: new_data),
+         {:ok, activity} <- Repo.update(changeset) do
+      {:ok, activity}
+    end
+  end
+
+  def update_report_state(_, _), do: {:error, "Unsupported state"}
+
+  def update_activity_visibility(activity, visibility) when visibility in @valid_visibilities do
+    [to, cc, recipients] =
+      activity
+      |> get_updated_targets(visibility)
+      |> Enum.map(&Enum.uniq/1)
+
+    object_data =
+      activity.object.data
+      |> Map.put("to", to)
+      |> Map.put("cc", cc)
+
+    {:ok, object} =
+      activity.object
+      |> Object.change(%{data: object_data})
+      |> Object.update_and_set_cache()
+
+    activity_data =
+      activity.data
+      |> Map.put("to", to)
+      |> Map.put("cc", cc)
+
+    activity
+    |> Map.put(:object, object)
+    |> Activity.change(%{data: activity_data, recipients: recipients})
+    |> Repo.update()
+  end
+
+  def update_activity_visibility(_, _), do: {:error, "Unsupported visibility"}
+
+  defp get_updated_targets(
+         %Activity{data: %{"to" => to} = data, recipients: recipients},
+         visibility
+       ) do
+    cc = Map.get(data, "cc", [])
+    follower_address = User.get_cached_by_ap_id(data["actor"]).follower_address
+    public = "https://www.w3.org/ns/activitystreams#Public"
+
+    case visibility do
+      "public" ->
+        to = [public | List.delete(to, follower_address)]
+        cc = [follower_address | List.delete(cc, public)]
+        recipients = [public | recipients]
+        [to, cc, recipients]
+
+      "private" ->
+        to = [follower_address | List.delete(to, public)]
+        cc = List.delete(cc, public)
+        recipients = List.delete(recipients, public)
+        [to, cc, recipients]
+
+      "unlisted" ->
+        to = [follower_address | List.delete(to, public)]
+        cc = [public | List.delete(cc, follower_address)]
+        recipients = recipients ++ [follower_address, public]
+        [to, cc, recipients]
+
+      _ ->
+        [to, cc, recipients]
     end
   end
 end

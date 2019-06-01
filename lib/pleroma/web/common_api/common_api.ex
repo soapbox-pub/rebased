@@ -71,6 +71,9 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, _} <- unpin(activity_id, user),
          {:ok, delete} <- ActivityPub.delete(object) do
       {:ok, delete}
+    else
+      _ ->
+        {:error, "Could not delete"}
     end
   end
 
@@ -154,6 +157,7 @@ defmodule Pleroma.Web.CommonAPI do
          {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"] || "",
+         sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
          full_payload <- String.trim(status <> cw),
          length when length in 1..limit <- String.length(full_payload),
          object <-
@@ -166,7 +170,8 @@ defmodule Pleroma.Web.CommonAPI do
              in_reply_to,
              tags,
              cw,
-             cc
+             cc,
+             sensitive
            ),
          object <-
            Map.put(
@@ -197,7 +202,7 @@ defmodule Pleroma.Web.CommonAPI do
     user =
       with emoji <- emoji_from_profile(user),
            source_data <- (user.info.source_data || %{}) |> Map.put("tag", emoji),
-           info_cng <- Pleroma.User.Info.set_source_data(user.info, source_data),
+           info_cng <- User.Info.set_source_data(user.info, source_data),
            change <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
            {:ok, user} <- User.update_and_set_cache(change) do
         user
@@ -230,7 +235,7 @@ defmodule Pleroma.Web.CommonAPI do
          } = activity <- get_by_id_or_ap_id(id_or_ap_id),
          true <- Enum.member?(object_to, "https://www.w3.org/ns/activitystreams#Public"),
          %{valid?: true} = info_changeset <-
-           Pleroma.User.Info.add_pinnned_activity(user.info, activity),
+           User.Info.add_pinnned_activity(user.info, activity),
          changeset <-
            Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
@@ -247,7 +252,7 @@ defmodule Pleroma.Web.CommonAPI do
   def unpin(id_or_ap_id, user) do
     with %Activity{} = activity <- get_by_id_or_ap_id(id_or_ap_id),
          %{valid?: true} = info_changeset <-
-           Pleroma.User.Info.remove_pinnned_activity(user.info, activity),
+           User.Info.remove_pinnned_activity(user.info, activity),
          changeset <-
            Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
@@ -314,6 +319,60 @@ defmodule Pleroma.Web.CommonAPI do
       {:account, nil} -> {:error, "Account not found"}
     end
   end
+
+  def update_report_state(activity_id, state) do
+    with %Activity{} = activity <- Activity.get_by_id(activity_id),
+         {:ok, activity} <- Utils.update_report_state(activity, state) do
+      {:ok, activity}
+    else
+      nil ->
+        {:error, :not_found}
+
+      {:error, reason} ->
+        {:error, reason}
+
+      _ ->
+        {:error, "Could not update state"}
+    end
+  end
+
+  def update_activity_scope(activity_id, opts \\ %{}) do
+    with %Activity{} = activity <- Activity.get_by_id_with_object(activity_id),
+         {:ok, activity} <- toggle_sensitive(activity, opts),
+         {:ok, activity} <- set_visibility(activity, opts) do
+      {:ok, activity}
+    else
+      nil ->
+        {:error, :not_found}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp toggle_sensitive(activity, %{"sensitive" => sensitive}) when sensitive in ~w(true false) do
+    toggle_sensitive(activity, %{"sensitive" => String.to_existing_atom(sensitive)})
+  end
+
+  defp toggle_sensitive(%Activity{object: object} = activity, %{"sensitive" => sensitive})
+       when is_boolean(sensitive) do
+    new_data = Map.put(object.data, "sensitive", sensitive)
+
+    {:ok, object} =
+      object
+      |> Object.change(%{data: new_data})
+      |> Object.update_and_set_cache()
+
+    {:ok, Map.put(activity, :object, object)}
+  end
+
+  defp toggle_sensitive(activity, _), do: {:ok, activity}
+
+  defp set_visibility(activity, %{"visibility" => visibility}) do
+    Utils.update_activity_visibility(activity, visibility)
+  end
+
+  defp set_visibility(activity, _), do: {:ok, activity}
 
   def hide_reblogs(user, muted) do
     ap_id = muted.ap_id
