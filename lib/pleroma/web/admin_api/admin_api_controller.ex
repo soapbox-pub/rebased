@@ -47,7 +47,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def users_create(conn, %{"users" => users}) do
-    result =
+    changesets =
       Enum.map(users, fn %{"nickname" => nickname, "email" => email, "password" => password} ->
         user_data = %{
           nickname: nickname,
@@ -58,19 +58,40 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
           bio: "."
         }
 
-        changeset = User.register_changeset(%User{}, user_data, need_confirmation: false)
-
-        case User.register(changeset) do
-          {:ok, user} ->
-            AccountView.render("created.json", %{user: user})
-
-          {:error, changeset} ->
-            AccountView.render("create-error.json", %{changeset: changeset})
-        end
+        User.register_changeset(%User{}, user_data, need_confirmation: false)
+      end)
+      |> Enum.reduce(Ecto.Multi.new(), fn changeset, multi ->
+        Ecto.Multi.insert(multi, Ecto.UUID.generate(), changeset)
       end)
 
-    conn
-    |> json(result)
+    case Pleroma.Repo.transaction(changesets) do
+      {:ok, users} ->
+        res =
+          users
+          |> Map.values()
+          |> Enum.map(fn user ->
+            {:ok, user} = User.post_register_action(user)
+            user
+          end)
+          |> Enum.map(&AccountView.render("created.json", %{user: &1}))
+
+        conn
+        |> json(res)
+
+      {:error, id, changeset, _} ->
+        res =
+          Enum.map(changesets.operations, fn
+            {current_id, {:changeset, _current_changeset, _}} when current_id == id ->
+              AccountView.render("create-error.json", %{changeset: changeset})
+
+            {_, {:changeset, current_changeset, _}} ->
+              AccountView.render("create-error.json", %{changeset: current_changeset})
+          end)
+
+        conn
+        |> put_status(:conflict)
+        |> json(res)
+    end
   end
 
   def user_show(conn, %{"nickname" => nickname}) do

@@ -48,7 +48,7 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
   def render("created.json", %{user: user}) do
     %{
       type: "success",
-      code: 201,
+      code: 200,
       data: %{
         nickname: user.nickname,
         email: user.email

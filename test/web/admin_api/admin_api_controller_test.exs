@@ -36,16 +36,29 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
               "nickname" => "lain",
               "email" => "lain@example.org",
               "password" => "test"
+            },
+            %{
+              "nickname" => "lain2",
+              "email" => "lain2@example.org",
+              "password" => "test"
             }
           ]
         })
 
       assert json_response(conn, 200) == [
                %{
-                 "code" => 201,
+                 "code" => 200,
                  "data" => %{
                    "email" => "lain@example.org",
                    "nickname" => "lain"
+                 },
+                 "type" => "success"
+               },
+               %{
+                 "code" => 200,
+                 "data" => %{
+                   "email" => "lain2@example.org",
+                   "nickname" => "lain2"
                  },
                  "type" => "success"
                }
@@ -70,7 +83,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == [
+      assert json_response(conn, 409) == [
                %{
                  "code" => 409,
                  "data" => %{
@@ -101,7 +114,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == [
+      assert json_response(conn, 409) == [
                %{
                  "code" => 409,
                  "data" => %{
@@ -112,6 +125,53 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  "type" => "error"
                }
              ]
+    end
+
+    test "Multiple user creation works in transaction" do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> put_req_header("accept", "application/json")
+        |> post("/api/pleroma/admin/users", %{
+          "users" => [
+            %{
+              "nickname" => "newuser",
+              "email" => "newuser@pleroma.social",
+              "password" => "test"
+            },
+            %{
+              "nickname" => "lain",
+              "email" => user.email,
+              "password" => "test"
+            }
+          ]
+        })
+
+      assert json_response(conn, 409) == [
+               %{
+                 "code" => 409,
+                 "data" => %{
+                   "email" => user.email,
+                   "nickname" => "lain"
+                 },
+                 "error" => "email has already been taken",
+                 "type" => "error"
+               },
+               %{
+                 "code" => 409,
+                 "data" => %{
+                   "email" => "newuser@pleroma.social",
+                   "nickname" => "newuser"
+                 },
+                 "error" => "",
+                 "type" => "error"
+               }
+             ]
+
+      assert User.get_by_nickname("newuser") === nil
     end
   end
 
