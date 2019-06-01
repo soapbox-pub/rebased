@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.UserView do
   use Pleroma.Web, :view
 
+  alias Pleroma.Keys
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -12,8 +13,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router.Helpers
-  alias Pleroma.Web.Salmon
-  alias Pleroma.Web.WebFinger
 
   import Ecto.Query
 
@@ -34,8 +33,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
   # the instance itself is not a Person, but instead an Application
   def render("user.json", %{user: %{nickname: nil} = user}) do
-    {:ok, user} = WebFinger.ensure_keys_present(user)
-    {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
+    {:ok, user} = User.ensure_keys_present(user)
+    {:ok, _, public_key} = Keys.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
 
@@ -62,8 +61,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("user.json", %{user: user}) do
-    {:ok, user} = WebFinger.ensure_keys_present(user)
-    {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
+    {:ok, user} = User.ensure_keys_present(user)
+    {:ok, _, public_key} = Keys.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
 

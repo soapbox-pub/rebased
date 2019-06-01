@@ -411,16 +411,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
-    ap_config = Application.get_env(:pleroma, :activitypub)
-    unfollow_blocked = Keyword.get(ap_config, :unfollow_blocked)
-    outgoing_blocks = Keyword.get(ap_config, :outgoing_blocks)
+    outgoing_blocks = Pleroma.Config.get([:activitypub, :outgoing_blocks])
+    unfollow_blocked = Pleroma.Config.get([:activitypub, :unfollow_blocked])
 
-    with true <- unfollow_blocked do
+    if unfollow_blocked do
       follow_activity = fetch_latest_follow(blocker, blocked)
-
-      if follow_activity do
-        unfollow(blocker, blocked, nil, local)
-      end
+      if follow_activity, do: unfollow(blocker, blocked, nil, local)
     end
 
     with true <- outgoing_blocks,
@@ -666,20 +662,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_tag(query, _), do: query
 
-  defp restrict_to_cc(query, recipients_to, recipients_cc) do
-    from(
-      activity in query,
-      where:
-        fragment(
-          "(?->'to' \\?| ?) or (?->'cc' \\?| ?)",
-          activity.data,
-          ^recipients_to,
-          activity.data,
-          ^recipients_cc
-        )
-    )
-  end
-
   defp restrict_recipients(query, [], _user), do: query
 
   defp restrict_recipients(query, recipients, nil) do
@@ -859,6 +841,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Activity.with_preloaded_bookmark(opts["user"])
   end
 
+  defp maybe_set_thread_muted_field(query, %{"skip_preload" => true}), do: query
+
+  defp maybe_set_thread_muted_field(query, opts) do
+    query
+    |> Activity.with_set_thread_muted_field(opts["user"])
+  end
+
   defp maybe_order(query, %{order: :desc}) do
     query
     |> order_by(desc: :id)
@@ -877,6 +866,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     base_query
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
+    |> maybe_set_thread_muted_field(opts)
     |> maybe_order(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
@@ -907,9 +897,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> Enum.reverse()
   end
 
-  def fetch_activities_bounded(recipients_to, recipients_cc, opts \\ %{}) do
+  def fetch_activities_bounded_query(query, recipients, recipients_with_public) do
+    from(activity in query,
+      where:
+        fragment("? && ?", activity.recipients, ^recipients) or
+          (fragment("? && ?", activity.recipients, ^recipients_with_public) and
+             "https://www.w3.org/ns/activitystreams#Public" in activity.recipients)
+    )
+  end
+
+  def fetch_activities_bounded(recipients, recipients_with_public, opts \\ %{}) do
     fetch_activities_query([], opts)
-    |> restrict_to_cc(recipients_to, recipients_cc)
+    |> fetch_activities_bounded_query(recipients, recipients_with_public)
     |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
   end
@@ -927,7 +926,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def user_data_from_user_object(data) do
+  defp object_to_user_data(data) do
     avatar =
       data["icon"]["url"] &&
         %{
@@ -974,9 +973,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, user_data}
   end
 
+  def user_data_from_user_object(data) do
+    with {:ok, data} <- MRF.filter(data),
+         {:ok, data} <- object_to_user_data(data) do
+      {:ok, data}
+    else
+      e -> {:error, e}
+    end
+  end
+
   def fetch_and_prepare_user_from_ap_id(ap_id) do
-    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id) do
-      user_data_from_user_object(data)
+    with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
+         {:ok, data} <- user_data_from_user_object(data) do
+      {:ok, data}
     else
       e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")
     end

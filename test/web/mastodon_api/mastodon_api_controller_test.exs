@@ -1552,6 +1552,72 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert object.data["actor"] == User.ap_id(user)
   end
 
+  test "mascot upload", %{conn: conn} do
+    user = insert(:user)
+
+    non_image_file = %Plug.Upload{
+      content_type: "audio/mpeg",
+      path: Path.absname("test/fixtures/sound.mp3"),
+      filename: "sound.mp3"
+    }
+
+    conn =
+      conn
+      |> assign(:user, user)
+      |> put("/api/v1/pleroma/mascot", %{"file" => non_image_file})
+
+    assert json_response(conn, 415)
+
+    file = %Plug.Upload{
+      content_type: "image/jpg",
+      path: Path.absname("test/fixtures/image.jpg"),
+      filename: "an_image.jpg"
+    }
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+      |> put("/api/v1/pleroma/mascot", %{"file" => file})
+
+    assert %{"id" => _, "type" => image} = json_response(conn, 200)
+  end
+
+  test "mascot retrieving", %{conn: conn} do
+    user = insert(:user)
+    # When user hasn't set a mascot, we should just get pleroma tan back
+    conn =
+      conn
+      |> assign(:user, user)
+      |> get("/api/v1/pleroma/mascot")
+
+    assert %{"url" => url} = json_response(conn, 200)
+    assert url =~ "pleroma-fox-tan-smol"
+
+    # When a user sets their mascot, we should get that back
+    file = %Plug.Upload{
+      content_type: "image/jpg",
+      path: Path.absname("test/fixtures/image.jpg"),
+      filename: "an_image.jpg"
+    }
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+      |> put("/api/v1/pleroma/mascot", %{"file" => file})
+
+    assert json_response(conn, 200)
+
+    user = User.get_cached_by_id(user.id)
+
+    conn =
+      build_conn()
+      |> assign(:user, user)
+      |> get("/api/v1/pleroma/mascot")
+
+    assert %{"url" => url, "type" => "image"} = json_response(conn, 200)
+    assert url =~ "an_image"
+  end
+
   test "hashtag timeline", %{conn: conn} do
     following = insert(:user)
 
@@ -2716,33 +2782,50 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                |> post("/api/v1/statuses/#{activity_two.id}/pin")
                |> json_response(400)
     end
+  end
 
-    test "Status rich-media Card", %{conn: conn, user: user} do
+  describe "cards" do
+    setup do
       Pleroma.Config.put([:rich_media, :enabled], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:rich_media, :enabled], false)
+      end)
+
+      user = insert(:user)
+      %{user: user}
+    end
+
+    test "returns rich-media card", %{conn: conn, user: user} do
       {:ok, activity} = CommonAPI.post(user, %{"status" => "http://example.com/ogp"})
+
+      card_data = %{
+        "image" => "http://ia.media-imdb.com/images/rock.jpg",
+        "provider_name" => "www.imdb.com",
+        "provider_url" => "http://www.imdb.com",
+        "title" => "The Rock",
+        "type" => "link",
+        "url" => "http://www.imdb.com/title/tt0117500/",
+        "description" =>
+          "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
+        "pleroma" => %{
+          "opengraph" => %{
+            "image" => "http://ia.media-imdb.com/images/rock.jpg",
+            "title" => "The Rock",
+            "type" => "video.movie",
+            "url" => "http://www.imdb.com/title/tt0117500/",
+            "description" =>
+              "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer."
+          }
+        }
+      }
 
       response =
         conn
         |> get("/api/v1/statuses/#{activity.id}/card")
         |> json_response(200)
 
-      assert response == %{
-               "image" => "http://ia.media-imdb.com/images/rock.jpg",
-               "provider_name" => "www.imdb.com",
-               "provider_url" => "http://www.imdb.com",
-               "title" => "The Rock",
-               "type" => "link",
-               "url" => "http://www.imdb.com/title/tt0117500/",
-               "description" => nil,
-               "pleroma" => %{
-                 "opengraph" => %{
-                   "image" => "http://ia.media-imdb.com/images/rock.jpg",
-                   "title" => "The Rock",
-                   "type" => "video.movie",
-                   "url" => "http://www.imdb.com/title/tt0117500/"
-                 }
-               }
-             }
+      assert response == card_data
 
       # works with private posts
       {:ok, activity} =
@@ -2754,9 +2837,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/statuses/#{activity.id}/card")
         |> json_response(200)
 
-      assert response_two == response
+      assert response_two == card_data
+    end
 
-      Pleroma.Config.put([:rich_media, :enabled], false)
+    test "replaces missing description with an empty string", %{conn: conn, user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "http://example.com/ogp-missing-data"})
+
+      response =
+        conn
+        |> get("/api/v1/statuses/#{activity.id}/card")
+        |> json_response(:ok)
+
+      assert response == %{
+               "type" => "link",
+               "title" => "Pleroma",
+               "description" => "",
+               "image" => nil,
+               "provider_name" => "pleroma.social",
+               "provider_url" => "https://pleroma.social",
+               "url" => "https://pleroma.social/",
+               "pleroma" => %{
+                 "opengraph" => %{
+                   "title" => "Pleroma",
+                   "type" => "website",
+                   "url" => "https://pleroma.social/"
+                 }
+               }
+             }
     end
   end
 

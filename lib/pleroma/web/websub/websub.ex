@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.Websub do
   alias Ecto.Changeset
   alias Pleroma.Activity
+  alias Pleroma.HTTP
   alias Pleroma.Instances
   alias Pleroma.Repo
   alias Pleroma.User
@@ -24,9 +25,7 @@ defmodule Pleroma.Web.Websub do
 
   @behaviour Pleroma.Web.Federator.Publisher
 
-  @httpoison Application.get_env(:pleroma, :httpoison)
-
-  def verify(subscription, getter \\ &@httpoison.get/3) do
+  def verify(subscription, getter \\ &HTTP.get/3) do
     challenge = Base.encode16(:crypto.strong_rand_bytes(8))
     lease_seconds = NaiveDateTime.diff(subscription.valid_until, subscription.updated_at)
     lease_seconds = lease_seconds |> to_string
@@ -207,7 +206,7 @@ defmodule Pleroma.Web.Websub do
     requester.(subscription)
   end
 
-  def gather_feed_data(topic, getter \\ &@httpoison.get/1) do
+  def gather_feed_data(topic, getter \\ &HTTP.get/1) do
     with {:ok, response} <- getter.(topic),
          status when status in 200..299 <- response.status,
          body <- response.body,
@@ -236,7 +235,7 @@ defmodule Pleroma.Web.Websub do
     end
   end
 
-  def request_subscription(websub, poster \\ &@httpoison.post/3, timeout \\ 10_000) do
+  def request_subscription(websub, poster \\ &HTTP.post/3, timeout \\ 10_000) do
     data = [
       "hub.mode": "subscribe",
       "hub.topic": websub.topic,
@@ -294,7 +293,7 @@ defmodule Pleroma.Web.Websub do
     Logger.info(fn -> "Pushing #{topic} to #{callback}" end)
 
     with {:ok, %{status: code}} when code in 200..299 <-
-           @httpoison.post(
+           HTTP.post(
              callback,
              xml,
              [

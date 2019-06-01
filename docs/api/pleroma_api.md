@@ -252,6 +252,45 @@ See [Admin-API](Admin-API.md)
 ]
 ```
 
+## `/api/v1/pleroma/mascot`
+### Gets user mascot image
+* Method `GET`
+* Authentication: required
+
+* Response: JSON. Returns a mastodon media attachment entity.
+* Example response:
+```json
+{
+    "id": "abcdefg",
+    "url": "https://pleroma.example.org/media/abcdefg.png",
+    "type": "image",
+    "pleroma": {
+        "mime_type": "image/png"
+    }
+}
+```
+
+### Updates user mascot image
+* Method `PUT`
+* Authentication: required
+* Params:
+    * `image`: Multipart image
+* Response: JSON. Returns a mastodon media attachment entity
+  when successful, otherwise returns HTTP 415 `{"error": "error_msg"}`
+* Example response:
+```json
+{
+    "id": "abcdefg",
+    "url": "https://pleroma.example.org/media/abcdefg.png",
+    "type": "image",
+    "pleroma": {
+        "mime_type": "image/png"
+    }
+}
+```
+* Note: Behaves exactly the same as `POST /api/v1/upload`.
+  Can only accept images - any attempt to upload non-image files will be met with `HTTP 415 Unsupported Media Type`.
+
 ## `/api/pleroma/notification_settings`
 ### Updates user notification settings
 * Method `PUT`

@@ -133,6 +133,13 @@ defmodule Pleroma.Object do
     end
   end
 
+  def prune(%Object{data: %{"id" => id}} = object) do
+    with {:ok, object} <- Repo.delete(object),
+         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
+      {:ok, object}
+    end
+  end
+
   def set_cache(%Object{data: %{"id" => ap_id}} = object) do
     Cachex.put(:object_cache, "object:#{ap_id}", object)
     {:ok, object}

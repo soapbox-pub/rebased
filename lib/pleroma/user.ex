@@ -10,6 +10,7 @@ defmodule Pleroma.User do
 
   alias Comeonin.Pbkdf2
   alias Pleroma.Activity
+  alias Pleroma.Keys
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Registration
@@ -365,9 +366,7 @@ defmodule Pleroma.User do
   end
 
   def follow(%User{} = follower, %User{info: info} = followed) do
-    user_config = Application.get_env(:pleroma, :user)
-    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
-
+    deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
     ap_followers = followed.follower_address
 
     cond do
@@ -759,7 +758,7 @@ defmodule Pleroma.User do
 
     from(s in subquery(boost_search_rank_query(distinct_query, for_user)),
       order_by: [desc: s.search_rank],
-      limit: 20
+      limit: 40
     )
   end
 
@@ -1401,5 +1400,45 @@ defmodule Pleroma.User do
     |> change()
     |> put_embed(:info, info_changeset)
     |> update_and_set_cache()
+  end
+
+  def get_mascot(%{info: %{mascot: %{} = mascot}}) when not is_nil(mascot) do
+    mascot
+  end
+
+  def get_mascot(%{info: %{mascot: mascot}}) when is_nil(mascot) do
+    # use instance-default
+    config = Pleroma.Config.get([:assets, :mascots])
+    default_mascot = Pleroma.Config.get([:assets, :default_mascot])
+    mascot = Keyword.get(config, default_mascot)
+
+    %{
+      "id" => "default-mascot",
+      "url" => mascot[:url],
+      "preview_url" => mascot[:url],
+      "pleroma" => %{
+        "mime_type" => mascot[:mime_type]
+      }
+    }
+  end
+
+  def ensure_keys_present(user) do
+    info = user.info
+
+    if info.keys do
+      {:ok, user}
+    else
+      {:ok, pem} = Keys.generate_rsa_pem()
+
+      info_cng =
+        info
+        |> User.Info.set_keys(pem)
+
+      cng =
+        Ecto.Changeset.change(user)
+        |> Ecto.Changeset.put_embed(:info, info_cng)
+
+      update_and_set_cache(cng)
+    end
   end
 end

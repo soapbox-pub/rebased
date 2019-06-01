@@ -12,25 +12,27 @@ defmodule Pleroma.Web.MediaProxy do
   def url("/" <> _ = url), do: url
 
   def url(url) do
-    config = Application.get_env(:pleroma, :media_proxy, [])
-    domain = URI.parse(url).host
-
-    cond do
-      !Keyword.get(config, :enabled, false) or String.starts_with?(url, Pleroma.Web.base_url()) ->
-        url
-
-      Enum.any?(Pleroma.Config.get([:media_proxy, :whitelist]), fn pattern ->
-        String.equivalent?(domain, pattern)
-      end) ->
-        url
-
-      true ->
-        encode_url(url)
+    if !enabled?() or local?(url) or whitelisted?(url) do
+      url
+    else
+      encode_url(url)
     end
   end
 
+  defp enabled?, do: Pleroma.Config.get([:media_proxy, :enabled], false)
+
+  defp local?(url), do: String.starts_with?(url, Pleroma.Web.base_url())
+
+  defp whitelisted?(url) do
+    %{host: domain} = URI.parse(url)
+
+    Enum.any?(Pleroma.Config.get([:media_proxy, :whitelist]), fn pattern ->
+      String.equivalent?(domain, pattern)
+    end)
+  end
+
   def encode_url(url) do
-    secret = Application.get_env(:pleroma, Pleroma.Web.Endpoint)[:secret_key_base]
+    secret = Pleroma.Config.get([Pleroma.Web.Endpoint, :secret_key_base])
 
     # Must preserve `%2F` for compatibility with S3
     # https://git.pleroma.social/pleroma/pleroma/issues/580
@@ -52,7 +54,7 @@ defmodule Pleroma.Web.MediaProxy do
   end
 
   def decode_url(sig, url) do
-    secret = Application.get_env(:pleroma, Pleroma.Web.Endpoint)[:secret_key_base]
+    secret = Pleroma.Config.get([Pleroma.Web.Endpoint, :secret_key_base])
     sig = Base.url_decode64!(sig, @base64_opts)
     local_sig = :crypto.hmac(:sha, secret, url)
 

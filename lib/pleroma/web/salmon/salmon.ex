@@ -5,12 +5,12 @@
 defmodule Pleroma.Web.Salmon do
   @behaviour Pleroma.Web.Federator.Publisher
 
-  @httpoison Application.get_env(:pleroma, :httpoison)
-
   use Bitwise
 
   alias Pleroma.Activity
+  alias Pleroma.HTTP
   alias Pleroma.Instances
+  alias Pleroma.Keys
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator.Publisher
@@ -89,45 +89,6 @@ defmodule Pleroma.Web.Salmon do
     "RSA.#{modulus_enc}.#{exponent_enc}"
   end
 
-  # Native generation of RSA keys is only available since OTP 20+ and in default build conditions
-  # We try at compile time to generate natively an RSA key otherwise we fallback on the old way.
-  try do
-    _ = :public_key.generate_key({:rsa, 2048, 65_537})
-
-    def generate_rsa_pem do
-      key = :public_key.generate_key({:rsa, 2048, 65_537})
-      entry = :public_key.pem_entry_encode(:RSAPrivateKey, key)
-      pem = :public_key.pem_encode([entry]) |> String.trim_trailing()
-      {:ok, pem}
-    end
-  rescue
-    _ ->
-      def generate_rsa_pem do
-        port = Port.open({:spawn, "openssl genrsa"}, [:binary])
-
-        {:ok, pem} =
-          receive do
-            {^port, {:data, pem}} -> {:ok, pem}
-          end
-
-        Port.close(port)
-
-        if Regex.match?(~r/RSA PRIVATE KEY/, pem) do
-          {:ok, pem}
-        else
-          :error
-        end
-      end
-  end
-
-  def keys_from_pem(pem) do
-    [private_key_code] = :public_key.pem_decode(pem)
-    private_key = :public_key.pem_entry_decode(private_key_code)
-    {:RSAPrivateKey, _, modulus, exponent, _, _, _, _, _, _, _} = private_key
-    public_key = {:RSAPublicKey, modulus, exponent}
-    {:ok, private_key, public_key}
-  end
-
   def encode(private_key, doc) do
     type = "application/atom+xml"
     encoding = "base64url"
@@ -176,7 +137,7 @@ defmodule Pleroma.Web.Salmon do
 
   def publish_one(%{recipient: url, feed: feed} = params) when is_binary(url) do
     with {:ok, %{status: code}} when code in 200..299 <-
-           @httpoison.post(
+           HTTP.post(
              url,
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}]
@@ -227,7 +188,7 @@ defmodule Pleroma.Web.Salmon do
         |> :xmerl.export_simple(:xmerl_xml)
         |> to_string
 
-      {:ok, private, _} = keys_from_pem(keys)
+      {:ok, private, _} = Keys.keys_from_pem(keys)
       {:ok, feed} = encode(private, feed)
 
       remote_users = remote_users(activity)
@@ -253,7 +214,7 @@ defmodule Pleroma.Web.Salmon do
   def publish(%{id: id}, _), do: Logger.debug(fn -> "Keys missing for user #{id}" end)
 
   def gather_webfinger_links(%User{} = user) do
-    {:ok, _private, public} = keys_from_pem(user.info.keys)
+    {:ok, _private, public} = Keys.keys_from_pem(user.info.keys)
     magic_key = encode_key(public)
 
     [

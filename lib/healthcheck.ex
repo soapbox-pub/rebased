@@ -29,13 +29,13 @@ defmodule Pleroma.Healthcheck do
   end
 
   defp assign_db_info(healthcheck) do
-    database = Application.get_env(:pleroma, Repo)[:database]
+    database = Pleroma.Config.get([Repo, :database])
 
     query =
       "select state, count(pid) from pg_stat_activity where datname = '#{database}' group by state;"
 
     result = Repo.query!(query)
-    pool_size = Application.get_env(:pleroma, Repo)[:pool_size]
+    pool_size = Pleroma.Config.get([Repo, :pool_size])
 
     db_info =
       Enum.reduce(result.rows, %{active: 0, idle: 0}, fn [state, cnt], states ->

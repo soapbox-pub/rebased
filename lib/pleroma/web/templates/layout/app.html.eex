@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,minimal-ui" />
     <title>
-    <%= Application.get_env(:pleroma, :instance)[:name] %>
+    <%= Pleroma.Config.get([:instance, :name]) %>
     </title>
     <style>
       body {
@@ -194,7 +194,7 @@
   </head>
   <body>
     <div class="container">
-      <h1><%= Application.get_env(:pleroma, :instance)[:name] %></h1>
+      <h1><%= Pleroma.Config.get([:instance, :name]) %></h1>
       <%= render @view_module, @view_template, assigns %>
     </div>
   </body>

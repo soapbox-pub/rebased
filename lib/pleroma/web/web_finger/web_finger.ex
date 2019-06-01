@@ -3,12 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFinger do
-  @httpoison Application.get_env(:pleroma, :httpoison)
-
+  alias Pleroma.HTTP
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.Federator.Publisher
-  alias Pleroma.Web.Salmon
   alias Pleroma.Web.XML
   alias Pleroma.XmlBuilder
   require Jason
@@ -61,7 +59,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def represent_user(user, "JSON") do
-    {:ok, user} = ensure_keys_present(user)
+    {:ok, user} = User.ensure_keys_present(user)
 
     %{
       "subject" => "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}",
@@ -71,7 +69,7 @@ defmodule Pleroma.Web.WebFinger do
   end
 
   def represent_user(user, "XML") do
-    {:ok, user} = ensure_keys_present(user)
+    {:ok, user} = User.ensure_keys_present(user)
 
     links =
       gather_links(user)
@@ -86,27 +84,6 @@ defmodule Pleroma.Web.WebFinger do
       ] ++ links
     }
     |> XmlBuilder.to_doc()
-  end
-
-  # This seems a better fit in Salmon
-  def ensure_keys_present(user) do
-    info = user.info
-
-    if info.keys do
-      {:ok, user}
-    else
-      {:ok, pem} = Salmon.generate_rsa_pem()
-
-      info_cng =
-        info
-        |> User.Info.set_keys(pem)
-
-      cng =
-        Ecto.Changeset.change(user)
-        |> Ecto.Changeset.put_embed(:info, info_cng)
-
-      User.update_and_set_cache(cng)
-    end
   end
 
   defp get_magic_key(magic_key) do
@@ -198,11 +175,11 @@ defmodule Pleroma.Web.WebFinger do
 
   def find_lrdd_template(domain) do
     with {:ok, %{status: status, body: body}} when status in 200..299 <-
-           @httpoison.get("http://#{domain}/.well-known/host-meta", []) do
+           HTTP.get("http://#{domain}/.well-known/host-meta", []) do
       get_template_from_xml(body)
     else
       _ ->
-        with {:ok, %{body: body}} <- @httpoison.get("https://#{domain}/.well-known/host-meta", []) do
+        with {:ok, %{body: body}} <- HTTP.get("https://#{domain}/.well-known/host-meta", []) do
           get_template_from_xml(body)
         else
           e -> {:error, "Can't find LRDD template: #{inspect(e)}"}
@@ -231,7 +208,7 @@ defmodule Pleroma.Web.WebFinger do
       end
 
     with response <-
-           @httpoison.get(
+           HTTP.get(
              address,
              Accept: "application/xrd+xml,application/jrd+json"
            ),
