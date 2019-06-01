@@ -1346,8 +1346,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       accounts =
         Map.put(%{}, user.id, AccountView.render("account.json", %{user: user, for: user}))
 
-      flavour = get_user_flavour(user)
-
       initial_state =
         %{
           meta: %{
@@ -1433,7 +1431,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       conn
       |> put_layout(false)
       |> put_view(MastodonView)
-      |> render("index.html", %{initial_state: initial_state, flavour: flavour})
+      |> render("index.html", %{initial_state: initial_state})
     else
       conn
       |> put_session(:return_to, conn.request_path)
@@ -1454,43 +1452,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> put_resp_content_type("application/json")
         |> send_resp(500, Jason.encode!(%{"error" => inspect(e)}))
     end
-  end
-
-  @supported_flavours ["glitch", "vanilla"]
-
-  def set_flavour(%{assigns: %{user: user}} = conn, %{"flavour" => flavour} = _params)
-      when flavour in @supported_flavours do
-    flavour_cng = User.Info.mastodon_flavour_update(user.info, flavour)
-
-    with changeset <- Ecto.Changeset.change(user),
-         changeset <- Ecto.Changeset.put_embed(changeset, :info, flavour_cng),
-         {:ok, user} <- User.update_and_set_cache(changeset),
-         flavour <- user.info.flavour do
-      json(conn, flavour)
-    else
-      e ->
-        conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(500, Jason.encode!(%{"error" => inspect(e)}))
-    end
-  end
-
-  def set_flavour(conn, _params) do
-    conn
-    |> put_status(400)
-    |> json(%{error: "Unsupported flavour"})
-  end
-
-  def get_flavour(%{assigns: %{user: user}} = conn, _params) do
-    json(conn, get_user_flavour(user))
-  end
-
-  defp get_user_flavour(%User{info: %{flavour: flavour}}) when flavour in @supported_flavours do
-    flavour
-  end
-
-  defp get_user_flavour(_) do
-    "glitch"
   end
 
   def login(%{assigns: %{user: %User{}}} = conn, _params) do

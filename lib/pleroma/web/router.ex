@@ -309,8 +309,6 @@ defmodule Pleroma.Web.Router do
       post("/conversations/:id/read", MastodonAPIController, :conversation_read)
 
       get("/endorsements", MastodonAPIController, :empty_array)
-
-      get("/pleroma/flavour", MastodonAPIController, :get_flavour)
     end
 
     scope [] do
@@ -349,8 +347,6 @@ defmodule Pleroma.Web.Router do
       get("/filters/:id", MastodonAPIController, :get_filter)
       put("/filters/:id", MastodonAPIController, :update_filter)
       delete("/filters/:id", MastodonAPIController, :delete_filter)
-
-      post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
 
       get("/pleroma/mascot", MastodonAPIController, :get_mascot)
       put("/pleroma/mascot", MastodonAPIController, :set_mascot)
