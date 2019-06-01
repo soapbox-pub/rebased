@@ -3630,8 +3630,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert json_response(conn, 200)
       object = Object.get_by_id(object.id)
 
-      assert Enum.all?(object.data["anyOf"], fn %{"replies" => %{"totalItems" => totalItems}} ->
-               totalItems == 1
+      assert Enum.all?(object.data["anyOf"], fn %{"replies" => %{"totalItems" => total_items}} ->
+               total_items == 1
              end)
     end
 
@@ -3675,8 +3675,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       object = Object.get_by_id(object.id)
 
-      refute Enum.any?(object.data["oneOf"], fn %{"replies" => %{"totalItems" => totalItems}} ->
-               totalItems == 1
+      refute Enum.any?(object.data["oneOf"], fn %{"replies" => %{"totalItems" => total_items}} ->
+               total_items == 1
              end)
     end
   end
