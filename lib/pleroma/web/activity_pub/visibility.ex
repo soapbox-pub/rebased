@@ -66,6 +66,9 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
       Enum.any?(to, &String.contains?(&1, "/followers")) ->
         "private"
 
+      object.data["directMessage"] == true ->
+        "direct"
+
       length(cc) > 0 ->
         "private"
 

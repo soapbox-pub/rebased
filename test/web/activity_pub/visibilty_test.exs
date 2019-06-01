@@ -117,4 +117,8 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     assert Visibility.get_visibility(direct) == "direct"
     assert Visibility.get_visibility(unlisted) == "unlisted"
   end
+
+  test "get_visibility with directMessage flag" do
+    assert Visibility.get_visibility(%{data: %{"directMessage" => true}}) == "direct"
+  end
 end
