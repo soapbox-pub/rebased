@@ -789,4 +789,21 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         [to, cc, recipients]
     end
   end
+
+  def get_existing_votes(actor, %{data: %{"id" => id}}) do
+    query =
+      from(
+        [activity, object: object] in Activity.with_preloaded_object(Activity),
+        where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
+        where:
+          fragment(
+            "(?)->'inReplyTo' = ?",
+            object.data,
+            ^to_string(id)
+          ),
+        where: fragment("(?)->>'type' = 'Answer'", object.data)
+      )
+
+    Repo.all(query)
+  end
 end

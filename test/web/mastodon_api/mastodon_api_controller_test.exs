@@ -3497,4 +3497,80 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert json_response(conn, 404)
     end
   end
+
+  describe "POST /api/v1/polls/:id/votes" do
+    test "votes are added to the poll", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "A very delicious sandwich",
+          "poll" => %{
+            "options" => ["Lettuce", "Grilled Bacon", "Tomato"],
+            "expires_in" => 20,
+            "multiple" => true
+          }
+        })
+
+      object = Object.normalize(activity)
+
+      conn =
+        conn
+        |> assign(:user, other_user)
+        |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [0, 1, 2]})
+
+      assert json_response(conn, 200)
+      object = Object.get_by_id(object.id)
+
+      assert Enum.all?(object.data["anyOf"], fn %{"replies" => %{"totalItems" => totalItems}} ->
+               totalItems == 1
+             end)
+    end
+
+    test "author can't vote", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "Am I cute?",
+          "poll" => %{"options" => ["Yes", "No"], "expires_in" => 20}
+        })
+
+      object = Object.normalize(activity)
+
+      assert conn
+             |> assign(:user, user)
+             |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [1]})
+             |> json_response(422) == %{"error" => "Already voted"}
+
+      object = Object.get_by_id(object.id)
+
+      refute Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 1
+    end
+
+    test "does not allow multiple choices on a single-choice question", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "The glass is",
+          "poll" => %{"options" => ["half empty", "half full"], "expires_in" => 20}
+        })
+
+      object = Object.normalize(activity)
+
+      assert conn
+             |> assign(:user, other_user)
+             |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [0, 1]})
+             |> json_response(422) == %{"error" => "Too many choices"}
+
+      object = Object.get_by_id(object.id)
+
+      refute Enum.any?(object.data["oneOf"], fn %{"replies" => %{"totalItems" => totalItems}} ->
+               totalItems == 1
+             end)
+    end
+  end
 end

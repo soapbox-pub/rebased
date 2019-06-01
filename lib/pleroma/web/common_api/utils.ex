@@ -491,4 +491,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         {:error, "No such conversation"}
     end
   end
+
+  def make_answer_data(%User{ap_id: ap_id}, object, name) do
+    %{
+      "type" => "Answer",
+      "actor" => ap_id,
+      "cc" => [object.data["actor"]],
+      "to" => [],
+      "name" => name,
+      "inReplyTo" => object.data["id"]
+    }
+  end
 end

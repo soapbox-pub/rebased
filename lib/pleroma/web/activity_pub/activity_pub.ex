@@ -878,7 +878,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
     |> maybe_order(opts)
-    |> exclude_poll_votes(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> restrict_tag(opts)
     |> restrict_tag_reject(opts)
@@ -899,6 +898,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
     |> Activity.restrict_deactivated_users()
+    |> exclude_poll_votes(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do

@@ -430,6 +430,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def poll_vote(%{assigns: %{user: user}} = conn, %{"id" => id, "choices" => choices}) do
+    with %Object{} = object <- Object.get_by_id(id),
+         true <- object.data["type"] == "Question",
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
+         true <- Visibility.visible_for_user?(activity, user),
+         {:ok, _activities, object} <- CommonAPI.vote(user, object, choices) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("poll.json", %{object: object, for: user})
+    else
+      nil ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Record not found"})
+
+      false ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Record not found"})
+
+      {:error, message} ->
+        conn
+        |> put_status(422)
+        |> json(%{error: message})
+    end
+  end
+
   def scheduled_statuses(%{assigns: %{user: user}} = conn, params) do
     with scheduled_activities <- MastodonAPI.get_scheduled_activities(user, params) do
       conn

@@ -335,6 +335,8 @@ defmodule Pleroma.Web.Router do
       put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
       delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
 
+      post("/polls/:id/votes", MastodonAPIController, :poll_vote)
+
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
 
