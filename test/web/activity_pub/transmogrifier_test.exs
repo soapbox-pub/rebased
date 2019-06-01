@@ -1211,9 +1211,12 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   end
 
   describe "fix_explicit_addressing" do
-    test "moves non-explicitly mentioned actors to cc" do
+    setup do
       user = insert(:user)
+      [user: user]
+    end
 
+    test "moves non-explicitly mentioned actors to cc", %{user: user} do
       explicitly_mentioned_actors = [
         "https://pleroma.gold/users/user1",
         "https://pleroma.gold/user2"
@@ -1235,9 +1238,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert "https://social.beepboop.ga/users/dirb" in fixed_object["cc"]
     end
 
-    test "does not move actor's follower collection to cc" do
-      user = insert(:user)
-
+    test "does not move actor's follower collection to cc", %{user: user} do
       object = %{
         "actor" => user.ap_id,
         "to" => [user.follower_address],
@@ -1247,6 +1248,22 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       fixed_object = Transmogrifier.fix_explicit_addressing(object)
       assert user.follower_address in fixed_object["to"]
       refute user.follower_address in fixed_object["cc"]
+    end
+
+    test "removes recipient's follower collection from cc", %{user: user} do
+      recipient = insert(:user)
+
+      object = %{
+        "actor" => user.ap_id,
+        "to" => [recipient.ap_id, "https://www.w3.org/ns/activitystreams#Public"],
+        "cc" => [user.follower_address, recipient.follower_address]
+      }
+
+      fixed_object = Transmogrifier.fix_explicit_addressing(object)
+
+      assert user.follower_address in fixed_object["cc"]
+      refute recipient.follower_address in fixed_object["cc"]
+      refute recipient.follower_address in fixed_object["to"]
     end
   end
 end
