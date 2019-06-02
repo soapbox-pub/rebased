@@ -3649,7 +3649,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert conn
              |> assign(:user, user)
              |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [1]})
-             |> json_response(422) == %{"error" => "Already voted"}
+             |> json_response(422) == %{"error" => "Poll's author can't vote"}
 
       object = Object.get_by_id(object.id)
 

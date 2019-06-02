@@ -144,7 +144,7 @@ defmodule Pleroma.Web.CommonAPI do
       object = Object.get_cached_by_ap_id(object.data["id"])
       {:ok, answer_activities, object}
     else
-      {:author, _} -> {:error, "Already voted"}
+      {:author, _} -> {:error, "Poll's author can't vote"}
       {:existing_votes, _} -> {:error, "Already voted"}
       {:choice_check, {_, false}} -> {:error, "Invalid indices"}
       {:count_check, false} -> {:error, "Too many choices"}
