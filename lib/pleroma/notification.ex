@@ -166,7 +166,16 @@ defmodule Pleroma.Notification do
   def get_notified_from_activity(_, _local_only), do: []
 
   def skip?(activity, user) do
-    [:self, :blocked, :local, :muted, :followers, :follows, :recently_followed]
+    [
+      :self,
+      :blocked,
+      :muted,
+      :followers,
+      :follows,
+      :non_followers,
+      :non_follows,
+      :recently_followed
+    ]
     |> Enum.any?(&skip?(&1, activity, user))
   end
 
@@ -178,12 +187,6 @@ defmodule Pleroma.Notification do
     actor = activity.data["actor"]
     User.blocks?(user, %{ap_id: actor})
   end
-
-  def skip?(:local, %{local: true}, %{info: %{notification_settings: %{"local" => false}}}),
-    do: true
-
-  def skip?(:local, %{local: false}, %{info: %{notification_settings: %{"remote" => false}}}),
-    do: true
 
   def skip?(:muted, activity, user) do
     actor = activity.data["actor"]
@@ -201,10 +204,30 @@ defmodule Pleroma.Notification do
     User.following?(follower, user)
   end
 
+  def skip?(
+        :non_followers,
+        activity,
+        %{info: %{notification_settings: %{"non_followers" => false}}} = user
+      ) do
+    actor = activity.data["actor"]
+    follower = User.get_cached_by_ap_id(actor)
+    !User.following?(follower, user)
+  end
+
   def skip?(:follows, activity, %{info: %{notification_settings: %{"follows" => false}}} = user) do
     actor = activity.data["actor"]
     followed = User.get_cached_by_ap_id(actor)
     User.following?(user, followed)
+  end
+
+  def skip?(
+        :non_follows,
+        activity,
+        %{info: %{notification_settings: %{"non_follows" => false}}} = user
+      ) do
+    actor = activity.data["actor"]
+    followed = User.get_cached_by_ap_id(actor)
+    !User.following?(user, followed)
   end
 
   def skip?(:recently_followed, %{data: %{"type" => "Follow"}} = activity, user) do
