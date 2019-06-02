@@ -330,7 +330,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
-  # TODO: Add tests for this view
   def render("poll.json", %{object: object} = opts) do
     {multiple, options} =
       case object.data do
