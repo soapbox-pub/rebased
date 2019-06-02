@@ -453,7 +453,11 @@ config :pleroma, :ldap,
 config :esshd,
   enabled: false
 
-oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+oauth_consumer_strategies =
+  System.get_env("OAUTH_CONSUMER_STRATEGIES")
+  |> to_string()
+  |> String.split()
+  |> Enum.map(&hd(String.split(&1, ":")))
 
 ueberauth_providers =
   for strategy <- oauth_consumer_strategies do

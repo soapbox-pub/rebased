@@ -51,16 +51,27 @@ defmodule Pleroma.Mixfile do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
+  # Specifies OAuth dependencies.
+  defp oauth_deps do
+    oauth_strategy_packages =
+      System.get_env("OAUTH_CONSUMER_STRATEGIES")
+      |> to_string()
+      |> String.split()
+      |> Enum.map(fn strategy_entry ->
+        with [_strategy, dependency] <- String.split(strategy_entry, ":") do
+          dependency
+        else
+          [strategy] -> "ueberauth_#{strategy}"
+        end
+      end)
+
+    for s <- oauth_strategy_packages, do: {String.to_atom(s), ">= 0.0.0"}
+  end
+
   # Specifies your project dependencies.
   #
   # Type `mix help deps` for examples and options.
   defp deps do
-    oauth_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
-
-    oauth_deps =
-      for s <- oauth_strategies,
-          do: {String.to_atom("ueberauth_#{s}"), ">= 0.0.0"}
-
     [
       {:phoenix, "~> 1.4.1"},
       {:plug_cowboy, "~> 2.0"},
@@ -121,7 +132,7 @@ defmodule Pleroma.Mixfile do
       {:ex_rated, "~> 1.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test}
-    ] ++ oauth_deps
+    ] ++ oauth_deps()
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
