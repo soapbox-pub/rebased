@@ -22,7 +22,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
   @impl true
   def filter(%{"actor" => actor} = message) do
     with {:ok, match, subchain} <- lookup_subchain(actor) do
-      Logger.debug("[SubchainPolicy] Matched #{actor} against #{inspect(match)} with subchain #{inspect(subchain)}")
+      Logger.debug(
+        "[SubchainPolicy] Matched #{actor} against #{inspect(match)} with subchain #{
+          inspect(subchain)
+        }"
+      )
 
       subchain
       |> MRF.filter(message)
