@@ -47,24 +47,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           ]
         })
 
-      assert json_response(conn, 200) == [
-               %{
-                 "code" => 200,
-                 "data" => %{
-                   "email" => "lain@example.org",
-                   "nickname" => "lain"
-                 },
-                 "type" => "success"
-               },
-               %{
-                 "code" => 200,
-                 "data" => %{
-                   "email" => "lain2@example.org",
-                   "nickname" => "lain2"
-                 },
-                 "type" => "success"
-               }
-             ]
+      response = json_response(conn, 200) |> Enum.map(&Map.get(&1, "type"))
+      assert response == ["success", "success"]
     end
 
     test "Cannot create user with exisiting email" do
