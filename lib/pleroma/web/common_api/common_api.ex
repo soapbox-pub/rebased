@@ -141,6 +141,7 @@ defmodule Pleroma.Web.CommonAPI do
           })
         end)
 
+      object = Object.get_cached_by_ap_id(object.data["id"])
       {:ok, answer_activities, object}
     else
       {:author, _} -> {:error, "Already voted"}

@@ -436,8 +436,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user),
          {:ok, _activities, object} <- CommonAPI.vote(user, object, choices) do
-      object = Object.get_cached_by_ap_id(object.data["id"])
-
       conn
       |> put_view(StatusView)
       |> try_render("poll.json", %{object: object, for: user})
