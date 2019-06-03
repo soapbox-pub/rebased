@@ -66,7 +66,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_explicit_addressing(%{"to" => to, "cc" => cc} = object, explicit_mentions) do
+  def fix_explicit_addressing(
+        %{"to" => to, "cc" => cc} = object,
+        explicit_mentions,
+        follower_collection
+      ) do
     explicit_to =
       to
       |> Enum.filter(fn x -> x in explicit_mentions end)
@@ -77,6 +81,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     final_cc =
       (cc ++ explicit_cc)
+      |> Enum.reject(fn x -> String.ends_with?(x, "/followers") and x != follower_collection end)
       |> Enum.uniq()
 
     object
@@ -84,7 +89,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("cc", final_cc)
   end
 
-  def fix_explicit_addressing(object, _explicit_mentions), do: object
+  def fix_explicit_addressing(object, _explicit_mentions, _followers_collection), do: object
 
   # if directMessage flag is set to true, leave the addressing alone
   def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
@@ -99,8 +104,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     explicit_mentions =
       explicit_mentions ++ ["https://www.w3.org/ns/activitystreams#Public", follower_collection]
 
-    object
-    |> fix_explicit_addressing(explicit_mentions)
+    fix_explicit_addressing(object, explicit_mentions, follower_collection)
   end
 
   # if as:Public is addressed, then make sure the followers collection is also addressed
@@ -137,7 +141,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
-    |> fix_explicit_addressing
+    |> fix_explicit_addressing()
     |> fix_implicit_addressing(followers_collection)
   end
 

@@ -11,6 +11,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.UserView
+  alias Pleroma.Web.ActivityPub.Utils
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -234,13 +235,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/users/:nickname/inbox" do
-    test "it inserts an incoming activity into the database", %{conn: conn} do
-      user = insert(:user)
-
+    setup do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Poison.decode!()
-        |> Map.put("bcc", [user.ap_id])
+
+      [data: data]
+    end
+
+    test "it inserts an incoming activity into the database", %{conn: conn, data: data} do
+      user = insert(:user)
+      data = Map.put(data, "bcc", [user.ap_id])
 
       conn =
         conn
@@ -253,15 +258,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert Activity.get_by_ap_id(data["id"])
     end
 
-    test "it accepts messages from actors that are followed by the user", %{conn: conn} do
+    test "it accepts messages from actors that are followed by the user", %{
+      conn: conn,
+      data: data
+    } do
       recipient = insert(:user)
       actor = insert(:user, %{ap_id: "http://mastodon.example.org/users/actor"})
 
       {:ok, recipient} = User.follow(recipient, actor)
-
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
 
       object =
         data["object"]
@@ -309,13 +313,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert response(conn, 200) =~ note_activity.data["object"]["content"]
     end
 
-    test "it clears `unreachable` federation status of the sender", %{conn: conn} do
+    test "it clears `unreachable` federation status of the sender", %{conn: conn, data: data} do
       user = insert(:user)
-
-      data =
-        File.read!("test/fixtures/mastodon-post-activity.json")
-        |> Poison.decode!()
-        |> Map.put("bcc", [user.ap_id])
+      data = Map.put(data, "bcc", [user.ap_id])
 
       sender_host = URI.parse(data["actor"]).host
       Instances.set_consistently_unreachable(sender_host)
@@ -329,6 +329,47 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert "ok" == json_response(conn, 200)
       assert Instances.reachable?(sender_host)
+    end
+
+    test "it removes all follower collections but actor's", %{conn: conn} do
+      [actor, recipient] = insert_pair(:user)
+
+      data =
+        File.read!("test/fixtures/activitypub-client-post-activity.json")
+        |> Poison.decode!()
+
+      object = Map.put(data["object"], "attributedTo", actor.ap_id)
+
+      data =
+        data
+        |> Map.put("id", Utils.generate_object_id())
+        |> Map.put("actor", actor.ap_id)
+        |> Map.put("object", object)
+        |> Map.put("cc", [
+          recipient.follower_address,
+          actor.follower_address
+        ])
+        |> Map.put("to", [
+          recipient.ap_id,
+          recipient.follower_address,
+          "https://www.w3.org/ns/activitystreams#Public"
+        ])
+
+      conn
+      |> assign(:valid_signature, true)
+      |> put_req_header("content-type", "application/activity+json")
+      |> post("/users/#{recipient.nickname}/inbox", data)
+      |> json_response(200)
+
+      activity = Activity.get_by_ap_id(data["id"])
+
+      assert activity.id
+      assert actor.follower_address in activity.recipients
+      assert actor.follower_address in activity.data["cc"]
+
+      refute recipient.follower_address in activity.recipients
+      refute recipient.follower_address in activity.data["cc"]
+      refute recipient.follower_address in activity.data["to"]
     end
   end
 

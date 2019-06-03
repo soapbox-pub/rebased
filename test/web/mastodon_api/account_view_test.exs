@@ -78,10 +78,10 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     user = insert(:user)
 
     notification_settings = %{
-      "remote" => true,
-      "local" => true,
       "followers" => true,
-      "follows" => true
+      "follows" => true,
+      "non_follows" => true,
+      "non_followers" => true
     }
 
     privacy = user.info.default_scope
