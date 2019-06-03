@@ -197,7 +197,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       languages: ["en"],
       registrations: Pleroma.Config.get([:instance, :registrations_open]),
       # Extra (not present in Mastodon):
-      max_toot_chars: Keyword.get(instance, :limit)
+      max_toot_chars: Keyword.get(instance, :limit),
+      poll_limits: Keyword.get(instance, :poll_limits)
     }
 
     json(conn, response)
@@ -409,6 +410,53 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def get_poll(%{assigns: %{user: user}} = conn, %{"id" => id}) do
+    with %Object{} = object <- Object.get_by_id(id),
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
+         true <- Visibility.visible_for_user?(activity, user) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("poll.json", %{object: object, for: user})
+    else
+      nil ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Record not found"})
+
+      false ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Record not found"})
+    end
+  end
+
+  def poll_vote(%{assigns: %{user: user}} = conn, %{"id" => id, "choices" => choices}) do
+    with %Object{} = object <- Object.get_by_id(id),
+         true <- object.data["type"] == "Question",
+         %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
+         true <- Visibility.visible_for_user?(activity, user),
+         {:ok, _activities, object} <- CommonAPI.vote(user, object, choices) do
+      conn
+      |> put_view(StatusView)
+      |> try_render("poll.json", %{object: object, for: user})
+    else
+      nil ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Record not found"})
+
+      false ->
+        conn
+        |> put_status(404)
+        |> json(%{error: "Record not found"})
+
+      {:error, message} ->
+        conn
+        |> put_status(422)
+        |> json(%{error: message})
+    end
+  end
+
   def scheduled_statuses(%{assigns: %{user: user}} = conn, params) do
     with scheduled_activities <- MastodonAPI.get_scheduled_activities(user, params) do
       conn
@@ -472,12 +520,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       params
       |> Map.put("in_reply_to_status_id", params["in_reply_to_id"])
 
-    idempotency_key =
-      case get_req_header(conn, "idempotency-key") do
-        [key] -> key
-        _ -> Ecto.UUID.generate()
-      end
-
     scheduled_at = params["scheduled_at"]
 
     if scheduled_at && ScheduledActivity.far_enough?(scheduled_at) do
@@ -490,15 +532,38 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       params = Map.drop(params, ["scheduled_at"])
 
-      {:ok, activity} =
-        Cachex.fetch!(:idempotency_cache, idempotency_key, fn _ ->
-          CommonAPI.post(user, params)
-        end)
+      case get_cached_status_or_post(conn, params) do
+        {:ignore, message} ->
+          conn
+          |> put_status(422)
+          |> json(%{error: message})
 
-      conn
-      |> put_view(StatusView)
-      |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+        {:error, message} ->
+          conn
+          |> put_status(422)
+          |> json(%{error: message})
+
+        {_, activity} ->
+          conn
+          |> put_view(StatusView)
+          |> try_render("status.json", %{activity: activity, for: user, as: :activity})
+      end
     end
+  end
+
+  defp get_cached_status_or_post(%{assigns: %{user: user}} = conn, params) do
+    idempotency_key =
+      case get_req_header(conn, "idempotency-key") do
+        [key] -> key
+        _ -> Ecto.UUID.generate()
+      end
+
+    Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
+      case CommonAPI.post(user, params) do
+        {:ok, activity} -> activity
+        {:error, message} -> {:ignore, message}
+      end
+    end)
   end
 
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
@@ -1364,6 +1429,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
             max_toot_chars: limit,
             mascot: User.get_mascot(user)["url"]
           },
+          poll_limits: Config.get([:instance, :poll_limits]),
           rights: %{
             delete_others_notice: present?(user.info.is_moderator),
             admin: present?(user.info.is_admin)

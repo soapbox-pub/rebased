@@ -146,6 +146,103 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     refute id == third_id
   end
 
+  describe "posting polls" do
+    test "posting a poll", %{conn: conn} do
+      user = insert(:user)
+      time = NaiveDateTime.utc_now()
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "Who is the #bestgrill?",
+          "poll" => %{"options" => ["Rei", "Asuka", "Misato"], "expires_in" => 420}
+        })
+
+      response = json_response(conn, 200)
+
+      assert Enum.all?(response["poll"]["options"], fn %{"title" => title} ->
+               title in ["Rei", "Asuka", "Misato"]
+             end)
+
+      assert NaiveDateTime.diff(NaiveDateTime.from_iso8601!(response["poll"]["expires_at"]), time) in 420..430
+      refute response["poll"]["expred"]
+    end
+
+    test "option limit is enforced", %{conn: conn} do
+      user = insert(:user)
+      limit = Pleroma.Config.get([:instance, :poll_limits, :max_options])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "desu~",
+          "poll" => %{"options" => Enum.map(0..limit, fn _ -> "desu" end), "expires_in" => 1}
+        })
+
+      %{"error" => error} = json_response(conn, 422)
+      assert error == "Poll can't contain more than #{limit} options"
+    end
+
+    test "option character limit is enforced", %{conn: conn} do
+      user = insert(:user)
+      limit = Pleroma.Config.get([:instance, :poll_limits, :max_option_chars])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "...",
+          "poll" => %{
+            "options" => [Enum.reduce(0..limit, "", fn _, acc -> acc <> "." end)],
+            "expires_in" => 1
+          }
+        })
+
+      %{"error" => error} = json_response(conn, 422)
+      assert error == "Poll options cannot be longer than #{limit} characters each"
+    end
+
+    test "minimal date limit is enforced", %{conn: conn} do
+      user = insert(:user)
+      limit = Pleroma.Config.get([:instance, :poll_limits, :min_expiration])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "imagine arbitrary limits",
+          "poll" => %{
+            "options" => ["this post was made by pleroma gang"],
+            "expires_in" => limit - 1
+          }
+        })
+
+      %{"error" => error} = json_response(conn, 422)
+      assert error == "Expiration date is too soon"
+    end
+
+    test "maximum date limit is enforced", %{conn: conn} do
+      user = insert(:user)
+      limit = Pleroma.Config.get([:instance, :poll_limits, :max_expiration])
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/v1/statuses", %{
+          "status" => "imagine arbitrary limits",
+          "poll" => %{
+            "options" => ["this post was made by pleroma gang"],
+            "expires_in" => limit + 1
+          }
+        })
+
+      %{"error" => error} = json_response(conn, 422)
+      assert error == "Expiration date is too far in the future"
+    end
+  end
+
   test "posting a sensitive status", %{conn: conn} do
     user = insert(:user)
 
@@ -2542,7 +2639,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
              "stats" => _,
              "thumbnail" => _,
              "languages" => _,
-             "registrations" => _
+             "registrations" => _,
+             "poll_limits" => _
            } = result
 
     assert email == from_config_email
@@ -3439,6 +3537,126 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         })
 
       assert json_response(conn, 403) == %{"error" => "Rate limit exceeded."}
+    end
+  end
+
+  describe "GET /api/v1/polls/:id" do
+    test "returns poll entity for object id", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "Pleroma does",
+          "poll" => %{"options" => ["what Mastodon't", "n't what Mastodoes"], "expires_in" => 20}
+        })
+
+      object = Object.normalize(activity)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/polls/#{object.id}")
+
+      response = json_response(conn, 200)
+      id = object.id
+      assert %{"id" => ^id, "expired" => false, "multiple" => false} = response
+    end
+
+    test "does not expose polls for private statuses", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "Pleroma does",
+          "poll" => %{"options" => ["what Mastodon't", "n't what Mastodoes"], "expires_in" => 20},
+          "visibility" => "private"
+        })
+
+      object = Object.normalize(activity)
+
+      conn =
+        conn
+        |> assign(:user, other_user)
+        |> get("/api/v1/polls/#{object.id}")
+
+      assert json_response(conn, 404)
+    end
+  end
+
+  describe "POST /api/v1/polls/:id/votes" do
+    test "votes are added to the poll", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "A very delicious sandwich",
+          "poll" => %{
+            "options" => ["Lettuce", "Grilled Bacon", "Tomato"],
+            "expires_in" => 20,
+            "multiple" => true
+          }
+        })
+
+      object = Object.normalize(activity)
+
+      conn =
+        conn
+        |> assign(:user, other_user)
+        |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [0, 1, 2]})
+
+      assert json_response(conn, 200)
+      object = Object.get_by_id(object.id)
+
+      assert Enum.all?(object.data["anyOf"], fn %{"replies" => %{"totalItems" => total_items}} ->
+               total_items == 1
+             end)
+    end
+
+    test "author can't vote", %{conn: conn} do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "Am I cute?",
+          "poll" => %{"options" => ["Yes", "No"], "expires_in" => 20}
+        })
+
+      object = Object.normalize(activity)
+
+      assert conn
+             |> assign(:user, user)
+             |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [1]})
+             |> json_response(422) == %{"error" => "Poll's author can't vote"}
+
+      object = Object.get_by_id(object.id)
+
+      refute Enum.at(object.data["oneOf"], 1)["replies"]["totalItems"] == 1
+    end
+
+    test "does not allow multiple choices on a single-choice question", %{conn: conn} do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "The glass is",
+          "poll" => %{"options" => ["half empty", "half full"], "expires_in" => 20}
+        })
+
+      object = Object.normalize(activity)
+
+      assert conn
+             |> assign(:user, other_user)
+             |> post("/api/v1/polls/#{object.id}/votes", %{"choices" => [0, 1]})
+             |> json_response(422) == %{"error" => "Too many choices"}
+
+      object = Object.get_by_id(object.id)
+
+      refute Enum.any?(object.data["oneOf"], fn %{"replies" => %{"totalItems" => total_items}} ->
+               total_items == 1
+             end)
     end
   end
 end

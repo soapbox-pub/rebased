@@ -49,7 +49,7 @@ defmodule Pleroma.Conversation do
     with true <- Pleroma.Web.ActivityPub.Visibility.is_direct?(activity),
          "Create" <- activity.data["type"],
          object <- Pleroma.Object.normalize(activity),
-         "Note" <- object.data["type"],
+         true <- object.data["type"] in ["Note", "Question"],
          ap_id when is_binary(ap_id) and byte_size(ap_id) > 0 <- object.data["context"] do
       {:ok, conversation} = create_for_ap_id(ap_id)
 

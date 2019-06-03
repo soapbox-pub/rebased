@@ -16,7 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix Tasks: `mix pleroma.database remove_embedded_objects`
 - Mix Tasks: `mix pleroma.database update_users_following_followers_counts`
 - Mix Tasks: `mix pleroma.user toggle_confirmed`
+- Federation: Support for `Question` and `Answer` objects
 - Federation: Support for reports
+- Configuration: `poll_limits` option
 - Configuration: `safe_dm_mentions` option
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
@@ -37,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: `/api/v1/pleroma/accounts/:id/favourites` (API extension)
 - Mastodon API: [Reports](https://docs.joinmastodon.org/api/rest/reports/)
 - Mastodon API: `POST /api/v1/accounts` (account creation API)
+- Mastodon API: [Polls](https://docs.joinmastodon.org/api/rest/polls/)
 - ActivityPub C2S: OAuth endpoints
 - Metadata: RelMe provider
 - OAuth: added support for refresh tokens

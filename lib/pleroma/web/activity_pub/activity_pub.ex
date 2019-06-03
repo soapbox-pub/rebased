@@ -108,6 +108,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def decrease_replies_count_if_reply(_object), do: :noop
 
+  def increase_poll_votes_if_vote(%{
+        "object" => %{"inReplyTo" => reply_ap_id, "name" => name},
+        "type" => "Create"
+      }) do
+    Object.increase_vote_count(reply_ap_id, name)
+  end
+
+  def increase_poll_votes_if_vote(_create_data), do: :noop
+
   def insert(map, local \\ true, fake \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
@@ -183,40 +192,42 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
     if activity.data["type"] in ["Create", "Announce", "Delete"] do
-      Pleroma.Web.Streamer.stream("user", activity)
-      Pleroma.Web.Streamer.stream("list", activity)
+      object = Object.normalize(activity)
+      # Do not stream out poll replies
+      unless object.data["type"] == "Answer" do
+        Pleroma.Web.Streamer.stream("user", activity)
+        Pleroma.Web.Streamer.stream("list", activity)
 
-      if Enum.member?(activity.data["to"], public) do
-        Pleroma.Web.Streamer.stream("public", activity)
+        if Enum.member?(activity.data["to"], public) do
+          Pleroma.Web.Streamer.stream("public", activity)
 
-        if activity.local do
-          Pleroma.Web.Streamer.stream("public:local", activity)
-        end
+          if activity.local do
+            Pleroma.Web.Streamer.stream("public:local", activity)
+          end
 
-        if activity.data["type"] in ["Create"] do
-          object = Object.normalize(activity)
+          if activity.data["type"] in ["Create"] do
+            object.data
+            |> Map.get("tag", [])
+            |> Enum.filter(fn tag -> is_bitstring(tag) end)
+            |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
 
-          object.data
-          |> Map.get("tag", [])
-          |> Enum.filter(fn tag -> is_bitstring(tag) end)
-          |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
+            if object.data["attachment"] != [] do
+              Pleroma.Web.Streamer.stream("public:media", activity)
 
-          if object.data["attachment"] != [] do
-            Pleroma.Web.Streamer.stream("public:media", activity)
-
-            if activity.local do
-              Pleroma.Web.Streamer.stream("public:local:media", activity)
+              if activity.local do
+                Pleroma.Web.Streamer.stream("public:local:media", activity)
+              end
             end
           end
+        else
+          # TODO: Write test, replace with visibility test
+          if !Enum.member?(activity.data["cc"] || [], public) &&
+               !Enum.member?(
+                 activity.data["to"],
+                 User.get_cached_by_ap_id(activity.data["actor"]).follower_address
+               ),
+             do: Pleroma.Web.Streamer.stream("direct", activity)
         end
-      else
-        # TODO: Write test, replace with visibility test
-        if !Enum.member?(activity.data["cc"] || [], public) &&
-             !Enum.member?(
-               activity.data["to"],
-               User.get_cached_by_ap_id(activity.data["actor"]).follower_address
-             ),
-           do: Pleroma.Web.Streamer.stream("direct", activity)
       end
     end
   end
@@ -235,6 +246,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
+         _ <- increase_poll_votes_if_vote(create_data),
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
@@ -476,6 +488,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
 
     from(activity in Activity)
+    |> maybe_preload_objects(opts)
     |> restrict_blocked(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> where(
@@ -488,6 +501,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         ^context
       )
     )
+    |> exclude_poll_votes(opts)
     |> order_by([activity], desc: activity.id)
   end
 
@@ -495,7 +509,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def fetch_activities_for_context(context, opts \\ %{}) do
     context
     |> fetch_activities_for_context_query(opts)
-    |> Activity.with_preloaded_object()
     |> Repo.all()
   end
 
@@ -503,7 +516,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           Pleroma.FlakeId.t() | nil
   def fetch_latest_activity_id_for_context(context, opts \\ %{}) do
     context
-    |> fetch_activities_for_context_query(opts)
+    |> fetch_activities_for_context_query(Map.merge(%{"skip_preload" => true}, opts))
     |> limit(1)
     |> select([a], a.id)
     |> Repo.one()
@@ -802,6 +815,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp exclude_poll_votes(query, %{"include_poll_votes" => "true"}), do: query
+
+  defp exclude_poll_votes(query, _) do
+    if has_named_binding?(query, :object) do
+      from([activity, object: o] in query,
+        where: fragment("not(?->>'type' = ?)", o.data, "Answer")
+      )
+    else
+      query
+    end
+  end
+
   defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
 
   defp maybe_preload_objects(query, _) do
@@ -863,6 +888,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
     |> Activity.restrict_deactivated_users()
+    |> exclude_poll_votes(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
