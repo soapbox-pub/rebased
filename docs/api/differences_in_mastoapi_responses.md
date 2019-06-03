@@ -80,6 +80,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `hide_favorites` - if true, user's favorites timeline will be hidden
 - `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
 - `default_scope` - the scope returned under `privacy` key in Source subentity
+- `skip_thread_containment` - if true, skip filtering out broken threads
 
 ## Authentication
 

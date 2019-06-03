@@ -124,7 +124,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         hide_followers: user.info.hide_followers,
         hide_follows: user.info.hide_follows,
         hide_favorites: user.info.hide_favorites,
-        relationship: relationship
+        relationship: relationship,
+        skip_thread_containment: user.info.skip_thread_containment
       }
     }
     |> maybe_put_role(user, opts[:for])

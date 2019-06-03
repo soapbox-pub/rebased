@@ -117,7 +117,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.dedup()
 
     info_params =
-      [:no_rich_text, :locked, :hide_followers, :hide_follows, :hide_favorites, :show_role]
+      [
+        :no_rich_text,
+        :locked,
+        :hide_followers,
+        :hide_follows,
+        :hide_favorites,
+        :show_role,
+        :skip_thread_containment
+      ]
       |> Enum.reduce(%{}, fn key, acc ->
         add_if_present(acc, params, to_string(key), key, fn value ->
           {:ok, ControllerHelper.truthy_param?(value)}

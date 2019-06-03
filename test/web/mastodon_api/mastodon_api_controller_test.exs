@@ -2378,6 +2378,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user["pleroma"]["hide_followers"] == true
     end
 
+    test "updates the user's skip_thread_containment option", %{conn: conn} do
+      user = insert(:user)
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{skip_thread_containment: "true"})
+        |> json_response(200)
+
+      assert response["pleroma"]["skip_thread_containment"] == true
+      assert refresh_record(user).info.skip_thread_containment
+    end
+
     test "updates the user's hide_follows status", %{conn: conn} do
       user = insert(:user)
 

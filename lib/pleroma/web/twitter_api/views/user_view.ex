@@ -118,7 +118,8 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
         "pleroma" =>
           %{
             "confirmation_pending" => user_info.confirmation_pending,
-            "tags" => user.tags
+            "tags" => user.tags,
+            "skip_thread_containment" => user.info.skip_thread_containment
           }
           |> maybe_with_activation_status(user, for_user)
       }
