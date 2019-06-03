@@ -56,4 +56,9 @@
 <%= hidden_input f, :response_type, value: @response_type %>
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
 <%= hidden_input f, :state, value: @state %>
+
+<%= if Pleroma.Config.oauth_consumer_enabled?() do %>
+  <%= render @view_module, Pleroma.Web.Auth.Authenticator.oauth_consumer_template(), assigns %>
+<% end %>
+
 <% end %>

@@ -89,7 +89,7 @@
 
       .scope:before {
         color: #b9b9ba;
-        content: "✔";
+        content: "✔\fe0e";
         margin-left: 1em;
         margin-right: 1em;
       }
@@ -197,7 +197,7 @@
 
         .scope:first-child:before {
           margin-left: 1em;
-          content: "✔";
+          content: "✔\fe0e";
         }
 
         .scope:after {
