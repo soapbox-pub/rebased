@@ -161,7 +161,6 @@
         width: 100%;
         background-color: #931014;
         border: 1px solid #a06060;
-        color: #902020;
         border-radius: 4px;
         padding: 10px;
         margin-top: 20px;
