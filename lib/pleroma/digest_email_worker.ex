@@ -18,9 +18,9 @@ defmodule Pleroma.DigestEmailWorker do
     |> run()
   end
 
-  defp run([]), do: :ok
+  def run([]), do: :ok
 
-  defp run([user | users]) do
+  def run([user | users]) do
     with %Swoosh.Email{} = email <- Pleroma.Emails.UserEmail.digest_email(user) do
       Pleroma.Emails.Mailer.deliver_async(email)
     end

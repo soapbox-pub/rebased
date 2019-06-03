@@ -2,8 +2,8 @@
 
 <h2>New Mentions:</h2>
 <ul>
-<%= for %{data: mention, from: from} <- @mentions do %>
-  <li><%= link from.nickname, to: mention.activity.actor %>: <%= raw mention.activity.object.data["content"] %></li>
+<%= for %{data: mention, object: object, from: from} <- @mentions do %>
+  <li><%= link from.nickname, to: mention.activity.actor %>: <%= raw object.data["content"] %></li>
 <% end %>
 </ul>
 

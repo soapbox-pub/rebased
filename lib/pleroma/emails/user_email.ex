@@ -103,12 +103,24 @@ defmodule Pleroma.Emails.UserEmail do
     new_notifications =
       Pleroma.Notification.for_user_since(user, user.last_digest_emailed_at)
       |> Enum.reduce(%{followers: [], mentions: []}, fn
-        %{activity: %{data: %{"type" => "Create"}, actor: actor}} = notification, acc ->
-          new_mention = %{data: notification, from: Pleroma.User.get_by_ap_id(actor)}
+        %{activity: %{data: %{"type" => "Create"}, actor: actor} = activity} = notification,
+        acc ->
+          new_mention = %{
+            data: notification,
+            object: Pleroma.Object.normalize(activity),
+            from: Pleroma.User.get_by_ap_id(actor)
+          }
+
           %{acc | mentions: [new_mention | acc.mentions]}
 
-        %{activity: %{data: %{"type" => "Follow"}, actor: actor}} = notification, acc ->
-          new_follower = %{data: notification, from: Pleroma.User.get_by_ap_id(actor)}
+        %{activity: %{data: %{"type" => "Follow"}, actor: actor} = activity} = notification,
+        acc ->
+          new_follower = %{
+            data: notification,
+            object: Pleroma.Object.normalize(activity),
+            from: Pleroma.User.get_by_ap_id(actor)
+          }
+
           %{acc | followers: [new_follower | acc.followers]}
 
         _, acc ->
