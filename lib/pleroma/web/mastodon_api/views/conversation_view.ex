@@ -22,9 +22,14 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
 
     last_status = StatusView.render("status.json", %{activity: activity, for: user})
 
+    # Conversations return all users except the current user.
+    users =
+      participation.conversation.users
+      |> Enum.reject(&(&1.id == user.id))
+
     accounts =
       AccountView.render("accounts.json", %{
-        users: participation.conversation.users,
+        users: users,
         as: :user
       })
 

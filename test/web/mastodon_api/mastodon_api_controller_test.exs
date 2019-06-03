@@ -414,12 +414,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   test "Conversations", %{conn: conn} do
     user_one = insert(:user)
     user_two = insert(:user)
+    user_three = insert(:user)
 
     {:ok, user_two} = User.follow(user_two, user_one)
 
     {:ok, direct} =
       CommonAPI.post(user_one, %{
-        "status" => "Hi @#{user_two.nickname}!",
+        "status" => "Hi @#{user_two.nickname}, @#{user_three.nickname}!",
         "visibility" => "direct"
       })
 
@@ -445,7 +446,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
              }
            ] = response
 
+    account_ids = Enum.map(res_accounts, & &1["id"])
     assert length(res_accounts) == 2
+    assert user_two.id in account_ids
+    assert user_three.id in account_ids
     assert is_binary(res_id)
     assert unread == true
     assert res_last_status["id"] == direct.id
