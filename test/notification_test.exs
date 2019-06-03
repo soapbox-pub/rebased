@@ -80,37 +80,17 @@ defmodule Pleroma.NotificationTest do
       assert nil == Notification.create_notification(activity, muter)
     end
 
-    test "it disables notifications from people on remote instances" do
-      user = insert(:user, info: %{notification_settings: %{"remote" => false}})
-      other_user = insert(:user)
-
-      create_activity = %{
-        "@context" => "https://www.w3.org/ns/activitystreams",
-        "type" => "Create",
-        "to" => ["https://www.w3.org/ns/activitystreams#Public"],
-        "actor" => other_user.ap_id,
-        "object" => %{
-          "type" => "Note",
-          "content" => "Hi @#{user.nickname}",
-          "attributedTo" => other_user.ap_id
-        }
-      }
-
-      {:ok, %{local: false} = activity} = Transmogrifier.handle_incoming(create_activity)
-      assert nil == Notification.create_notification(activity, user)
-    end
-
-    test "it disables notifications from people on the local instance" do
-      user = insert(:user, info: %{notification_settings: %{"local" => false}})
-      other_user = insert(:user)
-      {:ok, activity} = CommonAPI.post(other_user, %{"status" => "hey @#{user.nickname}"})
-      assert nil == Notification.create_notification(activity, user)
-    end
-
     test "it disables notifications from followers" do
       follower = insert(:user)
       followed = insert(:user, info: %{notification_settings: %{"followers" => false}})
       User.follow(follower, followed)
+      {:ok, activity} = CommonAPI.post(follower, %{"status" => "hey @#{followed.nickname}"})
+      assert nil == Notification.create_notification(activity, followed)
+    end
+
+    test "it disables notifications from non-followers" do
+      follower = insert(:user)
+      followed = insert(:user, info: %{notification_settings: %{"non_followers" => false}})
       {:ok, activity} = CommonAPI.post(follower, %{"status" => "hey @#{followed.nickname}"})
       assert nil == Notification.create_notification(activity, followed)
     end
@@ -120,6 +100,13 @@ defmodule Pleroma.NotificationTest do
       followed = insert(:user)
       User.follow(follower, followed)
       follower = Repo.get(User, follower.id)
+      {:ok, activity} = CommonAPI.post(followed, %{"status" => "hey @#{follower.nickname}"})
+      assert nil == Notification.create_notification(activity, follower)
+    end
+
+    test "it disables notifications from people the user does not follow" do
+      follower = insert(:user, info: %{notification_settings: %{"non_follows" => false}})
+      followed = insert(:user)
       {:ok, activity} = CommonAPI.post(followed, %{"status" => "hey @#{follower.nickname}"})
       assert nil == Notification.create_notification(activity, follower)
     end

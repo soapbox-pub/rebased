@@ -367,9 +367,7 @@ defmodule Pleroma.User do
   end
 
   def follow(%User{} = follower, %User{info: info} = followed) do
-    user_config = Application.get_env(:pleroma, :user)
-    deny_follow_blocked = Keyword.get(user_config, :deny_follow_blocked)
-
+    deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
     ap_followers = followed.follower_address
 
     cond do
@@ -761,7 +759,7 @@ defmodule Pleroma.User do
 
     from(s in subquery(boost_search_rank_query(distinct_query, for_user)),
       order_by: [desc: s.search_rank],
-      limit: 20
+      limit: 40
     )
   end
 

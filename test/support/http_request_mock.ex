@@ -52,6 +52,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mastodon.sdf.org/users/rinpatch", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/rinpatch.json")
+     }}
+  end
+
   def get(
         "https://mastodon.social/.well-known/webfinger?resource=https://mastodon.social/users/emelie",
         _,
@@ -726,6 +734,14 @@ defmodule HttpRequestMock do
 
   def get("http://example.com/ogp", _, _, _) do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
+  end
+
+  def get("http://example.com/ogp-missing-data", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/rich_media/ogp-missing-data.html")
+     }}
   end
 
   def get("http://example.com/malformed", _, _, _) do

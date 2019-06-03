@@ -71,6 +71,11 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `avatar_upload_limit`: File size limit of user’s profile avatars
 * `background_upload_limit`: File size limit of user’s profile backgrounds
 * `banner_upload_limit`: File size limit of user’s profile banners
+* `poll_limits`: A map with poll limits for **local** polls
+  * `max_options`: Maximum number of options
+  * `max_option_chars`: Maximum number of characters per option
+  * `min_expiration`: Minimum expiration time (in seconds)
+  * `max_expiration`: Maximum expiration time (in seconds)
 * `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `account_activation_required`: Require users to confirm their emails before signing in.

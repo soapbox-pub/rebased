@@ -208,6 +208,12 @@ config :pleroma, :instance,
   avatar_upload_limit: 2_000_000,
   background_upload_limit: 4_000_000,
   banner_upload_limit: 4_000_000,
+  poll_limits: %{
+    max_options: 20,
+    max_option_chars: 200,
+    min_expiration: 0,
+    max_expiration: 365 * 24 * 60 * 60
+  },
   registrations_open: true,
   federating: true,
   federation_reachability_timeout_days: 7,
