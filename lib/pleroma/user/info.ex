@@ -49,6 +49,8 @@ defmodule Pleroma.User.Info do
       default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
     )
 
+    field(:skip_thread_containment, :boolean, default: false)
+
     # Found in the wild
     # ap_id -> Where is this used?
     # bio -> Where is this used?
@@ -208,7 +210,8 @@ defmodule Pleroma.User.Info do
       :hide_followers,
       :hide_favorites,
       :background,
-      :show_role
+      :show_role,
+      :skip_thread_containment
     ])
   end
 

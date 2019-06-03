@@ -237,7 +237,8 @@ config :pleroma, :instance,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
   healthcheck: false,
-  remote_post_retention_days: 90
+  remote_post_retention_days: 90,
+  skip_thread_containment: false
 
 config :pleroma, :app_account_creation, enabled: true, max_requests: 25, interval: 1800
 

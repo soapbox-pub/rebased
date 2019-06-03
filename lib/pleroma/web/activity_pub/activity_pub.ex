@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Conversation
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -73,7 +74,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp check_remote_limit(%{"object" => %{"content" => content}}) when not is_nil(content) do
-    limit = Pleroma.Config.get([:instance, :remote_limit])
+    limit = Config.get([:instance, :remote_limit])
     String.length(content) <= limit
   end
 
@@ -399,8 +400,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
-    outgoing_blocks = Pleroma.Config.get([:activitypub, :outgoing_blocks])
-    unfollow_blocked = Pleroma.Config.get([:activitypub, :unfollow_blocked])
+    outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
+    unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
 
     if unfollow_blocked do
       follow_activity = fetch_latest_follow(blocker, blocked)

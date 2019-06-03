@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -224,11 +225,10 @@ defmodule Pleroma.Web.Streamer do
         mutes = user.info.mutes || []
         reblog_mutes = user.info.muted_reblogs || []
 
-        parent = Object.normalize(item)
-
-        unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
-                 item.actor in reblog_mutes or not ActivityPub.contain_activity(item, user) or
-                 parent.data["actor"] in blocks or parent.data["actor"] in mutes do
+        with parent when not is_nil(parent) <- Object.normalize(item),
+             true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
+             true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
+             true <- thread_containment(item, user) do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
@@ -264,8 +264,8 @@ defmodule Pleroma.Web.Streamer do
         blocks = user.info.blocks || []
         mutes = user.info.mutes || []
 
-        unless item.actor in blocks or item.actor in mutes or
-                 not ActivityPub.contain_activity(item, user) do
+        with true <- Enum.all?([blocks, mutes], &(item.actor not in &1)),
+             true <- thread_containment(item, user) do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
@@ -279,4 +279,15 @@ defmodule Pleroma.Web.Streamer do
   end
 
   defp internal_topic(topic, _), do: topic
+
+  @spec thread_containment(Activity.t(), User.t()) :: boolean()
+  defp thread_containment(_activity, %User{info: %{skip_thread_containment: true}}), do: true
+
+  defp thread_containment(activity, user) do
+    if Config.get([:instance, :skip_thread_containment]) do
+      true
+    else
+      ActivityPub.contain_activity(activity, user)
+    end
+  end
 end
