@@ -489,7 +489,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(activity in Activity)
     |> maybe_preload_objects(opts)
-    |> exclude_poll_votes(opts)
     |> restrict_blocked(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> where(
@@ -502,6 +501,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         ^context
       )
     )
+    |> exclude_poll_votes(opts)
     |> order_by([activity], desc: activity.id)
   end
 
