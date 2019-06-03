@@ -1266,4 +1266,16 @@ defmodule Pleroma.UserTest do
       assert user.info.keys == "xxx"
     end
   end
+
+  describe "get_ap_ids_by_nicknames" do
+    test "it returns a list of AP ids for a given set of nicknames" do
+      user = insert(:user)
+      user_two = insert(:user)
+
+      ap_ids = User.get_ap_ids_by_nicknames([user.nickname, user_two.nickname, "nonexistent"])
+      assert length(ap_ids) == 2
+      assert user.ap_id in ap_ids
+      assert user_two.ap_id in ap_ids
+    end
+  end
 end
