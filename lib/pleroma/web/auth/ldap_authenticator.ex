@@ -7,6 +7,9 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
 
   require Logger
 
+  import Pleroma.Web.Auth.Authenticator,
+    only: [fetch_credentials: 1, fetch_user: 1]
+
   @behaviour Pleroma.Web.Auth.Authenticator
   @base Pleroma.Web.Auth.PleromaAuthenticator
 
@@ -20,30 +23,20 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
   defdelegate oauth_consumer_template, to: @base
 
   def get_user(%Plug.Conn{} = conn) do
-    if Pleroma.Config.get([:ldap, :enabled]) do
-      {name, password} =
-        case conn.params do
-          %{"authorization" => %{"name" => name, "password" => password}} ->
-            {name, password}
-
-          %{"grant_type" => "password", "username" => name, "password" => password} ->
-            {name, password}
-        end
-
-      case ldap_user(name, password) do
-        %User{} = user ->
-          {:ok, user}
-
-        {:error, {:ldap_connection_error, _}} ->
-          # When LDAP is unavailable, try default authenticator
-          @base.get_user(conn)
-
-        error ->
-          error
-      end
+    with {:ldap, true} <- {:ldap, Pleroma.Config.get([:ldap, :enabled])},
+         {:ok, {name, password}} <- fetch_credentials(conn),
+         %User{} = user <- ldap_user(name, password) do
+      {:ok, user}
     else
-      # Fall back to default authenticator
-      @base.get_user(conn)
+      {:error, {:ldap_connection_error, _}} ->
+        # When LDAP is unavailable, try default authenticator
+        @base.get_user(conn)
+
+      {:ldap, _} ->
+        @base.get_user(conn)
+
+      error ->
+        error
     end
   end
 
@@ -94,7 +87,7 @@ defmodule Pleroma.Web.Auth.LDAPAuthenticator do
 
     case :eldap.simple_bind(connection, "#{uid}=#{name},#{base}", password) do
       :ok ->
-        case User.get_by_nickname_or_email(name) do
+        case fetch_user(name) do
           %User{} = user ->
             user
 

@@ -8,6 +8,8 @@ defmodule Pleroma.User.Info do
 
   alias Pleroma.User.Info
 
+  @type t :: %__MODULE__{}
+
   embedded_schema do
     field(:banner, :map, default: %{})
     field(:background, :map, default: %{})
@@ -40,10 +42,16 @@ defmodule Pleroma.User.Info do
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
     field(:pinned_activities, {:array, :string}, default: [])
-    field(:flavour, :string, default: nil)
+    field(:mascot, :map, default: nil)
+    field(:emoji, {:array, :map}, default: [])
 
     field(:notification_settings, :map,
-      default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
+      default: %{
+        "followers" => true,
+        "follows" => true,
+        "non_follows" => true,
+        "non_followers" => true
+      }
     )
 
     # Found in the wild
@@ -64,10 +72,15 @@ defmodule Pleroma.User.Info do
   end
 
   def update_notification_settings(info, settings) do
+    settings =
+      settings
+      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
+      |> Map.new()
+
     notification_settings =
       info.notification_settings
       |> Map.merge(settings)
-      |> Map.take(["remote", "local", "followers", "follows"])
+      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
 
     params = %{notification_settings: notification_settings}
 
@@ -209,21 +222,23 @@ defmodule Pleroma.User.Info do
     ])
   end
 
-  def confirmation_changeset(info, :confirmed) do
-    confirmation_changeset(info, %{
-      confirmation_pending: false,
-      confirmation_token: nil
-    })
-  end
+  @spec confirmation_changeset(Info.t(), keyword()) :: Changeset.t()
+  def confirmation_changeset(info, opts) do
+    need_confirmation? = Keyword.get(opts, :need_confirmation)
 
-  def confirmation_changeset(info, :unconfirmed) do
-    confirmation_changeset(info, %{
-      confirmation_pending: true,
-      confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
-    })
-  end
+    params =
+      if need_confirmation? do
+        %{
+          confirmation_pending: true,
+          confirmation_token: :crypto.strong_rand_bytes(32) |> Base.url_encode64()
+        }
+      else
+        %{
+          confirmation_pending: false,
+          confirmation_token: nil
+        }
+      end
 
-  def confirmation_changeset(info, params) do
     cast(info, params, [:confirmation_pending, :confirmation_token])
   end
 
@@ -235,12 +250,12 @@ defmodule Pleroma.User.Info do
     |> validate_required([:settings])
   end
 
-  def mastodon_flavour_update(info, flavour) do
-    params = %{flavour: flavour}
+  def mascot_update(info, url) do
+    params = %{mascot: url}
 
     info
-    |> cast(params, [:flavour])
-    |> validate_required([:flavour])
+    |> cast(params, [:mascot])
+    |> validate_required([:mascot])
   end
 
   def set_source_data(info, source_data) do

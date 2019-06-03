@@ -1,4 +1,4 @@
-vcl 4.0;
+vcl 4.1;
 import std;
 
 backend default {
@@ -35,30 +35,18 @@ sub vcl_recv {
       }
       return(purge);
     }
-
-    # Pleroma MediaProxy - strip headers that will affect caching
-    if (req.url ~ "^/proxy/") {
-      unset req.http.Cookie;
-      unset req.http.Authorization;
-      unset req.http.Accept;
-      return (hash);
-    }
-
-    # Strip headers that will affect caching from all other static content
-    # This also permits caching of individual toots and AP Activities
-    if ((req.url ~ "^/(media|static)/") ||
-    (req.url ~ "(?i)\.(html|js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|mp4|ogg|webm|svg|swf|ttf|pdf|woff|woff2)$"))
-    {
-      unset req.http.Cookie;
-      unset req.http.Authorization;
-      return (hash);
-    }
 }
 
 sub vcl_backend_response {
     # gzip text content
     if (beresp.http.content-type ~ "(text|text/css|application/x-javascript|application/javascript)") {
       set beresp.do_gzip = true;
+    }
+
+    # Retry broken backend responses.
+    if (beresp.status == 503) {
+      set bereq.http.X-Varnish-Backend-503 = "1";
+      return (retry);
     }
 
     # CHUNKED SUPPORT
@@ -73,8 +61,6 @@ sub vcl_backend_response {
       return (deliver);
     }
 
-    # Default object caching of 86400s;
-    set beresp.ttl = 86400s;
     # Allow serving cached content for 6h in case backend goes down
     set beresp.grace = 6h;
 
@@ -89,20 +75,6 @@ sub vcl_backend_response {
       set beresp.uncacheable = true;
       set beresp.ttl = 30s;
       return (deliver);
-    }
-
-    # Pleroma MediaProxy internally sets headers properly
-    if (bereq.url ~ "^/proxy/") {
-      return (deliver);
-    }
-
-    # Strip cache-restricting headers from Pleroma on static content that we want to cache
-    if (bereq.url ~ "(?i)\.(js|css|jpg|jpeg|png|gif|gz|tgz|bz2|tbz|mp3|mp4|ogg|webm|svg|swf|ttf|pdf|woff|woff2)$")
-    {
-      unset beresp.http.set-cookie;
-      unset beresp.http.Cache-Control;
-      unset beresp.http.x-request-id;
-      set beresp.http.Cache-Control = "public, max-age=86400";
     }
 }
 
@@ -132,9 +104,31 @@ sub vcl_hash {
 }
 
 sub vcl_backend_fetch {
+    # Be more lenient for slow servers on the fediverse
+    if bereq.url ~ "^/proxy/" {
+      set bereq.first_byte_timeout = 300s;
+    }
+
     # CHUNKED SUPPORT
     if (bereq.http.x-range) {
       set bereq.http.Range = bereq.http.x-range;
+    }
+
+    if (bereq.retries == 0) {
+        # Clean up the X-Varnish-Backend-503 flag that is used internally
+        # to mark broken backend responses that should be retried.
+        unset bereq.http.X-Varnish-Backend-503;
+    } else {
+        if (bereq.http.X-Varnish-Backend-503) {
+            if (bereq.method != "POST" &&
+              std.healthy(bereq.backend) &&
+              bereq.retries <= 4) {
+              # Flush broken backend response flag & try again.
+              unset bereq.http.X-Varnish-Backend-503;
+            } else {
+              return (abandon);
+            }
+        }
     }
 }
 
@@ -144,4 +138,10 @@ sub vcl_deliver {
       set resp.http.Content-Range = resp.http.CR;
       unset resp.http.CR;
     }
+}
+
+sub vcl_backend_error {
+    # Retry broken backend responses.
+    set bereq.http.X-Varnish-Backend-503 = "1";
+    return (retry);
 }

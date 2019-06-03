@@ -35,6 +35,9 @@ defmodule Pleroma.Object do
     |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
   end
 
+  def get_by_id(nil), do: nil
+  def get_by_id(id), do: Repo.get(Object, id)
+
   def get_by_ap_id(nil), do: nil
 
   def get_by_ap_id(ap_id) do
@@ -130,6 +133,13 @@ defmodule Pleroma.Object do
     end
   end
 
+  def prune(%Object{data: %{"id" => id}} = object) do
+    with {:ok, object} <- Repo.delete(object),
+         {:ok, true} <- Cachex.del(:object_cache, "object:#{id}") do
+      {:ok, object}
+    end
+  end
+
   def set_cache(%Object{data: %{"id" => ap_id}} = object) do
     Cachex.put(:object_cache, "object:#{ap_id}", object)
     {:ok, object}
@@ -186,6 +196,36 @@ defmodule Pleroma.Object do
     |> case do
       {1, [object]} -> set_cache(object)
       _ -> {:error, "Not found"}
+    end
+  end
+
+  def increase_vote_count(ap_id, name) do
+    with %Object{} = object <- Object.normalize(ap_id),
+         "Question" <- object.data["type"] do
+      multiple = Map.has_key?(object.data, "anyOf")
+
+      options =
+        (object.data["anyOf"] || object.data["oneOf"] || [])
+        |> Enum.map(fn
+          %{"name" => ^name} = option ->
+            Kernel.update_in(option["replies"]["totalItems"], &(&1 + 1))
+
+          option ->
+            option
+        end)
+
+      data =
+        if multiple do
+          Map.put(object.data, "anyOf", options)
+        else
+          Map.put(object.data, "oneOf", options)
+        end
+
+      object
+      |> Object.change(%{data: data})
+      |> update_and_set_cache()
+    else
+      _ -> :noop
     end
   end
 end

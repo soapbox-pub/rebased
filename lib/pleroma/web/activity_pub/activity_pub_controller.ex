@@ -27,7 +27,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   plug(:relay_active? when action in [:relay])
 
   def relay_active?(conn, _) do
-    if Keyword.get(Application.get_env(:pleroma, :instance), :allow_relay) do
+    if Pleroma.Config.get([:instance, :allow_relay]) do
       conn
     else
       conn
@@ -39,7 +39,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def user(conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+         {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("user.json", %{user: user}))
@@ -106,7 +106,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def following(conn, %{"nickname" => nickname, "page" => page}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+         {:ok, user} <- User.ensure_keys_present(user) do
       {page, _} = Integer.parse(page)
 
       conn
@@ -117,7 +117,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def following(conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+         {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("following.json", %{user: user}))
@@ -126,7 +126,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def followers(conn, %{"nickname" => nickname, "page" => page}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+         {:ok, user} <- User.ensure_keys_present(user) do
       {page, _} = Integer.parse(page)
 
       conn
@@ -137,7 +137,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def followers(conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+         {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("followers.json", %{user: user}))
@@ -146,7 +146,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def outbox(conn, %{"nickname" => nickname} = params) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+         {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("outbox.json", %{user: user, max_id: params["max_id"]}))
@@ -155,7 +155,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def inbox(%{assigns: %{valid_signature: true}} = conn, %{"nickname" => nickname} = params) do
     with %User{} = recipient <- User.get_cached_by_nickname(nickname),
-         %User{} = actor <- User.get_or_fetch_by_ap_id(params["actor"]),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(params["actor"]),
          true <- Utils.recipient_in_message(recipient, actor, params),
          params <- Utils.maybe_splice_recipient(recipient.ap_id, params) do
       Federator.incoming_ap_doc(params)
@@ -195,7 +195,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def relay(conn, _params) do
     with %User{} = user <- Relay.get_actor(),
-         {:ok, user} <- Pleroma.Web.WebFinger.ensure_keys_present(user) do
+         {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("user.json", %{user: user}))

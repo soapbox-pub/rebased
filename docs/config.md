@@ -37,7 +37,7 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 
 An example for Sendgrid adapter:
 
-```exs
+```elixir
 config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.Sendgrid,
   api_key: "YOUR_API_KEY"
@@ -45,7 +45,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 
 An example for SMTP adapter:
 
-```exs
+```elixir
 config :pleroma, Pleroma.Emails.Mailer,
   adapter: Swoosh.Adapters.SMTP,
   relay: "smtp.gmail.com",
@@ -71,6 +71,11 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `avatar_upload_limit`: File size limit of user’s profile avatars
 * `background_upload_limit`: File size limit of user’s profile backgrounds
 * `banner_upload_limit`: File size limit of user’s profile banners
+* `poll_limits`: A map with poll limits for **local** polls
+  * `max_options`: Maximum number of options
+  * `max_option_chars`: Maximum number of characters per option
+  * `min_expiration`: Minimum expiration time (in seconds)
+  * `max_expiration`: Maximum expiration time (in seconds)
 * `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `account_activation_required`: Require users to confirm their emails before signing in.
@@ -104,12 +109,19 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
 * `healthcheck`: if set to true, system data will be shown on ``/api/pleroma/healthcheck``.
+* `remote_post_retention_days`: the default amount of days to retain remote posts when pruning the database
+
+## :app_account_creation
+REST API for creating an account settings
+* `enabled`: Enable/disable registration
+* `max_requests`: Number of requests allowed for creating accounts
+* `interval`: Interval for restricting requests for one ip (seconds)
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
 An example to enable ONLY ExSyslogger (f/ex in ``prod.secret.exs``) with info and debug suppressed:
-```
+```elixir
 config :logger,
   backends: [{ExSyslogger, :ex_syslogger}]
 
@@ -118,7 +130,7 @@ config :logger, :ex_syslogger,
 ```
 
 Another example, keeping console output and adding the pid to syslog output:
-```
+```elixir
 config :logger,
   backends: [:console, {ExSyslogger, :ex_syslogger}]
 
@@ -130,7 +142,7 @@ config :logger, :ex_syslogger,
 See: [logger’s documentation](https://hexdocs.pm/logger/Logger.html) and [ex_syslogger’s documentation](https://hexdocs.pm/ex_syslogger/)
 
 An example of logging info to local syslog, but warn to a Slack channel:
-```
+```elixir
 config :logger,
   backends: [ {ExSyslogger, :ex_syslogger}, Quack.Logger ],
   level: :info
@@ -156,14 +168,30 @@ Frontends can access these settings at `/api/pleroma/frontend_configurations`
 
 To add your own configuration for PleromaFE, use it like this:
 
-`config :pleroma, :frontend_configurations, pleroma_fe: %{redirectRootNoLogin: "/main/all", ...}`
+```elixir
+config :pleroma, :frontend_configurations,
+  pleroma_fe: %{
+    theme: "pleroma-dark",
+    # ... see /priv/static/static/config.json for the available keys.
+},
+  masto_fe: %{
+    showInstanceSpecificPanel: true
+  }
+```
 
-These settings need to be complete, they will override the defaults. See `priv/static/static/config.json` for the available keys.
+These settings **need to be complete**, they will override the defaults.
+
+NOTE: for versions < 1.0, you need to set [`:fe`](#fe) to false, as shown a few lines below.
 
 ## :fe
 __THIS IS DEPRECATED__
 
-If you are using this method, please change it to the `frontend_configurations` method. Please set this option to false in your config like this: `config :pleroma, :fe, false`.
+If you are using this method, please change it to the [`frontend_configurations`](#frontend_configurations) method.
+Please **set this option to false** in your config like this:
+
+```elixir
+config :pleroma, :fe, false
+```
 
 This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:instance`` is set to false.
 
@@ -181,12 +209,25 @@ This section is used to configure Pleroma-FE, unless ``:managed_config`` in ``:i
 * `hide_post_stats`: Hide notices statistics(repeats, favorites, …)
 * `hide_user_stats`: Hide profile statistics(posts, posts per day, followers, followings, …)
 
+## :assets
+
+This section configures assets to be used with various frontends. Currently the only option
+relates to mascots on the mastodon frontend
+
+* `mascots`: KeywordList of mascots, each element __MUST__ contain both a `url` and a
+  `mime_type` key.
+* `default_mascot`: An element from `mascots` - This will be used as the default mascot
+  on MastoFE (default: `:pleroma_fox_tan`)
+
 ## :mrf_simple
 * `media_removal`: List of instances to remove medias from
 * `media_nsfw`: List of instances to put medias as NSFW(sensitive) from
 * `federated_timeline_removal`: List of instances to remove from Federated (aka The Whole Known Network) Timeline
 * `reject`: List of instances to reject any activities from
 * `accept`: List of instances to accept any activities from
+* `report_removal`: List of instances to reject reports from
+* `avatar_removal`: List of instances to strip avatars from
+* `banner_removal`: List of instances to strip banners from
 
 ## :mrf_rejectnonpublic
 * `allow_followersonly`: whether to allow followers-only posts
@@ -264,7 +305,8 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``sts``: Whether to additionally send a `Strict-Transport-Security` header
 * ``sts_max_age``: The maximum age for the `Strict-Transport-Security` header if sent
 * ``ct_max_age``: The maximum age for the `Expect-CT` header if sent
-* ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`.
+* ``referrer_policy``: The referrer policy to use, either `"same-origin"` or `"no-referrer"`
+* ``report_uri``: Adds the specified url to `report-uri` and `report-to` group in CSP header.
 
 ## :mrf_user_allowlist
 
@@ -274,7 +316,7 @@ their ActivityPub ID.
 
 An example:
 
-```exs
+```elixir
 config :pleroma, :mrf_user_allowlist,
   "example.org": ["https://example.org/users/admin"]
 ```
@@ -303,7 +345,7 @@ the source code is here: https://github.com/koto-bank/kocaptcha. The default end
 
 Allows to set a token that can be used to authenticate with the admin api without using an actual user by giving it as the 'admin_token' parameter. Example:
 
-```exs
+```elixir
 config :pleroma, :admin_token, "somerandomtoken"
 ```
 
@@ -387,7 +429,7 @@ Configuration for the `auto_linker` library:
 
 Example:
 
-```exs
+```elixir
 config :auto_linker,
   opts: [
     scheme: true,
@@ -428,7 +470,28 @@ Pleroma account will be created with the same name as the LDAP user name.
 * `base`: LDAP base, e.g. "dc=example,dc=com"
 * `uid`: LDAP attribute name to authenticate the user, e.g. when "cn", the filter will be "cn=username,base"
 
+## BBS / SSH access
+
+To enable simple command line interface accessible over ssh, add a setting like this to your configuration file:
+
+```exs
+app_dir = File.cwd!
+priv_dir = Path.join([app_dir, "priv/ssh_keys"])
+
+config :esshd,
+  enabled: true,
+  priv_dir: priv_dir,
+  handler: "Pleroma.BBS.Handler",
+  port: 10_022,
+  password_authenticator: "Pleroma.BBS.Authenticator"
+```
+
+Feel free to adjust the priv_dir and port number. Then you will have to create the key for the keys (in the example `priv/ssh_keys`) and create the host keys with `ssh-keygen -m PEM -N "" -b 2048 -t rsa -f ssh_host_rsa_key`. After restarting, you should be able to connect to your Pleroma instance with `ssh username@server -p $PORT`
+
 ## :auth
+
+* `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
+* `Pleroma.Web.Auth.LDAPAuthenticator`: LDAP authentication
 
 Authentication / authorization settings.
 
@@ -436,7 +499,7 @@ Authentication / authorization settings.
 * `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
 * `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
 
-# OAuth consumer mode
+## OAuth consumer mode
 
 OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
 Implementation is based on Ueberauth; see the list of [available strategies](https://github.com/ueberauth/ueberauth/wiki/List-of-Strategies).
@@ -460,7 +523,7 @@ Note: make sure that `"SameSite=Lax"` is set in `extra_cookie_attrs` when you ha
 Once the app is configured on external OAuth provider side, add app's credentials and strategy-specific settings (if any — e.g. see Microsoft below) to `config/prod.secret.exs`,
 per strategy's documentation (e.g. [ueberauth_twitter](https://github.com/ueberauth/ueberauth_twitter)). Example config basing on environment variables:
 
-```
+```elixir
 # Twitter
 config :ueberauth, Ueberauth.Strategy.Twitter.OAuth,
   consumer_key: System.get_env("TWITTER_CONSUMER_KEY"),
@@ -489,7 +552,31 @@ config :ueberauth, Ueberauth,
   ]
 ```
 
+## OAuth 2.0 provider - :oauth2
+
+Configure OAuth 2 provider capabilities:
+
+* `token_expires_in` - The lifetime in seconds of the access token.
+* `issue_new_refresh_token` - Keeps old refresh token or generate new refresh token when to obtain an access token.
+* `clean_expired_tokens` - Enable a background job to clean expired oauth tokens. Defaults to `false`.
+* `clean_expired_tokens_interval` - Interval to run the job to clean expired tokens. Defaults to `86_400_000` (24 hours).
+
 ## :emoji
 * `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
 * `default_manifest`: Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download. Currently only one manifest can be added (no arrays).
+
+## Database options
+
+### RUM indexing for full text search
+* `rum_enabled`: If RUM indexes should be used. Defaults to `false`.
+
+RUM indexes are an alternative indexing scheme that is not included in PostgreSQL by default. While they may eventually be mainlined, for now they have to be installed as a PostgreSQL extension from https://github.com/postgrespro/rum.
+
+Their advantage over the standard GIN indexes is that they allow efficient ordering of search results by timestamp, which makes search queries a lot faster on larger servers, by one or two orders of magnitude. They take up around 3 times as much space as GIN indexes.
+
+To enable them, both the `rum_enabled` flag has to be set and the following special migration has to be run:
+
+`mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/`
+
+This will probably take a long time.

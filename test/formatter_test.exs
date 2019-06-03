@@ -125,7 +125,7 @@ defmodule Pleroma.FormatterTest do
       archaeme =
         insert(:user, %{
           nickname: "archa_eme_",
-          info: %Pleroma.User.Info{source_data: %{"url" => "https://archeme/@archa_eme_"}}
+          info: %User.Info{source_data: %{"url" => "https://archeme/@archa_eme_"}}
         })
 
       archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
@@ -147,7 +147,7 @@ defmodule Pleroma.FormatterTest do
     end
 
     test "gives a replacement for user links when the user is using Osada" do
-      mike = User.get_or_fetch("mike@osada.macgirvin.com")
+      {:ok, mike} = User.get_or_fetch("mike@osada.macgirvin.com")
 
       text = "@mike@osada.macgirvin.com test"
 
@@ -184,17 +184,19 @@ defmodule Pleroma.FormatterTest do
 
     test "given the 'safe_mention' option, it will only mention people in the beginning" do
       user = insert(:user)
-      _other_user = insert(:user)
+      other_user = insert(:user)
       third_user = insert(:user)
-      text = " @#{user.nickname} hey dude i hate @#{third_user.nickname}"
+      text = " @#{user.nickname} @#{other_user.nickname} hey dudes i hate @#{third_user.nickname}"
       {expected_text, mentions, [] = _tags} = Formatter.linkify(text, safe_mention: true)
 
-      assert mentions == [{"@#{user.nickname}", user}]
+      assert mentions == [{"@#{user.nickname}", user}, {"@#{other_user.nickname}", other_user}]
 
       assert expected_text ==
                "<span class='h-card'><a data-user='#{user.id}' class='u-url mention' href='#{
                  user.ap_id
-               }'>@<span>#{user.nickname}</span></a></span> hey dude i hate <span class='h-card'><a data-user='#{
+               }'>@<span>#{user.nickname}</span></a></span> <span class='h-card'><a data-user='#{
+                 other_user.id
+               }' class='u-url mention' href='#{other_user.ap_id}'>@<span>#{other_user.nickname}</span></a></span> hey dudes i hate <span class='h-card'><a data-user='#{
                  third_user.id
                }' class='u-url mention' href='#{third_user.ap_id}'>@<span>#{third_user.nickname}</span></a></span>"
     end
@@ -205,6 +207,15 @@ defmodule Pleroma.FormatterTest do
 
       assert mentions == []
       assert expected_text == text
+    end
+
+    test "given the 'safe_mention' option, it will keep text after newlines" do
+      user = insert(:user)
+      text = " @#{user.nickname}\n hey dude\n\nhow are you doing?"
+
+      {expected_text, _, _} = Formatter.linkify(text, safe_mention: true)
+
+      assert expected_text =~ "how are you doing?"
     end
   end
 
@@ -248,7 +259,7 @@ defmodule Pleroma.FormatterTest do
     text = "I love :firefox:"
 
     expected_result =
-      "I love <img height=\"32px\" width=\"32px\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
+      "I love <img class=\"emoji\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
 
     assert Formatter.emojify(text) == expected_result
   end
@@ -263,7 +274,7 @@ defmodule Pleroma.FormatterTest do
     }
 
     expected_result =
-      "I love <img height=\"32px\" width=\"32px\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
+      "I love <img class=\"emoji\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
 
     assert Formatter.emojify(text, custom_emoji) == expected_result
   end

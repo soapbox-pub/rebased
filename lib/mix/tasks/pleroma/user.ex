@@ -77,6 +77,10 @@ defmodule Mix.Tasks.Pleroma.User do
   ## Delete tags from a user.
 
       mix pleroma.user untag NICKNAME TAGS
+
+  ## Toggle confirmation of the user's account.
+
+      mix pleroma.user toggle_confirmed NICKNAME
   """
   def run(["new", nickname, email | rest]) do
     {options, [], []} =
@@ -126,7 +130,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     proceed? = assume_yes? or Mix.shell().yes?("Continue?")
 
-    unless not proceed? do
+    if proceed? do
       Common.start_pleroma()
 
       params = %{
@@ -138,7 +142,7 @@ defmodule Mix.Tasks.Pleroma.User do
         bio: bio
       }
 
-      changeset = User.register_changeset(%User{}, params, confirmed: true)
+      changeset = User.register_changeset(%User{}, params, need_confirmation: false)
       {:ok, _user} = User.register(changeset)
 
       Mix.shell().info("User #{nickname} created")
@@ -163,7 +167,7 @@ defmodule Mix.Tasks.Pleroma.User do
     Common.start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.delete(user)
+      User.perform(:delete, user)
       Mix.shell().info("User #{nickname} deleted.")
     else
       _ ->
@@ -380,8 +384,23 @@ defmodule Mix.Tasks.Pleroma.User do
     Common.start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.delete_user_activities(user)
+      {:ok, _} = User.delete_user_activities(user)
       Mix.shell().info("User #{nickname} statuses deleted.")
+    else
+      _ ->
+        Mix.shell().error("No local user #{nickname}")
+    end
+  end
+
+  def run(["toggle_confirmed", nickname]) do
+    Common.start_pleroma()
+
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+      {:ok, user} = User.toggle_confirmation(user)
+
+      message = if user.info.confirmation_pending, do: "needs", else: "doesn't need"
+
+      Mix.shell().info("#{nickname} #{message} confirmation.")
     else
       _ ->
         Mix.shell().error("No local user #{nickname}")

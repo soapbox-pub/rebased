@@ -28,12 +28,18 @@ defmodule Pleroma.HTML do
   def filter_tags(html), do: filter_tags(html, nil)
   def strip_tags(html), do: Scrubber.scrub(html, Scrubber.StripTags)
 
-  def get_cached_scrubbed_html_for_activity(content, scrubbers, activity, key \\ "") do
+  def get_cached_scrubbed_html_for_activity(
+        content,
+        scrubbers,
+        activity,
+        key \\ "",
+        callback \\ fn x -> x end
+      ) do
     key = "#{key}#{generate_scrubber_signature(scrubbers)}|#{activity.id}"
 
     Cachex.fetch!(:scrubber_cache, key, fn _key ->
       object = Pleroma.Object.normalize(activity)
-      ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false)
+      ensure_scrubbed_html(content, scrubbers, object.data["fake"] || false, callback)
     end)
   end
 
@@ -42,24 +48,27 @@ defmodule Pleroma.HTML do
       content,
       HtmlSanitizeEx.Scrubber.StripTags,
       activity,
-      key
+      key,
+      &HtmlEntities.decode/1
     )
   end
 
   def ensure_scrubbed_html(
         content,
         scrubbers,
-        false = _fake
+        fake,
+        callback
       ) do
-    {:commit, filter_tags(content, scrubbers)}
-  end
+    content =
+      content
+      |> filter_tags(scrubbers)
+      |> callback.()
 
-  def ensure_scrubbed_html(
-        content,
-        scrubbers,
-        true = _fake
-      ) do
-    {:ignore, filter_tags(content, scrubbers)}
+    if fake do
+      {:ignore, content}
+    else
+      {:commit, content}
+    end
   end
 
   defp generate_scrubber_signature(scrubber) when is_atom(scrubber) do
@@ -95,7 +104,6 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   paragraphs, breaks and links are allowed through the filter.
   """
 
-  @markup Application.get_env(:pleroma, :markup)
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   require HtmlSanitizeEx.Scrubber.Meta
@@ -133,15 +141,14 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   Meta.allow_tag_with_these_attributes("span", [])
 
   # allow inline images for custom emoji
-  @allow_inline_images Keyword.get(@markup, :allow_inline_images)
-
-  if @allow_inline_images do
+  if Pleroma.Config.get([:markup, :allow_inline_images]) do
     # restrict img tags to http/https only, because of MediaProxy.
     Meta.allow_tag_with_uri_attributes("img", ["src"], ["http", "https"])
 
     Meta.allow_tag_with_these_attributes("img", [
       "width",
       "height",
+      "class",
       "title",
       "alt"
     ])
@@ -158,7 +165,6 @@ defmodule Pleroma.HTML.Scrubber.Default do
   # credo:disable-for-previous-line
   # No idea how to fix this one…
 
-  @markup Application.get_env(:pleroma, :markup)
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   Meta.remove_cdata_sections_before_scrub()
@@ -203,7 +209,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_this_attribute_values("span", "class", ["h-card"])
   Meta.allow_tag_with_these_attributes("span", [])
 
-  @allow_inline_images Keyword.get(@markup, :allow_inline_images)
+  @allow_inline_images Pleroma.Config.get([:markup, :allow_inline_images])
 
   if @allow_inline_images do
     # restrict img tags to http/https only, because of MediaProxy.
@@ -212,14 +218,13 @@ defmodule Pleroma.HTML.Scrubber.Default do
     Meta.allow_tag_with_these_attributes("img", [
       "width",
       "height",
+      "class",
       "title",
       "alt"
     ])
   end
 
-  @allow_tables Keyword.get(@markup, :allow_tables)
-
-  if @allow_tables do
+  if Pleroma.Config.get([:markup, :allow_tables]) do
     Meta.allow_tag_with_these_attributes("table", [])
     Meta.allow_tag_with_these_attributes("tbody", [])
     Meta.allow_tag_with_these_attributes("td", [])
@@ -228,9 +233,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
     Meta.allow_tag_with_these_attributes("tr", [])
   end
 
-  @allow_headings Keyword.get(@markup, :allow_headings)
-
-  if @allow_headings do
+  if Pleroma.Config.get([:markup, :allow_headings]) do
     Meta.allow_tag_with_these_attributes("h1", [])
     Meta.allow_tag_with_these_attributes("h2", [])
     Meta.allow_tag_with_these_attributes("h3", [])
@@ -238,9 +241,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
     Meta.allow_tag_with_these_attributes("h5", [])
   end
 
-  @allow_fonts Keyword.get(@markup, :allow_fonts)
-
-  if @allow_fonts do
+  if Pleroma.Config.get([:markup, :allow_fonts]) do
     Meta.allow_tag_with_these_attributes("font", ["face"])
   end
 

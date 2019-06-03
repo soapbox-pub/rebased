@@ -144,41 +144,25 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], false)
 
       conn
       |> get("/api/statuses/public_timeline.json")
       |> json_response(403)
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to authenticated request when the instance is not public",
          %{conn: conn, user: user} do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], false)
 
       conn
       |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_timeline.json")
       |> json_response(200)
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
@@ -214,41 +198,25 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     setup [:valid_user]
 
     test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], false)
 
       conn
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(403)
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to authenticated request when the instance is not public",
          %{conn: conn, user: user} do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], false)
 
       conn
       |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(200)
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
@@ -1094,7 +1062,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "GET /api/account/confirm_email/:id/:token" do
     setup do
       user = insert(:user)
-      info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
+      info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
 
       {:ok, user} =
         user
@@ -1145,7 +1113,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       end
 
       user = insert(:user)
-      info_change = User.Info.confirmation_changeset(user.info, :unconfirmed)
+      info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
 
       {:ok, user} =
         user
@@ -1610,6 +1578,34 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert user.info.locked == false
 
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
+    # Broken before the change to class="emoji" and non-<img/> in the DB
+    @tag :skip
+    test "it formats emojos", %{conn: conn} do
+      user = insert(:user)
+
+      conn =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{
+          "bio" => "I love our :moominmamma:​"
+        })
+
+      assert response = json_response(conn, 200)
+
+      assert %{
+               "description" => "I love our :moominmamma:",
+               "description_html" =>
+                 ~s{I love our <img class="emoji" alt="moominmamma" title="moominmamma" src="} <>
+                   _
+             } = response
+
+      conn =
+        conn
+        |> get("/api/users/show.json?user_id=#{user.nickname}")
+
+      assert response == json_response(conn, 200)
     end
   end
 

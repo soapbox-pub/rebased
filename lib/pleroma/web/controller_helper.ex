@@ -10,12 +10,6 @@ defmodule Pleroma.Web.ControllerHelper do
   def truthy_param?(blank_value) when blank_value in [nil, ""], do: nil
   def truthy_param?(value), do: value not in @falsy_param_values
 
-  def oauth_scopes(params, default) do
-    # Note: `scopes` is used by Mastodon — supporting it but sticking to
-    # OAuth's standard `scope` wherever we control it
-    Pleroma.Web.OAuth.parse_scopes(params["scope"] || params["scopes"], default)
-  end
-
   def json_response(conn, status, json) do
     conn
     |> put_status(status)

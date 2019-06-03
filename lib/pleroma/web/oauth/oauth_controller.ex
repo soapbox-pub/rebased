@@ -13,8 +13,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   alias Pleroma.Web.OAuth.App
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
-
-  import Pleroma.Web.ControllerHelper, only: [oauth_scopes: 2]
+  alias Pleroma.Web.OAuth.Token.Strategy.RefreshToken
+  alias Pleroma.Web.OAuth.Token.Strategy.Revoke, as: RevokeToken
+  alias Pleroma.Web.OAuth.Scopes
 
   if Pleroma.Config.oauth_consumer_enabled?(), do: plug(Ueberauth)
 
@@ -53,7 +54,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   defp do_authorize(conn, params) do
     app = Repo.get_by(App, client_id: params["client_id"])
     available_scopes = (app && app.scopes) || []
-    scopes = oauth_scopes(params, nil) || available_scopes
+    scopes = Scopes.fetch_scopes(params, available_scopes)
 
     # Note: `params` might differ from `conn.params`; use `@params` not `@conn.params` in template
     render(conn, Authenticator.auth_template(), %{
@@ -109,7 +110,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp handle_create_authorization_error(
          conn,
-         {scopes_issue, _},
+         {:error, scopes_issue},
          %{"authorization" => _} = params
        )
        when scopes_issue in [:unsupported_scopes, :missing_scopes] do
@@ -138,25 +139,33 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     Authenticator.handle_error(conn, error)
   end
 
-  def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
-    with %App{} = app <- get_app_from_request(conn, params),
-         fixed_token = fix_padding(params["code"]),
-         %Authorization{} = auth <-
-           Repo.get_by(Authorization, token: fixed_token, app_id: app.id),
-         %User{} = user <- User.get_cached_by_id(auth.user_id),
-         {:ok, token} <- Token.exchange_token(app, auth),
-         {:ok, inserted_at} <- DateTime.from_naive(token.inserted_at, "Etc/UTC") do
-      response = %{
-        token_type: "Bearer",
-        access_token: token.token,
-        refresh_token: token.refresh_token,
-        created_at: DateTime.to_unix(inserted_at),
-        expires_in: 60 * 10,
-        scope: Enum.join(token.scopes, " "),
-        me: user.ap_id
-      }
+  @doc "Renew access_token with refresh_token"
+  def token_exchange(
+        conn,
+        %{"grant_type" => "refresh_token", "refresh_token" => token} = _params
+      ) do
+    with {:ok, app} <- Token.Utils.fetch_app(conn),
+         {:ok, %{user: user} = token} <- Token.get_by_refresh_token(app, token),
+         {:ok, token} <- RefreshToken.grant(token) do
+      response_attrs = %{created_at: Token.Utils.format_created_at(token)}
 
-      json(conn, response)
+      json(conn, Token.Response.build(user, token, response_attrs))
+    else
+      _error ->
+        put_status(conn, 400)
+        |> json(%{error: "Invalid credentials"})
+    end
+  end
+
+  def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
+    with {:ok, app} <- Token.Utils.fetch_app(conn),
+         fixed_token = Token.Utils.fix_padding(params["code"]),
+         {:ok, auth} <- Authorization.get_by_token(app, fixed_token),
+         %User{} = user <- User.get_cached_by_id(auth.user_id),
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      response_attrs = %{created_at: Token.Utils.format_created_at(token)}
+
+      json(conn, Token.Response.build(user, token, response_attrs))
     else
       _error ->
         put_status(conn, 400)
@@ -168,25 +177,14 @@ defmodule Pleroma.Web.OAuth.OAuthController do
         conn,
         %{"grant_type" => "password"} = params
       ) do
-    with {_, {:ok, %User{} = user}} <- {:get_user, Authenticator.get_user(conn)},
-         %App{} = app <- get_app_from_request(conn, params),
+    with {:ok, %User{} = user} <- Authenticator.get_user(conn),
+         {:ok, app} <- Token.Utils.fetch_app(conn),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)},
          {:user_active, true} <- {:user_active, !user.info.deactivated},
-         scopes <- oauth_scopes(params, app.scopes),
-         [] <- scopes -- app.scopes,
-         true <- Enum.any?(scopes),
+         {:ok, scopes} <- validate_scopes(app, params),
          {:ok, auth} <- Authorization.create_authorization(app, user, scopes),
          {:ok, token} <- Token.exchange_token(app, auth) do
-      response = %{
-        token_type: "Bearer",
-        access_token: token.token,
-        refresh_token: token.refresh_token,
-        expires_in: 60 * 10,
-        scope: Enum.join(token.scopes, " "),
-        me: user.ap_id
-      }
-
-      json(conn, response)
+      json(conn, Token.Response.build(user, token))
     else
       {:auth_active, false} ->
         # Per https://github.com/tootsuite/mastodon/blob/
@@ -218,10 +216,24 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     token_exchange(conn, params)
   end
 
-  def token_revoke(conn, %{"token" => token} = params) do
-    with %App{} = app <- get_app_from_request(conn, params),
-         %Token{} = token <- Repo.get_by(Token, token: token, app_id: app.id),
-         {:ok, %Token{}} <- Repo.delete(token) do
+  def token_exchange(conn, %{"grant_type" => "client_credentials"} = _params) do
+    with {:ok, app} <- Token.Utils.fetch_app(conn),
+         {:ok, auth} <- Authorization.create_authorization(app, %User{}),
+         {:ok, token} <- Token.exchange_token(app, auth) do
+      json(conn, Token.Response.build_for_client_credentials(token))
+    else
+      _error ->
+        put_status(conn, 400)
+        |> json(%{error: "Invalid credentials"})
+    end
+  end
+
+  # Bad request
+  def token_exchange(conn, params), do: bad_request(conn, params)
+
+  def token_revoke(conn, %{"token" => _token} = params) do
+    with {:ok, app} <- Token.Utils.fetch_app(conn),
+         {:ok, _token} <- RevokeToken.revoke(app, params) do
       json(conn, %{})
     else
       _error ->
@@ -230,17 +242,27 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
+  def token_revoke(conn, params), do: bad_request(conn, params)
+
+  # Response for bad request
+  defp bad_request(conn, _) do
+    conn
+    |> put_status(500)
+    |> json(%{error: "Bad request"})
+  end
+
   @doc "Prepares OAuth request to provider for Ueberauth"
   def prepare_request(conn, %{"provider" => provider, "authorization" => auth_attrs}) do
     scope =
-      oauth_scopes(auth_attrs, [])
-      |> Enum.join(" ")
+      auth_attrs
+      |> Scopes.fetch_scopes([])
+      |> Scopes.to_string()
 
     state =
       auth_attrs
       |> Map.delete("scopes")
       |> Map.put("scope", scope)
-      |> Poison.encode!()
+      |> Jason.encode!()
 
     params =
       auth_attrs
@@ -278,25 +300,22 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     params = callback_params(params)
 
     with {:ok, registration} <- Authenticator.get_registration(conn) do
-      user = Repo.preload(registration, :user).user
       auth_attrs = Map.take(params, ~w(client_id redirect_uri scope scopes state))
 
-      if user do
-        create_authorization(
-          conn,
-          %{"authorization" => auth_attrs},
-          user: user
-        )
-      else
-        registration_params =
-          Map.merge(auth_attrs, %{
-            "nickname" => Registration.nickname(registration),
-            "email" => Registration.email(registration)
-          })
+      case Repo.get_assoc(registration, :user) do
+        {:ok, user} ->
+          create_authorization(conn, %{"authorization" => auth_attrs}, user: user)
 
-        conn
-        |> put_session(:registration_id, registration.id)
-        |> registration_details(%{"authorization" => registration_params})
+        _ ->
+          registration_params =
+            Map.merge(auth_attrs, %{
+              "nickname" => Registration.nickname(registration),
+              "email" => Registration.email(registration)
+            })
+
+          conn
+          |> put_session(:registration_id, registration.id)
+          |> registration_details(%{"authorization" => registration_params})
       end
     else
       _ ->
@@ -307,7 +326,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   defp callback_params(%{"state" => state} = params) do
-    Map.merge(params, Poison.decode!(state))
+    Map.merge(params, Jason.decode!(state))
   end
 
   def registration_details(conn, %{"authorization" => auth_attrs}) do
@@ -315,7 +334,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       client_id: auth_attrs["client_id"],
       redirect_uri: auth_attrs["redirect_uri"],
       state: auth_attrs["state"],
-      scopes: oauth_scopes(auth_attrs, []),
+      scopes: Scopes.fetch_scopes(auth_attrs, []),
       nickname: auth_attrs["nickname"],
       email: auth_attrs["email"]
     })
@@ -390,45 +409,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
            {:get_user, (user && {:ok, user}) || Authenticator.get_user(conn)},
          %App{} = app <- Repo.get_by(App, client_id: client_id),
          true <- redirect_uri in String.split(app.redirect_uris),
-         scopes <- oauth_scopes(auth_attrs, []),
-         {:unsupported_scopes, []} <- {:unsupported_scopes, scopes -- app.scopes},
-         # Note: `scope` param is intentionally not optional in this context
-         {:missing_scopes, false} <- {:missing_scopes, scopes == []},
+         {:ok, scopes} <- validate_scopes(app, auth_attrs),
          {:auth_active, true} <- {:auth_active, User.auth_active?(user)} do
       Authorization.create_authorization(app, user, scopes)
-    end
-  end
-
-  # XXX - for whatever reason our token arrives urlencoded, but Plug.Conn should be
-  # decoding it.  Investigate sometime.
-  defp fix_padding(token) do
-    token
-    |> URI.decode()
-    |> Base.url_decode64!(padding: false)
-    |> Base.url_encode64(padding: false)
-  end
-
-  defp get_app_from_request(conn, params) do
-    # Per RFC 6749, HTTP Basic is preferred to body params
-    {client_id, client_secret} =
-      with ["Basic " <> encoded] <- get_req_header(conn, "authorization"),
-           {:ok, decoded} <- Base.decode64(encoded),
-           [id, secret] <-
-             String.split(decoded, ":")
-             |> Enum.map(fn s -> URI.decode_www_form(s) end) do
-        {id, secret}
-      else
-        _ -> {params["client_id"], params["client_secret"]}
-      end
-
-    if client_id && client_secret do
-      Repo.get_by(
-        App,
-        client_id: client_id,
-        client_secret: client_secret
-      )
-    else
-      nil
     end
   end
 
@@ -441,4 +424,12 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp put_session_registration_id(conn, registration_id),
     do: put_session(conn, :registration_id, registration_id)
+
+  @spec validate_scopes(App.t(), map()) ::
+          {:ok, list()} | {:error, :missing_scopes | :unsupported_scopes}
+  defp validate_scopes(app, params) do
+    params
+    |> Scopes.fetch_scopes(app.scopes)
+    |> Scopes.validates(app.scopes)
+  end
 end

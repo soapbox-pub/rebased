@@ -7,15 +7,15 @@ defmodule Pleroma.MediaProxyTest do
   import Pleroma.Web.MediaProxy
   alias Pleroma.Web.MediaProxy.MediaProxyController
 
+  setup do
+    enabled = Pleroma.Config.get([:media_proxy, :enabled])
+    on_exit(fn -> Pleroma.Config.put([:media_proxy, :enabled], enabled) end)
+    :ok
+  end
+
   describe "when enabled" do
     setup do
-      enabled = Pleroma.Config.get([:media_proxy, :enabled])
-
-      unless enabled do
-        Pleroma.Config.put([:media_proxy, :enabled], true)
-        on_exit(fn -> Pleroma.Config.put([:media_proxy, :enabled], enabled) end)
-      end
-
+      Pleroma.Config.put([:media_proxy, :enabled], true)
       :ok
     end
 

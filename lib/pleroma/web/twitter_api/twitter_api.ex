@@ -128,7 +128,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
     end
   end
 
-  def register_user(params) do
+  def register_user(params, opts \\ []) do
     token = params["token"]
 
     params = %{
@@ -162,13 +162,22 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       # I have no idea how this error handling works
       {:error, %{error: Jason.encode!(%{captcha: [error]})}}
     else
-      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
-      registration_process(registrations_open, params, token)
+      registration_process(
+        params,
+        %{
+          registrations_open: Pleroma.Config.get([:instance, :registrations_open]),
+          token: token
+        },
+        opts
+      )
     end
   end
 
-  defp registration_process(registration_open, params, token)
-       when registration_open == false or is_nil(registration_open) do
+  defp registration_process(params, %{registrations_open: true}, opts) do
+    create_user(params, opts)
+  end
+
+  defp registration_process(params, %{token: token}, opts) do
     invite =
       unless is_nil(token) do
         Repo.get_by(UserInviteToken, %{token: token})
@@ -182,19 +191,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
       invite when valid_invite? ->
         UserInviteToken.update_usage!(invite)
-        create_user(params)
+        create_user(params, opts)
 
       _ ->
         {:error, "Expired token"}
     end
   end
 
-  defp registration_process(true, params, _token) do
-    create_user(params)
-  end
-
-  defp create_user(params) do
-    changeset = User.register_changeset(%User{}, params)
+  defp create_user(params, opts) do
+    changeset = User.register_changeset(%User{}, params, opts)
 
     case User.register(changeset) do
       {:ok, user} ->
@@ -231,12 +236,15 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   def get_user(user \\ nil, params) do
     case params do
       %{"user_id" => user_id} ->
-        case target = User.get_cached_by_nickname_or_id(user_id) do
+        case User.get_cached_by_nickname_or_id(user_id) do
           nil ->
             {:error, "No user with such user_id"}
 
-          _ ->
-            {:ok, target}
+          %User{info: %{deactivated: true}} ->
+            {:error, "User has been disabled"}
+
+          user ->
+            {:ok, user}
         end
 
       %{"screen_name" => nickname} ->
@@ -293,7 +301,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
   end
 
   def get_external_profile(for_user, uri) do
-    with %User{} = user <- User.get_or_fetch(uri) do
+    with {:ok, %User{} = user} <- User.get_or_fetch(uri) do
       {:ok, UserView.render("show.json", %{user: user, for: for_user})}
     else
       _e ->

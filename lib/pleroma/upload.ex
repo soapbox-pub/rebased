@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Upload do
   @moduledoc """
-  # Upload
+  Manage user uploads
 
   Options:
   * `:type`: presets for activity type (defaults to Document) and size limits from app configuration

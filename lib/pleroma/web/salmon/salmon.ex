@@ -3,12 +3,18 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.Salmon do
-  @httpoison Application.get_env(:pleroma, :httpoison)
+  @behaviour Pleroma.Web.Federator.Publisher
 
   use Bitwise
 
+  alias Pleroma.Activity
+  alias Pleroma.HTTP
   alias Pleroma.Instances
+  alias Pleroma.Keys
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Federator.Publisher
+  alias Pleroma.Web.OStatus
   alias Pleroma.Web.OStatus.ActivityRepresenter
   alias Pleroma.Web.XML
 
@@ -83,45 +89,6 @@ defmodule Pleroma.Web.Salmon do
     "RSA.#{modulus_enc}.#{exponent_enc}"
   end
 
-  # Native generation of RSA keys is only available since OTP 20+ and in default build conditions
-  # We try at compile time to generate natively an RSA key otherwise we fallback on the old way.
-  try do
-    _ = :public_key.generate_key({:rsa, 2048, 65_537})
-
-    def generate_rsa_pem do
-      key = :public_key.generate_key({:rsa, 2048, 65_537})
-      entry = :public_key.pem_entry_encode(:RSAPrivateKey, key)
-      pem = :public_key.pem_encode([entry]) |> String.trim_trailing()
-      {:ok, pem}
-    end
-  rescue
-    _ ->
-      def generate_rsa_pem do
-        port = Port.open({:spawn, "openssl genrsa"}, [:binary])
-
-        {:ok, pem} =
-          receive do
-            {^port, {:data, pem}} -> {:ok, pem}
-          end
-
-        Port.close(port)
-
-        if Regex.match?(~r/RSA PRIVATE KEY/, pem) do
-          {:ok, pem}
-        else
-          :error
-        end
-      end
-  end
-
-  def keys_from_pem(pem) do
-    [private_key_code] = :public_key.pem_decode(pem)
-    private_key = :public_key.pem_entry_decode(private_key_code)
-    {:RSAPrivateKey, _, modulus, exponent, _, _, _, _, _, _, _} = private_key
-    public_key = {:RSAPublicKey, modulus, exponent}
-    {:ok, private_key, public_key}
-  end
-
   def encode(private_key, doc) do
     type = "application/atom+xml"
     encoding = "base64url"
@@ -165,12 +132,12 @@ defmodule Pleroma.Web.Salmon do
   end
 
   @doc "Pushes an activity to remote account."
-  def send_to_user(%{recipient: %{info: %{salmon: salmon}}} = params),
-    do: send_to_user(Map.put(params, :recipient, salmon))
+  def publish_one(%{recipient: %{info: %{salmon: salmon}}} = params),
+    do: publish_one(Map.put(params, :recipient, salmon))
 
-  def send_to_user(%{recipient: url, feed: feed, poster: poster} = params) when is_binary(url) do
+  def publish_one(%{recipient: url, feed: feed} = params) when is_binary(url) do
     with {:ok, %{status: code}} when code in 200..299 <-
-           poster.(
+           HTTP.post(
              url,
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}]
@@ -184,11 +151,11 @@ defmodule Pleroma.Web.Salmon do
       e ->
         unless params[:unreachable_since], do: Instances.set_reachable(url)
         Logger.debug(fn -> "Pushing Salmon to #{url} failed, #{inspect(e)}" end)
-        :error
+        {:error, "Unreachable instance"}
     end
   end
 
-  def send_to_user(_), do: :noop
+  def publish_one(_), do: :noop
 
   @supported_activities [
     "Create",
@@ -199,13 +166,19 @@ defmodule Pleroma.Web.Salmon do
     "Delete"
   ]
 
+  def is_representable?(%Activity{data: %{"type" => type}} = activity)
+      when type in @supported_activities,
+      do: Visibility.is_public?(activity)
+
+  def is_representable?(_), do: false
+
   @doc """
   Publishes an activity to remote accounts
   """
-  @spec publish(User.t(), Pleroma.Activity.t(), Pleroma.HTTP.t()) :: none
-  def publish(user, activity, poster \\ &@httpoison.post/3)
+  @spec publish(User.t(), Pleroma.Activity.t()) :: none
+  def publish(user, activity)
 
-  def publish(%{info: %{keys: keys}} = user, %{data: %{"type" => type}} = activity, poster)
+  def publish(%{info: %{keys: keys}} = user, %{data: %{"type" => type}} = activity)
       when type in @supported_activities do
     feed = ActivityRepresenter.to_simple_form(activity, user, true)
 
@@ -215,7 +188,7 @@ defmodule Pleroma.Web.Salmon do
         |> :xmerl.export_simple(:xmerl_xml)
         |> to_string
 
-      {:ok, private, _} = keys_from_pem(keys)
+      {:ok, private, _} = Keys.keys_from_pem(keys)
       {:ok, feed} = encode(private, feed)
 
       remote_users = remote_users(activity)
@@ -229,15 +202,29 @@ defmodule Pleroma.Web.Salmon do
       |> Enum.each(fn remote_user ->
         Logger.debug(fn -> "Sending Salmon to #{remote_user.ap_id}" end)
 
-        Pleroma.Web.Federator.publish_single_salmon(%{
+        Publisher.enqueue_one(__MODULE__, %{
           recipient: remote_user,
           feed: feed,
-          poster: poster,
           unreachable_since: reachable_urls_metadata[remote_user.info.salmon]
         })
       end)
     end
   end
 
-  def publish(%{id: id}, _, _), do: Logger.debug(fn -> "Keys missing for user #{id}" end)
+  def publish(%{id: id}, _), do: Logger.debug(fn -> "Keys missing for user #{id}" end)
+
+  def gather_webfinger_links(%User{} = user) do
+    {:ok, _private, public} = Keys.keys_from_pem(user.info.keys)
+    magic_key = encode_key(public)
+
+    [
+      %{"rel" => "salmon", "href" => OStatus.salmon_path(user)},
+      %{
+        "rel" => "magic-public-key",
+        "href" => "data:application/magic-public-key,#{magic_key}"
+      }
+    ]
+  end
+
+  def gather_nodeinfo_protocol_names, do: []
 end

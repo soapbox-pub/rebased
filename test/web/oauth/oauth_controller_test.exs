@@ -12,6 +12,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   alias Pleroma.Web.OAuth.Authorization
   alias Pleroma.Web.OAuth.Token
 
+  @oauth_config_path [:oauth2, :issue_new_refresh_token]
   @session_opts [
     store: :cookie,
     key: "_test",
@@ -613,6 +614,27 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert token.scopes == ["scope1", "scope2"]
     end
 
+    test "issue a token for client_credentials grant type" do
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      conn =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "client_credentials",
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+
+      assert %{"access_token" => token, "refresh_token" => refresh, "scope" => scope} =
+               json_response(conn, 200)
+
+      assert token
+      token_from_db = Repo.get_by(Token, token: token)
+      assert token_from_db
+      assert refresh
+      assert scope == "read write"
+    end
+
     test "rejects token exchange with invalid client credentials" do
       user = insert(:user)
       app = insert(:oauth_app)
@@ -643,7 +665,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       password = "testpassword"
       user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
-      info_change = Pleroma.User.Info.confirmation_changeset(user.info, :unconfirmed)
+      info_change = Pleroma.User.Info.confirmation_changeset(user.info, need_confirmation: true)
 
       {:ok, user} =
         user
@@ -712,6 +734,201 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert resp = json_response(conn, 400)
       assert %{"error" => _} = json_response(conn, 400)
       refute Map.has_key?(resp, "access_token")
+    end
+  end
+
+  describe "POST /oauth/token - refresh token" do
+    setup do
+      oauth_token_config = Pleroma.Config.get(@oauth_config_path)
+
+      on_exit(fn ->
+        Pleroma.Config.get(@oauth_config_path, oauth_token_config)
+      end)
+    end
+
+    test "issues a new access token with keep fresh token" do
+      Pleroma.Config.put(@oauth_config_path, true)
+      user = insert(:user)
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      {:ok, auth} = Authorization.create_authorization(app, user, ["write"])
+      {:ok, token} = Token.exchange_token(app, auth)
+
+      response =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "refresh_token",
+          "refresh_token" => token.refresh_token,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(200)
+
+      ap_id = user.ap_id
+
+      assert match?(
+               %{
+                 "scope" => "write",
+                 "token_type" => "Bearer",
+                 "expires_in" => 600,
+                 "access_token" => _,
+                 "refresh_token" => _,
+                 "me" => ^ap_id
+               },
+               response
+             )
+
+      refute Repo.get_by(Token, token: token.token)
+      new_token = Repo.get_by(Token, token: response["access_token"])
+      assert new_token.refresh_token == token.refresh_token
+      assert new_token.scopes == auth.scopes
+      assert new_token.user_id == user.id
+      assert new_token.app_id == app.id
+    end
+
+    test "issues a new access token with new fresh token" do
+      Pleroma.Config.put(@oauth_config_path, false)
+      user = insert(:user)
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      {:ok, auth} = Authorization.create_authorization(app, user, ["write"])
+      {:ok, token} = Token.exchange_token(app, auth)
+
+      response =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "refresh_token",
+          "refresh_token" => token.refresh_token,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(200)
+
+      ap_id = user.ap_id
+
+      assert match?(
+               %{
+                 "scope" => "write",
+                 "token_type" => "Bearer",
+                 "expires_in" => 600,
+                 "access_token" => _,
+                 "refresh_token" => _,
+                 "me" => ^ap_id
+               },
+               response
+             )
+
+      refute Repo.get_by(Token, token: token.token)
+      new_token = Repo.get_by(Token, token: response["access_token"])
+      refute new_token.refresh_token == token.refresh_token
+      assert new_token.scopes == auth.scopes
+      assert new_token.user_id == user.id
+      assert new_token.app_id == app.id
+    end
+
+    test "returns 400 if we try use access token" do
+      user = insert(:user)
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      {:ok, auth} = Authorization.create_authorization(app, user, ["write"])
+      {:ok, token} = Token.exchange_token(app, auth)
+
+      response =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "refresh_token",
+          "refresh_token" => token.token,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(400)
+
+      assert %{"error" => "Invalid credentials"} == response
+    end
+
+    test "returns 400 if refresh_token invalid" do
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      response =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "refresh_token",
+          "refresh_token" => "token.refresh_token",
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(400)
+
+      assert %{"error" => "Invalid credentials"} == response
+    end
+
+    test "issues a new token if token expired" do
+      user = insert(:user)
+      app = insert(:oauth_app, scopes: ["read", "write"])
+
+      {:ok, auth} = Authorization.create_authorization(app, user, ["write"])
+      {:ok, token} = Token.exchange_token(app, auth)
+
+      change =
+        Ecto.Changeset.change(
+          token,
+          %{valid_until: NaiveDateTime.add(NaiveDateTime.utc_now(), -86_400 * 30)}
+        )
+
+      {:ok, access_token} = Repo.update(change)
+
+      response =
+        build_conn()
+        |> post("/oauth/token", %{
+          "grant_type" => "refresh_token",
+          "refresh_token" => access_token.refresh_token,
+          "client_id" => app.client_id,
+          "client_secret" => app.client_secret
+        })
+        |> json_response(200)
+
+      ap_id = user.ap_id
+
+      assert match?(
+               %{
+                 "scope" => "write",
+                 "token_type" => "Bearer",
+                 "expires_in" => 600,
+                 "access_token" => _,
+                 "refresh_token" => _,
+                 "me" => ^ap_id
+               },
+               response
+             )
+
+      refute Repo.get_by(Token, token: token.token)
+      token = Repo.get_by(Token, token: response["access_token"])
+      assert token
+      assert token.scopes == auth.scopes
+      assert token.user_id == user.id
+      assert token.app_id == app.id
+    end
+  end
+
+  describe "POST /oauth/token - bad request" do
+    test "returns 500" do
+      response =
+        build_conn()
+        |> post("/oauth/token", %{})
+        |> json_response(500)
+
+      assert %{"error" => "Bad request"} == response
+    end
+  end
+
+  describe "POST /oauth/revoke - bad request" do
+    test "returns 500" do
+      response =
+        build_conn()
+        |> post("/oauth/revoke", %{})
+        |> json_response(500)
+
+      assert %{"error" => "Bad request"} == response
     end
   end
 end

@@ -48,7 +48,8 @@ config :pleroma, ecto_repos: [Pleroma.Repo]
 
 config :pleroma, Pleroma.Repo,
   types: Pleroma.PostgresTypes,
-  telemetry_event: [Pleroma.Repo.Instrumenter]
+  telemetry_event: [Pleroma.Repo.Instrumenter],
+  migration_lock: nil
 
 config :pleroma, Pleroma.Captcha,
   enabled: false,
@@ -183,14 +184,12 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :pleroma, :websub, Pleroma.Web.Websub
-config :pleroma, :ostatus, Pleroma.Web.OStatus
-config :pleroma, :httpoison, Pleroma.HTTP
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
 config :pleroma, :http,
   proxy_url: nil,
+  send_user_agent: true,
   adapter: [
     ssl_options: [
       # We don't support TLS v1.3 yet
@@ -209,9 +208,20 @@ config :pleroma, :instance,
   avatar_upload_limit: 2_000_000,
   background_upload_limit: 4_000_000,
   banner_upload_limit: 4_000_000,
+  poll_limits: %{
+    max_options: 20,
+    max_option_chars: 200,
+    min_expiration: 0,
+    max_expiration: 365 * 24 * 60 * 60
+  },
   registrations_open: true,
   federating: true,
   federation_reachability_timeout_days: 7,
+  federation_publisher_modules: [
+    Pleroma.Web.ActivityPub.Publisher,
+    Pleroma.Web.Websub,
+    Pleroma.Web.Salmon
+  ],
   allow_relay: true,
   rewrite_policy: Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
   public: true,
@@ -232,7 +242,10 @@ config :pleroma, :instance,
   welcome_message: nil,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
-  healthcheck: false
+  healthcheck: false,
+  remote_post_retention_days: 90
+
+config :pleroma, :app_account_creation, enabled: true, max_requests: 25, interval: 1800
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -245,25 +258,6 @@ config :pleroma, :markup,
     Pleroma.HTML.Transform.MediaProxy,
     Pleroma.HTML.Scrubber.Default
   ]
-
-# Deprecated, will be gone in 1.0
-config :pleroma, :fe,
-  theme: "pleroma-dark",
-  logo: "/static/logo.png",
-  logo_mask: true,
-  logo_margin: "0.1em",
-  background: "/static/aurora_borealis.jpg",
-  redirect_root_no_login: "/main/all",
-  redirect_root_login: "/main/friends",
-  show_instance_panel: true,
-  scope_options_enabled: false,
-  formatting_options_enabled: false,
-  collapse_message_with_subject: false,
-  hide_post_stats: false,
-  hide_user_stats: false,
-  scope_copy: true,
-  subject_line_behavior: "email",
-  always_show_subject_input: true
 
 config :pleroma, :frontend_configurations,
   pleroma_fe: %{
@@ -285,6 +279,19 @@ config :pleroma, :frontend_configurations,
   masto_fe: %{
     showInstanceSpecificPanel: true
   }
+
+config :pleroma, :assets,
+  mascots: [
+    pleroma_fox_tan: %{
+      url: "/images/pleroma-fox-tan-smol.png",
+      mime_type: "image/png"
+    },
+    pleroma_fox_tan_shy: %{
+      url: "/images/pleroma-fox-tan-shy.png",
+      mime_type: "image/png"
+    }
+  ],
+  default_mascot: :pleroma_fox_tan
 
 config :pleroma, :activitypub,
   accept_blocks: true,
@@ -308,8 +315,11 @@ config :pleroma, :mrf_simple,
   media_removal: [],
   media_nsfw: [],
   federated_timeline_removal: [],
+  report_removal: [],
   reject: [],
-  accept: []
+  accept: [],
+  avatar_removal: [],
+  banner_removal: []
 
 config :pleroma, :mrf_keyword,
   reject: [],
@@ -380,6 +390,7 @@ config :pleroma, Pleroma.User,
     "activities",
     "api",
     "auth",
+    "check_password",
     "dev",
     "friend-requests",
     "inbox",
@@ -400,6 +411,7 @@ config :pleroma, Pleroma.User,
     "status",
     "tag",
     "user-search",
+    "user_exists",
     "users",
     "web"
   ]
@@ -416,7 +428,8 @@ config :pleroma_job_queue, :queues,
   web_push: 50,
   mailer: 10,
   transmogrifier: 20,
-  scheduled_activities: 10
+  scheduled_activities: 10,
+  background: 5
 
 config :pleroma, :fetch_initial_posts,
   enabled: false,
@@ -443,6 +456,9 @@ config :pleroma, :ldap,
   base: System.get_env("LDAP_BASE") || "dc=example,dc=com",
   uid: System.get_env("LDAP_UID") || "cn"
 
+config :esshd,
+  enabled: false
+
 oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
 
 ueberauth_providers =
@@ -467,6 +483,17 @@ config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 25,
   total_user_limit: 300,
   enabled: true
+
+config :pleroma, :oauth2,
+  token_expires_in: 600,
+  issue_new_refresh_token: true,
+  clean_expired_tokens: false,
+  clean_expired_tokens_interval: 86_400_000
+
+config :pleroma, :database, rum_enabled: false
+
+config :http_signatures,
+  adapter: Pleroma.Signature
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

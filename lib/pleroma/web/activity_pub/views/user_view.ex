@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.UserView do
   use Pleroma.Web, :view
 
+  alias Pleroma.Keys
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -12,8 +13,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router.Helpers
-  alias Pleroma.Web.Salmon
-  alias Pleroma.Web.WebFinger
 
   import Ecto.Query
 
@@ -34,8 +33,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
   # the instance itself is not a Person, but instead an Application
   def render("user.json", %{user: %{nickname: nil} = user}) do
-    {:ok, user} = WebFinger.ensure_keys_present(user)
-    {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
+    {:ok, user} = User.ensure_keys_present(user)
+    {:ok, _, public_key} = Keys.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
 
@@ -62,12 +61,17 @@ defmodule Pleroma.Web.ActivityPub.UserView do
   end
 
   def render("user.json", %{user: user}) do
-    {:ok, user} = WebFinger.ensure_keys_present(user)
-    {:ok, _, public_key} = Salmon.keys_from_pem(user.info.keys)
+    {:ok, user} = User.ensure_keys_present(user)
+    {:ok, _, public_key} = Keys.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
     public_key = :public_key.pem_encode([public_key])
 
     endpoints = render("endpoints.json", %{user: user})
+
+    user_tags =
+      user
+      |> Transmogrifier.add_emoji_tags()
+      |> Map.get("tag", [])
 
     %{
       "id" => user.ap_id,
@@ -87,7 +91,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "publicKeyPem" => public_key
       },
       "endpoints" => endpoints,
-      "tag" => user.info.source_data["tag"] || []
+      "tag" => (user.info.source_data["tag"] || []) ++ user_tags
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))
     |> Map.merge(maybe_make_image(&User.banner_url/2, "image", user))

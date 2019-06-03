@@ -9,6 +9,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   alias Ecto.Changeset
   alias Pleroma.Activity
+  alias Pleroma.Formatter
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -100,9 +101,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
 
-    activities =
-      ActivityPub.fetch_activities([user.ap_id | user.following], params)
-      |> ActivityPub.contain_timeline(user)
+    activities = ActivityPub.fetch_activities([user.ap_id | user.following], params)
 
     conn
     |> put_view(ActivityView)
@@ -181,6 +180,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       |> Map.put("blocking_user", user)
       |> Map.put("user", user)
       |> Map.put(:visibility, "direct")
+      |> Map.put(:order, :desc)
 
     activities =
       ActivityPub.fetch_activities_query([user.ap_id], params)
@@ -438,7 +438,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
          true <- user.local,
          true <- user.info.confirmation_pending,
          true <- user.info.confirmation_token == token,
-         info_change <- User.Info.confirmation_changeset(user.info, :confirmed),
+         info_change <- User.Info.confirmation_changeset(user.info, need_confirmation: false),
          changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_change),
          {:ok, _} <- User.update_and_set_cache(changeset) do
       conn
@@ -653,7 +653,22 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   defp parse_profile_bio(user, params) do
     if bio = params["description"] do
-      Map.put(params, "bio", User.parse_bio(bio, user))
+      emojis_text = (params["description"] || "") <> " " <> (params["name"] || "")
+
+      emojis =
+        ((user.info.emoji || []) ++ Formatter.get_emoji_map(emojis_text))
+        |> Enum.dedup()
+
+      user_info =
+        user.info
+        |> Map.put(
+          "emoji",
+          emojis
+        )
+
+      params
+      |> Map.put("bio", User.parse_bio(bio, user))
+      |> Map.put("info", user_info)
     else
       params
     end
@@ -713,7 +728,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   def only_if_public_instance(%{assigns: %{user: %User{}}} = conn, _), do: conn
 
   def only_if_public_instance(conn, _) do
-    if Keyword.get(Application.get_env(:pleroma, :instance), :public) do
+    if Pleroma.Config.get([:instance, :public]) do
       conn
     else
       conn

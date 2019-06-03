@@ -4,6 +4,10 @@
 
 defmodule Mix.Tasks.Pleroma.Database do
   alias Mix.Tasks.Pleroma.Common
+  alias Pleroma.Conversation
+  alias Pleroma.Object
+  alias Pleroma.Repo
+  alias Pleroma.User
   require Logger
   use Mix.Task
 
@@ -19,6 +23,18 @@ defmodule Mix.Tasks.Pleroma.Database do
 
     Options:
     - `--vacuum` - run `VACUUM FULL` after the embedded objects are replaced with their references
+
+  ## Prune old objects from the database
+
+      mix pleroma.database prune_objects
+
+  ## Create a conversation for all existing DMs. Can be safely re-run.
+
+      mix pleroma.database bump_all_conversations
+
+  ## Remove duplicated items from following and update followers count for all users
+
+      mix pleroma.database update_users_following_followers_counts
   """
   def run(["remove_embedded_objects" | args]) do
     {options, [], []} =
@@ -32,7 +48,7 @@ defmodule Mix.Tasks.Pleroma.Database do
     Common.start_pleroma()
     Logger.info("Removing embedded objects")
 
-    Pleroma.Repo.query!(
+    Repo.query!(
       "update activities set data = jsonb_set(data, '{object}'::text[], data->'object'->'id') where data->'object'->>'id' is not null;",
       [],
       timeout: :infinity
@@ -41,7 +57,62 @@ defmodule Mix.Tasks.Pleroma.Database do
     if Keyword.get(options, :vacuum) do
       Logger.info("Runnning VACUUM FULL")
 
-      Pleroma.Repo.query!(
+      Repo.query!(
+        "vacuum full;",
+        [],
+        timeout: :infinity
+      )
+    end
+  end
+
+  def run(["bump_all_conversations"]) do
+    Common.start_pleroma()
+    Conversation.bump_for_all_activities()
+  end
+
+  def run(["update_users_following_followers_counts"]) do
+    Common.start_pleroma()
+
+    users = Repo.all(User)
+    Enum.each(users, &User.remove_duplicated_following/1)
+    Enum.each(users, &User.update_follower_count/1)
+  end
+
+  def run(["prune_objects" | args]) do
+    import Ecto.Query
+
+    {options, [], []} =
+      OptionParser.parse(
+        args,
+        strict: [
+          vacuum: :boolean
+        ]
+      )
+
+    Common.start_pleroma()
+
+    deadline = Pleroma.Config.get([:instance, :remote_post_retention_days])
+
+    Logger.info("Pruning objects older than #{deadline} days")
+
+    time_deadline =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(-(deadline * 86_400))
+
+    public = "https://www.w3.org/ns/activitystreams#Public"
+
+    from(o in Object,
+      where: fragment("?->'to' \\? ? OR ?->'cc' \\? ?", o.data, ^public, o.data, ^public),
+      where: o.inserted_at < ^time_deadline,
+      where:
+        fragment("split_part(?->>'actor', '/', 3) != ?", o.data, ^Pleroma.Web.Endpoint.host())
+    )
+    |> Repo.delete_all(timeout: :infinity)
+
+    if Keyword.get(options, :vacuum) do
+      Logger.info("Runnning VACUUM FULL")
+
+      Repo.query!(
         "vacuum full;",
         [],
         timeout: :infinity

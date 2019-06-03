@@ -67,6 +67,13 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
         {String.trim(name, ":"), url}
       end)
 
+    emoji = Enum.dedup(emoji ++ user.info.emoji)
+
+    description_html =
+      (user.bio || "")
+      |> HTML.filter_tags(User.html_filter_policy(for_user))
+      |> Formatter.emojify(emoji)
+
     # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
     # For example: [{"name": "Pronoun", "value": "she/her"}, …]
     fields =
@@ -78,7 +85,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       %{
         "created_at" => user.inserted_at |> Utils.format_naive_asctime(),
         "description" => HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
-        "description_html" => HTML.filter_tags(user.bio, User.html_filter_policy(for_user)),
+        "description_html" => description_html,
         "favourites_count" => 0,
         "followers_count" => user_info[:follower_count],
         "following" => following,
@@ -114,6 +121,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
             "tags" => user.tags
           }
           |> maybe_with_activation_status(user, for_user)
+          |> with_notification_settings(user, for_user)
       }
       |> maybe_with_user_settings(user, for_user)
       |> maybe_with_role(user, for_user)
@@ -124,6 +132,12 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       data
     end
   end
+
+  defp with_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
+    Map.put(data, "notification_settings", user.info.notification_settings)
+  end
+
+  defp with_notification_settings(data, _, _), do: data
 
   defp maybe_with_activation_status(data, user, %User{info: %{is_admin: true}}) do
     Map.put(data, "deactivated", user.info.deactivated)

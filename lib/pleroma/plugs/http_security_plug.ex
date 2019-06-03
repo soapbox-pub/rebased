@@ -20,8 +20,9 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
 
   defp headers do
     referrer_policy = Config.get([:http_security, :referrer_policy])
+    report_uri = Config.get([:http_security, :report_uri])
 
-    [
+    headers = [
       {"x-xss-protection", "1; mode=block"},
       {"x-permitted-cross-domain-policies", "none"},
       {"x-frame-options", "DENY"},
@@ -30,12 +31,27 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       {"x-download-options", "noopen"},
       {"content-security-policy", csp_string() <> ";"}
     ]
+
+    if report_uri do
+      report_group = %{
+        "group" => "csp-endpoint",
+        "max-age" => 10_886_400,
+        "endpoints" => [
+          %{"url" => report_uri}
+        ]
+      }
+
+      headers ++ [{"reply-to", Jason.encode!(report_group)}]
+    else
+      headers
+    end
   end
 
   defp csp_string do
     scheme = Config.get([Pleroma.Web.Endpoint, :url])[:scheme]
     static_url = Pleroma.Web.Endpoint.static_url()
-    websocket_url = String.replace(static_url, "http", "ws")
+    websocket_url = Pleroma.Web.Endpoint.websocket_url()
+    report_uri = Config.get([:http_security, :report_uri])
 
     connect_src = "connect-src 'self' #{static_url} #{websocket_url}"
 
@@ -53,7 +69,7 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
         "script-src 'self'"
       end
 
-    [
+    main_part = [
       "default-src 'none'",
       "base-uri 'self'",
       "frame-ancestors 'none'",
@@ -63,11 +79,14 @@ defmodule Pleroma.Plugs.HTTPSecurityPlug do
       "font-src 'self'",
       "manifest-src 'self'",
       connect_src,
-      script_src,
-      if scheme == "https" do
-        "upgrade-insecure-requests"
-      end
+      script_src
     ]
+
+    report = if report_uri, do: ["report-uri #{report_uri}; report-to csp-endpoint"], else: []
+
+    insecure = if scheme == "https", do: ["upgrade-insecure-requests"], else: []
+
+    (main_part ++ report ++ insecure)
     |> Enum.join("; ")
   end
 

@@ -3,12 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.WebFinger do
-  @httpoison Application.get_env(:pleroma, :httpoison)
-
+  alias Pleroma.HTTP
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Salmon
+  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.XML
   alias Pleroma.XmlBuilder
   require Jason
@@ -50,93 +48,42 @@ defmodule Pleroma.Web.WebFinger do
     end
   end
 
+  defp gather_links(%User{} = user) do
+    [
+      %{
+        "rel" => "http://webfinger.net/rel/profile-page",
+        "type" => "text/html",
+        "href" => user.ap_id
+      }
+    ] ++ Publisher.gather_webfinger_links(user)
+  end
+
   def represent_user(user, "JSON") do
-    {:ok, user} = ensure_keys_present(user)
-    {:ok, _private, public} = Salmon.keys_from_pem(user.info.keys)
-    magic_key = Salmon.encode_key(public)
+    {:ok, user} = User.ensure_keys_present(user)
 
     %{
       "subject" => "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}",
       "aliases" => [user.ap_id],
-      "links" => [
-        %{
-          "rel" => "http://schemas.google.com/g/2010#updates-from",
-          "type" => "application/atom+xml",
-          "href" => OStatus.feed_path(user)
-        },
-        %{
-          "rel" => "http://webfinger.net/rel/profile-page",
-          "type" => "text/html",
-          "href" => user.ap_id
-        },
-        %{"rel" => "salmon", "href" => OStatus.salmon_path(user)},
-        %{
-          "rel" => "magic-public-key",
-          "href" => "data:application/magic-public-key,#{magic_key}"
-        },
-        %{"rel" => "self", "type" => "application/activity+json", "href" => user.ap_id},
-        %{
-          "rel" => "self",
-          "type" => "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
-          "href" => user.ap_id
-        },
-        %{
-          "rel" => "http://ostatus.org/schema/1.0/subscribe",
-          "template" => OStatus.remote_follow_path()
-        }
-      ]
+      "links" => gather_links(user)
     }
   end
 
   def represent_user(user, "XML") do
-    {:ok, user} = ensure_keys_present(user)
-    {:ok, _private, public} = Salmon.keys_from_pem(user.info.keys)
-    magic_key = Salmon.encode_key(public)
+    {:ok, user} = User.ensure_keys_present(user)
+
+    links =
+      gather_links(user)
+      |> Enum.map(fn link -> {:Link, link} end)
 
     {
       :XRD,
       %{xmlns: "http://docs.oasis-open.org/ns/xri/xrd-1.0"},
       [
         {:Subject, "acct:#{user.nickname}@#{Pleroma.Web.Endpoint.host()}"},
-        {:Alias, user.ap_id},
-        {:Link,
-         %{
-           rel: "http://schemas.google.com/g/2010#updates-from",
-           type: "application/atom+xml",
-           href: OStatus.feed_path(user)
-         }},
-        {:Link,
-         %{rel: "http://webfinger.net/rel/profile-page", type: "text/html", href: user.ap_id}},
-        {:Link, %{rel: "salmon", href: OStatus.salmon_path(user)}},
-        {:Link,
-         %{rel: "magic-public-key", href: "data:application/magic-public-key,#{magic_key}"}},
-        {:Link, %{rel: "self", type: "application/activity+json", href: user.ap_id}},
-        {:Link,
-         %{rel: "http://ostatus.org/schema/1.0/subscribe", template: OStatus.remote_follow_path()}}
-      ]
+        {:Alias, user.ap_id}
+      ] ++ links
     }
     |> XmlBuilder.to_doc()
-  end
-
-  # This seems a better fit in Salmon
-  def ensure_keys_present(user) do
-    info = user.info
-
-    if info.keys do
-      {:ok, user}
-    else
-      {:ok, pem} = Salmon.generate_rsa_pem()
-
-      info_cng =
-        info
-        |> Pleroma.User.Info.set_keys(pem)
-
-      cng =
-        Ecto.Changeset.change(user)
-        |> Ecto.Changeset.put_embed(:info, info_cng)
-
-      User.update_and_set_cache(cng)
-    end
   end
 
   defp get_magic_key(magic_key) do
@@ -228,11 +175,11 @@ defmodule Pleroma.Web.WebFinger do
 
   def find_lrdd_template(domain) do
     with {:ok, %{status: status, body: body}} when status in 200..299 <-
-           @httpoison.get("http://#{domain}/.well-known/host-meta", []) do
+           HTTP.get("http://#{domain}/.well-known/host-meta", []) do
       get_template_from_xml(body)
     else
       _ ->
-        with {:ok, %{body: body}} <- @httpoison.get("https://#{domain}/.well-known/host-meta", []) do
+        with {:ok, %{body: body}} <- HTTP.get("https://#{domain}/.well-known/host-meta", []) do
           get_template_from_xml(body)
         else
           e -> {:error, "Can't find LRDD template: #{inspect(e)}"}
@@ -261,7 +208,7 @@ defmodule Pleroma.Web.WebFinger do
       end
 
     with response <-
-           @httpoison.get(
+           HTTP.get(
              address,
              Accept: "application/xrd+xml,application/jrd+json"
            ),

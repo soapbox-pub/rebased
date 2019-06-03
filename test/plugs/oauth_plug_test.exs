@@ -38,6 +38,26 @@ defmodule Pleroma.Plugs.OAuthPlugTest do
     assert conn.assigns[:user] == opts[:user]
   end
 
+  test "with valid token(downcase) in url parameters, it assings the user", opts do
+    conn =
+      :get
+      |> build_conn("/?access_token=#{opts[:token]}")
+      |> put_req_header("content-type", "application/json")
+      |> fetch_query_params()
+      |> OAuthPlug.call(%{})
+
+    assert conn.assigns[:user] == opts[:user]
+  end
+
+  test "with valid token(downcase) in body parameters, it assigns the user", opts do
+    conn =
+      :post
+      |> build_conn("/api/v1/statuses", access_token: opts[:token], status: "test")
+      |> OAuthPlug.call(%{})
+
+    assert conn.assigns[:user] == opts[:user]
+  end
+
   test "with invalid token, it not assigns the user", %{conn: conn} do
     conn =
       conn

@@ -102,6 +102,72 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
+  def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
+      when is_list(options) do
+    %{max_expiration: max_expiration, min_expiration: min_expiration} =
+      limits = Pleroma.Config.get([:instance, :poll_limits])
+
+    # XXX: There is probably a cleaner way of doing this
+    try do
+      # In some cases mastofe sends out strings instead of integers
+      expires_in = if is_binary(expires_in), do: String.to_integer(expires_in), else: expires_in
+
+      if Enum.count(options) > limits.max_options do
+        raise ArgumentError, message: "Poll can't contain more than #{limits.max_options} options"
+      end
+
+      {poll, emoji} =
+        Enum.map_reduce(options, %{}, fn option, emoji ->
+          if String.length(option) > limits.max_option_chars do
+            raise ArgumentError,
+              message:
+                "Poll options cannot be longer than #{limits.max_option_chars} characters each"
+          end
+
+          {%{
+             "name" => option,
+             "type" => "Note",
+             "replies" => %{"type" => "Collection", "totalItems" => 0}
+           }, Map.merge(emoji, Formatter.get_emoji_map(option))}
+        end)
+
+      case expires_in do
+        expires_in when expires_in > max_expiration ->
+          raise ArgumentError, message: "Expiration date is too far in the future"
+
+        expires_in when expires_in < min_expiration ->
+          raise ArgumentError, message: "Expiration date is too soon"
+
+        _ ->
+          :noop
+      end
+
+      end_time =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(expires_in)
+        |> NaiveDateTime.to_iso8601()
+
+      poll =
+        if Pleroma.Web.ControllerHelper.truthy_param?(data["poll"]["multiple"]) do
+          %{"type" => "Question", "anyOf" => poll, "closed" => end_time}
+        else
+          %{"type" => "Question", "oneOf" => poll, "closed" => end_time}
+        end
+
+      {poll, emoji}
+    rescue
+      e in ArgumentError -> e.message
+    end
+  end
+
+  def make_poll_data(%{"poll" => poll}) when is_map(poll) do
+    "Invalid poll"
+  end
+
+  def make_poll_data(_data) do
+    {%{}, %{}}
+  end
+
   def make_content_html(
         status,
         attachments,
@@ -223,7 +289,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         in_reply_to,
         tags,
         cw \\ nil,
-        cc \\ []
+        cc \\ [],
+        sensitive \\ false,
+        merge \\ %{}
       ) do
     object = %{
       "type" => "Note",
@@ -231,20 +299,22 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "cc" => cc,
       "content" => content_html,
       "summary" => cw,
+      "sensitive" => !Enum.member?(["false", "False", "0", false], sensitive),
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,
       "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
     }
 
-    if in_reply_to do
-      in_reply_to_object = Object.normalize(in_reply_to)
+    object =
+      with false <- is_nil(in_reply_to),
+           %Object{} = in_reply_to_object <- Object.normalize(in_reply_to) do
+        Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
+      else
+        _ -> object
+      end
 
-      object
-      |> Map.put("inReplyTo", in_reply_to_object.data["id"])
-    else
-      object
-    end
+    Map.merge(object, merge)
   end
 
   def format_naive_asctime(date) do
@@ -420,5 +490,16 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       _e ->
         {:error, "No such conversation"}
     end
+  end
+
+  def make_answer_data(%User{ap_id: ap_id}, object, name) do
+    %{
+      "type" => "Answer",
+      "actor" => ap_id,
+      "cc" => [object.data["actor"]],
+      "to" => [],
+      "name" => name,
+      "inReplyTo" => object.data["id"]
+    }
   end
 end

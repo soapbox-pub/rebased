@@ -102,7 +102,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn
       |> assign(:user, user)
       |> put("/api/pleroma/notification_settings", %{
-        "remote" => false,
         "followers" => false,
         "bar" => 1
       })
@@ -110,8 +109,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       user = Repo.get(User, user.id)
 
-      assert %{"remote" => false, "local" => true, "followers" => false, "follows" => true} ==
-               user.info.notification_settings
+      assert %{
+               "followers" => false,
+               "follows" => true,
+               "non_follows" => true,
+               "non_followers" => true
+             } == user.info.notification_settings
     end
   end
 
@@ -141,7 +144,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
     test "it returns the managed config", %{conn: conn} do
       Pleroma.Config.put([:instance, :managed_config], false)
-      Pleroma.Config.put([:fe], theme: "rei-ayanami-towel")
+      Pleroma.Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
 
       response =
         conn
@@ -157,29 +160,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> get("/api/statusnet/config.json")
         |> json_response(:ok)
 
-      assert response["site"]["pleromafe"]
-    end
-
-    test "if :pleroma, :fe is false, it returns the new style config settings", %{conn: conn} do
-      Pleroma.Config.put([:instance, :managed_config], true)
-      Pleroma.Config.put([:fe, :theme], "rei-ayanami-towel")
-      Pleroma.Config.put([:frontend_configurations, :pleroma_fe], %{theme: "asuka-hospital"})
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      assert response["site"]["pleromafe"]["theme"] == "rei-ayanami-towel"
-
-      Pleroma.Config.put([:fe], false)
-
-      response =
-        conn
-        |> get("/api/statusnet/config.json")
-        |> json_response(:ok)
-
-      assert response["site"]["pleromafe"]["theme"] == "asuka-hospital"
+      assert response["site"]["pleromafe"] == %{"theme" => "asuka-hospital"}
     end
   end
 
@@ -250,5 +231,23 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     conn = get(conn, "/api/pleroma/healthcheck")
 
     assert conn.status in [200, 503]
+  end
+
+  describe "POST /api/pleroma/disable_account" do
+    test "it returns HTTP 200", %{conn: conn} do
+      user = insert(:user)
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post("/api/pleroma/disable_account", %{"password" => "test"})
+        |> json_response(:ok)
+
+      assert response == %{"status" => "success"}
+
+      user = User.get_cached_by_id(user.id)
+
+      assert user.info.deactivated == true
+    end
   end
 end

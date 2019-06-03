@@ -8,6 +8,7 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   use Pleroma.DataCase
@@ -213,8 +214,8 @@ defmodule Pleroma.UserTest do
   test "fetches correct profile for nickname beginning with number" do
     # Use old-style integer ID to try to reproduce the problem
     user = insert(:user, %{id: 1080})
-    userwithnumbers = insert(:user, %{nickname: "#{user.id}garbage"})
-    assert userwithnumbers == User.get_cached_by_nickname_or_id(userwithnumbers.nickname)
+    user_with_numbers = insert(:user, %{nickname: "#{user.id}garbage"})
+    assert user_with_numbers == User.get_cached_by_nickname_or_id(user_with_numbers.nickname)
   end
 
   describe "user registration" do
@@ -276,7 +277,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts certain nicknames" do
-      [restricted_name | _] = Pleroma.Config.get([Pleroma.User, :restricted_nicknames])
+      [restricted_name | _] = Pleroma.Config.get([User, :restricted_nicknames])
 
       assert is_bitstring(restricted_name)
 
@@ -349,7 +350,7 @@ defmodule Pleroma.UserTest do
     end
 
     test "it creates confirmed user if :confirmed option is given" do
-      changeset = User.register_changeset(%User{}, @full_user_data, confirmed: true)
+      changeset = User.register_changeset(%User{}, @full_user_data, need_confirmation: false)
       assert changeset.valid?
 
       {:ok, user} = Repo.insert(changeset)
@@ -362,7 +363,7 @@ defmodule Pleroma.UserTest do
   describe "get_or_fetch/1" do
     test "gets an existing user by nickname" do
       user = insert(:user)
-      fetched_user = User.get_or_fetch(user.nickname)
+      {:ok, fetched_user} = User.get_or_fetch(user.nickname)
 
       assert user == fetched_user
     end
@@ -379,7 +380,7 @@ defmodule Pleroma.UserTest do
           info: %{}
         )
 
-      fetched_user = User.get_or_fetch(ap_id)
+      {:ok, fetched_user} = User.get_or_fetch(ap_id)
       freshed_user = refresh_record(user)
       assert freshed_user == fetched_user
     end
@@ -388,14 +389,14 @@ defmodule Pleroma.UserTest do
   describe "fetching a user from nickname or trying to build one" do
     test "gets an existing user" do
       user = insert(:user)
-      fetched_user = User.get_or_fetch_by_nickname(user.nickname)
+      {:ok, fetched_user} = User.get_or_fetch_by_nickname(user.nickname)
 
       assert user == fetched_user
     end
 
     test "gets an existing user, case insensitive" do
       user = insert(:user, nickname: "nick")
-      fetched_user = User.get_or_fetch_by_nickname("NICK")
+      {:ok, fetched_user} = User.get_or_fetch_by_nickname("NICK")
 
       assert user == fetched_user
     end
@@ -403,7 +404,7 @@ defmodule Pleroma.UserTest do
     test "gets an existing user by fully qualified nickname" do
       user = insert(:user)
 
-      fetched_user =
+      {:ok, fetched_user} =
         User.get_or_fetch_by_nickname(user.nickname <> "@" <> Pleroma.Web.Endpoint.host())
 
       assert user == fetched_user
@@ -413,24 +414,24 @@ defmodule Pleroma.UserTest do
       user = insert(:user, nickname: "nick")
       casing_altered_fqn = String.upcase(user.nickname <> "@" <> Pleroma.Web.Endpoint.host())
 
-      fetched_user = User.get_or_fetch_by_nickname(casing_altered_fqn)
+      {:ok, fetched_user} = User.get_or_fetch_by_nickname(casing_altered_fqn)
 
       assert user == fetched_user
     end
 
     test "fetches an external user via ostatus if no user exists" do
-      fetched_user = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
+      {:ok, fetched_user} = User.get_or_fetch_by_nickname("shp@social.heldscal.la")
       assert fetched_user.nickname == "shp@social.heldscal.la"
     end
 
     test "returns nil if no user could be fetched" do
-      fetched_user = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
-      assert fetched_user == nil
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant@social.heldscal.la")
+      assert fetched_user == "not found nonexistant@social.heldscal.la"
     end
 
     test "returns nil for nonexistant local user" do
-      fetched_user = User.get_or_fetch_by_nickname("nonexistant")
-      assert fetched_user == nil
+      {:error, fetched_user} = User.get_or_fetch_by_nickname("nonexistant")
+      assert fetched_user == "not found nonexistant"
     end
 
     test "updates an existing user, if stale" do
@@ -448,7 +449,7 @@ defmodule Pleroma.UserTest do
 
       assert orig_user.last_refreshed_at == a_week_ago
 
-      user = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
+      {:ok, user} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
       assert user.info.source_data["endpoints"]
 
       refute user.last_refreshed_at == orig_user.last_refreshed_at
@@ -622,6 +623,37 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.update_follower_count(user)
 
       assert user.info.follower_count == 1
+    end
+  end
+
+  describe "remove duplicates from following list" do
+    test "it removes duplicates" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, %User{following: following} = follower} = User.follow(follower, user)
+      assert length(following) == 2
+
+      {:ok, follower} =
+        follower
+        |> User.update_changeset(%{following: following ++ following})
+        |> Repo.update()
+
+      assert length(follower.following) == 4
+
+      {:ok, follower} = User.remove_duplicated_following(follower)
+      assert length(follower.following) == 2
+    end
+
+    test "it does nothing when following is uniq" do
+      user = insert(:user)
+      follower = insert(:user)
+
+      {:ok, follower} = User.follow(follower, user)
+      assert length(follower.following) == 2
+
+      {:ok, follower} = User.remove_duplicated_following(follower)
+      assert length(follower.following) == 2
     end
   end
 
@@ -816,23 +848,83 @@ defmodule Pleroma.UserTest do
     assert addressed in recipients
   end
 
-  test ".deactivate can de-activate then re-activate a user" do
-    user = insert(:user)
-    assert false == user.info.deactivated
-    {:ok, user} = User.deactivate(user)
-    assert true == user.info.deactivated
-    {:ok, user} = User.deactivate(user, false)
-    assert false == user.info.deactivated
+  describe ".deactivate" do
+    test "can de-activate then re-activate a user" do
+      user = insert(:user)
+      assert false == user.info.deactivated
+      {:ok, user} = User.deactivate(user)
+      assert true == user.info.deactivated
+      {:ok, user} = User.deactivate(user, false)
+      assert false == user.info.deactivated
+    end
+
+    test "hide a user from followers " do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user} = User.follow(user, user2)
+      {:ok, _user} = User.deactivate(user)
+
+      info = User.get_cached_user_info(user2)
+
+      assert info.follower_count == 0
+      assert {:ok, []} = User.get_followers(user2)
+    end
+
+    test "hide a user from friends" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user2} = User.follow(user2, user)
+      assert User.following_count(user2) == 1
+
+      {:ok, _user} = User.deactivate(user)
+
+      info = User.get_cached_user_info(user2)
+
+      assert info.following_count == 0
+      assert User.following_count(user2) == 0
+      assert {:ok, []} = User.get_friends(user2)
+    end
+
+    test "hide a user's statuses from timelines and notifications" do
+      user = insert(:user)
+      user2 = insert(:user)
+
+      {:ok, user2} = User.follow(user2, user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}"})
+
+      activity = Repo.preload(activity, :bookmark)
+
+      [notification] = Pleroma.Notification.for_user(user2)
+      assert notification.activity.id == activity.id
+
+      assert [activity] == ActivityPub.fetch_public_activities(%{}) |> Repo.preload(:bookmark)
+
+      assert [%{activity | thread_muted?: CommonAPI.thread_muted?(user2, activity)}] ==
+               ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
+
+      {:ok, _user} = User.deactivate(user)
+
+      assert [] == ActivityPub.fetch_public_activities(%{})
+      assert [] == Pleroma.Notification.for_user(user2)
+
+      assert [] ==
+               ActivityPub.fetch_activities([user2.ap_id | user2.following], %{"user" => user2})
+    end
   end
 
   test ".delete_user_activities deletes all create activities" do
     user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
-    {:ok, _} = User.delete_user_activities(user)
 
-    # TODO: Remove favorites, repeats, delete activities.
-    refute Activity.get_by_id(activity.id)
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      {:ok, _} = User.delete_user_activities(user)
+      # TODO: Remove favorites, repeats, delete activities.
+      refute Activity.get_by_id(activity.id)
+    end)
   end
 
   test ".delete deactivates a user, all follow relationships and all create activities" do
@@ -1103,7 +1195,7 @@ defmodule Pleroma.UserTest do
       expected_text =
         "A.k.a. <span class='h-card'><a data-user='#{remote_user.id}' class='u-url mention' href='#{
           remote_user.ap_id
-        }'>" <> "@<span>nick@domain.com</span></a></span>"
+        }'>@<span>nick@domain.com</span></a></span>"
 
       assert expected_text == User.parse_bio(bio, user)
     end
@@ -1131,14 +1223,47 @@ defmodule Pleroma.UserTest do
     follower2 = insert(:user)
     follower3 = insert(:user)
 
-    {:ok, follower} = Pleroma.User.follow(follower, user)
-    {:ok, _follower2} = Pleroma.User.follow(follower2, user)
-    {:ok, _follower3} = Pleroma.User.follow(follower3, user)
+    {:ok, follower} = User.follow(follower, user)
+    {:ok, _follower2} = User.follow(follower2, user)
+    {:ok, _follower3} = User.follow(follower3, user)
 
-    {:ok, _} = Pleroma.User.block(user, follower)
+    {:ok, _} = User.block(user, follower)
 
     user_show = Pleroma.Web.TwitterAPI.UserView.render("show.json", %{user: user})
 
     assert Map.get(user_show, "followers_count") == 2
+  end
+
+  describe "toggle_confirmation/1" do
+    test "if user is confirmed" do
+      user = insert(:user, info: %{confirmation_pending: false})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      assert user.info.confirmation_pending
+      assert user.info.confirmation_token
+    end
+
+    test "if user is unconfirmed" do
+      user = insert(:user, info: %{confirmation_pending: true, confirmation_token: "some token"})
+      {:ok, user} = User.toggle_confirmation(user)
+
+      refute user.info.confirmation_pending
+      refute user.info.confirmation_token
+    end
+  end
+
+  describe "ensure_keys_present" do
+    test "it creates keys for a user and stores them in info" do
+      user = insert(:user)
+      refute is_binary(user.info.keys)
+      {:ok, user} = User.ensure_keys_present(user)
+      assert is_binary(user.info.keys)
+    end
+
+    test "it doesn't create keys if there already are some" do
+      user = insert(:user, %{info: %{keys: "xxx"}})
+      {:ok, user} = User.ensure_keys_present(user)
+      assert user.info.keys == "xxx"
+    end
   end
 end

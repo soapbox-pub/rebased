@@ -16,6 +16,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   alias Pleroma.Web.MastodonAPI.StatusView
   alias Pleroma.Web.MediaProxy
 
+  import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
+
   # TODO: Add cached version.
   defp get_replied_to_activities(activities) do
     activities
@@ -75,18 +77,22 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
   def render(
         "status.json",
-        %{activity: %{data: %{"type" => "Announce", "object" => object}} = activity} = opts
+        %{activity: %{data: %{"type" => "Announce", "object" => _object}} = activity} = opts
       ) do
     user = get_user(activity.data["actor"])
     created_at = Utils.to_masto_date(activity.data["published"])
+    activity_object = Object.normalize(activity)
 
-    reblogged_activity = Activity.get_create_by_object_ap_id(object)
+    reblogged_activity =
+      Activity.create_by_object_ap_id(activity_object.data["id"])
+      |> Activity.with_preloaded_bookmark(opts[:for])
+      |> Repo.one()
+
     reblogged = render("status.json", Map.put(opts, :activity, reblogged_activity))
 
-    activity_object = Object.normalize(activity)
     favorited = opts[:for] && opts[:for].ap_id in (activity_object.data["likes"] || [])
 
-    bookmarked = opts[:for] && CommonAPI.bookmarked?(opts[:for], reblogged_activity)
+    bookmarked = Activity.get_bookmark(reblogged_activity, opts[:for]) != nil
 
     mentions =
       activity.recipients
@@ -96,8 +102,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     %{
       id: to_string(activity.id),
-      uri: object,
-      url: object,
+      uri: activity_object.data["id"],
+      url: activity_object.data["id"],
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
@@ -149,7 +155,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     favorited = opts[:for] && opts[:for].ap_id in (object.data["likes"] || [])
 
-    bookmarked = opts[:for] && CommonAPI.bookmarked?(opts[:for], activity)
+    bookmarked = Activity.get_bookmark(activity, opts[:for]) != nil
+
+    thread_muted? =
+      case activity.thread_muted? do
+        thread_muted? when is_boolean(thread_muted?) -> thread_muted?
+        nil -> CommonAPI.thread_muted?(user, activity)
+      end
 
     attachment_data = object.data["attachment"] || []
     attachments = render_many(attachment_data, StatusView, "attachment.json", as: :attachment)
@@ -222,12 +234,13 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       reblogged: reblogged?(activity, opts[:for]),
       favourited: present?(favorited),
       bookmarked: present?(bookmarked),
-      muted: CommonAPI.thread_muted?(user, activity) || User.mutes?(opts[:for], user),
+      muted: thread_muted? || User.mutes?(opts[:for], user),
       pinned: pinned?(activity, user),
       sensitive: sensitive,
       spoiler_text: summary_html,
       visibility: get_visibility(object),
       media_attachments: attachments,
+      poll: render("poll.json", %{object: object, for: opts[:for]}),
       mentions: mentions,
       tags: build_tags(tags),
       application: %{
@@ -278,8 +291,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
       image: image_url |> MediaProxy.url(),
-      title: rich_media[:title],
-      description: rich_media[:description],
+      title: rich_media[:title] || "",
+      description: rich_media[:description] || "",
       pleroma: %{
         opengraph: rich_media
       }
@@ -317,6 +330,64 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     }
   end
 
+  def render("poll.json", %{object: object} = opts) do
+    {multiple, options} =
+      case object.data do
+        %{"anyOf" => options} when is_list(options) -> {true, options}
+        %{"oneOf" => options} when is_list(options) -> {false, options}
+        _ -> {nil, nil}
+      end
+
+    if options do
+      end_time =
+        (object.data["closed"] || object.data["endTime"])
+        |> NaiveDateTime.from_iso8601!()
+
+      expired =
+        end_time
+        |> NaiveDateTime.compare(NaiveDateTime.utc_now())
+        |> case do
+          :lt -> true
+          _ -> false
+        end
+
+      voted =
+        if opts[:for] do
+          existing_votes =
+            Pleroma.Web.ActivityPub.Utils.get_existing_votes(opts[:for].ap_id, object)
+
+          existing_votes != [] or opts[:for].ap_id == object.data["actor"]
+        else
+          false
+        end
+
+      {options, votes_count} =
+        Enum.map_reduce(options, 0, fn %{"name" => name} = option, count ->
+          current_count = option["replies"]["totalItems"] || 0
+
+          {%{
+             title: HTML.strip_tags(name),
+             votes_count: current_count
+           }, current_count + count}
+        end)
+
+      %{
+        # Mastodon uses separate ids for polls, but an object can't have
+        # more than one poll embedded so object id is fine
+        id: object.id,
+        expires_at: Utils.to_masto_date(end_time),
+        expired: expired,
+        multiple: multiple,
+        votes_count: votes_count,
+        options: options,
+        voted: voted,
+        emojis: build_emojis(object.data["emoji"])
+      }
+    else
+      nil
+    end
+  end
+
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do
     object = Object.normalize(activity)
 
@@ -333,30 +404,6 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       Activity.get_create_by_object_ap_id(object.data["inReplyTo"])
     else
       nil
-    end
-  end
-
-  def get_visibility(object) do
-    public = "https://www.w3.org/ns/activitystreams#Public"
-    to = object.data["to"] || []
-    cc = object.data["cc"] || []
-
-    cond do
-      public in to ->
-        "public"
-
-      public in cc ->
-        "unlisted"
-
-      # this should use the sql for the object's activity
-      Enum.any?(to, &String.contains?(&1, "/followers")) ->
-        "private"
-
-      length(cc) > 0 ->
-        "private"
-
-      true ->
-        "direct"
     end
   end
 

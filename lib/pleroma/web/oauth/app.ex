@@ -6,6 +6,8 @@ defmodule Pleroma.Web.OAuth.App do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   schema "apps" do
     field(:client_name, :string)
     field(:redirect_uris, :string)

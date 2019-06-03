@@ -7,20 +7,14 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Object.Containment
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
-  alias Pleroma.Web.Salmon
-  alias Pleroma.Web.WebFinger
   alias Pleroma.Web.Websub
 
   require Logger
-
-  @websub Application.get_env(:pleroma, :websub)
-  @ostatus Application.get_env(:pleroma, :ostatus)
 
   def init do
     # 1 minute
@@ -42,14 +36,6 @@ defmodule Pleroma.Web.Federator do
     PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish, activity], priority)
   end
 
-  def publish_single_ap(params) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_ap, params])
-  end
-
-  def publish_single_websub(websub) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_websub, websub])
-  end
-
   def verify_websub(websub) do
     PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:verify_websub, websub])
   end
@@ -60,10 +46,6 @@ defmodule Pleroma.Web.Federator do
 
   def refresh_subscriptions do
     PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:refresh_subscriptions])
-  end
-
-  def publish_single_salmon(params) do
-    PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_single_salmon, params])
   end
 
   # Job Worker Callbacks
@@ -92,26 +74,9 @@ defmodule Pleroma.Web.Federator do
   def perform(:publish, activity) do
     Logger.debug(fn -> "Running publish for #{activity.data["id"]}" end)
 
-    with actor when not is_nil(actor) <- User.get_cached_by_ap_id(activity.data["actor"]) do
-      {:ok, actor} = WebFinger.ensure_keys_present(actor)
-
-      if Visibility.is_public?(activity) do
-        if OStatus.is_representable?(activity) do
-          Logger.info(fn -> "Sending #{activity.data["id"]} out via WebSub" end)
-          Websub.publish(Pleroma.Web.OStatus.feed_path(actor), actor, activity)
-
-          Logger.info(fn -> "Sending #{activity.data["id"]} out via Salmon" end)
-          Pleroma.Web.Salmon.publish(actor, activity)
-        end
-
-        if Keyword.get(Application.get_env(:pleroma, :instance), :allow_relay) do
-          Logger.info(fn -> "Relaying #{activity.data["id"]} out" end)
-          Relay.publish(activity)
-        end
-      end
-
-      Logger.info(fn -> "Sending #{activity.data["id"]} out via AP" end)
-      Pleroma.Web.ActivityPub.ActivityPub.publish(actor, activity)
+    with %User{} = actor <- User.get_cached_by_ap_id(activity.data["actor"]),
+         {:ok, actor} <- User.ensure_keys_present(actor) do
+      Publisher.publish(actor, activity)
     end
   end
 
@@ -120,12 +85,12 @@ defmodule Pleroma.Web.Federator do
       "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})"
     end)
 
-    @websub.verify(websub)
+    Websub.verify(websub)
   end
 
   def perform(:incoming_doc, doc) do
     Logger.info("Got document, trying to parse")
-    @ostatus.handle_incoming(doc)
+    OStatus.handle_incoming(doc)
   end
 
   def perform(:incoming_ap_doc, params) do
@@ -148,22 +113,8 @@ defmodule Pleroma.Web.Federator do
       _e ->
         # Just drop those for now
         Logger.info("Unhandled activity")
-        Logger.info(Poison.encode!(params, pretty: 2))
+        Logger.info(Jason.encode!(params, pretty: true))
         :error
-    end
-  end
-
-  def perform(:publish_single_salmon, params) do
-    Salmon.send_to_user(params)
-  end
-
-  def perform(:publish_single_ap, params) do
-    case ActivityPub.publish_one(params) do
-      {:ok, _} ->
-        :ok
-
-      {:error, _} ->
-        RetryQueue.enqueue(params, ActivityPub)
     end
   end
 
