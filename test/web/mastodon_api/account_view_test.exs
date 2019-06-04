@@ -239,4 +239,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     assert expected == AccountView.render("account.json", %{user: user, for: other_user})
   end
+
+  test "returns the settings store if the requesting user is the represented user and it's requested specifically" do
+    user = insert(:user, %{info: %User.Info{pleroma_settings_store: %{fe: "test"}}})
+
+    result =
+      AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
+
+    assert result.pleroma.settings_store == %{:fe => "test"}
+
+    result = AccountView.render("account.json", %{user: user, with_pleroma_settings: true})
+    assert result.pleroma[:settings_store] == nil
+
+    result = AccountView.render("account.json", %{user: user, for: user})
+    assert result.pleroma[:settings_store] == nil
+  end
 end
