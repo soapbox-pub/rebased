@@ -794,6 +794,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     query =
       from(
         [activity, object: object] in Activity.with_preloaded_object(Activity),
+        where: fragment("(?)->>'type' = 'Create'", activity.data),
         where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
         where:
           fragment(
