@@ -86,6 +86,7 @@ config :pleroma, Pleroma.Emails.Mailer,
   * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default)
   * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production
   * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See ``:mrf_simple`` section)
+  * `Pleroma.Web.ActivityPub.MRF.SubchainPolicy`: Selectively runs other MRF policies when messages match (see ``:mrf_subchain`` section)
   * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See ``:mrf_rejectnonpublic`` section)
   * `Pleroma.Web.ActivityPub.MRF.EnsureRePrepended`: Rewrites posts to ensure that replies to posts with subjects do not have an identical subject and instead begin with re:.
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
@@ -228,6 +229,21 @@ relates to mascots on the mastodon frontend
 * `report_removal`: List of instances to reject reports from
 * `avatar_removal`: List of instances to strip avatars from
 * `banner_removal`: List of instances to strip banners from
+
+## :mrf_subchain
+This policy processes messages through an alternate pipeline when a given message matches certain criteria.
+All criteria are configured as a map of regular expressions to lists of policy modules.
+
+* `match_actor`: Matches a series of regular expressions against the actor field.
+
+Example:
+
+```
+config :pleroma, :mrf_subchain,
+  match_actor: %{
+    ~r/https:\/\/example.com/s => [Pleroma.Web.ActivityPub.MRF.DropPolicy]
+  }
+```
 
 ## :mrf_rejectnonpublic
 * `allow_followersonly`: whether to allow followers-only posts
