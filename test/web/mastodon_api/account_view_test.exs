@@ -67,7 +67,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
-        relationship: %{}
+        relationship: %{},
+        skip_thread_containment: false
       }
     }
 
@@ -132,7 +133,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
-        relationship: %{}
+        relationship: %{},
+        skip_thread_containment: false
       }
     }
 
@@ -233,10 +235,26 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           domain_blocking: false,
           showing_reblogs: true,
           endorsed: false
-        }
+        },
+        skip_thread_containment: false
       }
     }
 
     assert expected == AccountView.render("account.json", %{user: user, for: other_user})
+  end
+
+  test "returns the settings store if the requesting user is the represented user and it's requested specifically" do
+    user = insert(:user, %{info: %User.Info{pleroma_settings_store: %{fe: "test"}}})
+
+    result =
+      AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
+
+    assert result.pleroma.settings_store == %{:fe => "test"}
+
+    result = AccountView.render("account.json", %{user: user, with_pleroma_settings: true})
+    assert result.pleroma[:settings_store] == nil
+
+    result = AccountView.render("account.json", %{user: user, for: user})
+    assert result.pleroma[:settings_store] == nil
   end
 end

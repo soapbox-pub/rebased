@@ -117,13 +117,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.dedup()
 
     info_params =
-      [:no_rich_text, :locked, :hide_followers, :hide_follows, :hide_favorites, :show_role]
+      [
+        :no_rich_text,
+        :locked,
+        :hide_followers,
+        :hide_follows,
+        :hide_favorites,
+        :show_role,
+        :skip_thread_containment
+      ]
       |> Enum.reduce(%{}, fn key, acc ->
         add_if_present(acc, params, to_string(key), key, fn value ->
           {:ok, ControllerHelper.truthy_param?(value)}
         end)
       end)
       |> add_if_present(params, "default_scope", :default_scope)
+      |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store, fn value ->
+        {:ok, Map.merge(user.info.pleroma_settings_store, value)}
+      end)
       |> add_if_present(params, "header", :banner, fn value ->
         with %Plug.Upload{} <- value,
              {:ok, object} <- ActivityPub.upload(value, type: :banner) do
@@ -143,7 +154,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         CommonAPI.update(user)
       end
 
-      json(conn, AccountView.render("account.json", %{user: user, for: user}))
+      json(
+        conn,
+        AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
+      )
     else
       _e ->
         conn
@@ -153,7 +167,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
-    account = AccountView.render("account.json", %{user: user, for: user})
+    account =
+      AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
+
     json(conn, account)
   end
 

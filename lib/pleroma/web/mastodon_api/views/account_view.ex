@@ -124,12 +124,14 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         hide_followers: user.info.hide_followers,
         hide_follows: user.info.hide_follows,
         hide_favorites: user.info.hide_favorites,
-        relationship: relationship
+        relationship: relationship,
+        skip_thread_containment: user.info.skip_thread_containment
       }
     }
     |> maybe_put_role(user, opts[:for])
     |> maybe_put_settings(user, opts[:for], user_info)
     |> maybe_put_notification_settings(user, opts[:for])
+    |> maybe_put_settings_store(user, opts[:for], opts)
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -151,6 +153,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_settings(data, _, _, _), do: data
+
+  defp maybe_put_settings_store(data, %User{info: info, id: id}, %User{id: id}, %{
+         with_pleroma_settings: true
+       }) do
+    data
+    |> Kernel.put_in([:pleroma, :settings_store], info.pleroma_settings_store)
+  end
+
+  defp maybe_put_settings_store(data, _, _, _), do: data
 
   defp maybe_put_role(data, %User{info: %{show_role: true}} = user, _) do
     data

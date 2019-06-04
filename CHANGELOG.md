@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [unreleased]
 ### Added
 - Digest email for inactive users
+- Add a generic settings store for frontends / clients to use.
 - Optional SSH access mode. (Needs `erlang-ssh` package on some distributions).
 - [MongooseIM](https://github.com/esl/MongooseIM) http authentication support.
 - LDAP authentication
@@ -50,6 +51,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - OAuth: added job to clean expired access tokens
 - MRF: Support for rejecting reports from specific instances (`mrf_simple`)
 - MRF: Support for stripping avatars and banner images from specific instances (`mrf_simple`)
+- MRF: Support for running subchains.
+- Configuration: `skip_thread_containment` option
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
