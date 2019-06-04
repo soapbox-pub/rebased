@@ -28,9 +28,18 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
           })
       end)
 
-      Mix.Tasks.Pleroma.Digest.run(["test", user2.nickname])
+      yesterday =
+        NaiveDateTime.add(
+          NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+          -60 * 60 * 24,
+          :second
+        )
 
-      assert_received {:mix_shell, :info, [message]}
+      {:ok, yesterday_date} = Timex.format(yesterday, "%F", :strftime)
+
+      :ok = Mix.Tasks.Pleroma.Digest.run(["test", user2.nickname, yesterday_date])
+
+      assert_receive {:mix_shell, :info, [message]}
       assert message =~ "Digest email have been sent"
 
       assert_email_sent(
