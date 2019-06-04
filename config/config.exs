@@ -208,6 +208,12 @@ config :pleroma, :instance,
   avatar_upload_limit: 2_000_000,
   background_upload_limit: 4_000_000,
   banner_upload_limit: 4_000_000,
+  poll_limits: %{
+    max_options: 20,
+    max_option_chars: 200,
+    min_expiration: 0,
+    max_expiration: 365 * 24 * 60 * 60
+  },
   registrations_open: true,
   federating: true,
   federation_reachability_timeout_days: 7,
@@ -320,6 +326,8 @@ config :pleroma, :mrf_keyword,
   reject: [],
   federated_timeline_removal: [],
   replace: []
+
+config :pleroma, :mrf_subchain, match_actor: %{}
 
 config :pleroma, :rich_media, enabled: true
 
@@ -454,7 +462,11 @@ config :pleroma, :ldap,
 config :esshd,
   enabled: false
 
-oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+oauth_consumer_strategies =
+  System.get_env("OAUTH_CONSUMER_STRATEGIES")
+  |> to_string()
+  |> String.split()
+  |> Enum.map(&hd(String.split(&1, ":")))
 
 ueberauth_providers =
   for strategy <- oauth_consumer_strategies do

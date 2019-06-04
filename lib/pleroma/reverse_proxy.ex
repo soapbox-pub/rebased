@@ -61,8 +61,6 @@ defmodule Pleroma.ReverseProxy do
   * `http`: options for [hackney](https://github.com/benoitc/hackney).
 
   """
-  @hackney Pleroma.Config.get(:hackney, :hackney)
-
   @default_hackney_options []
 
   @inline_content_types [
@@ -148,7 +146,7 @@ defmodule Pleroma.ReverseProxy do
     Logger.debug("#{__MODULE__} #{method} #{url} #{inspect(headers)}")
     method = method |> String.downcase() |> String.to_existing_atom()
 
-    case @hackney.request(method, url, headers, "", hackney_opts) do
+    case :hackney.request(method, url, headers, "", hackney_opts) do
       {:ok, code, headers, client} when code in @valid_resp_codes ->
         {:ok, code, downcase_headers(headers), client}
 
@@ -198,7 +196,7 @@ defmodule Pleroma.ReverseProxy do
              duration,
              Keyword.get(opts, :max_read_duration, @max_read_duration)
            ),
-         {:ok, data} <- @hackney.stream_body(client),
+         {:ok, data} <- :hackney.stream_body(client),
          {:ok, duration} <- increase_read_duration(duration),
          sent_so_far = sent_so_far + byte_size(data),
          :ok <- body_size_constraint(sent_so_far, Keyword.get(opts, :max_body_size)),

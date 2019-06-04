@@ -122,6 +122,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
             "skip_thread_containment" => user.info.skip_thread_containment
           }
           |> maybe_with_activation_status(user, for_user)
+          |> with_notification_settings(user, for_user)
       }
       |> maybe_with_user_settings(user, for_user)
       |> maybe_with_role(user, for_user)
@@ -132,6 +133,12 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       data
     end
   end
+
+  defp with_notification_settings(data, %User{id: user_id} = user, %User{id: user_id}) do
+    Map.put(data, "notification_settings", user.info.notification_settings)
+  end
+
+  defp with_notification_settings(data, _, _), do: data
 
   defp maybe_with_activation_status(data, user, %User{info: %{is_admin: true}}) do
     Map.put(data, "deactivated", user.info.deactivated)

@@ -52,6 +52,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mastodon.sdf.org/users/rinpatch", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/rinpatch.json")
+     }}
+  end
+
   def get(
         "https://mastodon.social/.well-known/webfinger?resource=https://mastodon.social/users/emelie",
         _,
@@ -235,6 +243,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://n1u.moe/users/rye", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/rye.json")
+     }}
+  end
+
   def get("http://mastodon.example.org/users/admin/statuses/100787282858396771", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -292,6 +308,10 @@ defmodule HttpRequestMock do
        status: 200,
        body: File.read!("test/fixtures/httpoison_mock/admin@mastdon.example.org.json")
      }}
+  end
+
+  def get("http://mastodon.example.org/users/gargron", _, _, Accept: "application/activity+json") do
+    {:error, :nxdomain}
   end
 
   def get(
@@ -536,6 +556,15 @@ defmodule HttpRequestMock do
            "test/fixtures/httpoison_mock/http___gs.example.org_4040_index.php_user_1.xml"
          )
      }}
+  end
+
+  def get(
+        "http://gs.example.org:4040/index.php/user/1",
+        _,
+        _,
+        Accept: "application/activity+json"
+      ) do
+    {:ok, %Tesla.Env{status: 406, body: ""}}
   end
 
   def get("http://gs.example.org/index.php/api/statuses/user_timeline/1.atom", _, _, _) do

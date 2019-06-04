@@ -44,9 +44,15 @@ defmodule Pleroma.User.Info do
     field(:pinned_activities, {:array, :string}, default: [])
     field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
+    field(:pleroma_settings_store, :map, default: %{})
 
     field(:notification_settings, :map,
-      default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
+      default: %{
+        "followers" => true,
+        "follows" => true,
+        "non_follows" => true,
+        "non_followers" => true
+      }
     )
 
     field(:skip_thread_containment, :boolean, default: false)
@@ -69,10 +75,15 @@ defmodule Pleroma.User.Info do
   end
 
   def update_notification_settings(info, settings) do
+    settings =
+      settings
+      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
+      |> Map.new()
+
     notification_settings =
       info.notification_settings
       |> Map.merge(settings)
-      |> Map.take(["remote", "local", "followers", "follows"])
+      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
 
     params = %{notification_settings: notification_settings}
 
@@ -211,7 +222,8 @@ defmodule Pleroma.User.Info do
       :hide_favorites,
       :background,
       :show_role,
-      :skip_thread_containment
+      :skip_thread_containment,
+      :pleroma_settings_store
     ])
   end
 
