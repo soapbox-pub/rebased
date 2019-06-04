@@ -90,7 +90,6 @@ Pleroma has mechanism that allows frontends to save blobs of json for each user 
 The parameter should have a form of `{frontend_name: {...}}`, with `frontend_name` identifying your type of client, e.g. `pleroma_fe`. It will overwrite everything under this property, but will not overwrite other frontend's settings.
 
 This information is returned in the `verify_credentials` endpoint.
->>>>>>> develop
 
 ## Authentication
 
