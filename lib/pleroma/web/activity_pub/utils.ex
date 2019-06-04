@@ -797,7 +797,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
         where:
           fragment(
-            "(?)->'inReplyTo' = ?",
+            "(?)->>'inReplyTo' = ?",
             object.data,
             ^to_string(id)
           ),

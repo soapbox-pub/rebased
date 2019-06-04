@@ -43,6 +43,7 @@ Has these additional fields under the `pleroma` object:
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
+- `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
 
 ### Source
 
@@ -81,6 +82,14 @@ Additional parameters can be added to the JSON body/Form data:
 - `hide_favorites` - if true, user's favorites timeline will be hidden
 - `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
 - `default_scope` - the scope returned under `privacy` key in Source subentity
+- `pleroma_settings_store` - Opaque user settings to be saved on the backend.
+
+### Pleroma Settings Store
+Pleroma has mechanism that allows frontends to save blobs of json for each user on the backend. This can be used to save frontend-specific settings for a user that the backend does not need to know about.
+
+The parameter should have a form of `{frontend_name: {...}}`, with `frontend_name` identifying your type of client, e.g. `pleroma_fe`. It will overwrite everything under this property, but will not overwrite other frontend's settings.
+
+This information is returned in the `verify_credentials` endpoint.
 
 ## Authentication
 

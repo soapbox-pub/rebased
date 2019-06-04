@@ -2423,6 +2423,66 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   describe "updating credentials" do
+    test "sets user settings in a generic way", %{conn: conn} do
+      user = insert(:user)
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "pleroma_settings_store" => %{
+            pleroma_fe: %{
+              theme: "bla"
+            }
+          }
+        })
+
+      assert user = json_response(res_conn, 200)
+      assert user["pleroma"]["settings_store"] == %{"pleroma_fe" => %{"theme" => "bla"}}
+
+      user = Repo.get(User, user["id"])
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "pleroma_settings_store" => %{
+            masto_fe: %{
+              theme: "bla"
+            }
+          }
+        })
+
+      assert user = json_response(res_conn, 200)
+
+      assert user["pleroma"]["settings_store"] ==
+               %{
+                 "pleroma_fe" => %{"theme" => "bla"},
+                 "masto_fe" => %{"theme" => "bla"}
+               }
+
+      user = Repo.get(User, user["id"])
+
+      res_conn =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{
+          "pleroma_settings_store" => %{
+            masto_fe: %{
+              theme: "blub"
+            }
+          }
+        })
+
+      assert user = json_response(res_conn, 200)
+
+      assert user["pleroma"]["settings_store"] ==
+               %{
+                 "pleroma_fe" => %{"theme" => "bla"},
+                 "masto_fe" => %{"theme" => "blub"}
+               }
+    end
+
     test "updates the user's bio", %{conn: conn} do
       user = insert(:user)
       user2 = insert(:user)

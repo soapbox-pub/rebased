@@ -124,6 +124,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end)
       end)
       |> add_if_present(params, "default_scope", :default_scope)
+      |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store, fn value ->
+        {:ok, Map.merge(user.info.pleroma_settings_store, value)}
+      end)
       |> add_if_present(params, "header", :banner, fn value ->
         with %Plug.Upload{} <- value,
              {:ok, object} <- ActivityPub.upload(value, type: :banner) do
@@ -143,7 +146,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         CommonAPI.update(user)
       end
 
-      json(conn, AccountView.render("account.json", %{user: user, for: user}))
+      json(
+        conn,
+        AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
+      )
     else
       _e ->
         conn
@@ -153,7 +159,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
-    account = AccountView.render("account.json", %{user: user, for: user})
+    account =
+      AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
+
     json(conn, account)
   end
 
