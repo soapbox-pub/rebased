@@ -30,13 +30,13 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
 
       Mix.Tasks.Pleroma.Digest.run(["test", user2.nickname])
 
+      assert_received {:mix_shell, :info, [message]}
+      assert message =~ "Digest email have been sent"
+
       assert_email_sent(
         to: {user2.name, user2.email},
         html_body: ~r/new mentions:/i
       )
-
-      assert_received {:mix_shell, :info, [message]}
-      assert message =~ "Digest email have been sent"
     end
   end
 end
