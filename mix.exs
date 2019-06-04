@@ -157,7 +157,8 @@ defmodule Pleroma.Mixfile do
   #   * the mix environment if different than prod
   defp version(version) do
     {git_tag, git_pre_release} =
-      with {tag, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=0"]),
+      with {tag, 0} <-
+             System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true),
            tag = String.trim(tag),
            {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
            describe = String.trim(describe),
