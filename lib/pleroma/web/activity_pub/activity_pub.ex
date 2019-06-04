@@ -575,6 +575,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp restrict_thread_visibility(query, _, %{skip_thread_containment: true} = _),
     do: query
 
+  defp restrict_thread_visibility(
+         query,
+         %{"user" => %User{info: %{skip_thread_containment: true}}},
+         _
+       ),
+       do: query
+
   defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}, _) do
     from(
       a in query,
@@ -860,7 +867,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query = from(activity in Activity)
-    config = Enum.into(Config.get([:instance]), %{})
+
+    config = %{
+      skip_thread_containment: Config.get([:instance, :skip_thread_containment])
+    }
 
     base_query
     |> maybe_preload_objects(opts)
