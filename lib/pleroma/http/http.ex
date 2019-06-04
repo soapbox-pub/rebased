@@ -65,12 +65,9 @@ defmodule Pleroma.HTTP do
   end
 
   def process_request_options(options) do
-    config = Application.get_env(:pleroma, :http, [])
-    proxy = Keyword.get(config, :proxy_url, nil)
-
-    case proxy do
+    case Pleroma.Config.get([:http, :proxy_url]) do
       nil -> options
-      _ -> options ++ [proxy: proxy]
+      proxy -> options ++ [proxy: proxy]
     end
   end
 

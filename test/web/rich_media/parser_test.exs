@@ -44,6 +44,8 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
               %{
                 image: "http://ia.media-imdb.com/images/rock.jpg",
                 title: "The Rock",
+                description:
+                  "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
                 type: "video.movie",
                 url: "http://www.imdb.com/title/tt0117500/"
               }}

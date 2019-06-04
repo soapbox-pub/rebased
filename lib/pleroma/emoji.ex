@@ -22,7 +22,7 @@ defmodule Pleroma.Emoji do
 
   @ets __MODULE__.Ets
   @ets_options [:ordered_set, :protected, :named_table, {:read_concurrency, true}]
-  @groups Application.get_env(:pleroma, :emoji)[:groups]
+  @groups Pleroma.Config.get([:emoji, :groups])
 
   @doc false
   def start_link do
@@ -112,7 +112,7 @@ defmodule Pleroma.Emoji do
 
     # Compat thing for old custom emoji handling & default emoji,
     # it should run even if there are no emoji packs
-    shortcode_globs = Application.get_env(:pleroma, :emoji)[:shortcode_globs] || []
+    shortcode_globs = Pleroma.Config.get([:emoji, :shortcode_globs], [])
 
     emojis =
       (load_from_file("config/emoji.txt") ++

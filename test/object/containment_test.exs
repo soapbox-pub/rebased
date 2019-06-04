@@ -6,6 +6,11 @@ defmodule Pleroma.Object.ContainmentTest do
 
   import Pleroma.Factory
 
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
+
   describe "general origin containment" do
     test "contain_origin_from_id() catches obvious spoofing attempts" do
       data = %{

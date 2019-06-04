@@ -184,17 +184,19 @@ defmodule Pleroma.FormatterTest do
 
     test "given the 'safe_mention' option, it will only mention people in the beginning" do
       user = insert(:user)
-      _other_user = insert(:user)
+      other_user = insert(:user)
       third_user = insert(:user)
-      text = " @#{user.nickname} hey dude i hate @#{third_user.nickname}"
+      text = " @#{user.nickname} @#{other_user.nickname} hey dudes i hate @#{third_user.nickname}"
       {expected_text, mentions, [] = _tags} = Formatter.linkify(text, safe_mention: true)
 
-      assert mentions == [{"@#{user.nickname}", user}]
+      assert mentions == [{"@#{user.nickname}", user}, {"@#{other_user.nickname}", other_user}]
 
       assert expected_text ==
                "<span class='h-card'><a data-user='#{user.id}' class='u-url mention' href='#{
                  user.ap_id
-               }'>@<span>#{user.nickname}</span></a></span> hey dude i hate <span class='h-card'><a data-user='#{
+               }'>@<span>#{user.nickname}</span></a></span> <span class='h-card'><a data-user='#{
+                 other_user.id
+               }' class='u-url mention' href='#{other_user.ap_id}'>@<span>#{other_user.nickname}</span></a></span> hey dudes i hate <span class='h-card'><a data-user='#{
                  third_user.id
                }' class='u-url mention' href='#{third_user.ap_id}'>@<span>#{third_user.nickname}</span></a></span>"
     end

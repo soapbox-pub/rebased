@@ -5,11 +5,10 @@
 defmodule Pleroma.Web.Salmon do
   @behaviour Pleroma.Web.Federator.Publisher
 
-  @httpoison Application.get_env(:pleroma, :httpoison)
-
   use Bitwise
 
   alias Pleroma.Activity
+  alias Pleroma.HTTP
   alias Pleroma.Instances
   alias Pleroma.Keys
   alias Pleroma.User
@@ -153,7 +152,7 @@ defmodule Pleroma.Web.Salmon do
 
   def publish_one(%{recipient: url, feed: feed} = params) when is_binary(url) do
     with {:ok, %{status: code}} when code in 200..299 <-
-           @httpoison.post(
+           HTTP.post(
              url,
              feed,
              [{"Content-Type", "application/magic-envelope+xml"}]

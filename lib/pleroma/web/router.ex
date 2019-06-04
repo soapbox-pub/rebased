@@ -309,8 +309,6 @@ defmodule Pleroma.Web.Router do
       post("/conversations/:id/read", MastodonAPIController, :conversation_read)
 
       get("/endorsements", MastodonAPIController, :empty_array)
-
-      get("/pleroma/flavour", MastodonAPIController, :get_flavour)
     end
 
     scope [] do
@@ -335,6 +333,8 @@ defmodule Pleroma.Web.Router do
       put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
       delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
 
+      post("/polls/:id/votes", MastodonAPIController, :poll_vote)
+
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
 
@@ -349,8 +349,6 @@ defmodule Pleroma.Web.Router do
       get("/filters/:id", MastodonAPIController, :get_filter)
       put("/filters/:id", MastodonAPIController, :update_filter)
       delete("/filters/:id", MastodonAPIController, :delete_filter)
-
-      post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
 
       get("/pleroma/mascot", MastodonAPIController, :get_mascot)
       put("/pleroma/mascot", MastodonAPIController, :set_mascot)
@@ -425,6 +423,8 @@ defmodule Pleroma.Web.Router do
 
       get("/statuses/:id", MastodonAPIController, :get_status)
       get("/statuses/:id/context", MastodonAPIController, :get_context)
+
+      get("/polls/:id", MastodonAPIController, :get_poll)
 
       get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
       get("/accounts/:id/followers", MastodonAPIController, :followers)

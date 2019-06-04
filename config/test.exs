@@ -39,8 +39,6 @@ config :pleroma, Pleroma.Repo,
 # Reduce hash rounds for testing
 config :pbkdf2_elixir, rounds: 1
 
-config :pleroma, :websub, Pleroma.Web.WebsubMock
-config :pleroma, :ostatus, Pleroma.Web.OStatusMock
 config :tesla, adapter: Tesla.Mock
 config :pleroma, :rich_media, enabled: false
 
