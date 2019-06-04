@@ -97,6 +97,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         "pleroma_api",
         "mastodon_api",
         "mastodon_api_streaming",
+        "polls",
         if Config.get([:media_proxy, :enabled]) do
           "media_proxy"
         end,
@@ -149,6 +150,7 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         },
         staffAccounts: staff_accounts,
         federation: federation_response,
+        pollLimits: Config.get([:instance, :poll_limits]),
         postFormats: Config.get([:instance, :allowed_post_formats]),
         uploadLimits: %{
           general: Config.get([:instance, :upload_limit]),
