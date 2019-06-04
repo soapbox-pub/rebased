@@ -67,7 +67,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
-        relationship: %{}
+        relationship: %{},
+        skip_thread_containment: false
       }
     }
 
@@ -132,7 +133,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         hide_favorites: true,
         hide_followers: false,
         hide_follows: false,
-        relationship: %{}
+        relationship: %{},
+        skip_thread_containment: false
       }
     }
 
@@ -233,7 +235,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           domain_blocking: false,
           showing_reblogs: true,
           endorsed: false
-        }
+        },
+        skip_thread_containment: false
       }
     }
 

@@ -11,6 +11,16 @@ defmodule Pleroma.Web.StreamerTest do
   alias Pleroma.Web.Streamer
   import Pleroma.Factory
 
+  setup do
+    skip_thread_containment = Pleroma.Config.get([:instance, :skip_thread_containment])
+
+    on_exit(fn ->
+      Pleroma.Config.put([:instance, :skip_thread_containment], skip_thread_containment)
+    end)
+
+    :ok
+  end
+
   test "it sends to public" do
     user = insert(:user)
     other_user = insert(:user)
@@ -66,6 +76,74 @@ defmodule Pleroma.Web.StreamerTest do
     Streamer.push_to_socket(topics, "public", activity)
 
     Task.await(task)
+  end
+
+  describe "thread_containment" do
+    test "it doesn't send to user if recipients invalid and thread containment is enabled" do
+      Pleroma.Config.put([:instance, :skip_thread_containment], false)
+      author = insert(:user)
+      user = insert(:user, following: [author.ap_id])
+
+      activity =
+        insert(:note_activity,
+          note:
+            insert(:note,
+              user: author,
+              data: %{"to" => ["TEST-FFF"]}
+            )
+        )
+
+      task = Task.async(fn -> refute_receive {:text, _}, 1_000 end)
+      fake_socket = %{transport_pid: task.pid, assigns: %{user: user}}
+      topics = %{"public" => [fake_socket]}
+      Streamer.push_to_socket(topics, "public", activity)
+
+      Task.await(task)
+    end
+
+    test "it sends message if recipients invalid and thread containment is disabled" do
+      Pleroma.Config.put([:instance, :skip_thread_containment], true)
+      author = insert(:user)
+      user = insert(:user, following: [author.ap_id])
+
+      activity =
+        insert(:note_activity,
+          note:
+            insert(:note,
+              user: author,
+              data: %{"to" => ["TEST-FFF"]}
+            )
+        )
+
+      task = Task.async(fn -> assert_receive {:text, _}, 1_000 end)
+      fake_socket = %{transport_pid: task.pid, assigns: %{user: user}}
+      topics = %{"public" => [fake_socket]}
+      Streamer.push_to_socket(topics, "public", activity)
+
+      Task.await(task)
+    end
+
+    test "it sends message if recipients invalid and thread containment is enabled but user's thread containment is disabled" do
+      Pleroma.Config.put([:instance, :skip_thread_containment], false)
+      author = insert(:user)
+      user = insert(:user, following: [author.ap_id], info: %{skip_thread_containment: true})
+
+      activity =
+        insert(:note_activity,
+          note:
+            insert(:note,
+              user: author,
+              data: %{"to" => ["TEST-FFF"]}
+            )
+        )
+
+      task = Task.async(fn -> assert_receive {:text, _}, 1_000 end)
+      fake_socket = %{transport_pid: task.pid, assigns: %{user: user}}
+      topics = %{"public" => [fake_socket]}
+      Streamer.push_to_socket(topics, "public", activity)
+
+      Task.await(task)
+    end
   end
 
   test "it doesn't send to blocked users" do

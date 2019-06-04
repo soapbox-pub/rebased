@@ -99,7 +99,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "skip_thread_containment" => false
       },
       "rights" => %{"admin" => false, "delete_others_notice" => false},
       "role" => "member"
@@ -154,7 +155,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "skip_thread_containment" => false
       },
       "rights" => %{"admin" => false, "delete_others_notice" => false},
       "role" => "member"
@@ -199,7 +201,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "skip_thread_containment" => false
       },
       "rights" => %{"admin" => false, "delete_others_notice" => false},
       "role" => "member"
@@ -281,7 +284,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "skip_thread_containment" => false
       },
       "rights" => %{"admin" => false, "delete_others_notice" => false},
       "role" => "member"

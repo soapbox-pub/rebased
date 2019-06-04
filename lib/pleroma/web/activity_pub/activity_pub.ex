@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Conversation
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -73,7 +74,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp check_remote_limit(%{"object" => %{"content" => content}}) when not is_nil(content) do
-    limit = Pleroma.Config.get([:instance, :remote_limit])
+    limit = Config.get([:instance, :remote_limit])
     String.length(content) <= limit
   end
 
@@ -411,8 +412,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
-    outgoing_blocks = Pleroma.Config.get([:activitypub, :outgoing_blocks])
-    unfollow_blocked = Pleroma.Config.get([:activitypub, :unfollow_blocked])
+    outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
+    unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
 
     if unfollow_blocked do
       follow_activity = fetch_latest_follow(blocker, blocked)
@@ -557,14 +558,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_visibility(query, %{visibility: visibility})
        when visibility in @valid_visibilities do
-    query =
-      from(
-        a in query,
-        where:
-          fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
-      )
-
-    query
+    from(
+      a in query,
+      where:
+        fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
+    )
   end
 
   defp restrict_visibility(_query, %{visibility: visibility})
@@ -574,17 +572,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_visibility(query, _visibility), do: query
 
-  defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}) do
-    query =
-      from(
-        a in query,
-        where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
-      )
+  defp restrict_thread_visibility(query, _, %{skip_thread_containment: true} = _),
+    do: query
 
-    query
+  defp restrict_thread_visibility(
+         query,
+         %{"user" => %User{info: %{skip_thread_containment: true}}},
+         _
+       ),
+       do: query
+
+  defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}, _) do
+    from(
+      a in query,
+      where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
+    )
   end
 
-  defp restrict_thread_visibility(query, _), do: query
+  defp restrict_thread_visibility(query, _, _), do: query
 
   def fetch_user_activities(user, reading_user, params \\ %{}) do
     params =
@@ -863,6 +868,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def fetch_activities_query(recipients, opts \\ %{}) do
     base_query = from(activity in Activity)
 
+    config = %{
+      skip_thread_containment: Config.get([:instance, :skip_thread_containment])
+    }
+
     base_query
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
@@ -882,7 +891,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_muted(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
-    |> restrict_thread_visibility(opts)
+    |> restrict_thread_visibility(opts, config)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
