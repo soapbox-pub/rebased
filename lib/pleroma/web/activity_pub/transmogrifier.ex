@@ -462,7 +462,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
              {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
            {_, false} <- {:user_locked, User.locked?(followed)},
            {_, {:ok, follower}} <- {:follow, User.follow(follower, followed)},
-           {_, {:ok, _}} <- {:follow_state_update, Utils.update_follow_state(activity, "accept")} do
+           {_, {:ok, _}} <-
+             {:follow_state_update, Utils.update_follow_state_for_all(activity, "accept")} do
         ActivityPub.accept(%{
           to: [follower.ap_id],
           actor: followed,
@@ -471,7 +472,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         })
       else
         {:user_blocked, true} ->
-          {:ok, _} = Utils.update_follow_state(activity, "reject")
+          {:ok, _} = Utils.update_follow_state_for_all(activity, "reject")
 
           ActivityPub.reject(%{
             to: [follower.ap_id],
@@ -481,7 +482,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           })
 
         {:follow, {:error, _}} ->
-          {:ok, _} = Utils.update_follow_state(activity, "reject")
+          {:ok, _} = Utils.update_follow_state_for_all(activity, "reject")
 
           ActivityPub.reject(%{
             to: [follower.ap_id],
@@ -507,7 +508,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, _follower} = User.follow(follower, followed) do
       ActivityPub.accept(%{
@@ -528,7 +529,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
            ActivityPub.reject(%{
