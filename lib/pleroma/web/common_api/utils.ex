@@ -98,6 +98,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
+  def get_to_and_cc(_user, _mentions, _inReplyTo, _), do: {[], []}
+
   def get_addressed_users(_, to) when is_list(to) do
     User.get_ap_ids_by_nicknames(to)
   end
