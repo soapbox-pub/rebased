@@ -735,7 +735,6 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-
   def mute(muter, %User{ap_id: ap_id}) do
     info_cng =
       muter.info
