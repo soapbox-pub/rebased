@@ -371,7 +371,7 @@ defmodule Pleroma.User do
 
     cond do
       info.deactivated ->
-        {:error, "Could not follow user: You are deactivatedt."}
+        {:error, "Could not follow user: You are deactivated."}
 
       deny_follow_blocked and blocks?(followed, follower) ->
         {:error, "Could not follow user: #{followed.nickname} blocked you."}

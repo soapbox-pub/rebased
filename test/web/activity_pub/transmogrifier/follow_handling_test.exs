@@ -36,9 +36,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
     end
 
     test "it works for follow requests when you are already followed, creating a new accept activity" do
-      # This is important because the remote might have the wrong idea about the current follow status.
-      # This can lead to instance A thinking that x@A is followed by y@B, but B thinks they are not. In
-      # this case, the follow can never go through again because it will never get an Accept.
+      # This is important because the remote might have the wrong idea about the
+      # current follow status. This can lead to instance A thinking that x@A is
+      # followed by y@B, but B thinks they are not. In this case, the follow can
+      # never go through again because it will never get an Accept.
       user = insert(:user)
 
       data =
