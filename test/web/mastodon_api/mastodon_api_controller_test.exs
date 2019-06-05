@@ -2173,8 +2173,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "search fetches remote accounts", %{conn: conn} do
+    user = insert(:user)
+
     conn =
       conn
+      |> assign(:user, user)
       |> get("/api/v1/search", %{"q" => "shp@social.heldscal.la", "resolve" => "true"})
 
     assert results = json_response(conn, 200)
