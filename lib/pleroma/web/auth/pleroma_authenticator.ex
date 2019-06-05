@@ -24,6 +24,14 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
     end
   end
 
+  @doc """
+  Gets or creates Pleroma.Registration record from Ueberauth assigns.
+  Note: some strategies (like `keycloak`) might need extra configuration to fill `uid` from callback response —
+    see [`docs/config.md`](docs/config.md).
+  """
+  def get_registration(%Plug.Conn{assigns: %{ueberauth_auth: %{uid: nil}}}),
+    do: {:error, :missing_uid}
+
   def get_registration(%Plug.Conn{
         assigns: %{ueberauth_auth: %{provider: provider, uid: uid} = auth}
       }) do
@@ -51,9 +59,10 @@ defmodule Pleroma.Web.Auth.PleromaAuthenticator do
 
   def get_registration(%Plug.Conn{} = _conn), do: {:error, :missing_credentials}
 
+  @doc "Creates Pleroma.User record basing on params and Pleroma.Registration record."
   def create_from_registration(
         %Plug.Conn{params: %{"authorization" => registration_attrs}},
-        registration
+        %Registration{} = registration
       ) do
     nickname = value([registration_attrs["nickname"], Registration.nickname(registration)])
     email = value([registration_attrs["email"], Registration.email(registration)])

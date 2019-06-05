@@ -514,7 +514,7 @@ Authentication / authorization settings.
 
 * `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`.
 * `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
-* `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable. Each entry in this space-delimited string should be of format `<strategy>` or `<strategy>:<dependency>` (e.g. `twitter` or `keycloak:ueberauth_keycloak_strategy` in case dependency is named differently than `ueberauth_<strategy>`).
+* `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by `OAUTH_CONSUMER_STRATEGIES` environment variable. Each entry in this space-delimited string should be of format `<strategy>` or `<strategy>:<dependency>` (e.g. `twitter` or `keycloak:ueberauth_keycloak_strategy` in case dependency is named differently than `ueberauth_<strategy>`).
 
 ## OAuth consumer mode
 
@@ -566,6 +566,24 @@ config :ueberauth, Ueberauth.Strategy.Microsoft.OAuth,
 config :ueberauth, Ueberauth,
   providers: [
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
+  ]
+  
+# Keycloak
+# Note: make sure to add `keycloak:ueberauth_keycloak_strategy` entry to `OAUTH_CONSUMER_STRATEGIES` environment variable
+keycloak_url = "https://publicly-reachable-keycloak-instance.org:8080"
+
+config :ueberauth, Ueberauth.Strategy.Keycloak.OAuth,
+  client_id: System.get_env("KEYCLOAK_CLIENT_ID"),
+  client_secret: System.get_env("KEYCLOAK_CLIENT_SECRET"),
+  site: keycloak_url,
+  authorize_url: "#{keycloak_url}/auth/realms/master/protocol/openid-connect/auth",
+  token_url: "#{keycloak_url}/auth/realms/master/protocol/openid-connect/token",
+  userinfo_url: "#{keycloak_url}/auth/realms/master/protocol/openid-connect/userinfo",
+  token_method: :post
+
+config :ueberauth, Ueberauth,
+  providers: [
+    keycloak: {Ueberauth.Strategy.Keycloak, [uid_field: :email]}
   ]
 ```
 
