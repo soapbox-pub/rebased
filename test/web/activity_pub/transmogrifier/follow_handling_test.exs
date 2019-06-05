@@ -27,12 +27,39 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
         |> Poison.decode!()
         |> Map.put("object", user.ap_id)
 
-      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
 
       assert data["actor"] == "http://mastodon.example.org/users/admin"
       assert data["type"] == "Follow"
       assert data["id"] == "http://mastodon.example.org/users/admin#follows/2"
+
+      activity = Repo.get(Activity, activity.id)
+      assert activity.data["state"] == "accept"
       assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+    end
+
+    test "with locked accounts, it does not create a follow or an accept" do
+      user = insert(:user, info: %{locked: true})
+
+      data =
+        File.read!("test/fixtures/mastodon-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["state"] == "pending"
+
+      refute User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+
+      accepts =
+        from(
+          a in Activity,
+          where: fragment("?->>'type' = ?", a.data, "Accept")
+        )
+        |> Repo.all()
+
+      assert length(accepts) == 0
     end
 
     test "it works for follow requests when you are already followed, creating a new accept activity" do

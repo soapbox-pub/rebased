@@ -376,8 +376,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Updates a follow activity's state (for locked accounts).
   """
-  def update_follow_state(
-        %Activity{data: %{"actor" => actor, "object" => object, "state" => "pending"}} = activity,
+  def update_follow_state_for_all(
+        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
         state
       ) do
     try do
