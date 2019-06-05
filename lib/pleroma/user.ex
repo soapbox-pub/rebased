@@ -324,14 +324,6 @@ defmodule Pleroma.User do
     end
   end
 
-  def maybe_follow(%User{} = follower, %User{info: _info} = followed) do
-    if not following?(follower, followed) do
-      follow(follower, followed)
-    else
-      {:ok, follower}
-    end
-  end
-
   @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do

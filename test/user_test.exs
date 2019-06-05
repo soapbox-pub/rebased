@@ -75,7 +75,7 @@ defmodule Pleroma.UserTest do
     Pleroma.Web.TwitterAPI.TwitterAPI.follow(pending_follower, %{"user_id" => locked.id})
     Pleroma.Web.TwitterAPI.TwitterAPI.follow(pending_follower, %{"user_id" => locked.id})
     Pleroma.Web.TwitterAPI.TwitterAPI.follow(accepted_follower, %{"user_id" => locked.id})
-    User.maybe_follow(accepted_follower, locked)
+    User.follow(accepted_follower, locked)
 
     assert {:ok, [activity]} = User.get_follow_requests(locked)
     assert activity
