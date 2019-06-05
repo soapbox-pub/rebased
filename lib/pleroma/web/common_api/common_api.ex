@@ -132,13 +132,16 @@ defmodule Pleroma.Web.CommonAPI do
         Enum.map(choices, fn index ->
           answer_data = make_answer_data(user, object, Enum.at(options, index)["name"])
 
-          ActivityPub.create(%{
-            to: answer_data["to"],
-            actor: user,
-            context: object.data["context"],
-            object: answer_data,
-            additional: %{"cc" => answer_data["cc"]}
-          })
+          {:ok, activity} =
+            ActivityPub.create(%{
+              to: answer_data["to"],
+              actor: user,
+              context: object.data["context"],
+              object: answer_data,
+              additional: %{"cc" => answer_data["cc"]}
+            })
+
+          activity
         end)
 
       object = Object.get_cached_by_ap_id(object.data["id"])

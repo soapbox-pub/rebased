@@ -83,6 +83,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
 - `default_scope` - the scope returned under `privacy` key in Source subentity
 - `pleroma_settings_store` - Opaque user settings to be saved on the backend.
+- `skip_thread_containment` - if true, skip filtering out broken threads
 
 ### Pleroma Settings Store
 Pleroma has mechanism that allows frontends to save blobs of json for each user on the backend. This can be used to save frontend-specific settings for a user that the backend does not need to know about.

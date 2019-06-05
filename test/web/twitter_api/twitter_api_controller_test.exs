@@ -1495,7 +1495,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
           "hide_follows" => "false"
         })
 
-      user = Repo.get!(User, user.id)
+      user = refresh_record(user)
       assert user.info.hide_follows == false
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
@@ -1546,6 +1546,29 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = Repo.get!(User, user.id)
       assert user.info.show_role == false
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
+    test "it sets and un-sets skip_thread_containment", %{conn: conn} do
+      user = insert(:user)
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{"skip_thread_containment" => "true"})
+        |> json_response(200)
+
+      assert response["pleroma"]["skip_thread_containment"] == true
+      user = refresh_record(user)
+      assert user.info.skip_thread_containment
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{"skip_thread_containment" => "false"})
+        |> json_response(200)
+
+      assert response["pleroma"]["skip_thread_containment"] == false
+      refute refresh_record(user).info.skip_thread_containment
     end
 
     test "it locks an account", %{conn: conn} do
