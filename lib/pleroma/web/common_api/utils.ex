@@ -61,9 +61,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end)
   end
 
-  def to_for_user_and_mentions(user, mentions, inReplyTo, "public") do
-    mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
-
+  @spec get_to_and_cc(User.t(), list(String.t()), Activity.t() | nil, String.t()) ::
+          {list(String.t()), list(String.t())}
+  def get_to_and_cc(user, mentioned_users, inReplyTo, "public") do
     to = ["https://www.w3.org/ns/activitystreams#Public" | mentioned_users]
     cc = [user.follower_address]
 
@@ -74,9 +74,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def to_for_user_and_mentions(user, mentions, inReplyTo, "unlisted") do
-    mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
-
+  def get_to_and_cc(user, mentioned_users, inReplyTo, "unlisted") do
     to = [user.follower_address | mentioned_users]
     cc = ["https://www.w3.org/ns/activitystreams#Public"]
 
@@ -87,20 +85,24 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def to_for_user_and_mentions(user, mentions, inReplyTo, "private") do
-    {to, cc} = to_for_user_and_mentions(user, mentions, inReplyTo, "direct")
+  def get_to_and_cc(user, mentioned_users, inReplyTo, "private") do
+    {to, cc} = get_to_and_cc(user, mentioned_users, inReplyTo, "direct")
     {[user.follower_address | to], cc}
   end
 
-  def to_for_user_and_mentions(_user, mentions, inReplyTo, "direct") do
-    mentioned_users = Enum.map(mentions, fn {_, %{ap_id: ap_id}} -> ap_id end)
-
+  def get_to_and_cc(_user, mentioned_users, inReplyTo, "direct") do
     if inReplyTo do
       {Enum.uniq([inReplyTo.data["actor"] | mentioned_users]), []}
     else
       {mentioned_users, []}
     end
   end
+
+  def get_addressed_users(_, to) when is_list(to) do
+    User.get_ap_ids_by_nicknames(to)
+  end
+
+  def get_addressed_users(mentioned_users, _), do: mentioned_users
 
   def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
       when is_list(options) do

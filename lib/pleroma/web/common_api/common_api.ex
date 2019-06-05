@@ -204,8 +204,10 @@ defmodule Pleroma.Web.CommonAPI do
              data,
              visibility
            ),
+         mentioned_users <- for({_, mentioned_user} <- mentions, do: mentioned_user.ap_id),
+         addressed_users <- get_addressed_users(mentioned_users, data["to"]),
          {poll, poll_emoji} <- make_poll_data(data),
-         {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
+         {to, cc} <- get_to_and_cc(user, addressed_users, in_reply_to, visibility),
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),

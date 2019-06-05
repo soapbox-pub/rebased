@@ -56,6 +56,25 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "posting" do
+    test "it supports explicit addressing" do
+      user = insert(:user)
+      user_two = insert(:user)
+      user_three = insert(:user)
+      user_four = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" =>
+            "Hey, I think @#{user_three.nickname} is ugly. @#{user_four.nickname} is alright though.",
+          "to" => [user_two.nickname, user_four.nickname, "nonexistent"]
+        })
+
+      assert user.ap_id in activity.recipients
+      assert user_two.ap_id in activity.recipients
+      assert user_four.ap_id in activity.recipients
+      refute user_three.ap_id in activity.recipients
+    end
+
     test "it filters out obviously bad tags when accepting a post as HTML" do
       user = insert(:user)
 
