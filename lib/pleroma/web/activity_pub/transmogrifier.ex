@@ -458,10 +458,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
          {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
       with deny_follow_blocked <- Pleroma.Config.get([:user, :deny_follow_blocked]),
-           {:user_blocked, false} <-
+           {_, false} <-
              {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
-           {:user_locked, false} <- {:user_locked, User.locked?(followed)},
-           {:follow, {:ok, follower}} <- {:follow, User.follow(follower, followed)} do
+           {_, false} <- {:user_locked, User.locked?(followed)},
+           {_, {:ok, follower}} <- {:follow, User.follow(follower, followed)},
+           {_, {:ok, _}} <- {:follow_state_update, Utils.update_follow_state(activity, "accept")} do
         ActivityPub.accept(%{
           to: [follower.ap_id],
           actor: followed,
