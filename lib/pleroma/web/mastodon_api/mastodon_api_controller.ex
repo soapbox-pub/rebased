@@ -14,7 +14,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.HTTP
   alias Pleroma.Notification
   alias Pleroma.Object
-  alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -1125,64 +1124,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def status_search_query_with_gin(q, query) do
-    from([a, o] in q,
-      where:
-        fragment(
-          "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
-          o.data,
-          ^query
-        ),
-      order_by: [desc: :id]
-    )
-  end
-
-  def status_search_query_with_rum(q, query) do
-    from([a, o] in q,
-      where:
-        fragment(
-          "? @@ plainto_tsquery('english', ?)",
-          o.fts_content,
-          ^query
-        ),
-      order_by: [fragment("? <=> now()::date", o.inserted_at)]
-    )
-  end
-
-  def status_search(user, query) do
-    fetched =
-      if Regex.match?(~r/https?:/, query) do
-        with {:ok, object} <- Fetcher.fetch_object_from_id(query),
-             %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
-             true <- Visibility.visible_for_user?(activity, user) do
-          [activity]
-        else
-          _e -> []
-        end
-      end || []
-
-    q =
-      from([a, o] in Activity.with_preloaded_object(Activity),
-        where: fragment("?->>'type' = 'Create'", a.data),
-        where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
-        limit: 40
-      )
-
-    q =
-      if Pleroma.Config.get([:database, :rum_enabled]) do
-        status_search_query_with_rum(q, query)
-      else
-        status_search_query_with_gin(q, query)
-      end
-
-    Repo.all(q) ++ fetched
-  end
-
   def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-
-    statuses = status_search(user, query)
-
+    statuses = Activity.search(user, query)
     tags_path = Web.base_url() <> "/tag/"
 
     tags =
@@ -1205,8 +1149,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-
-    statuses = status_search(user, query)
+    statuses = Activity.search(user, query)
 
     tags =
       query

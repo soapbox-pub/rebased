@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
 
     Benchee.run(%{
       "search" => fn ->
-        Pleroma.Web.MastodonAPI.MastodonAPIController.status_search(nil, "cofe")
+        Pleroma.Activity.search(nil, "cofe")
       end
     })
   end
