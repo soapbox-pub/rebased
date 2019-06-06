@@ -325,14 +325,6 @@ defmodule Pleroma.User do
     end
   end
 
-  def maybe_follow(%User{} = follower, %User{info: _info} = followed) do
-    if not following?(follower, followed) do
-      follow(follower, followed)
-    else
-      {:ok, follower}
-    end
-  end
-
   @doc "A mass follow for local users. Respects blocks in both directions but does not create activities."
   @spec follow_all(User.t(), list(User.t())) :: {atom(), User.t()}
   def follow_all(follower, followeds) do
@@ -371,8 +363,8 @@ defmodule Pleroma.User do
     ap_followers = followed.follower_address
 
     cond do
-      following?(follower, followed) or info.deactivated ->
-        {:error, "Could not follow user: #{followed.nickname} is already on your list."}
+      info.deactivated ->
+        {:error, "Could not follow user: You are deactivated."}
 
       deny_follow_blocked and blocks?(followed, follower) ->
         {:error, "Could not follow user: #{followed.nickname} blocked you."}
@@ -734,122 +726,6 @@ defmodule Pleroma.User do
   def get_recipients_from_activity(%Activity{recipients: to}) do
     User.Query.build(%{recipients_from_activity: to, local: true, deactivated: false})
     |> Repo.all()
-  end
-
-  def search(query, resolve \\ false, for_user \\ nil) do
-    # Strip the beginning @ off if there is a query
-    query = String.trim_leading(query, "@")
-
-    if resolve, do: get_or_fetch(query)
-
-    {:ok, results} =
-      Repo.transaction(fn ->
-        Ecto.Adapters.SQL.query(Repo, "select set_limit(0.25)", [])
-        Repo.all(search_query(query, for_user))
-      end)
-
-    results
-  end
-
-  def search_query(query, for_user) do
-    fts_subquery = fts_search_subquery(query)
-    trigram_subquery = trigram_search_subquery(query)
-    union_query = from(s in trigram_subquery, union_all: ^fts_subquery)
-    distinct_query = from(s in subquery(union_query), order_by: s.search_type, distinct: s.id)
-
-    from(s in subquery(boost_search_rank_query(distinct_query, for_user)),
-      order_by: [desc: s.search_rank],
-      limit: 40
-    )
-  end
-
-  defp boost_search_rank_query(query, nil), do: query
-
-  defp boost_search_rank_query(query, for_user) do
-    friends_ids = get_friends_ids(for_user)
-    followers_ids = get_followers_ids(for_user)
-
-    from(u in subquery(query),
-      select_merge: %{
-        search_rank:
-          fragment(
-            """
-             CASE WHEN (?) THEN (?) * 1.3
-             WHEN (?) THEN (?) * 1.2
-             WHEN (?) THEN (?) * 1.1
-             ELSE (?) END
-            """,
-            u.id in ^friends_ids and u.id in ^followers_ids,
-            u.search_rank,
-            u.id in ^friends_ids,
-            u.search_rank,
-            u.id in ^followers_ids,
-            u.search_rank,
-            u.search_rank
-          )
-      }
-    )
-  end
-
-  defp fts_search_subquery(term, query \\ User) do
-    processed_query =
-      term
-      |> String.replace(~r/\W+/, " ")
-      |> String.trim()
-      |> String.split()
-      |> Enum.map(&(&1 <> ":*"))
-      |> Enum.join(" | ")
-
-    from(
-      u in query,
-      select_merge: %{
-        search_type: ^0,
-        search_rank:
-          fragment(
-            """
-            ts_rank_cd(
-              setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
-              setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B'),
-              to_tsquery('simple', ?),
-              32
-            )
-            """,
-            u.nickname,
-            u.name,
-            ^processed_query
-          )
-      },
-      where:
-        fragment(
-          """
-            (setweight(to_tsvector('simple', regexp_replace(?, '\\W', ' ', 'g')), 'A') ||
-            setweight(to_tsvector('simple', regexp_replace(coalesce(?, ''), '\\W', ' ', 'g')), 'B')) @@ to_tsquery('simple', ?)
-          """,
-          u.nickname,
-          u.name,
-          ^processed_query
-        )
-    )
-    |> restrict_deactivated()
-  end
-
-  defp trigram_search_subquery(term) do
-    from(
-      u in User,
-      select_merge: %{
-        # ^1 gives 'Postgrex expected a binary, got 1' for some weird reason
-        search_type: fragment("?", 1),
-        search_rank:
-          fragment(
-            "similarity(?, trim(? || ' ' || coalesce(?, '')))",
-            ^term,
-            u.nickname,
-            u.name
-          )
-      },
-      where: fragment("trim(? || ' ' || coalesce(?, '')) % ?", u.nickname, u.name, ^term)
-    )
-    |> restrict_deactivated()
   end
 
   def mute(muter, %User{ap_id: ap_id}) do
@@ -1516,4 +1392,14 @@ defmodule Pleroma.User do
       update_and_set_cache(cng)
     end
   end
+
+  def get_ap_ids_by_nicknames(nicknames) do
+    from(u in User,
+      where: u.nickname in ^nicknames,
+      select: u.ap_id
+    )
+    |> Repo.all()
+  end
+
+  defdelegate search(query, opts \\ []), to: User.Search
 end

@@ -7,6 +7,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -56,6 +57,25 @@ defmodule Pleroma.Web.CommonAPITest do
   end
 
   describe "posting" do
+    test "it supports explicit addressing" do
+      user = insert(:user)
+      user_two = insert(:user)
+      user_three = insert(:user)
+      user_four = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" =>
+            "Hey, I think @#{user_three.nickname} is ugly. @#{user_four.nickname} is alright though.",
+          "to" => [user_two.nickname, user_four.nickname, "nonexistent"]
+        })
+
+      assert user.ap_id in activity.recipients
+      assert user_two.ap_id in activity.recipients
+      assert user_four.ap_id in activity.recipients
+      refute user_three.ap_id in activity.recipients
+    end
+
     test "it filters out obviously bad tags when accepting a post as HTML" do
       user = insert(:user)
 
@@ -318,6 +338,48 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, muter} = CommonAPI.show_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == true
+    end
+  end
+
+  describe "accept_follow_request/2" do
+    test "after acceptance, it sets all existing pending follow request states to 'accept'" do
+      user = insert(:user, info: %{locked: true})
+      follower = insert(:user)
+      follower_two = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_three} = ActivityPub.follow(follower_two, user)
+
+      assert follow_activity.data["state"] == "pending"
+      assert follow_activity_two.data["state"] == "pending"
+      assert follow_activity_three.data["state"] == "pending"
+
+      {:ok, _follower} = CommonAPI.accept_follow_request(follower, user)
+
+      assert Repo.get(Activity, follow_activity.id).data["state"] == "accept"
+      assert Repo.get(Activity, follow_activity_two.id).data["state"] == "accept"
+      assert Repo.get(Activity, follow_activity_three.id).data["state"] == "pending"
+    end
+
+    test "after rejection, it sets all existing pending follow request states to 'reject'" do
+      user = insert(:user, info: %{locked: true})
+      follower = insert(:user)
+      follower_two = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_three} = ActivityPub.follow(follower_two, user)
+
+      assert follow_activity.data["state"] == "pending"
+      assert follow_activity_two.data["state"] == "pending"
+      assert follow_activity_three.data["state"] == "pending"
+
+      {:ok, _follower} = CommonAPI.reject_follow_request(follower, user)
+
+      assert Repo.get(Activity, follow_activity.id).data["state"] == "reject"
+      assert Repo.get(Activity, follow_activity_two.id).data["state"] == "reject"
+      assert Repo.get(Activity, follow_activity_three.id).data["state"] == "pending"
     end
   end
 end

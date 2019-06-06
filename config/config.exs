@@ -244,7 +244,8 @@ config :pleroma, :instance,
   safe_dm_mentions: false,
   healthcheck: false,
   remote_post_retention_days: 90,
-  skip_thread_containment: false
+  skip_thread_containment: false,
+  limit_unauthenticated_to_local_content: true
 
 config :pleroma, :app_account_creation, enabled: true, max_requests: 25, interval: 1800
 

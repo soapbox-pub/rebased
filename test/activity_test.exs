@@ -99,4 +99,58 @@ defmodule Pleroma.ActivityTest do
       assert Activity.get_bookmark(queried_activity, user) == bookmark
     end
   end
+
+  describe "search" do
+    setup do
+      Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+
+      user = insert(:user)
+
+      params = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "actor" => "http://mastodon.example.org/users/admin",
+        "type" => "Create",
+        "id" => "http://mastodon.example.org/users/admin/activities/1",
+        "object" => %{
+          "type" => "Note",
+          "content" => "find me!",
+          "id" => "http://mastodon.example.org/users/admin/objects/1",
+          "attributedTo" => "http://mastodon.example.org/users/admin"
+        },
+        "to" => ["https://www.w3.org/ns/activitystreams#Public"]
+      }
+
+      {:ok, local_activity} = Pleroma.Web.CommonAPI.post(user, %{"status" => "find me!"})
+      {:ok, remote_activity} = Pleroma.Web.Federator.incoming_ap_doc(params)
+      %{local_activity: local_activity, remote_activity: remote_activity, user: user}
+    end
+
+    test "find local and remote statuses for authenticated users", %{
+      local_activity: local_activity,
+      remote_activity: remote_activity,
+      user: user
+    } do
+      activities = Enum.sort_by(Activity.search(user, "find me"), & &1.id)
+
+      assert [^local_activity, ^remote_activity] = activities
+    end
+
+    test "find only local statuses for unauthenticated users", %{local_activity: local_activity} do
+      assert [^local_activity] = Activity.search(nil, "find me")
+    end
+
+    test "find all statuses for unauthenticated users when `limit_unauthenticated_to_local_content` is `false`",
+         %{
+           local_activity: local_activity,
+           remote_activity: remote_activity
+         } do
+      Pleroma.Config.put([:instance, :limit_unauthenticated_to_local_content], false)
+
+      activities = Enum.sort_by(Activity.search(nil, "find me"), & &1.id)
+
+      assert [^local_activity, ^remote_activity] = activities
+
+      Pleroma.Config.put([:instance, :limit_unauthenticated_to_local_content], true)
+    end
+  end
 end
