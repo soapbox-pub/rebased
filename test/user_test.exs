@@ -1077,7 +1077,7 @@ defmodule Pleroma.UserTest do
                Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
     end
 
-    test "find local and remote statuses for authenticated users" do
+    test "find local and remote users for authenticated users" do
       u1 = insert(:user, %{name: "lain"})
       u2 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
       u3 = insert(:user, %{nickname: "lain@pleroma.soykaf.com", local: false})
@@ -1091,12 +1091,30 @@ defmodule Pleroma.UserTest do
       assert [u1.id, u2.id, u3.id] == results
     end
 
-    test "find only local statuses for unauthenticated users" do
+    test "find only local users for unauthenticated users" do
       %{id: id} = insert(:user, %{name: "lain"})
       insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
       insert(:user, %{nickname: "lain@pleroma.soykaf.com", local: false})
 
       assert [%{id: ^id}] = User.search("lain")
+    end
+
+    test "find all users for unauthenticated users when `limit_unauthenticated_to_local_content` is `false`" do
+      Pleroma.Config.put([:instance, :limit_unauthenticated_to_local_content], false)
+
+      u1 = insert(:user, %{name: "lain"})
+      u2 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
+      u3 = insert(:user, %{nickname: "lain@pleroma.soykaf.com", local: false})
+
+      results =
+        "lain"
+        |> User.search()
+        |> Enum.map(& &1.id)
+        |> Enum.sort()
+
+      assert [u1.id, u2.id, u3.id] == results
+
+      Pleroma.Config.put([:instance, :limit_unauthenticated_to_local_content], true)
     end
 
     test "finds a user whose name is nil" do
