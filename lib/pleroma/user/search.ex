@@ -14,7 +14,7 @@ defmodule Pleroma.User.Search do
     # Strip the beginning @ off if there is a query
     query = String.trim_leading(query, "@")
 
-    if match?(%User{}, for_user) and resolve, do: User.get_or_fetch(query)
+    maybe_resolve(resolve, for_user, query)
 
     {:ok, results} =
       Repo.transaction(fn ->
@@ -28,6 +28,16 @@ defmodule Pleroma.User.Search do
     results
   end
 
+  defp maybe_resolve(true, %User{}, query) do
+    User.get_or_fetch(query)
+  end
+
+  defp maybe_resolve(true, _, query) do
+    unless restrict_local?(), do: User.get_or_fetch(query)
+  end
+
+  defp maybe_resolve(_, _, _), do: :noop
+
   defp search_query(query, for_user) do
     query
     |> union_query()
@@ -37,6 +47,10 @@ defmodule Pleroma.User.Search do
     |> order_by(desc: :search_rank)
     |> limit(20)
     |> maybe_restrict_local(for_user)
+  end
+
+  defp restrict_local? do
+    Pleroma.Config.get([:instance, :limit_unauthenticated_to_local_content], true)
   end
 
   defp union_query(query) do
@@ -52,7 +66,14 @@ defmodule Pleroma.User.Search do
 
   # unauthenticated users can only search local activities
   defp maybe_restrict_local(q, %User{}), do: q
-  defp maybe_restrict_local(q, _), do: where(q, [u], u.local == true)
+
+  defp maybe_restrict_local(q, _) do
+    if restrict_local?() do
+      where(q, [u], u.local == true)
+    else
+      q
+    end
+  end
 
   defp boost_search_rank_query(query, nil), do: query
 
