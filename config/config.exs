@@ -494,7 +494,7 @@ config :pleroma, Pleroma.ScheduledActivity,
 
 config :pleroma, :email_notifications,
   digest: %{
-    active: true,
+    active: false,
     schedule: "0 0 * * 0",
     interval: 7,
     inactivity_threshold: 7
