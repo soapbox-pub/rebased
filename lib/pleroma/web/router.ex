@@ -699,7 +699,7 @@ defmodule Pleroma.Web.Router do
     get("/:sig/:url/:filename", MediaProxyController, :remote)
   end
 
-  if Mix.env() == :dev do
+  if Pleroma.Config.get(:env) == :dev do
     scope "/dev" do
       pipe_through([:mailbox_preview])
 

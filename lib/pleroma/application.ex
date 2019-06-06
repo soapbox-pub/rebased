@@ -194,7 +194,7 @@ defmodule Pleroma.Application do
       end
   end
 
-  if Mix.env() == :test do
+  if Pleroma.Config.get(:env) == :test do
     defp streamer_child, do: []
     defp chat_child, do: []
   else
