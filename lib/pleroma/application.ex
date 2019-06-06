@@ -4,7 +4,6 @@
 
 defmodule Pleroma.Application do
   use Application
-  import Supervisor.Spec
 
   @name Mix.Project.config()[:name]
   @version Mix.Project.config()[:version]
@@ -31,96 +30,127 @@ defmodule Pleroma.Application do
     children =
       [
         # Start the Ecto repository
-        supervisor(Pleroma.Repo, []),
-        worker(Pleroma.Emoji, []),
-        worker(Pleroma.Captcha, []),
-        worker(
-          Cachex,
-          [
-            :used_captcha_cache,
-            [
-              ttl_interval: :timer.seconds(Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid]))
-            ]
-          ],
-          id: :cachex_used_captcha_cache
-        ),
-        worker(
-          Cachex,
-          [
-            :user_cache,
-            [
-              default_ttl: 25_000,
-              ttl_interval: 1000,
-              limit: 2500
-            ]
-          ],
-          id: :cachex_user
-        ),
-        worker(
-          Cachex,
-          [
-            :object_cache,
-            [
-              default_ttl: 25_000,
-              ttl_interval: 1000,
-              limit: 2500
-            ]
-          ],
-          id: :cachex_object
-        ),
-        worker(
-          Cachex,
-          [
-            :rich_media_cache,
-            [
-              default_ttl: :timer.minutes(120),
-              limit: 5000
-            ]
-          ],
-          id: :cachex_rich_media
-        ),
-        worker(
-          Cachex,
-          [
-            :scrubber_cache,
-            [
-              limit: 2500
-            ]
-          ],
-          id: :cachex_scrubber
-        ),
-        worker(
-          Cachex,
-          [
-            :idempotency_cache,
-            [
-              expiration:
-                expiration(
-                  default: :timer.seconds(6 * 60 * 60),
-                  interval: :timer.seconds(60)
-                ),
-              limit: 2500
-            ]
-          ],
-          id: :cachex_idem
-        ),
-        worker(Pleroma.FlakeId, []),
-        worker(Pleroma.ScheduledActivityWorker, [])
+        %{id: Pleroma.Repo, start: {Pleroma.Repo, :start_link, []}, type: :supervisor},
+        %{id: Pleroma.Emoji, start: {Pleroma.Emoji, :start_link, []}},
+        %{id: Pleroma.Captcha, start: {Pleroma.Captcha, :start_link, []}},
+        %{
+          id: :cachex_used_captcha_cache,
+          start:
+            {Cachex, :start_link,
+             [
+               :used_captcha_cache,
+               [
+                 ttl_interval:
+                   :timer.seconds(Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid]))
+               ]
+             ]}
+        },
+        %{
+          id: :cachex_user,
+          start:
+            {Cachex, :start_link,
+             [
+               :user_cache,
+               [
+                 default_ttl: 25_000,
+                 ttl_interval: 1000,
+                 limit: 2500
+               ]
+             ]}
+        },
+        %{
+          id: :cachex_object,
+          start:
+            {Cachex, :start_link,
+             [
+               :object_cache,
+               [
+                 default_ttl: 25_000,
+                 ttl_interval: 1000,
+                 limit: 2500
+               ]
+             ]}
+        },
+        %{
+          id: :cachex_rich_media,
+          start:
+            {Cachex, :start_link,
+             [
+               :rich_media_cache,
+               [
+                 default_ttl: :timer.minutes(120),
+                 limit: 5000
+               ]
+             ]}
+        },
+        %{
+          id: :cachex_scrubber,
+          start:
+            {Cachex, :start_link,
+             [
+               :scrubber_cache,
+               [
+                 limit: 2500
+               ]
+             ]}
+        },
+        %{
+          id: :cachex_idem,
+          start:
+            {Cachex, :start_link,
+             [
+               :idempotency_cache,
+               [
+                 expiration:
+                   expiration(
+                     default: :timer.seconds(6 * 60 * 60),
+                     interval: :timer.seconds(60)
+                   ),
+                 limit: 2500
+               ]
+             ]}
+        },
+        %{id: Pleroma.FlakeId, start: {Pleroma.FlakeId, :start_link, []}},
+        %{
+          id: Pleroma.ScheduledActivityWorker,
+          start: {Pleroma.ScheduledActivityWorker, :start_link, []}
+        }
       ] ++
         hackney_pool_children() ++
         [
-          worker(Pleroma.Web.Federator.RetryQueue, []),
-          worker(Pleroma.Web.OAuth.Token.CleanWorker, []),
-          worker(Pleroma.Stats, []),
-          worker(Task, [&Pleroma.Web.Push.init/0], restart: :temporary, id: :web_push_init),
-          worker(Task, [&Pleroma.Web.Federator.init/0], restart: :temporary, id: :federator_init)
+          %{
+            id: Pleroma.Web.Federator.RetryQueue,
+            start: {Pleroma.Web.Federator.RetryQueue, :start_link, []}
+          },
+          %{
+            id: Pleroma.Web.OAuth.Token.CleanWorker,
+            start: {Pleroma.Web.OAuth.Token.CleanWorker, :start_link, []}
+          },
+          %{
+            id: Pleroma.Stats,
+            start: {Pleroma.Stats, :start_link, []}
+          },
+          %{
+            id: :web_push_init,
+            start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},
+            restart: :temporary
+          },
+          %{
+            id: :federator_init,
+            start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
+            restart: :temporary
+          }
         ] ++
         streamer_child() ++
         chat_child() ++
         [
           # Start the endpoint when the application starts
-          supervisor(Pleroma.Web.Endpoint, []),
-          worker(Pleroma.Gopher.Server, [])
+          %{
+            id: Pleroma.Web.Endpoint,
+            start: {Pleroma.Web.Endpoint, :start_link, []},
+            type: :supervisor
+          },
+          %{id: Pleroma.Gopher.Server, start: {Pleroma.Gopher.Server, :start_link, []}}
         ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
@@ -169,12 +199,17 @@ defmodule Pleroma.Application do
     defp chat_child, do: []
   else
     defp streamer_child do
-      [worker(Pleroma.Web.Streamer, [])]
+      [%{id: Pleroma.Web.Streamer, start: {Pleroma.Web.Streamer, :start_link, []}}]
     end
 
     defp chat_child do
       if Pleroma.Config.get([:chat, :enabled]) do
-        [worker(Pleroma.Web.ChatChannel.ChatChannelState, [])]
+        [
+          %{
+            id: Pleroma.Web.ChatChannel.ChatChannelState,
+            start: {Pleroma.Web.ChatChannel.ChatChannelState, :start_link, []}
+          }
+        ]
       else
         []
       end
