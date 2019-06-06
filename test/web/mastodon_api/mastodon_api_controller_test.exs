@@ -2185,6 +2185,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert account["acct"] == "shp@social.heldscal.la"
   end
 
+  test "search doesn't fetch remote accounts if resolve is false", %{conn: conn} do
+    conn =
+      conn
+      |> get("/api/v1/search", %{"q" => "shp@social.heldscal.la", "resolve" => "false"})
+
+    assert results = json_response(conn, 200)
+    assert [] == results["accounts"]
+  end
+
   test "returns the favorites of a user", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)

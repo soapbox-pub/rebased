@@ -86,8 +86,8 @@ defmodule Pleroma.User.Search do
         search_rank:
           fragment(
             """
-             CASE WHEN (?) THEN (?) * 1.3
-             WHEN (?) THEN (?) * 1.2
+             CASE WHEN (?) THEN 0.5 + (?) * 1.3
+             WHEN (?) THEN 0.5 + (?) * 1.2
              WHEN (?) THEN (?) * 1.1
              ELSE (?) END
             """,
