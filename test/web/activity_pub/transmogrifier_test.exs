@@ -67,7 +67,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       object =
         data["object"]
-        |> Map.put("inReplyTo", "https://nonexistent.space/whatever")
+        |> Map.put("inReplyTo", "https://404.site/whatever")
 
       data =
         data
