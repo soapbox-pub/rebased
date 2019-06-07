@@ -27,7 +27,8 @@ config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test
 
 config :pleroma, :instance,
   email: "admin@example.com",
-  notify_email: "noreply@example.com"
+  notify_email: "noreply@example.com",
+  skip_thread_containment: false
 
 # Configure your database
 config :pleroma, Pleroma.Repo,
