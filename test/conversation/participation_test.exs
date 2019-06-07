@@ -72,8 +72,11 @@ defmodule Pleroma.Conversation.ParticipationTest do
     object2 = Pleroma.Object.normalize(activity_two)
     object3 = Pleroma.Object.normalize(activity_three)
 
+    user = Repo.get(Pleroma.User, user.id)
+
     assert participation_one.conversation.ap_id == object3.data["context"]
     assert participation_two.conversation.ap_id == object2.data["context"]
+    assert participation_one.conversation.users == [user]
 
     # Pagination
     assert [participation_one] = Participation.for_user(user, %{"limit" => 1})
