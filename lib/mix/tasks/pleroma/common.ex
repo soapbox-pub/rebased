@@ -5,7 +5,8 @@
 defmodule Mix.Tasks.Pleroma.Common do
   @doc "Common functions to be reused in mix tasks"
   def start_pleroma do
-    Mix.Task.run("app.start")
+    Application.put_env(:phoenix, :serve_endpoints, false, persistent: true)
+    {:ok, _} = Application.ensure_all_started(:pleroma)
   end
 
   def get_option(options, opt, prompt, defval \\ nil, defname \\ nil) do
