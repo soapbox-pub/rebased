@@ -37,7 +37,9 @@ defmodule Mix.Tasks.Pleroma.Common do
   end
 
   def shell_yes?(message) do
-    shell_prompt(message, "Yn") in ~w(Yn Y y)
+    if mix_shell?(),
+      do: Mix.shell().yes?("Continue?"),
+      else: shell_prompt(message, "Continue?") in ~w(Yn Y y)
   end
 
   def shell_info(message) do
