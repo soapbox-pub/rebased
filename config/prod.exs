@@ -15,8 +15,9 @@ use Mix.Config
 # which you typically run after static files are built.
 config :pleroma, Pleroma.Web.Endpoint,
   http: [port: 4000],
-  protocol: "http",
-  serve_endpoints: true
+  protocol: "http"
+
+config :phoenix, serve_endpoints: true
 
 # Do not print debug messages in production
 config :logger, level: :info
