@@ -2,4 +2,4 @@
 # XXX: This should be removed when elixir's releases get custom command support
 SCRIPT=$(readlink -f "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
-$SCRIPTPATH/pleroma eval 'Pleroma.ReleaseTasks.mix_task("'"$*"'")'
+$SCRIPTPATH/pleroma eval 'Pleroma.ReleaseTasks.run("'"$*"'")'

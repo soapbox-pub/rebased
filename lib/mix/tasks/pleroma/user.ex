@@ -115,7 +115,7 @@ defmodule Mix.Tasks.Pleroma.User do
     admin? = Keyword.get(options, :admin, false)
     assume_yes? = Keyword.get(options, :assume_yes, false)
 
-    Mix.shell().info("""
+    Common.shell_info("""
     A user will be created with the following information:
       - nickname: #{nickname}
       - email: #{email}
@@ -128,7 +128,7 @@ defmodule Mix.Tasks.Pleroma.User do
       - admin: #{if(admin?, do: "true", else: "false")}
     """)
 
-    proceed? = assume_yes? or Mix.shell().yes?("Continue?")
+    proceed? = assume_yes? or Common.shell_yes?("Continue?")
 
     if proceed? do
       Common.start_pleroma()
@@ -145,7 +145,7 @@ defmodule Mix.Tasks.Pleroma.User do
       changeset = User.register_changeset(%User{}, params, need_confirmation: false)
       {:ok, _user} = User.register(changeset)
 
-      Mix.shell().info("User #{nickname} created")
+      Common.shell_info("User #{nickname} created")
 
       if moderator? do
         run(["set", nickname, "--moderator"])
@@ -159,7 +159,7 @@ defmodule Mix.Tasks.Pleroma.User do
         run(["reset_password", nickname])
       end
     else
-      Mix.shell().info("User will not be created.")
+      Common.shell_info("User will not be created.")
     end
   end
 
@@ -168,10 +168,10 @@ defmodule Mix.Tasks.Pleroma.User do
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       User.perform(:delete, user)
-      Mix.shell().info("User #{nickname} deleted.")
+      Common.shell_info("User #{nickname} deleted.")
     else
       _ ->
-        Mix.shell().error("No local user #{nickname}")
+        Common.shell_error("No local user #{nickname}")
     end
   end
 
@@ -181,12 +181,12 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       {:ok, user} = User.deactivate(user, !user.info.deactivated)
 
-      Mix.shell().info(
+      Common.shell_info(
         "Activation status of #{nickname}: #{if(user.info.deactivated, do: "de", else: "")}activated"
       )
     else
       _ ->
-        Mix.shell().error("No user #{nickname}")
+        Common.shell_error("No user #{nickname}")
     end
   end
 
@@ -195,7 +195,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname),
          {:ok, token} <- Pleroma.PasswordResetToken.create_token(user) do
-      Mix.shell().info("Generated password reset token for #{user.nickname}")
+      Common.shell_info("Generated password reset token for #{user.nickname}")
 
       IO.puts(
         "URL: #{
@@ -208,7 +208,7 @@ defmodule Mix.Tasks.Pleroma.User do
       )
     else
       _ ->
-        Mix.shell().error("No local user #{nickname}")
+        Common.shell_error("No local user #{nickname}")
     end
   end
 
@@ -216,7 +216,7 @@ defmodule Mix.Tasks.Pleroma.User do
     Common.start_pleroma()
 
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
-      Mix.shell().info("Deactivating #{user.nickname}")
+      Common.shell_info("Deactivating #{user.nickname}")
       User.deactivate(user)
 
       {:ok, friends} = User.get_friends(user)
@@ -224,7 +224,7 @@ defmodule Mix.Tasks.Pleroma.User do
       Enum.each(friends, fn friend ->
         user = User.get_cached_by_id(user.id)
 
-        Mix.shell().info("Unsubscribing #{friend.nickname} from #{user.nickname}")
+        Common.shell_info("Unsubscribing #{friend.nickname} from #{user.nickname}")
         User.unfollow(user, friend)
       end)
 
@@ -233,11 +233,11 @@ defmodule Mix.Tasks.Pleroma.User do
       user = User.get_cached_by_id(user.id)
 
       if Enum.empty?(user.following) do
-        Mix.shell().info("Successfully unsubscribed all followers from #{user.nickname}")
+        Common.shell_info("Successfully unsubscribed all followers from #{user.nickname}")
       end
     else
       _ ->
-        Mix.shell().error("No user #{nickname}")
+        Common.shell_error("No user #{nickname}")
     end
   end
 
@@ -274,7 +274,7 @@ defmodule Mix.Tasks.Pleroma.User do
         end
     else
       _ ->
-        Mix.shell().error("No local user #{nickname}")
+        Common.shell_error("No local user #{nickname}")
     end
   end
 
@@ -284,10 +284,10 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       user = user |> User.tag(tags)
 
-      Mix.shell().info("Tags of #{user.nickname}: #{inspect(tags)}")
+      Common.shell_info("Tags of #{user.nickname}: #{inspect(tags)}")
     else
       _ ->
-        Mix.shell().error("Could not change user tags for #{nickname}")
+        Common.shell_error("Could not change user tags for #{nickname}")
     end
   end
 
@@ -297,10 +297,10 @@ defmodule Mix.Tasks.Pleroma.User do
     with %User{} = user <- User.get_cached_by_nickname(nickname) do
       user = user |> User.untag(tags)
 
-      Mix.shell().info("Tags of #{user.nickname}: #{inspect(tags)}")
+      Common.shell_info("Tags of #{user.nickname}: #{inspect(tags)}")
     else
       _ ->
-        Mix.shell().error("Could not change user tags for #{nickname}")
+        Common.shell_error("Could not change user tags for #{nickname}")
     end
   end
 
@@ -326,7 +326,7 @@ defmodule Mix.Tasks.Pleroma.User do
     with {:ok, val} <- options[:expires_at],
          options = Map.put(options, :expires_at, val),
          {:ok, invite} <- UserInviteToken.create_invite(options) do
-      Mix.shell().info(
+      Common.shell_info(
         "Generated user invite token " <> String.replace(invite.invite_type, "_", " ")
       )
 
@@ -340,14 +340,14 @@ defmodule Mix.Tasks.Pleroma.User do
       IO.puts(url)
     else
       error ->
-        Mix.shell().error("Could not create invite token: #{inspect(error)}")
+        Common.shell_error("Could not create invite token: #{inspect(error)}")
     end
   end
 
   def run(["invites"]) do
     Common.start_pleroma()
 
-    Mix.shell().info("Invites list:")
+    Common.shell_info("Invites list:")
 
     UserInviteToken.list_invites()
     |> Enum.each(fn invite ->
@@ -361,7 +361,7 @@ defmodule Mix.Tasks.Pleroma.User do
           " | Max use: #{max_use}    Left use: #{max_use - invite.uses}"
         end
 
-      Mix.shell().info(
+      Common.shell_info(
         "ID: #{invite.id} | Token: #{invite.token} | Token type: #{invite.invite_type} | Used: #{
           invite.used
         }#{expire_info}#{using_info}"
@@ -374,9 +374,9 @@ defmodule Mix.Tasks.Pleroma.User do
 
     with {:ok, invite} <- UserInviteToken.find_by_token(token),
          {:ok, _} <- UserInviteToken.update_invite(invite, %{used: true}) do
-      Mix.shell().info("Invite for token #{token} was revoked.")
+      Common.shell_info("Invite for token #{token} was revoked.")
     else
-      _ -> Mix.shell().error("No invite found with token #{token}")
+      _ -> Common.shell_error("No invite found with token #{token}")
     end
   end
 
@@ -385,10 +385,10 @@ defmodule Mix.Tasks.Pleroma.User do
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       {:ok, _} = User.delete_user_activities(user)
-      Mix.shell().info("User #{nickname} statuses deleted.")
+      Common.shell_info("User #{nickname} statuses deleted.")
     else
       _ ->
-        Mix.shell().error("No local user #{nickname}")
+        Common.shell_error("No local user #{nickname}")
     end
   end
 
@@ -400,10 +400,10 @@ defmodule Mix.Tasks.Pleroma.User do
 
       message = if user.info.confirmation_pending, do: "needs", else: "doesn't need"
 
-      Mix.shell().info("#{nickname} #{message} confirmation.")
+      Common.shell_info("#{nickname} #{message} confirmation.")
     else
       _ ->
-        Mix.shell().error("No local user #{nickname}")
+        Common.shell_error("No local user #{nickname}")
     end
   end
 
@@ -416,7 +416,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     {:ok, user} = User.update_and_set_cache(user_cng)
 
-    Mix.shell().info("Moderator status of #{user.nickname}: #{user.info.is_moderator}")
+    Common.shell_info("Moderator status of #{user.nickname}: #{user.info.is_moderator}")
     user
   end
 
@@ -429,7 +429,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     {:ok, user} = User.update_and_set_cache(user_cng)
 
-    Mix.shell().info("Admin status of #{user.nickname}: #{user.info.is_admin}")
+    Common.shell_info("Admin status of #{user.nickname}: #{user.info.is_admin}")
     user
   end
 
@@ -442,7 +442,7 @@ defmodule Mix.Tasks.Pleroma.User do
 
     {:ok, user} = User.update_and_set_cache(user_cng)
 
-    Mix.shell().info("Locked status of #{user.nickname}: #{user.info.locked}")
+    Common.shell_info("Locked status of #{user.nickname}: #{user.info.locked}")
     user
   end
 end

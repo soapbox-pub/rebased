@@ -155,17 +155,17 @@ defmodule Mix.Tasks.Pleroma.Instance do
           dbpass: dbpass
         )
 
-      Mix.shell().info(
+      Common.shell_info(
         "Writing config to #{config_path}. You should rename it to config/prod.secret.exs or config/dev.secret.exs."
       )
 
       File.write(config_path, result_config)
-      Mix.shell().info("Writing #{psql_path}.")
+      Common.shell_info("Writing #{psql_path}.")
       File.write(psql_path, result_psql)
 
       write_robots_txt(indexable)
 
-      Mix.shell().info(
+      Common.shell_info(
         "\n" <>
           """
           To get started:
@@ -179,7 +179,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
           end
       )
     else
-      Mix.shell().error(
+      Common.shell_error(
         "The task would have overwritten the following files:\n" <>
           (Enum.map(paths, &"- #{&1}\n") |> Enum.join("")) <>
           "Rerun with `--force` to overwrite them."
@@ -204,10 +204,10 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
     if File.exists?(robots_txt_path) do
       File.cp!(robots_txt_path, "#{robots_txt_path}.bak")
-      Mix.shell().info("Backing up existing robots.txt to #{robots_txt_path}.bak")
+      Common.shell_info("Backing up existing robots.txt to #{robots_txt_path}.bak")
     end
 
     File.write(robots_txt_path, robots_txt)
-    Mix.shell().info("Writing #{robots_txt_path}.")
+    Common.shell_info("Writing #{robots_txt_path}.")
   end
 end
