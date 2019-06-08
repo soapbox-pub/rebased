@@ -60,6 +60,22 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert returned_object.data["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
     end
 
+    test "it does not crash if the object in inReplyTo can't be fetched" do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      object =
+        data["object"]
+        |> Map.put("inReplyTo", "https://404.site/whatever")
+
+      data =
+        data
+        |> Map.put("object", object)
+
+      {:ok, _returned_activity} = Transmogrifier.handle_incoming(data)
+    end
+
     test "it works for incoming notices" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
