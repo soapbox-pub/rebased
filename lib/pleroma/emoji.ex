@@ -98,7 +98,9 @@ defmodule Pleroma.Emoji do
         Logger.error("Could not access the custom emoji directory #{emoji_dir_path}: #{e}")
 
       {:ok, results} ->
-        grouped = Enum.group_by(results, &File.dir?/1)
+        grouped =
+          Enum.group_by(results, fn file -> File.dir?(Path.join(emoji_dir_path, file)) end)
+
         packs = grouped[true] || []
         files = grouped[false] || []
 
