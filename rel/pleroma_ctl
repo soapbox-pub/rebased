@@ -5,9 +5,9 @@ if [ -z "$1" ] || [ "$1" == "help" ]; then
 
     The known commands are:
 
-        create           Create database schema (needs to be executed only once)
-        migrate          Execute database migrations (needs to be done after updates)
-        rollback         Rollback database migrations (needs to be done before downgrading)
+        create                     Create database schema (needs to be executed only once)
+        migrate                    Execute database migrations (needs to be done after updates)
+        rollback [VERSION]         Rollback database migrations (needs to be done before downgrading)
 
     and any mix tasks under Pleroma namespace, for example \`mix pleroma.user COMMAND\` is
     equialent to \`$(basename "$0") user COMMAND\`
