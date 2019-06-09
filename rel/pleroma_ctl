@@ -1,5 +1,19 @@
 #!/bin/sh
 # XXX: This should be removed when elixir's releases get custom command support
-SCRIPT=$(readlink -f "$0")
-SCRIPTPATH=$(dirname "$SCRIPT")
-$SCRIPTPATH/pleroma eval 'Pleroma.ReleaseTasks.run("'"$*"'")'
+if [ -z "$1" ] || [ "$1" == "help" ]; then
+  echo "Usage: $(basename "$0") COMMAND [ARGS]
+
+    The known commands are:
+
+        create           Create database schema (needs to be executed only once)
+        migrate          Execute database migrations (needs to be done after updates)
+        rollback         Rollback database migrations (needs to be done before downgrading)
+
+    and any mix tasks under Pleroma namespace, for example \`mix pleroma.user COMMAND\` is
+    equialent to \`$(basename "$0") user COMMAND\`
+"
+else
+  SCRIPT=$(readlink -f "$0")
+  SCRIPTPATH=$(dirname "$SCRIPT")
+  $SCRIPTPATH/pleroma eval 'Pleroma.ReleaseTasks.run("'"$*"'")'
+fi
