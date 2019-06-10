@@ -32,8 +32,20 @@ defmodule Pleroma.Mixfile do
         ],
         main: "readme",
         output: "priv/static/doc"
+      ],
+      releases: [
+        pleroma: [
+          include_executables_for: [:unix],
+          applications: [ex_syslogger: :load, syslog: :load],
+          steps: [:assemble, &copy_pleroma_ctl/1]
+        ]
       ]
     ]
+  end
+
+  def copy_pleroma_ctl(%{path: target_path} = release) do
+    File.cp!("./rel/pleroma_ctl", Path.join([target_path, "bin", "pleroma_ctl"]))
+    release
   end
 
   # Configuration for the OTP application.

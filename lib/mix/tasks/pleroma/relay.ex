@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
       # put this task to sleep to allow the genserver to push out the messages
       :timer.sleep(500)
     else
-      {:error, e} -> Mix.shell().error("Error while following #{target}: #{inspect(e)}")
+      {:error, e} -> Common.shell_error("Error while following #{target}: #{inspect(e)}")
     end
   end
 
@@ -41,7 +41,7 @@ defmodule Mix.Tasks.Pleroma.Relay do
       # put this task to sleep to allow the genserver to push out the messages
       :timer.sleep(500)
     else
-      {:error, e} -> Mix.shell().error("Error while following #{target}: #{inspect(e)}")
+      {:error, e} -> Common.shell_error("Error while following #{target}: #{inspect(e)}")
     end
   end
 end

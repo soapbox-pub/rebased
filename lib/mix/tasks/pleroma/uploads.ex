@@ -38,10 +38,10 @@ defmodule Mix.Tasks.Pleroma.Uploads do
       Pleroma.Config.put([Upload, :uploader], uploader)
     end
 
-    Mix.shell().info("Migrating files from local #{local_path} to #{to_string(uploader)}")
+    Common.shell_info("Migrating files from local #{local_path} to #{to_string(uploader)}")
 
     if delete? do
-      Mix.shell().info(
+      Common.shell_info(
         "Attention: uploaded files will be deleted, hope you have backups! (--delete ; cancel with ^C)"
       )
 
@@ -78,7 +78,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
       |> Enum.filter(& &1)
 
     total_count = length(uploads)
-    Mix.shell().info("Found #{total_count} uploads")
+    Common.shell_info("Found #{total_count} uploads")
 
     uploads
     |> Task.async_stream(
@@ -90,7 +90,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
             :ok
 
           error ->
-            Mix.shell().error("failed to upload #{inspect(upload.path)}: #{inspect(error)}")
+            Common.shell_error("failed to upload #{inspect(upload.path)}: #{inspect(error)}")
         end
       end,
       timeout: 150_000
@@ -99,10 +99,10 @@ defmodule Mix.Tasks.Pleroma.Uploads do
     # credo:disable-for-next-line Credo.Check.Warning.UnusedEnumOperation
     |> Enum.reduce(0, fn done, count ->
       count = count + length(done)
-      Mix.shell().info("Uploaded #{count}/#{total_count} files")
+      Common.shell_info("Uploaded #{count}/#{total_count} files")
       count
     end)
 
-    Mix.shell().info("Done!")
+    Common.shell_info("Done!")
   end
 end
