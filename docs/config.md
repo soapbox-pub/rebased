@@ -616,3 +616,14 @@ To enable them, both the `rum_enabled` flag has to be set and the following spec
 `mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/`
 
 This will probably take a long time.
+
+## :rate_limit
+
+A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
+
+* The first element: `scale` (Integer). The time scale in milliseconds.
+* The second element: `limit` (Integer). How many requests to limit in the time scale provided.
+
+It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
+
+See [`Pleroma.Plugs.RateLimiter`](Pleroma.Plugs.RateLimiter.html) documentation for examples.
