@@ -1099,8 +1099,20 @@ defmodule Pleroma.UserTest do
       assert [%{id: ^id}] = User.search("lain")
     end
 
-    test "find all users for unauthenticated users when `limit_unauthenticated_to_local_content` is `false`" do
-      Pleroma.Config.put([:instance, :limit_unauthenticated_to_local_content], false)
+    test "find only local users for authenticated users when `limit_to_local_content` is `:all`" do
+      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+
+      %{id: id} = insert(:user, %{name: "lain"})
+      insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
+      insert(:user, %{nickname: "lain@pleroma.soykaf.com", local: false})
+
+      assert [%{id: ^id}] = User.search("lain")
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+    end
+
+    test "find all users for unauthenticated users when `limit_to_local_content` is `false`" do
+      Pleroma.Config.put([:instance, :limit_to_local_content], false)
 
       u1 = insert(:user, %{name: "lain"})
       u2 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
@@ -1114,7 +1126,7 @@ defmodule Pleroma.UserTest do
 
       assert [u1.id, u2.id, u3.id] == results
 
-      Pleroma.Config.put([:instance, :limit_unauthenticated_to_local_content], true)
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
     end
 
     test "finds a user whose name is nil" do
