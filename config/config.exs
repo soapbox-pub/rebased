@@ -360,8 +360,8 @@ config :pleroma, :suggestions,
   third_party_engine:
     "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
   timeout: 300_000,
-  limit: 23,
-  web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
+  limit: 40,
+  web: "https://vinayaka.distsn.org"
 
 config :pleroma, :http_security,
   enabled: true,
