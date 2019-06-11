@@ -56,17 +56,18 @@ defmodule Pleroma.Activity.Search do
     )
   end
 
-  # users can search everything
-  defp maybe_restrict_local(q, %User{}), do: q
+  defp maybe_restrict_local(q, user) do
+    limit = Pleroma.Config.get([:instance, :limit_to_local_content], :unauthenticated)
 
-  # unauthenticated users can only search local activities
-  defp maybe_restrict_local(q, _) do
-    if Pleroma.Config.get([:instance, :limit_unauthenticated_to_local_content], true) do
-      where(q, local: true)
-    else
-      q
+    case {limit, user} do
+      {:all, _} -> restrict_local(q)
+      {:unauthenticated, %User{}} -> q
+      {:unauthenticated, _} -> restrict_local(q)
+      {false, _} -> q
     end
   end
+
+  defp restrict_local(q), do: where(q, local: true)
 
   defp maybe_fetch(activities, user, search_query) do
     with true <- Regex.match?(~r/https?:/, search_query),

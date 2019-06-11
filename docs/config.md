@@ -112,7 +112,8 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
-* `limit_unauthenticated_to_local_content`: Limit unauthenticated users to search for local statutes and users only. The default is `true`.
+* `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
+
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack

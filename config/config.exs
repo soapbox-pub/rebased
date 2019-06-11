@@ -245,7 +245,7 @@ config :pleroma, :instance,
   healthcheck: false,
   remote_post_retention_days: 90,
   skip_thread_containment: true,
-  limit_unauthenticated_to_local_content: true
+  limit_to_local_content: :unauthenticated
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
