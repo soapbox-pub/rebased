@@ -114,12 +114,6 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_unauthenticated_to_local_content`: Limit unauthenticated users to search for local statutes and users only. The default is `true`.
 
-## :app_account_creation
-REST API for creating an account settings
-* `enabled`: Enable/disable registration
-* `max_requests`: Number of requests allowed for creating accounts
-* `interval`: Interval for restricting requests for one ip (seconds)
-
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
@@ -568,7 +562,7 @@ config :ueberauth, Ueberauth,
   providers: [
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
   ]
-  
+
 # Keycloak
 # Note: make sure to add `keycloak:ueberauth_keycloak_strategy` entry to `OAUTH_CONSUMER_STRATEGIES` environment variable
 keycloak_url = "https://publicly-reachable-keycloak-instance.org:8080"
@@ -616,3 +610,14 @@ To enable them, both the `rum_enabled` flag has to be set and the following spec
 `mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/`
 
 This will probably take a long time.
+
+## :rate_limit
+
+A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
+
+* The first element: `scale` (Integer). The time scale in milliseconds.
+* The second element: `limit` (Integer). How many requests to limit in the time scale provided.
+
+It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
+
+See [`Pleroma.Plugs.RateLimiter`](Pleroma.Plugs.RateLimiter.html) documentation for examples.

@@ -3551,24 +3551,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   describe "create account by app" do
-    setup do
-      enabled = Pleroma.Config.get([:app_account_creation, :enabled])
-      max_requests = Pleroma.Config.get([:app_account_creation, :max_requests])
-      interval = Pleroma.Config.get([:app_account_creation, :interval])
-
-      Pleroma.Config.put([:app_account_creation, :enabled], true)
-      Pleroma.Config.put([:app_account_creation, :max_requests], 5)
-      Pleroma.Config.put([:app_account_creation, :interval], 1)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:app_account_creation, :enabled], enabled)
-        Pleroma.Config.put([:app_account_creation, :max_requests], max_requests)
-        Pleroma.Config.put([:app_account_creation, :interval], interval)
-      end)
-
-      :ok
-    end
-
     test "Account registration via Application", %{conn: conn} do
       conn =
         conn
@@ -3671,7 +3653,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           agreement: true
         })
 
-      assert json_response(conn, 403) == %{"error" => "Rate limit exceeded."}
+      assert json_response(conn, :too_many_requests) == %{"error" => "Throttled"}
     end
   end
 
