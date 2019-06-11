@@ -114,12 +114,6 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_unauthenticated_to_local_content`: Limit unauthenticated users to search for local statutes and users only. The default is `true`.
 
-## :app_account_creation
-REST API for creating an account settings
-* `enabled`: Enable/disable registration
-* `max_requests`: Number of requests allowed for creating accounts
-* `interval`: Interval for restricting requests for one ip (seconds)
-
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
 
@@ -568,7 +562,7 @@ config :ueberauth, Ueberauth,
   providers: [
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
   ]
-  
+
 # Keycloak
 # Note: make sure to add `keycloak:ueberauth_keycloak_strategy` entry to `OAUTH_CONSUMER_STRATEGIES` environment variable
 keycloak_url = "https://publicly-reachable-keycloak-instance.org:8080"

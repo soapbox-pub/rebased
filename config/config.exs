@@ -247,8 +247,6 @@ config :pleroma, :instance,
   skip_thread_containment: false,
   limit_unauthenticated_to_local_content: true
 
-config :pleroma, :app_account_creation, enabled: true, max_requests: 25, interval: 1800
-
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
   # of custom emoji.  Issue #275 discusses defanging that somehow.
@@ -503,7 +501,9 @@ config :pleroma, :database, rum_enabled: false
 config :http_signatures,
   adapter: Pleroma.Signature
 
-config :pleroma, :rate_limit, search: [{1000, 10}, {1000, 30}]
+config :pleroma, :rate_limit,
+  search: [{1000, 10}, {1000, 30}],
+  app_account_creation: {1_800_000, 25}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

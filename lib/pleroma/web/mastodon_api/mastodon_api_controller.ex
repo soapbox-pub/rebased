@@ -46,15 +46,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
-  plug(
-    Pleroma.Plugs.RateLimitPlug,
-    %{
-      max_requests: Config.get([:app_account_creation, :max_requests]),
-      interval: Config.get([:app_account_creation, :interval])
-    }
-    when action in [:account_register]
-  )
-
+  plug(Pleroma.Plugs.RateLimiter, :app_account_creation when action == :account_register)
   plug(Pleroma.Plugs.RateLimiter, :search when action in [:search, :search2, :account_search])
 
   @local_mastodon_name "Mastodon-Local"
