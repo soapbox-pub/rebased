@@ -57,6 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
+- Thread containment / test for complete visibility will be skipped by default.
 - Enforcement of OAuth scopes
 - Add multiple use/time expiring invite token
 - Restyled OAuth pages to fit with Pleroma's default theme
