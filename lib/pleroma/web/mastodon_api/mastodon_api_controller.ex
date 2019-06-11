@@ -55,6 +55,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     when action in [:account_register]
   )
 
+  plug(Pleroma.Plugs.RateLimiter, :search when action in [:search, :search2, :account_search])
+
   @local_mastodon_name "Mastodon-Local"
 
   action_fallback(:errors)
