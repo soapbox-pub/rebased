@@ -1,15 +1,14 @@
 defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
   def parse(html, data, prefix, error_message, key_name, value_name \\ "content") do
     with elements = [_ | _] <- get_elements(html, key_name, prefix),
-         page_title = get_page_title(html),
          meta_data =
            Enum.reduce(elements, data, fn el, acc ->
              attributes = normalize_attributes(el, prefix, key_name, value_name)
 
              Map.merge(acc, attributes)
-           end)
-           |> Map.put_new(:title, page_title) do
-      {:ok, meta_data}
+           end) do
+      rich_meta_data = maybe_use_page_title(meta_data, html)
+      {:ok, rich_meta_data}
     else
       _e -> {:error, error_message}
     end
@@ -30,7 +29,10 @@ defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
     %{String.to_atom(data[key_name]) => data[value_name]}
   end
 
-  defp get_page_title(html) do
-    Floki.find(html, "title") |> Floki.text()
+  defp maybe_use_page_title(meta_data, html) do
+    if !Map.has_key?(meta_data, :title) do
+      page_title = Floki.find(html, "title") |> Floki.text()
+      Map.put_new(meta_data, :title, page_title)
+    end
   end
 end
