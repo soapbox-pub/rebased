@@ -126,7 +126,7 @@ defmodule Pleroma.Mixfile do
       {:ueberauth, "~> 0.4"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
-       ref: "c00c4e75b35367fa42c95ffd9b8c455bf9995829"},
+       ref: "e2385402bcd24fc659fee83b3eb8863b0528ad42"},
       {:http_signatures,
        git: "https://git.pleroma.social/pleroma/http_signatures.git",
        ref: "9789401987096ead65646b52b5a2ca6bf52fc531"},
