@@ -86,6 +86,7 @@ config :pleroma, Pleroma.Emails.Mailer,
   * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default)
   * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production
   * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See ``:mrf_simple`` section)
+  * `Pleroma.Web.ActivityPub.MRF.TagPolicy`: Applies policies to individual users based on tags, which can be set using pleroma-fe/admin-fe/any other app that supports Pleroma Admin API. For example it allows marking posts from individual users nsfw (sensitive)
   * `Pleroma.Web.ActivityPub.MRF.SubchainPolicy`: Selectively runs other MRF policies when messages match (see ``:mrf_subchain`` section)
   * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See ``:mrf_rejectnonpublic`` section)
   * `Pleroma.Web.ActivityPub.MRF.EnsureRePrepended`: Rewrites posts to ensure that replies to posts with subjects do not have an identical subject and instead begin with re:.
