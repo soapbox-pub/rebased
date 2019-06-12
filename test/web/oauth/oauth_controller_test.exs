@@ -408,7 +408,11 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert html_response(conn, 200) =~ ~s(type="submit")
     end
 
-    test "redirects to app if user is already authenticated", %{app: app, conn: conn} do
+    test "with existing authentication and non-OOB `redirect_uri`, redirects to app with `token` and `state` params",
+         %{
+           app: app,
+           conn: conn
+         } do
       token = insert(:oauth_token, app_id: app.id)
 
       conn =
@@ -420,11 +424,36 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "response_type" => "code",
             "client_id" => app.client_id,
             "redirect_uri" => app.redirect_uris,
+            "state" => "specific_client_state",
             "scope" => "read"
           }
         )
 
-      assert redirected_to(conn) == "https://redirect.url"
+      assert URI.decode(redirected_to(conn)) ==
+               "https://redirect.url?access_token=#{token.token}&state=specific_client_state"
+    end
+
+    test "with existing authentication and OOB `redirect_uri`, redirects to app with `token` and `state` params",
+         %{
+           app: app,
+           conn: conn
+         } do
+      token = insert(:oauth_token, app_id: app.id)
+
+      conn =
+        conn
+        |> put_session(:oauth_token, token.token)
+        |> get(
+          "/oauth/authorize",
+          %{
+            "response_type" => "code",
+            "client_id" => app.client_id,
+            "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
+            "scope" => "read"
+          }
+        )
+
+      assert html_response(conn, 200) =~ "Authorization exists"
     end
   end
 
