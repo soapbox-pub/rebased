@@ -11,6 +11,9 @@ defmodule Pleroma.Object.FetcherTest do
       %{method: :get, url: "https://mastodon.example.org/users/userisgone"} ->
         %Tesla.Env{status: 410}
 
+      %{method: :get, url: "https://mastodon.example.org/users/userisgone404"} ->
+        %Tesla.Env{status: 404}
+
       env ->
         apply(HttpRequestMock, :request, [env])
     end)
@@ -98,6 +101,13 @@ defmodule Pleroma.Object.FetcherTest do
       assert {:error, "Object has been deleted"} ==
                Fetcher.fetch_and_contain_remote_object_from_id(
                  "https://mastodon.example.org/users/userisgone"
+               )
+    end
+
+    test "handle HTTP 404 response" do
+      assert {:error, "Object has been deleted"} ==
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://mastodon.example.org/users/userisgone404"
                )
     end
   end

@@ -85,7 +85,7 @@ defmodule Pleroma.Object.Fetcher do
          :ok <- Containment.contain_origin_from_id(id, data) do
       {:ok, data}
     else
-      {:ok, %{status: 410}} ->
+      {:ok, %{status: code}} when code in [404, 410] ->
         {:error, "Object has been deleted"}
 
       e ->
