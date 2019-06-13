@@ -39,8 +39,7 @@ defmodule Pleroma.Activity.Search do
           "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
           o.data,
           ^search_query
-        ),
-      order_by: [desc: :id]
+        )
     )
   end
 
