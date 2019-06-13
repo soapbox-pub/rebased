@@ -1,6 +1,6 @@
 #!/bin/sh
 # XXX: This should be removed when elixir's releases get custom command support
-if [ -z "$1" ] || [ "$1" == "help" ]; then
+if [ -z "$1" ] || [ "$1" = "help" ]; then
   echo "Usage: $(basename "$0") COMMAND [ARGS]
 
     The known commands are:
@@ -15,5 +15,5 @@ if [ -z "$1" ] || [ "$1" == "help" ]; then
 else
   SCRIPT=$(readlink -f "$0")
   SCRIPTPATH=$(dirname "$SCRIPT")
-  $SCRIPTPATH/pleroma eval 'Pleroma.ReleaseTasks.run("'"$*"'")'
+  "$SCRIPTPATH"/pleroma eval 'Pleroma.ReleaseTasks.run("'"$*"'")'
 fi
