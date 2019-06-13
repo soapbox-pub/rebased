@@ -143,8 +143,6 @@ stop_review_app:
     - ssh -t dokku@pleroma.online -- --force apps:destroy "$CI_ENVIRONMENT_SLUG"
     - ssh -t dokku@pleroma.online -- --force postgres:destroy $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db
 
-# TODO: Restrict to master and develop
-
 amd64:
   stage: release 
   # TODO: Replace with upstream image when 1.9.0 comes out
