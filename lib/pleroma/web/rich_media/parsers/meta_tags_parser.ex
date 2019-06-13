@@ -1,17 +1,19 @@
 defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
   def parse(html, data, prefix, error_message, key_name, value_name \\ "content") do
-    with elements = [_ | _] <- get_elements(html, key_name, prefix),
-         page_title = get_page_title(html),
-         meta_data =
-           Enum.reduce(elements, data, fn el, acc ->
-             attributes = normalize_attributes(el, prefix, key_name, value_name)
+    meta_data =
+      html
+      |> get_elements(key_name, prefix)
+      |> Enum.reduce(data, fn el, acc ->
+        attributes = normalize_attributes(el, prefix, key_name, value_name)
 
-             Map.merge(acc, attributes)
-           end)
-           |> Map.put_new(:title, page_title) do
-      {:ok, meta_data}
+        Map.merge(acc, attributes)
+      end)
+      |> maybe_put_title(html)
+
+    if Enum.empty?(meta_data) do
+      {:error, error_message}
     else
-      _e -> {:error, error_message}
+      {:ok, meta_data}
     end
   end
 
@@ -28,6 +30,15 @@ defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
       end)
 
     %{String.to_atom(data[key_name]) => data[value_name]}
+  end
+
+  defp maybe_put_title(%{title: _} = meta, _), do: meta
+
+  defp maybe_put_title(meta, html) do
+    case get_page_title(html) do
+      "" -> meta
+      title -> Map.put_new(meta, :title, title)
+    end
   end
 
   defp get_page_title(html) do

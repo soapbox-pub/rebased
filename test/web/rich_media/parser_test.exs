@@ -11,6 +11,15 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
 
       %{
         method: :get,
+        url: "http://example.com/ogp-missing-title"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body: File.read!("test/fixtures/rich_media/ogp-missing-title.html")
+        }
+
+      %{
+        method: :get,
         url: "http://example.com/twitter-card"
       } ->
         %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/twitter_card.html")}
@@ -44,6 +53,19 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
               %{
                 image: "http://ia.media-imdb.com/images/rock.jpg",
                 title: "The Rock",
+                description:
+                  "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
+                type: "video.movie",
+                url: "http://www.imdb.com/title/tt0117500/"
+              }}
+  end
+
+  test "falls back to <title> when ogp:title is missing" do
+    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/ogp-missing-title") ==
+             {:ok,
+              %{
+                image: "http://ia.media-imdb.com/images/rock.jpg",
+                title: "The Rock (1996)",
                 description:
                   "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
                 type: "video.movie",
