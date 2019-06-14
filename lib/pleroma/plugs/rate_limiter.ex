@@ -14,13 +14,20 @@ defmodule Pleroma.Plugs.RateLimiter do
 
   It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
 
+  To disable a limiter set its value to `nil`.
+
   ### Example
 
       config :pleroma, :rate_limit,
         one: {1000, 10},
-        two: [{10_000, 10}, {10_000, 50}]
+        two: [{10_000, 10}, {10_000, 50}],
+        foobar: nil
 
-  Here we have two limiters: `one` which is not over 10req/1s and `two` which has two limits 10req/10s for unauthenticated users and 50req/10s for authenticated users.
+  Here we have three limiters:
+
+  * `one` which is not over 10req/1s
+  * `two` which has two limits: 10req/10s for unauthenticated users and 50req/10s for authenticated users
+  * `foobar` which is disabled
 
   ## Usage
 
