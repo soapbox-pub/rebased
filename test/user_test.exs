@@ -1011,6 +1011,18 @@ defmodule Pleroma.UserTest do
   end
 
   describe "User.search" do
+    test "accepts limit parameter" do
+      Enum.each(0..4, &insert(:user, %{nickname: "john#{&1}"}))
+      assert length(User.search("john", limit: 3)) == 3
+      assert length(User.search("john")) == 5
+    end
+
+    test "accepts offset parameter" do
+      Enum.each(0..4, &insert(:user, %{nickname: "john#{&1}"}))
+      assert length(User.search("john", limit: 3)) == 3
+      assert length(User.search("john", limit: 3, offset: 3)) == 2
+    end
+
     test "finds a user by full or partial nickname" do
       user = insert(:user, %{nickname: "john"})
 
@@ -1075,6 +1087,24 @@ defmodule Pleroma.UserTest do
 
       assert [friend.id, follower.id, u2.id] --
                Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
+    end
+
+    test "finds followers of user by partial name" do
+      u1 = insert(:user)
+      u2 = insert(:user, %{name: "Jimi"})
+      follower_jimi = insert(:user, %{name: "Jimi Hendrix"})
+      follower_lizz = insert(:user, %{name: "Lizz Wright"})
+      friend = insert(:user, %{name: "Jimi"})
+
+      {:ok, follower_jimi} = User.follow(follower_jimi, u1)
+      {:ok, _follower_lizz} = User.follow(follower_lizz, u2)
+      {:ok, u1} = User.follow(u1, friend)
+
+      assert Enum.map(User.search("jimi", following: true, for_user: u1), & &1.id) == [
+               follower_jimi.id
+             ]
+
+      assert User.search("lizz", following: true, for_user: u1) == []
     end
 
     test "find local and remote users for authenticated users" do

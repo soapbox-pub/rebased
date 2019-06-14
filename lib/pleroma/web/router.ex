@@ -412,7 +412,7 @@ defmodule Pleroma.Web.Router do
 
     get("/trends", MastodonAPIController, :empty_array)
 
-    get("/accounts/search", MastodonAPIController, :account_search)
+    get("/accounts/search", SearchController, :account_search)
 
     scope [] do
       pipe_through(:oauth_read_or_public)
@@ -431,7 +431,7 @@ defmodule Pleroma.Web.Router do
       get("/accounts/:id/following", MastodonAPIController, :following)
       get("/accounts/:id", MastodonAPIController, :user)
 
-      get("/search", MastodonAPIController, :search)
+      get("/search", SearchController, :search)
 
       get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
     end
@@ -439,7 +439,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
     pipe_through([:api, :oauth_read_or_public])
-    get("/search", MastodonAPIController, :search2)
+    get("/search", SearchController, :search2)
   end
 
   scope "/api", Pleroma.Web do

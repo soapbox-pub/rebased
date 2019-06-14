@@ -1118,58 +1118,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-    statuses = Activity.search(user, query)
-    tags_path = Web.base_url() <> "/tag/"
-
-    tags =
-      query
-      |> String.split()
-      |> Enum.uniq()
-      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
-      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
-      |> Enum.map(fn tag -> %{name: tag, url: tags_path <> tag} end)
-
-    res = %{
-      "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
-      "statuses" =>
-        StatusView.render("index.json", activities: statuses, for: user, as: :activity),
-      "hashtags" => tags
-    }
-
-    json(conn, res)
-  end
-
-  def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-    statuses = Activity.search(user, query)
-
-    tags =
-      query
-      |> String.split()
-      |> Enum.uniq()
-      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
-      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
-
-    res = %{
-      "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
-      "statuses" =>
-        StatusView.render("index.json", activities: statuses, for: user, as: :activity),
-      "hashtags" => tags
-    }
-
-    json(conn, res)
-  end
-
-  def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-
-    res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
-
-    json(conn, res)
-  end
-
   def favourites(%{assigns: %{user: user}} = conn, params) do
     params =
       params
