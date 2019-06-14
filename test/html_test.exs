@@ -4,7 +4,11 @@
 
 defmodule Pleroma.HTMLTest do
   alias Pleroma.HTML
+  alias Pleroma.Object
+  alias Pleroma.Web.CommonAPI
   use Pleroma.DataCase
+
+  import Pleroma.Factory
 
   @html_sample """
     <b>this is in bold</b>
@@ -158,6 +162,55 @@ defmodule Pleroma.HTMLTest do
                  @html_span_invalid_microformats_sample,
                  Pleroma.HTML.Scrubber.Default
                )
+    end
+  end
+
+  describe "extract_first_external_url" do
+    test "extracts the url" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" =>
+            "I think I just found the best github repo https://github.com/komeiji-satori/Dress"
+        })
+
+      object = Object.normalize(activity)
+      {:ok, url} = HTML.extract_first_external_url(object, object.data["content"])
+      assert url == "https://github.com/komeiji-satori/Dress"
+    end
+
+    test "skips mentions" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" =>
+            "@#{other_user.nickname} install misskey! https://github.com/syuilo/misskey/blob/develop/docs/setup.en.md"
+        })
+
+      object = Object.normalize(activity)
+      {:ok, url} = HTML.extract_first_external_url(object, object.data["content"])
+
+      assert url == "https://github.com/syuilo/misskey/blob/develop/docs/setup.en.md"
+
+      refute url == other_user.ap_id
+    end
+
+    test "skips hashtags" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" =>
+            "#cofe https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72255140"
+        })
+
+      object = Object.normalize(activity)
+      {:ok, url} = HTML.extract_first_external_url(object, object.data["content"])
+
+      assert url == "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72255140"
     end
   end
 end
