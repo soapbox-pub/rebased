@@ -1036,9 +1036,7 @@ defmodule Pleroma.User do
     Pleroma.HTML.Scrubber.TwitterText
   end
 
-  @default_scrubbers Pleroma.Config.get([:markup, :scrub_policy])
-
-  def html_filter_policy(_), do: @default_scrubbers
+  def html_filter_policy(_), do: Pleroma.Config.get([:markup, :scrub_policy])
 
   def fetch_by_ap_id(ap_id) do
     ap_try = ActivityPub.make_user_from_ap_id(ap_id)

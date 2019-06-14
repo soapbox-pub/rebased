@@ -114,6 +114,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
+* `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
 
 
 ## :logger

@@ -31,6 +31,7 @@ defmodule Pleroma.Application do
       [
         # Start the Ecto repository
         %{id: Pleroma.Repo, start: {Pleroma.Repo, :start_link, []}, type: :supervisor},
+        %{id: Pleroma.Config.TransferTask, start: {Pleroma.Config.TransferTask, :start_link, []}},
         %{id: Pleroma.Emoji, start: {Pleroma.Emoji, :start_link, []}},
         %{id: Pleroma.Captcha, start: {Pleroma.Captcha, :start_link, []}},
         %{
@@ -186,7 +187,7 @@ defmodule Pleroma.Application do
       else
         []
       end ++
-      if Pleroma.Config.get([Pleroma.Uploader, :proxy_remote]) do
+      if Pleroma.Config.get([Pleroma.Upload, :proxy_remote]) do
         [:upload]
       else
         []

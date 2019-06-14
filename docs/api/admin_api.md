@@ -289,7 +289,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `limit`: optional, the number of records to retrieve
   - `since_id`: optional, returns results that are more recent than the specified id
   - `max_id`: optional, returns results that are older than the specified id
-- Response: 
+- Response:
   - On failure: 403 Forbidden error `{"error": "error_msg"}` when requested by anonymous or non-admin
   - On success: JSON, returns a list of reports, where:
     - `account`: the user who has been reported
@@ -443,7 +443,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `id`
 - Response:
-  - On failure: 
+  - On failure:
     - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
   - On success: JSON, Report object (see above)
@@ -454,8 +454,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `id`
   - `state`: required, the new state. Valid values are `open`, `closed` and `resolved`
-- Response: 
-  - On failure: 
+- Response:
+  - On failure:
     - 400 Bad Request `"Unsupported state"`
     - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
@@ -467,10 +467,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `id`
   - `status`: required, the message
-- Response: 
-  - On failure: 
-    - 400 Bad Request `"Invalid parameters"` when `status` is missing 
-    - 403 Forbidden `{"error": "error_msg"}` 
+- Response:
+  - On failure:
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing
+    - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
   - On success: JSON, created Mastodon Status entity
 
@@ -540,10 +540,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `id`
   - `sensitive`: optional, valid values are `true` or `false`
   - `visibility`: optional, valid values are `public`, `private` and `unlisted`
-- Response: 
-  - On failure: 
+- Response:
+  - On failure:
     - 400 Bad Request `"Unsupported visibility"`
-    - 403 Forbidden `{"error": "error_msg"}` 
+    - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
   - On success: JSON, Mastodon Status entity
 
@@ -552,8 +552,88 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Method `DELETE`
 - Params:
   - `id`
-- Response: 
-  - On failure: 
-    - 403 Forbidden `{"error": "error_msg"}` 
+- Response:
+  - On failure:
+    - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
   - On success: 200 OK `{}`
+
+## `/api/pleroma/admin/config`
+### List config settings
+- Method `GET`
+- Params: none
+- Response:
+
+```json
+{
+  configs: [
+    {
+      "key": string,
+      "value": string or {} or []
+     }
+  ]
+}
+```
+
+## `/api/pleroma/admin/config`
+### Update config settings
+Module name can be passed as string, which starts with `Pleroma`, e.g. `"Pleroma.Upload"`.
+Atom or boolean value can be passed with `:` in the beginning, e.g. `":true"`, `":upload"`.
+Integer with `i:`, e.g. `"i:150"`.
+
+Compile time settings (need instance reboot):
+- all settings by this keys:
+  - `:hackney_pools`
+  - `:chat`
+  - `Pleroma.Web.Endpoint`
+  - `Pleroma.Repo`
+- part settings:
+  - `Pleroma.Captcha` -> `:seconds_valid`
+  - `Pleroma.Upload` -> `:proxy_remote`
+  - `:instance` -> `:upload_limit`
+
+- Method `POST`
+- Params:
+  - `configs` => [
+    - `key` (string)
+    - `value` (string, [], {})
+    - `delete` = true (optional, if parameter must be deleted)
+  ]
+
+- Request (example):
+
+```json
+{
+  configs: [
+    {
+      "key": "Pleroma.Upload",
+      "value": {
+        "uploader": "Pleroma.Uploaders.Local",
+        "filters": ["Pleroma.Upload.Filter.Dedupe"],
+        "link_name": ":true",
+        "proxy_remote": ":false",
+        "proxy_opts": {
+          "redirect_on_failure": ":false",
+          "max_body_length": "i:1048576",
+          "http": {
+            "follow_redirect": ":true",
+            "pool": ":upload"
+          }
+        }
+      }
+     }
+  ]
+}
+
+- Response:
+
+```json
+{
+  configs: [
+    {
+      "key": string,
+      "value": string or {} or []
+     }
+  ]
+}
+```

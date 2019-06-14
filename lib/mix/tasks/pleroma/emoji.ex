@@ -55,15 +55,13 @@ defmodule Mix.Tasks.Pleroma.Emoji do
   are extracted).
   """
 
-  @default_manifest Pleroma.Config.get!([:emoji, :default_manifest])
-
   def run(["ls-packs" | args]) do
     Application.ensure_all_started(:hackney)
 
     {options, [], []} = parse_global_opts(args)
 
     manifest =
-      fetch_manifest(if options[:manifest], do: options[:manifest], else: @default_manifest)
+      fetch_manifest(if options[:manifest], do: options[:manifest], else: default_manifest())
 
     Enum.each(manifest, fn {name, info} ->
       to_print = [
@@ -88,7 +86,7 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     {options, pack_names, []} = parse_global_opts(args)
 
-    manifest_url = if options[:manifest], do: options[:manifest], else: @default_manifest
+    manifest_url = if options[:manifest], do: options[:manifest], else: default_manifest()
 
     manifest = fetch_manifest(manifest_url)
 
@@ -298,4 +296,6 @@ defmodule Mix.Tasks.Pleroma.Emoji do
 
     Tesla.client(middleware)
   end
+
+  defp default_manifest, do: Pleroma.Config.get!([:emoji, :default_manifest])
 end

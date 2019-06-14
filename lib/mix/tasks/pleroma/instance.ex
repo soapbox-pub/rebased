@@ -30,6 +30,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
   - `--dbuser DBUSER` - the user (aka role) to use for the database connection
   - `--dbpass DBPASS` - the password to use for the database connection
   - `--indexable Y/N` - Allow/disallow indexing site by search engines
+  - `--db-configurable Y/N` - Allow/disallow configuring instance from admin part
   """
 
   def run(["gen" | rest]) do
@@ -48,7 +49,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           dbname: :string,
           dbuser: :string,
           dbpass: :string,
-          indexable: :string
+          indexable: :string,
+          db_configurable: :string
         ],
         aliases: [
           o: :output,
@@ -101,6 +103,14 @@ defmodule Mix.Tasks.Pleroma.Instance do
           "y"
         ) === "y"
 
+      db_configurable? =
+        Common.get_option(
+          options,
+          :db_configurable,
+          "Do you want to be able to configure instance from admin part? (y/n)",
+          "y"
+        ) === "y"
+
       dbhost =
         Common.get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
 
@@ -144,7 +154,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
           secret: secret,
           signing_salt: signing_salt,
           web_push_public_key: Base.url_encode64(web_push_public_key, padding: false),
-          web_push_private_key: Base.url_encode64(web_push_private_key, padding: false)
+          web_push_private_key: Base.url_encode64(web_push_private_key, padding: false),
+          db_configurable?: db_configurable?
         )
 
       result_psql =
