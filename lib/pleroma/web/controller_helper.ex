@@ -15,4 +15,22 @@ defmodule Pleroma.Web.ControllerHelper do
     |> put_status(status)
     |> json(json)
   end
+
+  @spec fetch_integer_param(map(), String.t(), integer() | nil) :: integer() | nil
+  def fetch_integer_param(params, name, default \\ nil) do
+    params
+    |> Map.get(name, default)
+    |> param_to_integer(default)
+  end
+
+  defp param_to_integer(val, _) when is_integer(val), do: val
+
+  defp param_to_integer(val, default) when is_binary(val) do
+    case Integer.parse(val) do
+      {res, _} -> res
+      _ -> default
+    end
+  end
+
+  defp param_to_integer(_, default), do: default
 end
