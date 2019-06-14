@@ -10,6 +10,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.AdminAPI.Config
+  alias Pleroma.Web.AdminAPI.ConfigView
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
@@ -360,6 +362,41 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
       json(conn, %{})
     end
+  end
+
+  def config_show(conn, _params) do
+    configs = Pleroma.Repo.all(Config)
+
+    conn
+    |> put_view(ConfigView)
+    |> render("index.json", %{configs: configs})
+  end
+
+  def config_update(conn, %{"configs" => configs}) do
+    updated =
+      if Pleroma.Config.get([:instance, :dynamic_configuration]) do
+        updated =
+          Enum.map(configs, fn
+            %{"key" => key, "value" => value} ->
+              {:ok, config} = Config.update_or_create(%{key: key, value: value})
+              config
+
+            %{"key" => key, "delete" => "true"} ->
+              {:ok, _} = Config.delete(key)
+              nil
+          end)
+          |> Enum.reject(&is_nil(&1))
+
+        Pleroma.Config.TransferTask.load_and_update_env()
+        Mix.Tasks.Pleroma.Config.run(["migrate_from_db", Pleroma.Config.get(:env)])
+        updated
+      else
+        []
+      end
+
+    conn
+    |> put_view(ConfigView)
+    |> render("index.json", %{configs: updated})
   end
 
   def errors(conn, {:error, :not_found}) do

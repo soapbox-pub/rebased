@@ -88,7 +88,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       true
     else
       inbox_info = URI.parse(inbox)
-      !Enum.member?(Pleroma.Config.get([:instance, :quarantined_instances], []), inbox_info.host)
+      !Enum.member?(Config.get([:instance, :quarantined_instances], []), inbox_info.host)
     end
   end
 

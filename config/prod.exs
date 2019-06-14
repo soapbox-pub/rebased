@@ -63,3 +63,6 @@ config :logger, level: :warn
 # Finally import the config/prod.secret.exs
 # which should be versioned separately.
 import_config "prod.secret.exs"
+
+if File.exists?("./config/prod.migrated.secret.exs"),
+  do: import_config("./config/prod.migrated.secret.exs")

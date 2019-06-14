@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix Tasks: `mix pleroma.database remove_embedded_objects`
 - Mix Tasks: `mix pleroma.database update_users_following_followers_counts`
 - Mix Tasks: `mix pleroma.user toggle_confirmed`
+- Mix Tasks: `mix pleroma.config migrate_to_db`
+- Mix Tasks: `mix pleroma.config migrate_from_db`
 - Federation: Support for `Question` and `Answer` objects
 - Federation: Support for reports
 - Configuration: `poll_limits` option
@@ -37,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: added filters (role, tags, email, name) for users endpoint
 - Admin API: Endpoints for managing reports
 - Admin API: Endpoints for deleting and changing the scope of individual reported statuses
+- Admin API: Endpoints to view and change config settings.
 - AdminFE: initial release with basic user management accessible at /pleroma/admin/
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
