@@ -208,7 +208,11 @@ defmodule Pleroma.Mixfile do
     branch_name =
       with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
            true <- branch_name != "master" do
-        "-" <> String.trim(branch_name)
+        branch_name =
+          String.trim(branch_name)
+          |> String.replace(~r/\W+/, "-")
+
+        "-" <> branch_name
       end
 
     full_version =
