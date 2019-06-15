@@ -176,7 +176,9 @@ defmodule Pleroma.Mixfile do
            ahead <- String.replace(describe, tag, "") do
         {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
       else
-        _ -> {nil, nil}
+        _ ->
+          {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+          {nil, "-g" <> String.trim(commit_hash)}
       end
 
     if git_tag && version != git_tag do
@@ -203,8 +205,18 @@ defmodule Pleroma.Mixfile do
             string -> "+" <> string
           end).()
 
-    [version, git_pre_release, build]
-    |> Enum.filter(fn string -> string && string != "" end)
-    |> Enum.join()
+    branch_name =
+      with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+           true <- branch_name != "master" do
+        "-" <> String.trim(branch_name)
+      end
+
+    full_version =
+      [version, git_pre_release, branch_name, build]
+      |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.join()
+
+    Mix.shell().info("Project version: #{full_version}")
+    full_version
   end
 end
