@@ -178,7 +178,7 @@ defmodule Pleroma.Mixfile do
       else
         _ ->
           {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-          {nil, "-g" <> String.trim(commit_hash)}
+          {nil, "-0-g" <> String.trim(commit_hash)}
       end
 
     if git_tag && version != git_tag do
