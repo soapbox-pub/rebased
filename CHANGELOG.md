@@ -41,7 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Endpoints for deleting and changing the scope of individual reported statuses
 - Admin API: Endpoints to view and change config settings.
 - AdminFE: initial release with basic user management accessible at /pleroma/admin/
-- Mastodon API: Add chat tokeen to `verify_credentials` response
+- Mastodon API: Add chat token to `verify_credentials` response
 - Mastodon API: Add background image setting to `update_credentials`
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
