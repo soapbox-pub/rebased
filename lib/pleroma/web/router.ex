@@ -607,12 +607,6 @@ defmodule Pleroma.Web.Router do
     post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
   end
 
-  scope "/", Pleroma.Web do
-    pipe_through(:oembed)
-
-    get("/oembed", OEmbed.OEmbedController, :url)
-  end
-
   pipeline :activitypub do
     plug(:accepts, ["activity+json", "json"])
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
