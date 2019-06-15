@@ -6,9 +6,9 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.Web.AdminAPI.ReportView
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.CommonAPI
 
   test "renders a report" do
     user = insert(:user)

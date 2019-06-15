@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.AdminAPI.ReportView do
   use Pleroma.Web, :view
   alias Pleroma.Activity
-  alias Pleroma.User
   alias Pleroma.HTML
+  alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
