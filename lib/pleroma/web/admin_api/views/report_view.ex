@@ -6,6 +6,7 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
   use Pleroma.Web, :view
   alias Pleroma.Activity
   alias Pleroma.User
+  alias Pleroma.HTML
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
@@ -32,7 +33,7 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
       id: report.id,
       account: AccountView.render("account.json", %{user: account}),
       actor: AccountView.render("account.json", %{user: user}),
-      content: report.data["content"],
+      content: HTML.filter_tags(report.data["content"]),
       created_at: created_at,
       statuses: StatusView.render("index.json", %{activities: statuses, as: :activity}),
       state: report.data["state"]
