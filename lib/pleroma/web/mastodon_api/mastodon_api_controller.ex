@@ -454,12 +454,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  defp get_cached_vote_or_vote(user, object, choices) do
+    idempotency_key = "polls:#{user.id}:#{object.data["id"]}"
+
+    {_, res} =
+      Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
+        case CommonAPI.vote(user, object, choices) do
+          {:error, _message} = res -> {:ignore, res}
+          res -> {:commit, res}
+        end
+      end)
+
+    res
+  end
+
   def poll_vote(%{assigns: %{user: user}} = conn, %{"id" => id, "choices" => choices}) do
     with %Object{} = object <- Object.get_by_id(id),
          true <- object.data["type"] == "Question",
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user),
-         {:ok, _activities, object} <- CommonAPI.vote(user, object, choices) do
+         {:ok, _activities, object} <- get_cached_vote_or_vote(user, object, choices) do
       conn
       |> put_view(StatusView)
       |> try_render("poll.json", %{object: object, for: user})
