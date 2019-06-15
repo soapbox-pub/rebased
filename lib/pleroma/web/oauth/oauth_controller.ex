@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.OAuth.OAuthController do
   use Pleroma.Web, :controller
 
+  alias Pleroma.Helpers.UriHelper
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.User
@@ -26,34 +27,25 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   action_fallback(Pleroma.Web.OAuth.FallbackController)
 
+  @oob_token_redirect_uri "urn:ietf:wg:oauth:2.0:oob"
+
   # Note: this definition is only called from error-handling methods with `conn.params` as 2nd arg
-  def authorize(conn, %{"authorization" => _} = params) do
+  def authorize(%Plug.Conn{} = conn, %{"authorization" => _} = params) do
     {auth_attrs, params} = Map.pop(params, "authorization")
     authorize(conn, Map.merge(params, auth_attrs))
   end
 
-  def authorize(%{assigns: %{token: %Token{} = token}} = conn, params) do
+  def authorize(%Plug.Conn{assigns: %{token: %Token{}}} = conn, params) do
     if ControllerHelper.truthy_param?(params["force_login"]) do
       do_authorize(conn, params)
     else
-      redirect_uri =
-        if is_binary(params["redirect_uri"]) do
-          params["redirect_uri"]
-        else
-          app = Repo.preload(token, :app).app
-
-          app.redirect_uris
-          |> String.split()
-          |> Enum.at(0)
-        end
-
-      redirect(conn, external: redirect_uri(conn, redirect_uri))
+      handle_existing_authorization(conn, params)
     end
   end
 
-  def authorize(conn, params), do: do_authorize(conn, params)
+  def authorize(%Plug.Conn{} = conn, params), do: do_authorize(conn, params)
 
-  defp do_authorize(conn, params) do
+  defp do_authorize(%Plug.Conn{} = conn, params) do
     app = Repo.get_by(App, client_id: params["client_id"])
     available_scopes = (app && app.scopes) || []
     scopes = Scopes.fetch_scopes(params, available_scopes)
@@ -70,8 +62,33 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     })
   end
 
+  defp handle_existing_authorization(
+         %Plug.Conn{assigns: %{token: %Token{} = token}} = conn,
+         params
+       ) do
+    token = Repo.preload(token, :app)
+
+    redirect_uri =
+      if is_binary(params["redirect_uri"]) do
+        params["redirect_uri"]
+      else
+        default_redirect_uri(token.app)
+      end
+
+    redirect_uri = redirect_uri(conn, redirect_uri)
+
+    if redirect_uri == @oob_token_redirect_uri do
+      render(conn, "oob_token_exists.html", %{token: token})
+    else
+      url_params = %{access_token: token.token}
+      url_params = UriHelper.append_param_if_present(url_params, :state, params["state"])
+      url = UriHelper.append_uri_params(redirect_uri, url_params)
+      redirect(conn, external: url)
+    end
+  end
+
   def create_authorization(
-        conn,
+        %Plug.Conn{} = conn,
         %{"authorization" => _} = params,
         opts \\ []
       ) do
@@ -83,35 +100,23 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  def after_create_authorization(conn, auth, %{
+  def after_create_authorization(%Plug.Conn{} = conn, %Authorization{} = auth, %{
         "authorization" => %{"redirect_uri" => redirect_uri} = auth_attrs
       }) do
     redirect_uri = redirect_uri(conn, redirect_uri)
 
-    if redirect_uri == "urn:ietf:wg:oauth:2.0:oob" do
-      render(conn, "results.html", %{
-        auth: auth
-      })
+    if redirect_uri == @oob_token_redirect_uri do
+      render(conn, "oob_authorization_created.html", %{auth: auth})
     else
-      connector = if String.contains?(redirect_uri, "?"), do: "&", else: "?"
-      url = "#{redirect_uri}#{connector}"
-      url_params = %{:code => auth.token}
-
-      url_params =
-        if auth_attrs["state"] do
-          Map.put(url_params, :state, auth_attrs["state"])
-        else
-          url_params
-        end
-
-      url = "#{url}#{Plug.Conn.Query.encode(url_params)}"
-
+      url_params = %{code: auth.token}
+      url_params = UriHelper.append_param_if_present(url_params, :state, auth_attrs["state"])
+      url = UriHelper.append_uri_params(redirect_uri, url_params)
       redirect(conn, external: url)
     end
   end
 
   defp handle_create_authorization_error(
-         conn,
+         %Plug.Conn{} = conn,
          {:error, scopes_issue},
          %{"authorization" => _} = params
        )
@@ -125,7 +130,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   defp handle_create_authorization_error(
-         conn,
+         %Plug.Conn{} = conn,
          {:auth_active, false},
          %{"authorization" => _} = params
        ) do
@@ -137,13 +142,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     |> authorize(params)
   end
 
-  defp handle_create_authorization_error(conn, error, %{"authorization" => _}) do
+  defp handle_create_authorization_error(%Plug.Conn{} = conn, error, %{"authorization" => _}) do
     Authenticator.handle_error(conn, error)
   end
 
   @doc "Renew access_token with refresh_token"
   def token_exchange(
-        conn,
+        %Plug.Conn{} = conn,
         %{"grant_type" => "refresh_token", "refresh_token" => token} = _params
       ) do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
@@ -159,7 +164,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  def token_exchange(conn, %{"grant_type" => "authorization_code"} = params) do
+  def token_exchange(%Plug.Conn{} = conn, %{"grant_type" => "authorization_code"} = params) do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
          fixed_token = Token.Utils.fix_padding(params["code"]),
          {:ok, auth} <- Authorization.get_by_token(app, fixed_token),
@@ -176,7 +181,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def token_exchange(
-        conn,
+        %Plug.Conn{} = conn,
         %{"grant_type" => "password"} = params
       ) do
     with {:ok, %User{} = user} <- Authenticator.get_user(conn),
@@ -207,7 +212,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def token_exchange(
-        conn,
+        %Plug.Conn{} = conn,
         %{"grant_type" => "password", "name" => name, "password" => _password} = params
       ) do
     params =
@@ -218,7 +223,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     token_exchange(conn, params)
   end
 
-  def token_exchange(conn, %{"grant_type" => "client_credentials"} = _params) do
+  def token_exchange(%Plug.Conn{} = conn, %{"grant_type" => "client_credentials"} = _params) do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, auth} <- Authorization.create_authorization(app, %User{}),
          {:ok, token} <- Token.exchange_token(app, auth) do
@@ -231,9 +236,9 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   # Bad request
-  def token_exchange(conn, params), do: bad_request(conn, params)
+  def token_exchange(%Plug.Conn{} = conn, params), do: bad_request(conn, params)
 
-  def token_revoke(conn, %{"token" => _token} = params) do
+  def token_revoke(%Plug.Conn{} = conn, %{"token" => _token} = params) do
     with {:ok, app} <- Token.Utils.fetch_app(conn),
          {:ok, _token} <- RevokeToken.revoke(app, params) do
       json(conn, %{})
@@ -244,17 +249,20 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  def token_revoke(conn, params), do: bad_request(conn, params)
+  def token_revoke(%Plug.Conn{} = conn, params), do: bad_request(conn, params)
 
   # Response for bad request
-  defp bad_request(conn, _) do
+  defp bad_request(%Plug.Conn{} = conn, _) do
     conn
     |> put_status(500)
     |> json(%{error: "Bad request"})
   end
 
   @doc "Prepares OAuth request to provider for Ueberauth"
-  def prepare_request(conn, %{"provider" => provider, "authorization" => auth_attrs}) do
+  def prepare_request(%Plug.Conn{} = conn, %{
+        "provider" => provider,
+        "authorization" => auth_attrs
+      }) do
     scope =
       auth_attrs
       |> Scopes.fetch_scopes([])
@@ -275,7 +283,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     redirect(conn, to: o_auth_path(conn, :request, provider, params))
   end
 
-  def request(conn, params) do
+  def request(%Plug.Conn{} = conn, params) do
     message =
       if params["provider"] do
         "Unsupported OAuth provider: #{params["provider"]}."
@@ -288,7 +296,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     |> redirect(to: "/")
   end
 
-  def callback(%{assigns: %{ueberauth_failure: failure}} = conn, params) do
+  def callback(%Plug.Conn{assigns: %{ueberauth_failure: failure}} = conn, params) do
     params = callback_params(params)
     messages = for e <- Map.get(failure, :errors, []), do: e.message
     message = Enum.join(messages, "; ")
@@ -298,7 +306,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     |> redirect(external: redirect_uri(conn, params["redirect_uri"]))
   end
 
-  def callback(conn, params) do
+  def callback(%Plug.Conn{} = conn, params) do
     params = callback_params(params)
 
     with {:ok, registration} <- Authenticator.get_registration(conn) do
@@ -333,7 +341,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     Map.merge(params, Jason.decode!(state))
   end
 
-  def registration_details(conn, %{"authorization" => auth_attrs}) do
+  def registration_details(%Plug.Conn{} = conn, %{"authorization" => auth_attrs}) do
     render(conn, "register.html", %{
       client_id: auth_attrs["client_id"],
       redirect_uri: auth_attrs["redirect_uri"],
@@ -344,7 +352,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     })
   end
 
-  def register(conn, %{"authorization" => _, "op" => "connect"} = params) do
+  def register(%Plug.Conn{} = conn, %{"authorization" => _, "op" => "connect"} = params) do
     with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
          %Registration{} = registration <- Repo.get(Registration, registration_id),
          {_, {:ok, auth}} <-
@@ -363,7 +371,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     end
   end
 
-  def register(conn, %{"authorization" => _, "op" => "register"} = params) do
+  def register(%Plug.Conn{} = conn, %{"authorization" => _, "op" => "register"} = params) do
     with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
          %Registration{} = registration <- Repo.get(Registration, registration_id),
          {:ok, user} <- Authenticator.create_from_registration(conn, registration) do
@@ -399,7 +407,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   defp do_create_authorization(
-         conn,
+         %Plug.Conn{} = conn,
          %{
            "authorization" =>
              %{
@@ -420,13 +428,13 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   # Special case: Local MastodonFE
-  defp redirect_uri(conn, "."), do: mastodon_api_url(conn, :login)
+  defp redirect_uri(%Plug.Conn{} = conn, "."), do: mastodon_api_url(conn, :login)
 
-  defp redirect_uri(_conn, redirect_uri), do: redirect_uri
+  defp redirect_uri(%Plug.Conn{}, redirect_uri), do: redirect_uri
 
-  defp get_session_registration_id(conn), do: get_session(conn, :registration_id)
+  defp get_session_registration_id(%Plug.Conn{} = conn), do: get_session(conn, :registration_id)
 
-  defp put_session_registration_id(conn, registration_id),
+  defp put_session_registration_id(%Plug.Conn{} = conn, registration_id),
     do: put_session(conn, :registration_id, registration_id)
 
   @spec validate_scopes(App.t(), map()) ::
@@ -435,5 +443,11 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     params
     |> Scopes.fetch_scopes(app.scopes)
     |> Scopes.validates(app.scopes)
+  end
+
+  defp default_redirect_uri(%App{} = app) do
+    app.redirect_uris
+    |> String.split()
+    |> Enum.at(0)
   end
 end
