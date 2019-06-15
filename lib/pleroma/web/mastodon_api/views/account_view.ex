@@ -133,6 +133,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_settings(user, opts[:for], user_info)
     |> maybe_put_notification_settings(user, opts[:for])
     |> maybe_put_settings_store(user, opts[:for], opts)
+    |> maybe_put_chat_token(user, opts[:for], opts)
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -163,6 +164,15 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_settings_store(data, _, _, _), do: data
+
+  defp maybe_put_chat_token(data, %User{id: id}, %User{id: id}, %{
+         with_chat_token: token
+       }) do
+    data
+    |> Kernel.put_in([:pleroma, :chat_token], token)
+  end
+
+  defp maybe_put_chat_token(data, _, _, _), do: data
 
   defp maybe_put_role(data, %User{info: %{show_role: true}} = user, _) do
     data

@@ -542,7 +542,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> assign(:user, user)
       |> get("/api/v1/accounts/verify_credentials")
 
-    assert %{"id" => id, "source" => %{"privacy" => "public"}} = json_response(conn, 200)
+    response = json_response(conn, 200)
+
+    assert %{"id" => id, "source" => %{"privacy" => "public"}} = response
+    assert response["pleroma"]["chat_token"]
     assert id == to_string(user.id)
   end
 
