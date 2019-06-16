@@ -9,7 +9,8 @@ defmodule Pleroma.Config.TransferTask do
   end
 
   def load_and_update_env do
-    if Pleroma.Config.get([:instance, :dynamic_configuration]) do
+    if Pleroma.Config.get([:instance, :dynamic_configuration]) and
+         Ecto.Adapters.SQL.table_exists?(Pleroma.Repo, "config") do
       Pleroma.Repo.all(Config)
       |> Enum.each(&update_env(&1))
     end
