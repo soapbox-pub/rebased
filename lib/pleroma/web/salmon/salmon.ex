@@ -146,7 +146,7 @@ defmodule Pleroma.Web.Salmon do
         do: Instances.set_reachable(url)
 
       Logger.debug(fn -> "Pushed to #{url}, code #{code}" end)
-      :ok
+      {:ok, code}
     else
       e ->
         unless params[:unreachable_since], do: Instances.set_reachable(url)
