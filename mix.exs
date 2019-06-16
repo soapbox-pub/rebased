@@ -215,12 +215,8 @@ defmodule Pleroma.Mixfile do
         "-" <> branch_name
       end
 
-    full_version =
-      [version, git_pre_release, branch_name, build]
-      |> Enum.filter(fn string -> string && string != "" end)
-      |> Enum.join()
-
-    Mix.shell().info("Project version: #{full_version}")
-    full_version
+    [version, git_pre_release, branch_name, build]
+    |> Enum.filter(fn string -> string && string != "" end)
+    |> Enum.join()
   end
 end
