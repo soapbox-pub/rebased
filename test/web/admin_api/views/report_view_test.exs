@@ -17,7 +17,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     {:ok, activity} = CommonAPI.report(user, %{"account_id" => other_user.id})
 
     expected = %{
-      content: "",
+      content: nil,
       actor: AccountView.render("account.json", %{user: user}),
       account: AccountView.render("account.json", %{user: other_user}),
       statuses: [],
@@ -41,7 +41,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
       CommonAPI.report(user, %{"account_id" => other_user.id, "status_ids" => [activity.id]})
 
     expected = %{
-      content: "",
+      content: nil,
       actor: AccountView.render("account.json", %{user: user}),
       account: AccountView.render("account.json", %{user: other_user}),
       statuses: [StatusView.render("status.json", %{activity: activity})],
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     data = Map.put(activity.data, "content", "<script> alert('hecked :D:D:D:D:D:D:D') </script>")
     activity = Map.put(activity, :data, data)
 
-    refute %{content: "<script> alert('hecked :D:D:D:D:D:D:D') </script>"} ==
+    refute "<script> alert('hecked :D:D:D:D:D:D:D') </script>" ==
              ReportView.render("show.json", %{report: activity})[:content]
   end
 end
