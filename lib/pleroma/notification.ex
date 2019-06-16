@@ -13,6 +13,8 @@ defmodule Pleroma.Notification do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
+  alias Pleroma.Web.Push
+  alias Pleroma.Web.Streamer
 
   import Ecto.Query
   import Ecto.Changeset
@@ -145,8 +147,9 @@ defmodule Pleroma.Notification do
     unless skip?(activity, user) do
       notification = %Notification{user_id: user.id, activity: activity}
       {:ok, notification} = Repo.insert(notification)
-      Pleroma.Web.Streamer.stream("user", notification)
-      Pleroma.Web.Push.send(notification)
+      Streamer.stream("user", notification)
+      Streamer.stream("user:notification", notification)
+      Push.send(notification)
       notification
     end
   end
