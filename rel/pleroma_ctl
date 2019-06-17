@@ -1,7 +1,7 @@
 #!/bin/sh
 # XXX: This should be removed when elixir's releases get custom command support
 if [ -z "$1" ] || [ "$1" = "help" ]; then
-  echo "Usage: $(basename "$0") COMMAND [ARGS]
+	echo "Usage: $(basename "$0") COMMAND [ARGS]
 
     The known commands are:
 
@@ -11,9 +11,16 @@ if [ -z "$1" ] || [ "$1" = "help" ]; then
 
     and any mix tasks under Pleroma namespace, for example \`mix pleroma.user COMMAND\` is
     equivalent to \`$(basename "$0") user COMMAND\`
+
+    By default pleroma_ctl will try calling into a running instance to execute non migration-related commands,
+    if for some reason this is undesired, set PLEROMA_CTL_RPC_DISABLED environment variable
 "
 else
-  SCRIPT=$(readlink -f "$0")
-  SCRIPTPATH=$(dirname "$SCRIPT")
-  "$SCRIPTPATH"/pleroma eval 'Pleroma.ReleaseTasks.run("'"$*"'")'
+	SCRIPT=$(readlink -f "$0")
+	SCRIPTPATH=$(dirname "$SCRIPT")
+	if [ "$1" = "migrate" ] || [ "$1" = "rollback" ] || [ "$1" = "create" ] || [ -n "$PLEROMA_CTL_RPC_DISABLED" ]; then
+		"$SCRIPTPATH"/pleroma eval 'Pleroma.ReleaseTasks.run("'"$*"'")'
+	else
+		"$SCRIPTPATH"/pleroma rpc 'Pleroma.ReleaseTasks.run("'"$*"'")'
+	fi
 fi
