@@ -802,6 +802,30 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def post("http://mastodon.example.org/inbox", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("https://hubzilla.example.org/inbox", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://gs.example.org/index.php/main/salmon/user/1", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
   def post("http://200.site" <> _, _, _, _) do
     {:ok,
      %Tesla.Env{
