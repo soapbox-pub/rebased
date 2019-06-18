@@ -64,26 +64,34 @@ defmodule Pleroma.Web.OAuth.OAuthController do
 
   defp handle_existing_authorization(
          %Plug.Conn{assigns: %{token: %Token{} = token}} = conn,
-         params
+         %{"redirect_uri" => @oob_token_redirect_uri}
        ) do
-    token = Repo.preload(token, :app)
+    render(conn, "oob_token_exists.html", %{token: token})
+  end
+
+  defp handle_existing_authorization(
+         %Plug.Conn{assigns: %{token: %Token{} = token}} = conn,
+         %{} = params
+       ) do
+    app = Repo.preload(token, :app).app
 
     redirect_uri =
       if is_binary(params["redirect_uri"]) do
         params["redirect_uri"]
       else
-        default_redirect_uri(token.app)
+        default_redirect_uri(app)
       end
 
-    redirect_uri = redirect_uri(conn, redirect_uri)
-
-    if redirect_uri == @oob_token_redirect_uri do
-      render(conn, "oob_token_exists.html", %{token: token})
-    else
+    if redirect_uri in String.split(app.redirect_uris) do
+      redirect_uri = redirect_uri(conn, redirect_uri)
       url_params = %{access_token: token.token}
       url_params = UriHelper.append_param_if_present(url_params, :state, params["state"])
       url = UriHelper.append_uri_params(redirect_uri, url_params)
       redirect(conn, external: url)
+    else
+      conn
+      |> put_flash(:error, "Unlisted redirect_uri.")
+      |> redirect(external: redirect_uri(conn, redirect_uri))
     end
   end
 
@@ -101,17 +109,27 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   end
 
   def after_create_authorization(%Plug.Conn{} = conn, %Authorization{} = auth, %{
+        "authorization" => %{"redirect_uri" => @oob_token_redirect_uri}
+      }) do
+    render(conn, "oob_authorization_created.html", %{auth: auth})
+  end
+
+  def after_create_authorization(%Plug.Conn{} = conn, %Authorization{} = auth, %{
         "authorization" => %{"redirect_uri" => redirect_uri} = auth_attrs
       }) do
-    redirect_uri = redirect_uri(conn, redirect_uri)
+    app = Repo.preload(auth, :app).app
 
-    if redirect_uri == @oob_token_redirect_uri do
-      render(conn, "oob_authorization_created.html", %{auth: auth})
-    else
+    # An extra safety measure before we redirect (the same check is being performed in `do_create_authorization/2`)
+    if redirect_uri in String.split(app.redirect_uris) do
+      redirect_uri = redirect_uri(conn, redirect_uri)
       url_params = %{code: auth.token}
       url_params = UriHelper.append_param_if_present(url_params, :state, auth_attrs["state"])
       url = UriHelper.append_uri_params(redirect_uri, url_params)
       redirect(conn, external: url)
+    else
+      conn
+      |> put_flash(:error, "Unlisted redirect_uri.")
+      |> redirect(external: redirect_uri(conn, redirect_uri))
     end
   end
 
@@ -324,7 +342,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
             })
 
           conn
-          |> put_session(:registration_id, registration.id)
+          |> put_session_registration_id(registration.id)
           |> registration_details(%{"authorization" => registration_params})
       end
     else
@@ -445,7 +463,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
     |> Scopes.validates(app.scopes)
   end
 
-  defp default_redirect_uri(%App{} = app) do
+  def default_redirect_uri(%App{} = app) do
     app.redirect_uris
     |> String.split()
     |> Enum.at(0)
