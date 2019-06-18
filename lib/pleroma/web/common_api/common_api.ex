@@ -212,7 +212,7 @@ defmodule Pleroma.Web.CommonAPI do
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
          full_payload <- String.trim(status <> cw),
-         length when length in 1..limit <- String.length(full_payload),
+         :ok <- validate_character_limit(full_payload, attachments, limit),
          object <-
            make_note_data(
              user.ap_id,
@@ -247,6 +247,7 @@ defmodule Pleroma.Web.CommonAPI do
 
       res
     else
+      {:error, _} = e -> e
       e -> {:error, e}
     end
   end
