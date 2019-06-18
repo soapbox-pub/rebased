@@ -119,7 +119,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
       }) do
     app = Repo.preload(auth, :app).app
 
-    # An extra safety measure before we redirect (the same check is being performed in `do_create_authorization/2`)
+    # An extra safety measure before we redirect (also done in `do_create_authorization/2`)
     if redirect_uri in String.split(app.redirect_uris) do
       redirect_uri = redirect_uri(conn, redirect_uri)
       url_params = %{code: auth.token}
