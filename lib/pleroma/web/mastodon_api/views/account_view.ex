@@ -66,6 +66,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp do_render("account.json", %{user: user} = opts) do
+    display_name = HTML.strip_tags(user.name || user.nickname)
+
     image = User.avatar_url(user) |> MediaProxy.url()
     header = User.banner_url(user) |> MediaProxy.url()
     user_info = User.get_cached_user_info(user)
@@ -96,7 +98,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       id: to_string(user.id),
       username: username_from_nickname(user.nickname),
       acct: user.nickname,
-      display_name: user.name || user.nickname,
+      display_name: display_name,
       locked: user_info.locked,
       created_at: Utils.to_masto_date(user.inserted_at),
       followers_count: user_info.follower_count,
