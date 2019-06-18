@@ -544,15 +544,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def post_status(conn, %{"status" => "", "media_ids" => media_ids} = params)
-      when length(media_ids) > 0 do
-    params =
-      params
-      |> Map.put("status", ".")
-
-    post_status(conn, params)
-  end
-
   def post_status(%{assigns: %{user: user}} = conn, %{"status" => _} = params) do
     params =
       params
