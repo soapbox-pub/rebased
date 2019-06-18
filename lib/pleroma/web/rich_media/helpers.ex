@@ -9,7 +9,9 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Web.RichMedia.Parser
 
   defp validate_page_url(page_url) when is_binary(page_url) do
-    if AutoLinker.Parser.url?(page_url, true) do
+    validate_tld = Application.get_env(:auto_linker, :opts)[:validate_tld]
+
+    if AutoLinker.Parser.url?(page_url, scheme: true, validate_tld: validate_tld) do
       URI.parse(page_url) |> validate_page_url
     else
       :error
