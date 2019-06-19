@@ -148,7 +148,6 @@ defmodule Mix.Tasks.Pleroma.Instance do
           dbname: dbname,
           dbuser: dbuser,
           dbpass: dbpass,
-          version: Pleroma.Mixfile.project() |> Keyword.get(:version),
           secret: secret,
           signing_salt: signing_salt,
           web_push_public_key: Base.url_encode64(web_push_public_key, padding: false),
