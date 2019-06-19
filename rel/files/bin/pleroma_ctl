@@ -46,7 +46,7 @@ update() {
 	uri="${PLEROMA_CTL_URI:-https://git.pleroma.social}"
 	project_id="${PLEROMA_CTL_PROJECT_ID:-2}"
 	project_branch="$(detect_branch)"
-	flavour="${PLEROMA_CTL_ARCH:-$(detect_flavour)}"
+	flavour="${PLEROMA_CTL_FLAVOUR:-$(detect_flavour)}"
 	echo "Detected flavour: $flavour"
 	tmp="${PLEROMA_CTL_TMP_DIR:-/tmp}"
 	artifact="$tmp/pleroma.zip"
@@ -90,8 +90,8 @@ if [ -z "$1" ] || [ "$1" = "help" ]; then
 	  some files are stored inside of the release directories (although you really shouldn't store them
 	  there), or if you want to be able to quickly revert a broken update.
 
-	  The script will try to detect your architecture and ABI automatically, but if it is wrong, you can
-	  overwrite it by setting PLEROMA_CTL_ARCH to the desired architecture.
+	  The script will try to detect your architecture and ABI and set a flavour automatically,
+	  but if it is wrong, you can overwrite it by setting PLEROMA_CTL_FLAVOUR to the desired flavour.
 
 	  By default the artifact will be downloaded from https://git.pleroma.social for pleroma/pleroma (project id: 2)
 	  to /tmp/, you can overwrite these settings by setting PLEROMA_CTL_URI, PLEROMA_CTL_PROJECT_ID and PLEROMA_CTL_TMP_DIR
