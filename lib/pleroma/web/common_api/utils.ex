@@ -504,4 +504,18 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "inReplyTo" => object.data["id"]
     }
   end
+
+  def validate_character_limit(full_payload, attachments, limit) do
+    length = String.length(full_payload)
+
+    if length < limit do
+      if length > 0 or Enum.count(attachments) > 0 do
+        :ok
+      else
+        {:error, "Cannot post an empty status without attachments"}
+      end
+    else
+      {:error, "The status is over the character limit"}
+    end
+  end
 end
