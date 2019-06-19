@@ -207,6 +207,7 @@ defmodule Pleroma.Mixfile do
 
     branch_name =
       with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+           branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
            true <- branch_name != "master" do
         branch_name =
           String.trim(branch_name)

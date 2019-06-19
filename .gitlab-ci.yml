@@ -173,6 +173,7 @@ amd64:
   script: &release
     - mix deps.get --only prod
     - mkdir release
+    - PLEROMA_BUILD_BRANCH=$CI_COMMIT_REF_NAME
     - mix release --path release
 
 
