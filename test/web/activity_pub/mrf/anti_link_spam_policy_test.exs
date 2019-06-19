@@ -22,6 +22,14 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
     }
   }
 
+  @response_message %{
+    "type" => "Create",
+    "object" => %{
+      "name" => "yes",
+      "type" => "Answer"
+    }
+  }
+
   describe "with new user" do
     test "it allows posts without links" do
       user = insert(:user)
@@ -115,6 +123,18 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
         |> Map.put("actor", "http://invalid.actor")
 
       {:reject, _} = AntiLinkSpamPolicy.filter(message)
+    end
+  end
+
+  describe "with contentless-objects" do
+    test "it does not reject them or error out" do
+      user = insert(:user, info: %{note_count: 1})
+
+      message =
+        @response_message
+        |> Map.put("actor", user.ap_id)
+
+      {:ok, _message} = AntiLinkSpamPolicy.filter(message)
     end
   end
 end
