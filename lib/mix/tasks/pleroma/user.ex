@@ -8,6 +8,7 @@ defmodule Mix.Tasks.Pleroma.User do
   alias Mix.Tasks.Pleroma.Common
   alias Pleroma.User
   alias Pleroma.UserInviteToken
+  alias Pleroma.Web.OAuth
 
   @shortdoc "Manages Pleroma users"
   @moduledoc """
@@ -48,6 +49,10 @@ defmodule Mix.Tasks.Pleroma.User do
   ## Delete the user's activities.
 
       mix pleroma.user delete_activities NICKNAME
+
+  ## Sign user out from all applications (delete user's OAuth tokens and authorizations).
+
+      mix pleroma.user sign_out NICKNAME
 
   ## Deactivate or activate the user's account.
 
@@ -401,6 +406,20 @@ defmodule Mix.Tasks.Pleroma.User do
       message = if user.info.confirmation_pending, do: "needs", else: "doesn't need"
 
       Common.shell_info("#{nickname} #{message} confirmation.")
+    else
+      _ ->
+        Common.shell_error("No local user #{nickname}")
+    end
+  end
+
+  def run(["sign_out", nickname]) do
+    Common.start_pleroma()
+
+    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+      OAuth.Token.delete_user_tokens(user)
+      OAuth.Authorization.delete_user_authorizations(user)
+
+      Common.shell_info("#{nickname} signed out from all apps.")
     else
       _ ->
         Common.shell_error("No local user #{nickname}")
