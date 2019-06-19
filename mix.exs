@@ -154,6 +154,8 @@ defmodule Pleroma.Mixfile do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
+      "ecto.migrate": ["pleroma.ecto.migrate"],
+      "ecto.rollback": ["pleroma.ecto.rollback"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate", "test"]

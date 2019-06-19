@@ -6,13 +6,12 @@ defmodule Pleroma.ReleaseTasks do
   @repo Pleroma.Repo
 
   def run(args) do
-    Mix.Tasks.Pleroma.Common.start_pleroma()
     [task | args] = String.split(args)
 
     case task do
-      "migrate" -> migrate()
+      "migrate" -> migrate(args)
       "create" -> create()
-      "rollback" -> rollback(String.to_integer(Enum.at(args, 0)))
+      "rollback" -> rollback(args)
       task -> mix_task(task, args)
     end
   end
@@ -35,12 +34,12 @@ defmodule Pleroma.ReleaseTasks do
     end
   end
 
-  def migrate do
-    {:ok, _, _} = Ecto.Migrator.with_repo(@repo, &Ecto.Migrator.run(&1, :up, all: true))
+  def migrate(args) do
+    Mix.Tasks.Pleroma.Ecto.Migrate.run(args)
   end
 
-  def rollback(version) do
-    {:ok, _, _} = Ecto.Migrator.with_repo(@repo, &Ecto.Migrator.run(&1, :down, to: version))
+  def rollback(args) do
+    Mix.Tasks.Pleroma.Ecto.Rollback.run(args)
   end
 
   def create do
