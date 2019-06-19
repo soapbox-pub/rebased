@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Pleroma.Config do
   use Mix.Task
-  alias Mix.Tasks.Pleroma.Common
+  import Mix.Pleroma
   alias Pleroma.Repo
   alias Pleroma.Web.AdminAPI.Config
   @shortdoc "Manages the location of the config"
@@ -17,7 +17,7 @@ defmodule Mix.Tasks.Pleroma.Config do
   """
 
   def run(["migrate_to_db"]) do
-    Common.start_pleroma()
+    start_pleroma()
 
     if Pleroma.Config.get([:instance, :dynamic_configuration]) do
       Application.get_all_env(:pleroma)
@@ -37,7 +37,7 @@ defmodule Mix.Tasks.Pleroma.Config do
   end
 
   def run(["migrate_from_db", env]) do
-    Common.start_pleroma()
+    start_pleroma()
 
     if Pleroma.Config.get([:instance, :dynamic_configuration]) do
       config_path = "config/#{env}.migrated.secret.exs"

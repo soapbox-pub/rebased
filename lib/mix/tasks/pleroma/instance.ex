@@ -4,7 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.Instance do
   use Mix.Task
-  alias Mix.Tasks.Pleroma.Common
+  import Mix.Pleroma
 
   @shortdoc "Manages Pleroma instance"
   @moduledoc """
@@ -70,7 +70,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
     if proceed? do
       [domain, port | _] =
         String.split(
-          Common.get_option(
+          get_option(
             options,
             :domain,
             "What domain will your instance use? (e.g pleroma.soykaf.com)"
@@ -79,16 +79,16 @@ defmodule Mix.Tasks.Pleroma.Instance do
         ) ++ [443]
 
       name =
-        Common.get_option(
+        get_option(
           options,
           :instance_name,
           "What is the name of your instance? (e.g. Pleroma/Soykaf)"
         )
 
-      email = Common.get_option(options, :admin_email, "What is your admin email address?")
+      email = get_option(options, :admin_email, "What is your admin email address?")
 
       notify_email =
-        Common.get_option(
+        get_option(
           options,
           :notify_email,
           "What email address do you want to use for sending email notifications?",
@@ -96,7 +96,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
 
       indexable =
-        Common.get_option(
+        get_option(
           options,
           :indexable,
           "Do you want search engines to index your site? (y/n)",
@@ -104,21 +104,19 @@ defmodule Mix.Tasks.Pleroma.Instance do
         ) === "y"
 
       db_configurable? =
-        Common.get_option(
+        get_option(
           options,
           :db_configurable,
           "Do you want to be able to configure instance from admin part? (y/n)",
           "y"
         ) === "y"
 
-      dbhost =
-        Common.get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
+      dbhost = get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
 
-      dbname =
-        Common.get_option(options, :dbname, "What is the name of your database?", "pleroma_dev")
+      dbname = get_option(options, :dbname, "What is the name of your database?", "pleroma_dev")
 
       dbuser =
-        Common.get_option(
+        get_option(
           options,
           :dbuser,
           "What is the user used to connect to your database?",
@@ -126,7 +124,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
         )
 
       dbpass =
-        Common.get_option(
+        get_option(
           options,
           :dbpass,
           "What is the password used to connect to your database?",
@@ -166,31 +164,31 @@ defmodule Mix.Tasks.Pleroma.Instance do
           dbpass: dbpass
         )
 
-      Common.shell_info(
+      shell_info(
         "Writing config to #{config_path}. You should rename it to config/prod.secret.exs or config/dev.secret.exs."
       )
 
       File.write(config_path, result_config)
-      Common.shell_info("Writing #{psql_path}.")
+      shell_info("Writing #{psql_path}.")
       File.write(psql_path, result_psql)
 
       write_robots_txt(indexable)
 
-      Common.shell_info(
+      shell_info(
         "\n" <>
           """
           To get started:
           1. Verify the contents of the generated files.
-          2. Run `sudo -u postgres psql -f #{Common.escape_sh_path(psql_path)}`.
+          2. Run `sudo -u postgres psql -f #{escape_sh_path(psql_path)}`.
           """ <>
           if config_path in ["config/dev.secret.exs", "config/prod.secret.exs"] do
             ""
           else
-            "3. Run `mv #{Common.escape_sh_path(config_path)} 'config/prod.secret.exs'`."
+            "3. Run `mv #{escape_sh_path(config_path)} 'config/prod.secret.exs'`."
           end
       )
     else
-      Common.shell_error(
+      shell_error(
         "The task would have overwritten the following files:\n" <>
           (Enum.map(paths, &"- #{&1}\n") |> Enum.join("")) <>
           "Rerun with `--force` to overwrite them."
@@ -215,10 +213,10 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
     if File.exists?(robots_txt_path) do
       File.cp!(robots_txt_path, "#{robots_txt_path}.bak")
-      Common.shell_info("Backing up existing robots.txt to #{robots_txt_path}.bak")
+      shell_info("Backing up existing robots.txt to #{robots_txt_path}.bak")
     end
 
     File.write(robots_txt_path, robots_txt)
-    Common.shell_info("Writing #{robots_txt_path}.")
+    shell_info("Writing #{robots_txt_path}.")
   end
 end
