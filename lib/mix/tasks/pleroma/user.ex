@@ -415,7 +415,7 @@ defmodule Mix.Tasks.Pleroma.User do
   def run(["sign_out", nickname]) do
     Common.start_pleroma()
 
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+    with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
       OAuth.Token.delete_user_tokens(user)
       OAuth.Authorization.delete_user_authorizations(user)
 
