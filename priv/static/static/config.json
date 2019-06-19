@@ -8,7 +8,6 @@
   "redirectRootLogin": "/main/friends",
   "chatDisabled": false,
   "showInstanceSpecificPanel": false,
-  "formattingOptionsEnabled": false,
   "collapseMessageWithSubject": false,
   "scopeCopy": true,
   "subjectLineBehavior": "email",
