@@ -212,5 +212,21 @@ defmodule Pleroma.HTMLTest do
 
       assert url == "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72255140"
     end
+
+    test "skips microformats hashtags" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" =>
+            "<a href=\"https://pleroma.gov/tags/cofe\" rel=\"tag\">#cofe</a> https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72255140",
+          "content_type" => "text/html"
+        })
+
+      object = Object.normalize(activity)
+      {:ok, url} = HTML.extract_first_external_url(object, object.data["content"])
+
+      assert url == "https://www.pixiv.net/member_illust.php?mode=medium&illust_id=72255140"
+    end
   end
 end
