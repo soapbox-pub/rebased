@@ -17,6 +17,7 @@ defmodule Pleroma.ReleaseTasks do
   end
 
   defp mix_task(task, args) do
+    Application.load(:pleroma)
     {:ok, modules} = :application.get_key(:pleroma, :modules)
 
     module =

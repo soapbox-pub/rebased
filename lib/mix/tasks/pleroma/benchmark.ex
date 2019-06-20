@@ -1,9 +1,9 @@
 defmodule Mix.Tasks.Pleroma.Benchmark do
+  import Mix.Pleroma
   use Mix.Task
-  alias Mix.Tasks.Pleroma.Common
 
   def run(["search"]) do
-    Common.start_pleroma()
+    start_pleroma()
 
     Benchee.run(%{
       "search" => fn ->
@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
   end
 
   def run(["tag"]) do
-    Common.start_pleroma()
+    start_pleroma()
 
     Benchee.run(%{
       "tag" => fn ->

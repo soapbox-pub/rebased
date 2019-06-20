@@ -16,7 +16,6 @@ config :pleroma, :instance,
   notify_email: "<%= notify_email %>",
   limit: 5000,
   registrations_open: true,
-  dedupe_media: false,
   dynamic_configuration: <%= db_configurable? %>
 
 config :pleroma, :media_proxy,
@@ -37,6 +36,9 @@ config :web_push_encryption, :vapid_details,
   subject: "mailto:<%= email %>",
   public_key: "<%= web_push_public_key %>",
   private_key: "<%= web_push_private_key %>"
+
+config :pleroma, :instance, static_dir: "<%= static_dir %>"
+config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 
 # Enable Strict-Transport-Security once SSL is working:
 # config :pleroma, :http_security,

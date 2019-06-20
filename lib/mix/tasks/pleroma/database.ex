@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.Database do
-  alias Mix.Tasks.Pleroma.Common
   alias Pleroma.Conversation
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
   require Logger
+  import Mix.Pleroma
   use Mix.Task
 
   @shortdoc "A collection of database related tasks"
@@ -45,7 +45,7 @@ defmodule Mix.Tasks.Pleroma.Database do
         ]
       )
 
-    Common.start_pleroma()
+    start_pleroma()
     Logger.info("Removing embedded objects")
 
     Repo.query!(
@@ -66,12 +66,12 @@ defmodule Mix.Tasks.Pleroma.Database do
   end
 
   def run(["bump_all_conversations"]) do
-    Common.start_pleroma()
+    start_pleroma()
     Conversation.bump_for_all_activities()
   end
 
   def run(["update_users_following_followers_counts"]) do
-    Common.start_pleroma()
+    start_pleroma()
 
     users = Repo.all(User)
     Enum.each(users, &User.remove_duplicated_following/1)
@@ -89,7 +89,7 @@ defmodule Mix.Tasks.Pleroma.Database do
         ]
       )
 
-    Common.start_pleroma()
+    start_pleroma()
 
     deadline = Pleroma.Config.get([:instance, :remote_post_retention_days])
 
