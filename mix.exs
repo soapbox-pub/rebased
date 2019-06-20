@@ -212,7 +212,7 @@ defmodule Pleroma.Mixfile do
            true <- branch_name != "master" do
         branch_name =
           String.trim(branch_name)
-          |> String.replace(~r/\W+/, "-")
+          |> String.replace(~r/[\W_]+/, "-")
 
         "-" <> branch_name
       end
