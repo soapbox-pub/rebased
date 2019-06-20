@@ -95,7 +95,7 @@ if [ -z "$1" ] || [ "$1" = "help" ]; then
 
 	  By default the artifact will be downloaded from https://git.pleroma.social for pleroma/pleroma (project id: 2)
 	  to /tmp/, you can overwrite these settings by setting PLEROMA_CTL_URI, PLEROMA_CTL_PROJECT_ID and PLEROMA_CTL_TMP_DIR
-	  respectievly.
+	  respectively.
 
 
     and any mix tasks under Pleroma namespace, for example \`mix pleroma.user COMMAND\` is
