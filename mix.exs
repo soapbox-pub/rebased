@@ -37,14 +37,14 @@ defmodule Pleroma.Mixfile do
         pleroma: [
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load],
-          steps: [:assemble, &copy_pleroma_ctl/1]
+          steps: [:assemble, &copy_files/1]
         ]
       ]
     ]
   end
 
-  def copy_pleroma_ctl(%{path: target_path} = release) do
-    File.cp!("./rel/pleroma_ctl", Path.join([target_path, "bin", "pleroma_ctl"]))
+  def copy_files(%{path: target_path} = release) do
+    File.cp_r!("./rel/files", target_path)
     release
   end
 
@@ -209,6 +209,7 @@ defmodule Pleroma.Mixfile do
 
     branch_name =
       with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+           branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
            true <- branch_name != "master" do
         branch_name =
           String.trim(branch_name)
