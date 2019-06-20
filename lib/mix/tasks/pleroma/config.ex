@@ -40,9 +40,10 @@ defmodule Mix.Tasks.Pleroma.Config do
     Common.start_pleroma()
 
     if Pleroma.Config.get([:instance, :dynamic_configuration]) do
-      config_path = "config/#{env}.migrated.secret.exs"
+      config_path = "config/#{env}.exported_from_db.secret.exs"
 
       {:ok, file} = File.open(config_path, [:write])
+      IO.write(file, "use Mix.Config\r\n")
 
       Repo.all(Config)
       |> Enum.each(fn config ->

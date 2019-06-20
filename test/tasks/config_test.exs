@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
 
   setup_all do
     Mix.shell(Mix.Shell.Process)
-    temp_file = "config/temp.migrated.secret.exs"
+    temp_file = "config/temp.exported_from_db.secret.exs"
 
     dynamic = Pleroma.Config.get([:instance, :dynamic_configuration])
 
