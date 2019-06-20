@@ -62,7 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF: Support for running subchains.
 - Configuration: `skip_thread_containment` option
 - Configuration: `rate_limit` option. See `Pleroma.Plugs.RateLimiter` documentation for details.
-- MRF: Support for filtering out likely spam messages using naive heuristics.
+- MRF: Support for filtering out likely spam messages by rejecting posts from new users that contain links.
 
 ### Changed
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
