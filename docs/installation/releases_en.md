@@ -24,7 +24,7 @@ Other than things bundled in the OTP release Pleroma depends on:
 * unzip (needed to unpack release builds)
 * ncurses (ERTS won't run without it)
 * PostgreSQL (also utilizes extensions in postgresql-contrib)
-* nginx (could be swapped with another webserver but this guide covers only it)
+* nginx (could be swapped with another reverse proxy but this guide covers only it)
 * certbot (for Let's Encrypt certificates, could be swapped with another ACME client, but this guide covers only it)
 
 Debian/Ubuntu:
