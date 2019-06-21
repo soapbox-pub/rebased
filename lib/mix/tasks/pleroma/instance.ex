@@ -112,12 +112,12 @@ defmodule Mix.Tasks.Pleroma.Instance do
           options,
           :db_configurable,
           "Do you want to store the configuration in the database (allows controlling it from admin-fe)? (y/n)",
-          "y"
+          "n"
         ) === "y"
 
       dbhost = get_option(options, :dbhost, "What is the hostname of your database?", "localhost")
 
-      dbname = get_option(options, :dbname, "What is the name of your database?", "pleroma_dev")
+      dbname = get_option(options, :dbname, "What is the name of your database?", "pleroma")
 
       dbuser =
         get_option(
