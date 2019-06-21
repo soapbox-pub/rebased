@@ -49,7 +49,11 @@ defmodule Pleroma.Mixfile do
   end
 
   def copy_nginx_config(%{path: target_path} = release) do
-    File.cp!("./installation/pleroma.nginx", Path.join([target_path, "installation", "pleroma.nginx"]))
+    File.cp!(
+      "./installation/pleroma.nginx",
+      Path.join([target_path, "installation", "pleroma.nginx"])
+    )
+
     release
   end
 
