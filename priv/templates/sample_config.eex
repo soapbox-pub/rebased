@@ -3,7 +3,7 @@
 # NOTE: This file should not be committed to a repo or otherwise made public
 # without removing sensitive information.
 
-<%= if Code.ensure_loaded?(Config) do
+<%= if Code.ensure_loaded?(Config) or not Code.ensure_loaded?(Mix.Config) do
   "import Config"
 else
   "use Mix.Config"
