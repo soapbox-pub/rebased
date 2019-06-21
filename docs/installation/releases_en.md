@@ -118,7 +118,7 @@ psql -U postgres -d postgres -f /tmp/setup_db.psql
 ./bin/pleroma_ctl migrate
 
 # If you have installed RUM indexes also run
-./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/
+# ./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/
 
 # Start the instance to verify that everything is working as expected
 ./bin/pleroma daemon
