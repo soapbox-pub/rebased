@@ -60,5 +60,5 @@ else
   )
 end
 
-if File.exists?("./config/dev.migrated.secret.exs"),
-  do: import_config("./config/dev.migrated.secret.exs")
+if File.exists?("./config/dev.exported_from_db.secret.exs"),
+  do: import_config("dev.exported_from_db.secret.exs")

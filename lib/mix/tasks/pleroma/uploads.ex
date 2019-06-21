@@ -4,7 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.Uploads do
   use Mix.Task
-  alias Mix.Tasks.Pleroma.Common
+  import Mix.Pleroma
   alias Pleroma.Upload
   alias Pleroma.Uploaders.Local
   require Logger
@@ -24,7 +24,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
   """
   def run(["migrate_local", target_uploader | args]) do
     delete? = Enum.member?(args, "--delete")
-    Common.start_pleroma()
+    start_pleroma()
     local_path = Pleroma.Config.get!([Local, :uploads])
     uploader = Module.concat(Pleroma.Uploaders, target_uploader)
 
@@ -38,10 +38,10 @@ defmodule Mix.Tasks.Pleroma.Uploads do
       Pleroma.Config.put([Upload, :uploader], uploader)
     end
 
-    Common.shell_info("Migrating files from local #{local_path} to #{to_string(uploader)}")
+    shell_info("Migrating files from local #{local_path} to #{to_string(uploader)}")
 
     if delete? do
-      Common.shell_info(
+      shell_info(
         "Attention: uploaded files will be deleted, hope you have backups! (--delete ; cancel with ^C)"
       )
 
@@ -78,7 +78,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
       |> Enum.filter(& &1)
 
     total_count = length(uploads)
-    Common.shell_info("Found #{total_count} uploads")
+    shell_info("Found #{total_count} uploads")
 
     uploads
     |> Task.async_stream(
@@ -90,7 +90,7 @@ defmodule Mix.Tasks.Pleroma.Uploads do
             :ok
 
           error ->
-            Common.shell_error("failed to upload #{inspect(upload.path)}: #{inspect(error)}")
+            shell_error("failed to upload #{inspect(upload.path)}: #{inspect(error)}")
         end
       end,
       timeout: 150_000
@@ -99,10 +99,10 @@ defmodule Mix.Tasks.Pleroma.Uploads do
     # credo:disable-for-next-line Credo.Check.Warning.UnusedEnumOperation
     |> Enum.reduce(0, fn done, count ->
       count = count + length(done)
-      Common.shell_info("Uploaded #{count}/#{total_count} files")
+      shell_info("Uploaded #{count}/#{total_count} files")
       count
     end)
 
-    Common.shell_info("Done!")
+    shell_info("Done!")
   end
 end
