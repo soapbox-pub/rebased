@@ -186,28 +186,16 @@ defmodule Mix.Tasks.Pleroma.Instance do
           dbpass: dbpass
         )
 
-      shell_info(
-        "Writing config to #{config_path}. You should rename it to config/prod.secret.exs or config/dev.secret.exs."
-      )
+      shell_info("Writing config to #{config_path}.")
 
       File.write(config_path, result_config)
-      shell_info("Writing #{psql_path}.")
+      shell_info("Writing the postgres script to #{psql_path}.")
       File.write(psql_path, result_psql)
 
       write_robots_txt(indexable, template_dir)
 
       shell_info(
-        "\n" <>
-          """
-          To get started:
-          1. Verify the contents of the generated files.
-          2. Run `sudo -u postgres psql -f #{escape_sh_path(psql_path)}`.
-          """ <>
-          if config_path in ["config/dev.secret.exs", "config/prod.secret.exs"] do
-            ""
-          else
-            "3. Run `mv #{escape_sh_path(config_path)} 'config/prod.secret.exs'`."
-          end
+        "\n All files successfully written! Refer to the installation instructions for your platform for next steps"
       )
     else
       shell_error(
