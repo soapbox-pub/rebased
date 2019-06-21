@@ -110,9 +110,16 @@ su pleroma -s $SHELL -lc "./bin/pleroma_ctl instance gen --output /etc/pleroma/c
 # Create the postgres database
 psql -U postgres -d postgres -f /tmp/setup_db.psql
 
+# If you have installed RUM indexes add
+# `config :pleroma, :database, rum_enabled: true`
+# to the end of /etc/pleroma/config.exs before proceeding
+
 # Create the database schema
 ./bin/pleroma_ctl create
 ./bin/pleroma_ctl migrate
+
+# If you have installed RUM indexes also run
+./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/
 
 # Start the instance to verify that everything is working as expected
 ./bin/pleroma daemon
