@@ -3,7 +3,11 @@
 # NOTE: This file should not be committed to a repo or otherwise made public
 # without removing sensitive information.
 
-use Mix.Config
+<%= if Code.ensure_loaded?(Config) do
+  "import Config"
+else
+  "use Mix.Config"
+end %>
 
 config :pleroma, Pleroma.Web.Endpoint,
    url: [host: "<%= domain %>", scheme: "https", port: <%= port %>],
