@@ -92,16 +92,16 @@ rm /tmp/pleroma.zip
 # Note: It does not have to be `/var/lib/pleroma/uploads`, the config generator will ask about the upload directory later
 
 mkdir -p /var/lib/pleroma/uploads
-chown -R pleroma:pleroma /var/lib/pleroma
+chown -R pleroma /var/lib/pleroma
 
 # Create custom public files directory (custom emojis, frontend bundle overrides, robots.txt, etc.)
 # Note: It does not have to be `/var/lib/pleroma/static`, the config generator will ask about the custom public files directory later
 mkdir -p /var/lib/pleroma/static
-chown -R pleroma:pleroma /var/lib/pleroma
+chown -R pleroma /var/lib/pleroma
 
 # Create a config directory
 mkdir -p /etc/pleroma
-chown -R pleroma:pleroma /etc/pleroma
+chown -R pleroma /etc/pleroma
 
 # Run the config generator
 su pleroma -s $SHELL -lc "./bin/pleroma_ctl instance gen --output /etc/pleroma/config.exs --output-psql /tmp/setup_db.psql"
