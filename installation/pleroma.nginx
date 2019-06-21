@@ -14,7 +14,6 @@ server {
 
     listen         80;
     listen         [::]:80;
-    return         301 https://$server_name$request_uri;
 
     # Uncomment this if you need to use the 'webroot' method with certbot. Make sure
     # that the directory exists and that it is accessible by the webserver. If you followed
@@ -23,8 +22,11 @@ server {
     # to get the certificate, and then uncomment it.
     #
     # location ~ /\.well-known/acme-challenge {
-    #     root /var/lib/letsencrypt/.well-known/acme-challenge;
+    #     alias /var/lib/letsencrypt/.well-known/acme-challenge;
     # }
+    location / {
+      return         301 https://$server_name$request_uri;
+    }
 }
 
 # Enable SSL session caching for improved performance
