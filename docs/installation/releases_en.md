@@ -70,7 +70,7 @@ rc-service postgresql restart
 ### Installing Pleroma
 ```sh
 # Create the Pleroma user
-adduser -S -s /bin/false -h /opt/pleroma -H pleroma
+adduser --system --shell  /bin/false --home /opt/pleroma pleroma
 
 # Set the flavour environment variable to the string you got in Detecting flavour section. 
 # For example if the flavour is `arm64-musl` the command will be
