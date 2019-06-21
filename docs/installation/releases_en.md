@@ -107,7 +107,7 @@ chown -R pleroma /etc/pleroma
 su pleroma -s $SHELL -lc "./bin/pleroma_ctl instance gen --output /etc/pleroma/config.exs --output-psql /tmp/setup_db.psql"
 
 # Create the postgres database
-psql -U postgres -d postgres -f /tmp/setup_db.psql
+su postgres -s $SHELL -lc "psql -f /tmp/setup_db.psql"
 
 # If you have installed RUM indexes add
 # `config :pleroma, :database, rum_enabled: true`
