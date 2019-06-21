@@ -108,7 +108,7 @@ defmodule Pleroma.Mixfile do
       {:ex_aws, "~> 2.0"},
       {:ex_aws_s3, "~> 2.0"},
       {:earmark, "~> 1.3"},
-      {:bbcode, "~> 0.1"},
+      {:bbcode, "~> 0.1.1"},
       {:ex_machina, "~> 2.3", only: :test},
       {:credo, "~> 0.9.3", only: [:dev, :test]},
       {:mock, "~> 0.3.3", only: :test},
