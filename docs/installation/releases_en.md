@@ -29,7 +29,7 @@ Other than things bundled in the OTP release Pleroma depends on:
 
 Debian/Ubuntu:
 ```sh
-apt install curl unzip ncurses postgresql posqtgresql-contrib nginx certbot
+apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot
 ```
 Alpine:
 ```sh
