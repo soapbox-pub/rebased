@@ -114,20 +114,20 @@ su postgres -s $SHELL -lc "psql -f /tmp/setup_db.psql"
 # to the end of /etc/pleroma/config.exs before proceeding
 
 # Create the database schema
-./bin/pleroma_ctl create
-./bin/pleroma_ctl migrate
+su pleroma -s $SHELL -lc "./bin/pleroma_ctl create"
+su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
 
-# If you have installed RUM indexes also run
-# ./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/
+# If you have installed RUM indexes uncommend and run
+# su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate --migrations-path priv/repo/optional_migrations/rum_indexing/"
 
 # Start the instance to verify that everything is working as expected
-./bin/pleroma daemon
+su pleroma -s $SHELL -lc "./bin/pleroma daemon"
 
 # Wait for about 20 seconds and query the instance endpoint, if it shows your uri, name and email correctly, you are configured correctly
 sleep 20 && curl http://localhost:4000/api/v1/instance
 
 # Stop the instance
-./bin/pleroma stop
+su pleroma -s $SHELL -lc "./bin/pleroma stop"
 ```
 
 ### Setting up nginx and getting Let's Encrypt SSL certificaties
