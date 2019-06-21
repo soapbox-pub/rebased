@@ -8,7 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
   require Logger
 
   # has the user successfully posted before?
-  defp user_has_posted_before?(%User{} = u) do
+  defp old_user?(%User{} = u) do
     u.info.note_count > 0 || u.info.follower_count > 0
   end
 
@@ -25,13 +25,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
   def filter(%{"type" => "Create", "actor" => actor, "object" => object} = message) do
     with {:ok, %User{} = u} <- User.get_or_fetch_by_ap_id(actor),
          {:contains_links, true} <- {:contains_links, contains_links?(object)},
-         {:posted_before, true} <- {:posted_before, user_has_posted_before?(u)} do
+         {:old_user, true} <- {:old_user, old_user?(u)} do
       {:ok, message}
     else
       {:contains_links, false} ->
         {:ok, message}
 
-      {:posted_before, false} ->
+      {:old_user, false} ->
         {:reject, nil}
 
       {:error, _} ->
