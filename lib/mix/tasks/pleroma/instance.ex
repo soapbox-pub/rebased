@@ -155,10 +155,11 @@ defmodule Mix.Tasks.Pleroma.Instance do
       secret = :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
       signing_salt = :crypto.strong_rand_bytes(8) |> Base.encode64() |> binary_part(0, 8)
       {web_push_public_key, web_push_private_key} = :crypto.generate_key(:ecdh, :prime256v1)
+      template_dir = Application.app_dir(:pleroma, "priv") <> "/templates"
 
       result_config =
         EEx.eval_file(
-          "sample_config.eex" |> Path.expand(__DIR__),
+          template_dir <> "/sample_config.eex",
           domain: domain,
           port: port,
           email: email,
@@ -179,7 +180,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
 
       result_psql =
         EEx.eval_file(
-          "sample_psql.eex" |> Path.expand(__DIR__),
+          template_dir <> "/sample_psql.eex",
           dbname: dbname,
           dbuser: dbuser,
           dbpass: dbpass
@@ -193,7 +194,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
       shell_info("Writing #{psql_path}.")
       File.write(psql_path, result_psql)
 
-      write_robots_txt(indexable)
+      write_robots_txt(indexable, template_dir)
 
       shell_info(
         "\n" <>
@@ -217,10 +218,10 @@ defmodule Mix.Tasks.Pleroma.Instance do
     end
   end
 
-  defp write_robots_txt(indexable) do
+  defp write_robots_txt(indexable, template_dir) do
     robots_txt =
       EEx.eval_file(
-        Path.expand("robots_txt.eex", __DIR__),
+        template_dir <> "/robots_txt.eex",
         indexable: indexable
       )
 

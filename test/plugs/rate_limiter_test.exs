@@ -20,7 +20,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
   end
 
   test "it restricts by opts" do
-    scale = 100
+    scale = 1000
     limit = 5
 
     Pleroma.Config.put([:rate_limit, @limiter_name], {scale, limit})
@@ -64,7 +64,7 @@ defmodule Pleroma.Plugs.RateLimiterTest do
   test "optional limits for authenticated users" do
     Ecto.Adapters.SQL.Sandbox.checkout(Pleroma.Repo)
 
-    scale = 100
+    scale = 1000
     limit = 5
     Pleroma.Config.put([:rate_limit, @limiter_name], [{1, 10}, {scale, limit}])
 
