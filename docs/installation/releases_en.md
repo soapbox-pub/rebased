@@ -41,9 +41,9 @@ apk add curl unzip ncurses postgresql posqtgresql-contrib nginx certbot
 #### (Optional) Installing RUM indexes
 RUM indexes are an alternative indexing scheme that is not included in PostgreSQL by default. You can read more about them on the [Configuration page](config.html#rum-indexing-for-full-text-search). They are completely optional and most of the time are not worth it, especially if you are running a single user instance (unless you absolutely need ordered search results).
 
-Debian/Ubuntu:
+Debian/Ubuntu (available only on Buster/19.04):
 ```sh
-apt install postgresql-rum
+apt install postgresql-11-rum
 ```
 Alpine:
 ```sh
