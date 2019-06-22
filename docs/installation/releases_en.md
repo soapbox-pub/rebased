@@ -140,7 +140,7 @@ certbot certonly --standalone --preferred-challenges http -d yourinstance.tld
 # For Debian/Ubuntu:
 cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/sites-available/pleroma.nginx
 ln -s /etc/nginx/sites-available/pleroma.nginx /etc/nginx/sites-enabled/pleroma.nginx
-# For Alpine
+# For Alpine:
 cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/conf.d/pleroma.conf
 # If your distro does not have either of those you can append
 # `include /etc/nginx/pleroma.conf` to the end of the http section in /etc/nginx/nginx.conf and
@@ -155,7 +155,7 @@ nginx -t
 # Start nginx
 # For Debian/Ubuntu:
 systemctl start nginx
-# For Alpine
+# For Alpine:
 rc-service nginx start
 ```
 
@@ -188,5 +188,53 @@ Still doesn't work? Feel free to contact us on [#pleroma on freenode](https://we
 ## Post installation
 
 ### Setting up auto-renew Let's Encrypt certificate
+```sh
+# Create the directory for webroot challenges
+mkdir -p /var/lib/letsencrypt
+
+# Uncomment the webroot method
+$EDITOR path-to-nginx-config
+
+# Verify that the config is valid
+nginx -t
+```
+Debian/Ubuntu:
+```sh
+# Restart nginx
+systemctl restart nginx
+
+# Ensure the webroot menthod and post hook is working
+certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --dry-run --post-hook 'systemctl nginx reload'
+
+# Add it to the daily cron
+echo '#!/bin/sh
+certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --dry-run --post-hook "systemctl reload nginx"
+' > /etc/cron.daily/renew-pleroma-cert
+chmod +x /etc/cron.daily/renew-pleroma-cert
+
+# If everything worked the output should contain /etc/cron.daily/renew-pleroma-cert
+run-parts --test /etc/cron.daily
+```
+Alpine:
+```sh
+# Restart nginx
+rc-service nginx restart
+
+# Start the cron daemon and make it start on boot
+rc-service crond start
+rc-update add crond
+
+# Ensure the webroot menthod and post hook is working
+certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --dry-run --post-hook 'rc-service nginx reload'
+
+# Add it to the daily cron
+echo '#!/bin/sh
+certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --dry-run --post-hook "rc-service nginx reload"
+' > /etc/periodic/daily/renew-pleroma-cert
+chmod +x /etc/periodic/daily/renew-pleroma-cert
+
+# If everything worked this should output /etc/periodic/daily/renew-pleroma-cert
+run-parts --test /etc/periodic/daily
+```
 ### Running Mix tasks
 ### Updating
