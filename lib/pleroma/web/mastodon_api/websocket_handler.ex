@@ -29,7 +29,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
 
   def init(%{qs: qs} = req, state) do
     with params <- :cow_qs.parse_qs(qs),
-         access_token <- List.keyfind(params, "access_token", 0),
+         access_token <- :cowboy_req.header("sec-websocket-protocol", req, 0),
          {_, stream} <- List.keyfind(params, "stream", 0),
          {:ok, user} <- allow_request(stream, access_token),
          topic when is_binary(topic) <- expand_topic(stream, params) do
@@ -89,7 +89,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
   end
 
   # Authenticated streams.
-  defp allow_request(stream, {"access_token", access_token}) when stream in @streams do
+  defp allow_request(stream, access_token) when stream in @streams do
     with %Token{user_id: user_id} <- Repo.get_by(Token, token: access_token),
          user = %User{} <- User.get_cached_by_id(user_id) do
       {:ok, user}
