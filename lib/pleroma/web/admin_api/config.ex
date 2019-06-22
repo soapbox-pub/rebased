@@ -77,6 +77,8 @@ defmodule Pleroma.Web.AdminAPI.Config do
   defp do_convert({k, v} = value) when is_tuple(value),
     do: %{k => do_convert(v)}
 
+  defp do_convert(value) when is_tuple(value), do: %{"tuple" => do_convert(Tuple.to_list(value))}
+
   defp do_convert(value) when is_binary(value) or is_map(value) or is_number(value), do: value
 
   defp do_convert(value) when is_atom(value) do
@@ -108,11 +110,16 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   defp do_transform(%Regex{} = value) when is_map(value), do: value
 
+  defp do_transform(%{"tuple" => [k, values] = entity}) when length(entity) == 2 do
+    {do_transform(k), do_transform(values)}
+  end
+
+  defp do_transform(%{"tuple" => values}) do
+    Enum.reduce(values, {}, fn val, acc -> Tuple.append(acc, do_transform(val)) end)
+  end
+
   defp do_transform(value) when is_map(value) do
-    values =
-      for {key, val} <- value,
-          into: [],
-          do: {String.to_atom(key), do_transform(val)}
+    values = for {key, val} <- value, into: [], do: {String.to_atom(key), do_transform(val)}
 
     Enum.sort(values)
   end
@@ -124,28 +131,27 @@ defmodule Pleroma.Web.AdminAPI.Config do
   defp do_transform(entity) when is_list(entity) and length(entity) == 1, do: hd(entity)
 
   defp do_transform(value) when is_binary(value) do
-    value = String.trim(value)
-
-    case String.length(value) do
-      0 ->
-        nil
-
-      _ ->
-        cond do
-          String.starts_with?(value, "Pleroma") ->
-            String.to_existing_atom("Elixir." <> value)
-
-          String.starts_with?(value, ":") ->
-            String.replace(value, ":", "") |> String.to_existing_atom()
-
-          String.starts_with?(value, "i:") ->
-            String.replace(value, "i:", "") |> String.to_integer()
-
-          true ->
-            value
-        end
-    end
+    String.trim(value)
+    |> do_transform_string()
   end
 
   defp do_transform(value), do: value
+
+  defp do_transform_string(value) when byte_size(value) == 0, do: nil
+
+  defp do_transform_string(value) do
+    cond do
+      String.starts_with?(value, "Pleroma") or String.starts_with?(value, "Phoenix") ->
+        String.to_existing_atom("Elixir." <> value)
+
+      String.starts_with?(value, ":") ->
+        String.replace(value, ":", "") |> String.to_existing_atom()
+
+      String.starts_with?(value, "i:") ->
+        String.replace(value, "i:", "") |> String.to_integer()
+
+      true ->
+        value
+    end
+  end
 end

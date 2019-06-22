@@ -1343,6 +1343,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         Application.delete_env(:pleroma, :key4)
         Application.delete_env(:pleroma, :keyaa1)
         Application.delete_env(:pleroma, :keyaa2)
+        Application.delete_env(:pleroma, Pleroma.Web.Endpoint.NotReal)
+        Application.delete_env(:pleroma, Pleroma.Captcha.NotReal)
         :ok = File.rm(temp_file)
       end)
 
@@ -1469,7 +1471,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         post(conn, "/api/pleroma/admin/config", %{
           configs: [
             %{
-              "key" => "Pleroma.Captcha",
+              "key" => "Pleroma.Captcha.NotReal",
               "value" => %{
                 "enabled" => ":false",
                 "method" => "Pleroma.Captcha.Kocaptcha",
@@ -1482,7 +1484,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert json_response(conn, 200) == %{
                "configs" => [
                  %{
-                   "key" => "Pleroma.Captcha",
+                   "key" => "Pleroma.Captcha.NotReal",
                    "value" => [
                      %{"enabled" => false},
                      %{"method" => "Pleroma.Captcha.Kocaptcha"},
@@ -1492,5 +1494,119 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                ]
              }
     end
+
+    test "tuples with more than two values", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "key" => "Pleroma.Web.Endpoint.NotReal",
+              "value" => [
+                %{
+                  "http" => %{
+                    "dispatch" => [
+                      %{
+                        "tuple" => [
+                          ":_",
+                          [
+                            %{
+                              "tuple" => [
+                                "/api/v1/streaming",
+                                "Pleroma.Web.MastodonAPI.WebsocketHandler",
+                                []
+                              ]
+                            },
+                            %{
+                              "tuple" => [
+                                "/websocket",
+                                "Phoenix.Endpoint.CowboyWebSocket",
+                                %{
+                                  "tuple" => [
+                                    "Phoenix.Transports.WebSocket",
+                                    %{
+                                      "tuple" => [
+                                        "Pleroma.Web.Endpoint",
+                                        "Pleroma.Web.UserSocket",
+                                        []
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            %{
+                              "tuple" => [
+                                ":_",
+                                "Phoenix.Endpoint.Cowboy2Handler",
+                                %{
+                                  "tuple" => ["Pleroma.Web.Endpoint", []]
+                                }
+                              ]
+                            }
+                          ]
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "key" => "Pleroma.Web.Endpoint.NotReal",
+                   "value" => [
+                     %{
+                       "http" => %{
+                         "dispatch" => %{
+                           "_" => [
+                             %{
+                               "tuple" => [
+                                 "/api/v1/streaming",
+                                 "Pleroma.Web.MastodonAPI.WebsocketHandler",
+                                 []
+                               ]
+                             },
+                             %{
+                               "tuple" => [
+                                 "/websocket",
+                                 "Phoenix.Endpoint.CowboyWebSocket",
+                                 %{
+                                   "Elixir.Phoenix.Transports.WebSocket" => %{
+                                     "tuple" => [
+                                       "Pleroma.Web.Endpoint",
+                                       "Pleroma.Web.UserSocket",
+                                       []
+                                     ]
+                                   }
+                                 }
+                               ]
+                             },
+                             %{
+                               "tuple" => [
+                                 "_",
+                                 "Phoenix.Endpoint.Cowboy2Handler",
+                                 %{"Elixir.Pleroma.Web.Endpoint" => []}
+                               ]
+                             }
+                           ]
+                         }
+                       }
+                     }
+                   ]
+                 }
+               ]
+             }
+    end
   end
+end
+
+# Needed for testing
+defmodule Pleroma.Web.Endpoint.NotReal do
+end
+
+defmodule Pleroma.Captcha.NotReal do
 end

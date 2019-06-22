@@ -179,5 +179,80 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert Config.from_binary(binary) ==
                [federated_timeline_removal: [], reject: [~r/comp[lL][aA][iI][nN]er/], replace: []]
     end
+
+    test "complex map with tuples with more than 2 values" do
+      binary =
+        Config.transform(%{
+          "http" => %{
+            "dispatch" => [
+              %{
+                "tuple" => [
+                  ":_",
+                  [
+                    %{
+                      "tuple" => [
+                        "/api/v1/streaming",
+                        "Pleroma.Web.MastodonAPI.WebsocketHandler",
+                        []
+                      ]
+                    },
+                    %{
+                      "tuple" => [
+                        "/websocket",
+                        "Phoenix.Endpoint.CowboyWebSocket",
+                        %{
+                          "tuple" => [
+                            "Phoenix.Transports.WebSocket",
+                            %{"tuple" => ["Pleroma.Web.Endpoint", "Pleroma.Web.UserSocket", []]}
+                          ]
+                        }
+                      ]
+                    },
+                    %{
+                      "tuple" => [
+                        ":_",
+                        "Phoenix.Endpoint.Cowboy2Handler",
+                        %{
+                          "tuple" => ["Pleroma.Web.Endpoint", []]
+                        }
+                      ]
+                    }
+                  ]
+                ]
+              }
+            ]
+          }
+        })
+
+      assert binary ==
+               :erlang.term_to_binary(
+                 http: [
+                   dispatch: [
+                     _: [
+                       {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+                       {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
+                        {Phoenix.Transports.WebSocket,
+                         {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, []}}},
+                       {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+                     ]
+                   ]
+                 ]
+               )
+
+      assert Config.from_binary(binary) == [
+               http: [
+                 dispatch: [
+                   {:_,
+                    [
+                      {"/api/v1/streaming", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+                      {"/websocket", Phoenix.Endpoint.CowboyWebSocket,
+                       {Phoenix.Transports.WebSocket,
+                        {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, []}}},
+                      {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+                    ]}
+                 ]
+               ]
+             ]
+    end
   end
 end
