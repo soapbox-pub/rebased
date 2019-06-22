@@ -114,7 +114,6 @@ su postgres -s $SHELL -lc "psql -f /tmp/setup_db.psql"
 # to the end of /etc/pleroma/config.exs before proceeding
 
 # Create the database schema
-su pleroma -s $SHELL -lc "./bin/pleroma_ctl create"
 su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
 
 # If you have installed RUM indexes uncommend and run
