@@ -34,12 +34,14 @@ defmodule Pleroma.Web.RichMedia.Parsers.MetaTagsParser do
 
   defp maybe_put_title(%{title: _} = meta, _), do: meta
 
-  defp maybe_put_title(meta, html) do
+  defp maybe_put_title(meta, html) when meta != %{} do
     case get_page_title(html) do
       "" -> meta
       title -> Map.put_new(meta, :title, title)
     end
   end
+
+  defp maybe_put_title(meta, _), do: meta
 
   defp get_page_title(html) do
     Floki.find(html, "title") |> Floki.text()

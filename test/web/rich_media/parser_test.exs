@@ -11,6 +11,12 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
 
       %{
         method: :get,
+        url: "http://example.com/non-ogp"
+      } ->
+        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/non_ogp_embed.html")}
+
+      %{
+        method: :get,
         url: "http://example.com/ogp-missing-title"
       } ->
         %Tesla.Env{
@@ -45,6 +51,11 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
 
   test "returns error when no metadata present" do
     assert {:error, _} = Pleroma.Web.RichMedia.Parser.parse("http://example.com/empty")
+  end
+
+  test "doesn't just add a title" do
+    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/non-ogp") ==
+             {:error, "Found metadata was invalid or incomplete: %{}"}
   end
 
   test "parses ogp" do
