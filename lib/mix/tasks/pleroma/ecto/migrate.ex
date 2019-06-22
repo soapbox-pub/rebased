@@ -4,6 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.Ecto.Migrate do
   use Mix.Task
+  import Mix.Pleroma
   require Logger
 
   @shortdoc "Wrapper on `ecto.migrate` task."
@@ -37,6 +38,7 @@ defmodule Mix.Tasks.Pleroma.Ecto.Migrate do
 
   @impl true
   def run(args \\ []) do
+    load_pleroma()
     {opts, _} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
     opts =

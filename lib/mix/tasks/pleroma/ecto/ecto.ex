@@ -9,6 +9,15 @@ defmodule Mix.Tasks.Pleroma.Ecto do
   def ensure_migrations_path(repo, opts) do
     path = opts[:migrations_path] || Path.join(source_repo_priv(repo), "migrations")
 
+    path =
+      case Path.type(path) do
+        :relative ->
+          Path.join(Application.app_dir(:pleroma), path)
+
+        :absolute ->
+          path
+      end
+
     if not File.dir?(path) do
       raise_missing_migrations(Path.relative_to_cwd(path), repo)
     end
@@ -22,7 +31,7 @@ defmodule Mix.Tasks.Pleroma.Ecto do
   def source_repo_priv(repo) do
     config = repo.config()
     priv = config[:priv] || "priv/#{repo |> Module.split() |> List.last() |> Macro.underscore()}"
-    Path.join(File.cwd!(), priv)
+    Path.join(Application.app_dir(:pleroma), priv)
   end
 
   defp raise_missing_migrations(path, repo) do

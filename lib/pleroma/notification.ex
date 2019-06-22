@@ -127,8 +127,7 @@ defmodule Pleroma.Notification do
     end
   end
 
-  def create_notifications(%Activity{data: %{"to" => _, "type" => type}} = activity)
-      when type in ["Create", "Like", "Announce", "Follow"] do
+  def create_notifications(%Activity{data: %{"to" => _, "type" => "Create"}} = activity) do
     object = Object.normalize(activity)
 
     unless object && object.data["type"] == "Answer" do
@@ -138,6 +137,13 @@ defmodule Pleroma.Notification do
     else
       {:ok, []}
     end
+  end
+
+  def create_notifications(%Activity{data: %{"to" => _, "type" => type}} = activity)
+      when type in ["Like", "Announce", "Follow"] do
+    users = get_notified_from_activity(activity)
+    notifications = Enum.map(users, fn user -> create_notification(activity, user) end)
+    {:ok, notifications}
   end
 
   def create_notifications(_), do: {:ok, []}
