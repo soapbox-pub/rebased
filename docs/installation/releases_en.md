@@ -238,3 +238,12 @@ run-parts --test /etc/periodic/daily
 ```
 ### Running Mix tasks
 ### Updating
+Generally, doing the following is enough:
+```sh
+# Download the new release
+su pleroma -s $SHELL -lc "./bin/pleroma_ctl update"
+
+# Migrate the database, you are advised to stop the instance before doing that
+su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
+```
+But you should **always check the release notes/changelog** in case there are config deprecations, special update steps, etc.
