@@ -32,8 +32,10 @@ Debian/Ubuntu:
 apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot
 ```
 Alpine:
+
+**Warning:** There has been some changes to musl on Alpine 3.10 which need an Elixir rebuild. Since the build machines are running Alpine 3.9 running the builds on 3.10 will likely fail with "dlsym: Resource temporarily unavailable". If you have not updated yet, replace `latest-stable` with `v3.9` in `/etc/apk/repositories`. If you have, try downgrading `musl` to `1.1.20-r3`
 ```sh
-echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
+echo "http://nl.alpinelinux.org/alpine/v3.9/community" >> /etc/apk/repositories
 apk update
 apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot
 ```
@@ -149,7 +151,7 @@ cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/conf.d/pleroma.conf
 cp /opt/pleroma/installation/pleroma.nginx /etc/nginx/pleroma.conf
 
 # Edit the nginx config replacing example.tld with your (sub)domain
-$EDITOR path-to-the-config
+$EDITOR path-to-nginx-config
 
 # Verify that the config is valid
 nginx -t
