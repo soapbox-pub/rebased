@@ -4,6 +4,7 @@
 
 defmodule Mix.Tasks.Pleroma.Ecto.Rollback do
   use Mix.Task
+  import Mix.Pleroma
   require Logger
   @shortdoc "Wrapper on `ecto.rollback` task"
 
@@ -36,6 +37,7 @@ defmodule Mix.Tasks.Pleroma.Ecto.Rollback do
 
   @impl true
   def run(args \\ []) do
+    load_pleroma()
     {opts, _} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
     opts =
