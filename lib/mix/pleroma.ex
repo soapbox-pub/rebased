@@ -9,6 +9,10 @@ defmodule Mix.Pleroma do
     {:ok, _} = Application.ensure_all_started(:pleroma)
   end
 
+  def load_pleroma do
+    Application.load(:pleroma)
+  end
+
   def get_option(options, opt, prompt, defval \\ nil, defname \\ nil) do
     Keyword.get(options, opt) || shell_prompt(prompt, defval, defname)
   end
