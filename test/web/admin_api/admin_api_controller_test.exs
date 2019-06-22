@@ -1463,5 +1463,34 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert Application.get_env(:pleroma, :keyaa1) == "another_value"
       refute Application.get_env(:pleroma, :keyaa2)
     end
+
+    test "common config example", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "key" => "Pleroma.Captcha",
+              "value" => %{
+                "enabled" => ":false",
+                "method" => "Pleroma.Captcha.Kocaptcha",
+                "seconds_valid" => "i:60"
+              }
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "key" => "Pleroma.Captcha",
+                   "value" => [
+                     %{"enabled" => false},
+                     %{"method" => "Pleroma.Captcha.Kocaptcha"},
+                     %{"seconds_valid" => 60}
+                   ]
+                 }
+               ]
+             }
+    end
   end
 end

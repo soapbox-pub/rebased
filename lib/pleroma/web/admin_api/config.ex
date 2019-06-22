@@ -77,8 +77,15 @@ defmodule Pleroma.Web.AdminAPI.Config do
   defp do_convert({k, v} = value) when is_tuple(value),
     do: %{k => do_convert(v)}
 
-  defp do_convert(value) when is_binary(value) or is_atom(value) or is_map(value),
-    do: value
+  defp do_convert(value) when is_binary(value) or is_map(value) or is_number(value), do: value
+
+  defp do_convert(value) when is_atom(value) do
+    string = to_string(value)
+
+    if String.starts_with?(string, "Elixir."),
+      do: String.trim_leading(string, "Elixir."),
+      else: value
+  end
 
   @spec transform(any()) :: binary()
   def transform(entity) when is_map(entity) do
