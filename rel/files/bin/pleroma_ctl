@@ -2,7 +2,7 @@
 # XXX: This should be removed when elixir's releases get custom command support
 
 detect_flavour() {
-	arch="$(arch)"
+	arch="$(uname -m)"
 	if [ "$arch" = "x86_64" ]; then
 		arch="amd64"
 	elif [ "$arch" = "armv7l" ]; then
