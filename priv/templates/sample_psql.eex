@@ -5,3 +5,8 @@ CREATE DATABASE <%= dbname %> OWNER <%= dbuser %>;
 CREATE EXTENSION IF NOT EXISTS citext;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+<%= if rum_enabled do
+  "CREATE EXTENSION IF NOT EXISTS rum;"
+else
+""
+end %>

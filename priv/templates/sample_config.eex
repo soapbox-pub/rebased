@@ -41,6 +41,7 @@ config :web_push_encryption, :vapid_details,
   public_key: "<%= web_push_public_key %>",
   private_key: "<%= web_push_private_key %>"
 
+config :pleroma, :database, rum_enabled: <%= rum_enabled %>
 config :pleroma, :instance, static_dir: "<%= static_dir %>"
 config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 
