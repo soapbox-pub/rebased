@@ -568,8 +568,9 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 {
   configs: [
     {
+      "group": string,
       "key": string,
-      "value": string or {} or []
+      "value": string or {} or [] or {"tuple": []}
      }
   ]
 }
@@ -597,8 +598,9 @@ Compile time settings (need instance reboot):
 - Method `POST`
 - Params:
   - `configs` => [
+    - `group` (string)
     - `key` (string)
-    - `value` (string, [], {})
+    - `value` (string, [], {} or {"tuple": []})
     - `delete` = true (optional, if parameter must be deleted)
   ]
 
@@ -608,6 +610,7 @@ Compile time settings (need instance reboot):
 {
   configs: [
     {
+      "group": "pleroma",
       "key": "Pleroma.Upload",
       "value": {
         "uploader": "Pleroma.Uploaders.Local",
@@ -636,6 +639,7 @@ Compile time settings (need instance reboot):
 {
   configs: [
     {
+      "group": string,
       "key": string,
       "value": string or {} or [] or {"tuple": []}
      }

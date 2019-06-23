@@ -11,8 +11,17 @@ defmodule Pleroma.Config.TransferTask do
   def load_and_update_env do
     if Pleroma.Config.get([:instance, :dynamic_configuration]) and
          Ecto.Adapters.SQL.table_exists?(Pleroma.Repo, "config") do
-      Pleroma.Repo.all(Config)
-      |> Enum.each(&update_env(&1))
+      for_restart =
+        Pleroma.Repo.all(Config)
+        |> Enum.map(&update_env(&1))
+
+      # We need to restart applications for loaded settings take effect
+      for_restart
+      |> Enum.reject(&(&1 in [:pleroma, :ok]))
+      |> Enum.each(fn app ->
+        Application.stop(app)
+        :ok = Application.start(app)
+      end)
     end
   end
 
@@ -25,11 +34,15 @@ defmodule Pleroma.Config.TransferTask do
           setting.key
         end
 
+      group = String.to_existing_atom(setting.group)
+
       Application.put_env(
-        :pleroma,
+        group,
         String.to_existing_atom(key),
         Config.from_binary(setting.value)
       )
+
+      group
     rescue
       e ->
         require Logger
