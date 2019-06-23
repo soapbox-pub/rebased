@@ -42,13 +42,20 @@ defmodule Pleroma.User.Info do
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
     field(:pinned_activities, {:array, :string}, default: [])
-    field(:flavour, :string, default: nil)
     field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
+    field(:pleroma_settings_store, :map, default: %{})
 
     field(:notification_settings, :map,
-      default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
+      default: %{
+        "followers" => true,
+        "follows" => true,
+        "non_follows" => true,
+        "non_followers" => true
+      }
     )
+
+    field(:skip_thread_containment, :boolean, default: false)
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -68,10 +75,15 @@ defmodule Pleroma.User.Info do
   end
 
   def update_notification_settings(info, settings) do
+    settings =
+      settings
+      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
+      |> Map.new()
+
     notification_settings =
       info.notification_settings
       |> Map.merge(settings)
-      |> Map.take(["remote", "local", "followers", "follows"])
+      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
 
     params = %{notification_settings: notification_settings}
 
@@ -209,7 +221,9 @@ defmodule Pleroma.User.Info do
       :hide_followers,
       :hide_favorites,
       :background,
-      :show_role
+      :show_role,
+      :skip_thread_containment,
+      :pleroma_settings_store
     ])
   end
 
@@ -239,14 +253,6 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:settings])
     |> validate_required([:settings])
-  end
-
-  def mastodon_flavour_update(info, flavour) do
-    params = %{flavour: flavour}
-
-    info
-    |> cast(params, [:flavour])
-    |> validate_required([:flavour])
   end
 
   def mascot_update(info, url) do

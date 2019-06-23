@@ -4,10 +4,9 @@
 
 defmodule Pleroma.Uploaders.MDII do
   alias Pleroma.Config
+  alias Pleroma.HTTP
 
   @behaviour Pleroma.Uploaders.Uploader
-
-  @httpoison Application.get_env(:pleroma, :httpoison)
 
   # MDII-hosted images are never passed through the MediaPlug; only local media.
   # Delegate to Pleroma.Uploaders.Local
@@ -25,7 +24,7 @@ defmodule Pleroma.Uploaders.MDII do
     query = "#{cgi}?#{extension}"
 
     with {:ok, %{status: 200, body: body}} <-
-           @httpoison.post(query, file_data, [], adapter: [pool: :default]) do
+           HTTP.post(query, file_data, [], adapter: [pool: :default]) do
       remote_file_name = String.split(body) |> List.first()
       public_url = "#{files}/#{remote_file_name}.#{extension}"
       {:ok, {:url, public_url}}

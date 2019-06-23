@@ -36,7 +36,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
           conn
       end
 
-    config = Pleroma.Config.get([Pleroma.Upload])
+    config = Pleroma.Config.get(Pleroma.Upload)
 
     with uploader <- Keyword.fetch!(config, :uploader),
          proxy_remote = Keyword.get(config, :proxy_remote, false),

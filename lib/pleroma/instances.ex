@@ -13,7 +13,7 @@ defmodule Pleroma.Instances do
 
   def reachability_datetime_threshold do
     federation_reachability_timeout_days =
-      Pleroma.Config.get(:instance)[:federation_reachability_timeout_days] || 0
+      Pleroma.Config.get([:instance, :federation_reachability_timeout_days], 0)
 
     if federation_reachability_timeout_days > 0 do
       NaiveDateTime.add(

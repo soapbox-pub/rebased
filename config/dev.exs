@@ -59,3 +59,6 @@ else
     "!!! RUNNING IN LOCALHOST DEV MODE! !!!\nFEDERATION WON'T WORK UNTIL YOU CONFIGURE A dev.secret.exs"
   )
 end
+
+if File.exists?("./config/dev.exported_from_db.secret.exs"),
+  do: import_config("dev.exported_from_db.secret.exs")

@@ -202,6 +202,9 @@ defmodule Pleroma.Web.Router do
 
     put("/statuses/:id", AdminAPIController, :status_update)
     delete("/statuses/:id", AdminAPIController, :status_delete)
+
+    get("/config", AdminAPIController, :config_show)
+    post("/config", AdminAPIController, :config_update)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
@@ -309,8 +312,6 @@ defmodule Pleroma.Web.Router do
       post("/conversations/:id/read", MastodonAPIController, :conversation_read)
 
       get("/endorsements", MastodonAPIController, :empty_array)
-
-      get("/pleroma/flavour", MastodonAPIController, :get_flavour)
     end
 
     scope [] do
@@ -339,6 +340,8 @@ defmodule Pleroma.Web.Router do
       put("/scheduled_statuses/:id", MastodonAPIController, :update_scheduled_status)
       delete("/scheduled_statuses/:id", MastodonAPIController, :delete_scheduled_status)
 
+      post("/polls/:id/votes", MastodonAPIController, :poll_vote)
+
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
 
@@ -353,8 +356,6 @@ defmodule Pleroma.Web.Router do
       get("/filters/:id", MastodonAPIController, :get_filter)
       put("/filters/:id", MastodonAPIController, :update_filter)
       delete("/filters/:id", MastodonAPIController, :delete_filter)
-
-      post("/pleroma/flavour/:flavour", MastodonAPIController, :set_flavour)
 
       get("/pleroma/mascot", MastodonAPIController, :get_mascot)
       put("/pleroma/mascot", MastodonAPIController, :set_mascot)
@@ -418,7 +419,7 @@ defmodule Pleroma.Web.Router do
 
     get("/trends", MastodonAPIController, :empty_array)
 
-    get("/accounts/search", MastodonAPIController, :account_search)
+    get("/accounts/search", SearchController, :account_search)
 
     scope [] do
       pipe_through(:oauth_read_or_public)
@@ -430,12 +431,14 @@ defmodule Pleroma.Web.Router do
       get("/statuses/:id", MastodonAPIController, :get_status)
       get("/statuses/:id/context", MastodonAPIController, :get_context)
 
+      get("/polls/:id", MastodonAPIController, :get_poll)
+
       get("/accounts/:id/statuses", MastodonAPIController, :user_statuses)
       get("/accounts/:id/followers", MastodonAPIController, :followers)
       get("/accounts/:id/following", MastodonAPIController, :following)
       get("/accounts/:id", MastodonAPIController, :user)
 
-      get("/search", MastodonAPIController, :search)
+      get("/search", SearchController, :search)
 
       get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
     end
@@ -443,7 +446,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
     pipe_through([:api, :oauth_read_or_public])
-    get("/search", MastodonAPIController, :search2)
+    get("/search", SearchController, :search2)
   end
 
   scope "/api", Pleroma.Web do
@@ -608,12 +611,6 @@ defmodule Pleroma.Web.Router do
     post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
   end
 
-  scope "/", Pleroma.Web do
-    pipe_through(:oembed)
-
-    get("/oembed", OEmbed.OEmbedController, :url)
-  end
-
   pipeline :activitypub do
     plug(:accepts, ["activity+json", "json"])
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
@@ -703,7 +700,7 @@ defmodule Pleroma.Web.Router do
     get("/:sig/:url/:filename", MediaProxyController, :remote)
   end
 
-  if Mix.env() == :dev do
+  if Pleroma.Config.get(:env) == :dev do
     scope "/dev" do
       pipe_through([:mailbox_preview])
 

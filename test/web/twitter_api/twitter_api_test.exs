@@ -116,8 +116,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user, followed, _activity} = TwitterAPI.follow(user, %{"user_id" => followed.id})
     assert User.ap_followers(followed) in user.following
 
-    {:error, msg} = TwitterAPI.follow(user, %{"user_id" => followed.id})
-    assert msg == "Could not follow user: #{followed.nickname} is already on your list."
+    {:ok, _, _, _} = TwitterAPI.follow(user, %{"user_id" => followed.id})
   end
 
   test "Follow another user using screen_name" do
@@ -132,8 +131,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     followed = User.get_cached_by_ap_id(followed.ap_id)
     assert followed.info.follower_count == 1
 
-    {:error, msg} = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
-    assert msg == "Could not follow user: #{followed.nickname} is already on your list."
+    {:ok, _, _, _} = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
   end
 
   test "Unfollow another user using user_id" do

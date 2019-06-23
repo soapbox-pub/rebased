@@ -71,6 +71,11 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `avatar_upload_limit`: File size limit of user’s profile avatars
 * `background_upload_limit`: File size limit of user’s profile backgrounds
 * `banner_upload_limit`: File size limit of user’s profile banners
+* `poll_limits`: A map with poll limits for **local** polls
+  * `max_options`: Maximum number of options
+  * `max_option_chars`: Maximum number of characters per option
+  * `min_expiration`: Minimum expiration time (in seconds)
+  * `max_expiration`: Maximum expiration time (in seconds)
 * `registrations_open`: Enable registrations for anyone, invitations can be enabled when false.
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `account_activation_required`: Require users to confirm their emails before signing in.
@@ -81,8 +86,11 @@ config :pleroma, Pleroma.Emails.Mailer,
   * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default)
   * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production
   * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See ``:mrf_simple`` section)
+  * `Pleroma.Web.ActivityPub.MRF.TagPolicy`: Applies policies to individual users based on tags, which can be set using pleroma-fe/admin-fe/any other app that supports Pleroma Admin API. For example it allows marking posts from individual users nsfw (sensitive)
+  * `Pleroma.Web.ActivityPub.MRF.SubchainPolicy`: Selectively runs other MRF policies when messages match (see ``:mrf_subchain`` section)
   * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See ``:mrf_rejectnonpublic`` section)
   * `Pleroma.Web.ActivityPub.MRF.EnsureRePrepended`: Rewrites posts to ensure that replies to posts with subjects do not have an identical subject and instead begin with re:.
+  * `Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy`: Rejects posts from likely spambots by rejecting posts from new users that contain links.
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
@@ -102,15 +110,13 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `welcome_message`: A message that will be send to a newly registered users as a direct message.
 * `welcome_user_nickname`: The nickname of the local user that sends the welcome message.
 * `max_report_comment_size`: The maximum size of the report comment (Default: `1000`)
-* `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). (Default: `false`)
-* `healthcheck`: if set to true, system data will be shown on ``/api/pleroma/healthcheck``.
-* `remote_post_retention_days`: the default amount of days to retain remote posts when pruning the database
+* `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
+* `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
+* `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
+* `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
+* `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
+* `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
 
-## :app_account_creation
-REST API for creating an account settings
-* `enabled`: Enable/disable registration
-* `max_requests`: Number of requests allowed for creating accounts
-* `interval`: Interval for restricting requests for one ip (seconds)
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
@@ -223,6 +229,21 @@ relates to mascots on the mastodon frontend
 * `report_removal`: List of instances to reject reports from
 * `avatar_removal`: List of instances to strip avatars from
 * `banner_removal`: List of instances to strip banners from
+
+## :mrf_subchain
+This policy processes messages through an alternate pipeline when a given message matches certain criteria.
+All criteria are configured as a map of regular expressions to lists of policy modules.
+
+* `match_actor`: Matches a series of regular expressions against the actor field.
+
+Example:
+
+```
+config :pleroma, :mrf_subchain,
+  match_actor: %{
+    ~r/https:\/\/example.com/s => [Pleroma.Web.ActivityPub.MRF.DropPolicy]
+  }
+```
 
 ## :mrf_rejectnonpublic
 * `allow_followersonly`: whether to allow followers-only posts
@@ -492,7 +513,7 @@ Authentication / authorization settings.
 
 * `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`.
 * `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
-* `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by OAUTH_CONSUMER_STRATEGIES environment variable.
+* `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by `OAUTH_CONSUMER_STRATEGIES` environment variable. Each entry in this space-delimited string should be of format `<strategy>` or `<strategy>:<dependency>` (e.g. `twitter` or `keycloak:ueberauth_keycloak_strategy` in case dependency is named differently than `ueberauth_<strategy>`).
 
 ## OAuth consumer mode
 
@@ -545,6 +566,24 @@ config :ueberauth, Ueberauth,
   providers: [
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
   ]
+
+# Keycloak
+# Note: make sure to add `keycloak:ueberauth_keycloak_strategy` entry to `OAUTH_CONSUMER_STRATEGIES` environment variable
+keycloak_url = "https://publicly-reachable-keycloak-instance.org:8080"
+
+config :ueberauth, Ueberauth.Strategy.Keycloak.OAuth,
+  client_id: System.get_env("KEYCLOAK_CLIENT_ID"),
+  client_secret: System.get_env("KEYCLOAK_CLIENT_SECRET"),
+  site: keycloak_url,
+  authorize_url: "#{keycloak_url}/auth/realms/master/protocol/openid-connect/auth",
+  token_url: "#{keycloak_url}/auth/realms/master/protocol/openid-connect/token",
+  userinfo_url: "#{keycloak_url}/auth/realms/master/protocol/openid-connect/userinfo",
+  token_method: :post
+
+config :ueberauth, Ueberauth,
+  providers: [
+    keycloak: {Ueberauth.Strategy.Keycloak, [uid_field: :email]}
+  ]
 ```
 
 ## OAuth 2.0 provider - :oauth2
@@ -575,3 +614,14 @@ To enable them, both the `rum_enabled` flag has to be set and the following spec
 `mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/`
 
 This will probably take a long time.
+
+## :rate_limit
+
+A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
+
+* The first element: `scale` (Integer). The time scale in milliseconds.
+* The second element: `limit` (Integer). How many requests to limit in the time scale provided.
+
+It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
+
+See [`Pleroma.Plugs.RateLimiter`](Pleroma.Plugs.RateLimiter.html) documentation for examples.

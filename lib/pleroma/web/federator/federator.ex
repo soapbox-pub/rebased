@@ -11,12 +11,10 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.Federator.RetryQueue
+  alias Pleroma.Web.OStatus
   alias Pleroma.Web.Websub
 
   require Logger
-
-  @websub Application.get_env(:pleroma, :websub)
-  @ostatus Application.get_env(:pleroma, :ostatus)
 
   def init do
     # 1 minute
@@ -87,12 +85,12 @@ defmodule Pleroma.Web.Federator do
       "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})"
     end)
 
-    @websub.verify(websub)
+    Websub.verify(websub)
   end
 
   def perform(:incoming_doc, doc) do
     Logger.info("Got document, trying to parse")
-    @ostatus.handle_incoming(doc)
+    OStatus.handle_incoming(doc)
   end
 
   def perform(:incoming_ap_doc, params) do

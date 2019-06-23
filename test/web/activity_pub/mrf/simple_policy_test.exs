@@ -145,6 +145,24 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
 
       assert SimplePolicy.filter(local_message) == {:ok, local_message}
     end
+
+    test "has a matching host but only as:Public in to" do
+      {_actor, ftl_message} = build_ftl_actor_and_message()
+
+      ftl_message_actor_host =
+        ftl_message
+        |> Map.fetch!("actor")
+        |> URI.parse()
+        |> Map.fetch!(:host)
+
+      ftl_message = Map.put(ftl_message, "cc", [])
+
+      Config.put([:mrf_simple, :federated_timeline_removal], [ftl_message_actor_host])
+
+      assert {:ok, ftl_message} = SimplePolicy.filter(ftl_message)
+      refute "https://www.w3.org/ns/activitystreams#Public" in ftl_message["to"]
+      assert "https://www.w3.org/ns/activitystreams#Public" in ftl_message["cc"]
+    end
   end
 
   defp build_ftl_actor_and_message do

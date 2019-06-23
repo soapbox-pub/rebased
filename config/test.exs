@@ -17,6 +17,8 @@ config :pleroma, Pleroma.Captcha,
 # Print only warnings and errors during test
 config :logger, level: :warn
 
+config :pleroma, :auth, oauth_consumer_strategies: []
+
 config :pleroma, Pleroma.Upload, filters: [], link_name: false
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
@@ -25,7 +27,8 @@ config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test
 
 config :pleroma, :instance,
   email: "admin@example.com",
-  notify_email: "noreply@example.com"
+  notify_email: "noreply@example.com",
+  skip_thread_containment: false
 
 # Configure your database
 config :pleroma, Pleroma.Repo,
@@ -39,8 +42,6 @@ config :pleroma, Pleroma.Repo,
 # Reduce hash rounds for testing
 config :pbkdf2_elixir, rounds: 1
 
-config :pleroma, :websub, Pleroma.Web.WebsubMock
-config :pleroma, :ostatus, Pleroma.Web.OStatusMock
 config :tesla, adapter: Tesla.Mock
 config :pleroma, :rich_media, enabled: false
 
@@ -59,7 +60,7 @@ config :pleroma, Pleroma.ScheduledActivity,
   total_user_limit: 3,
   enabled: false
 
-config :pleroma, :app_account_creation, max_requests: 5
+config :pleroma, :rate_limit, app_account_creation: {10_000, 5}
 
 config :pleroma, :http_security, report_uri: "https://endpoint.com"
 

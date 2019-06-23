@@ -1186,4 +1186,33 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   def data_uri do
     File.read!("test/fixtures/avatar_data_uri")
   end
+
+  describe "fetch_activities_bounded" do
+    test "fetches private posts for followed users" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "thought I looked cute might delete later :3",
+          "visibility" => "private"
+        })
+
+      [result] = ActivityPub.fetch_activities_bounded([user.follower_address], [])
+      assert result.id == activity.id
+    end
+
+    test "fetches only public posts for other users" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe", "visibility" => "public"})
+
+      {:ok, _private_activity} =
+        CommonAPI.post(user, %{
+          "status" => "why is tenshi eating a corndog so cute?",
+          "visibility" => "private"
+        })
+
+      [result] = ActivityPub.fetch_activities_bounded([], [user.follower_address])
+      assert result.id == activity.id
+    end
+  end
 end

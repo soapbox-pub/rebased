@@ -17,8 +17,10 @@ config :pleroma, Pleroma.Web.Endpoint,
   http: [port: 4000],
   protocol: "http"
 
+config :phoenix, serve_endpoints: true
+
 # Do not print debug messages in production
-config :logger, level: :info
+config :logger, level: :warn
 
 # ## SSL Support
 #
@@ -61,3 +63,6 @@ config :logger, level: :info
 # Finally import the config/prod.secret.exs
 # which should be versioned separately.
 import_config "prod.secret.exs"
+
+if File.exists?("./config/prod.exported_from_db.secret.exs"),
+  do: import_config("prod.exported_from_db.secret.exs")

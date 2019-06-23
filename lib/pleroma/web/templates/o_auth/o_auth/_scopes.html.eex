@@ -1,13 +1,19 @@
 <div class="scopes-input">
-  <%= label @form, :scope, "Permissions" %>
-
+  <%= label @form, :scope, "The following permissions will be granted" %>
   <div class="scopes">
     <%= for scope <- @available_scopes do %>
       <%# Note: using hidden input with `unchecked_value` in order to distinguish user's empty selection from `scope` param being omitted %>
-      <div class="scope">
+      <%= if scope in @scopes do %>
+        <div class="scope">
+          <%= checkbox @form, :"scope_#{scope}", value: scope in @scopes && scope, checked_value: scope, unchecked_value: "", name: "authorization[scope][]" %>
+          <%= label @form, :"scope_#{scope}", String.capitalize(scope) %>
+          <%= if scope in @scopes && scope do %>
+            <%= String.capitalize(scope) %>
+          <% end %>
+        </div>
+      <% else %>
         <%= checkbox @form, :"scope_#{scope}", value: scope in @scopes && scope, checked_value: scope, unchecked_value: "", name: "authorization[scope][]" %>
-        <%= label @form, :"scope_#{scope}", String.capitalize(scope) %>
-      </div>
+      <% end %>
     <% end %>
   </div>
 </div>

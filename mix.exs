@@ -32,8 +32,20 @@ defmodule Pleroma.Mixfile do
         ],
         main: "readme",
         output: "priv/static/doc"
+      ],
+      releases: [
+        pleroma: [
+          include_executables_for: [:unix],
+          applications: [ex_syslogger: :load, syslog: :load],
+          steps: [:assemble, &copy_files/1]
+        ]
       ]
     ]
+  end
+
+  def copy_files(%{path: target_path} = release) do
+    File.cp_r!("./rel/files", target_path)
+    release
   end
 
   # Configuration for the OTP application.
@@ -51,18 +63,29 @@ defmodule Pleroma.Mixfile do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
+  # Specifies OAuth dependencies.
+  defp oauth_deps do
+    oauth_strategy_packages =
+      System.get_env("OAUTH_CONSUMER_STRATEGIES")
+      |> to_string()
+      |> String.split()
+      |> Enum.map(fn strategy_entry ->
+        with [_strategy, dependency] <- String.split(strategy_entry, ":") do
+          dependency
+        else
+          [strategy] -> "ueberauth_#{strategy}"
+        end
+      end)
+
+    for s <- oauth_strategy_packages, do: {String.to_atom(s), ">= 0.0.0"}
+  end
+
   # Specifies your project dependencies.
   #
   # Type `mix help deps` for examples and options.
   defp deps do
-    oauth_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
-
-    oauth_deps =
-      for s <- oauth_strategies,
-          do: {String.to_atom("ueberauth_#{s}"), ">= 0.0.0"}
-
     [
-      {:phoenix, "~> 1.4.1"},
+      {:phoenix, "~> 1.4.8"},
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
@@ -85,7 +108,7 @@ defmodule Pleroma.Mixfile do
       {:ex_aws, "~> 2.0"},
       {:ex_aws_s3, "~> 2.0"},
       {:earmark, "~> 1.3"},
-      {:bbcode, "~> 0.1"},
+      {:bbcode, "~> 0.1.1"},
       {:ex_machina, "~> 2.3", only: :test},
       {:credo, "~> 0.9.3", only: [:dev, :test]},
       {:mock, "~> 0.3.3", only: :test},
@@ -103,7 +126,7 @@ defmodule Pleroma.Mixfile do
       {:ueberauth, "~> 0.4"},
       {:auto_linker,
        git: "https://git.pleroma.social/pleroma/auto_linker.git",
-       ref: "c00c4e75b35367fa42c95ffd9b8c455bf9995829"},
+       ref: "95e8188490e97505c56636c1379ffdf036c1fdde"},
       {:http_signatures,
        git: "https://git.pleroma.social/pleroma/http_signatures.git",
        ref: "9789401987096ead65646b52b5a2ca6bf52fc531"},
@@ -113,15 +136,14 @@ defmodule Pleroma.Mixfile do
       {:prometheus_plugs, "~> 1.1"},
       {:prometheus_phoenix, "~> 1.2"},
       {:prometheus_ecto, "~> 1.4"},
-      {:prometheus_process_collector, "~> 1.4"},
       {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"},
       {:benchee, "~> 1.0"},
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
-      {:ex_rated, "~> 1.2"},
+      {:ex_rated, "~> 1.3"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test}
-    ] ++ oauth_deps
+    ] ++ oauth_deps()
   end
 
   # Aliases are shortcuts or tasks specific to the current project.
@@ -132,6 +154,8 @@ defmodule Pleroma.Mixfile do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
+      "ecto.migrate": ["pleroma.ecto.migrate"],
+      "ecto.rollback": ["pleroma.ecto.rollback"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate", "test"]
@@ -146,14 +170,17 @@ defmodule Pleroma.Mixfile do
   #   * the mix environment if different than prod
   defp version(version) do
     {git_tag, git_pre_release} =
-      with {tag, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=0"]),
+      with {tag, 0} <-
+             System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true),
            tag = String.trim(tag),
            {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
            describe = String.trim(describe),
            ahead <- String.replace(describe, tag, "") do
         {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
       else
-        _ -> {nil, nil}
+        _ ->
+          {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
+          {nil, "-0-g" <> String.trim(commit_hash)}
       end
 
     if git_tag && version != git_tag do
@@ -180,7 +207,18 @@ defmodule Pleroma.Mixfile do
             string -> "+" <> string
           end).()
 
-    [version, git_pre_release, build]
+    branch_name =
+      with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+           branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
+           true <- branch_name != "master" do
+        branch_name =
+          String.trim(branch_name)
+          |> String.replace(~r/[^0-9a-z\-\.]+/i, "-")
+
+        "-" <> branch_name
+      end
+
+    [version, git_pre_release, branch_name, build]
     |> Enum.filter(fn string -> string && string != "" end)
     |> Enum.join()
   end

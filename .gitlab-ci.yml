@@ -16,6 +16,7 @@ stages:
   - build
   - test
   - deploy
+  - release
 
 before_script:
   - mix local.hex --force
@@ -42,6 +43,7 @@ docs-build:
     paths:
       - priv/static/doc
 
+
 unit-testing:
   stage: test
   services:
@@ -52,8 +54,7 @@ unit-testing:
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
-    - mix test --trace --preload-modules
-    - mix coveralls
+    - mix coveralls --trace --preload-modules
 
 unit-testing-rum:
   stage: test
@@ -95,3 +96,150 @@ docs-deploy:
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - rsync -hrvz --delete -e "ssh -p ${SSH_PORT}" priv/static/doc/ "${SSH_USER_HOST_LOCATION}/${CI_COMMIT_REF_NAME}"
+
+review_app:
+  image: alpine:3.9
+  stage: deploy
+  before_script:
+    - apk update && apk add openssh-client git
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: https://$CI_ENVIRONMENT_SLUG.pleroma.online/
+    on_stop: stop_review_app
+  only:
+    - branches
+  except:
+    - master
+    - develop
+  script:
+    - echo "$CI_ENVIRONMENT_SLUG"
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
+    - (ssh -t dokku@pleroma.online -- apps:create "$CI_ENVIRONMENT_SLUG") || true
+    - ssh -t dokku@pleroma.online -- config:set "$CI_ENVIRONMENT_SLUG" APP_NAME="$CI_ENVIRONMENT_SLUG" APP_HOST="$CI_ENVIRONMENT_SLUG.pleroma.online" MIX_ENV=dokku
+    - (ssh -t dokku@pleroma.online -- postgres:create $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db) || true
+    - (ssh -t dokku@pleroma.online -- postgres:link $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db "$CI_ENVIRONMENT_SLUG") || true
+    - (ssh -t dokku@pleroma.online -- certs:add "$CI_ENVIRONMENT_SLUG" /home/dokku/server.crt /home/dokku/server.key) || true
+    - git push -f dokku@pleroma.online:$CI_ENVIRONMENT_SLUG $CI_COMMIT_SHA:refs/heads/master
+
+stop_review_app:
+  image: alpine:3.9
+  stage: deploy
+  before_script:
+    - apk update && apk add openssh-client git
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    action: stop
+  script:
+    - echo "$CI_ENVIRONMENT_SLUG"
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - ssh-keyscan -H "pleroma.online" >> ~/.ssh/known_hosts
+    - ssh -t dokku@pleroma.online -- --force apps:destroy "$CI_ENVIRONMENT_SLUG"
+    - ssh -t dokku@pleroma.online -- --force postgres:destroy $(echo $CI_ENVIRONMENT_SLUG | sed -e 's/-/_/g')_db
+
+amd64:
+  stage: release 
+  # TODO: Replace with upstream image when 1.9.0 comes out
+  image: rinpatch/elixir:1.9.0-rc.0
+  only: &release-only
+  - master@pleroma/pleroma
+  - develop@pleroma/pleroma
+  artifacts: &release-artifacts
+    name: "pleroma-$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA-$CI_JOB_NAME"
+    paths:
+      - release/*
+    # Ideally it would be never for master branch and with the next commit for develop,
+    # but Gitlab does not support neither `only` for artifacts
+    # nor setting it to never from .gitlab-ci.yml
+    # nor expiring with the next commit
+    expire_in: 42 yrs
+
+  cache: &release-cache
+    key: $CI_COMMIT_REF_NAME-$CI_JOB_NAME
+    paths:
+          - deps
+  variables: &release-variables
+    MIX_ENV: prod
+  before_script: &before-release
+  - echo "import Mix.Config" > config/prod.secret.exs
+  - mix local.hex --force
+  - mix local.rebar --force
+  script: &release
+    - mix deps.get --only prod
+    - mkdir release
+    - export PLEROMA_BUILD_BRANCH=$CI_COMMIT_REF_NAME
+    - mix release --path release
+
+
+amd64-musl:
+  stage: release
+  artifacts: *release-artifacts
+  only: *release-only
+  # TODO: Replace with upstream image when 1.9.0 comes out
+  image: rinpatch/elixir:1.9.0-rc.0-alpine
+  cache: *release-cache
+  variables: *release-variables
+  before_script: &before-release-musl
+  - apk add git gcc g++ musl-dev make
+  - echo "import Mix.Config" > config/prod.secret.exs
+  - mix local.hex --force
+  - mix local.rebar --force
+  script: *release
+
+arm:
+  stage: release
+  artifacts: *release-artifacts
+  only: *release-only
+  tags:
+    - arm32
+  # TODO: Replace with upstream image when 1.9.0 comes out
+  image: rinpatch/elixir:1.9.0-rc.0-arm
+  cache: *release-cache
+  variables: *release-variables
+  before_script: *before-release
+  script: *release
+
+arm-musl:
+  stage: release
+  artifacts: *release-artifacts
+  only: *release-only
+  tags:
+    - arm32
+  # TODO: Replace with upstream image when 1.9.0 comes out
+  image: rinpatch/elixir:1.9.0-rc.0-arm-alpine
+  cache: *release-cache
+  variables: *release-variables
+  before_script: *before-release-musl
+  script: *release
+
+arm64:
+  stage: release
+  artifacts: *release-artifacts
+  only: *release-only
+  tags:
+    - arm
+  # TODO: Replace with upstream image when 1.9.0 comes out
+  image: rinpatch/elixir:1.9.0-rc.0-arm64
+  cache: *release-cache
+  variables: *release-variables
+  before_script: *before-release
+  script: *release
+
+arm64-musl:
+  stage: release
+  artifacts: *release-artifacts
+  only: *release-only
+  tags:
+    - arm
+  # TODO: Replace with upstream image when 1.9.0 comes out
+  image: rinpatch/elixir:1.9.0-rc.0-arm64-alpine
+  cache: *release-cache
+  variables: *release-variables
+  before_script: *before-release-musl
+  script: *release

@@ -52,6 +52,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mastodon.sdf.org/users/rinpatch", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/rinpatch.json")
+     }}
+  end
+
   def get(
         "https://mastodon.social/.well-known/webfinger?resource=https://mastodon.social/users/emelie",
         _,
@@ -235,6 +243,14 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://n1u.moe/users/rye", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/httpoison_mock/rye.json")
+     }}
+  end
+
   def get("http://mastodon.example.org/users/admin/statuses/100787282858396771", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -292,6 +308,10 @@ defmodule HttpRequestMock do
        status: 200,
        body: File.read!("test/fixtures/httpoison_mock/admin@mastdon.example.org.json")
      }}
+  end
+
+  def get("http://mastodon.example.org/users/gargron", _, _, Accept: "application/activity+json") do
+    {:error, :nxdomain}
   end
 
   def get(
@@ -538,6 +558,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "http://gs.example.org:4040/index.php/user/1",
+        _,
+        _,
+        Accept: "application/activity+json"
+      ) do
+    {:ok, %Tesla.Env{status: 406, body: ""}}
+  end
+
   def get("http://gs.example.org/index.php/api/statuses/user_timeline/1.atom", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -728,6 +757,14 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
   end
 
+  def get("http://example.com/ogp-missing-data", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/rich_media/ogp-missing-data.html")
+     }}
+  end
+
   def get("http://example.com/malformed", _, _, _) do
     {:ok,
      %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/malformed-data.html")}}
@@ -758,6 +795,30 @@ defmodule HttpRequestMock do
   def post(url, query \\ [], body \\ [], headers \\ [])
 
   def post("http://example.org/needs_refresh", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://mastodon.example.org/inbox", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("https://hubzilla.example.org/inbox", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://gs.example.org/index.php/main/salmon/user/1", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,

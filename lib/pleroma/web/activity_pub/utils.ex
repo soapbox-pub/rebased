@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   require Logger
 
-  @supported_object_types ["Article", "Note", "Video", "Page"]
+  @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer"]
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
 
@@ -376,8 +376,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Updates a follow activity's state (for locked accounts).
   """
-  def update_follow_state(
-        %Activity{data: %{"actor" => actor, "object" => object, "state" => "pending"}} = activity,
+  def update_follow_state_for_all(
+        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
         state
       ) do
     try do
@@ -788,5 +788,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       _ ->
         [to, cc, recipients]
     end
+  end
+
+  def get_existing_votes(actor, %{data: %{"id" => id}}) do
+    query =
+      from(
+        [activity, object: object] in Activity.with_preloaded_object(Activity),
+        where: fragment("(?)->>'type' = 'Create'", activity.data),
+        where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
+        where:
+          fragment(
+            "(?)->>'inReplyTo' = ?",
+            object.data,
+            ^to_string(id)
+          ),
+        where: fragment("(?)->>'type' = 'Answer'", object.data)
+      )
+
+    Repo.all(query)
   end
 end

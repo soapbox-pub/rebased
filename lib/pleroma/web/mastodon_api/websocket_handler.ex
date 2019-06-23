@@ -17,6 +17,7 @@ defmodule Pleroma.Web.MastodonAPI.WebsocketHandler do
     "public:media",
     "public:local:media",
     "user",
+    "user:notification",
     "direct",
     "list",
     "hashtag"

@@ -35,9 +35,9 @@ defmodule Pleroma.Web.CommonAPI do
   end
 
   def accept_follow_request(follower, followed) do
-    with {:ok, follower} <- User.maybe_follow(follower, followed),
+    with {:ok, follower} <- User.follow(follower, followed),
          %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
          {:ok, _activity} <-
            ActivityPub.accept(%{
              to: [follower.ap_id],
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.CommonAPI do
 
   def reject_follow_request(follower, followed) do
     with %Activity{} = follow_activity <- Utils.fetch_latest_follow(follower, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
          {:ok, _activity} <-
            ActivityPub.reject(%{
              to: [follower.ap_id],
@@ -119,6 +119,56 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def vote(user, object, choices) do
+    with "Question" <- object.data["type"],
+         {:author, false} <- {:author, object.data["actor"] == user.ap_id},
+         {:existing_votes, []} <- {:existing_votes, Utils.get_existing_votes(user.ap_id, object)},
+         {options, max_count} <- get_options_and_max_count(object),
+         option_count <- Enum.count(options),
+         {:choice_check, {choices, true}} <-
+           {:choice_check, normalize_and_validate_choice_indices(choices, option_count)},
+         {:count_check, true} <- {:count_check, Enum.count(choices) <= max_count} do
+      answer_activities =
+        Enum.map(choices, fn index ->
+          answer_data = make_answer_data(user, object, Enum.at(options, index)["name"])
+
+          {:ok, activity} =
+            ActivityPub.create(%{
+              to: answer_data["to"],
+              actor: user,
+              context: object.data["context"],
+              object: answer_data,
+              additional: %{"cc" => answer_data["cc"]}
+            })
+
+          activity
+        end)
+
+      object = Object.get_cached_by_ap_id(object.data["id"])
+      {:ok, answer_activities, object}
+    else
+      {:author, _} -> {:error, "Poll's author can't vote"}
+      {:existing_votes, _} -> {:error, "Already voted"}
+      {:choice_check, {_, false}} -> {:error, "Invalid indices"}
+      {:count_check, false} -> {:error, "Too many choices"}
+    end
+  end
+
+  defp get_options_and_max_count(object) do
+    if Map.has_key?(object.data, "anyOf") do
+      {object.data["anyOf"], Enum.count(object.data["anyOf"])}
+    else
+      {object.data["oneOf"], 1}
+    end
+  end
+
+  defp normalize_and_validate_choice_indices(choices, count) do
+    Enum.map_reduce(choices, true, fn index, valid ->
+      index = if is_binary(index), do: String.to_integer(index), else: index
+      {index, if(valid, do: index < count, else: valid)}
+    end)
+  end
+
   def get_visibility(%{"visibility" => visibility}, in_reply_to)
       when visibility in ~w{public unlisted private direct},
       do: {visibility, get_replied_to_visibility(in_reply_to)}
@@ -154,12 +204,15 @@ defmodule Pleroma.Web.CommonAPI do
              data,
              visibility
            ),
-         {to, cc} <- to_for_user_and_mentions(user, mentions, in_reply_to, visibility),
+         mentioned_users <- for({_, mentioned_user} <- mentions, do: mentioned_user.ap_id),
+         addressed_users <- get_addressed_users(mentioned_users, data["to"]),
+         {poll, poll_emoji} <- make_poll_data(data),
+         {to, cc} <- get_to_and_cc(user, addressed_users, in_reply_to, visibility),
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
          full_payload <- String.trim(status <> cw),
-         length when length in 1..limit <- String.length(full_payload),
+         :ok <- validate_character_limit(full_payload, attachments, limit),
          object <-
            make_note_data(
              user.ap_id,
@@ -171,13 +224,14 @@ defmodule Pleroma.Web.CommonAPI do
              tags,
              cw,
              cc,
-             sensitive
+             sensitive,
+             poll
            ),
          object <-
            Map.put(
              object,
              "emoji",
-             Formatter.get_emoji_map(full_payload)
+             Map.merge(Formatter.get_emoji_map(full_payload), poll_emoji)
            ) do
       res =
         ActivityPub.create(
@@ -193,6 +247,7 @@ defmodule Pleroma.Web.CommonAPI do
 
       res
     else
+      {:error, _} = e -> e
       e -> {:error, e}
     end
   end

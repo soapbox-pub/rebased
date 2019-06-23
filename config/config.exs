@@ -184,9 +184,6 @@ config :mime, :types, %{
   "application/ld+json" => ["activity+json"]
 }
 
-config :pleroma, :websub, Pleroma.Web.Websub
-config :pleroma, :ostatus, Pleroma.Web.OStatus
-config :pleroma, :httpoison, Pleroma.HTTP
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 # Configures http settings, upstream proxy etc.
@@ -211,6 +208,12 @@ config :pleroma, :instance,
   avatar_upload_limit: 2_000_000,
   background_upload_limit: 4_000_000,
   banner_upload_limit: 4_000_000,
+  poll_limits: %{
+    max_options: 20,
+    max_option_chars: 200,
+    min_expiration: 0,
+    max_expiration: 365 * 24 * 60 * 60
+  },
   registrations_open: true,
   federating: true,
   federation_reachability_timeout_days: 7,
@@ -240,9 +243,10 @@ config :pleroma, :instance,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
   healthcheck: false,
-  remote_post_retention_days: 90
-
-config :pleroma, :app_account_creation, enabled: true, max_requests: 25, interval: 1800
+  remote_post_retention_days: 90,
+  skip_thread_containment: true,
+  limit_to_local_content: :unauthenticated,
+  dynamic_configuration: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -323,6 +327,8 @@ config :pleroma, :mrf_keyword,
   federated_timeline_removal: [],
   replace: []
 
+config :pleroma, :mrf_subchain, match_actor: %{}
+
 config :pleroma, :rich_media, enabled: true
 
 config :pleroma, :media_proxy,
@@ -355,8 +361,8 @@ config :pleroma, :suggestions,
   third_party_engine:
     "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
   timeout: 300_000,
-  limit: 23,
-  web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
+  limit: 40,
+  web: "https://vinayaka.distsn.org"
 
 config :pleroma, :http_security,
   enabled: true,
@@ -436,6 +442,8 @@ config :auto_linker,
   opts: [
     scheme: true,
     extra: true,
+    # TODO: Set to :no_scheme when it works properly
+    validate_tld: true,
     class: false,
     strip_prefix: false,
     new_window: false,
@@ -456,7 +464,11 @@ config :pleroma, :ldap,
 config :esshd,
   enabled: false
 
-oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+oauth_consumer_strategies =
+  System.get_env("OAUTH_CONSUMER_STRATEGIES")
+  |> to_string()
+  |> String.split()
+  |> Enum.map(&hd(String.split(&1, ":")))
 
 ueberauth_providers =
   for strategy <- oauth_consumer_strategies do
@@ -489,8 +501,14 @@ config :pleroma, :oauth2,
 
 config :pleroma, :database, rum_enabled: false
 
+config :pleroma, :env, Mix.env()
+
 config :http_signatures,
   adapter: Pleroma.Signature
+
+config :pleroma, :rate_limit,
+  search: [{1000, 10}, {1000, 30}],
+  app_account_creation: {1_800_000, 25}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

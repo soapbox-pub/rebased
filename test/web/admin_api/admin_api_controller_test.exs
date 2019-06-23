@@ -437,27 +437,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       user = insert(:user, local: false, tags: ["foo", "bar"])
       conn = get(conn, "/api/pleroma/admin/users?page=1")
 
+      users =
+        [
+          %{
+            "deactivated" => admin.info.deactivated,
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "local" => true,
+            "tags" => []
+          },
+          %{
+            "deactivated" => user.info.deactivated,
+            "id" => user.id,
+            "nickname" => user.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => false,
+            "tags" => ["foo", "bar"]
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
       assert json_response(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => admin.info.deactivated,
-                   "id" => admin.id,
-                   "nickname" => admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => true,
-                   "tags" => []
-                 },
-                 %{
-                   "deactivated" => user.info.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => false,
-                   "tags" => ["foo", "bar"]
-                 }
-               ]
+               "users" => users
              }
     end
 
@@ -659,35 +663,39 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> assign(:user, admin)
         |> get("/api/pleroma/admin/users?filters=local")
 
+      users =
+        [
+          %{
+            "deactivated" => user.info.deactivated,
+            "id" => user.id,
+            "nickname" => user.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => true,
+            "tags" => []
+          },
+          %{
+            "deactivated" => admin.info.deactivated,
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "local" => true,
+            "tags" => []
+          },
+          %{
+            "deactivated" => false,
+            "id" => old_admin.id,
+            "local" => true,
+            "nickname" => old_admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "tags" => []
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
       assert json_response(conn, 200) == %{
                "count" => 3,
                "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => user.info.deactivated,
-                   "id" => user.id,
-                   "nickname" => user.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => true,
-                   "tags" => []
-                 },
-                 %{
-                   "deactivated" => admin.info.deactivated,
-                   "id" => admin.id,
-                   "nickname" => admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => true,
-                   "tags" => []
-                 },
-                 %{
-                   "deactivated" => false,
-                   "id" => old_admin.id,
-                   "local" => true,
-                   "nickname" => old_admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "tags" => []
-                 }
-               ]
+               "users" => users
              }
     end
 
@@ -698,27 +706,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?filters=is_admin")
 
+      users =
+        [
+          %{
+            "deactivated" => false,
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "local" => admin.local,
+            "tags" => []
+          },
+          %{
+            "deactivated" => false,
+            "id" => second_admin.id,
+            "nickname" => second_admin.nickname,
+            "roles" => %{"admin" => true, "moderator" => false},
+            "local" => second_admin.local,
+            "tags" => []
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
       assert json_response(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => false,
-                   "id" => admin.id,
-                   "nickname" => admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => admin.local,
-                   "tags" => []
-                 },
-                 %{
-                   "deactivated" => false,
-                   "id" => second_admin.id,
-                   "nickname" => second_admin.nickname,
-                   "roles" => %{"admin" => true, "moderator" => false},
-                   "local" => second_admin.local,
-                   "tags" => []
-                 }
-               ]
+               "users" => users
              }
     end
 
@@ -753,27 +765,31 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       conn = get(conn, "/api/pleroma/admin/users?tags[]=first&tags[]=second")
 
+      users =
+        [
+          %{
+            "deactivated" => false,
+            "id" => user1.id,
+            "nickname" => user1.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => user1.local,
+            "tags" => ["first"]
+          },
+          %{
+            "deactivated" => false,
+            "id" => user2.id,
+            "nickname" => user2.nickname,
+            "roles" => %{"admin" => false, "moderator" => false},
+            "local" => user2.local,
+            "tags" => ["second"]
+          }
+        ]
+        |> Enum.sort_by(& &1["nickname"])
+
       assert json_response(conn, 200) == %{
                "count" => 2,
                "page_size" => 50,
-               "users" => [
-                 %{
-                   "deactivated" => false,
-                   "id" => user1.id,
-                   "nickname" => user1.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => user1.local,
-                   "tags" => ["first"]
-                 },
-                 %{
-                   "deactivated" => false,
-                   "id" => user2.id,
-                   "nickname" => user2.nickname,
-                   "roles" => %{"admin" => false, "moderator" => false},
-                   "local" => user2.local,
-                   "tags" => ["second"]
-                 }
-               ]
+               "users" => users
              }
     end
 
@@ -1274,6 +1290,178 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         |> delete("/api/pleroma/admin/statuses/test")
 
       assert json_response(conn, :bad_request) == "Could not delete"
+    end
+  end
+
+  describe "GET /api/pleroma/admin/config" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+
+      %{conn: assign(conn, :user, admin)}
+    end
+
+    test "without any settings in db", %{conn: conn} do
+      conn = get(conn, "/api/pleroma/admin/config")
+
+      assert json_response(conn, 200) == %{"configs" => []}
+    end
+
+    test "with settings in db", %{conn: conn} do
+      config1 = insert(:config)
+      config2 = insert(:config)
+
+      conn = get(conn, "/api/pleroma/admin/config")
+
+      %{
+        "configs" => [
+          %{
+            "key" => key1,
+            "value" => _
+          },
+          %{
+            "key" => key2,
+            "value" => _
+          }
+        ]
+      } = json_response(conn, 200)
+
+      assert key1 == config1.key
+      assert key2 == config2.key
+    end
+  end
+
+  describe "POST /api/pleroma/admin/config" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+
+      temp_file = "config/test.exported_from_db.secret.exs"
+
+      on_exit(fn ->
+        Application.delete_env(:pleroma, :key1)
+        Application.delete_env(:pleroma, :key2)
+        Application.delete_env(:pleroma, :key3)
+        Application.delete_env(:pleroma, :key4)
+        Application.delete_env(:pleroma, :keyaa1)
+        Application.delete_env(:pleroma, :keyaa2)
+        :ok = File.rm(temp_file)
+      end)
+
+      dynamic = Pleroma.Config.get([:instance, :dynamic_configuration])
+
+      Pleroma.Config.put([:instance, :dynamic_configuration], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :dynamic_configuration], dynamic)
+      end)
+
+      %{conn: assign(conn, :user, admin)}
+    end
+
+    test "create new config setting in db", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{key: "key1", value: "value1"},
+            %{
+              key: "key2",
+              value: %{
+                "nested_1" => "nested_value1",
+                "nested_2" => [
+                  %{"nested_22" => "nested_value222"},
+                  %{"nested_33" => %{"nested_44" => "nested_444"}}
+                ]
+              }
+            },
+            %{
+              key: "key3",
+              value: [
+                %{"nested_3" => ":nested_3", "nested_33" => "nested_33"},
+                %{"nested_4" => ":true"}
+              ]
+            },
+            %{
+              key: "key4",
+              value: %{"nested_5" => ":upload", "endpoint" => "https://example.com"}
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "key" => "key1",
+                   "value" => "value1"
+                 },
+                 %{
+                   "key" => "key2",
+                   "value" => [
+                     %{"nested_1" => "nested_value1"},
+                     %{
+                       "nested_2" => [
+                         %{"nested_22" => "nested_value222"},
+                         %{"nested_33" => %{"nested_44" => "nested_444"}}
+                       ]
+                     }
+                   ]
+                 },
+                 %{
+                   "key" => "key3",
+                   "value" => [
+                     [%{"nested_3" => "nested_3"}, %{"nested_33" => "nested_33"}],
+                     %{"nested_4" => true}
+                   ]
+                 },
+                 %{
+                   "key" => "key4",
+                   "value" => [%{"endpoint" => "https://example.com"}, %{"nested_5" => "upload"}]
+                 }
+               ]
+             }
+
+      assert Application.get_env(:pleroma, :key1) == "value1"
+
+      assert Application.get_env(:pleroma, :key2) == [
+               nested_1: "nested_value1",
+               nested_2: [
+                 [nested_22: "nested_value222"],
+                 [nested_33: [nested_44: "nested_444"]]
+               ]
+             ]
+
+      assert Application.get_env(:pleroma, :key3) == [
+               [nested_3: :nested_3, nested_33: "nested_33"],
+               [nested_4: true]
+             ]
+
+      assert Application.get_env(:pleroma, :key4) == [
+               endpoint: "https://example.com",
+               nested_5: :upload
+             ]
+    end
+
+    test "update config setting & delete", %{conn: conn} do
+      config1 = insert(:config, key: "keyaa1")
+      config2 = insert(:config, key: "keyaa2")
+
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{key: config1.key, value: "another_value"},
+            %{key: config2.key, delete: "true"}
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "key" => config1.key,
+                   "value" => "another_value"
+                 }
+               ]
+             }
+
+      assert Application.get_env(:pleroma, :keyaa1) == "another_value"
+      refute Application.get_env(:pleroma, :keyaa2)
     end
   end
 end

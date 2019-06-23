@@ -343,4 +343,6 @@ defmodule Pleroma.Activity do
         )
     )
   end
+
+  defdelegate search(user, query), to: Pleroma.Activity.Search
 end

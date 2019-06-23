@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.HTTP
   alias Pleroma.Instances
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
@@ -15,8 +16,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   @behaviour Pleroma.Web.Federator.Publisher
 
   require Logger
-
-  @httpoison Application.get_env(:pleroma, :httpoison)
 
   @moduledoc """
   ActivityPub outgoing federation module.
@@ -63,7 +62,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     with {:ok, %{status: code}} when code in 200..299 <-
            result =
-             @httpoison.post(
+             HTTP.post(
                inbox,
                json,
                [
@@ -89,7 +88,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       true
     else
       inbox_info = URI.parse(inbox)
-      !Enum.member?(Pleroma.Config.get([:instance, :quarantined_instances], []), inbox_info.host)
+      !Enum.member?(Config.get([:instance, :quarantined_instances], []), inbox_info.host)
     end
   end
 

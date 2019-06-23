@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.ReverseProxy do
+  alias Pleroma.HTTP
+
   @keep_req_headers ~w(accept user-agent accept-encoding cache-control if-modified-since) ++
                       ~w(if-unmodified-since if-none-match if-range range)
   @resp_cache_headers ~w(etag date last-modified cache-control)
@@ -59,9 +61,6 @@ defmodule Pleroma.ReverseProxy do
   * `http`: options for [hackney](https://github.com/benoitc/hackney).
 
   """
-  @hackney Application.get_env(:pleroma, :hackney, :hackney)
-  @httpoison Application.get_env(:pleroma, :httpoison, HTTPoison)
-
   @default_hackney_options []
 
   @inline_content_types [
@@ -97,7 +96,7 @@ defmodule Pleroma.ReverseProxy do
     hackney_opts =
       @default_hackney_options
       |> Keyword.merge(Keyword.get(opts, :http, []))
-      |> @httpoison.process_request_options()
+      |> HTTP.process_request_options()
 
     req_headers = build_req_headers(conn.req_headers, opts)
 
@@ -147,7 +146,7 @@ defmodule Pleroma.ReverseProxy do
     Logger.debug("#{__MODULE__} #{method} #{url} #{inspect(headers)}")
     method = method |> String.downcase() |> String.to_existing_atom()
 
-    case @hackney.request(method, url, headers, "", hackney_opts) do
+    case hackney().request(method, url, headers, "", hackney_opts) do
       {:ok, code, headers, client} when code in @valid_resp_codes ->
         {:ok, code, downcase_headers(headers), client}
 
@@ -197,7 +196,7 @@ defmodule Pleroma.ReverseProxy do
              duration,
              Keyword.get(opts, :max_read_duration, @max_read_duration)
            ),
-         {:ok, data} <- @hackney.stream_body(client),
+         {:ok, data} <- hackney().stream_body(client),
          {:ok, duration} <- increase_read_duration(duration),
          sent_so_far = sent_so_far + byte_size(data),
          :ok <- body_size_constraint(sent_so_far, Keyword.get(opts, :max_body_size)),
@@ -378,4 +377,6 @@ defmodule Pleroma.ReverseProxy do
   defp increase_read_duration(_) do
     {:ok, :no_duration_limit, :no_duration_limit}
   end
+
+  defp hackney, do: Pleroma.Config.get(:hackney, :hackney)
 end

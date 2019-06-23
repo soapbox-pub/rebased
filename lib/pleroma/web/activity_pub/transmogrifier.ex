@@ -35,6 +35,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_likes
     |> fix_addressing
     |> fix_summary
+    |> fix_type
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -65,7 +66,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_explicit_addressing(%{"to" => to, "cc" => cc} = object, explicit_mentions) do
+  def fix_explicit_addressing(
+        %{"to" => to, "cc" => cc} = object,
+        explicit_mentions,
+        follower_collection
+      ) do
     explicit_to =
       to
       |> Enum.filter(fn x -> x in explicit_mentions end)
@@ -76,6 +81,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     final_cc =
       (cc ++ explicit_cc)
+      |> Enum.reject(fn x -> String.ends_with?(x, "/followers") and x != follower_collection end)
       |> Enum.uniq()
 
     object
@@ -83,7 +89,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("cc", final_cc)
   end
 
-  def fix_explicit_addressing(object, _explicit_mentions), do: object
+  def fix_explicit_addressing(object, _explicit_mentions, _followers_collection), do: object
 
   # if directMessage flag is set to true, leave the addressing alone
   def fix_explicit_addressing(%{"directMessage" => true} = object), do: object
@@ -93,10 +99,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
       object
       |> Utils.determine_explicit_mentions()
 
-    explicit_mentions = explicit_mentions ++ ["https://www.w3.org/ns/activitystreams#Public"]
+    follower_collection = User.get_cached_by_ap_id(Containment.get_actor(object)).follower_address
 
-    object
-    |> fix_explicit_addressing(explicit_mentions)
+    explicit_mentions =
+      explicit_mentions ++ ["https://www.w3.org/ns/activitystreams#Public", follower_collection]
+
+    fix_explicit_addressing(object, explicit_mentions, follower_collection)
   end
 
   # if as:Public is addressed, then make sure the followers collection is also addressed
@@ -133,7 +141,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_addressing_list("cc")
     |> fix_addressing_list("bto")
     |> fix_addressing_list("bcc")
-    |> fix_explicit_addressing
+    |> fix_explicit_addressing()
     |> fix_implicit_addressing(followers_collection)
   end
 
@@ -328,6 +336,18 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_content_map(object), do: object
 
+  def fix_type(%{"inReplyTo" => reply_id} = object) when is_binary(reply_id) do
+    reply = Object.normalize(reply_id)
+
+    if reply && (reply.data["type"] == "Question" and object["name"]) do
+      Map.put(object, "type", "Answer")
+    else
+      object
+    end
+  end
+
+  def fix_type(object), do: object
+
   defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
     with true <- id =~ "follows",
          %User{local: true} = follower <- User.get_cached_by_ap_id(follower_id),
@@ -398,7 +418,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # - tags
   # - emoji
   def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
-      when objtype in ["Article", "Note", "Video", "Page"] do
+      when objtype in ["Article", "Note", "Video", "Page", "Question", "Answer"] do
     actor = Containment.get_actor(data)
 
     data =
@@ -438,10 +458,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
          {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
       with deny_follow_blocked <- Pleroma.Config.get([:user, :deny_follow_blocked]),
-           {:user_blocked, false} <-
+           {_, false} <-
              {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},
-           {:user_locked, false} <- {:user_locked, User.locked?(followed)},
-           {:follow, {:ok, follower}} <- {:follow, User.follow(follower, followed)} do
+           {_, false} <- {:user_locked, User.locked?(followed)},
+           {_, {:ok, follower}} <- {:follow, User.follow(follower, followed)},
+           {_, {:ok, _}} <-
+             {:follow_state_update, Utils.update_follow_state_for_all(activity, "accept")} do
         ActivityPub.accept(%{
           to: [follower.ap_id],
           actor: followed,
@@ -450,7 +472,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         })
       else
         {:user_blocked, true} ->
-          {:ok, _} = Utils.update_follow_state(activity, "reject")
+          {:ok, _} = Utils.update_follow_state_for_all(activity, "reject")
 
           ActivityPub.reject(%{
             to: [follower.ap_id],
@@ -460,7 +482,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           })
 
         {:follow, {:error, _}} ->
-          {:ok, _} = Utils.update_follow_state(activity, "reject")
+          {:ok, _} = Utils.update_follow_state_for_all(activity, "reject")
 
           ActivityPub.reject(%{
             to: [follower.ap_id],
@@ -486,21 +508,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "accept"),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "accept"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
-         {:ok, activity} <-
-           ActivityPub.accept(%{
-             to: follow_activity.data["to"],
-             type: "Accept",
-             actor: followed,
-             object: follow_activity.data["id"],
-             local: false
-           }) do
-      if not User.following?(follower, followed) do
-        {:ok, _follower} = User.follow(follower, followed)
-      end
-
-      {:ok, activity}
+         {:ok, _follower} = User.follow(follower, followed) do
+      ActivityPub.accept(%{
+        to: follow_activity.data["to"],
+        type: "Accept",
+        actor: followed,
+        object: follow_activity.data["id"],
+        local: false
+      })
     else
       _e -> :error
     end
@@ -512,7 +529,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
          {:ok, follow_activity} <- get_follow_activity(follow_object, followed),
-         {:ok, follow_activity} <- Utils.update_follow_state(follow_activity, "reject"),
+         {:ok, follow_activity} <- Utils.update_follow_state_for_all(follow_activity, "reject"),
          %User{local: true} = follower <- User.get_cached_by_ap_id(follow_activity.data["actor"]),
          {:ok, activity} <-
            ActivityPub.reject(%{
@@ -731,6 +748,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> set_reply_to_uri
     |> strip_internal_fields
     |> strip_internal_tags
+    |> set_type
   end
 
   #  @doc
@@ -894,6 +912,12 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     tags = object["tag"] || []
     Map.put(object, "sensitive", "nsfw" in tags)
   end
+
+  def set_type(%{"type" => "Answer"} = object) do
+    Map.put(object, "type", "Note")
+  end
+
+  def set_type(object), do: object
 
   def add_attributed_to(object) do
     attributed_to = object["attributedTo"] || object["actor"]

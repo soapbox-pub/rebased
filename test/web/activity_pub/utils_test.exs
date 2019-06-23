@@ -1,6 +1,8 @@
 defmodule Pleroma.Web.ActivityPub.UtilsTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Object
+  alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
@@ -203,5 +205,94 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
                }
              ]
            }
+  end
+
+  describe "get_existing_votes" do
+    test "fetches existing votes" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "How do I pronounce LaTeX?",
+          "poll" => %{
+            "options" => ["laytekh", "lahtekh", "latex"],
+            "expires_in" => 20,
+            "multiple" => true
+          }
+        })
+
+      object = Object.normalize(activity)
+      {:ok, votes, object} = CommonAPI.vote(other_user, object, [0, 1])
+      assert Enum.sort(Utils.get_existing_votes(other_user.ap_id, object)) == Enum.sort(votes)
+    end
+
+    test "fetches only Create activities" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "Are we living in a society?",
+          "poll" => %{
+            "options" => ["yes", "no"],
+            "expires_in" => 20
+          }
+        })
+
+      object = Object.normalize(activity)
+      {:ok, [vote], object} = CommonAPI.vote(other_user, object, [0])
+      vote_object = Object.normalize(vote)
+      {:ok, _activity, _object} = ActivityPub.like(user, vote_object)
+      [fetched_vote] = Utils.get_existing_votes(other_user.ap_id, object)
+      assert fetched_vote.id == vote.id
+    end
+  end
+
+  describe "update_follow_state_for_all/2" do
+    test "updates the state of all Follow activities with the same actor and object" do
+      user = insert(:user, info: %{locked: true})
+      follower = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
+
+      data =
+        follow_activity_two.data
+        |> Map.put("state", "accept")
+
+      cng = Ecto.Changeset.change(follow_activity_two, data: data)
+
+      {:ok, follow_activity_two} = Repo.update(cng)
+
+      {:ok, follow_activity_two} =
+        Utils.update_follow_state_for_all(follow_activity_two, "accept")
+
+      assert Repo.get(Activity, follow_activity.id).data["state"] == "accept"
+      assert Repo.get(Activity, follow_activity_two.id).data["state"] == "accept"
+    end
+  end
+
+  describe "update_follow_state/2" do
+    test "updates the state of the given follow activity" do
+      user = insert(:user, info: %{locked: true})
+      follower = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
+
+      data =
+        follow_activity_two.data
+        |> Map.put("state", "accept")
+
+      cng = Ecto.Changeset.change(follow_activity_two, data: data)
+
+      {:ok, follow_activity_two} = Repo.update(cng)
+
+      {:ok, follow_activity_two} = Utils.update_follow_state(follow_activity_two, "reject")
+
+      assert Repo.get(Activity, follow_activity.id).data["state"] == "pending"
+      assert Repo.get(Activity, follow_activity_two.id).data["state"] == "reject"
+    end
   end
 end

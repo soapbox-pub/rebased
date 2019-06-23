@@ -1,7 +1,9 @@
 <h2>Sign in with external provider</h2>
 
 <%= form_for @conn, o_auth_path(@conn, :prepare_request), [as: "authorization", method: "get"], fn f -> %>
-  <%= render @view_module, "_scopes.html", Map.put(assigns, :form, f) %>
+  <div style="display: none">
+    <%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
+  </div>
 
   <%= hidden_input f, :client_id, value: @client_id %>
   <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
