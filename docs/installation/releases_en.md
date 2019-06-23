@@ -253,3 +253,10 @@ su pleroma -s $SHELL -lc "./bin/pleroma_ctl update"
 su pleroma -s $SHELL -lc "./bin/pleroma_ctl migrate"
 ```
 But you should **always check the release notes/changelog** in case there are config deprecations, special update steps, etc.
+
+## Further reading
+* [Configuration](config.html)
+* [Pleroma's base config.exs](https://git.pleroma.social/pleroma/pleroma/blob/master/config/config.exs)
+* [Hardening your instance](hardening.html)
+* [Pleroma Clients](clients.html)
+* [Emoji pack manager](Mix.Tasks.Pleroma.Emoji.html)
