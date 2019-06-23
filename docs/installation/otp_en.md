@@ -33,9 +33,8 @@ apt install curl unzip libncurses5 postgresql postgresql-contrib nginx certbot
 ```
 Alpine:
 
-**Warning:** There has been some changes to musl on Alpine 3.10 which need an Elixir rebuild. Since the build machines are running Alpine 3.9 running the builds on 3.10 will likely fail with "dlsym: Resource temporarily unavailable". If you have not updated yet, replace `latest-stable` with `v3.9` in `/etc/apk/repositories`. If you have, try downgrading `musl` to `1.1.20-r3`
 ```sh
-echo "http://nl.alpinelinux.org/alpine/v3.9/community" >> /etc/apk/repositories
+echo "http://nl.alpinelinux.org/alpine/latest-stable/community" >> /etc/apk/repositories
 apk update
 apk add curl unzip ncurses postgresql postgresql-contrib nginx certbot
 ```
