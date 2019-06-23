@@ -16,6 +16,13 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 ## Pleroma.Uploaders.Local
 * `uploads`: Which directory to store the user-uploads in, relative to pleroma’s working directory
 
+## Pleroma.Uploaders.S3
+* `bucket`: S3 bucket name
+* `public_endpoint`: S3 endpoint that the user finally accesses(ex. "https://s3.dualstack.\<region>.amazonaws.com")
+* `truncated_namespace`: If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or "" etc.
+For example, when using CDN to S3 virtual host format, set "".
+At this time, write CNAME to CDN in public_endpoint.
+
 ## Pleroma.Upload.Filter.Mogrify
 
 * `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"impode", "1"}]`.
