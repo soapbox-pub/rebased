@@ -51,7 +51,7 @@ apt install postgresql-11-rum
 ```
 Alpine:
 ```sh
-apk add gcc make git postgresql-dev musl-dev
+apk add git build-base postgresql-dev
 git clone https://github.com/postgrespro/rum /tmp/rum
 cd /tmp/rum
 make USE_PGXS=1
