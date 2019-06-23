@@ -139,6 +139,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
+    ip: {127, 0, 0, 1},
     dispatch: [
       {:_,
        [
