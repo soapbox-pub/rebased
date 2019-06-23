@@ -17,7 +17,7 @@ server {
 
     # Uncomment this if you need to use the 'webroot' method with certbot. Make sure
     # that the directory exists and that it is accessible by the webserver. If you followed
-    # the guide, you already ran 'sudo mkdir -p /var/lib/letsencrypt' to create the folder.
+    # the guide, you already ran 'mkdir -p /var/lib/letsencrypt' to create the folder.
     # You may need to load this file with the ssl server block commented out, run certbot
     # to get the certificate, and then uncomment it.
     #
