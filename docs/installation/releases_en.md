@@ -236,7 +236,13 @@ chmod +x /etc/periodic/daily/renew-pleroma-cert
 # If everything worked this should output /etc/periodic/daily/renew-pleroma-cert
 run-parts --test /etc/periodic/daily
 ```
-### Running Mix tasks
+### Running mix tasks
+Throughout the wiki and guides there is a lot of references to mix tasks. Since `mix` is a build tool, you can't just call `mix pleroma.task`, instead you should call `pleroma_ctl` stripping pleroma/ecto namespace.
+
+So for example, if the task is `mix pleroma.user set admin --admin`, you should run it like this:
+```sh
+su pleroma -s $SHELL -lc "./bin/pleroma_ctl user set admin --admin"
+```
 ### Updating
 Generally, doing the following is enough:
 ```sh
