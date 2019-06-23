@@ -377,12 +377,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       if Pleroma.Config.get([:instance, :dynamic_configuration]) do
         updated =
           Enum.map(configs, fn
-            %{"key" => key, "value" => value} ->
-              {:ok, config} = Config.update_or_create(%{key: key, value: value})
+            %{"group" => group, "key" => key, "value" => value} ->
+              {:ok, config} = Config.update_or_create(%{group: group, key: key, value: value})
               config
 
-            %{"key" => key, "delete" => "true"} ->
-              {:ok, _} = Config.delete(key)
+            %{"group" => group, "key" => key, "delete" => "true"} ->
+              {:ok, _} = Config.delete(%{group: group, key: key})
               nil
           end)
           |> Enum.reject(&is_nil(&1))

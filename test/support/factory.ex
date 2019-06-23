@@ -314,6 +314,7 @@ defmodule Pleroma.Factory do
   def config_factory do
     %Pleroma.Web.AdminAPI.Config{
       key: sequence(:key, &"some_key_#{&1}"),
+      group: "pleroma",
       value:
         sequence(
           :value,

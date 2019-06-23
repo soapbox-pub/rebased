@@ -12,26 +12,27 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   schema "config" do
     field(:key, :string)
+    field(:group, :string)
     field(:value, :binary)
 
     timestamps()
   end
 
-  @spec get_by_key(String.t()) :: Config.t() | nil
-  def get_by_key(key), do: Repo.get_by(Config, key: key)
+  @spec get_by_params(map()) :: Config.t() | nil
+  def get_by_params(params), do: Repo.get_by(Config, params)
 
   @spec changeset(Config.t(), map()) :: Changeset.t()
   def changeset(config, params \\ %{}) do
     config
-    |> cast(params, [:key, :value])
-    |> validate_required([:key, :value])
-    |> unique_constraint(:key)
+    |> cast(params, [:key, :group, :value])
+    |> validate_required([:key, :group, :value])
+    |> unique_constraint(:key, name: :config_group_key_index)
   end
 
   @spec create(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
-  def create(%{key: key, value: value}) do
+  def create(params) do
     %Config{}
-    |> changeset(%{key: key, value: transform(value)})
+    |> changeset(Map.put(params, :value, transform(params[:value])))
     |> Repo.insert()
   end
 
@@ -43,20 +44,20 @@ defmodule Pleroma.Web.AdminAPI.Config do
   end
 
   @spec update_or_create(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
-  def update_or_create(%{key: key} = params) do
-    with %Config{} = config <- Config.get_by_key(key) do
+  def update_or_create(params) do
+    with %Config{} = config <- Config.get_by_params(Map.take(params, [:group, :key])) do
       Config.update(config, params)
     else
       nil -> Config.create(params)
     end
   end
 
-  @spec delete(String.t()) :: {:ok, Config.t()} | {:error, Changeset.t()}
-  def delete(key) do
-    with %Config{} = config <- Config.get_by_key(key) do
+  @spec delete(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
+  def delete(params) do
+    with %Config{} = config <- Config.get_by_params(params) do
       Repo.delete(config)
     else
-      nil -> {:error, "Config with key #{key} not found"}
+      nil -> {:error, "Config with params #{inspect(params)} not found"}
     end
   end
 
@@ -77,10 +78,21 @@ defmodule Pleroma.Web.AdminAPI.Config do
   defp do_convert({k, v} = value) when is_tuple(value),
     do: %{k => do_convert(v)}
 
-  defp do_convert(value) when is_binary(value) or is_atom(value) or is_map(value),
-    do: value
+  defp do_convert(value) when is_tuple(value), do: %{"tuple" => do_convert(Tuple.to_list(value))}
+
+  defp do_convert(value) when is_binary(value) or is_map(value) or is_number(value), do: value
+
+  defp do_convert(value) when is_atom(value) do
+    string = to_string(value)
+
+    if String.starts_with?(string, "Elixir."),
+      do: String.trim_leading(string, "Elixir."),
+      else: value
+  end
 
   @spec transform(any()) :: binary()
+  def transform(%{"tuple" => _} = entity), do: :erlang.term_to_binary(do_transform(entity))
+
   def transform(entity) when is_map(entity) do
     tuples =
       for {k, v} <- entity,
@@ -101,11 +113,16 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   defp do_transform(%Regex{} = value) when is_map(value), do: value
 
+  defp do_transform(%{"tuple" => [k, values] = entity}) when length(entity) == 2 do
+    {do_transform(k), do_transform(values)}
+  end
+
+  defp do_transform(%{"tuple" => values}) do
+    Enum.reduce(values, {}, fn val, acc -> Tuple.append(acc, do_transform(val)) end)
+  end
+
   defp do_transform(value) when is_map(value) do
-    values =
-      for {key, val} <- value,
-          into: [],
-          do: {String.to_atom(key), do_transform(val)}
+    values = for {key, val} <- value, into: [], do: {String.to_atom(key), do_transform(val)}
 
     Enum.sort(values)
   end
@@ -117,28 +134,27 @@ defmodule Pleroma.Web.AdminAPI.Config do
   defp do_transform(entity) when is_list(entity) and length(entity) == 1, do: hd(entity)
 
   defp do_transform(value) when is_binary(value) do
-    value = String.trim(value)
-
-    case String.length(value) do
-      0 ->
-        nil
-
-      _ ->
-        cond do
-          String.starts_with?(value, "Pleroma") ->
-            String.to_existing_atom("Elixir." <> value)
-
-          String.starts_with?(value, ":") ->
-            String.replace(value, ":", "") |> String.to_existing_atom()
-
-          String.starts_with?(value, "i:") ->
-            String.replace(value, "i:", "") |> String.to_integer()
-
-          true ->
-            value
-        end
-    end
+    String.trim(value)
+    |> do_transform_string()
   end
 
   defp do_transform(value), do: value
+
+  defp do_transform_string(value) when byte_size(value) == 0, do: nil
+
+  defp do_transform_string(value) do
+    cond do
+      String.starts_with?(value, "Pleroma") or String.starts_with?(value, "Phoenix") ->
+        String.to_existing_atom("Elixir." <> value)
+
+      String.starts_with?(value, ":") ->
+        String.replace(value, ":", "") |> String.to_existing_atom()
+
+      String.starts_with?(value, "i:") ->
+        String.replace(value, "i:", "") |> String.to_integer()
+
+      true ->
+        value
+    end
+  end
 end
