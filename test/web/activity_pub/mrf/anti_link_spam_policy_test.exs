@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
   use Pleroma.DataCase
   import Pleroma.Factory
+  import ExUnit.CaptureLog
 
   alias Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy
 
@@ -114,7 +115,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
         @linkless_message
         |> Map.put("actor", "http://invalid.actor")
 
-      {:reject, _} = AntiLinkSpamPolicy.filter(message)
+      assert capture_log(fn ->
+               {:reject, _} = AntiLinkSpamPolicy.filter(message)
+             end) =~ "[error] Could not decode user at fetch http://invalid.actor"
     end
 
     test "it rejects posts with links" do
@@ -122,7 +125,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicyTest do
         @linkful_message
         |> Map.put("actor", "http://invalid.actor")
 
-      {:reject, _} = AntiLinkSpamPolicy.filter(message)
+      assert capture_log(fn ->
+               {:reject, _} = AntiLinkSpamPolicy.filter(message)
+             end) =~ "[error] Could not decode user at fetch http://invalid.actor"
     end
   end
 
