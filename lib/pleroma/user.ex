@@ -15,6 +15,7 @@ defmodule Pleroma.User do
   alias Pleroma.Object
   alias Pleroma.Registration
   alias Pleroma.Repo
+  alias Pleroma.RepoStreamer
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -932,18 +933,24 @@ defmodule Pleroma.User do
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:delete, %User{} = user) do
-    {:ok, user} = User.deactivate(user)
-
     # Remove all relationships
     {:ok, followers} = User.get_followers(user)
 
-    Enum.each(followers, fn follower -> User.unfollow(follower, user) end)
+    Enum.each(followers, fn follower ->
+      ActivityPub.unfollow(follower, user)
+      User.unfollow(follower, user)
+    end)
 
     {:ok, friends} = User.get_friends(user)
 
-    Enum.each(friends, fn followed -> User.unfollow(user, followed) end)
+    Enum.each(friends, fn followed ->
+      ActivityPub.unfollow(user, followed)
+      User.unfollow(user, followed)
+    end)
 
     delete_user_activities(user)
+
+    {:ok, _user} = Repo.delete(user)
   end
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
@@ -1016,18 +1023,35 @@ defmodule Pleroma.User do
       ])
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do
-    stream =
-      ap_id
-      |> Activity.query_by_actor()
-      |> Repo.stream()
-
-    Repo.transaction(fn -> Enum.each(stream, &delete_activity(&1)) end, timeout: :infinity)
+    ap_id
+    |> Activity.query_by_actor()
+    |> RepoStreamer.chunk_stream(50)
+    |> Stream.each(fn activities ->
+      Enum.each(activities, &delete_activity(&1))
+    end)
+    |> Stream.run()
 
     {:ok, user}
   end
 
   defp delete_activity(%{data: %{"type" => "Create"}} = activity) do
-    Object.normalize(activity) |> ActivityPub.delete()
+    activity
+    |> Object.normalize()
+    |> ActivityPub.delete()
+  end
+
+  defp delete_activity(%{data: %{"type" => "Like"}} = activity) do
+    user = get_cached_by_ap_id(activity.actor)
+    object = Object.normalize(activity)
+
+    ActivityPub.unlike(user, object)
+  end
+
+  defp delete_activity(%{data: %{"type" => "Announce"}} = activity) do
+    user = get_cached_by_ap_id(activity.actor)
+    object = Object.normalize(activity)
+
+    ActivityPub.unannounce(user, object)
   end
 
   defp delete_activity(_activity), do: "Doing nothing"
