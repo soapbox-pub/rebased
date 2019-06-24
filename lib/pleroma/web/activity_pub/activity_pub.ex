@@ -189,6 +189,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end)
   end
 
+  def stream_out_participations(%Object{data: %{"context" => context}}, user) do
+    with %Conversation{} = conversation <- Conversation.get_for_ap_id(context),
+         conversation = Repo.preload(conversation, :participations),
+         last_activity_id =
+           fetch_latest_activity_id_for_context(conversation.ap_id, %{
+             "user" => user,
+             "blocking_user" => user
+           }) do
+      if last_activity_id do
+        stream_out_participations(conversation.participations)
+      end
+    end
+  end
+
+  def stream_out_participations(_, _), do: :noop
+
   def stream_out(activity) do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
@@ -401,7 +417,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "to" => to,
            "deleted_activity_id" => activity && activity.id
          },
-         {:ok, activity} <- insert(data, local),
+         {:ok, activity} <- insert(data, local, false),
+         stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
