@@ -1,5 +1,7 @@
 #!/sbin/openrc-run
 
+supervisor=supervise-daemon
+
 # Requires OpenRC >= 0.35
 directory=/opt/pleroma
 
@@ -14,5 +16,6 @@ retry="SIGTERM/30/SIGKILL/5"
 pidfile="/var/run/pleroma.pid"
 
 depend() {
-    need nginx postgresql
+    want nginx
+    need postgresql
 }
