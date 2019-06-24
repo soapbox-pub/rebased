@@ -133,8 +133,8 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
 
-    get("/password_reset/:token", UtilController, :show_password_reset)
-    post("/password_reset", UtilController, :password_reset)
+    get("/password_reset/:token", PasswordController, :reset, as: :reset_password)
+    post("/password_reset", PasswordController, :do_reset, as: :reset_password)
     get("/emoji", UtilController, :emoji)
     get("/captcha", UtilController, :captcha)
     get("/healthcheck", UtilController, :healthcheck)

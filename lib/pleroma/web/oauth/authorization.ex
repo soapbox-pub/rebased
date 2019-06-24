@@ -76,12 +76,14 @@ defmodule Pleroma.Web.OAuth.Authorization do
   def use_token(%Authorization{used: true}), do: {:error, "already used"}
 
   @spec delete_user_authorizations(User.t()) :: {integer(), any()}
-  def delete_user_authorizations(%User{id: user_id}) do
-    from(
-      a in Pleroma.Web.OAuth.Authorization,
-      where: a.user_id == ^user_id
-    )
+  def delete_user_authorizations(%User{} = user) do
+    user
+    |> delete_by_user_query
     |> Repo.delete_all()
+  end
+
+  def delete_by_user_query(%User{id: user_id}) do
+    from(a in __MODULE__, where: a.user_id == ^user_id)
   end
 
   @doc "gets auth for app by token"
