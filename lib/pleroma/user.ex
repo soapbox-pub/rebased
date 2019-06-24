@@ -9,6 +9,7 @@ defmodule Pleroma.User do
   import Ecto.Query
 
   alias Comeonin.Pbkdf2
+  alias Ecto.Multi
   alias Pleroma.Activity
   alias Pleroma.Keys
   alias Pleroma.Notification
@@ -194,27 +195,24 @@ defmodule Pleroma.User do
   end
 
   def password_update_changeset(struct, params) do
-    changeset =
-      struct
-      |> cast(params, [:password, :password_confirmation])
-      |> validate_required([:password, :password_confirmation])
-      |> validate_confirmation(:password)
-
-    OAuth.Token.delete_user_tokens(struct)
-    OAuth.Authorization.delete_user_authorizations(struct)
-
-    if changeset.valid? do
-      hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
-
-      changeset
-      |> put_change(:password_hash, hashed)
-    else
-      changeset
-    end
+    struct
+    |> cast(params, [:password, :password_confirmation])
+    |> validate_required([:password, :password_confirmation])
+    |> validate_confirmation(:password)
+    |> put_password_hash
   end
 
-  def reset_password(user, data) do
-    update_and_set_cache(password_update_changeset(user, data))
+  def reset_password(%User{id: user_id} = user, data) do
+    multi =
+      Multi.new()
+      |> Multi.update(:user, password_update_changeset(user, data))
+      |> Multi.delete_all(:tokens, OAuth.Token.Query.get_by_user(user_id))
+      |> Multi.delete_all(:auth, OAuth.Authorization.delete_by_user_query(user))
+
+    case Repo.transaction(multi) do
+      {:ok, %{user: user} = _} -> set_cache(user)
+      {:error, _, changeset, _} -> {:error, changeset}
+    end
   end
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
@@ -250,12 +248,11 @@ defmodule Pleroma.User do
       end
 
     if changeset.valid? do
-      hashed = Pbkdf2.hashpwsalt(changeset.changes[:password])
       ap_id = User.ap_id(%User{nickname: changeset.changes[:nickname]})
       followers = User.ap_followers(%User{nickname: changeset.changes[:nickname]})
 
       changeset
-      |> put_change(:password_hash, hashed)
+      |> put_password_hash
       |> put_change(:ap_id, ap_id)
       |> unique_constraint(:ap_id)
       |> put_change(:following, [followers])
@@ -1349,4 +1346,12 @@ defmodule Pleroma.User do
   end
 
   defdelegate search(query, opts \\ []), to: User.Search
+
+  defp put_password_hash(
+         %Ecto.Changeset{valid?: true, changes: %{password: password}} = changeset
+       ) do
+    change(changeset, password_hash: Pbkdf2.hashpwsalt(password))
+  end
+
+  defp put_password_hash(changeset), do: changeset
 end

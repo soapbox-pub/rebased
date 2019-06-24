@@ -204,9 +204,9 @@ defmodule Mix.Tasks.Pleroma.User do
 
       IO.puts(
         "URL: #{
-          Pleroma.Web.Router.Helpers.util_url(
+          Pleroma.Web.Router.Helpers.reset_password_url(
             Pleroma.Web.Endpoint,
-            :show_password_reset,
+            :reset,
             token.token
           )
         }"
