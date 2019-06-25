@@ -8,13 +8,21 @@ defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
+  @private_ip_regexp ~r/(127\.)|(10\.\d+\.\d+.\d+)|(192\.168\.)
+  |(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(localhost)/
+
   defp validate_page_url(page_url) when is_binary(page_url) do
     validate_tld = Application.get_env(:auto_linker, :opts)[:validate_tld]
 
-    if AutoLinker.Parser.url?(page_url, scheme: true, validate_tld: validate_tld) do
-      URI.parse(page_url) |> validate_page_url
-    else
-      :error
+    cond do
+      Regex.match?(@private_ip_regexp, page_url) ->
+        :error
+
+      AutoLinker.Parser.url?(page_url, scheme: true, validate_tld: validate_tld) ->
+        URI.parse(page_url) |> validate_page_url
+
+      true ->
+        :error
     end
   end
 
