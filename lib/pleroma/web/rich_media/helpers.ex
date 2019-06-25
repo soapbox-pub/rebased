@@ -4,35 +4,53 @@
 
 defmodule Pleroma.Web.RichMedia.Helpers do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Web.RichMedia.Parser
 
-  @private_ip_regexp ~r/(127\.)|(10\.\d+\.\d+.\d+)|(192\.168\.)
-  |(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(localhost)/
+  @validate_tld Application.get_env(:auto_linker, :opts)[:validate_tld]
 
+  @spec validate_page_url(any()) :: :ok | :error
   defp validate_page_url(page_url) when is_binary(page_url) do
-    validate_tld = Application.get_env(:auto_linker, :opts)[:validate_tld]
+    page_url
+    |> AutoLinker.Parser.url?(scheme: true, validate_tld: @validate_tld)
+    |> parse_uri(page_url)
+  end
 
+  defp validate_page_url(%URI{host: host, scheme: scheme, authority: authority})
+       when scheme == "https" and not is_nil(authority) do
     cond do
-      Regex.match?(@private_ip_regexp, page_url) ->
+      host in Config.get([:rich_media, :ignore_hosts], []) ->
         :error
 
-      AutoLinker.Parser.url?(page_url, scheme: true, validate_tld: validate_tld) ->
-        URI.parse(page_url) |> validate_page_url
+      get_tld(host) in Config.get([:rich_media, :ignore_tld], []) ->
+        :error
 
       true ->
-        :error
+        :ok
     end
   end
 
-  defp validate_page_url(%URI{authority: nil}), do: :error
-  defp validate_page_url(%URI{scheme: nil}), do: :error
-  defp validate_page_url(%URI{}), do: :ok
   defp validate_page_url(_), do: :error
 
+  defp parse_uri(true, url) do
+    url
+    |> URI.parse()
+    |> validate_page_url
+  end
+
+  defp parse_uri(_, _), do: :error
+
+  defp get_tld(host) do
+    host
+    |> String.split(".")
+    |> Enum.reverse()
+    |> hd
+  end
+
   def fetch_data_for_activity(%Activity{data: %{"type" => "Create"}} = activity) do
-    with true <- Pleroma.Config.get([:rich_media, :enabled]),
+    with true <- Config.get([:rich_media, :enabled]),
          %Object{} = object <- Object.normalize(activity),
          false <- object.data["sensitive"] || false,
          {:ok, page_url} <- HTML.extract_first_external_url(object, object.data["content"]),

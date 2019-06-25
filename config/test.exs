@@ -43,7 +43,11 @@ config :pleroma, Pleroma.Repo,
 config :pbkdf2_elixir, rounds: 1
 
 config :tesla, adapter: Tesla.Mock
-config :pleroma, :rich_media, enabled: false
+
+config :pleroma, :rich_media,
+  enabled: false,
+  ignore_hosts: [],
+  ignore_tld: ["local", "localdomain", "lan"]
 
 config :web_push_encryption, :vapid_details,
   subject: "mailto:administrator@example.com",
