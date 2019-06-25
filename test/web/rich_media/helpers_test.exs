@@ -1,14 +1,19 @@
 defmodule Pleroma.Web.RichMedia.HelpersTest do
   use Pleroma.DataCase
 
+  alias Pleroma.Config
   alias Pleroma.Object
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.RichMedia.Helpers
 
   import Pleroma.Factory
   import Tesla.Mock
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    rich_media = Config.get([:rich_media, :enabled])
+    on_exit(fn -> Config.put([:rich_media, :enabled], rich_media) end)
+
     :ok
   end
 
@@ -21,11 +26,9 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
         "content_type" => "text/markdown"
       })
 
-    Pleroma.Config.put([:rich_media, :enabled], true)
+    Config.put([:rich_media, :enabled], true)
 
     assert %{} == Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-
-    Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
   test "refuses to crawl malformed URLs" do
@@ -37,11 +40,9 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
         "content_type" => "text/markdown"
       })
 
-    Pleroma.Config.put([:rich_media, :enabled], true)
+    Config.put([:rich_media, :enabled], true)
 
     assert %{} == Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-
-    Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
   test "crawls valid, complete URLs" do
@@ -53,12 +54,10 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
         "content_type" => "text/markdown"
       })
 
-    Pleroma.Config.put([:rich_media, :enabled], true)
+    Config.put([:rich_media, :enabled], true)
 
     assert %{page_url: "http://example.com/ogp", rich_media: _} =
              Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-
-    Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
   test "refuses to crawl URLs from posts marked sensitive" do
@@ -74,11 +73,9 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     assert object.data["sensitive"]
 
-    Pleroma.Config.put([:rich_media, :enabled], true)
+    Config.put([:rich_media, :enabled], true)
 
     assert %{} = Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
-
-    Pleroma.Config.put([:rich_media, :enabled], false)
   end
 
   test "refuses to crawl URLs from posts tagged NSFW" do
@@ -93,10 +90,26 @@ defmodule Pleroma.Web.RichMedia.HelpersTest do
 
     assert object.data["sensitive"]
 
-    Pleroma.Config.put([:rich_media, :enabled], true)
+    Config.put([:rich_media, :enabled], true)
 
     assert %{} = Pleroma.Web.RichMedia.Helpers.fetch_data_for_activity(activity)
+  end
 
-    Pleroma.Config.put([:rich_media, :enabled], false)
+  test "refuses to crawl URLs of private network from posts" do
+    user = insert(:user)
+    Config.put([:rich_media, :enabled], true)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{"status" => "http://127.0.0.1:4000/notice/9kCP7VNyPJXFOXDrgO"})
+
+    {:ok, activity2} = CommonAPI.post(user, %{"status" => "https://10.111.10.1/notice/9kCP7V"})
+
+    {:ok, activity3} = CommonAPI.post(user, %{"status" => "https://172.16.32.40/notice/9kCP7V"})
+    {:ok, activity4} = CommonAPI.post(user, %{"status" => "https://192.168.10.40/notice/9kCP7V"})
+
+    assert %{} = Helpers.fetch_data_for_activity(activity)
+    assert %{} = Helpers.fetch_data_for_activity(activity2)
+    assert %{} = Helpers.fetch_data_for_activity(activity3)
+    assert %{} = Helpers.fetch_data_for_activity(activity4)
   end
 end
