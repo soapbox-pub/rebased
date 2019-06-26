@@ -121,7 +121,7 @@ defmodule Pleroma.Web.CommonAPITest do
                })
 
       Enum.each(["public", "private", "unlisted"], fn visibility ->
-        assert {:error, {:private_to_public, _}} =
+        assert {:error, "The message visibility must be direct"} =
                  CommonAPI.post(user, %{
                    "status" => "suya..",
                    "visibility" => visibility,

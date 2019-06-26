@@ -94,56 +94,186 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
            |> json_response(403) == %{"error" => "This resource requires authentication."}
   end
 
-  test "posting a status", %{conn: conn} do
-    user = insert(:user)
+  describe "posting statuses" do
+    setup do
+      user = insert(:user)
 
-    idempotency_key = "Pikachu rocks!"
+      conn =
+        build_conn()
+        |> assign(:user, user)
 
-    conn_one =
-      conn
-      |> assign(:user, user)
-      |> put_req_header("idempotency-key", idempotency_key)
-      |> post("/api/v1/statuses", %{
-        "status" => "cofe",
-        "spoiler_text" => "2hu",
-        "sensitive" => "false"
-      })
+      [conn: conn]
+    end
 
-    {:ok, ttl} = Cachex.ttl(:idempotency_cache, idempotency_key)
-    # Six hours
-    assert ttl > :timer.seconds(6 * 60 * 60 - 1)
+    test "posting a status", %{conn: conn} do
+      idempotency_key = "Pikachu rocks!"
 
-    assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
-             json_response(conn_one, 200)
+      conn_one =
+        conn
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "spoiler_text" => "2hu",
+          "sensitive" => "false"
+        })
 
-    assert Activity.get_by_id(id)
+      {:ok, ttl} = Cachex.ttl(:idempotency_cache, idempotency_key)
+      # Six hours
+      assert ttl > :timer.seconds(6 * 60 * 60 - 1)
 
-    conn_two =
-      conn
-      |> assign(:user, user)
-      |> put_req_header("idempotency-key", idempotency_key)
-      |> post("/api/v1/statuses", %{
-        "status" => "cofe",
-        "spoiler_text" => "2hu",
-        "sensitive" => "false"
-      })
+      assert %{"content" => "cofe", "id" => id, "spoiler_text" => "2hu", "sensitive" => false} =
+               json_response(conn_one, 200)
 
-    assert %{"id" => second_id} = json_response(conn_two, 200)
+      assert Activity.get_by_id(id)
 
-    assert id == second_id
+      conn_two =
+        conn
+        |> put_req_header("idempotency-key", idempotency_key)
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "spoiler_text" => "2hu",
+          "sensitive" => "false"
+        })
 
-    conn_three =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{
-        "status" => "cofe",
-        "spoiler_text" => "2hu",
-        "sensitive" => "false"
-      })
+      assert %{"id" => second_id} = json_response(conn_two, 200)
+      assert id == second_id
 
-    assert %{"id" => third_id} = json_response(conn_three, 200)
+      conn_three =
+        conn
+        |> post("/api/v1/statuses", %{
+          "status" => "cofe",
+          "spoiler_text" => "2hu",
+          "sensitive" => "false"
+        })
 
-    refute id == third_id
+      assert %{"id" => third_id} = json_response(conn_three, 200)
+      refute id == third_id
+    end
+
+    test "replying to a status", %{conn: conn} do
+      user = insert(:user)
+      {:ok, replied_to} = CommonAPI.post(user, %{"status" => "cofe"})
+
+      conn =
+        conn
+        |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => replied_to.id})
+
+      assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
+
+      activity = Activity.get_by_id(id)
+
+      assert activity.data["context"] == replied_to.data["context"]
+      assert Activity.get_in_reply_to_activity(activity).id == replied_to.id
+    end
+
+    test "replying to a direct message with visibility other than direct", %{conn: conn} do
+      user = insert(:user)
+      {:ok, replied_to} = CommonAPI.post(user, %{"status" => "suya..", "visibility" => "direct"})
+
+      Enum.each(["public", "private", "unlisted"], fn visibility ->
+        conn =
+          conn
+          |> post("/api/v1/statuses", %{
+            "status" => "@#{user.nickname} hey",
+            "in_reply_to_id" => replied_to.id,
+            "visibility" => visibility
+          })
+
+        assert json_response(conn, 422) == %{"error" => "The message visibility must be direct"}
+      end)
+    end
+
+    test "posting a status with an invalid in_reply_to_id", %{conn: conn} do
+      conn =
+        conn
+        |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => ""})
+
+      assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
+      assert Activity.get_by_id(id)
+    end
+
+    test "posting a sensitive status", %{conn: conn} do
+      conn =
+        conn
+        |> post("/api/v1/statuses", %{"status" => "cofe", "sensitive" => true})
+
+      assert %{"content" => "cofe", "id" => id, "sensitive" => true} = json_response(conn, 200)
+      assert Activity.get_by_id(id)
+    end
+
+    test "posting a fake status", %{conn: conn} do
+      real_conn =
+        conn
+        |> post("/api/v1/statuses", %{
+          "status" =>
+            "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it"
+        })
+
+      real_status = json_response(real_conn, 200)
+
+      assert real_status
+      assert Object.get_by_ap_id(real_status["uri"])
+
+      real_status =
+        real_status
+        |> Map.put("id", nil)
+        |> Map.put("url", nil)
+        |> Map.put("uri", nil)
+        |> Map.put("created_at", nil)
+        |> Kernel.put_in(["pleroma", "conversation_id"], nil)
+
+      fake_conn =
+        conn
+        |> post("/api/v1/statuses", %{
+          "status" =>
+            "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it",
+          "preview" => true
+        })
+
+      fake_status = json_response(fake_conn, 200)
+
+      assert fake_status
+      refute Object.get_by_ap_id(fake_status["uri"])
+
+      fake_status =
+        fake_status
+        |> Map.put("id", nil)
+        |> Map.put("url", nil)
+        |> Map.put("uri", nil)
+        |> Map.put("created_at", nil)
+        |> Kernel.put_in(["pleroma", "conversation_id"], nil)
+
+      assert real_status == fake_status
+    end
+
+    test "posting a status with OGP link preview", %{conn: conn} do
+      Pleroma.Config.put([:rich_media, :enabled], true)
+
+      conn =
+        conn
+        |> post("/api/v1/statuses", %{
+          "status" => "https://example.com/ogp"
+        })
+
+      assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
+      assert Activity.get_by_id(id)
+      Pleroma.Config.put([:rich_media, :enabled], false)
+    end
+
+    test "posting a direct status", %{conn: conn} do
+      user2 = insert(:user)
+      content = "direct cofe @#{user2.nickname}"
+
+      conn =
+        conn
+        |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
+
+      assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
+      assert activity = Activity.get_by_id(id)
+      assert activity.recipients == [user2.ap_id, conn.assigns[:user].ap_id]
+      assert activity.data["to"] == [user2.ap_id]
+      assert activity.data["cc"] == []
+    end
   end
 
   describe "posting polls" do
@@ -241,100 +371,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       %{"error" => error} = json_response(conn, 422)
       assert error == "Expiration date is too far in the future"
     end
-  end
-
-  test "posting a sensitive status", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{"status" => "cofe", "sensitive" => true})
-
-    assert %{"content" => "cofe", "id" => id, "sensitive" => true} = json_response(conn, 200)
-    assert Activity.get_by_id(id)
-  end
-
-  test "posting a fake status", %{conn: conn} do
-    user = insert(:user)
-
-    real_conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{
-        "status" =>
-          "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it"
-      })
-
-    real_status = json_response(real_conn, 200)
-
-    assert real_status
-    assert Object.get_by_ap_id(real_status["uri"])
-
-    real_status =
-      real_status
-      |> Map.put("id", nil)
-      |> Map.put("url", nil)
-      |> Map.put("uri", nil)
-      |> Map.put("created_at", nil)
-      |> Kernel.put_in(["pleroma", "conversation_id"], nil)
-
-    fake_conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{
-        "status" =>
-          "\"Tenshi Eating a Corndog\" is a much discussed concept on /jp/. The significance of it is disputed, so I will focus on one core concept: the symbolism behind it",
-        "preview" => true
-      })
-
-    fake_status = json_response(fake_conn, 200)
-
-    assert fake_status
-    refute Object.get_by_ap_id(fake_status["uri"])
-
-    fake_status =
-      fake_status
-      |> Map.put("id", nil)
-      |> Map.put("url", nil)
-      |> Map.put("uri", nil)
-      |> Map.put("created_at", nil)
-      |> Kernel.put_in(["pleroma", "conversation_id"], nil)
-
-    assert real_status == fake_status
-  end
-
-  test "posting a status with OGP link preview", %{conn: conn} do
-    Pleroma.Config.put([:rich_media, :enabled], true)
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{
-        "status" => "https://example.com/ogp"
-      })
-
-    assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
-    assert Activity.get_by_id(id)
-    Pleroma.Config.put([:rich_media, :enabled], false)
-  end
-
-  test "posting a direct status", %{conn: conn} do
-    user1 = insert(:user)
-    user2 = insert(:user)
-    content = "direct cofe @#{user2.nickname}"
-
-    conn =
-      conn
-      |> assign(:user, user1)
-      |> post("api/v1/statuses", %{"status" => content, "visibility" => "direct"})
-
-    assert %{"id" => id, "visibility" => "direct"} = json_response(conn, 200)
-    assert activity = Activity.get_by_id(id)
-    assert activity.recipients == [user2.ap_id, user1.ap_id]
-    assert activity.data["to"] == [user2.ap_id]
-    assert activity.data["cc"] == []
   end
 
   test "direct timeline", %{conn: conn} do
@@ -499,39 +535,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     [status] = json_response(res_conn, 200)
     assert status["id"] == direct.id
-  end
-
-  test "replying to a status", %{conn: conn} do
-    user = insert(:user)
-
-    {:ok, replied_to} = TwitterAPI.create_status(user, %{"status" => "cofe"})
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => replied_to.id})
-
-    assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
-
-    activity = Activity.get_by_id(id)
-
-    assert activity.data["context"] == replied_to.data["context"]
-    assert Activity.get_in_reply_to_activity(activity).id == replied_to.id
-  end
-
-  test "posting a status with an invalid in_reply_to_id", %{conn: conn} do
-    user = insert(:user)
-
-    conn =
-      conn
-      |> assign(:user, user)
-      |> post("/api/v1/statuses", %{"status" => "xD", "in_reply_to_id" => ""})
-
-    assert %{"content" => "xD", "id" => id} = json_response(conn, 200)
-
-    activity = Activity.get_by_id(id)
-
-    assert activity
   end
 
   test "verify_credentials", %{conn: conn} do

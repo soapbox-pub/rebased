@@ -247,6 +247,7 @@ defmodule Pleroma.Web.CommonAPI do
 
       res
     else
+      {:private_to_public, true} -> {:error, "The message visibility must be direct"}
       {:error, _} = e -> e
       e -> {:error, e}
     end
