@@ -103,7 +103,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - HTTP connection timeout is now set to 10 seconds.
 - Respond with a 404 Not implemented JSON error message when requested API is not implemented
 - Rich Media: Added `ignore_hosts` and `ignore_tld` config params, that allow to set host and top level domain to ignore for crawl URLs from posts.
-- Rich Media: crawls only https URLs.
+- Rich Media: crawl only https URLs.
 
 ### Fixed
 - Follow requests don't get 'stuck' anymore.
