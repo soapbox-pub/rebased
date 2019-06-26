@@ -82,9 +82,14 @@ mv ~pleroma/config/prod.secret.exs /etc/pleroma/config.exs
 $EDITOR /etc/pleroma/config.exs
 ```
 ## Installing the release
+Before proceeding, get the flavour from [Detecting flavour](otp_en.html#detecting-flavour) section in OTP installation guide.
 ```sh
 # Delete all files in pleroma user's directory
 rm -r ~pleroma/*
+
+# Set the flavour environment variable to the string you got in Detecting flavour section.
+# For example if the flavour is `arm64-musl` the command will be
+export FLAVOUR="arm64-musl"
 
 # Clone the release build into a temporary directory and unpack it
 su pleroma -s $SHELL -lc "
