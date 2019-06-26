@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Federation: Support for `Question` and `Answer` objects
 - Federation: Support for reports
 - Configuration: `poll_limits` option
+- Configuration: `pack_extensions` option
 - Configuration: `safe_dm_mentions` option
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
