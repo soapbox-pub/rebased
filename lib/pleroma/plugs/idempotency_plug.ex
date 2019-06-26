@@ -11,7 +11,9 @@ defmodule Pleroma.Plugs.IdempotencyPlug do
   @impl true
   def init(opts), do: opts
 
-  # Sending idempotency keys in `GET` and `DELETE` requests has no effect and should be avoided, as these requests are idempotent by definition.
+  # Sending idempotency keys in `GET` and `DELETE` requests has no effect
+  # and should be avoided, as these requests are idempotent by definition.
+
   @impl true
   def call(%{method: method} = conn, _) when method in ["POST", "PUT", "PATCH"] do
     case get_req_header(conn, "idempotency-key") do
