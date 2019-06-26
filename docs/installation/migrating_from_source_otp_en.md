@@ -94,7 +94,7 @@ unzip /tmp/pleroma.zip -d /tmp/
 
 # Move the release to the home directory and delete temporary files
 su pleroma -s $SHELL -lc "
-mv /tmp/release/* /opt/pleroma
+mv /tmp/release/* ~pleroma/
 rmdir /tmp/release
 rm /tmp/pleroma.zip
 "
