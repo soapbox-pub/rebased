@@ -330,7 +330,10 @@ config :pleroma, :mrf_keyword,
 
 config :pleroma, :mrf_subchain, match_actor: %{}
 
-config :pleroma, :rich_media, enabled: true
+config :pleroma, :rich_media,
+  enabled: true,
+  ignore_hosts: [],
+  ignore_tld: ["local", "localdomain", "lan"]
 
 config :pleroma, :media_proxy,
   enabled: false,

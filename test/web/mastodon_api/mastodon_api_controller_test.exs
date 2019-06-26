@@ -312,7 +312,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       conn
       |> assign(:user, user)
       |> post("/api/v1/statuses", %{
-        "status" => "http://example.com/ogp"
+        "status" => "https://example.com/ogp"
       })
 
     assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
@@ -2557,7 +2557,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "returns rich-media card", %{conn: conn, user: user} do
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "http://example.com/ogp"})
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "https://example.com/ogp"})
 
       card_data = %{
         "image" => "http://ia.media-imdb.com/images/rock.jpg",
@@ -2589,7 +2589,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       # works with private posts
       {:ok, activity} =
-        CommonAPI.post(user, %{"status" => "http://example.com/ogp", "visibility" => "direct"})
+        CommonAPI.post(user, %{"status" => "https://example.com/ogp", "visibility" => "direct"})
 
       response_two =
         conn
@@ -2601,7 +2601,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "replaces missing description with an empty string", %{conn: conn, user: user} do
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "http://example.com/ogp-missing-data"})
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "https://example.com/ogp-missing-data"})
 
       response =
         conn
