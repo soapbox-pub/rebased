@@ -29,16 +29,16 @@ defmodule Pleroma.Plugs.IdempotencyPlug do
       {:ok, nil} ->
         cache_resposnse(conn, key)
 
-      {atom, message} when atom in [:ignore, :error] ->
-        render_error(conn, message)
-
       {:ok, record} ->
         send_cached(conn, key, record)
+
+      {atom, message} when atom in [:ignore, :error] ->
+        render_error(conn, message)
     end
   end
 
   defp cache_resposnse(conn, key) do
-    Plug.Conn.register_before_send(conn, fn conn ->
+    register_before_send(conn, fn conn ->
       [request_id] = get_resp_header(conn, "x-request-id")
       content_type = get_content_type(conn)
 

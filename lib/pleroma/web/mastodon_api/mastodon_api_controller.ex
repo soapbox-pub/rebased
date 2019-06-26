@@ -564,7 +564,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       case CommonAPI.post(user, params) do
         {:error, message} ->
           conn
-          |> put_status(422)
+          |> put_status(:unprocessable_entity)
           |> json(%{error: message})
 
         {:ok, activity} ->

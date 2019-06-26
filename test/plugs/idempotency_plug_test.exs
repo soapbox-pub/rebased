@@ -24,7 +24,7 @@ defmodule Pleroma.Plugs.IdempotencyPlugTest do
     |> IdempotencyPlug.call([])
     |> Conn.send_resp(status, body)
 
-    conn2 =
+    conn =
       :post
       |> conn("/cofe")
       |> put_req_header("idempotency-key", key)
@@ -33,17 +33,17 @@ defmodule Pleroma.Plugs.IdempotencyPlugTest do
       |> IdempotencyPlug.call([])
 
     assert_raise Conn.AlreadySentError, fn ->
-      Conn.send_resp(conn2, :im_a_teapot, "no cofe")
+      Conn.send_resp(conn, :im_a_teapot, "no cofe")
     end
 
-    assert conn2.resp_body == body
-    assert conn2.status == status
+    assert conn.resp_body == body
+    assert conn.status == status
 
-    assert [^second_request_id] = Conn.get_resp_header(conn2, "x-request-id")
-    assert [^orig_request_id] = Conn.get_resp_header(conn2, "x-original-request-id")
-    assert [^key] = Conn.get_resp_header(conn2, "idempotency-key")
-    assert ["true"] = Conn.get_resp_header(conn2, "idempotent-replayed")
-    assert ["application/json; charset=utf-8"] = Conn.get_resp_header(conn2, "content-type")
+    assert [^second_request_id] = Conn.get_resp_header(conn, "x-request-id")
+    assert [^orig_request_id] = Conn.get_resp_header(conn, "x-original-request-id")
+    assert [^key] = Conn.get_resp_header(conn, "idempotency-key")
+    assert ["true"] = Conn.get_resp_header(conn, "idempotent-replayed")
+    assert ["application/json; charset=utf-8"] = Conn.get_resp_header(conn, "content-type")
   end
 
   test "pass conn downstream if the cache not found" do
