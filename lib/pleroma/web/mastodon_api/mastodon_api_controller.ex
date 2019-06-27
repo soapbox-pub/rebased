@@ -561,38 +561,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       params = Map.drop(params, ["scheduled_at"])
 
-      case get_cached_status_or_post(conn, params) do
-        {:ignore, message} ->
-          conn
-          |> put_status(422)
-          |> json(%{error: message})
-
+      case CommonAPI.post(user, params) do
         {:error, message} ->
           conn
-          |> put_status(422)
+          |> put_status(:unprocessable_entity)
           |> json(%{error: message})
 
-        {_, activity} ->
+        {:ok, activity} ->
           conn
           |> put_view(StatusView)
           |> try_render("status.json", %{activity: activity, for: user, as: :activity})
       end
     end
-  end
-
-  defp get_cached_status_or_post(%{assigns: %{user: user}} = conn, params) do
-    idempotency_key =
-      case get_req_header(conn, "idempotency-key") do
-        [key] -> key
-        _ -> Ecto.UUID.generate()
-      end
-
-    Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
-      case CommonAPI.post(user, params) do
-        {:ok, activity} -> activity
-        {:error, message} -> {:ignore, message}
-      end
-    end)
   end
 
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
