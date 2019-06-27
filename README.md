@@ -17,6 +17,9 @@ If you want to run your own server, feel free to contact us at @lain@pleroma.soy
 ## Installation
 **Note:** The guide below may be outdated and in most cases shouldn't be used. Instead check out our [wiki](https://docs.pleroma.social) for platform-specific installation instructions, most likely [Installing on Linux using OTP releases](https://docs.pleroma.social/otp_en.html) is the guide you need.
 
+### OS/Distro packages
+Currently Pleroma is not packaged by any OS/Distros, but feel free to reach out to us at [#pleroma-dev on freenode](https://webchat.freenode.net/?channels=%23pleroma-dev) or via matrix at <https://matrix.heldscal.la/#/room/#freenode_#pleroma-dev:matrix.org> for assistance. If you want to change default options in your Pleroma package, please **discuss it with us first**.
+
 ### Docker
 While we don’t provide docker files, other people have written very good ones. Take a look at <https://github.com/angristan/docker-pleroma> or <https://github.com/sn0w/pleroma-docker>.
 
