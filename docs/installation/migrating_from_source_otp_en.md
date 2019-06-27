@@ -1,4 +1,6 @@
 # Switching a from-source install to OTP releases
+## What are OTP releases?
+OTP releases are as close as you can get to binary releases with Erlang/Elixir. The release is self-contained, and provides everything needed to boot it, it is easily administered via the provided shell script to open up a remote console, start/stop/restart the release, start in the background, send remote commands, and more.
 ## Why would one want to switch?
 Benefits of OTP releases over from-source installs include:
 * **Less space used.** OTP releases come without source code, build tools, have docs and debug symbols stripped from the compiled bytecode and do not cointain tests, docs, revision history.
