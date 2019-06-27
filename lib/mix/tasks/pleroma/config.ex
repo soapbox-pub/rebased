@@ -36,8 +36,10 @@ defmodule Mix.Tasks.Pleroma.Config do
     end
   end
 
-  def run(["migrate_from_db", env]) do
+  def run(["migrate_from_db", env, delete?]) do
     start_pleroma()
+
+    delete? = if delete? == "true", do: true, else: false
 
     if Pleroma.Config.get([:instance, :dynamic_configuration]) do
       config_path = "config/#{env}.exported_from_db.secret.exs"
@@ -47,7 +49,11 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       Repo.all(Config)
       |> Enum.each(fn config ->
-        mark = if String.starts_with?(config.key, "Pleroma."), do: ",", else: ":"
+        mark =
+          if String.starts_with?(config.key, "Pleroma.") or
+               String.starts_with?(config.key, "Ueberauth"),
+             do: ",",
+             else: ":"
 
         IO.write(
           file,
@@ -56,8 +62,10 @@ defmodule Mix.Tasks.Pleroma.Config do
           }\r\n"
         )
 
-        {:ok, _} = Repo.delete(config)
-        Mix.shell().info("#{config.key} deleted from DB.")
+        if delete? do
+          {:ok, _} = Repo.delete(config)
+          Mix.shell().info("#{config.key} deleted from DB.")
+        end
       end)
 
       File.close(file)

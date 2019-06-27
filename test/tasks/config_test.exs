@@ -51,7 +51,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
       value: [key: "valu2", key2: [Pleroma.Repo]]
     })
 
-    Mix.Tasks.Pleroma.Config.run(["migrate_from_db", "temp"])
+    Mix.Tasks.Pleroma.Config.run(["migrate_from_db", "temp", "true"])
 
     assert Repo.all(Config) == []
     assert File.exists?(temp_file)

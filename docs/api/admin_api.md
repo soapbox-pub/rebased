@@ -579,7 +579,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 ## `/api/pleroma/admin/config`
 ### Update config settings
 Module name can be passed as string, which starts with `Pleroma`, e.g. `"Pleroma.Upload"`.
-Atom or boolean value can be passed with `:` in the beginning, e.g. `":true"`, `":upload"`.
+Atom or boolean value can be passed with `:` in the beginning, e.g. `":true"`, `":upload"`. For keys it is not needed.
 Integer with `i:`, e.g. `"i:150"`.
 Tuple with more than 2 values with `{"tuple": ["first_val", Pleroma.Module, []]}`.
 `{"tuple": ["some_string", "Pleroma.Some.Module", []]}` will be converted to `{"some_string", Pleroma.Some.Module, []}`.
