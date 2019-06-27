@@ -169,7 +169,7 @@ config :logger, :console,
 
 config :logger, :ex_syslogger,
   level: :debug,
-  ident: "Pleroma",
+  ident: "pleroma",
   format: "$metadata[$level] $message",
   metadata: [:request_id]
 
