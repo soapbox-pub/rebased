@@ -68,6 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF: Support for filtering out likely spam messages by rejecting posts from new users that contain links.
 - Configuration: `ignore_hosts` option
 - Configuration: `ignore_tld` option
+- Configuration: default syslog tag "Pleroma" is now lowercased to "pleroma"
 
 ### Changed
 - **Breaking:** bind to 127.0.0.1 instead of 0.0.0.0 by default
