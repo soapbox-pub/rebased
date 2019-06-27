@@ -15,9 +15,9 @@ For clients it supports both the [GNU Social API with Qvitter extensions](https:
 If you want to run your own server, feel free to contact us at @lain@pleroma.soykaf.com or in our dev chat at #pleroma on freenode or via matrix at <https://matrix.heldscal.la/#/room/#freenode_#pleroma:matrix.org>.
 
 ## Installation
+**Note:** The guide below may be outdated and in most cases shouldn't be used. Instead check out our [wiki](https://docs.pleroma.social) for platform-specific installation instructions, most likely [Installing on Linux using OTP releases](https://docs.pleroma.social/otp_en.html) is the guide you need.
 
 ### Docker
-
 While we don’t provide docker files, other people have written very good ones. Take a look at <https://github.com/angristan/docker-pleroma> or <https://github.com/sn0w/pleroma-docker>.
 
 ### Dependencies
