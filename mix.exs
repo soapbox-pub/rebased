@@ -37,7 +37,7 @@ defmodule Pleroma.Mixfile do
         pleroma: [
           include_executables_for: [:unix],
           applications: [ex_syslogger: :load, syslog: :load],
-          steps: [:assemble, &copy_files/1]
+          steps: [:assemble, &copy_files/1, &copy_nginx_config/1]
         ]
       ]
     ]
@@ -45,6 +45,15 @@ defmodule Pleroma.Mixfile do
 
   def copy_files(%{path: target_path} = release) do
     File.cp_r!("./rel/files", target_path)
+    release
+  end
+
+  def copy_nginx_config(%{path: target_path} = release) do
+    File.cp!(
+      "./installation/pleroma.nginx",
+      Path.join([target_path, "installation", "pleroma.nginx"])
+    )
+
     release
   end
 
