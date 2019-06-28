@@ -1,6 +1,8 @@
 # Switching a from-source install to OTP releases
 ## What are OTP releases?
 OTP releases are as close as you can get to binary releases with Erlang/Elixir. The release is self-contained, and provides everything needed to boot it, it is easily administered via the provided shell script to open up a remote console, start/stop/restart the release, start in the background, send remote commands, and more.
+### Can I still run the develop branch if I decide to use them?
+Yes, we produce builds for every commit in `develop`. However `develop` is considered unstable, please don't use it in production because of faster access to new features, unless you need them as an app developer.
 ## Why would one want to switch?
 Benefits of OTP releases over from-source installs include:
 * **Less space used.** OTP releases come without source code, build tools, have docs and debug symbols stripped from the compiled bytecode and do not cointain tests, docs, revision history.
@@ -94,6 +96,7 @@ rm -r ~pleroma/*
 export FLAVOUR="arm64-musl"
 
 # Clone the release build into a temporary directory and unpack it
+# Replace `master` with `develop` if you want to run the develop branch
 su pleroma -s $SHELL -lc "
 curl 'https://git.pleroma.social/api/v4/projects/2/jobs/artifacts/master/download?job=$FLAVOUR' -o /tmp/pleroma.zip
 unzip /tmp/pleroma.zip -d /tmp/
