@@ -6,10 +6,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Activity
+  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.HTML
   alias Pleroma.Web.MediaProxy
   import Pleroma.Factory
 
