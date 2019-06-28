@@ -16,6 +16,13 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 ## Pleroma.Uploaders.Local
 * `uploads`: Which directory to store the user-uploads in, relative to pleroma’s working directory
 
+## Pleroma.Uploaders.S3
+* `bucket`: S3 bucket name
+* `public_endpoint`: S3 endpoint that the user finally accesses(ex. "https://s3.dualstack.ap-northeast-1.amazonaws.com")
+* `truncated_namespace`: If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or "" etc.
+For example, when using CDN to S3 virtual host format, set "".
+At this time, write CNAME to CDN in public_endpoint.
+
 ## Pleroma.Upload.Filter.Mogrify
 
 * `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"impode", "1"}]`.
@@ -86,9 +93,11 @@ config :pleroma, Pleroma.Emails.Mailer,
   * `Pleroma.Web.ActivityPub.MRF.NoOpPolicy`: Doesn’t modify activities (default)
   * `Pleroma.Web.ActivityPub.MRF.DropPolicy`: Drops all activities. It generally doesn’t makes sense to use in production
   * `Pleroma.Web.ActivityPub.MRF.SimplePolicy`: Restrict the visibility of activities from certains instances (See ``:mrf_simple`` section)
+  * `Pleroma.Web.ActivityPub.MRF.TagPolicy`: Applies policies to individual users based on tags, which can be set using pleroma-fe/admin-fe/any other app that supports Pleroma Admin API. For example it allows marking posts from individual users nsfw (sensitive)
   * `Pleroma.Web.ActivityPub.MRF.SubchainPolicy`: Selectively runs other MRF policies when messages match (see ``:mrf_subchain`` section)
   * `Pleroma.Web.ActivityPub.MRF.RejectNonPublic`: Drops posts with non-public visibility settings (See ``:mrf_rejectnonpublic`` section)
   * `Pleroma.Web.ActivityPub.MRF.EnsureRePrepended`: Rewrites posts to ensure that replies to posts with subjects do not have an identical subject and instead begin with re:.
+  * `Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy`: Rejects posts from likely spambots by rejecting posts from new users that contain links.
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
@@ -112,13 +121,9 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
-* `limit_unauthenticated_to_local_content`: Limit unauthenticated users to search for local statutes and users only. The default is `true`.
+* `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
+* `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
 
-## :app_account_creation
-REST API for creating an account settings
-* `enabled`: Enable/disable registration
-* `max_requests`: Number of requests allowed for creating accounts
-* `interval`: Interval for restricting requests for one ip (seconds)
 
 ## :logger
 * `backends`: `:console` is used to send logs to stdout, `{ExSyslogger, :ex_syslogger}` to log to syslog, and `Quack.Logger` to log to Slack
@@ -412,6 +417,8 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 
 ## :rich_media
 * `enabled`: if enabled the instance will parse metadata from attached links to generate link previews
+* `ignore_hosts`: list of hosts which will be ignored by the metadata parser. For example `["accounts.google.com", "xss.website"]`, defaults to `[]`.
+* `ignore_tld`: list TLDs (top-level domains) which will ignore for parse metadata. default is ["local", "localdomain", "lan"]
 
 ## :fetch_initial_posts
 * `enabled`: if enabled, when a new user is federated with, fetch some of their latest posts
@@ -580,7 +587,7 @@ config :ueberauth, Ueberauth,
   providers: [
     microsoft: {Ueberauth.Strategy.Microsoft, [callback_params: []]}
   ]
-  
+
 # Keycloak
 # Note: make sure to add `keycloak:ueberauth_keycloak_strategy` entry to `OAUTH_CONSUMER_STRATEGIES` environment variable
 keycloak_url = "https://publicly-reachable-keycloak-instance.org:8080"
@@ -611,6 +618,7 @@ Configure OAuth 2 provider capabilities:
 
 ## :emoji
 * `shortcode_globs`: Location of custom emoji files. `*` can be used as a wildcard. Example `["/emoji/custom/**/*.png"]`
+* `pack_extensions`: A list of file extensions for emojis, when no emoji.txt for a pack is present. Example `[".png", ".gif"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
 * `default_manifest`: Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download. Currently only one manifest can be added (no arrays).
 
@@ -628,3 +636,14 @@ To enable them, both the `rum_enabled` flag has to be set and the following spec
 `mix ecto.migrate --migrations-path priv/repo/optional_migrations/rum_indexing/`
 
 This will probably take a long time.
+
+## :rate_limit
+
+A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
+
+* The first element: `scale` (Integer). The time scale in milliseconds.
+* The second element: `limit` (Integer). How many requests to limit in the time scale provided.
+
+It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
+
+See [`Pleroma.Plugs.RateLimiter`](Pleroma.Plugs.RateLimiter.html) documentation for examples.

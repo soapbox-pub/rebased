@@ -203,12 +203,12 @@ sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress
 #### Further reading
 
 * [Admin tasks](Admin tasks)
-* [Backup your instance](Backup-your-instance)
-* [Configuration tips](General tips for customizing pleroma fe)
-* [Hardening your instance](Hardening-your-instance)
-* [How to activate mediaproxy](How-to-activate-mediaproxy)
-* [Small Pleroma-FE customizations](Small customizations)
-* [Updating your instance](Updating-your-instance)
+* [Backup your instance](backup.html)
+* [Configuration tips](general-tips-for-customizing-pleroma-fe.html)
+* [Hardening your instance](hardening.html)
+* [How to activate mediaproxy](howto_mediaproxy.html)
+* [Small Pleroma-FE customizations](small_customizations.html)
+* [Updating your instance](updating.html)
 
 ## Questions
 

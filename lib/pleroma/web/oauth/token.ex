@@ -14,7 +14,6 @@ defmodule Pleroma.Web.OAuth.Token do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OAuth.Token.Query
 
-  @expires_in Pleroma.Config.get([:oauth2, :token_expires_in], 600)
   @type t :: %__MODULE__{}
 
   schema "oauth_tokens" do
@@ -78,7 +77,7 @@ defmodule Pleroma.Web.OAuth.Token do
 
   defp put_valid_until(changeset, attrs) do
     expires_in =
-      Map.get(attrs, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), @expires_in))
+      Map.get(attrs, :valid_until, NaiveDateTime.add(NaiveDateTime.utc_now(), expires_in()))
 
     changeset
     |> change(%{valid_until: expires_in})
@@ -123,4 +122,6 @@ defmodule Pleroma.Web.OAuth.Token do
   end
 
   def is_expired?(_), do: false
+
+  defp expires_in, do: Pleroma.Config.get([:oauth2, :token_expires_in], 600)
 end

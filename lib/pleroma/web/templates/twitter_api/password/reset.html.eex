@@ -1,0 +1,13 @@
+<h2>Password Reset for <%= @user.nickname %></h2>
+<%= form_for @conn, reset_password_path(@conn, :do_reset), [as: "data"], fn f -> %>
+  <div class="form-row">
+    <%= label f, :password, "Password" %>
+    <%= password_input f, :password %>
+  </div>
+  <div class="form-row">
+    <%= label f, :password_confirmation, "Confirmation" %>
+    <%= password_input f, :password_confirmation %>
+  </div>
+  <%= hidden_input f, :token, value: @token.token %>
+  <%= submit "Reset" %>
+<% end %>

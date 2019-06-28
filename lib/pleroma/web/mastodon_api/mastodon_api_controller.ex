@@ -46,14 +46,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
-  plug(
-    Pleroma.Plugs.RateLimitPlug,
-    %{
-      max_requests: Config.get([:app_account_creation, :max_requests]),
-      interval: Config.get([:app_account_creation, :interval])
-    }
-    when action in [:account_register]
-  )
+  plug(Pleroma.Plugs.RateLimiter, :app_account_creation when action == :account_register)
+  plug(Pleroma.Plugs.RateLimiter, :search when action in [:search, :search2, :account_search])
 
   @local_mastodon_name "Mastodon-Local"
 
@@ -142,6 +136,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           _ -> :error
         end
       end)
+      |> add_if_present(params, "pleroma_background_image", :background, fn value ->
+        with %Plug.Upload{} <- value,
+             {:ok, object} <- ActivityPub.upload(value, type: :background) do
+          {:ok, object.data}
+        else
+          _ -> :error
+        end
+      end)
       |> Map.put(:emoji, user_info_emojis)
 
     info_cng = User.Info.profile_update(user.info, info_params)
@@ -166,8 +168,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
+    chat_token = Phoenix.Token.sign(conn, "user socket", user.id)
+
     account =
-      AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
+      AccountView.render("account.json", %{
+        user: user,
+        for: user,
+        with_pleroma_settings: true,
+        with_chat_token: chat_token
+      })
 
     json(conn, account)
   end
@@ -445,12 +454,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  defp get_cached_vote_or_vote(user, object, choices) do
+    idempotency_key = "polls:#{user.id}:#{object.data["id"]}"
+
+    {_, res} =
+      Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
+        case CommonAPI.vote(user, object, choices) do
+          {:error, _message} = res -> {:ignore, res}
+          res -> {:commit, res}
+        end
+      end)
+
+    res
+  end
+
   def poll_vote(%{assigns: %{user: user}} = conn, %{"id" => id, "choices" => choices}) do
     with %Object{} = object <- Object.get_by_id(id),
          true <- object.data["type"] == "Question",
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user),
-         {:ok, _activities, object} <- CommonAPI.vote(user, object, choices) do
+         {:ok, _activities, object} <- get_cached_vote_or_vote(user, object, choices) do
       conn
       |> put_view(StatusView)
       |> try_render("poll.json", %{object: object, for: user})
@@ -521,15 +544,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def post_status(conn, %{"status" => "", "media_ids" => media_ids} = params)
-      when length(media_ids) > 0 do
-    params =
-      params
-      |> Map.put("status", ".")
-
-    post_status(conn, params)
-  end
-
   def post_status(%{assigns: %{user: user}} = conn, %{"status" => _} = params) do
     params =
       params
@@ -547,38 +561,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       params = Map.drop(params, ["scheduled_at"])
 
-      case get_cached_status_or_post(conn, params) do
-        {:ignore, message} ->
-          conn
-          |> put_status(422)
-          |> json(%{error: message})
-
+      case CommonAPI.post(user, params) do
         {:error, message} ->
           conn
-          |> put_status(422)
+          |> put_status(:unprocessable_entity)
           |> json(%{error: message})
 
-        {_, activity} ->
+        {:ok, activity} ->
           conn
           |> put_view(StatusView)
           |> try_render("status.json", %{activity: activity, for: user, as: :activity})
       end
     end
-  end
-
-  defp get_cached_status_or_post(%{assigns: %{user: user}} = conn, params) do
-    idempotency_key =
-      case get_req_header(conn, "idempotency-key") do
-        [key] -> key
-        _ -> Ecto.UUID.generate()
-      end
-
-    Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
-      case CommonAPI.post(user, params) do
-        {:ok, activity} -> activity
-        {:error, message} -> {:ignore, message}
-      end
-    end)
   end
 
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
@@ -830,7 +824,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       conn
       |> put_view(AccountView)
-      |> render(AccountView, "accounts.json", %{for: user, users: users, as: :user})
+      |> render("accounts.json", %{for: user, users: users, as: :user})
     else
       _ -> json(conn, [])
     end
@@ -1122,58 +1116,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> put_resp_content_type("application/json")
         |> send_resp(403, Jason.encode!(%{"error" => message}))
     end
-  end
-
-  def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-    statuses = Activity.search(user, query)
-    tags_path = Web.base_url() <> "/tag/"
-
-    tags =
-      query
-      |> String.split()
-      |> Enum.uniq()
-      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
-      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
-      |> Enum.map(fn tag -> %{name: tag, url: tags_path <> tag} end)
-
-    res = %{
-      "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
-      "statuses" =>
-        StatusView.render("index.json", activities: statuses, for: user, as: :activity),
-      "hashtags" => tags
-    }
-
-    json(conn, res)
-  end
-
-  def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-    statuses = Activity.search(user, query)
-
-    tags =
-      query
-      |> String.split()
-      |> Enum.uniq()
-      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
-      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
-
-    res = %{
-      "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
-      "statuses" =>
-        StatusView.render("index.json", activities: statuses, for: user, as: :activity),
-      "hashtags" => tags
-    }
-
-    json(conn, res)
-  end
-
-  def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-
-    res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
-
-    json(conn, res)
   end
 
   def favourites(%{assigns: %{user: user}} = conn, params) do

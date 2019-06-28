@@ -99,6 +99,7 @@ config :pleroma, Pleroma.Uploaders.MDII,
 
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
+  pack_extensions: [".png", ".gif"],
   groups: [
     # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Custom: ["/emoji/*.png", "/emoji/**/*.png"]
@@ -139,6 +140,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
+    ip: {127, 0, 0, 1},
     dispatch: [
       {:_,
        [
@@ -167,7 +169,7 @@ config :logger, :console,
 
 config :logger, :ex_syslogger,
   level: :debug,
-  ident: "Pleroma",
+  ident: "pleroma",
   format: "$metadata[$level] $message",
   metadata: [:request_id]
 
@@ -244,10 +246,9 @@ config :pleroma, :instance,
   safe_dm_mentions: false,
   healthcheck: false,
   remote_post_retention_days: 90,
-  skip_thread_containment: false,
-  limit_unauthenticated_to_local_content: true
-
-config :pleroma, :app_account_creation, enabled: true, max_requests: 25, interval: 1800
+  skip_thread_containment: true,
+  limit_to_local_content: :unauthenticated,
+  dynamic_configuration: false
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -330,7 +331,10 @@ config :pleroma, :mrf_keyword,
 
 config :pleroma, :mrf_subchain, match_actor: %{}
 
-config :pleroma, :rich_media, enabled: true
+config :pleroma, :rich_media,
+  enabled: true,
+  ignore_hosts: [],
+  ignore_tld: ["local", "localdomain", "lan"]
 
 config :pleroma, :media_proxy,
   enabled: false,
@@ -362,8 +366,8 @@ config :pleroma, :suggestions,
   third_party_engine:
     "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
   timeout: 300_000,
-  limit: 23,
-  web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
+  limit: 40,
+  web: "https://vinayaka.distsn.org"
 
 config :pleroma, :http_security,
   enabled: true,
@@ -443,6 +447,8 @@ config :auto_linker,
   opts: [
     scheme: true,
     extra: true,
+    # TODO: Set to :no_scheme when it works properly
+    validate_tld: true,
     class: false,
     strip_prefix: false,
     new_window: false,
@@ -508,8 +514,14 @@ config :pleroma, :oauth2,
 
 config :pleroma, :database, rum_enabled: false
 
+config :pleroma, :env, Mix.env()
+
 config :http_signatures,
   adapter: Pleroma.Signature
+
+config :pleroma, :rate_limit,
+  search: [{1000, 10}, {1000, 30}],
+  app_account_creation: {1_800_000, 25}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

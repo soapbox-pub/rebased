@@ -18,7 +18,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
   def parse(nil), do: {:error, "No URL provided"}
 
-  if Mix.env() == :test do
+  if Pleroma.Config.get(:env) == :test do
     def parse(url), do: parse_url(url)
   else
     def parse(url) do

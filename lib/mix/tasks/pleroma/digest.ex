@@ -1,6 +1,5 @@
 defmodule Mix.Tasks.Pleroma.Digest do
   use Mix.Task
-  alias Mix.Tasks.Pleroma.Common
 
   @shortdoc "Manages digest emails"
   @moduledoc """
@@ -14,7 +13,7 @@ defmodule Mix.Tasks.Pleroma.Digest do
   Example: ``mix pleroma.digest test donaldtheduck 2019-05-20``
   """
   def run(["test", nickname | opts]) do
-    Common.start_pleroma()
+    Mix.Pleroma.start_pleroma()
 
     user = Pleroma.User.get_by_nickname(nickname)
 

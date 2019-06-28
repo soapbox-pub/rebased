@@ -91,7 +91,7 @@ defmodule Pleroma.Web.Endpoint do
     Plug.Session,
     store: :cookie,
     key: cookie_name,
-    signing_salt: {Pleroma.Config, :get, [[__MODULE__, :signing_salt], "CqaoopA2"]},
+    signing_salt: Pleroma.Config.get([__MODULE__, :signing_salt], "CqaoopA2"),
     http_only: true,
     secure: secure_cookies,
     extra: extra

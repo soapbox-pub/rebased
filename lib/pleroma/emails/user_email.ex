@@ -23,13 +23,8 @@ defmodule Pleroma.Emails.UserEmail do
   defp recipient(email, name), do: {name, email}
   defp recipient(%Pleroma.User{} = user), do: recipient(user.email, user.name)
 
-  def password_reset_email(user, password_reset_token) when is_binary(password_reset_token) do
-    password_reset_url =
-      Router.Helpers.util_url(
-        Endpoint,
-        :show_password_reset,
-        password_reset_token
-      )
+  def password_reset_email(user, token) when is_binary(token) do
+    password_reset_url = Router.Helpers.reset_password_url(Endpoint, :reset, token)
 
     html_body = """
     <h3>Reset your password at #{instance_name()}</h3>

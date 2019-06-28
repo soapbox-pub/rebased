@@ -31,6 +31,7 @@ defmodule Pleroma.Application do
       [
         # Start the Ecto repository
         %{id: Pleroma.Repo, start: {Pleroma.Repo, :start_link, []}, type: :supervisor},
+        %{id: Pleroma.Config.TransferTask, start: {Pleroma.Config.TransferTask, :start_link, []}},
         %{id: Pleroma.Emoji, start: {Pleroma.Emoji, :start_link, []}},
         %{id: Pleroma.Captcha, start: {Pleroma.Captcha, :start_link, []}},
         %{
@@ -180,7 +181,6 @@ defmodule Pleroma.Application do
       Pleroma.Repo.Instrumenter.setup()
     end
 
-    Prometheus.Registry.register_collector(:prometheus_process_collector)
     Pleroma.Web.Endpoint.MetricsExporter.setup()
     Pleroma.Web.Endpoint.PipelineInstrumenter.setup()
     Pleroma.Web.Endpoint.Instrumenter.setup()
@@ -193,14 +193,14 @@ defmodule Pleroma.Application do
       else
         []
       end ++
-      if Pleroma.Config.get([Pleroma.Uploader, :proxy_remote]) do
+      if Pleroma.Config.get([Pleroma.Upload, :proxy_remote]) do
         [:upload]
       else
         []
       end
   end
 
-  if Mix.env() == :test do
+  if Pleroma.Config.get(:env) == :test do
     defp streamer_child, do: []
     defp chat_child, do: []
   else

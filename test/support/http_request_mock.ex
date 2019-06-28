@@ -757,7 +757,23 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
   end
 
+  def get("https://example.com/ogp", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
+  end
+
+  def get("https://pleroma.local/notice/9kCP7V", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
+  end
+
   def get("http://example.com/ogp-missing-data", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/rich_media/ogp-missing-data.html")
+     }}
+  end
+
+  def get("https://example.com/ogp-missing-data", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
@@ -795,6 +811,30 @@ defmodule HttpRequestMock do
   def post(url, query \\ [], body \\ [], headers \\ [])
 
   def post("http://example.org/needs_refresh", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://mastodon.example.org/inbox", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("https://hubzilla.example.org/inbox", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: ""
+     }}
+  end
+
+  def post("http://gs.example.org/index.php/main/salmon/user/1", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,

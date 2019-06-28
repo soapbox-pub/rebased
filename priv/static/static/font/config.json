@@ -241,6 +241,12 @@
       "src": "fontawesome"
     },
     {
+      "uid": "266d5d9adf15a61800477a5acf9a4462",
+      "css": "chart-bar",
+      "code": 59419,
+      "src": "fontawesome"
+    },
+    {
       "uid": "671f29fa10dda08074a4c6a341bb4f39",
       "css": "bell-alt",
       "code": 61683,
@@ -251,6 +257,26 @@
       "css": "wrench",
       "code": 59418,
       "src": "fontawesome"
+    },
+    {
+      "uid": "5b0772e9484a1a11646793a82edd622a",
+      "css": "pin",
+      "code": 59417,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "22411a88489225a018f68db737de3c77",
+      "css": "ellipsis",
+      "code": 61761,
+      "src": "custom_icons",
+      "selected": true,
+      "svg": {
+        "path": "M214 411V518Q214 540 199 556T161 571H54Q31 571 16 556T0 518V411Q0 388 16 373T54 357H161Q183 357 199 373T214 411ZM500 411V518Q500 540 484 556T446 571H339Q317 571 301 556T286 518V411Q286 388 301 373T339 357H446Q469 357 484 373T500 411ZM786 411V518Q786 540 770 556T732 571H625Q603 571 587 556T571 518V411Q571 388 587 373T625 357H732Q755 357 770 373T786 411Z",
+        "width": 785.7
+      },
+      "search": [
+        "ellipsis"
+      ]
     }
   ]
 }

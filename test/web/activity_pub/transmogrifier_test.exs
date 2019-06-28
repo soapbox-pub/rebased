@@ -15,6 +15,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.Web.Websub.WebsubClientSubscription
 
   import Pleroma.Factory
+  import ExUnit.CaptureLog
   alias Pleroma.Web.CommonAPI
 
   setup_all do
@@ -58,6 +59,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                )
 
       assert returned_object.data["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+    end
+
+    test "it does not crash if the object in inReplyTo can't be fetched" do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      object =
+        data["object"]
+        |> Map.put("inReplyTo", "https://404.site/whatever")
+
+      data =
+        data
+        |> Map.put("object", object)
+
+      assert capture_log(fn ->
+               {:ok, _returned_activity} = Transmogrifier.handle_incoming(data)
+             end) =~ "[error] Couldn't fetch \"\"https://404.site/whatever\"\", error: nil"
     end
 
     test "it works for incoming notices" do
@@ -500,7 +519,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         data
         |> Map.put("object", object)
 
-      :error = Transmogrifier.handle_incoming(data)
+      assert capture_log(fn ->
+               :error = Transmogrifier.handle_incoming(data)
+             end) =~
+               "[error] Could not decode user at fetch http://mastodon.example.org/users/gargron, {:error, {:error, :nxdomain}}"
 
       assert Activity.get_by_id(activity.id)
     end

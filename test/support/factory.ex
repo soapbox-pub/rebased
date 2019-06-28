@@ -311,4 +311,18 @@ defmodule Pleroma.Factory do
       }
     }
   end
+
+  def config_factory do
+    %Pleroma.Web.AdminAPI.Config{
+      key: sequence(:key, &"some_key_#{&1}"),
+      group: "pleroma",
+      value:
+        sequence(
+          :value,
+          fn key ->
+            :erlang.term_to_binary(%{another_key: "#{key}somevalue", another: "#{key}somevalue"})
+          end
+        )
+    }
+  end
 end

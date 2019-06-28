@@ -10,7 +10,7 @@ defmodule Pleroma.Web.RelMe do
     with_body: true
   ]
 
-  if Mix.env() == :test do
+  if Pleroma.Config.get(:env) == :test do
     def parse(url) when is_binary(url), do: parse_url(url)
   else
     def parse(url) when is_binary(url) do

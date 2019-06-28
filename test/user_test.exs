@@ -920,42 +920,44 @@ defmodule Pleroma.UserTest do
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
 
-    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
-      {:ok, _} = User.delete_user_activities(user)
-      # TODO: Remove favorites, repeats, delete activities.
-      refute Activity.get_by_id(activity.id)
-    end)
+    {:ok, _} = User.delete_user_activities(user)
+
+    # TODO: Remove favorites, repeats, delete activities.
+    refute Activity.get_by_id(activity.id)
   end
 
-  test ".delete deactivates a user, all follow relationships and all create activities" do
+  test ".delete deactivates a user, all follow relationships and all activities" do
     user = insert(:user)
-    followed = insert(:user)
     follower = insert(:user)
 
-    {:ok, user} = User.follow(user, followed)
     {:ok, follower} = User.follow(follower, user)
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
     {:ok, activity_two} = CommonAPI.post(follower, %{"status" => "3hu"})
 
-    {:ok, _, _} = CommonAPI.favorite(activity_two.id, user)
-    {:ok, _, _} = CommonAPI.favorite(activity.id, follower)
-    {:ok, _, _} = CommonAPI.repeat(activity.id, follower)
+    {:ok, like, _} = CommonAPI.favorite(activity_two.id, user)
+    {:ok, like_two, _} = CommonAPI.favorite(activity.id, follower)
+    {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
 
     {:ok, _} = User.delete(user)
 
-    followed = User.get_cached_by_id(followed.id)
     follower = User.get_cached_by_id(follower.id)
-    user = User.get_cached_by_id(user.id)
 
-    assert user.info.deactivated
+    refute User.following?(follower, user)
+    refute User.get_by_id(user.id)
 
-    refute User.following?(user, followed)
-    refute User.following?(followed, follower)
+    user_activities =
+      user.ap_id
+      |> Activity.query_by_actor()
+      |> Repo.all()
+      |> Enum.map(fn act -> act.data["type"] end)
 
-    # TODO: Remove favorites, repeats, delete activities.
+    assert Enum.all?(user_activities, fn act -> act in ~w(Delete Undo) end)
 
     refute Activity.get_by_id(activity.id)
+    refute Activity.get_by_id(like.id)
+    refute Activity.get_by_id(like_two.id)
+    refute Activity.get_by_id(repeat.id)
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
@@ -1011,6 +1013,18 @@ defmodule Pleroma.UserTest do
   end
 
   describe "User.search" do
+    test "accepts limit parameter" do
+      Enum.each(0..4, &insert(:user, %{nickname: "john#{&1}"}))
+      assert length(User.search("john", limit: 3)) == 3
+      assert length(User.search("john")) == 5
+    end
+
+    test "accepts offset parameter" do
+      Enum.each(0..4, &insert(:user, %{nickname: "john#{&1}"}))
+      assert length(User.search("john", limit: 3)) == 3
+      assert length(User.search("john", limit: 3, offset: 3)) == 2
+    end
+
     test "finds a user by full or partial nickname" do
       user = insert(:user, %{nickname: "john"})
 
@@ -1077,6 +1091,24 @@ defmodule Pleroma.UserTest do
                Enum.map(User.search("doe", resolve: false, for_user: u1), & &1.id) == []
     end
 
+    test "finds followers of user by partial name" do
+      u1 = insert(:user)
+      u2 = insert(:user, %{name: "Jimi"})
+      follower_jimi = insert(:user, %{name: "Jimi Hendrix"})
+      follower_lizz = insert(:user, %{name: "Lizz Wright"})
+      friend = insert(:user, %{name: "Jimi"})
+
+      {:ok, follower_jimi} = User.follow(follower_jimi, u1)
+      {:ok, _follower_lizz} = User.follow(follower_lizz, u2)
+      {:ok, u1} = User.follow(u1, friend)
+
+      assert Enum.map(User.search("jimi", following: true, for_user: u1), & &1.id) == [
+               follower_jimi.id
+             ]
+
+      assert User.search("lizz", following: true, for_user: u1) == []
+    end
+
     test "find local and remote users for authenticated users" do
       u1 = insert(:user, %{name: "lain"})
       u2 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
@@ -1099,8 +1131,20 @@ defmodule Pleroma.UserTest do
       assert [%{id: ^id}] = User.search("lain")
     end
 
-    test "find all users for unauthenticated users when `limit_unauthenticated_to_local_content` is `false`" do
-      Pleroma.Config.put([:instance, :limit_unauthenticated_to_local_content], false)
+    test "find only local users for authenticated users when `limit_to_local_content` is `:all`" do
+      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+
+      %{id: id} = insert(:user, %{name: "lain"})
+      insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
+      insert(:user, %{nickname: "lain@pleroma.soykaf.com", local: false})
+
+      assert [%{id: ^id}] = User.search("lain")
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+    end
+
+    test "find all users for unauthenticated users when `limit_to_local_content` is `false`" do
+      Pleroma.Config.put([:instance, :limit_to_local_content], false)
 
       u1 = insert(:user, %{name: "lain"})
       u2 = insert(:user, %{name: "ebn", nickname: "lain@mastodon.social", local: false})
@@ -1114,7 +1158,7 @@ defmodule Pleroma.UserTest do
 
       assert [u1.id, u2.id, u3.id] == results
 
-      Pleroma.Config.put([:instance, :limit_unauthenticated_to_local_content], true)
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
     end
 
     test "finds a user whose name is nil" do

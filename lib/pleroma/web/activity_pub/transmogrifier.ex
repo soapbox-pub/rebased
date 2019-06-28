@@ -339,7 +339,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_type(%{"inReplyTo" => reply_id} = object) when is_binary(reply_id) do
     reply = Object.normalize(reply_id)
 
-    if reply.data["type"] == "Question" and object["name"] do
+    if reply && (reply.data["type"] == "Question" and object["name"]) do
       Map.put(object, "type", "Answer")
     else
       object

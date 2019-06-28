@@ -44,6 +44,7 @@ Has these additional fields under the `pleroma` object:
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
+- `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
 
 ### Source
 
@@ -84,6 +85,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `default_scope` - the scope returned under `privacy` key in Source subentity
 - `pleroma_settings_store` - Opaque user settings to be saved on the backend.
 - `skip_thread_containment` - if true, skip filtering out broken threads
+- `pleroma_background_image` - sets the background image of the user.
 
 ### Pleroma Settings Store
 Pleroma has mechanism that allows frontends to save blobs of json for each user on the backend. This can be used to save frontend-specific settings for a user that the backend does not need to know about.

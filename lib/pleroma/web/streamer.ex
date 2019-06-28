@@ -110,23 +110,18 @@ defmodule Pleroma.Web.Streamer do
     {:noreply, topics}
   end
 
-  def handle_cast(%{action: :stream, topic: "user", item: %Notification{} = item}, topics) do
-    topic = "user:#{item.user_id}"
-
-    Enum.each(topics[topic] || [], fn socket ->
-      json =
-        %{
-          event: "notification",
-          payload:
-            NotificationView.render("show.json", %{
-              notification: item,
-              for: socket.assigns["user"]
-            })
-            |> Jason.encode!()
-        }
-        |> Jason.encode!()
-
-      send(socket.transport_pid, {:text, json})
+  def handle_cast(
+        %{action: :stream, topic: topic, item: %Notification{} = item},
+        topics
+      )
+      when topic in ["user", "user:notification"] do
+    topics
+    |> Map.get("#{topic}:#{item.user_id}", [])
+    |> Enum.each(fn socket ->
+      send(
+        socket.transport_pid,
+        {:text, represent_notification(socket.assigns[:user], item)}
+      )
     end)
 
     {:noreply, topics}
@@ -216,6 +211,20 @@ defmodule Pleroma.Web.Streamer do
     |> Jason.encode!()
   end
 
+  @spec represent_notification(User.t(), Notification.t()) :: binary()
+  defp represent_notification(%User{} = user, %Notification{} = notify) do
+    %{
+      event: "notification",
+      payload:
+        NotificationView.render(
+          "show.json",
+          %{notification: notify, for: user}
+        )
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
   def push_to_socket(topics, topic, %Activity{data: %{"type" => "Announce"}} = item) do
     Enum.each(topics[topic] || [], fn socket ->
       # Get the current user so we have up-to-date blocks etc.
@@ -274,7 +283,7 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
-  defp internal_topic(topic, socket) when topic in ~w[user direct] do
+  defp internal_topic(topic, socket) when topic in ~w[user user:notification direct] do
     "#{topic}:#{socket.assigns[:user].id}"
   end
 

@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+
+supervisor=supervise-daemon
+
+# Requires OpenRC >= 0.35
+directory=/opt/pleroma
+
+command=/opt/pleroma/bin/pleroma
+command_args="start"
+command_user=pleroma
+command_background=1
+
+# Ask process to terminate within 30 seconds, otherwise kill it
+retry="SIGTERM/30/SIGKILL/5"
+
+pidfile="/var/run/pleroma.pid"
+
+depend() {
+    want nginx
+    need postgresql
+}
