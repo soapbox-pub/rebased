@@ -128,7 +128,7 @@ Debian/Ubuntu:
 cp ~pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
 
 # Reload service files
-systemctl reload-daemon
+systemctl daemon-reload
 
 # Reenable pleroma to start on boot
 systemctl reenable pleroma
