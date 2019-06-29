@@ -11,6 +11,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Visibility
 
   import Pleroma.Web.CommonAPI.Utils
 
@@ -284,12 +285,11 @@ defmodule Pleroma.Web.CommonAPI do
            },
            object: %Object{
              data: %{
-               "to" => object_to,
                "type" => "Note"
              }
            }
          } = activity <- get_by_id_or_ap_id(id_or_ap_id),
-         true <- Enum.member?(object_to, "https://www.w3.org/ns/activitystreams#Public"),
+         true <- Visibility.is_public?(activity),
          %{valid?: true} = info_changeset <-
            User.Info.add_pinnned_activity(user.info, activity),
          changeset <-
