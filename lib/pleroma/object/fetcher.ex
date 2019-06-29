@@ -22,7 +22,7 @@ defmodule Pleroma.Object.Fetcher do
 
   # TODO:
   # This will create a Create activity, which we need internally at the moment.
-  def fetch_object_from_id(id) do
+  def fetch_object_from_id(id, options \\ []) do
     if object = Object.get_cached_by_ap_id(id) do
       {:ok, object}
     else
@@ -38,7 +38,7 @@ defmodule Pleroma.Object.Fetcher do
              "object" => data
            },
            :ok <- Containment.contain_origin(id, params),
-           {:ok, activity} <- Transmogrifier.handle_incoming(params),
+           {:ok, activity} <- Transmogrifier.handle_incoming(params, options),
            {:object, _data, %Object{} = object} <-
              {:object, data, Object.normalize(activity, false)} do
         {:ok, object}
@@ -63,8 +63,8 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  def fetch_object_from_id!(id) do
-    with {:ok, object} <- fetch_object_from_id(id) do
+  def fetch_object_from_id!(id, options \\ []) do
+    with {:ok, object} <- fetch_object_from_id(id, options) do
       object
     else
       _e ->

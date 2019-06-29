@@ -11,12 +11,13 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Transmogrifier
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Websub.WebsubClientSubscription
 
+  import Mock
   import Pleroma.Factory
   import ExUnit.CaptureLog
-  alias Pleroma.Web.CommonAPI
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -46,12 +47,10 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         data["object"]
         |> Map.put("inReplyTo", "https://shitposter.club/notice/2827873")
 
-      data =
-        data
-        |> Map.put("object", object)
-
+      data = Map.put(data, "object", object)
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
-      returned_object = Object.normalize(returned_activity.data["object"])
+
+      returned_object = Object.normalize(returned_activity.data["object"], false)
 
       assert activity =
                Activity.get_create_by_object_ap_id(
@@ -59,6 +58,32 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                )
 
       assert returned_object.data["inReplyToAtomUri"] == "https://shitposter.club/notice/2827873"
+    end
+
+    test "it does not fetch replied-to activities beyond max_replies_depth" do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      object =
+        data["object"]
+        |> Map.put("inReplyTo", "https://shitposter.club/notice/2827873")
+
+      data = Map.put(data, "object", object)
+
+      with_mock Pleroma.Web.Federator,
+        max_replies_depth: fn -> 0 end do
+        {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
+
+        returned_object = Object.normalize(returned_activity.data["object"], false)
+
+        refute Activity.get_create_by_object_ap_id(
+                 "tag:shitposter.club,2017-05-05:noticeId=2827873:objectType=comment"
+               )
+
+        assert returned_object.data["inReplyToAtomUri"] ==
+                 "https://shitposter.club/notice/2827873"
+      end
     end
 
     test "it does not crash if the object in inReplyTo can't be fetched" do
