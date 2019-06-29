@@ -122,6 +122,8 @@ su pleroma -s $SHELL -lc "./bin/pleroma stop"
 ## Setting up a system service
 OTP releases have different service files than from-source installs so they need to be copied over again.
 
+**Warning:** The service files assume pleroma user's home directory is `/opt/pleroma`, please make sure all paths fit your installation.
+
 Debian/Ubuntu:
 ```sh
 # Copy the service into a proper directory
