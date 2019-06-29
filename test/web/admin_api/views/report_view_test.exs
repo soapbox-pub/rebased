@@ -18,8 +18,16 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
     expected = %{
       content: nil,
-      actor: AccountView.render("account.json", %{user: user}),
-      account: AccountView.render("account.json", %{user: other_user}),
+      actor:
+        Map.merge(
+          AccountView.render("account.json", %{user: user}),
+          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user})
+        ),
+      account:
+        Map.merge(
+          AccountView.render("account.json", %{user: other_user}),
+          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
+        ),
       statuses: [],
       state: "open",
       id: activity.id
@@ -42,8 +50,16 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
 
     expected = %{
       content: nil,
-      actor: AccountView.render("account.json", %{user: user}),
-      account: AccountView.render("account.json", %{user: other_user}),
+      actor:
+        Map.merge(
+          AccountView.render("account.json", %{user: user}),
+          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user})
+        ),
+      account:
+        Map.merge(
+          AccountView.render("account.json", %{user: other_user}),
+          Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: other_user})
+        ),
       statuses: [StatusView.render("status.json", %{activity: activity})],
       state: "open",
       id: report_activity.id

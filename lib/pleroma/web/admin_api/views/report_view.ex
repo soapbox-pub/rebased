@@ -8,7 +8,6 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
   alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{reports: reports}) do
@@ -38,12 +37,17 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
 
     %{
       id: report.id,
-      account: AccountView.render("account.json", %{user: account}),
-      actor: AccountView.render("account.json", %{user: user}),
+      account: merge_account_views(account),
+      actor: merge_account_views(user),
       content: content,
       created_at: created_at,
       statuses: StatusView.render("index.json", %{activities: statuses, as: :activity}),
       state: report.data["state"]
     }
+  end
+
+  defp merge_account_views(user) do
+    Pleroma.Web.MastodonAPI.AccountView.render("account.json", %{user: user})
+    |> Map.merge(Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user}))
   end
 end
