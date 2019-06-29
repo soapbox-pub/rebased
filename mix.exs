@@ -207,6 +207,15 @@ defmodule Pleroma.Mixfile do
 
     env_name = if Mix.env() != :prod, do: to_string(Mix.env())
 
+    env_override = System.get_env("PLEROMA_BUILD_ENV")
+
+    env_name =
+      if env_override do
+        if env_override != "prod", do: env_override
+      else
+        env_name
+      end
+
     build =
       [build_name, env_name]
       |> Enum.filter(fn string -> string && string != "" end)
