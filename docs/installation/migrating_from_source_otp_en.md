@@ -49,7 +49,7 @@ mkdir -p /var/lib/pleroma/static
 chown -R pleroma /var/lib/pleroma
 
 # If you use the local uploader with default settings your uploads should be located in `~pleroma/uploads`
-mv ~pleroma/uploads /var/lib/pleroma/uploads
+mv ~pleroma/uploads/* /var/lib/pleroma/uploads
 
 # If you have created the custom public files directory with default settings it should be located in `~pleroma/instance/static`
 mv ~pleroma/instance/static /var/lib/pleroma/static
