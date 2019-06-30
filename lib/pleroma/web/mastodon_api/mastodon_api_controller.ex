@@ -356,6 +356,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_id(params["id"]) do
+      params =
+        params
+        |> Map.put("tag", params["tagged"])
+
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 
       conn
