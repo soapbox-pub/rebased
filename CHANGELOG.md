@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Not being able to pin unlisted posts
 
+### Changed
+- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+
 ## [1.0.0] - 2019-06-29
 ### Security
 - Mastodon API: Fix display names not being sanitized
