@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
 - Federation: Support for restricting max. reply-to depth on fetching 
+- Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
+
+### Fixed
+- Not being able to pin unlisted posts
+
+### Changed
+- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
 
 ## [1.0.0] - 2019-06-29
 ### Security
