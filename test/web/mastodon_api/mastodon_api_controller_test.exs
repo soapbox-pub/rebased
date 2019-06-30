@@ -1408,6 +1408,19 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert [%{"id" => id}] = json_response(conn, 200)
       assert id == to_string(post.id)
     end
+
+    test "filters user's statuses by a hashtag", %{conn: conn} do
+      user = insert(:user)
+      {:ok, post} = CommonAPI.post(user, %{"status" => "#hashtag"})
+      {:ok, _post} = CommonAPI.post(user, %{"status" => "hashtag"})
+
+      conn =
+        conn
+        |> get("/api/v1/accounts/#{user.id}/statuses", %{"tagged" => "hashtag"})
+
+      assert [%{"id" => id}] = json_response(conn, 200)
+      assert id == to_string(post.id)
+    end
   end
 
   describe "user relationships" do
