@@ -94,7 +94,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
       activity
     else
       _e ->
-        with true <- (options[:depth] || 1) <= Federator.max_replies_depth(),
+        with true <- Federator.allowed_incoming_reply_depth?(options[:depth]),
              in_reply_to_href when not is_nil(in_reply_to_href) <-
                XML.string_from_xpath("//thr:in-reply-to[1]/@href", entry),
              {:ok, [activity | _]} <- OStatus.fetch_activity_from_url(in_reply_to_href, options) do

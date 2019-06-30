@@ -187,7 +187,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     object = Map.put(object, "inReplyToAtomUri", in_reply_to_id)
 
-    if (options[:depth] || 1) <= Federator.max_replies_depth() do
+    if Federator.allowed_incoming_reply_depth?(options[:depth]) do
       case get_obj_helper(in_reply_to_id, options) do
         {:ok, replied_object} ->
           with %Activity{} = _activity <-
@@ -349,10 +349,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_type(%{"inReplyTo" => reply_id} = object, options) when is_binary(reply_id) do
     reply =
-      if (options[:depth] || 1) <= Federator.max_replies_depth() do
+      if Federator.allowed_incoming_reply_depth?(options[:depth]) do
         Object.normalize(reply_id, true)
-      else
-        nil
       end
 
     if reply && (reply.data["type"] == "Question" and object["name"]) do

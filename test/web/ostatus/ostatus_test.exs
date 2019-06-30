@@ -298,7 +298,7 @@ defmodule Pleroma.Web.OStatusTest do
     incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
 
     with_mock Pleroma.Web.Federator,
-      max_replies_depth: fn -> 0 end do
+      allowed_incoming_reply_depth?: fn _ -> false end do
       {:ok, [activity]} = OStatus.handle_incoming(incoming)
       object = Object.normalize(activity.data["object"], false)
 

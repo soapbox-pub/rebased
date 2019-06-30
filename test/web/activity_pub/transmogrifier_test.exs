@@ -72,7 +72,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       data = Map.put(data, "object", object)
 
       with_mock Pleroma.Web.Federator,
-        max_replies_depth: fn -> 0 end do
+        allowed_incoming_reply_depth?: fn _ -> false end do
         {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
 
         returned_object = Object.normalize(returned_activity.data["object"], false)

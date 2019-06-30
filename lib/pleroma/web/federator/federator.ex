@@ -22,11 +22,17 @@ defmodule Pleroma.Web.Federator do
     refresh_subscriptions()
   end
 
-  @max_replies_depth 100
-
   @doc "Addresses [memory leaks on recursive replies fetching](https://git.pleroma.social/pleroma/pleroma/issues/161)"
   # credo:disable-for-previous-line Credo.Check.Readability.MaxLineLength
-  def max_replies_depth, do: @max_replies_depth
+  def allowed_incoming_reply_depth?(depth) do
+    max_replies_depth = Pleroma.Config.get([:instance, :federation_incoming_replies_max_depth])
+
+    if max_replies_depth do
+      (depth || 1) <= max_replies_depth
+    else
+      true
+    end
+  end
 
   # Client API
 
