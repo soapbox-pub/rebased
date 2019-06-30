@@ -188,6 +188,11 @@ defmodule Pleroma.Web.CommonAPITest do
       assert %User{info: %{pinned_activities: [^id]}} = user
     end
 
+    test "unlisted statuses can be pinned", %{user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!", "visibility" => "unlisted"})
+      assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
+    end
+
     test "only self-authored can be pinned", %{activity: activity} do
       user = insert(:user)
 

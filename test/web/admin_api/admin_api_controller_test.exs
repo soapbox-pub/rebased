@@ -6,9 +6,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Activity
+  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MediaProxy
   import Pleroma.Factory
 
   describe "/api/pleroma/admin/users" do
@@ -58,7 +60,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "local" => true,
         "nickname" => user.nickname,
         "roles" => %{"admin" => false, "moderator" => false},
-        "tags" => []
+        "tags" => [],
+        "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+        "display_name" => HTML.strip_tags(user.name || user.nickname)
       }
 
       assert expected == json_response(conn, 200)
@@ -445,7 +449,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
             "local" => true,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(admin.name || admin.nickname)
           },
           %{
             "deactivated" => user.info.deactivated,
@@ -453,7 +459,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => user.nickname,
             "roles" => %{"admin" => false, "moderator" => false},
             "local" => false,
-            "tags" => ["foo", "bar"]
+            "tags" => ["foo", "bar"],
+            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user.name || user.nickname)
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -492,7 +500,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -514,7 +524,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -536,7 +548,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -558,7 +572,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -580,7 +596,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -602,7 +620,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -619,7 +639,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user2.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user2.name || user2.nickname)
                  }
                ]
              }
@@ -646,7 +668,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -671,7 +695,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => user.nickname,
             "roles" => %{"admin" => false, "moderator" => false},
             "local" => true,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user.name || user.nickname)
           },
           %{
             "deactivated" => admin.info.deactivated,
@@ -679,7 +705,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
             "local" => true,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(admin.name || admin.nickname)
           },
           %{
             "deactivated" => false,
@@ -687,7 +715,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "local" => true,
             "nickname" => old_admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(old_admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(old_admin.name || old_admin.nickname)
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -714,7 +744,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
             "local" => admin.local,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(admin.name || admin.nickname)
           },
           %{
             "deactivated" => false,
@@ -722,7 +754,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => second_admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
             "local" => second_admin.local,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(second_admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(second_admin.name || second_admin.nickname)
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -751,7 +785,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => moderator.nickname,
                    "roles" => %{"admin" => false, "moderator" => true},
                    "local" => moderator.local,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(moderator) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(moderator.name || moderator.nickname)
                  }
                ]
              }
@@ -773,7 +809,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => user1.nickname,
             "roles" => %{"admin" => false, "moderator" => false},
             "local" => user1.local,
-            "tags" => ["first"]
+            "tags" => ["first"],
+            "avatar" => User.avatar_url(user1) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user1.name || user1.nickname)
           },
           %{
             "deactivated" => false,
@@ -781,7 +819,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => user2.nickname,
             "roles" => %{"admin" => false, "moderator" => false},
             "local" => user2.local,
-            "tags" => ["second"]
+            "tags" => ["second"],
+            "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user2.name || user2.nickname)
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -815,7 +855,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => user.local,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -838,7 +880,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "nickname" => user.nickname,
                "roles" => %{"admin" => false, "moderator" => false},
                "local" => true,
-               "tags" => []
+               "tags" => [],
+               "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+               "display_name" => HTML.strip_tags(user.name || user.nickname)
              }
   end
 

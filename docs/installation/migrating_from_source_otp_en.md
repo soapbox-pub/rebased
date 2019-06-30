@@ -49,7 +49,7 @@ mkdir -p /var/lib/pleroma/static
 chown -R pleroma /var/lib/pleroma
 
 # If you use the local uploader with default settings your uploads should be located in `~pleroma/uploads`
-mv ~pleroma/uploads /var/lib/pleroma/uploads
+mv ~pleroma/uploads/* /var/lib/pleroma/uploads
 
 # If you have created the custom public files directory with default settings it should be located in `~pleroma/instance/static`
 mv ~pleroma/instance/static /var/lib/pleroma/static
@@ -122,13 +122,15 @@ su pleroma -s $SHELL -lc "./bin/pleroma stop"
 ## Setting up a system service
 OTP releases have different service files than from-source installs so they need to be copied over again.
 
+**Warning:** The service files assume pleroma user's home directory is `/opt/pleroma`, please make sure all paths fit your installation.
+
 Debian/Ubuntu:
 ```sh
 # Copy the service into a proper directory
 cp ~pleroma/installation/pleroma.service /etc/systemd/system/pleroma.service
 
 # Reload service files
-systemctl reload-daemon
+systemctl daemon-reload
 
 # Reenable pleroma to start on boot
 systemctl reenable pleroma

@@ -5,8 +5,11 @@
 defmodule Pleroma.Web.AdminAPI.AccountView do
   use Pleroma.Web, :view
 
+  alias Pleroma.HTML
+  alias Pleroma.User
   alias Pleroma.User.Info
   alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.MediaProxy
 
   def render("index.json", %{users: users, count: count, page_size: page_size}) do
     %{
@@ -17,9 +20,14 @@ defmodule Pleroma.Web.AdminAPI.AccountView do
   end
 
   def render("show.json", %{user: user}) do
+    avatar = User.avatar_url(user) |> MediaProxy.url()
+    display_name = HTML.strip_tags(user.name || user.nickname)
+
     %{
       "id" => user.id,
+      "avatar" => avatar,
       "nickname" => user.nickname,
+      "display_name" => display_name,
       "deactivated" => user.info.deactivated,
       "local" => user.local,
       "roles" => Info.roles(user.info),
