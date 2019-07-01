@@ -56,6 +56,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Endpoints for managing reports
 - Admin API: Endpoints for deleting and changing the scope of individual reported statuses
 - Admin API: Endpoints to view and change config settings.
+- Admin API: Return users' tags when querying reports
+- Admin API: Return avatar and display name when querying users
 - AdminFE: initial release with basic user management accessible at /pleroma/admin/
 - Mastodon API: Add chat token to `verify_credentials` response
 - Mastodon API: Add background image setting to `update_credentials`

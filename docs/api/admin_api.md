@@ -38,7 +38,9 @@ Authentication is required and the user must be an admin.
         "moderator": bool
       },
       "local": bool,
-      "tags": array
+      "tags": array,
+      "avatar": string,
+      "display_name": string
     },
     ...
   ]
@@ -331,6 +333,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
           "pleroma": {},
           "sensitive": false
         },
+        "tags": ["force_unlisted"],
         "statuses_count": 3,
         "url": "https://pleroma.example.org/users/user",
         "username": "user"
@@ -366,6 +369,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
           "pleroma": {},
           "sensitive": false
         },
+        "tags": ["force_unlisted"],
         "statuses_count": 1,
         "url": "https://pleroma.example.org/users/lain",
         "username": "lain"
