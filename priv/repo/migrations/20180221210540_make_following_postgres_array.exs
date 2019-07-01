@@ -1,7 +1,7 @@
 defmodule Pleroma.Repo.Migrations.MakeFollowingPostgresArray do
   use Ecto.Migration
 
-  def change do
+  def up do
     alter table(:users) do
       add :following_temp, {:array, :string}
     end
@@ -15,4 +15,6 @@ defmodule Pleroma.Repo.Migrations.MakeFollowingPostgresArray do
     end
     rename table(:users), :following_temp, to: :following
   end
+
+  def down, do: :ok
 end

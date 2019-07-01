@@ -68,6 +68,6 @@ defmodule Pleroma.Repo.Migrations.AddThreadVisibilityFunction do
   end
 
   def down do
-    execute("drop function thread_visibility(actor varchar, activity_id varchar)")
+    execute("drop function if exists thread_visibility(actor varchar, activity_id varchar)")
   end
 end

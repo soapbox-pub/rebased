@@ -37,12 +37,12 @@ defmodule Pleroma.Repo.Migrations.AddVisibilityFunction do
   end
 
   def down do
-    drop(
+    drop_if_exists(
       index(:activities, ["activity_visibility(actor, recipients, data)"],
         name: :activities_visibility_index
       )
     )
 
-    execute("drop function activity_visibility(actor varchar, recipients varchar[], data jsonb)")
+    execute("drop function if exists activity_visibility(actor varchar, recipients varchar[], data jsonb)")
   end
 end

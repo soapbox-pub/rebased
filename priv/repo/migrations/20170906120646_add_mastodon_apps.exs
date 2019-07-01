@@ -2,7 +2,7 @@ defmodule Pleroma.Repo.Migrations.AddMastodonApps do
   use Ecto.Migration
 
   def change do
-    create table(:apps) do
+    create_if_not_exists table(:apps) do
       add :client_name, :string
       add :redirect_uris, :string
       add :scopes, :string
