@@ -18,4 +18,6 @@ defmodule Pleroma.Repo.Migrations.FillRecipientsInActivities do
       end)
     end
   end
+
+  def down, do: :ok
 end

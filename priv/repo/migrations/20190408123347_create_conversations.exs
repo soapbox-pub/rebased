@@ -6,12 +6,12 @@ defmodule Pleroma.Repo.Migrations.CreateConversations do
   use Ecto.Migration
 
   def change do
-    create table(:conversations) do
+    create_if_not_exists table(:conversations) do
       add(:ap_id, :string, null: false)
       timestamps()
     end
 
-    create table(:conversation_participations) do
+    create_if_not_exists table(:conversation_participations) do
       add(:user_id, references(:users, type: :uuid, on_delete: :delete_all))
       add(:conversation_id, references(:conversations, on_delete: :delete_all))
       add(:read, :boolean, default: false)
@@ -19,8 +19,8 @@ defmodule Pleroma.Repo.Migrations.CreateConversations do
       timestamps()
     end
 
-    create index(:conversation_participations, [:conversation_id])
-    create unique_index(:conversation_participations, [:user_id, :conversation_id])
-    create unique_index(:conversations, [:ap_id])
+    create_if_not_exists index(:conversation_participations, [:conversation_id])
+    create_if_not_exists unique_index(:conversation_participations, [:user_id, :conversation_id])
+    create_if_not_exists unique_index(:conversations, [:ap_id])
   end
 end

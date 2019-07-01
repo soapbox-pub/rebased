@@ -6,6 +6,6 @@ defmodule Pleroma.Repo.Migrations.AddRecipientsToActivities do
       add :recipients, {:array, :string}
     end
 
-    create index(:activities, [:recipients], using: :gin)
+    create_if_not_exists index(:activities, [:recipients], using: :gin)
   end
 end

@@ -12,7 +12,7 @@ defmodule Pleroma.Repo.Migrations.AddActorToActivity do
   end
 
   def down do
-    drop index(:activities, [:actor, "id DESC NULLS LAST"])
+    drop_if_exists index(:activities, [:actor, "id DESC NULLS LAST"])
     alter table(:activities) do
       remove :actor
     end

@@ -2,7 +2,7 @@ defmodule Pleroma.Repo.Migrations.CreateUserFtsIndex do
   use Ecto.Migration
 
   def change do
-    create index(
+    create_if_not_exists index(
              :users,
              [
                """
