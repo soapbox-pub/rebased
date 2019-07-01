@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
 - Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
+- Admin API: Return users' tags when querying reports
+- Admin API: Return avatar and display name when querying users
 
 ### Fixed
 - Not being able to pin unlisted posts
@@ -56,8 +58,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Endpoints for managing reports
 - Admin API: Endpoints for deleting and changing the scope of individual reported statuses
 - Admin API: Endpoints to view and change config settings.
-- Admin API: Return users' tags when querying reports
-- Admin API: Return avatar and display name when querying users
 - AdminFE: initial release with basic user management accessible at /pleroma/admin/
 - Mastodon API: Add chat token to `verify_credentials` response
 - Mastodon API: Add background image setting to `update_credentials`
