@@ -207,7 +207,7 @@ certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --
 
 # Add it to the daily cron
 echo '#!/bin/sh
-certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --dry-run --post-hook "systemctl reload nginx"
+certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --post-hook "systemctl reload nginx"
 ' > /etc/cron.daily/renew-pleroma-cert
 chmod +x /etc/cron.daily/renew-pleroma-cert
 
@@ -228,7 +228,7 @@ certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --
 
 # Add it to the daily cron
 echo '#!/bin/sh
-certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --dry-run --post-hook "rc-service nginx reload"
+certbot renew --cert-name yourinstance.tld --webroot -w /var/lib/letsencrypt/ --post-hook "rc-service nginx reload"
 ' > /etc/periodic/daily/renew-pleroma-cert
 chmod +x /etc/periodic/daily/renew-pleroma-cert
 
