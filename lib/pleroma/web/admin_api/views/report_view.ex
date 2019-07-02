@@ -46,8 +46,10 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
     }
   end
 
-  defp merge_account_views(user) do
+  defp merge_account_views(%User{} = user) do
     Pleroma.Web.MastodonAPI.AccountView.render("account.json", %{user: user})
     |> Map.merge(Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user}))
   end
+
+  defp merge_account_views(_), do: %{}
 end
