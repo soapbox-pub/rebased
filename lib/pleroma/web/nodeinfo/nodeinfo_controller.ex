@@ -162,7 +162,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
         accountActivationRequired: Config.get([:instance, :account_activation_required], false),
         invitesEnabled: Config.get([:instance, :invites_enabled], false),
         features: features,
-        restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames])
+        restrictedNicknames: Config.get([Pleroma.User, :restricted_nicknames]),
+        skipThreadContainment: Config.get([:instance, :skip_thread_containment], false)
       }
     }
   end
