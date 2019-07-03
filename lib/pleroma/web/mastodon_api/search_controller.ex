@@ -17,8 +17,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   plug(Pleroma.Plugs.RateLimiter, :search when action in [:search, :search2, :account_search])
 
   def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, search_options(params, user))
-    statuses = Activity.search(user, query)
+    accounts = with_fallback(fn -> User.search(query, search_options(params, user)) end, [])
+    statuses = with_fallback(fn -> Activity.search(user, query) end, [])
     tags_path = Web.base_url() <> "/tag/"
 
     tags =
@@ -40,8 +40,8 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   end
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, search_options(params, user))
-    statuses = Activity.search(user, query)
+    accounts = with_fallback(fn -> User.search(query, search_options(params, user)) end, [])
+    statuses = with_fallback(fn -> Activity.search(user, query) end, [])
 
     tags =
       query
@@ -75,5 +75,15 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
       offset: ControllerHelper.fetch_integer_param(params, "offset"),
       for_user: user
     ]
+  end
+
+  defp with_fallback(f, fallback) do
+    try do
+      f.()
+    rescue
+      error ->
+        Logger.error("#{__MODULE__} search error: #{inspect(error)}")
+        fallback
+    end
   end
 end
