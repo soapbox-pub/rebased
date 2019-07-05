@@ -9,6 +9,12 @@ defmodule Pleroma.Tests.Helpers do
 
   defmacro __using__(_opts) do
     quote do
+      def collect_ids(collection) do
+        collection
+        |> Enum.map(& &1.id)
+        |> Enum.sort()
+      end
+
       def refresh_record(%{id: id, __struct__: model} = _),
         do: refresh_record(model, %{id: id})
 
