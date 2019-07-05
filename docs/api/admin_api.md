@@ -187,6 +187,17 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - On failure: `Not found`
   - On success: JSON of the user
 
+## `/api/pleroma/admin/users/:id`
+
+### Retrive the details of a user
+
+- Method: `GET`
+- Params:
+  - `id`
+- Response:
+  - On failure: `Not found`
+  - On success: JSON of the user
+
 ## `/api/pleroma/admin/relay`
 
 ### Follow a Relay
