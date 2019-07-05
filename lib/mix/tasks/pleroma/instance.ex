@@ -149,7 +149,7 @@ defmodule Mix.Tasks.Pleroma.Instance do
       uploads_dir =
         get_option(
           options,
-          :upload_dir,
+          :uploads_dir,
           "What directory should media uploads go in (when using the local uploader)?",
           Pleroma.Config.get([Pleroma.Uploaders.Local, :uploads])
         )
