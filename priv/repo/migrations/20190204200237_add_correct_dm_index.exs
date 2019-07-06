@@ -19,7 +19,7 @@ defmodule Pleroma.Repo.Migrations.AddCorrectDMIndex do
   end
 
   def down do
-    drop(
+    drop_if_exists(
       index(:activities, ["activity_visibility(actor, recipients, data)", "id DESC"],
         name: :activities_visibility_index,
         concurrently: true,

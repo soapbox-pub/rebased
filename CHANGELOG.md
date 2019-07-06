@@ -8,12 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
 - Federation: Support for restricting max. reply-to depth on fetching 
 - Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
+- Admin API: Return users' tags when querying reports
+- Admin API: Return avatar and display name when querying users
 
 ### Fixed
 - Not being able to pin unlisted posts
+- Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+
+### Changed
+- NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
 
 ## [1.0.0] - 2019-06-29
 ### Security

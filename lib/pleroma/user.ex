@@ -836,15 +836,12 @@ defmodule Pleroma.User do
   def mutes?(nil, _), do: false
   def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.info.mutes, ap_id)
 
-  def blocks?(user, %{ap_id: ap_id}) do
-    blocks = user.info.blocks
-    domain_blocks = user.info.domain_blocks
+  def blocks?(%User{info: info} = _user, %{ap_id: ap_id}) do
+    blocks = info.blocks
+    domain_blocks = info.domain_blocks
     %{host: host} = URI.parse(ap_id)
 
-    Enum.member?(blocks, ap_id) ||
-      Enum.any?(domain_blocks, fn domain ->
-        host == domain
-      end)
+    Enum.member?(blocks, ap_id) || Enum.any?(domain_blocks, &(&1 == host))
   end
 
   def subscribed_to?(user, %{ap_id: ap_id}) do

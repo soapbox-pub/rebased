@@ -2,12 +2,12 @@ defmodule Pleroma.Repo.Migrations.CreateConfig do
   use Ecto.Migration
 
   def change do
-    create table(:config) do
+    create_if_not_exists table(:config) do
       add(:key, :string)
       add(:value, :binary)
       timestamps()
     end
 
-    create(unique_index(:config, :key))
+    create_if_not_exists(unique_index(:config, :key))
   end
 end

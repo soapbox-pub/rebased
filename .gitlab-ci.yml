@@ -35,6 +35,7 @@ docs-build:
   - develop@pleroma/pleroma
   variables:
     MIX_ENV: dev
+    PLEROMA_BUILD_ENV: prod
   script:
     - mix deps.get
     - mix compile

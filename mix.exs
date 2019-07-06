@@ -174,10 +174,14 @@ defmodule Pleroma.Mixfile do
   # Builds a version string made of:
   # * the application version
   # * a pre-release if ahead of the tag: the describe string (-count-commithash)
-  # * build info:
+  # * branch name
+  # * build metadata:
   #   * a build name if `PLEROMA_BUILD_NAME` or `:pleroma, :build_name` is defined
   #   * the mix environment if different than prod
   defp version(version) do
+    identifier_filter = ~r/[^0-9a-z\-]+/i
+
+    # Pre-release version, denoted from patch version with a hyphen
     {git_tag, git_pre_release} =
       with {tag, 0} <-
              System.cmd("git", ["describe", "--tags", "--abbrev=0"], stderr_to_stdout: true),
@@ -198,6 +202,19 @@ defmodule Pleroma.Mixfile do
       )
     end
 
+    # Branch name as pre-release version component, denoted with a dot
+    branch_name =
+      with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+           branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
+           true <- branch_name != "master" do
+        branch_name =
+          branch_name
+          |> String.trim()
+          |> String.replace(identifier_filter, "-")
+
+        "." <> branch_name
+      end
+
     build_name =
       cond do
         name = Application.get_env(:pleroma, :build_name) -> name
@@ -206,28 +223,26 @@ defmodule Pleroma.Mixfile do
       end
 
     env_name = if Mix.env() != :prod, do: to_string(Mix.env())
+    env_override = System.get_env("PLEROMA_BUILD_ENV")
 
-    build =
-      [build_name, env_name]
-      |> Enum.filter(fn string -> string && string != "" end)
-      |> Enum.join("-")
-      |> (fn
-            "" -> nil
-            string -> "+" <> string
-          end).()
-
-    branch_name =
-      with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
-           branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
-           true <- branch_name != "master" do
-        branch_name =
-          String.trim(branch_name)
-          |> String.replace(~r/[^0-9a-z\-\.]+/i, "-")
-
-        "-" <> branch_name
+    env_name =
+      case env_override do
+        nil -> env_name
+        env_override when env_override in ["", "prod"] -> nil
+        env_override -> env_override
       end
 
-    [version, git_pre_release, branch_name, build]
+    # Build metadata, denoted with a plus sign
+    build_metadata =
+      [build_name, env_name]
+      |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.join(".")
+      |> (fn
+            "" -> nil
+            string -> "+" <> String.replace(string, identifier_filter, "-")
+          end).()
+
+    [version, git_pre_release, branch_name, build_metadata]
     |> Enum.filter(fn string -> string && string != "" end)
     |> Enum.join()
   end
