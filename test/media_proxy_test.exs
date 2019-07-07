@@ -70,9 +70,12 @@ defmodule Pleroma.MediaProxyTest do
       assert decode_result(encoded) == url
     end
 
-    test "ensures urls are url-encoded" do
+    # Some of the signed url expect the special character in the url to be same
+    # for the proxy to work.
+    # Issue https://git.pleroma.social/pleroma/pleroma/issues/1055
+    test "ensures urls are maintained (character are not encoded or decoded)" do
       assert decode_result(url("https://pleroma.social/Hello world.jpg")) ==
-               "https://pleroma.social/Hello%20world.jpg"
+               "https://pleroma.social/Hello world.jpg"
 
       assert decode_result(url("https://pleroma.social/Hello%20world.jpg")) ==
                "https://pleroma.social/Hello%20world.jpg"
