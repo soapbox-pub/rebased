@@ -107,5 +107,12 @@ defmodule Pleroma.Integration.MastodonWebsocketTest do
       assert {:ok, _} = start_socket("?stream=user:notification&access_token=#{token.token}")
       assert {:error, {403, "Forbidden"}} = start_socket("?stream=user:notification")
     end
+
+    test "accepts valid token on Sec-WebSocket-Protocol header", %{token: token} do
+      assert {:ok, _} = start_socket("?stream=user", [{"Sec-WebSocket-Protocol", token.token}])
+
+      assert {:error, {403, "Forbidden"}} =
+               start_socket("?stream=user", [{"Sec-WebSocket-Protocol", "I am a friend"}])
+    end
   end
 end
