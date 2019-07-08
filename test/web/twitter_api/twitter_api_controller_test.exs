@@ -892,7 +892,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
     test "with credentials", %{conn: conn, user: current_user} do
       note_activity = insert(:note_activity)
-      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      object = Object.normalize(note_activity)
       ActivityPub.like(current_user, object)
 
       conn =

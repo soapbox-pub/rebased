@@ -30,7 +30,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       data =
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Poison.decode!()
-        |> Map.put("object", activity.data["object"])
+        |> Map.put("object", Object.normalize(activity).data)
 
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
 
@@ -51,7 +51,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("object", object)
 
       {:ok, returned_activity} = Transmogrifier.handle_incoming(data)
-      returned_object = Object.normalize(returned_activity.data["object"])
+      returned_object = Object.normalize(returned_activity)
 
       assert activity =
                Activity.get_create_by_object_ap_id(
@@ -99,25 +99,27 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert data["actor"] == "http://mastodon.example.org/users/admin"
 
-      object = Object.normalize(data["object"]).data
-      assert object["id"] == "http://mastodon.example.org/users/admin/statuses/99512778738411822"
+      object_data = Object.normalize(data["object"]).data
 
-      assert object["to"] == ["https://www.w3.org/ns/activitystreams#Public"]
+      assert object_data["id"] ==
+               "http://mastodon.example.org/users/admin/statuses/99512778738411822"
 
-      assert object["cc"] == [
+      assert object_data["to"] == ["https://www.w3.org/ns/activitystreams#Public"]
+
+      assert object_data["cc"] == [
                "http://mastodon.example.org/users/admin/followers",
                "http://localtesting.pleroma.lol/users/lain"
              ]
 
-      assert object["actor"] == "http://mastodon.example.org/users/admin"
-      assert object["attributedTo"] == "http://mastodon.example.org/users/admin"
+      assert object_data["actor"] == "http://mastodon.example.org/users/admin"
+      assert object_data["attributedTo"] == "http://mastodon.example.org/users/admin"
 
-      assert object["context"] ==
+      assert object_data["context"] ==
                "tag:mastodon.example.org,2018-02-12:objectId=20:objectType=Conversation"
 
-      assert object["sensitive"] == true
+      assert object_data["sensitive"] == true
 
-      user = User.get_cached_by_ap_id(object["actor"])
+      user = User.get_cached_by_ap_id(object_data["actor"])
 
       assert user.info.note_count == 1
     end
@@ -548,10 +550,11 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
 
       assert data["type"] == "Undo"
-      assert data["object"]["type"] == "Announce"
-      assert data["object"]["object"] == activity.data["object"]
+      assert object_data = data["object"]
+      assert object_data["type"] == "Announce"
+      assert object_data["object"] == activity.data["object"]
 
-      assert data["object"]["id"] ==
+      assert object_data["id"] ==
                "http://mastodon.example.org/users/admin/statuses/99542391527669785/activity"
     end
 
@@ -861,7 +864,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       other_user = insert(:user)
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
-      object = Object.normalize(activity.data["object"])
+      object = Object.normalize(activity)
 
       message = %{
         "@context" => "https://www.w3.org/ns/activitystreams",

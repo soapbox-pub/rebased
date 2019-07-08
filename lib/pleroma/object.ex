@@ -44,7 +44,15 @@ defmodule Pleroma.Object do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
   end
 
+  defp warn_on_no_object_preloaded(ap_id) do
+    "Object.normalize() called without preloaded object (#{ap_id}). Consider preloading the object"
+    |> Logger.debug()
+
+    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
+  end
+
   def normalize(_, fetch_remote \\ true)
+
   # If we pass an Activity to Object.normalize(), we can try to use the preloaded object.
   # Use this whenever possible, especially when walking graphs in an O(N) loop!
   def normalize(%Object{} = object, _), do: object
@@ -55,25 +63,15 @@ defmodule Pleroma.Object do
     %Object{id: "pleroma:fake_object_id", data: data}
   end
 
-  # Catch and log Object.normalize() calls where the Activity's child object is not
-  # preloaded.
+  # No preloaded object
   def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}, fetch_remote) do
-    Logger.debug(
-      "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
-    )
-
-    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
-
+    warn_on_no_object_preloaded(ap_id)
     normalize(ap_id, fetch_remote)
   end
 
+  # No preloaded object
   def normalize(%Activity{data: %{"object" => ap_id}}, fetch_remote) do
-    Logger.debug(
-      "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
-    )
-
-    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
-
+    warn_on_no_object_preloaded(ap_id)
     normalize(ap_id, fetch_remote)
   end
 

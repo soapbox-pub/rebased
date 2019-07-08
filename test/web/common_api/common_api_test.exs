@@ -34,7 +34,7 @@ defmodule Pleroma.Web.CommonAPITest do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu #2HU"})
 
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     assert object.data["tag"] == ["2hu"]
   end
@@ -87,7 +87,7 @@ defmodule Pleroma.Web.CommonAPITest do
           "content_type" => "text/html"
         })
 
-      object = Object.normalize(activity.data["object"])
+      object = Object.normalize(activity)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
@@ -103,7 +103,7 @@ defmodule Pleroma.Web.CommonAPITest do
           "content_type" => "text/markdown"
         })
 
-      object = Object.normalize(activity.data["object"])
+      object = Object.normalize(activity)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end

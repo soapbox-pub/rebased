@@ -55,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note with null content" do
     note = insert(:note_activity)
-    note_object = Object.normalize(note.data["object"])
+    note_object = Object.normalize(note)
 
     data =
       note_object.data
@@ -73,26 +73,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note activity" do
     note = insert(:note_activity)
+    object_data = Object.normalize(note).data
     user = User.get_cached_by_ap_id(note.data["actor"])
 
-    convo_id = Utils.context_to_conversation_id(note.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(object_data["context"])
 
     status = StatusView.render("status.json", %{activity: note})
 
     created_at =
-      (note.data["object"]["published"] || "")
+      (object_data["published"] || "")
       |> String.replace(~r/\.\d+Z/, ".000Z")
 
     expected = %{
       id: to_string(note.id),
-      uri: note.data["object"]["id"],
+      uri: object_data["id"],
       url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, note),
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       card: nil,
       reblog: nil,
-      content: HtmlSanitizeEx.basic_html(note.data["object"]["content"]),
+      content: HtmlSanitizeEx.basic_html(object_data["content"]),
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,
@@ -104,14 +105,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pinned: false,
       sensitive: false,
       poll: nil,
-      spoiler_text: HtmlSanitizeEx.basic_html(note.data["object"]["summary"]),
+      spoiler_text: HtmlSanitizeEx.basic_html(object_data["summary"]),
       visibility: "public",
       media_attachments: [],
       mentions: [],
       tags: [
         %{
-          name: "#{note.data["object"]["tag"]}",
-          url: "/tag/#{note.data["object"]["tag"]}"
+          name: "#{object_data["tag"]}",
+          url: "/tag/#{object_data["tag"]}"
         }
       ],
       application: %{
@@ -131,8 +132,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         local: true,
         conversation_id: convo_id,
         in_reply_to_account_acct: nil,
-        content: %{"text/plain" => HtmlSanitizeEx.strip_tags(note.data["object"]["content"])},
-        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(note.data["object"]["summary"])}
+        content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
+        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])}
       }
     }
 

@@ -17,8 +17,9 @@ defmodule Pleroma.Web.OStatus.DeleteHandlingTest do
     test "it removes the mentioned activity" do
       note = insert(:note_activity)
       second_note = insert(:note_activity)
+      object = Object.normalize(note)
+      second_object = Object.normalize(second_note)
       user = insert(:user)
-      object = Object.get_by_ap_id(note.data["object"]["id"])
 
       {:ok, like, _object} = Pleroma.Web.ActivityPub.ActivityPub.like(user, object)
 
@@ -26,16 +27,16 @@ defmodule Pleroma.Web.OStatus.DeleteHandlingTest do
         File.read!("test/fixtures/delete.xml")
         |> String.replace(
           "tag:mastodon.sdf.org,2017-06-10:objectId=310513:objectType=Status",
-          note.data["object"]["id"]
+          object.data["id"]
         )
 
       {:ok, [delete]} = OStatus.handle_incoming(incoming)
 
       refute Activity.get_by_id(note.id)
       refute Activity.get_by_id(like.id)
-      assert Object.get_by_ap_id(note.data["object"]["id"]).data["type"] == "Tombstone"
+      assert Object.get_by_ap_id(object.data["id"]).data["type"] == "Tombstone"
       assert Activity.get_by_id(second_note.id)
-      assert Object.get_by_ap_id(second_note.data["object"]["id"])
+      assert Object.get_by_ap_id(second_object.data["id"])
 
       assert delete.data["type"] == "Delete"
     end
