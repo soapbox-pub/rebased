@@ -4,8 +4,8 @@
 
 defmodule Pleroma.Factory do
   use ExMachina.Ecto, repo: Pleroma.Repo
-  alias Pleroma.User
   alias Pleroma.Object
+  alias Pleroma.User
 
   def participation_factory do
     conversation = insert(:conversation)
