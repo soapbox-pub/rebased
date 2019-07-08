@@ -121,4 +121,6 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
       acc ++ rendered_tags
     end)
   end
+
+  defp build_attachments(_), do: []
 end
