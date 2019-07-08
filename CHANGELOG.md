@@ -11,8 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Return avatar and display name when querying users
 
 ### Fixed
-- Not being able to pin unlisted postss
-- Metadata rendering crashes no longer result in 500 errors
+- Not being able to pin unlisted posts
+- Metadata rendering errors resulting in the entire page being inaccessible
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 
 ### Changed
