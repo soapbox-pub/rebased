@@ -116,6 +116,7 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
       acc ++ rendered_tags
     end)
   end
+
   defp build_attachments(_id, _object), do: []
 
   defp player_url(id) do
