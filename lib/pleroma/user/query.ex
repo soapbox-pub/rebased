@@ -7,7 +7,7 @@ defmodule Pleroma.User.Query do
   User query builder module. Builds query from new query or another user query.
 
     ## Example:
-        query = Pleroma.User.Query(%{nickname: "nickname"})
+        query = Pleroma.User.Query.build(%{nickname: "nickname"})
         another_query = Pleroma.User.Query.build(query, %{email: "email@example.com"})
         Pleroma.Repo.all(query)
         Pleroma.Repo.all(another_query)
@@ -47,7 +47,10 @@ defmodule Pleroma.User.Query do
             friends: User.t(),
             recipients_from_activity: [String.t()],
             nickname: [String.t()],
-            ap_id: [String.t()]
+            ap_id: [String.t()],
+            order_by: term(),
+            select: term(),
+            limit: pos_integer()
           }
           | %{}
 
@@ -139,6 +142,18 @@ defmodule Pleroma.User.Query do
 
   defp compose_query({:recipients_from_activity, to}, query) do
     where(query, [u], u.ap_id in ^to or fragment("? && ?", u.following, ^to))
+  end
+
+  defp compose_query({:order_by, key}, query) do
+    order_by(query, [u], field(u, ^key))
+  end
+
+  defp compose_query({:select, keys}, query) do
+    select(query, [u], ^keys)
+  end
+
+  defp compose_query({:limit, limit}, query) do
+    limit(query, ^limit)
   end
 
   defp compose_query(_unsupported_param, query), do: query

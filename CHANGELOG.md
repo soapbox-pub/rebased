@@ -11,6 +11,7 @@ Configuration: `federation_incoming_replies_max_depth` option
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
 - Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
+- Added synchronization of following/followers counters for external users
 
 ### Fixed
 - Not being able to pin unlisted posts
