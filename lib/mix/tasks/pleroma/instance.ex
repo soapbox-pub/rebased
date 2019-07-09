@@ -34,6 +34,8 @@ defmodule Mix.Tasks.Pleroma.Instance do
   - `--db-configurable Y/N` - Allow/disallow configuring instance from admin part
   - `--uploads-dir` - the directory uploads go in when using a local uploader
   - `--static-dir` - the directory custom public files should be read from (custom emojis, frontend bundle overrides, robots.txt, etc.)
+  - `--listen-ip` - the ip the app should listen to, defaults to 127.0.0.1
+  - `--listen-port` - the port the app should listen to, defaults to 4000
   """
 
   def run(["gen" | rest]) do
@@ -56,7 +58,9 @@ defmodule Mix.Tasks.Pleroma.Instance do
           indexable: :string,
           db_configurable: :string,
           uploads_dir: :string,
-          static_dir: :string
+          static_dir: :string,
+          listen_ip: :string,
+          listen_port: :string
         ],
         aliases: [
           o: :output,
@@ -146,6 +150,22 @@ defmodule Mix.Tasks.Pleroma.Instance do
           "n"
         ) === "y"
 
+      listen_port =
+        get_option(
+          options,
+          :listen_port,
+          "What port will the app listen to (leave it if you are using the default setup with nginx)?",
+          4000
+        )
+
+      listen_ip =
+        get_option(
+          options,
+          :listen_ip,
+          "What ip will the app listen to (leave it if you are using the default setup with nginx)?",
+          "127.0.0.1"
+        )
+
       uploads_dir =
         get_option(
           options,
@@ -186,7 +206,9 @@ defmodule Mix.Tasks.Pleroma.Instance do
           db_configurable?: db_configurable?,
           static_dir: static_dir,
           uploads_dir: uploads_dir,
-          rum_enabled: rum_enabled
+          rum_enabled: rum_enabled,
+          listen_ip: listen_ip,
+          listen_port: listen_port
         )
 
       result_psql =

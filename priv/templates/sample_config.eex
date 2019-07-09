@@ -11,6 +11,7 @@ end %>
 
 config :pleroma, Pleroma.Web.Endpoint,
    url: [host: "<%= domain %>", scheme: "https", port: <%= port %>],
+   http: [ip: {<%= String.replace(listen_ip, ".", ", ") %>}, port: <%= listen_port %>],
    secret_key_base: "<%= secret %>",
    signing_salt: "<%= signing_salt %>"
 
