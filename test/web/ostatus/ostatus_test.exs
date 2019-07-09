@@ -30,7 +30,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming note - GS, Salmon" do
     incoming = File.read!("test/fixtures/incoming_note_activity.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     user = User.get_cached_by_ap_id(activity.data["actor"])
     assert user.info.note_count == 1
@@ -53,7 +53,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming notes - GS, subscription" do
     incoming = File.read!("test/fixtures/ostatus_incoming_post.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
@@ -67,7 +67,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming notes with attachments - GS, subscription" do
     incoming = File.read!("test/fixtures/incoming_websub_gnusocial_attachments.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
@@ -80,7 +80,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming notes with tags" do
     incoming = File.read!("test/fixtures/ostatus_incoming_post_tag.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     assert object.data["tag"] == ["nsfw"]
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
@@ -97,7 +97,7 @@ defmodule Pleroma.Web.OStatusTest do
 
     incoming = File.read!("test/fixtures/incoming_reply_mastodon.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
@@ -109,7 +109,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming notes - Mastodon, with CW" do
     incoming = File.read!("test/fixtures/mastodon-note-cw.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
@@ -121,7 +121,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming unlisted messages, put public into cc" do
     incoming = File.read!("test/fixtures/mastodon-note-unlisted.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     refute "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["cc"]
@@ -132,7 +132,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming retweets - Mastodon, with CW" do
     incoming = File.read!("test/fixtures/cw_retweet.xml")
     {:ok, [[_activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
-    retweeted_object = Object.normalize(retweeted_activity.data["object"])
+    retweeted_object = Object.normalize(retweeted_activity)
 
     assert retweeted_object.data["summary"] == "Hey."
   end
@@ -140,7 +140,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming notes - GS, subscription, reply" do
     incoming = File.read!("test/fixtures/ostatus_incoming_reply.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
@@ -166,7 +166,7 @@ defmodule Pleroma.Web.OStatusTest do
     refute activity.local
 
     retweeted_activity = Activity.get_by_id(retweeted_activity.id)
-    retweeted_object = Object.normalize(retweeted_activity.data["object"])
+    retweeted_object = Object.normalize(retweeted_activity)
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == "https://pleroma.soykaf.com/users/lain"
     refute retweeted_activity.local
@@ -178,18 +178,19 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming retweets - GS, subscription - local message" do
     incoming = File.read!("test/fixtures/share-gs-local.xml")
     note_activity = insert(:note_activity)
+    object = Object.normalize(note_activity)
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
     incoming =
       incoming
-      |> String.replace("LOCAL_ID", note_activity.data["object"]["id"])
+      |> String.replace("LOCAL_ID", object.data["id"])
       |> String.replace("LOCAL_USER", user.ap_id)
 
     {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
 
     assert activity.data["type"] == "Announce"
     assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"] == retweeted_activity.data["object"]["id"]
+    assert activity.data["object"] == object.data["id"]
     assert user.ap_id in activity.data["to"]
     refute activity.local
 
@@ -204,7 +205,7 @@ defmodule Pleroma.Web.OStatusTest do
   test "handle incoming retweets - Mastodon, salmon" do
     incoming = File.read!("test/fixtures/share.xml")
     {:ok, [[activity, retweeted_activity]]} = OStatus.handle_incoming(incoming)
-    retweeted_object = Object.normalize(retweeted_activity.data["object"])
+    retweeted_object = Object.normalize(retweeted_activity)
 
     assert activity.data["type"] == "Announce"
     assert activity.data["actor"] == "https://mastodon.social/users/lambadalambda"
@@ -253,16 +254,17 @@ defmodule Pleroma.Web.OStatusTest do
 
   test "handle incoming favorites with locally available object - GS, websub" do
     note_activity = insert(:note_activity)
+    object = Object.normalize(note_activity)
 
     incoming =
       File.read!("test/fixtures/favorite_with_local_note.xml")
-      |> String.replace("localid", note_activity.data["object"]["id"])
+      |> String.replace("localid", object.data["id"])
 
     {:ok, [[activity, favorited_activity]]} = OStatus.handle_incoming(incoming)
 
     assert activity.data["type"] == "Like"
     assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-    assert activity.data["object"] == favorited_activity.data["object"]["id"]
+    assert activity.data["object"] == object.data["id"]
     refute activity.local
     assert note_activity.id == favorited_activity.id
     assert favorited_activity.local
@@ -274,7 +276,7 @@ defmodule Pleroma.Web.OStatusTest do
                  [] do
     incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity.data["object"], false)
+    object = Object.normalize(activity, false)
 
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
@@ -300,7 +302,7 @@ defmodule Pleroma.Web.OStatusTest do
     with_mock Pleroma.Web.Federator,
       allowed_incoming_reply_depth?: fn _ -> false end do
       {:ok, [activity]} = OStatus.handle_incoming(incoming)
-      object = Object.normalize(activity.data["object"], false)
+      object = Object.normalize(activity, false)
 
       refute called(OStatus.fetch_activity_from_url(object.data["inReplyTo"], :_))
     end
@@ -337,13 +339,14 @@ defmodule Pleroma.Web.OStatusTest do
              "undo:tag:social.heldscal.la,2017-05-07:subscription:23211:person:44803:2017-05-07T09:54:48+00:00"
 
     assert activity.data["actor"] == "https://social.heldscal.la/user/23211"
-    assert is_map(activity.data["object"])
-    assert activity.data["object"]["type"] == "Follow"
-    assert activity.data["object"]["object"] == "https://pawoo.net/users/pekorino"
+    embedded_object = activity.data["object"]
+    assert is_map(embedded_object)
+    assert embedded_object["type"] == "Follow"
+    assert embedded_object["object"] == "https://pawoo.net/users/pekorino"
     refute activity.local
 
     follower = User.get_cached_by_ap_id(activity.data["actor"])
-    followed = User.get_cached_by_ap_id(activity.data["object"]["object"])
+    followed = User.get_cached_by_ap_id(embedded_object["object"])
 
     refute User.following?(follower, followed)
   end
@@ -560,8 +563,7 @@ defmodule Pleroma.Web.OStatusTest do
 
     test "Article objects are not representable" do
       note_activity = insert(:note_activity)
-
-      note_object = Object.normalize(note_activity.data["object"])
+      note_object = Object.normalize(note_activity)
 
       note_data =
         note_object.data

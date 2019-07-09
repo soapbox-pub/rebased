@@ -6,6 +6,7 @@ defmodule Pleroma.ActivityTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
   alias Pleroma.Bookmark
+  alias Pleroma.Object
   alias Pleroma.ThreadMute
   import Pleroma.Factory
 
@@ -18,15 +19,18 @@ defmodule Pleroma.ActivityTest do
 
   test "returns activities by it's objects AP ids" do
     activity = insert(:note_activity)
-    [found_activity] = Activity.get_all_create_by_object_ap_id(activity.data["object"]["id"])
+    object_data = Object.normalize(activity).data
+
+    [found_activity] = Activity.get_all_create_by_object_ap_id(object_data["id"])
 
     assert activity == found_activity
   end
 
   test "returns the activity that created an object" do
     activity = insert(:note_activity)
+    object_data = Object.normalize(activity).data
 
-    found_activity = Activity.get_create_by_object_ap_id(activity.data["object"]["id"])
+    found_activity = Activity.get_create_by_object_ap_id(object_data["id"])
 
     assert activity == found_activity
   end
