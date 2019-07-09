@@ -87,6 +87,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `invites_enabled`: Enable user invitations for admins (depends on `registrations_open: false`).
 * `account_activation_required`: Require users to confirm their emails before signing in.
 * `federating`: Enable federation with other instances
+* `federation_incoming_replies_max_depth`: Max. depth of reply-to activities fetching on incoming federation, to prevent out-of-memory situations while fetching very long threads. If set to `nil`, threads of any depth will be fetched. Lower this value if you experience out-of-memory crashes.
 * `federation_reachability_timeout_days`: Timeout (in days) of each external federation target being unreachable prior to pausing federating to it.
 * `allow_relay`: Enable Pleroma’s Relay, which makes it possible to follow a whole instance
 * `rewrite_policy`: Message Rewrite Policy, either one or a list. Here are the ones available by default:
@@ -124,6 +125,12 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
+* `external_user_synchronization`: Following/followers counters synchronization settings.
+  * `enabled`: Enables synchronization
+  * `interval`: Interval between synchronization.
+  * `max_retries`: Max rettries for host. After exceeding the limit, the check will not be carried out for users from this host.
+  * `limit`: Users batch size for processing in one time.
+
 
 
 ## :logger

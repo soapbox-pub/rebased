@@ -67,20 +67,3 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 # For using third-party S3 clones like wasabi, also do:
 # config :ex_aws, :s3,
 #   host: "s3.wasabisys.com"
-
-
-# Configure Openstack Swift support if desired.
-#
-# Many openstack deployments are different, so config is left very open with
-# no assumptions made on which provider you're using. This should allow very
-# wide support without needing separate handlers for OVH, Rackspace, etc.
-#
-# config :pleroma, Pleroma.Uploaders.Swift,
-#  container: "some-container",
-#  username: "api-username-yyyy",
-#  password: "api-key-xxxx",
-#  tenant_id: "<openstack-project/tenant-id>",
-#  auth_url: "https://keystone-endpoint.provider.com",
-#  storage_url: "https://swift-endpoint.prodider.com/v1/AUTH_<tenant>/<container>",
-#  object_url: "https://cdn-endpoint.provider.com/<container>"
-#

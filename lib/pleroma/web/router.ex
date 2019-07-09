@@ -724,6 +724,7 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+  require Logger
   alias Pleroma.User
   alias Pleroma.Web.Metadata
 
@@ -750,7 +751,20 @@ defmodule Fallback.RedirectController do
 
   def redirector_with_meta(conn, params) do
     {:ok, index_content} = File.read(index_file_path())
-    tags = Metadata.build_tags(params)
+
+    tags =
+      try do
+        Metadata.build_tags(params)
+      rescue
+        e ->
+          Logger.error(
+            "Metadata rendering for #{conn.request_path} failed.\n" <>
+              Exception.format(:error, e, __STACKTRACE__)
+          )
+
+          ""
+      end
+
     response = String.replace(index_content, "<!--server-generated-meta-->", tags)
 
     conn
