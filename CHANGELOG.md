@@ -13,10 +13,12 @@ Configuration: `federation_incoming_replies_max_depth` option
 
 ### Fixed
 - Not being able to pin unlisted posts
+- Metadata rendering errors resulting in the entire page being inaccessible
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
 
 ### Changed
+- Configuration: OpenGraph and TwitterCard providers enabled by default
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
 
 ### Changed
