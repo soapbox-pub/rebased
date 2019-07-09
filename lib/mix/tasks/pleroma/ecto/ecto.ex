@@ -1,6 +1,7 @@
 # Pleroma: A lightweight social networking server
 # Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-onl
+
 defmodule Mix.Tasks.Pleroma.Ecto do
   @doc """
   Ensures the given repository's migrations path exists on the file system.
