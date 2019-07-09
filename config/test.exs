@@ -75,6 +75,8 @@ rum_enabled = System.get_env("RUM_ENABLED") == "true"
 config :pleroma, :database, rum_enabled: rum_enabled
 IO.puts("RUM enabled: #{rum_enabled}")
 
+config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
+
 try do
   import_config "test.secret.exs"
 rescue
