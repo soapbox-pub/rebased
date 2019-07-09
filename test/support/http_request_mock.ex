@@ -759,6 +759,54 @@ defmodule HttpRequestMock do
     {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}}
   end
 
+  def get("http://localhost:4001/users/masto_closed/followers", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/masto_closed_followers.json")
+     }}
+  end
+
+  def get("http://localhost:4001/users/masto_closed/following", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/masto_closed_following.json")
+     }}
+  end
+
+  def get("http://localhost:4001/users/fuser2/followers", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/pleroma_followers.json")
+     }}
+  end
+
+  def get("http://localhost:4001/users/fuser2/following", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/pleroma_following.json")
+     }}
+  end
+
+  def get("http://domain-with-errors:4001/users/fuser1/followers", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 504,
+       body: ""
+     }}
+  end
+
+  def get("http://domain-with-errors:4001/users/fuser1/following", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 504,
+       body: ""
+     }}
+  end
+
   def get("http://example.com/ogp-missing-data", _, _, _) do
     {:ok,
      %Tesla.Env{

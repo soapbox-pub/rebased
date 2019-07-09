@@ -125,6 +125,12 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
+* `external_user_synchronization`: Following/followers counters synchronization settings.
+  * `enabled`: Enables synchronization
+  * `interval`: Interval between synchronization.
+  * `max_retries`: Max rettries for host. After exceeding the limit, the check will not be carried out for users from this host.
+  * `limit`: Users batch size for processing in one time.
+
 
 
 ## :logger

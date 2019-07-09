@@ -1,0 +1,7 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "http://localhost:4001/users/masto_closed/followers",
+  "type": "OrderedCollection",
+  "totalItems": 437,
+  "first": "http://localhost:4001/users/masto_closed/followers?page=1"
+}

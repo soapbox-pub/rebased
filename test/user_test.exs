@@ -1183,4 +1183,121 @@ defmodule Pleroma.UserTest do
       assert user_two.ap_id in ap_ids
     end
   end
+
+  describe "sync followers count" do
+    setup do
+      user1 = insert(:user, local: false, ap_id: "http://localhost:4001/users/masto_closed")
+      user2 = insert(:user, local: false, ap_id: "http://localhost:4001/users/fuser2")
+      insert(:user, local: true)
+      insert(:user, local: false, info: %{deactivated: true})
+      {:ok, user1: user1, user2: user2}
+    end
+
+    test "external_users/1 external active users with limit", %{user1: user1, user2: user2} do
+      [fdb_user1] = User.external_users(limit: 1)
+
+      assert fdb_user1.ap_id
+      assert fdb_user1.ap_id == user1.ap_id
+      assert fdb_user1.id == user1.id
+
+      [fdb_user2] = User.external_users(max_id: fdb_user1.id, limit: 1)
+
+      assert fdb_user2.ap_id
+      assert fdb_user2.ap_id == user2.ap_id
+      assert fdb_user2.id == user2.id
+
+      assert User.external_users(max_id: fdb_user2.id, limit: 1) == []
+    end
+
+    test "sync_follow_counters/1", %{user1: user1, user2: user2} do
+      {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
+
+      :ok = User.sync_follow_counters()
+
+      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
+      assert followers == 437
+      assert following == 152
+
+      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
+
+      assert followers == 527
+      assert following == 267
+
+      Agent.stop(:domain_errors)
+    end
+
+    test "sync_follow_counters/1 in separate batches", %{user1: user1, user2: user2} do
+      {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
+
+      :ok = User.sync_follow_counters(limit: 1)
+
+      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
+      assert followers == 437
+      assert following == 152
+
+      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
+
+      assert followers == 527
+      assert following == 267
+
+      Agent.stop(:domain_errors)
+    end
+
+    test "perform/1 with :sync_follow_counters", %{user1: user1, user2: user2} do
+      :ok = User.perform(:sync_follow_counters)
+      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
+      assert followers == 437
+      assert following == 152
+
+      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
+
+      assert followers == 527
+      assert following == 267
+    end
+  end
+
+  describe "set_info_cache/2" do
+    setup do
+      user = insert(:user)
+      {:ok, user: user}
+    end
+
+    test "update from args", %{user: user} do
+      User.set_info_cache(user, %{following_count: 15, follower_count: 18})
+
+      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user)
+      assert followers == 18
+      assert following == 15
+    end
+
+    test "without args", %{user: user} do
+      User.set_info_cache(user, %{})
+
+      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user)
+      assert followers == 0
+      assert following == 0
+    end
+  end
+
+  describe "user_info/2" do
+    setup do
+      user = insert(:user)
+      {:ok, user: user}
+    end
+
+    test "update from args", %{user: user} do
+      %{follower_count: followers, following_count: following} =
+        User.user_info(user, %{following_count: 15, follower_count: 18})
+
+      assert followers == 18
+      assert following == 15
+    end
+
+    test "without args", %{user: user} do
+      %{follower_count: followers, following_count: following} = User.user_info(user)
+
+      assert followers == 0
+      assert following == 0
+    end
+  end
 end
