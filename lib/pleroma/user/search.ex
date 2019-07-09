@@ -150,7 +150,7 @@ defmodule Pleroma.User.Search do
   @spec fts_search_subquery(User.t() | Ecto.Query.t(), String.t()) :: Ecto.Query.t()
   defp fts_search_subquery(query, term) do
     processed_query =
-      term
+      String.trim_trailing(term, "@" <> local_domain())
       |> String.replace(~r/\W+/, " ")
       |> String.trim()
       |> String.split()
@@ -192,6 +192,8 @@ defmodule Pleroma.User.Search do
 
   @spec trigram_search_subquery(User.t() | Ecto.Query.t(), String.t()) :: Ecto.Query.t()
   defp trigram_search_subquery(query, term) do
+    term = String.trim_trailing(term, "@" <> local_domain())
+
     from(
       u in query,
       select_merge: %{
@@ -209,4 +211,6 @@ defmodule Pleroma.User.Search do
     )
     |> User.restrict_deactivated()
   end
+
+  defp local_domain, do: Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host])
 end
