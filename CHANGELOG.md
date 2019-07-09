@@ -10,6 +10,7 @@ Configuration: `federation_incoming_replies_max_depth` option
 - Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
+- Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
 
 ### Fixed
 - Not being able to pin unlisted posts
