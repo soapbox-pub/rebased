@@ -20,7 +20,7 @@ defmodule Pleroma.Web.ActivityPub.ObjectViewTest do
 
   test "renders a note activity" do
     note = insert(:note_activity)
-    object = Pleroma.Object.normalize(note)
+    object = Object.normalize(note)
 
     result = ObjectView.render("object.json", %{object: note})
 
