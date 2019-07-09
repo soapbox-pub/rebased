@@ -156,6 +156,13 @@ defmodule Pleroma.MediaProxyTest do
       assert decode_result(encoded) == url
     end
 
+    test "preserve unicode characters" do
+      url = "https://ko.wikipedia.org/wiki/위키백과:대문"
+
+      encoded = url(url)
+      assert decode_result(encoded) == url
+    end
+
     test "does not change whitelisted urls" do
       upload_config = Pleroma.Config.get([Pleroma.Upload])
       media_url = "https://media.pleroma.social"
