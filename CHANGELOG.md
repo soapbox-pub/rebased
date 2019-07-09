@@ -85,6 +85,7 @@ Configuration: `federation_incoming_replies_max_depth` option
 - OAuth: added job to clean expired access tokens
 - MRF: Support for rejecting reports from specific instances (`mrf_simple`)
 - MRF: Support for stripping avatars and banner images from specific instances (`mrf_simple`)
+- Ability to reset avatar, profile banner and backgroud
 - MRF: Support for running subchains.
 - Configuration: `skip_thread_containment` option
 - Configuration: `rate_limit` option. See `Pleroma.Plugs.RateLimiter` documentation for details.

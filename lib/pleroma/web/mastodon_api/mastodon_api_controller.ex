@@ -167,6 +167,69 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  def update_avatar(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
+    change = Changeset.change(user, %{avatar: nil})
+    {:ok, user} = User.update_and_set_cache(change)
+    CommonAPI.update(user)
+
+    json(conn, %{url: nil})
+  end
+
+  def update_avatar(%{assigns: %{user: user}} = conn, params) do
+    {:ok, object} = ActivityPub.upload(params, type: :avatar)
+    change = Changeset.change(user, %{avatar: object.data})
+    {:ok, user} = User.update_and_set_cache(change)
+    CommonAPI.update(user)
+    %{"url" => [%{"href" => href} | _]} = object.data
+
+    json(conn, %{url: href})
+  end
+
+  def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
+    with new_info <- %{"banner" => %{}},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
+      CommonAPI.update(user)
+
+      json(conn, %{url: nil})
+    end
+  end
+
+  def update_banner(%{assigns: %{user: user}} = conn, params) do
+    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
+         new_info <- %{"banner" => object.data},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
+      CommonAPI.update(user)
+      %{"url" => [%{"href" => href} | _]} = object.data
+
+      json(conn, %{url: href})
+    end
+  end
+
+  def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
+    with new_info <- %{"background" => %{}},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
+      json(conn, %{url: nil})
+    end
+  end
+
+  def update_background(%{assigns: %{user: user}} = conn, params) do
+    with {:ok, object} <- ActivityPub.upload(params, type: :background),
+         new_info <- %{"background" => object.data},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
+      %{"url" => [%{"href" => href} | _]} = object.data
+
+      json(conn, %{url: href})
+    end
+  end
+
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
     chat_token = Phoenix.Token.sign(conn, "user socket", user.id)
 
