@@ -217,5 +217,36 @@ defmodule Pleroma.UserSearchTest do
       refute Enum.member?(account_ids, blocked_user2.id)
       assert length(account_ids) == 3
     end
+
+    test "local user has the same search_rank as for users with the same nickname, but another domain" do
+      user = insert(:user)
+      insert(:user, nickname: "lain@mastodon.social")
+      insert(:user, nickname: "lain")
+      insert(:user, nickname: "lain@pleroma.social")
+
+      assert User.search("lain@localhost", resolve: true, for_user: user)
+             |> Enum.each(fn u -> u.search_rank == 0.5 end)
+    end
+
+    test "localhost is the part of the domain" do
+      user = insert(:user)
+      insert(:user, nickname: "another@somedomain")
+      insert(:user, nickname: "lain")
+      insert(:user, nickname: "lain@examplelocalhost")
+
+      result = User.search("lain@examplelocalhost", resolve: true, for_user: user)
+      assert Enum.each(result, fn u -> u.search_rank == 0.5 end)
+      assert length(result) == 2
+    end
+
+    test "local user search with users" do
+      user = insert(:user)
+      local_user = insert(:user, nickname: "lain")
+      insert(:user, nickname: "another@localhost.com")
+      insert(:user, nickname: "localhost@localhost.com")
+
+      [result] = User.search("lain@localhost", resolve: true, for_user: user)
+      assert Map.put(result, :search_rank, nil) |> Map.put(:search_type, nil) == local_user
+    end
   end
 end

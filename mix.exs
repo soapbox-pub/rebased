@@ -109,7 +109,6 @@ defmodule Pleroma.Mixfile do
       {:phoenix_html, "~> 2.10"},
       {:calendar, "~> 0.17.4"},
       {:cachex, "~> 3.0.2"},
-      {:httpoison, "~> 1.2.0"},
       {:poison, "~> 3.0", override: true},
       {:tesla, "~> 1.2"},
       {:jason, "~> 1.0"},
@@ -151,7 +150,8 @@ defmodule Pleroma.Mixfile do
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_rated, "~> 1.3"},
       {:plug_static_index_html, "~> 1.0.0"},
-      {:excoveralls, "~> 0.11.1", only: :test}
+      {:excoveralls, "~> 0.11.1", only: :test},
+      {:mox, "~> 0.5", only: :test}
     ] ++ oauth_deps()
   end
 

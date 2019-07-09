@@ -54,7 +54,7 @@ defmodule Pleroma.Web.OStatus do
     "#{Web.base_url()}/ostatus_subscribe?acct={uri}"
   end
 
-  def handle_incoming(xml_string) do
+  def handle_incoming(xml_string, options \\ []) do
     with doc when doc != :error <- parse_document(xml_string) do
       with {:ok, actor_user} <- find_make_or_update_user(doc),
            do: Pleroma.Instances.set_reachable(actor_user.ap_id)
@@ -91,10 +91,12 @@ defmodule Pleroma.Web.OStatus do
               _ ->
                 case object_type do
                   'http://activitystrea.ms/schema/1.0/note' ->
-                    with {:ok, activity} <- NoteHandler.handle_note(entry, doc), do: activity
+                    with {:ok, activity} <- NoteHandler.handle_note(entry, doc, options),
+                         do: activity
 
                   'http://activitystrea.ms/schema/1.0/comment' ->
-                    with {:ok, activity} <- NoteHandler.handle_note(entry, doc), do: activity
+                    with {:ok, activity} <- NoteHandler.handle_note(entry, doc, options),
+                         do: activity
 
                   _ ->
                     Logger.error("Couldn't parse incoming document")
@@ -359,7 +361,7 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
-  def fetch_activity_from_atom_url(url) do
+  def fetch_activity_from_atom_url(url, options \\ []) do
     with true <- String.starts_with?(url, "http"),
          {:ok, %{body: body, status: code}} when code in 200..299 <-
            HTTP.get(
@@ -367,7 +369,7 @@ defmodule Pleroma.Web.OStatus do
              [{:Accept, "application/atom+xml"}]
            ) do
       Logger.debug("Got document from #{url}, handling...")
-      handle_incoming(body)
+      handle_incoming(body, options)
     else
       e ->
         Logger.debug("Couldn't get #{url}: #{inspect(e)}")
@@ -375,13 +377,13 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
-  def fetch_activity_from_html_url(url) do
+  def fetch_activity_from_html_url(url, options \\ []) do
     Logger.debug("Trying to fetch #{url}")
 
     with true <- String.starts_with?(url, "http"),
          {:ok, %{body: body}} <- HTTP.get(url, []),
          {:ok, atom_url} <- get_atom_url(body) do
-      fetch_activity_from_atom_url(atom_url)
+      fetch_activity_from_atom_url(atom_url, options)
     else
       e ->
         Logger.debug("Couldn't get #{url}: #{inspect(e)}")
@@ -389,11 +391,11 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
-  def fetch_activity_from_url(url) do
-    with {:ok, [_ | _] = activities} <- fetch_activity_from_atom_url(url) do
+  def fetch_activity_from_url(url, options \\ []) do
+    with {:ok, [_ | _] = activities} <- fetch_activity_from_atom_url(url, options) do
       {:ok, activities}
     else
-      _e -> fetch_activity_from_html_url(url)
+      _e -> fetch_activity_from_html_url(url, options)
     end
   rescue
     e ->

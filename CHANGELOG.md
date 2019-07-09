@@ -6,15 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
+Configuration: `federation_incoming_replies_max_depth` option
 - Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
+- Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
+- Mastodon API, extension: Ability to reset avatar, profile banner, and background
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
+- Admin API: Allow querying user by ID
+- Added synchronization of following/followers counters for external users
 
 ### Fixed
 - Not being able to pin unlisted posts
+- Metadata rendering errors resulting in the entire page being inaccessible
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
+- Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
 
 ### Changed
+- Configuration: OpenGraph and TwitterCard providers enabled by default
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
 
 ### Changed

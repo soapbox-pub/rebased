@@ -322,6 +322,10 @@ defmodule Pleroma.Web.Router do
 
       patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
 
+      patch("/accounts/update_avatar", MastodonAPIController, :update_avatar)
+      patch("/accounts/update_banner", MastodonAPIController, :update_banner)
+      patch("/accounts/update_background", MastodonAPIController, :update_background)
+
       post("/statuses", MastodonAPIController, :post_status)
       delete("/statuses/:id", MastodonAPIController, :delete_status)
 
@@ -724,6 +728,7 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+  require Logger
   alias Pleroma.User
   alias Pleroma.Web.Metadata
 
@@ -750,7 +755,20 @@ defmodule Fallback.RedirectController do
 
   def redirector_with_meta(conn, params) do
     {:ok, index_content} = File.read(index_file_path())
-    tags = Metadata.build_tags(params)
+
+    tags =
+      try do
+        Metadata.build_tags(params)
+      rescue
+        e ->
+          Logger.error(
+            "Metadata rendering for #{conn.request_path} failed.\n" <>
+              Exception.format(:error, e, __STACKTRACE__)
+          )
+
+          ""
+      end
+
     response = String.replace(index_content, "<!--server-generated-meta-->", tags)
 
     conn

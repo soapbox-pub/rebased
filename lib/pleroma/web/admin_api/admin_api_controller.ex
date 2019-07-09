@@ -74,7 +74,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def user_show(conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
       conn
       |> json(AccountView.render("show.json", %{user: user}))
     else

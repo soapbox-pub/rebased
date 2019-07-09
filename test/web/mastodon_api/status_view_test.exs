@@ -445,4 +445,39 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       assert Enum.at(result[:options], 2)[:votes_count] == 1
     end
   end
+
+  test "embeds a relationship in the account" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" => "drink more water"
+      })
+
+    result = StatusView.render("status.json", %{activity: activity, for: other_user})
+
+    assert result[:account][:pleroma][:relationship] ==
+             AccountView.render("relationship.json", %{user: other_user, target: user})
+  end
+
+  test "embeds a relationship in the account in reposts" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" => "˙˙ɐʎns"
+      })
+
+    {:ok, activity, _object} = CommonAPI.repeat(activity.id, other_user)
+
+    result = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert result[:account][:pleroma][:relationship] ==
+             AccountView.render("relationship.json", %{user: user, target: other_user})
+
+    assert result[:reblog][:account][:pleroma][:relationship] ==
+             AccountView.render("relationship.json", %{user: user, target: user})
+  end
 end

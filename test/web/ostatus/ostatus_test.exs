@@ -11,8 +11,10 @@ defmodule Pleroma.Web.OStatusTest do
   alias Pleroma.User
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
-  import Pleroma.Factory
+
   import ExUnit.CaptureLog
+  import Mock
+  import Pleroma.Factory
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -268,10 +270,13 @@ defmodule Pleroma.Web.OStatusTest do
     assert favorited_activity.local
   end
 
-  test "handle incoming replies" do
+  test_with_mock "handle incoming replies, fetching replied-to activities if we don't have them",
+                 OStatus,
+                 [:passthrough],
+                 [] do
     incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
     {:ok, [activity]} = OStatus.handle_incoming(incoming)
-    object = Object.normalize(activity)
+    object = Object.normalize(activity, false)
 
     assert activity.data["type"] == "Create"
     assert object.data["type"] == "Note"
@@ -284,6 +289,23 @@ defmodule Pleroma.Web.OStatusTest do
     assert object.data["id"] == "tag:gs.example.org:4040,2017-04-25:noticeId=55:objectType=note"
 
     assert "https://www.w3.org/ns/activitystreams#Public" in activity.data["to"]
+
+    assert called(OStatus.fetch_activity_from_url(object.data["inReplyTo"], :_))
+  end
+
+  test_with_mock "handle incoming replies, not fetching replied-to activities beyond max_replies_depth",
+                 OStatus,
+                 [:passthrough],
+                 [] do
+    incoming = File.read!("test/fixtures/incoming_note_activity_answer.xml")
+
+    with_mock Pleroma.Web.Federator,
+      allowed_incoming_reply_depth?: fn _ -> false end do
+      {:ok, [activity]} = OStatus.handle_incoming(incoming)
+      object = Object.normalize(activity, false)
+
+      refute called(OStatus.fetch_activity_from_url(object.data["inReplyTo"], :_))
+    end
   end
 
   test "handle incoming follows" do
