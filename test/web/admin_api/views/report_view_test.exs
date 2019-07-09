@@ -111,4 +111,20 @@ defmodule Pleroma.Web.AdminAPI.ReportViewTest do
     refute "<script> alert('hecked :D:D:D:D:D:D:D') </script>" ==
              ReportView.render("show.json", %{report: activity})[:content]
   end
+
+  test "doesn't error out when the user doesn't exists" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.report(user, %{
+        "account_id" => other_user.id,
+        "comment" => ""
+      })
+
+    Pleroma.User.delete(other_user)
+    Pleroma.User.invalidate_cache(other_user)
+
+    assert %{} = ReportView.render("show.json", %{report: activity})
+  end
 end

@@ -28,7 +28,8 @@ config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test
 config :pleroma, :instance,
   email: "admin@example.com",
   notify_email: "noreply@example.com",
-  skip_thread_containment: false
+  skip_thread_containment: false,
+  federating: false
 
 # Configure your database
 config :pleroma, Pleroma.Repo,
@@ -75,6 +76,8 @@ config :pleroma, :database, rum_enabled: rum_enabled
 IO.puts("RUM enabled: #{rum_enabled}")
 
 config :joken, default_signer: "yU8uHKq+yyAkZ11Hx//jcdacWc8yQ1bxAAGrplzB0Zwwjkp35v0RK9SO8WTPr6QZ"
+
+config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 
 try do
   import_config "test.secret.exs"

@@ -10,6 +10,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.Federator
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.XML
 
@@ -88,14 +89,15 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     Map.put(note, "external_url", url)
   end
 
-  def fetch_replied_to_activity(entry, in_reply_to) do
+  def fetch_replied_to_activity(entry, in_reply_to, options \\ []) do
     with %Activity{} = activity <- Activity.get_create_by_object_ap_id(in_reply_to) do
       activity
     else
       _e ->
-        with in_reply_to_href when not is_nil(in_reply_to_href) <-
+        with true <- Federator.allowed_incoming_reply_depth?(options[:depth]),
+             in_reply_to_href when not is_nil(in_reply_to_href) <-
                XML.string_from_xpath("//thr:in-reply-to[1]/@href", entry),
-             {:ok, [activity | _]} <- OStatus.fetch_activity_from_url(in_reply_to_href) do
+             {:ok, [activity | _]} <- OStatus.fetch_activity_from_url(in_reply_to_href, options) do
           activity
         else
           _e -> nil
@@ -104,7 +106,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   end
 
   # TODO: Clean this up a bit.
-  def handle_note(entry, doc \\ nil) do
+  def handle_note(entry, doc \\ nil, options \\ []) do
     with id <- XML.string_from_xpath("//id", entry),
          activity when is_nil(activity) <- Activity.get_create_by_object_ap_id_with_object(id),
          [author] <- :xmerl_xpath.string('//author[1]', doc),
@@ -112,7 +114,8 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          content_html <- OStatus.get_content(entry),
          cw <- OStatus.get_cw(entry),
          in_reply_to <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
-         in_reply_to_activity <- fetch_replied_to_activity(entry, in_reply_to),
+         options <- Keyword.put(options, :depth, (options[:depth] || 0) + 1),
+         in_reply_to_activity <- fetch_replied_to_activity(entry, in_reply_to, options),
          in_reply_to_object <-
            (in_reply_to_activity && Object.normalize(in_reply_to_activity)) || nil,
          in_reply_to <- (in_reply_to_object && in_reply_to_object.data["id"]) || in_reply_to,

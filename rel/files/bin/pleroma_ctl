@@ -30,12 +30,15 @@ detect_flavour() {
 
 detect_branch() {
 	version="$(cut -d' ' -f2 <"$RELEASE_ROOT"/releases/start_erl.data)"
-	branch="$(echo "$version" | cut -d'-' -f 4)"
+	# Expected format: major.minor.patch_version(-number_of_commits_ahead_of_tag-gcommit_hash).branch
+	branch="$(echo "$version" | cut -d'.' -f 4)"
 	if [ "$branch" = "develop" ]; then
 		echo "develop"
 	elif [ "$branch" = "" ]; then
 		echo "master"
 	else
+	  # Note: branch name in version is of SemVer format and may only contain [0-9a-zA-Z-] symbols —
+	  #   if supporting releases for more branches, need to ensure they contain only these symbols.
 		echo "Releases are built only for master and develop branches" >&2
 		exit 1
 	fi

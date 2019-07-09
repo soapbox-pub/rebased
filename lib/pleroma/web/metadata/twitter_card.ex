@@ -117,6 +117,8 @@ defmodule Pleroma.Web.Metadata.Providers.TwitterCard do
     end)
   end
 
+  defp build_attachments(_id, _object), do: []
+
   defp player_url(id) do
     Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice_player, id)
   end

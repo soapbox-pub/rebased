@@ -43,6 +43,8 @@ defmodule Pleroma.User.Search do
   defp search_query(query_string, for_user, following) do
     for_user
     |> base_query(following)
+    |> filter_blocked_user(for_user)
+    |> filter_blocked_domains(for_user)
     |> search_subqueries(query_string)
     |> union_subqueries
     |> distinct_query()
@@ -54,6 +56,25 @@ defmodule Pleroma.User.Search do
 
   defp base_query(_user, false), do: User
   defp base_query(user, true), do: User.get_followers_query(user)
+
+  defp filter_blocked_user(query, %User{info: %{blocks: blocks}})
+       when length(blocks) > 0 do
+    from(q in query, where: not (q.ap_id in ^blocks))
+  end
+
+  defp filter_blocked_user(query, _), do: query
+
+  defp filter_blocked_domains(query, %User{info: %{domain_blocks: domain_blocks}})
+       when length(domain_blocks) > 0 do
+    domains = Enum.join(domain_blocks, ",")
+
+    from(
+      q in query,
+      where: fragment("substring(ap_id from '.*://([^/]*)') NOT IN (?)", ^domains)
+    )
+  end
+
+  defp filter_blocked_domains(query, _), do: query
 
   defp paginate(query, limit, offset) do
     from(q in query, limit: ^limit, offset: ^offset)
@@ -129,7 +150,7 @@ defmodule Pleroma.User.Search do
   @spec fts_search_subquery(User.t() | Ecto.Query.t(), String.t()) :: Ecto.Query.t()
   defp fts_search_subquery(query, term) do
     processed_query =
-      term
+      String.trim_trailing(term, "@" <> local_domain())
       |> String.replace(~r/\W+/, " ")
       |> String.trim()
       |> String.split()
@@ -171,6 +192,8 @@ defmodule Pleroma.User.Search do
 
   @spec trigram_search_subquery(User.t() | Ecto.Query.t(), String.t()) :: Ecto.Query.t()
   defp trigram_search_subquery(query, term) do
+    term = String.trim_trailing(term, "@" <> local_domain())
+
     from(
       u in query,
       select_merge: %{
@@ -188,4 +211,6 @@ defmodule Pleroma.User.Search do
     )
     |> User.restrict_deactivated()
   end
+
+  defp local_domain, do: Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host])
 end

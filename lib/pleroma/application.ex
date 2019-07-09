@@ -155,7 +155,11 @@ defmodule Pleroma.Application do
             start: {Pleroma.Web.Endpoint, :start_link, []},
             type: :supervisor
           },
-          %{id: Pleroma.Gopher.Server, start: {Pleroma.Gopher.Server, :start_link, []}}
+          %{id: Pleroma.Gopher.Server, start: {Pleroma.Gopher.Server, :start_link, []}},
+          %{
+            id: Pleroma.User.SynchronizationWorker,
+            start: {Pleroma.User.SynchronizationWorker, :start_link, []}
+          }
         ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html

@@ -14,6 +14,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.Federator
 
   import Ecto.Query
 
@@ -22,20 +23,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
-  def fix_object(object) do
+  def fix_object(object, options \\ []) do
     object
     |> fix_actor
     |> fix_url
     |> fix_attachments
     |> fix_context
-    |> fix_in_reply_to
+    |> fix_in_reply_to(options)
     |> fix_emoji
     |> fix_tag
     |> fix_content_map
     |> fix_likes
     |> fix_addressing
     |> fix_summary
-    |> fix_type
+    |> fix_type(options)
   end
 
   def fix_summary(%{"summary" => nil} = object) do
@@ -164,7 +165,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     object
   end
 
-  def fix_in_reply_to(%{"inReplyTo" => in_reply_to} = object)
+  def fix_in_reply_to(object, options \\ [])
+
+  def fix_in_reply_to(%{"inReplyTo" => in_reply_to} = object, options)
       when not is_nil(in_reply_to) do
     in_reply_to_id =
       cond do
@@ -182,28 +185,34 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           ""
       end
 
-    case get_obj_helper(in_reply_to_id) do
-      {:ok, replied_object} ->
-        with %Activity{} = _activity <-
-               Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
-          object
-          |> Map.put("inReplyTo", replied_object.data["id"])
-          |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
-          |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
-          |> Map.put("context", replied_object.data["context"] || object["conversation"])
-        else
-          e ->
-            Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
-            object
-        end
+    object = Map.put(object, "inReplyToAtomUri", in_reply_to_id)
 
-      e ->
-        Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
-        object
+    if Federator.allowed_incoming_reply_depth?(options[:depth]) do
+      case get_obj_helper(in_reply_to_id, options) do
+        {:ok, replied_object} ->
+          with %Activity{} = _activity <-
+                 Activity.get_create_by_object_ap_id(replied_object.data["id"]) do
+            object
+            |> Map.put("inReplyTo", replied_object.data["id"])
+            |> Map.put("inReplyToAtomUri", object["inReplyToAtomUri"] || in_reply_to_id)
+            |> Map.put("conversation", replied_object.data["context"] || object["conversation"])
+            |> Map.put("context", replied_object.data["context"] || object["conversation"])
+          else
+            e ->
+              Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
+              object
+          end
+
+        e ->
+          Logger.error("Couldn't fetch \"#{inspect(in_reply_to_id)}\", error: #{inspect(e)}")
+          object
+      end
+    else
+      object
     end
   end
 
-  def fix_in_reply_to(object), do: object
+  def fix_in_reply_to(object, _options), do: object
 
   def fix_context(object) do
     context = object["context"] || object["conversation"] || Utils.generate_context_id()
@@ -336,8 +345,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_content_map(object), do: object
 
-  def fix_type(%{"inReplyTo" => reply_id} = object) when is_binary(reply_id) do
-    reply = Object.normalize(reply_id)
+  def fix_type(object, options \\ [])
+
+  def fix_type(%{"inReplyTo" => reply_id} = object, options) when is_binary(reply_id) do
+    reply =
+      if Federator.allowed_incoming_reply_depth?(options[:depth]) do
+        Object.normalize(reply_id, true)
+      end
 
     if reply && (reply.data["type"] == "Question" and object["name"]) do
       Map.put(object, "type", "Answer")
@@ -346,7 +360,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def fix_type(object), do: object
+  def fix_type(object, _), do: object
 
   defp mastodon_follow_hack(%{"id" => id, "actor" => follower_id}, followed) do
     with true <- id =~ "follows",
@@ -374,9 +388,11 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
+  def handle_incoming(data, options \\ [])
+
   # Flag objects are placed ahead of the ID check because Mastodon 2.8 and earlier send them
   # with nil ID.
-  def handle_incoming(%{"type" => "Flag", "object" => objects, "actor" => actor} = data) do
+  def handle_incoming(%{"type" => "Flag", "object" => objects, "actor" => actor} = data, _options) do
     with context <- data["context"] || Utils.generate_context_id(),
          content <- data["content"] || "",
          %User{} = actor <- User.get_cached_by_ap_id(actor),
@@ -409,15 +425,19 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   # disallow objects with bogus IDs
-  def handle_incoming(%{"id" => nil}), do: :error
-  def handle_incoming(%{"id" => ""}), do: :error
+  def handle_incoming(%{"id" => nil}, _options), do: :error
+  def handle_incoming(%{"id" => ""}, _options), do: :error
   # length of https:// = 8, should validate better, but good enough for now.
-  def handle_incoming(%{"id" => id}) when not (is_binary(id) and length(id) > 8), do: :error
+  def handle_incoming(%{"id" => id}, _options) when not (is_binary(id) and length(id) > 8),
+    do: :error
 
   # TODO: validate those with a Ecto scheme
   # - tags
   # - emoji
-  def handle_incoming(%{"type" => "Create", "object" => %{"type" => objtype} = object} = data)
+  def handle_incoming(
+        %{"type" => "Create", "object" => %{"type" => objtype} = object} = data,
+        options
+      )
       when objtype in ["Article", "Note", "Video", "Page", "Question", "Answer"] do
     actor = Containment.get_actor(data)
 
@@ -427,7 +447,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
     with nil <- Activity.get_create_by_object_ap_id(object["id"]),
          {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(data["actor"]) do
-      object = fix_object(data["object"])
+      options = Keyword.put(options, :depth, (options[:depth] || 0) + 1)
+      object = fix_object(data["object"], options)
 
       params = %{
         to: data["to"],
@@ -452,7 +473,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Follow", "object" => followed, "actor" => follower, "id" => id} = data
+        %{"type" => "Follow", "object" => followed, "actor" => follower, "id" => id} = data,
+        _options
       ) do
     with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
          {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
@@ -503,7 +525,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => _id} = data
+        %{"type" => "Accept", "object" => follow_object, "actor" => _actor, "id" => _id} = data,
+        _options
       ) do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
@@ -524,7 +547,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => _id} = data
+        %{"type" => "Reject", "object" => follow_object, "actor" => _actor, "id" => _id} = data,
+        _options
       ) do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = followed} <- User.get_or_fetch_by_ap_id(actor),
@@ -548,7 +572,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data
+        %{"type" => "Like", "object" => object_id, "actor" => _actor, "id" => id} = data,
+        _options
       ) do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
@@ -561,7 +586,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Announce", "object" => object_id, "actor" => _actor, "id" => id} = data
+        %{"type" => "Announce", "object" => object_id, "actor" => _actor, "id" => id} = data,
+        _options
       ) do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
@@ -576,7 +602,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def handle_incoming(
         %{"type" => "Update", "object" => %{"type" => object_type} = object, "actor" => actor_id} =
-          data
+          data,
+        _options
       )
       when object_type in ["Person", "Application", "Service", "Organization"] do
     with %User{ap_id: ^actor_id} = actor <- User.get_cached_by_ap_id(object["id"]) do
@@ -614,7 +641,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # an error or a tombstone.  This would allow us to verify that a deletion actually took
   # place.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => _actor, "id" => _id} = data
+        %{"type" => "Delete", "object" => object_id, "actor" => _actor, "id" => _id} = data,
+        _options
       ) do
     object_id = Utils.get_ap_id(object_id)
 
@@ -635,7 +663,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "object" => %{"type" => "Announce", "object" => object_id},
           "actor" => _actor,
           "id" => id
-        } = data
+        } = data,
+        _options
       ) do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
@@ -653,7 +682,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "object" => %{"type" => "Follow", "object" => followed},
           "actor" => follower,
           "id" => id
-        } = _data
+        } = _data,
+        _options
       ) do
     with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
          {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
@@ -671,7 +701,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "object" => %{"type" => "Block", "object" => blocked},
           "actor" => blocker,
           "id" => id
-        } = _data
+        } = _data,
+        _options
       ) do
     with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
          %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
@@ -685,7 +716,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
-        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data
+        %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
+        _options
       ) do
     with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
          %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
@@ -705,7 +737,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
           "object" => %{"type" => "Like", "object" => object_id},
           "actor" => _actor,
           "id" => id
-        } = data
+        } = data,
+        _options
       ) do
     with actor <- Containment.get_actor(data),
          {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
@@ -717,10 +750,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     end
   end
 
-  def handle_incoming(_), do: :error
+  def handle_incoming(_, _), do: :error
 
-  def get_obj_helper(id) do
-    if object = Object.normalize(id), do: {:ok, object}, else: nil
+  def get_obj_helper(id, options \\ []) do
+    if object = Object.normalize(id, true, options), do: {:ok, object}, else: nil
   end
 
   def set_reply_to_uri(%{"inReplyTo" => in_reply_to} = object) when is_binary(in_reply_to) do

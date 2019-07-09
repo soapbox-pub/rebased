@@ -1,0 +1,20 @@
+{
+  "type": "OrderedCollection",
+  "totalItems": 267,
+  "id": "http://localhost:4001/users/fuser2/following",
+  "first": {
+    "type": "OrderedCollectionPage",
+    "totalItems": 267,
+    "partOf": "http://localhost:4001/users/fuser2/following",
+    "orderedItems": [],
+    "next": "http://localhost:4001/users/fuser2/following?page=2",
+    "id": "http://localhost:4001/users/fuser2/following?page=1"
+  },
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "http://localhost:4001/schemas/litepub-0.1.jsonld",
+    {
+      "@language": "und"
+    }
+  ]
+}
