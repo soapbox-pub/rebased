@@ -203,10 +203,71 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("status.json", %{activity: activity})
 
-    actor = User.get_cached_by_ap_id(activity.actor)
-
     assert status.mentions ==
-             Enum.map([user, actor], fn u -> AccountView.render("mention.json", %{user: u}) end)
+             Enum.map([user], fn u -> AccountView.render("mention.json", %{user: u}) end)
+  end
+
+  test "create mentions from the 'to' field" do
+    %User{ap_id: recipient_ap_id} = insert(:user)
+    cc = insert_pair(:user) |> Enum.map(& &1.ap_id)
+
+    object =
+      insert(:note, %{
+        data: %{
+          "to" => [recipient_ap_id],
+          "cc" => cc
+        }
+      })
+
+    activity =
+      insert(:note_activity, %{
+        note: object,
+        recipients: [recipient_ap_id | cc]
+      })
+
+    assert length(activity.recipients) == 3
+
+    %{mentions: [mention] = mentions} = StatusView.render("status.json", %{activity: activity})
+
+    assert length(mentions) == 1
+    assert mention.url == recipient_ap_id
+  end
+
+  test "create mentions from the 'tag' field" do
+    recipient = insert(:user)
+    cc = insert_pair(:user) |> Enum.map(& &1.ap_id)
+
+    object =
+      insert(:note, %{
+        data: %{
+          "cc" => cc,
+          "tag" => [
+            %{
+              "href" => recipient.ap_id,
+              "name" => recipient.nickname,
+              "type" => "Mention"
+            },
+            %{
+              "href" => "https://example.com/search?tag=test",
+              "name" => "#test",
+              "type" => "Hashtag"
+            }
+          ]
+        }
+      })
+
+    activity =
+      insert(:note_activity, %{
+        note: object,
+        recipients: [recipient.ap_id | cc]
+      })
+
+    assert length(activity.recipients) == 3
+
+    %{mentions: [mention] = mentions} = StatusView.render("status.json", %{activity: activity})
+
+    assert length(mentions) == 1
+    assert mention.url == recipient.ap_id
   end
 
   test "attachments" do

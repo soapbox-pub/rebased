@@ -149,8 +149,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     tags = object.data["tag"] || []
     sensitive = object.data["sensitive"] || Enum.member?(tags, "nsfw")
 
+    tag_mentions =
+      tags
+      |> Enum.filter(fn tag -> is_map(tag) and tag["type"] == "Mention" end)
+      |> Enum.map(fn tag -> tag["href"] end)
+
     mentions =
-      activity.recipients
+      (object.data["to"] ++ tag_mentions)
+      |> Enum.uniq()
       |> Enum.map(fn ap_id -> User.get_cached_by_ap_id(ap_id) end)
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
