@@ -8,7 +8,6 @@ defmodule Pleroma.Plugs.UploadedMedia do
 
   import Plug.Conn
   import Pleroma.Web.Gettext
-  import Pleroma.Web.TranslationHelpers
   require Logger
 
   @behaviour Plug
