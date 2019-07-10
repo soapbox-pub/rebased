@@ -18,8 +18,7 @@ defmodule Pleroma.User.Search do
 
     for_user = Keyword.get(opts, :for_user)
 
-    # Strip the beginning @ off if there is a query
-    query_string = String.trim_leading(query_string, "@")
+    query_string = format_query(query_string)
 
     maybe_resolve(resolve, for_user, query_string)
 
@@ -38,6 +37,18 @@ defmodule Pleroma.User.Search do
       end)
 
     results
+  end
+
+  defp format_query(query_string) do
+    # Strip the beginning @ off if there is a query
+    query_string = String.trim_leading(query_string, "@")
+
+    with [name, domain] <- String.split(query_string, "@"),
+         formatted_domain <- String.replace(domain, ~r/[!-\-|@|[-`|{-~|\/|:]+/, "") do
+      name <> "@" <> to_string(:idna.encode(formatted_domain))
+    else
+      _ -> query_string
+    end
   end
 
   defp search_query(query_string, for_user, following) do
@@ -151,7 +162,7 @@ defmodule Pleroma.User.Search do
   defp fts_search_subquery(query, term) do
     processed_query =
       String.trim_trailing(term, "@" <> local_domain())
-      |> String.replace(~r/\W+/, " ")
+      |> String.replace(~r/[!-\/|@|[-`|{-~|:-?]+/, " ")
       |> String.trim()
       |> String.split()
       |> Enum.map(&(&1 <> ":*"))
