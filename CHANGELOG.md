@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Changed
+- **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
+- Configuration: OpenGraph and TwitterCard providers enabled by default
+- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+- NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
+
+### Fixed
+- Not being able to pin unlisted posts
+- Metadata rendering errors resulting in the entire page being inaccessible
+- Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
+- Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
+
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
 Configuration: `federation_incoming_replies_max_depth` option
@@ -15,19 +27,6 @@ Configuration: `federation_incoming_replies_max_depth` option
 - Admin API: Allow querying user by ID
 - Added synchronization of following/followers counters for external users
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
-
-### Fixed
-- Not being able to pin unlisted posts
-- Metadata rendering errors resulting in the entire page being inaccessible
-- Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
-- Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
-
-### Changed
-- Configuration: OpenGraph and TwitterCard providers enabled by default
-- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
-
-### Changed
-- NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
 
 ## [1.0.0] - 2019-06-29
 ### Security
