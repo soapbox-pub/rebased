@@ -1234,7 +1234,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       recipients = Enum.map(response["mentions"], & &1["username"])
 
-      assert conn.assigns[:user].nickname in recipients
       assert reporter.nickname in recipients
       assert response["content"] == "I will check it out"
       assert response["visibility"] == "direct"
