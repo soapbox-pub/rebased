@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Captcha do
+  import Pleroma.Web.Gettext
+
   alias Calendar.DateTime
   alias Plug.Crypto.KeyGenerator
   alias Plug.Crypto.MessageEncryptor
@@ -83,10 +85,11 @@ defmodule Pleroma.Captcha do
       with {:ok, data} <- MessageEncryptor.decrypt(answer_data, secret, sign_secret),
            %{at: at, answer_data: answer_md5} <- :erlang.binary_to_term(data) do
         try do
-          if DateTime.before?(at, valid_if_after), do: throw({:error, "CAPTCHA expired"})
+          if DateTime.before?(at, valid_if_after),
+            do: throw({:error, dgettext("errors", "CAPTCHA expired")})
 
           if not is_nil(Cachex.get!(:used_captcha_cache, token)),
-            do: throw({:error, "CAPTCHA already used"})
+            do: throw({:error, dgettext("errors", "CAPTCHA already used")})
 
           res = method().validate(token, captcha, answer_md5)
           # Throw if an error occurs
@@ -101,7 +104,7 @@ defmodule Pleroma.Captcha do
           :throw, e -> e
         end
       else
-        _ -> {:error, "Invalid answer data"}
+        _ -> {:error, dgettext("errors", "Invalid answer data")}
       end
 
     {:reply, result, state}

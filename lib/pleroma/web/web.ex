@@ -23,9 +23,11 @@ defmodule Pleroma.Web do
   def controller do
     quote do
       use Phoenix.Controller, namespace: Pleroma.Web
+
       import Plug.Conn
       import Pleroma.Web.Gettext
       import Pleroma.Web.Router.Helpers
+      import Pleroma.Web.TranslationHelpers
 
       plug(:set_put_layout)
 

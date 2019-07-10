@@ -5,6 +5,7 @@
 defmodule Pleroma.Web.AdminAPI.Config do
   use Ecto.Schema
   import Ecto.Changeset
+  import Pleroma.Web.Gettext
   alias __MODULE__
   alias Pleroma.Repo
 
@@ -57,7 +58,11 @@ defmodule Pleroma.Web.AdminAPI.Config do
     with %Config{} = config <- Config.get_by_params(params) do
       Repo.delete(config)
     else
-      nil -> {:error, "Config with params #{inspect(params)} not found"}
+      nil ->
+        err =
+          dgettext("errors", "Config with params %{params} not found", params: inspect(params))
+
+        {:error, err}
     end
   end
 

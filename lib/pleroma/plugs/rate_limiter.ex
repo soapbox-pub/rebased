@@ -44,8 +44,7 @@ defmodule Pleroma.Plugs.RateLimiter do
         ...
       end
   """
-
-  import Phoenix.Controller, only: [json: 2]
+  import Pleroma.Web.TranslationHelpers
   import Plug.Conn
 
   alias Pleroma.User
@@ -63,7 +62,7 @@ defmodule Pleroma.Plugs.RateLimiter do
   def call(conn, opts) do
     case check_rate(conn, opts) do
       {:ok, _count} -> conn
-      {:error, _count} -> render_error(conn)
+      {:error, _count} -> render_throttled_error(conn)
     end
   end
 
@@ -85,10 +84,9 @@ defmodule Pleroma.Plugs.RateLimiter do
     |> Enum.join(".")
   end
 
-  defp render_error(conn) do
+  defp render_throttled_error(conn) do
     conn
-    |> put_status(:too_many_requests)
-    |> json(%{error: "Throttled"})
+    |> render_error(:too_many_requests, "Throttled")
     |> halt()
   end
 end

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug do
+  import Pleroma.Web.TranslationHelpers
   import Plug.Conn
   alias Pleroma.Config
   alias Pleroma.User
@@ -23,8 +24,7 @@ defmodule Pleroma.Plugs.EnsurePublicOrAuthenticatedPlug do
 
       {false, _} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{error: "This resource requires authentication."}))
+        |> render_error(:forbidden, "This resource requires authentication.")
         |> halt
     end
   end

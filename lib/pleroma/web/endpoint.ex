@@ -7,13 +7,9 @@ defmodule Pleroma.Web.Endpoint do
 
   socket("/socket", Pleroma.Web.UserSocket)
 
-  # Serve at "/" the static files from "priv/static" directory.
-  #
-  # You should set gzip to true if you are running phoenix.digest
-  # when deploying your static files in production.
+  plug(Pleroma.Plugs.SetLocalePlug)
   plug(CORSPlug)
   plug(Pleroma.Plugs.HTTPSecurityPlug)
-
   plug(Pleroma.Plugs.UploadedMedia)
 
   @static_cache_control "public, no-cache"
@@ -30,6 +26,10 @@ defmodule Pleroma.Web.Endpoint do
     }
   )
 
+  # Serve at "/" the static files from "priv/static" directory.
+  #
+  # You should set gzip to true if you are running phoenix.digest
+  # when deploying your static files in production.
   plug(
     Plug.Static,
     at: "/",
