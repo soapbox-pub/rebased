@@ -4,29 +4,27 @@
 
 defmodule Pleroma.Web.MastodonAPI.SearchController do
   use Pleroma.Web, :controller
+
   alias Pleroma.Activity
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.User
   alias Pleroma.Web
+  alias Pleroma.Web.ControllerHelper
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
-  alias Pleroma.Web.ControllerHelper
-
   require Logger
-
-  plug(Pleroma.Plugs.RateLimiter, :search when action in [:search, :search2, :account_search])
+  plug(RateLimiter, :search when action in [:search, :search2, :account_search])
 
   def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
     accounts = with_fallback(fn -> User.search(query, search_options(params, user)) end, [])
     statuses = with_fallback(fn -> Activity.search(user, query) end, [])
+
     tags_path = Web.base_url() <> "/tag/"
 
     tags =
       query
-      |> String.split()
-      |> Enum.uniq()
-      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
-      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
+      |> prepare_tags
       |> Enum.map(fn tag -> %{name: tag, url: tags_path <> tag} end)
 
     res = %{
@@ -40,15 +38,10 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
   end
 
   def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = with_fallback(fn -> User.search(query, search_options(params, user)) end, [])
-    statuses = with_fallback(fn -> Activity.search(user, query) end, [])
+    accounts = with_fallback(fn -> User.search(query, search_options(params, user)) end)
+    statuses = with_fallback(fn -> Activity.search(user, query) end)
 
-    tags =
-      query
-      |> String.split()
-      |> Enum.uniq()
-      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
-      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
+    tags = prepare_tags(query)
 
     res = %{
       "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
@@ -67,6 +60,14 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     json(conn, res)
   end
 
+  defp prepare_tags(query) do
+    query
+    |> String.split()
+    |> Enum.uniq()
+    |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
+    |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
+  end
+
   defp search_options(params, user) do
     [
       resolve: params["resolve"] == "true",
@@ -77,7 +78,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchController do
     ]
   end
 
-  defp with_fallback(f, fallback) do
+  defp with_fallback(f, fallback \\ []) do
     try do
       f.()
     rescue
