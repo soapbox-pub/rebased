@@ -54,6 +54,14 @@ defmodule Pleroma.UserTest do
     assert expected_followers_collection == User.ap_followers(user)
   end
 
+  test "ap_following returns the following collection for the user" do
+    user = UserBuilder.build()
+
+    expected_followers_collection = "#{User.ap_id(user)}/following"
+
+    assert expected_followers_collection == User.ap_following(user)
+  end
+
   test "returns all pending follow requests" do
     unlocked = insert(:user)
     locked = insert(:user, %{info: %{locked: true}})
@@ -1239,52 +1247,6 @@ defmodule Pleroma.UserTest do
       assert fdb_user2.id == user2.id
 
       assert User.external_users(max_id: fdb_user2.id, limit: 1) == []
-    end
-
-    test "sync_follow_counters/1", %{user1: user1, user2: user2} do
-      {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
-
-      :ok = User.sync_follow_counters()
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
-
-      Agent.stop(:domain_errors)
-    end
-
-    test "sync_follow_counters/1 in separate batches", %{user1: user1, user2: user2} do
-      {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
-
-      :ok = User.sync_follow_counters(limit: 1)
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
-
-      Agent.stop(:domain_errors)
-    end
-
-    test "perform/1 with :sync_follow_counters", %{user1: user1, user2: user2} do
-      :ok = User.perform(:sync_follow_counters)
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
     end
   end
 
