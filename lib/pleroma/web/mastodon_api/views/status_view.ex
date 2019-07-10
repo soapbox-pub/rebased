@@ -19,6 +19,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
 
   # TODO: Add cached version.
+  defp get_replied_to_activities([]), do: %{}
+
   defp get_replied_to_activities(activities) do
     activities
     |> Enum.map(fn
