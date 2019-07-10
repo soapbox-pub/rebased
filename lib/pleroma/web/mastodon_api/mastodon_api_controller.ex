@@ -299,7 +299,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         "static_url" => url,
         "visible_in_picker" => true,
         "url" => url,
-        "tags" => tags
+        "tags" => tags,
+        # Assuming that a comma is authorized in the category name
+        "category" => (tags -- ["Custom"]) |> Enum.join(",")
       }
     end)
   end

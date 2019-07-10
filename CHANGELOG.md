@@ -27,6 +27,7 @@ Configuration: `federation_incoming_replies_max_depth` option
 - Admin API: Allow querying user by ID
 - Added synchronization of following/followers counters for external users
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
+- Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
 
 ## [1.0.0] - 2019-06-29
 ### Security
