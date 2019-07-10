@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.ReverseProxy.Client do
   @callback request(atom(), String.t(), [tuple()], String.t(), list()) ::
               {:ok, pos_integer(), [tuple()], reference() | map()}
