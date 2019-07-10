@@ -1121,6 +1121,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.info.ap_enabled
       assert user.info.note_count == 1
       assert user.follower_address == "https://niu.moe/users/rye/followers"
+      assert user.following_address == "https://niu.moe/users/rye/following"
 
       user = User.get_cached_by_id(user.id)
       assert user.info.note_count == 1

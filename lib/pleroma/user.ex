@@ -52,6 +52,7 @@ defmodule Pleroma.User do
     field(:avatar, :map)
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
+    field(:following_address, :string)
     field(:search_rank, :float, virtual: true)
     field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
@@ -162,9 +163,10 @@ defmodule Pleroma.User do
 
     if changes.valid? do
       case info_cng.changes[:source_data] do
-        %{"followers" => followers} ->
+        %{"followers" => followers, "following" => following} ->
           changes
           |> put_change(:follower_address, followers)
+          |> put_change(:following_address, following)
 
         _ ->
           followers = User.ap_followers(%User{nickname: changes.changes[:nickname]})
@@ -196,7 +198,14 @@ defmodule Pleroma.User do
       |> User.Info.user_upgrade(params[:info])
 
     struct
-    |> cast(params, [:bio, :name, :follower_address, :avatar, :last_refreshed_at])
+    |> cast(params, [
+      :bio,
+      :name,
+      :follower_address,
+      :following_address,
+      :avatar,
+      :last_refreshed_at
+    ])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
@@ -1039,15 +1048,20 @@ defmodule Pleroma.User do
     end
   end
 
+  @spec external_users_query() :: Ecto.Query.t()
+  def external_users_query do
+    User.Query.build(%{
+      external: true,
+      active: true,
+      order_by: :id
+    })
+  end
+
   @spec external_users(keyword()) :: [User.t()]
   def external_users(opts \\ []) do
     query =
-      User.Query.build(%{
-        external: true,
-        active: true,
-        order_by: :id,
-        select: [:id, :ap_id, :info]
-      })
+      external_users_query()
+      |> select([u], struct(u, [:id, :ap_id, :info]))
 
     query =
       if opts[:max_id],
