@@ -3,46 +3,42 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
-  alias Pleroma.User
   @moduledoc "Rejects non-public (followers-only, direct) activities"
+
+  alias Pleroma.Config
+  alias Pleroma.User
+
   @behaviour Pleroma.Web.ActivityPub.MRF
+
+  @public "https://www.w3.org/ns/activitystreams#Public"
 
   @impl true
   def filter(%{"type" => "Create"} = object) do
     user = User.get_cached_by_ap_id(object["actor"])
-    public = "https://www.w3.org/ns/activitystreams#Public"
 
     # Determine visibility
     visibility =
       cond do
-        public in object["to"] -> "public"
-        public in object["cc"] -> "unlisted"
+        @public in object["to"] -> "public"
+        @public in object["cc"] -> "unlisted"
         user.follower_address in object["to"] -> "followers"
         true -> "direct"
       end
 
-    policy = Pleroma.Config.get(:mrf_rejectnonpublic)
+    policy = Config.get(:mrf_rejectnonpublic)
 
-    case visibility do
-      "public" ->
+    cond do
+      visibility in ["public", "unlisted"] ->
         {:ok, object}
 
-      "unlisted" ->
+      visibility == "followers" and Keyword.get(policy, :allow_followersonly) ->
         {:ok, object}
 
-      "followers" ->
-        with true <- Keyword.get(policy, :allow_followersonly) do
-          {:ok, object}
-        else
-          _e -> {:reject, nil}
-        end
+      visibility == "direct" and Keyword.get(policy, :allow_direct) ->
+        {:ok, object}
 
-      "direct" ->
-        with true <- Keyword.get(policy, :allow_direct) do
-          {:ok, object}
-        else
-          _e -> {:reject, nil}
-        end
+      true ->
+        {:reject, nil}
     end
   end
 
