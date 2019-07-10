@@ -840,6 +840,45 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "https://zetsubou.xn--q9jyb4c/.well-known/webfinger?resource=lain@zetsubou.xn--q9jyb4c",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/lain.xml")
+     }}
+  end
+
+  def get(
+        "https://zetsubou.xn--q9jyb4c/.well-known/webfinger?resource=https://zetsubou.xn--q9jyb4c/users/lain",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/lain.xml")
+     }}
+  end
+
+  def get(
+        "https://zetsubou.xn--q9jyb4c/.well-known/host-meta",
+        _,
+        _,
+        _
+      ) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/host-meta-zetsubou.xn--q9jyb4c.xml")
+     }}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Not implemented the mock response for get #{inspect(url)}, #{query}, #{inspect(body)}, #{
