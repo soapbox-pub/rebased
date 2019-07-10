@@ -250,7 +250,7 @@ config :pleroma, :instance,
   skip_thread_containment: true,
   limit_to_local_content: :unauthenticated,
   dynamic_configuration: false,
-  external_user_synchronization: false
+  external_user_synchronization: true
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
