@@ -23,7 +23,7 @@ config :pleroma, Pleroma.Upload, filters: [], link_name: false
 
 config :pleroma, Pleroma.Uploaders.Local, uploads: "test/uploads"
 
-config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test
+config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Test, enabled: true
 
 config :pleroma, :instance,
   email: "admin@example.com",

@@ -14,6 +14,7 @@ Configuration: `federation_incoming_replies_max_depth` option
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
 - Added synchronization of following/followers counters for external users
+- Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
 
 ### Fixed
 - Not being able to pin unlisted posts

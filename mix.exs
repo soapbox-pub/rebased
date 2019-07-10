@@ -125,7 +125,7 @@ defmodule Pleroma.Mixfile do
       {:cors_plug, "~> 1.5"},
       {:ex_doc, "~> 0.20.2", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
-      {:swoosh, "~> 0.20"},
+      {:swoosh, "~> 0.23.2"},
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
       {:floki, "~> 0.20.0"},
