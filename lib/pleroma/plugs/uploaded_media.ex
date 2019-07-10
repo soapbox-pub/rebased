@@ -66,7 +66,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
       conn
     else
       conn
-      |> render_error(:not_found, "Not found")
+      |> send_resp(:not_found, dgettext("errors", "Not found"))
       |> halt()
     end
   end
@@ -86,7 +86,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
     Logger.error("#{__MODULE__}: Unknown get startegy: #{inspect(unknown)}")
 
     conn
-    |> render_error(:internal_server_error, "Internal Error")
+    |> send_resp(:internal_server_error, dgettext("errors", "Internal Error"))
     |> halt()
   end
 end
