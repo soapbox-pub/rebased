@@ -501,7 +501,7 @@ config :ueberauth,
 
 config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
-config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail
+config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 

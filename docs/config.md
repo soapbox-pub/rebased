@@ -41,6 +41,7 @@ This filter replaces the filename (not the path) of an upload. For complete obfu
 ## Pleroma.Emails.Mailer
 * `adapter`: one of the mail adapters listed in [Swoosh readme](https://github.com/swoosh/swoosh#adapters), or `Swoosh.Adapters.Local` for in-memory mailbox.
 * `api_key` / `password` and / or other adapter-specific settings, per the above documentation.
+* `enabled`: Allows enable/disable send  emails. Default: `false`.
 
 An example for Sendgrid adapter:
 
