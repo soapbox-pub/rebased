@@ -405,6 +405,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def delete(%User{ap_id: ap_id, follower_address: follower_address} = user) do
+    with data <- %{
+           "to" => [follower_address],
+           "type" => "Delete",
+           "actor" => ap_id,
+           "object" => %{"type" => "Person", "id" => ap_id}
+         },
+         {:ok, activity} <- insert(data, true, true),
+         :ok <- maybe_federate(activity) do
+      {:ok, user}
+    end
+  end
+
   def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
