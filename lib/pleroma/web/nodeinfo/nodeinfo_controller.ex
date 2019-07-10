@@ -201,8 +201,6 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   end
 
   def nodeinfo(conn, _) do
-    conn
-    |> put_status(404)
-    |> json(%{error: "Nodeinfo schema version not handled"})
+    render_error(conn, :not_found, "Nodeinfo schema version not handled")
   end
 end

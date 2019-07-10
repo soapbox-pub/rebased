@@ -7,6 +7,8 @@ defmodule Pleroma.Plugs.UploadedMedia do
   """
 
   import Plug.Conn
+  import Pleroma.Web.Gettext
+  import Pleroma.Web.TranslationHelpers
   require Logger
 
   @behaviour Plug
@@ -45,7 +47,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
     else
       _ ->
         conn
-        |> send_resp(500, "Failed")
+        |> send_resp(:internal_server_error, dgettext("errors", "Failed"))
         |> halt()
     end
   end
@@ -64,7 +66,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
       conn
     else
       conn
-      |> send_resp(404, "Not found")
+      |> render_error(:not_found, "Not found")
       |> halt()
     end
   end
@@ -84,7 +86,7 @@ defmodule Pleroma.Plugs.UploadedMedia do
     Logger.error("#{__MODULE__}: Unknown get startegy: #{inspect(unknown)}")
 
     conn
-    |> send_resp(500, "Internal Error")
+    |> render_error(:internal_server_error, "Internal Error")
     |> halt()
   end
 end

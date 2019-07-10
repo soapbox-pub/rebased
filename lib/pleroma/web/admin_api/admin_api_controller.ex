@@ -160,9 +160,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def right_add(conn, _) do
-    conn
-    |> put_status(404)
-    |> json(%{error: "No such permission_group"})
+    render_error(conn, :not_found, "No such permission_group")
   end
 
   def right_get(conn, %{"nickname" => nickname}) do
@@ -184,9 +182,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       )
       when permission_group in ["moderator", "admin"] do
     if admin_nickname == nickname do
-      conn
-      |> put_status(403)
-      |> json(%{error: "You can't revoke your own admin status."})
+      render_error(conn, :forbidden, "You can't revoke your own admin status.")
     else
       user = User.get_cached_by_nickname(nickname)
 
@@ -207,9 +203,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def right_delete(conn, _) do
-    conn
-    |> put_status(404)
-    |> json(%{error: "No such permission_group"})
+    render_error(conn, :not_found, "No such permission_group")
   end
 
   def set_activation_status(conn, %{"nickname" => nickname, "status" => status}) do
@@ -401,26 +395,26 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   def errors(conn, {:error, :not_found}) do
     conn
-    |> put_status(404)
-    |> json("Not found")
+    |> put_status(:not_found)
+    |> json(dgettext("errors", "Not found"))
   end
 
   def errors(conn, {:error, reason}) do
     conn
-    |> put_status(400)
+    |> put_status(:bad_request)
     |> json(reason)
   end
 
   def errors(conn, {:param_cast, _}) do
     conn
-    |> put_status(400)
-    |> json("Invalid parameters")
+    |> put_status(:bad_request)
+    |> json(dgettext("errors", "Invalid parameters"))
   end
 
   def errors(conn, _) do
     conn
-    |> put_status(500)
-    |> json("Something went wrong")
+    |> put_status(:internal_server_error)
+    |> json(dgettext("errors", "Something went wrong"))
   end
 
   defp page_params(params) do
