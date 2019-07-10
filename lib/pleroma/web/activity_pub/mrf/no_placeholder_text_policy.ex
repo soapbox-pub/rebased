@@ -10,19 +10,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoPlaceholderTextPolicy do
   def filter(
         %{
           "type" => "Create",
-          "object" => %{"content" => content, "attachment" => _attachment} = child_object
+          "object" => %{"content" => content, "attachment" => _} = _child_object
         } = object
       )
       when content in [".", "<p>.</p>"] do
-    child_object =
-      child_object
-      |> Map.put("content", "")
-
-    object =
-      object
-      |> Map.put("object", child_object)
-
-    {:ok, object}
+    {:ok, put_in(object, ["object", "content"], "")}
   end
 
   @impl true
