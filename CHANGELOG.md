@@ -25,9 +25,14 @@ Configuration: `federation_incoming_replies_max_depth` option
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
+- Admin API: Added support for `tuples`.
 - Added synchronization of following/followers counters for external users
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
 - Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
+
+### Changed
+- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+- Admin API: changed json structure for saving config settings.
 
 ## [1.0.0] - 2019-06-29
 ### Security

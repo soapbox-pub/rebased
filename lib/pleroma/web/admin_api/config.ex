@@ -67,99 +67,86 @@ defmodule Pleroma.Web.AdminAPI.Config do
   end
 
   @spec from_binary(binary()) :: term()
-  def from_binary(value), do: :erlang.binary_to_term(value)
+  def from_binary(binary), do: :erlang.binary_to_term(binary)
 
-  @spec from_binary_to_map(binary()) :: any()
-  def from_binary_to_map(binary) do
+  @spec from_binary_with_convert(binary()) :: any()
+  def from_binary_with_convert(binary) do
     from_binary(binary)
     |> do_convert()
   end
 
-  defp do_convert([{k, v}] = value) when is_list(value) and length(value) == 1,
-    do: %{k => do_convert(v)}
+  defp do_convert(entity) when is_list(entity) do
+    for v <- entity, into: [], do: do_convert(v)
+  end
 
-  defp do_convert(values) when is_list(values), do: for(val <- values, do: do_convert(val))
+  defp do_convert(entity) when is_map(entity) do
+    for {k, v} <- entity, into: %{}, do: {do_convert(k), do_convert(v)}
+  end
 
-  defp do_convert({k, v} = value) when is_tuple(value),
-    do: %{k => do_convert(v)}
+  defp do_convert({:dispatch, [entity]}), do: %{"tuple" => [":dispatch", [inspect(entity)]]}
 
-  defp do_convert(value) when is_tuple(value), do: %{"tuple" => do_convert(Tuple.to_list(value))}
+  defp do_convert(entity) when is_tuple(entity),
+    do: %{"tuple" => do_convert(Tuple.to_list(entity))}
 
-  defp do_convert(value) when is_binary(value) or is_map(value) or is_number(value), do: value
+  defp do_convert(entity) when is_boolean(entity) or is_number(entity) or is_nil(entity),
+    do: entity
 
-  defp do_convert(value) when is_atom(value) do
-    string = to_string(value)
+  defp do_convert(entity) when is_atom(entity) do
+    string = to_string(entity)
 
     if String.starts_with?(string, "Elixir."),
-      do: String.trim_leading(string, "Elixir."),
-      else: value
+      do: do_convert(string),
+      else: ":" <> string
   end
+
+  defp do_convert("Elixir." <> module_name), do: module_name
+
+  defp do_convert(entity) when is_binary(entity), do: entity
 
   @spec transform(any()) :: binary()
-  def transform(%{"tuple" => _} = entity), do: :erlang.term_to_binary(do_transform(entity))
-
-  def transform(entity) when is_map(entity) do
-    tuples =
-      for {k, v} <- entity,
-          into: [],
-          do: {if(is_atom(k), do: k, else: String.to_atom(k)), do_transform(v)}
-
-    Enum.reject(tuples, fn {_k, v} -> is_nil(v) end)
-    |> Enum.sort()
-    |> :erlang.term_to_binary()
-  end
-
-  def transform(entity) when is_list(entity) do
-    list = Enum.map(entity, &do_transform(&1))
-    :erlang.term_to_binary(list)
+  def transform(entity) when is_binary(entity) or is_map(entity) or is_list(entity) do
+    :erlang.term_to_binary(do_transform(entity))
   end
 
   def transform(entity), do: :erlang.term_to_binary(entity)
 
-  defp do_transform(%Regex{} = value) when is_map(value), do: value
+  defp do_transform(%Regex{} = entity) when is_map(entity), do: entity
 
-  defp do_transform(%{"tuple" => [k, values] = entity}) when length(entity) == 2 do
-    {do_transform(k), do_transform(values)}
+  defp do_transform(%{"tuple" => [":dispatch", [entity]]}) do
+    cleaned_string = String.replace(entity, ~r/[^\w|^{:,[|^,|^[|^\]^}|^\/|^\.|^"]^\s/, "")
+    {dispatch_settings, []} = Code.eval_string(cleaned_string, [], requires: [], macros: [])
+    {:dispatch, [dispatch_settings]}
   end
 
-  defp do_transform(%{"tuple" => values}) do
-    Enum.reduce(values, {}, fn val, acc -> Tuple.append(acc, do_transform(val)) end)
+  defp do_transform(%{"tuple" => entity}) do
+    Enum.reduce(entity, {}, fn val, acc -> Tuple.append(acc, do_transform(val)) end)
   end
 
-  defp do_transform(value) when is_map(value) do
-    values = for {key, val} <- value, into: [], do: {String.to_atom(key), do_transform(val)}
-
-    Enum.sort(values)
+  defp do_transform(entity) when is_map(entity) do
+    for {k, v} <- entity, into: %{}, do: {do_transform(k), do_transform(v)}
   end
 
-  defp do_transform(value) when is_list(value) do
-    Enum.map(value, &do_transform(&1))
+  defp do_transform(entity) when is_list(entity) do
+    for v <- entity, into: [], do: do_transform(v)
   end
 
-  defp do_transform(entity) when is_list(entity) and length(entity) == 1, do: hd(entity)
-
-  defp do_transform(value) when is_binary(value) do
-    String.trim(value)
+  defp do_transform(entity) when is_binary(entity) do
+    String.trim(entity)
     |> do_transform_string()
   end
 
-  defp do_transform(value), do: value
+  defp do_transform(entity), do: entity
 
-  defp do_transform_string(value) when byte_size(value) == 0, do: nil
+  defp do_transform_string("~r/" <> pattern) do
+    pattern = String.trim_trailing(pattern, "/")
+    ~r/#{pattern}/
+  end
+
+  defp do_transform_string(":" <> atom), do: String.to_atom(atom)
 
   defp do_transform_string(value) do
-    cond do
-      String.starts_with?(value, "Pleroma") or String.starts_with?(value, "Phoenix") ->
-        String.to_existing_atom("Elixir." <> value)
-
-      String.starts_with?(value, ":") ->
-        String.replace(value, ":", "") |> String.to_existing_atom()
-
-      String.starts_with?(value, "i:") ->
-        String.replace(value, "i:", "") |> String.to_integer()
-
-      true ->
-        value
-    end
+    if String.starts_with?(value, "Pleroma") or String.starts_with?(value, "Phoenix"),
+      do: String.to_existing_atom("Elixir." <> value),
+      else: value
   end
 end
