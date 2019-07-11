@@ -28,6 +28,7 @@ Configuration: `federation_incoming_replies_max_depth` option
 - Added synchronization of following/followers counters for external users
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
 - Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
+- Addressable lists
 
 ## [1.0.0] - 2019-06-29
 ### Security
@@ -89,7 +90,6 @@ Configuration: `federation_incoming_replies_max_depth` option
 - MRF: Support for rejecting reports from specific instances (`mrf_simple`)
 - MRF: Support for stripping avatars and banner images from specific instances (`mrf_simple`)
 - MRF: Support for running subchains.
-- Addressable lists
 - Configuration: `skip_thread_containment` option
 - Configuration: `rate_limit` option. See `Pleroma.Plugs.RateLimiter` documentation for details.
 - MRF: Support for filtering out likely spam messages by rejecting posts from new users that contain links.
