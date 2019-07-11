@@ -146,4 +146,10 @@ defmodule Pleroma.List do
   end
 
   def memberships(_), do: []
+
+  def member?(%Pleroma.List{following: following}, %User{follower_address: follower_address}) do
+    Enum.member?(following, follower_address)
+  end
+
+  def member?(_, _), do: false
 end

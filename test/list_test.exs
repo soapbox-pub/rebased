@@ -128,4 +128,15 @@ defmodule Pleroma.ListTest do
 
     assert Pleroma.List.memberships(member) == [list.ap_id]
   end
+
+  test "member?" do
+    user = insert(:user)
+    member = insert(:user)
+
+    {:ok, list} = Pleroma.List.create("foo", user)
+    {:ok, list} = Pleroma.List.follow(list, member)
+
+    assert Pleroma.List.member?(list, member)
+    refute Pleroma.List.member?(list, user)
+  end
 end
