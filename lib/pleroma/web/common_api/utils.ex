@@ -108,12 +108,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_addressed_users(mentioned_users, _), do: mentioned_users
 
-  def bcc_for_list(user, {:list, list_id}) do
-    list = Pleroma.List.get(list_id, user)
-    [list.ap_id]
+  def maybe_add_list_data(additional_data, user, {:list, list_id}) do
+    case Pleroma.List.get(list_id, user) do
+      %Pleroma.List{} = list ->
+        additional_data
+        |> Map.put("listMessage", list.ap_id)
+        |> Map.put("bcc", [list.ap_id])
+
+      _ ->
+        additional_data
+    end
   end
 
-  def bcc_for_list(_, _), do: []
+  def maybe_add_list_data(additional_data, _, _), do: additional_data
 
   def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
       when is_list(options) do

@@ -215,7 +215,6 @@ defmodule Pleroma.Web.CommonAPI do
          addressed_users <- get_addressed_users(mentioned_users, data["to"]),
          {poll, poll_emoji} <- make_poll_data(data),
          {to, cc} <- get_to_and_cc(user, addressed_users, in_reply_to, visibility),
-         bcc <- bcc_for_list(user, visibility),
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
@@ -241,16 +240,21 @@ defmodule Pleroma.Web.CommonAPI do
              "emoji",
              Map.merge(Formatter.get_emoji_map(full_payload), poll_emoji)
            ) do
-      ActivityPub.create(
-        %{
-          to: to,
-          actor: user,
-          context: context,
-          object: object,
-          additional: %{"cc" => cc, "bcc" => bcc, "directMessage" => visibility == "direct"}
-        },
-        Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
-      )
+      preview? = Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
+      direct? = visibility == "direct"
+
+      additional_data =
+        %{"cc" => cc, "directMessage" => direct?} |> maybe_add_list_data(user, visibility)
+
+      params = %{
+        to: to,
+        actor: user,
+        context: context,
+        object: object,
+        additional: additional_data
+      }
+
+      ActivityPub.create(params, preview?)
     else
       {:private_to_public, true} ->
         {:error, dgettext("errors", "The message visibility must be direct")}

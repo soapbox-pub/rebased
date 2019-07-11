@@ -139,6 +139,7 @@ defmodule Pleroma.Web.CommonAPITest do
 
       assert activity.data["bcc"] == [list.ap_id]
       assert activity.recipients == [list.ap_id, user.ap_id]
+      assert activity.data["listMessage"] == list.ap_id
     end
   end
 

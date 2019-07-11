@@ -136,7 +136,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       json =
         data
         |> Map.put("cc", cc)
-        |> Map.put("directMessage", true)
         |> Jason.encode!()
 
       Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
