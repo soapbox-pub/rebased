@@ -339,7 +339,12 @@ config :pleroma, :mrf_subchain, match_actor: %{}
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
-  ignore_tld: ["local", "localdomain", "lan"]
+  ignore_tld: ["local", "localdomain", "lan"],
+  parsers: [
+    Pleroma.Web.RichMedia.Parsers.TwitterCard,
+    Pleroma.Web.RichMedia.Parsers.OGP,
+    Pleroma.Web.RichMedia.Parsers.OEmbed
+  ]
 
 config :pleroma, :media_proxy,
   enabled: false,
