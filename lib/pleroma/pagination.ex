@@ -14,16 +14,28 @@ defmodule Pleroma.Pagination do
 
   @default_limit 20
 
-  def fetch_paginated(query, params) do
+  def fetch_paginated(query, params, type \\ :keyset)
+
+  def fetch_paginated(query, params, :keyset) do
     options = cast_params(params)
 
     query
-    |> paginate(options)
+    |> paginate(options, :keyset)
     |> Repo.all()
     |> enforce_order(options)
   end
 
-  def paginate(query, options) do
+  def fetch_paginated(query, params, :offset) do
+    options = cast_params(params)
+
+    query
+    |> paginate(options, :offset)
+    |> Repo.all()
+  end
+
+  def paginate(query, options, method \\ :keyset)
+
+  def paginate(query, options, :keyset) do
     query
     |> restrict(:min_id, options)
     |> restrict(:since_id, options)
@@ -32,11 +44,18 @@ defmodule Pleroma.Pagination do
     |> restrict(:limit, options)
   end
 
+  def paginate(query, options, :offset) do
+    query
+    |> restrict(:offset, options)
+    |> restrict(:limit, options)
+  end
+
   defp cast_params(params) do
     param_types = %{
       min_id: :string,
       since_id: :string,
       max_id: :string,
+      offset: :integer,
       limit: :integer
     }
 
@@ -68,6 +87,10 @@ defmodule Pleroma.Pagination do
 
   defp restrict(query, :order, _options) do
     order_by(query, [u], fragment("? desc nulls last", u.id))
+  end
+
+  defp restrict(query, :offset, %{offset: offset}) do
+    offset(query, ^offset)
   end
 
   defp restrict(query, :limit, options) do
