@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Search do
+  alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.User
   import Ecto.Query
@@ -32,8 +33,7 @@ defmodule Pleroma.User.Search do
 
         query_string
         |> search_query(for_user, following)
-        |> paginate(result_limit, offset)
-        |> Repo.all()
+        |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => result_limit}, :offset)
       end)
 
     results
@@ -86,10 +86,6 @@ defmodule Pleroma.User.Search do
   end
 
   defp filter_blocked_domains(query, _), do: query
-
-  defp paginate(query, limit, offset) do
-    from(q in query, limit: ^limit, offset: ^offset)
-  end
 
   defp union_subqueries({fts_subquery, trigram_subquery}) do
     from(s in trigram_subquery, union_all: ^fts_subquery)
