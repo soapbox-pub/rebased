@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.CommonAPI.Utils do
+  import Pleroma.Web.Gettext
+
   alias Calendar.Strftime
   alias Comeonin.Pbkdf2
   alias Pleroma.Activity
@@ -381,7 +383,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
          true <- Pbkdf2.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else
-      _ -> {:error, "Invalid password."}
+      _ -> {:error, dgettext("errors", "Invalid password.")}
     end
   end
 
@@ -464,7 +466,8 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     if String.length(comment) <= max_size do
       {:ok, format_input(comment, "text/plain")}
     else
-      {:error, "Comment must be up to #{max_size} characters"}
+      {:error,
+       dgettext("errors", "Comment must be up to %{max_size} characters", max_size: max_size)}
     end
   end
 
@@ -499,7 +502,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       context
     else
       _e ->
-        {:error, "No such conversation"}
+        {:error, dgettext("errors", "No such conversation")}
     end
   end
 
@@ -512,5 +515,19 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "name" => name,
       "inReplyTo" => object.data["id"]
     }
+  end
+
+  def validate_character_limit(full_payload, attachments, limit) do
+    length = String.length(full_payload)
+
+    if length < limit do
+      if length > 0 or Enum.count(attachments) > 0 do
+        :ok
+      else
+        {:error, dgettext("errors", "Cannot post an empty status without attachments")}
+      end
+    else
+      {:error, dgettext("errors", "The status is over the character limit")}
+    end
   end
 end

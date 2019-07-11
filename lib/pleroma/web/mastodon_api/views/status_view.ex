@@ -19,6 +19,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
 
   # TODO: Add cached version.
+  defp get_replied_to_activities([]), do: %{}
+
   defp get_replied_to_activities(activities) do
     activities
     |> Enum.map(fn
@@ -104,7 +106,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       id: to_string(activity.id),
       uri: activity_object.data["id"],
       url: activity_object.data["id"],
-      account: AccountView.render("account.json", %{user: user}),
+      account: AccountView.render("account.json", %{user: user, for: opts[:for]}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       reblog: reblogged,
@@ -147,8 +149,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     tags = object.data["tag"] || []
     sensitive = object.data["sensitive"] || Enum.member?(tags, "nsfw")
 
+    tag_mentions =
+      tags
+      |> Enum.filter(fn tag -> is_map(tag) and tag["type"] == "Mention" end)
+      |> Enum.map(fn tag -> tag["href"] end)
+
     mentions =
-      activity.recipients
+      (object.data["to"] ++ tag_mentions)
+      |> Enum.uniq()
       |> Enum.map(fn ap_id -> User.get_cached_by_ap_id(ap_id) end)
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
@@ -221,7 +229,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       id: to_string(activity.id),
       uri: object.data["id"],
       url: url,
-      account: AccountView.render("account.json", %{user: user}),
+      account: AccountView.render("account.json", %{user: user, for: opts[:for]}),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,

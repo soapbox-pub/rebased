@@ -19,9 +19,18 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       ]
     }
 
+    background_image = %{
+      "url" => [%{"href" => "https://example.com/images/asuka_hospital.png"}]
+    }
+
     user =
       insert(:user, %{
-        info: %{note_count: 5, follower_count: 3, source_data: source_data},
+        info: %{
+          note_count: 5,
+          follower_count: 3,
+          source_data: source_data,
+          background: background_image
+        },
         nickname: "shp@shitposter.club",
         name: ":karjalanpiirakka: shp",
         bio: "<script src=\"invalid-html\"></script><span>valid html</span>",
@@ -60,6 +69,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         pleroma: %{}
       },
       pleroma: %{
+        background_image: "https://example.com/images/asuka_hospital.png",
         confirmation_pending: false,
         tags: [],
         is_admin: false,
@@ -126,6 +136,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         pleroma: %{}
       },
       pleroma: %{
+        background_image: nil,
         confirmation_pending: false,
         tags: [],
         is_admin: false,
@@ -216,6 +227,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
         pleroma: %{}
       },
       pleroma: %{
+        background_image: nil,
         confirmation_pending: false,
         tags: [],
         is_admin: false,
@@ -256,5 +268,11 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
 
     result = AccountView.render("account.json", %{user: user, for: user})
     assert result.pleroma[:settings_store] == nil
+  end
+
+  test "sanitizes display names" do
+    user = insert(:user, name: "<marquee> username </marquee>")
+    result = AccountView.render("account.json", %{user: user})
+    refute result.display_name == "<marquee> username </marquee>"
   end
 end

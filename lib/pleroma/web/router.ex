@@ -27,6 +27,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.UserEnabledPlug)
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureUserKeyPlug)
+    plug(Pleroma.Plugs.IdempotencyPlug)
   end
 
   pipeline :authenticated_api do
@@ -41,6 +42,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.UserEnabledPlug)
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
+    plug(Pleroma.Plugs.IdempotencyPlug)
   end
 
   pipeline :admin_api do
@@ -57,6 +59,7 @@ defmodule Pleroma.Web.Router do
     plug(Pleroma.Plugs.SetUserSessionIdPlug)
     plug(Pleroma.Plugs.EnsureAuthenticatedPlug)
     plug(Pleroma.Plugs.UserIsAdminPlug)
+    plug(Pleroma.Plugs.IdempotencyPlug)
   end
 
   pipeline :mastodon_html do
@@ -133,8 +136,8 @@ defmodule Pleroma.Web.Router do
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
 
-    get("/password_reset/:token", UtilController, :show_password_reset)
-    post("/password_reset", UtilController, :password_reset)
+    get("/password_reset/:token", PasswordController, :reset, as: :reset_password)
+    post("/password_reset", PasswordController, :do_reset, as: :reset_password)
     get("/emoji", UtilController, :emoji)
     get("/captcha", UtilController, :captcha)
     get("/healthcheck", UtilController, :healthcheck)
@@ -202,6 +205,9 @@ defmodule Pleroma.Web.Router do
 
     put("/statuses/:id", AdminAPIController, :status_update)
     delete("/statuses/:id", AdminAPIController, :status_delete)
+
+    get("/config", AdminAPIController, :config_show)
+    post("/config", AdminAPIController, :config_update)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
@@ -316,6 +322,10 @@ defmodule Pleroma.Web.Router do
 
       patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
 
+      patch("/accounts/update_avatar", MastodonAPIController, :update_avatar)
+      patch("/accounts/update_banner", MastodonAPIController, :update_banner)
+      patch("/accounts/update_background", MastodonAPIController, :update_background)
+
       post("/statuses", MastodonAPIController, :post_status)
       delete("/statuses/:id", MastodonAPIController, :delete_status)
 
@@ -412,7 +422,7 @@ defmodule Pleroma.Web.Router do
 
     get("/trends", MastodonAPIController, :empty_array)
 
-    get("/accounts/search", MastodonAPIController, :account_search)
+    get("/accounts/search", SearchController, :account_search)
 
     scope [] do
       pipe_through(:oauth_read_or_public)
@@ -431,7 +441,7 @@ defmodule Pleroma.Web.Router do
       get("/accounts/:id/following", MastodonAPIController, :following)
       get("/accounts/:id", MastodonAPIController, :user)
 
-      get("/search", MastodonAPIController, :search)
+      get("/search", SearchController, :search)
 
       get("/pleroma/accounts/:id/favourites", MastodonAPIController, :user_favourites)
     end
@@ -439,7 +449,7 @@ defmodule Pleroma.Web.Router do
 
   scope "/api/v2", Pleroma.Web.MastodonAPI do
     pipe_through([:api, :oauth_read_or_public])
-    get("/search", MastodonAPIController, :search2)
+    get("/search", SearchController, :search2)
   end
 
   scope "/api", Pleroma.Web do
@@ -604,12 +614,6 @@ defmodule Pleroma.Web.Router do
     post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
   end
 
-  scope "/", Pleroma.Web do
-    pipe_through(:oembed)
-
-    get("/oembed", OEmbed.OEmbedController, :url)
-  end
-
   pipeline :activitypub do
     plug(:accepts, ["activity+json", "json"])
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
@@ -699,7 +703,7 @@ defmodule Pleroma.Web.Router do
     get("/:sig/:url/:filename", MediaProxyController, :remote)
   end
 
-  if Mix.env() == :dev do
+  if Pleroma.Config.get(:env) == :dev do
     scope "/dev" do
       pipe_through([:mailbox_preview])
 
@@ -724,6 +728,7 @@ end
 
 defmodule Fallback.RedirectController do
   use Pleroma.Web, :controller
+  require Logger
   alias Pleroma.User
   alias Pleroma.Web.Metadata
 
@@ -750,7 +755,20 @@ defmodule Fallback.RedirectController do
 
   def redirector_with_meta(conn, params) do
     {:ok, index_content} = File.read(index_file_path())
-    tags = Metadata.build_tags(params)
+
+    tags =
+      try do
+        Metadata.build_tags(params)
+      rescue
+        e ->
+          Logger.error(
+            "Metadata rendering for #{conn.request_path} failed.\n" <>
+              Exception.format(:error, e, __STACKTRACE__)
+          )
+
+          ""
+      end
+
     response = String.replace(index_content, "<!--server-generated-meta-->", tags)
 
     conn

@@ -38,7 +38,7 @@ defmodule Pleroma.Config do
 
   def put([parent_key | keys], value) do
     parent =
-      Application.get_env(:pleroma, parent_key)
+      Application.get_env(:pleroma, parent_key, [])
       |> put_in(keys, value)
 
     Application.put_env(:pleroma, parent_key, parent)

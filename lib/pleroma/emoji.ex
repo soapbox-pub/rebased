@@ -22,7 +22,6 @@ defmodule Pleroma.Emoji do
 
   @ets __MODULE__.Ets
   @ets_options [:ordered_set, :protected, :named_table, {:read_concurrency, true}]
-  @groups Pleroma.Config.get([:emoji, :groups])
 
   @doc false
   def start_link do
@@ -87,6 +86,8 @@ defmodule Pleroma.Emoji do
         "emoji"
       )
 
+    emoji_groups = Pleroma.Config.get([:emoji, :groups])
+
     case File.ls(emoji_dir_path) do
       {:error, :enoent} ->
         # The custom emoji directory doesn't exist,
@@ -98,7 +99,9 @@ defmodule Pleroma.Emoji do
         Logger.error("Could not access the custom emoji directory #{emoji_dir_path}: #{e}")
 
       {:ok, results} ->
-        grouped = Enum.group_by(results, &File.dir?/1)
+        grouped =
+          Enum.group_by(results, fn file -> File.dir?(Path.join(emoji_dir_path, file)) end)
+
         packs = grouped[true] || []
         files = grouped[false] || []
 
@@ -116,7 +119,7 @@ defmodule Pleroma.Emoji do
         emojis =
           Enum.flat_map(
             packs,
-            fn pack -> load_pack(Path.join(emoji_dir_path, pack)) end
+            fn pack -> load_pack(Path.join(emoji_dir_path, pack), emoji_groups) end
           )
 
         true = :ets.insert(@ets, emojis)
@@ -127,9 +130,9 @@ defmodule Pleroma.Emoji do
     shortcode_globs = Pleroma.Config.get([:emoji, :shortcode_globs], [])
 
     emojis =
-      (load_from_file("config/emoji.txt") ++
-         load_from_file("config/custom_emoji.txt") ++
-         load_from_globs(shortcode_globs))
+      (load_from_file("config/emoji.txt", emoji_groups) ++
+         load_from_file("config/custom_emoji.txt", emoji_groups) ++
+         load_from_globs(shortcode_globs, emoji_groups))
       |> Enum.reject(fn value -> value == nil end)
 
     true = :ets.insert(@ets, emojis)
@@ -137,23 +140,25 @@ defmodule Pleroma.Emoji do
     :ok
   end
 
-  defp load_pack(pack_dir) do
+  defp load_pack(pack_dir, emoji_groups) do
     pack_name = Path.basename(pack_dir)
 
     emoji_txt = Path.join(pack_dir, "emoji.txt")
 
     if File.exists?(emoji_txt) do
-      load_from_file(emoji_txt)
+      load_from_file(emoji_txt, emoji_groups)
     else
+      extensions = Pleroma.Config.get([:emoji, :pack_extensions])
+
       Logger.info(
-        "No emoji.txt found for pack \"#{pack_name}\", assuming all .png files are emoji"
+        "No emoji.txt found for pack \"#{pack_name}\", assuming all #{Enum.join(extensions, ", ")} files are emoji"
       )
 
-      make_shortcode_to_file_map(pack_dir, [".png"])
+      make_shortcode_to_file_map(pack_dir, extensions)
       |> Enum.map(fn {shortcode, rel_file} ->
         filename = Path.join("/emoji/#{pack_name}", rel_file)
 
-        {shortcode, filename, [to_string(match_extra(@groups, filename))]}
+        {shortcode, filename, [to_string(match_extra(emoji_groups, filename))]}
       end)
     end
   end
@@ -182,21 +187,21 @@ defmodule Pleroma.Emoji do
     |> Enum.filter(fn f -> Path.extname(f) in exts end)
   end
 
-  defp load_from_file(file) do
+  defp load_from_file(file, emoji_groups) do
     if File.exists?(file) do
-      load_from_file_stream(File.stream!(file))
+      load_from_file_stream(File.stream!(file), emoji_groups)
     else
       []
     end
   end
 
-  defp load_from_file_stream(stream) do
+  defp load_from_file_stream(stream, emoji_groups) do
     stream
     |> Stream.map(&String.trim/1)
     |> Stream.map(fn line ->
       case String.split(line, ~r/,\s*/) do
         [name, file] ->
-          {name, file, [to_string(match_extra(@groups, file))]}
+          {name, file, [to_string(match_extra(emoji_groups, file))]}
 
         [name, file | tags] ->
           {name, file, tags}
@@ -208,7 +213,7 @@ defmodule Pleroma.Emoji do
     |> Enum.to_list()
   end
 
-  defp load_from_globs(globs) do
+  defp load_from_globs(globs, emoji_groups) do
     static_path = Path.join(:code.priv_dir(:pleroma), "static")
 
     paths =
@@ -219,7 +224,7 @@ defmodule Pleroma.Emoji do
       |> Enum.concat()
 
     Enum.map(paths, fn path ->
-      tag = match_extra(@groups, Path.join("/", Path.relative_to(path, static_path)))
+      tag = match_extra(emoji_groups, Path.join("/", Path.relative_to(path, static_path)))
       shortcode = Path.basename(path, Path.extname(path))
       external_path = Path.join("/", Path.relative_to(path, static_path))
       {shortcode, external_path, [to_string(tag)]}

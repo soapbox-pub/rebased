@@ -7,6 +7,7 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
@@ -33,7 +34,7 @@ defmodule Pleroma.Web.CommonAPITest do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => "#2hu #2HU"})
 
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     assert object.data["tag"] == ["2hu"]
   end
@@ -86,7 +87,7 @@ defmodule Pleroma.Web.CommonAPITest do
           "content_type" => "text/html"
         })
 
-      object = Object.normalize(activity.data["object"])
+      object = Object.normalize(activity)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
@@ -102,7 +103,7 @@ defmodule Pleroma.Web.CommonAPITest do
           "content_type" => "text/markdown"
         })
 
-      object = Object.normalize(activity.data["object"])
+      object = Object.normalize(activity)
 
       assert object.data["content"] == "<p><b>2hu</b></p>alert('xss')"
     end
@@ -120,7 +121,7 @@ defmodule Pleroma.Web.CommonAPITest do
                })
 
       Enum.each(["public", "private", "unlisted"], fn visibility ->
-        assert {:error, {:private_to_public, _}} =
+        assert {:error, "The message visibility must be direct"} =
                  CommonAPI.post(user, %{
                    "status" => "suya..",
                    "visibility" => visibility,
@@ -196,6 +197,11 @@ defmodule Pleroma.Web.CommonAPITest do
       user = refresh_record(user)
 
       assert %User{info: %{pinned_activities: [^id]}} = user
+    end
+
+    test "unlisted statuses can be pinned", %{user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!", "visibility" => "unlisted"})
+      assert {:ok, ^activity} = CommonAPI.pin(activity.id, user)
     end
 
     test "only self-authored can be pinned", %{activity: activity} do
@@ -348,6 +354,48 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, muter} = CommonAPI.show_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == true
+    end
+  end
+
+  describe "accept_follow_request/2" do
+    test "after acceptance, it sets all existing pending follow request states to 'accept'" do
+      user = insert(:user, info: %{locked: true})
+      follower = insert(:user)
+      follower_two = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_three} = ActivityPub.follow(follower_two, user)
+
+      assert follow_activity.data["state"] == "pending"
+      assert follow_activity_two.data["state"] == "pending"
+      assert follow_activity_three.data["state"] == "pending"
+
+      {:ok, _follower} = CommonAPI.accept_follow_request(follower, user)
+
+      assert Repo.get(Activity, follow_activity.id).data["state"] == "accept"
+      assert Repo.get(Activity, follow_activity_two.id).data["state"] == "accept"
+      assert Repo.get(Activity, follow_activity_three.id).data["state"] == "pending"
+    end
+
+    test "after rejection, it sets all existing pending follow request states to 'reject'" do
+      user = insert(:user, info: %{locked: true})
+      follower = insert(:user)
+      follower_two = insert(:user)
+
+      {:ok, follow_activity} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_two} = ActivityPub.follow(follower, user)
+      {:ok, follow_activity_three} = ActivityPub.follow(follower_two, user)
+
+      assert follow_activity.data["state"] == "pending"
+      assert follow_activity_two.data["state"] == "pending"
+      assert follow_activity_three.data["state"] == "pending"
+
+      {:ok, _follower} = CommonAPI.reject_follow_request(follower, user)
+
+      assert Repo.get(Activity, follow_activity.id).data["state"] == "reject"
+      assert Repo.get(Activity, follow_activity_two.id).data["state"] == "reject"
+      assert Repo.get(Activity, follow_activity_three.id).data["state"] == "pending"
     end
   end
 end

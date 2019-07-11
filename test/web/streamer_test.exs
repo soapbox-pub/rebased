@@ -21,6 +21,52 @@ defmodule Pleroma.Web.StreamerTest do
     :ok
   end
 
+  describe "user streams" do
+    setup do
+      GenServer.start(Streamer, %{}, name: Streamer)
+
+      on_exit(fn ->
+        if pid = Process.whereis(Streamer) do
+          Process.exit(pid, :kill)
+        end
+      end)
+
+      user = insert(:user)
+      notify = insert(:notification, user: user, activity: build(:note_activity))
+      {:ok, %{user: user, notify: notify}}
+    end
+
+    test "it sends notify to in the 'user' stream", %{user: user, notify: notify} do
+      task =
+        Task.async(fn ->
+          assert_receive {:text, _}, 4_000
+        end)
+
+      Streamer.add_socket(
+        "user",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      Streamer.stream("user", notify)
+      Task.await(task)
+    end
+
+    test "it sends notify to in the 'user:notification' stream", %{user: user, notify: notify} do
+      task =
+        Task.async(fn ->
+          assert_receive {:text, _}, 4_000
+        end)
+
+      Streamer.add_socket(
+        "user:notification",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      Streamer.stream("user:notification", notify)
+      Task.await(task)
+    end
+  end
+
   test "it sends to public" do
     user = insert(:user)
     other_user = insert(:user)
@@ -309,5 +355,111 @@ defmodule Pleroma.Web.StreamerTest do
     Streamer.push_to_socket(topics, "public", announce_activity)
 
     Task.await(task)
+  end
+
+  describe "direct streams" do
+    setup do
+      GenServer.start(Streamer, %{}, name: Streamer)
+
+      on_exit(fn ->
+        if pid = Process.whereis(Streamer) do
+          Process.exit(pid, :kill)
+        end
+      end)
+
+      :ok
+    end
+
+    test "it sends conversation update to the 'direct' stream", %{} do
+      user = insert(:user)
+      another_user = insert(:user)
+
+      task =
+        Task.async(fn ->
+          assert_receive {:text, _received_event}, 4_000
+        end)
+
+      Streamer.add_socket(
+        "direct",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      {:ok, _create_activity} =
+        CommonAPI.post(another_user, %{
+          "status" => "hey @#{user.nickname}",
+          "visibility" => "direct"
+        })
+
+      Task.await(task)
+    end
+
+    test "it doesn't send conversation update to the 'direct' streamj when the last message in the conversation is deleted" do
+      user = insert(:user)
+      another_user = insert(:user)
+
+      {:ok, create_activity} =
+        CommonAPI.post(another_user, %{
+          "status" => "hi @#{user.nickname}",
+          "visibility" => "direct"
+        })
+
+      task =
+        Task.async(fn ->
+          assert_receive {:text, received_event}, 4_000
+          assert %{"event" => "delete", "payload" => _} = Jason.decode!(received_event)
+
+          refute_receive {:text, _}, 4_000
+        end)
+
+      Streamer.add_socket(
+        "direct",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      {:ok, _} = CommonAPI.delete(create_activity.id, another_user)
+
+      Task.await(task)
+    end
+
+    test "it sends conversation update to the 'direct' stream when a message is deleted" do
+      user = insert(:user)
+      another_user = insert(:user)
+
+      {:ok, create_activity} =
+        CommonAPI.post(another_user, %{
+          "status" => "hi @#{user.nickname}",
+          "visibility" => "direct"
+        })
+
+      {:ok, create_activity2} =
+        CommonAPI.post(another_user, %{
+          "status" => "hi @#{user.nickname}",
+          "in_reply_to_status_id" => create_activity.id,
+          "visibility" => "direct"
+        })
+
+      task =
+        Task.async(fn ->
+          assert_receive {:text, received_event}, 4_000
+          assert %{"event" => "delete", "payload" => _} = Jason.decode!(received_event)
+
+          assert_receive {:text, received_event}, 4_000
+
+          assert %{"event" => "conversation", "payload" => received_payload} =
+                   Jason.decode!(received_event)
+
+          assert %{"last_status" => last_status} = Jason.decode!(received_payload)
+          assert last_status["id"] == to_string(create_activity.id)
+        end)
+
+      Streamer.add_socket(
+        "direct",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      {:ok, _} = CommonAPI.delete(create_activity2.id, another_user)
+
+      Task.await(task)
+    end
   end
 end

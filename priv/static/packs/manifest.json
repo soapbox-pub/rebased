@@ -554,6 +554,16 @@
         "/packs/locales/vanilla/he.js.map"
       ]
     },
+    "locales/vanilla/hi": {
+      "js": [
+        "/packs/locales.js",
+        "/packs/locales/vanilla/hi.js"
+      ],
+      "js.map": [
+        "/packs/locales.js.map",
+        "/packs/locales/vanilla/hi.js.map"
+      ]
+    },
     "locales/vanilla/hr": {
       "js": [
         "/packs/locales.js",
@@ -1353,12 +1363,12 @@
   "flavours/glitch/async/bookmarked_statuses.js.map": "/packs/flavours/glitch/async/bookmarked_statuses.js.map",
   "flavours/glitch/async/community_timeline.js": "/packs/flavours/glitch/async/community_timeline.js",
   "flavours/glitch/async/community_timeline.js.map": "/packs/flavours/glitch/async/community_timeline.js.map",
+  "flavours/glitch/async/compose.js": "/packs/flavours/glitch/async/compose.js",
+  "flavours/glitch/async/compose.js.map": "/packs/flavours/glitch/async/compose.js.map",
   "flavours/glitch/async/direct_timeline.js": "/packs/flavours/glitch/async/direct_timeline.js",
   "flavours/glitch/async/direct_timeline.js.map": "/packs/flavours/glitch/async/direct_timeline.js.map",
   "flavours/glitch/async/domain_blocks.js": "/packs/flavours/glitch/async/domain_blocks.js",
   "flavours/glitch/async/domain_blocks.js.map": "/packs/flavours/glitch/async/domain_blocks.js.map",
-  "flavours/glitch/async/drawer.js": "/packs/flavours/glitch/async/drawer.js",
-  "flavours/glitch/async/drawer.js.map": "/packs/flavours/glitch/async/drawer.js.map",
   "flavours/glitch/async/embed_modal.js": "/packs/flavours/glitch/async/embed_modal.js",
   "flavours/glitch/async/embed_modal.js.map": "/packs/flavours/glitch/async/embed_modal.js.map",
   "flavours/glitch/async/emoji_picker.js": "/packs/flavours/glitch/async/emoji_picker.js",
@@ -1567,6 +1577,8 @@
   "locales/vanilla/gl.js.map": "/packs/locales/vanilla/gl.js.map",
   "locales/vanilla/he.js": "/packs/locales/vanilla/he.js",
   "locales/vanilla/he.js.map": "/packs/locales/vanilla/he.js.map",
+  "locales/vanilla/hi.js": "/packs/locales/vanilla/hi.js",
+  "locales/vanilla/hi.js.map": "/packs/locales/vanilla/hi.js.map",
   "locales/vanilla/hr.js": "/packs/locales/vanilla/hr.js",
   "locales/vanilla/hr.js.map": "/packs/locales/vanilla/hr.js.map",
   "locales/vanilla/hu.js": "/packs/locales/vanilla/hu.js",

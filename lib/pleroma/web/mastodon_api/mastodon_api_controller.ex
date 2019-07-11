@@ -14,7 +14,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.HTTP
   alias Pleroma.Notification
   alias Pleroma.Object
-  alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
@@ -47,14 +46,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
-  plug(
-    Pleroma.Plugs.RateLimitPlug,
-    %{
-      max_requests: Config.get([:app_account_creation, :max_requests]),
-      interval: Config.get([:app_account_creation, :interval])
-    }
-    when action in [:account_register]
-  )
+  plug(Pleroma.Plugs.RateLimiter, :app_account_creation when action == :account_register)
+  plug(Pleroma.Plugs.RateLimiter, :search when action in [:search, :search2, :account_search])
 
   @local_mastodon_name "Mastodon-Local"
 
@@ -143,6 +136,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           _ -> :error
         end
       end)
+      |> add_if_present(params, "pleroma_background_image", :background, fn value ->
+        with %Plug.Upload{} <- value,
+             {:ok, object} <- ActivityPub.upload(value, type: :background) do
+          {:ok, object.data}
+        else
+          _ -> :error
+        end
+      end)
       |> Map.put(:emoji, user_info_emojis)
 
     info_cng = User.Info.profile_update(user.info, info_params)
@@ -159,16 +160,83 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
       )
     else
-      _e ->
-        conn
-        |> put_status(403)
-        |> json(%{error: "Invalid request"})
+      _e -> render_error(conn, :forbidden, "Invalid request")
+    end
+  end
+
+  def update_avatar(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
+    change = Changeset.change(user, %{avatar: nil})
+    {:ok, user} = User.update_and_set_cache(change)
+    CommonAPI.update(user)
+
+    json(conn, %{url: nil})
+  end
+
+  def update_avatar(%{assigns: %{user: user}} = conn, params) do
+    {:ok, object} = ActivityPub.upload(params, type: :avatar)
+    change = Changeset.change(user, %{avatar: object.data})
+    {:ok, user} = User.update_and_set_cache(change)
+    CommonAPI.update(user)
+    %{"url" => [%{"href" => href} | _]} = object.data
+
+    json(conn, %{url: href})
+  end
+
+  def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
+    with new_info <- %{"banner" => %{}},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
+      CommonAPI.update(user)
+
+      json(conn, %{url: nil})
+    end
+  end
+
+  def update_banner(%{assigns: %{user: user}} = conn, params) do
+    with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
+         new_info <- %{"banner" => object.data},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, user} <- User.update_and_set_cache(changeset) do
+      CommonAPI.update(user)
+      %{"url" => [%{"href" => href} | _]} = object.data
+
+      json(conn, %{url: href})
+    end
+  end
+
+  def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
+    with new_info <- %{"background" => %{}},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
+      json(conn, %{url: nil})
+    end
+  end
+
+  def update_background(%{assigns: %{user: user}} = conn, params) do
+    with {:ok, object} <- ActivityPub.upload(params, type: :background),
+         new_info <- %{"background" => object.data},
+         info_cng <- User.Info.profile_update(user.info, new_info),
+         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         {:ok, _user} <- User.update_and_set_cache(changeset) do
+      %{"url" => [%{"href" => href} | _]} = object.data
+
+      json(conn, %{url: href})
     end
   end
 
   def verify_credentials(%{assigns: %{user: user}} = conn, _) do
+    chat_token = Phoenix.Token.sign(conn, "user socket", user.id)
+
     account =
-      AccountView.render("account.json", %{user: user, for: user, with_pleroma_settings: true})
+      AccountView.render("account.json", %{
+        user: user,
+        for: user,
+        with_pleroma_settings: true,
+        with_chat_token: chat_token
+      })
 
     json(conn, account)
   end
@@ -187,10 +255,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       account = AccountView.render("account.json", %{user: user, for: for_user})
       json(conn, account)
     else
-      _e ->
-        conn
-        |> put_status(404)
-        |> json(%{error: "Can't find user"})
+      _e -> render_error(conn, :not_found, "Can't find user")
     end
   end
 
@@ -234,7 +299,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         "static_url" => url,
         "visible_in_picker" => true,
         "url" => url,
-        "tags" => tags
+        "tags" => tags,
+        # Assuming that a comma is authorized in the category name
+        "category" => (tags -- ["Custom"]) |> Enum.join(",")
       }
     end)
   end
@@ -348,6 +415,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
     with %User{} = user <- User.get_cached_by_id(params["id"]) do
+      params =
+        params
+        |> Map.put("tag", params["tagged"])
+
       activities = ActivityPub.fetch_user_activities(user, reading_user, params)
 
       conn
@@ -434,16 +505,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(StatusView)
       |> try_render("poll.json", %{object: object, for: user})
     else
-      nil ->
-        conn
-        |> put_status(404)
-        |> json(%{error: "Record not found"})
-
-      false ->
-        conn
-        |> put_status(404)
-        |> json(%{error: "Record not found"})
+      nil -> render_error(conn, :not_found, "Record not found")
+      false -> render_error(conn, :not_found, "Record not found")
     end
+  end
+
+  defp get_cached_vote_or_vote(user, object, choices) do
+    idempotency_key = "polls:#{user.id}:#{object.data["id"]}"
+
+    {_, res} =
+      Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
+        case CommonAPI.vote(user, object, choices) do
+          {:error, _message} = res -> {:ignore, res}
+          res -> {:commit, res}
+        end
+      end)
+
+    res
   end
 
   def poll_vote(%{assigns: %{user: user}} = conn, %{"id" => id, "choices" => choices}) do
@@ -451,24 +529,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          true <- object.data["type"] == "Question",
          %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
          true <- Visibility.visible_for_user?(activity, user),
-         {:ok, _activities, object} <- CommonAPI.vote(user, object, choices) do
+         {:ok, _activities, object} <- get_cached_vote_or_vote(user, object, choices) do
       conn
       |> put_view(StatusView)
       |> try_render("poll.json", %{object: object, for: user})
     else
       nil ->
-        conn
-        |> put_status(404)
-        |> json(%{error: "Record not found"})
+        render_error(conn, :not_found, "Record not found")
 
       false ->
-        conn
-        |> put_status(404)
-        |> json(%{error: "Record not found"})
+        render_error(conn, :not_found, "Record not found")
 
       {:error, message} ->
         conn
-        |> put_status(422)
+        |> put_status(:unprocessable_entity)
         |> json(%{error: message})
     end
   end
@@ -522,15 +596,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def post_status(conn, %{"status" => "", "media_ids" => media_ids} = params)
-      when length(media_ids) > 0 do
-    params =
-      params
-      |> Map.put("status", ".")
-
-    post_status(conn, params)
-  end
-
   def post_status(%{assigns: %{user: user}} = conn, %{"status" => _} = params) do
     params =
       params
@@ -548,18 +613,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       params = Map.drop(params, ["scheduled_at"])
 
-      case get_cached_status_or_post(conn, params) do
-        {:ignore, message} ->
-          conn
-          |> put_status(422)
-          |> json(%{error: message})
-
+      case CommonAPI.post(user, params) do
         {:error, message} ->
           conn
-          |> put_status(422)
+          |> put_status(:unprocessable_entity)
           |> json(%{error: message})
 
-        {_, activity} ->
+        {:ok, activity} ->
           conn
           |> put_view(StatusView)
           |> try_render("status.json", %{activity: activity, for: user, as: :activity})
@@ -567,29 +627,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  defp get_cached_status_or_post(%{assigns: %{user: user}} = conn, params) do
-    idempotency_key =
-      case get_req_header(conn, "idempotency-key") do
-        [key] -> key
-        _ -> Ecto.UUID.generate()
-      end
-
-    Cachex.fetch(:idempotency_cache, idempotency_key, fn _ ->
-      case CommonAPI.post(user, params) do
-        {:ok, activity} -> activity
-        {:error, message} -> {:ignore, message}
-      end
-    end)
-  end
-
   def delete_status(%{assigns: %{user: user}} = conn, %{"id" => id}) do
     with {:ok, %Activity{}} <- CommonAPI.delete(id, user) do
       json(conn, %{})
     else
-      _e ->
-        conn
-        |> put_status(403)
-        |> json(%{error: "Can't delete this post"})
+      _e -> render_error(conn, :forbidden, "Can't delete this post")
     end
   end
 
@@ -637,8 +679,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, reason} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(:bad_request, Jason.encode!(%{"error" => reason}))
+        |> put_status(:bad_request)
+        |> json(%{"error" => reason})
     end
   end
 
@@ -714,8 +756,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, reason} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => reason}))
+        |> put_status(:forbidden)
+        |> json(%{"error" => reason})
     end
   end
 
@@ -730,8 +772,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, reason} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => reason}))
+        |> put_status(:forbidden)
+        |> json(%{"error" => reason})
     end
   end
 
@@ -809,9 +851,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         conn
         |> json(rendered)
       else
-        conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(415, Jason.encode!(%{"error" => "mascots can only be images"}))
+        render_error(conn, :unsupported_media_type, "mascots can only be images")
       end
     end
   end
@@ -831,7 +871,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       conn
       |> put_view(AccountView)
-      |> render(AccountView, "accounts.json", %{for: user, users: users, as: :user})
+      |> render("accounts.json", %{for: user, users: users, as: :user})
     else
       _ -> json(conn, [])
     end
@@ -940,8 +980,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -954,8 +994,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -972,8 +1012,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -990,8 +1030,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -1020,8 +1060,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -1034,8 +1074,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -1056,8 +1096,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -1071,8 +1111,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -1106,8 +1146,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
   end
 
@@ -1120,117 +1160,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, message} ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(403, Jason.encode!(%{"error" => message}))
+        |> put_status(:forbidden)
+        |> json(%{error: message})
     end
-  end
-
-  def status_search_query_with_gin(q, query) do
-    from([a, o] in q,
-      where:
-        fragment(
-          "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
-          o.data,
-          ^query
-        ),
-      order_by: [desc: :id]
-    )
-  end
-
-  def status_search_query_with_rum(q, query) do
-    from([a, o] in q,
-      where:
-        fragment(
-          "? @@ plainto_tsquery('english', ?)",
-          o.fts_content,
-          ^query
-        ),
-      order_by: [fragment("? <=> now()::date", o.inserted_at)]
-    )
-  end
-
-  def status_search(user, query) do
-    fetched =
-      if Regex.match?(~r/https?:/, query) do
-        with {:ok, object} <- Fetcher.fetch_object_from_id(query),
-             %Activity{} = activity <- Activity.get_create_by_object_ap_id(object.data["id"]),
-             true <- Visibility.visible_for_user?(activity, user) do
-          [activity]
-        else
-          _e -> []
-        end
-      end || []
-
-    q =
-      from([a, o] in Activity.with_preloaded_object(Activity),
-        where: fragment("?->>'type' = 'Create'", a.data),
-        where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
-        limit: 40
-      )
-
-    q =
-      if Pleroma.Config.get([:database, :rum_enabled]) do
-        status_search_query_with_rum(q, query)
-      else
-        status_search_query_with_gin(q, query)
-      end
-
-    Repo.all(q) ++ fetched
-  end
-
-  def search2(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-
-    statuses = status_search(user, query)
-
-    tags_path = Web.base_url() <> "/tag/"
-
-    tags =
-      query
-      |> String.split()
-      |> Enum.uniq()
-      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
-      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
-      |> Enum.map(fn tag -> %{name: tag, url: tags_path <> tag} end)
-
-    res = %{
-      "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
-      "statuses" =>
-        StatusView.render("index.json", activities: statuses, for: user, as: :activity),
-      "hashtags" => tags
-    }
-
-    json(conn, res)
-  end
-
-  def search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-
-    statuses = status_search(user, query)
-
-    tags =
-      query
-      |> String.split()
-      |> Enum.uniq()
-      |> Enum.filter(fn tag -> String.starts_with?(tag, "#") end)
-      |> Enum.map(fn tag -> String.slice(tag, 1..-1) end)
-
-    res = %{
-      "accounts" => AccountView.render("accounts.json", users: accounts, for: user, as: :user),
-      "statuses" =>
-        StatusView.render("index.json", activities: statuses, for: user, as: :activity),
-      "hashtags" => tags
-    }
-
-    json(conn, res)
-  end
-
-  def account_search(%{assigns: %{user: user}} = conn, %{"q" => query} = params) do
-    accounts = User.search(query, resolve: params["resolve"] == "true", for_user: user)
-
-    res = AccountView.render("accounts.json", users: accounts, for: user, as: :user)
-
-    json(conn, res)
   end
 
   def favourites(%{assigns: %{user: user}} = conn, params) do
@@ -1277,13 +1209,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(StatusView)
       |> render("index.json", %{activities: activities, for: for_user, as: :activity})
     else
-      nil ->
-        {:error, :not_found}
-
-      true ->
-        conn
-        |> put_status(403)
-        |> json(%{error: "Can't get favorites"})
+      nil -> {:error, :not_found}
+      true -> render_error(conn, :forbidden, "Can't get favorites")
     end
   end
 
@@ -1315,10 +1242,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       res = ListView.render("list.json", list: list)
       json(conn, res)
     else
-      _e ->
-        conn
-        |> put_status(404)
-        |> json(%{error: "Record not found"})
+      _e -> render_error(conn, :not_found, "Record not found")
     end
   end
 
@@ -1334,7 +1258,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       json(conn, %{})
     else
       _e ->
-        json(conn, "error")
+        json(conn, dgettext("errors", "error"))
     end
   end
 
@@ -1385,7 +1309,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       json(conn, res)
     else
       _e ->
-        json(conn, "error")
+        json(conn, dgettext("errors", "error"))
     end
   end
 
@@ -1409,10 +1333,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(StatusView)
       |> render("index.json", %{activities: activities, for: user, as: :activity})
     else
-      _e ->
-        conn
-        |> put_status(403)
-        |> json(%{error: "Error."})
+      _e -> render_error(conn, :forbidden, "Error.")
     end
   end
 
@@ -1531,8 +1452,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       e ->
         conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(500, Jason.encode!(%{"error" => inspect(e)}))
+        |> put_status(:internal_server_error)
+        |> json(%{error: inspect(e)})
     end
   end
 
@@ -1700,20 +1621,18 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.map_join(", ", fn {_k, v} -> v end)
 
     conn
-    |> put_status(422)
+    |> put_status(:unprocessable_entity)
     |> json(%{error: error_message})
   end
 
   def errors(conn, {:error, :not_found}) do
-    conn
-    |> put_status(404)
-    |> json(%{error: "Record not found"})
+    render_error(conn, :not_found, "Record not found")
   end
 
   def errors(conn, _) do
     conn
-    |> put_status(500)
-    |> json("Something went wrong")
+    |> put_status(:internal_server_error)
+    |> json(dgettext("errors", "Something went wrong"))
   end
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
@@ -1833,21 +1752,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     else
       {:error, errors} ->
         conn
-        |> put_status(400)
-        |> json(Jason.encode!(errors))
+        |> put_status(:bad_request)
+        |> json(errors)
     end
   end
 
   def account_register(%{assigns: %{app: _app}} = conn, _params) do
-    conn
-    |> put_status(400)
-    |> json(%{error: "Missing parameters"})
+    render_error(conn, :bad_request, "Missing parameters")
   end
 
   def account_register(conn, _) do
-    conn
-    |> put_status(403)
-    |> json(%{error: "Invalid credentials"})
+    render_error(conn, :forbidden, "Invalid credentials")
   end
 
   def conversations(%{assigns: %{user: user}} = conn, params) do
@@ -1877,21 +1792,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def try_render(conn, target, params)
       when is_binary(target) do
-    res = render(conn, target, params)
-
-    if res == nil do
-      conn
-      |> put_status(501)
-      |> json(%{error: "Can't display this activity"})
-    else
-      res
+    case render(conn, target, params) do
+      nil -> render_error(conn, :not_implemented, "Can't display this activity")
+      res -> res
     end
   end
 
   def try_render(conn, _, _) do
-    conn
-    |> put_status(501)
-    |> json(%{error: "Can't display this activity"})
+    render_error(conn, :not_implemented, "Can't display this activity")
   end
 
   defp present?(nil), do: false

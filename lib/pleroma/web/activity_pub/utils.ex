@@ -151,16 +151,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def create_context(context) do
     context = context || generate_id("contexts")
-    changeset = Object.context_mapping(context)
 
-    case Repo.insert(changeset) do
-      {:ok, object} ->
+    # Ecto has problems accessing the constraint inside the jsonb,
+    # so we explicitly check for the existed object before insert
+    object = Object.get_cached_by_ap_id(context)
+
+    with true <- is_nil(object),
+         changeset <- Object.context_mapping(context),
+         {:ok, inserted_object} <- Repo.insert(changeset) do
+      inserted_object
+    else
+      _ ->
         object
-
-      # This should be solved by an upsert, but it seems ecto
-      # has problems accessing the constraint inside the jsonb.
-      {:error, _} ->
-        Object.get_cached_by_ap_id(context)
     end
   end
 
@@ -168,14 +170,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Enqueues an activity for federation if it's local
   """
   def maybe_federate(%Activity{local: true} = activity) do
-    priority =
-      case activity.data["type"] do
-        "Delete" -> 10
-        "Create" -> 1
-        _ -> 5
-      end
+    if Pleroma.Config.get!([:instance, :federating]) do
+      priority =
+        case activity.data["type"] do
+          "Delete" -> 10
+          "Create" -> 1
+          _ -> 5
+        end
 
-    Pleroma.Web.Federator.publish(activity, priority)
+      Pleroma.Web.Federator.publish(activity, priority)
+    end
+
     :ok
   end
 
@@ -376,8 +381,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Updates a follow activity's state (for locked accounts).
   """
-  def update_follow_state(
-        %Activity{data: %{"actor" => actor, "object" => object, "state" => "pending"}} = activity,
+  def update_follow_state_for_all(
+        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
         state
       ) do
     try do

@@ -3,7 +3,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [unreleased]
+## [Unreleased]
+### Changed
+- **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
+- Configuration: OpenGraph and TwitterCard providers enabled by default
+- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+- NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
+
+### Fixed
+- Not being able to pin unlisted posts
+- Metadata rendering errors resulting in the entire page being inaccessible
+- Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
+- Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
+
+### Added
+- MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
+Configuration: `federation_incoming_replies_max_depth` option
+- Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
+- Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
+- Mastodon API, extension: Ability to reset avatar, profile banner, and background
+- Admin API: Return users' tags when querying reports
+- Admin API: Return avatar and display name when querying users
+- Admin API: Allow querying user by ID
+- Added synchronization of following/followers counters for external users
+- Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
+- Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
+
+## [1.0.0] - 2019-06-29
+### Security
+- Mastodon API: Fix display names not being sanitized
+- Rich media: Do not crawl private IP ranges
+
 ### Added
 - Add a generic settings store for frontends / clients to use.
 - Explicit addressing option for posting.
@@ -11,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - [MongooseIM](https://github.com/esl/MongooseIM) http authentication support.
 - LDAP authentication
 - External OAuth provider authentication
+- Support for building a release using [`mix release`](https://hexdocs.pm/mix/master/Mix.Tasks.Release.html)
 - A [job queue](https://git.pleroma.social/pleroma/pleroma_job_queue) for federation, emails, web push, etc.
 - [Prometheus](https://prometheus.io/) metrics
 - Support for Mastodon's remote interaction
@@ -18,15 +49,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix Tasks: `mix pleroma.database remove_embedded_objects`
 - Mix Tasks: `mix pleroma.database update_users_following_followers_counts`
 - Mix Tasks: `mix pleroma.user toggle_confirmed`
+- Mix Tasks: `mix pleroma.config migrate_to_db`
+- Mix Tasks: `mix pleroma.config migrate_from_db`
 - Federation: Support for `Question` and `Answer` objects
 - Federation: Support for reports
 - Configuration: `poll_limits` option
+- Configuration: `pack_extensions` option
 - Configuration: `safe_dm_mentions` option
 - Configuration: `link_name` option
 - Configuration: `fetch_initial_posts` option
 - Configuration: `notify_email` option
 - Configuration: Media proxy `whitelist` option
 - Configuration: `report_uri` option
+- Configuration: `limit_to_local_content` option
 - Pleroma API: User subscriptions
 - Pleroma API: Healthcheck endpoint
 - Pleroma API: `/api/v1/pleroma/mascot` per-user frontend mascot configuration endpoints
@@ -35,7 +70,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: added filters (role, tags, email, name) for users endpoint
 - Admin API: Endpoints for managing reports
 - Admin API: Endpoints for deleting and changing the scope of individual reported statuses
+- Admin API: Endpoints to view and change config settings.
 - AdminFE: initial release with basic user management accessible at /pleroma/admin/
+- Mastodon API: Add chat token to `verify_credentials` response
+- Mastodon API: Add background image setting to `update_credentials`
 - Mastodon API: [Scheduled statuses](https://docs.joinmastodon.org/api/rest/scheduled-statuses/)
 - Mastodon API: `/api/v1/notifications/destroy_multiple` (glitch-soc extension)
 - Mastodon API: `/api/v1/pleroma/accounts/:id/favourites` (API extension)
@@ -53,9 +91,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF: Support for running subchains.
 - Addressable lists
 - Configuration: `skip_thread_containment` option
+- Configuration: `rate_limit` option. See `Pleroma.Plugs.RateLimiter` documentation for details.
+- MRF: Support for filtering out likely spam messages by rejecting posts from new users that contain links.
+- Configuration: `ignore_hosts` option
+- Configuration: `ignore_tld` option
+- Configuration: default syslog tag "Pleroma" is now lowercased to "pleroma"
 
 ### Changed
+- **Breaking:** bind to 127.0.0.1 instead of 0.0.0.0 by default
 - **Breaking:** Configuration: move from Pleroma.Mailer to Pleroma.Emails.Mailer
+- Thread containment / test for complete visibility will be skipped by default.
 - Enforcement of OAuth scopes
 - Add multiple use/time expiring invite token
 - Restyled OAuth pages to fit with Pleroma's default theme
@@ -64,6 +109,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Federation: Expand the audience of delete activities to all recipients of the deleted object
 - Federation: Removed `inReplyToStatusId` from objects
 - Configuration: Dedupe enabled by default
+- Configuration: Default log level in `prod` environment is now set to `warn`
 - Configuration: Added `extra_cookie_attrs` for setting non-standard cookie attributes. Defaults to ["SameSite=Lax"] so that remote follows work.
 - Timelines: Messages involving people you have blocked will be excluded from the timeline in all cases instead of just repeats.
 - Admin API: Move the user related API to `api/pleroma/admin/users`
@@ -89,8 +135,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Posts which are marked sensitive or tagged nsfw no longer have link previews.
 - HTTP connection timeout is now set to 10 seconds.
 - Respond with a 404 Not implemented JSON error message when requested API is not implemented
+- Rich Media: crawl only https URLs.
 
 ### Fixed
+- Follow requests don't get 'stuck' anymore.
 - Added an FTS index on objects. Running `vacuum analyze` and setting a larger `work_mem` is recommended.
 - Followers counter not being updated when a follower is blocked
 - Deactivated users being able to request an access token

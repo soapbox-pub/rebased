@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Instances do
   @moduledoc "Instances context."
 
@@ -13,7 +17,7 @@ defmodule Pleroma.Instances do
 
   def reachability_datetime_threshold do
     federation_reachability_timeout_days =
-      Pleroma.Config.get(:instance)[:federation_reachability_timeout_days] || 0
+      Pleroma.Config.get([:instance, :federation_reachability_timeout_days], 0)
 
     if federation_reachability_timeout_days > 0 do
       NaiveDateTime.add(

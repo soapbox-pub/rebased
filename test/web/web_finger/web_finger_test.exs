@@ -104,5 +104,16 @@ defmodule Pleroma.Web.WebFingerTest do
 
       assert template == "http://status.alpicola.com/main/xrd?uri={uri}"
     end
+
+    test "it works with idna domains as nickname" do
+      nickname = "lain@" <> to_string(:idna.encode("zetsubou.みんな"))
+
+      {:ok, _data} = WebFinger.finger(nickname)
+    end
+
+    test "it works with idna domains as link" do
+      ap_id = "https://" <> to_string(:idna.encode("zetsubou.みんな")) <> "/users/lain"
+      {:ok, _data} = WebFinger.finger(ap_id)
+    end
   end
 end

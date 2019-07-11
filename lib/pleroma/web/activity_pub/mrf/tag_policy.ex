@@ -19,12 +19,17 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
      - `mrf_tag:disable-any-subscription`: Reject any follow requests
   """
 
+  @public "https://www.w3.org/ns/activitystreams#Public"
+
   defp get_tags(%User{tags: tags}) when is_list(tags), do: tags
   defp get_tags(_), do: []
 
   defp process_tag(
          "mrf_tag:media-force-nsfw",
-         %{"type" => "Create", "object" => %{"attachment" => child_attachment} = object} = message
+         %{
+           "type" => "Create",
+           "object" => %{"attachment" => child_attachment} = object
+         } = message
        )
        when length(child_attachment) > 0 do
     tags = (object["tag"] || []) ++ ["nsfw"]
@@ -41,7 +46,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
 
   defp process_tag(
          "mrf_tag:media-strip",
-         %{"type" => "Create", "object" => %{"attachment" => child_attachment} = object} = message
+         %{
+           "type" => "Create",
+           "object" => %{"attachment" => child_attachment} = object
+         } = message
        )
        when length(child_attachment) > 0 do
     object = Map.delete(object, "attachment")
@@ -52,19 +60,22 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
 
   defp process_tag(
          "mrf_tag:force-unlisted",
-         %{"type" => "Create", "to" => to, "cc" => cc, "actor" => actor} = message
+         %{
+           "type" => "Create",
+           "to" => to,
+           "cc" => cc,
+           "actor" => actor,
+           "object" => object
+         } = message
        ) do
     user = User.get_cached_by_ap_id(actor)
 
-    if Enum.member?(to, "https://www.w3.org/ns/activitystreams#Public") do
-      to =
-        List.delete(to, "https://www.w3.org/ns/activitystreams#Public") ++ [user.follower_address]
-
-      cc =
-        List.delete(cc, user.follower_address) ++ ["https://www.w3.org/ns/activitystreams#Public"]
+    if Enum.member?(to, @public) do
+      to = List.delete(to, @public) ++ [user.follower_address]
+      cc = List.delete(cc, user.follower_address) ++ [@public]
 
       object =
-        message["object"]
+        object
         |> Map.put("to", to)
         |> Map.put("cc", cc)
 
@@ -82,19 +93,22 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
 
   defp process_tag(
          "mrf_tag:sandbox",
-         %{"type" => "Create", "to" => to, "cc" => cc, "actor" => actor} = message
+         %{
+           "type" => "Create",
+           "to" => to,
+           "cc" => cc,
+           "actor" => actor,
+           "object" => object
+         } = message
        ) do
     user = User.get_cached_by_ap_id(actor)
 
-    if Enum.member?(to, "https://www.w3.org/ns/activitystreams#Public") or
-         Enum.member?(cc, "https://www.w3.org/ns/activitystreams#Public") do
-      to =
-        List.delete(to, "https://www.w3.org/ns/activitystreams#Public") ++ [user.follower_address]
-
-      cc = List.delete(cc, "https://www.w3.org/ns/activitystreams#Public")
+    if Enum.member?(to, @public) or Enum.member?(cc, @public) do
+      to = List.delete(to, @public) ++ [user.follower_address]
+      cc = List.delete(cc, @public)
 
       object =
-        message["object"]
+        object
         |> Map.put("to", to)
         |> Map.put("cc", cc)
 
@@ -123,7 +137,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
     end
   end
 
-  defp process_tag("mrf_tag:disable-any-subscription", %{"type" => "Follow"}), do: {:reject, nil}
+  defp process_tag("mrf_tag:disable-any-subscription", %{"type" => "Follow"}),
+    do: {:reject, nil}
 
   defp process_tag(_, message), do: {:ok, message}
 

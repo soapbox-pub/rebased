@@ -12,7 +12,7 @@ defmodule Pleroma.Repo.Migrations.UsersAndActivitiesFlakeId do
   #   4- update relation pkeys with the new ids
   #   5- rename the temporary column to id
   #   6- re-create the constraints
-  def change do
+  def up do
     # Old serial int ids are transformed to 128bits with extra padding.
     # The application (in `Pleroma.FlakeId`) handles theses IDs properly as integers; to keep compatibility
     # with previously issued ids.
@@ -74,6 +74,8 @@ defmodule Pleroma.Repo.Migrations.UsersAndActivitiesFlakeId do
 
     stop_clippy_heartbeats(clippy)
   end
+
+  def down, do: :ok
 
   defp start_clippy_heartbeats() do
     count = from(a in "activities", select: count(a.id)) |> Repo.one!

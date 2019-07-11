@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Object.ContainmentTest do
   use Pleroma.DataCase
 
@@ -5,6 +9,7 @@ defmodule Pleroma.Object.ContainmentTest do
   alias Pleroma.User
 
   import Pleroma.Factory
+  import ExUnit.CaptureLog
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -57,7 +62,10 @@ defmodule Pleroma.Object.ContainmentTest do
           follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})
         })
 
-      {:error, _} = User.get_or_fetch_by_ap_id("https://n1u.moe/users/rye")
+      assert capture_log(fn ->
+               {:error, _} = User.get_or_fetch_by_ap_id("https://n1u.moe/users/rye")
+             end) =~
+               "[error] Could not decode user at fetch https://n1u.moe/users/rye, {:error, :error}"
     end
   end
 end

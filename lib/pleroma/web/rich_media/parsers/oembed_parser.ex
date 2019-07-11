@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.RichMedia.Parsers.OEmbed do
   def parse(html, _data) do
     with elements = [_ | _] <- get_discovery_data(html),

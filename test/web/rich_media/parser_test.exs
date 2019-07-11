@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.RichMedia.ParserTest do
   use ExUnit.Case, async: true
 
@@ -8,6 +12,21 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
         url: "http://example.com/ogp"
       } ->
         %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/ogp.html")}
+
+      %{
+        method: :get,
+        url: "http://example.com/non-ogp"
+      } ->
+        %Tesla.Env{status: 200, body: File.read!("test/fixtures/rich_media/non_ogp_embed.html")}
+
+      %{
+        method: :get,
+        url: "http://example.com/ogp-missing-title"
+      } ->
+        %Tesla.Env{
+          status: 200,
+          body: File.read!("test/fixtures/rich_media/ogp-missing-title.html")
+        }
 
       %{
         method: :get,
@@ -38,12 +57,30 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
     assert {:error, _} = Pleroma.Web.RichMedia.Parser.parse("http://example.com/empty")
   end
 
+  test "doesn't just add a title" do
+    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/non-ogp") ==
+             {:error, "Found metadata was invalid or incomplete: %{}"}
+  end
+
   test "parses ogp" do
     assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/ogp") ==
              {:ok,
               %{
                 image: "http://ia.media-imdb.com/images/rock.jpg",
                 title: "The Rock",
+                description:
+                  "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
+                type: "video.movie",
+                url: "http://www.imdb.com/title/tt0117500/"
+              }}
+  end
+
+  test "falls back to <title> when ogp:title is missing" do
+    assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/ogp-missing-title") ==
+             {:ok,
+              %{
+                image: "http://ia.media-imdb.com/images/rock.jpg",
+                title: "The Rock (1996)",
                 description:
                   "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
                 type: "video.movie",

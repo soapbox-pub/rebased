@@ -1,0 +1,2 @@
+<h1>Authorization exists</h1>
+<h2>Access token is <%= @token.token %></h2>

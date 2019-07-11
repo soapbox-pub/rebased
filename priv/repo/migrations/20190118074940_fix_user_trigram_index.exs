@@ -4,7 +4,7 @@ defmodule Pleroma.Repo.Migrations.FixUserTrigramIndex do
   def up do
     drop_if_exists(index(:users, [], name: :users_trigram_index))
 
-    create(
+    create_if_not_exists(
       index(:users, ["(trim(nickname || ' ' || coalesce(name, ''))) gist_trgm_ops"],
         name: :users_trigram_index,
         using: :gist
@@ -15,7 +15,7 @@ defmodule Pleroma.Repo.Migrations.FixUserTrigramIndex do
   def down do
     drop_if_exists(index(:users, [], name: :users_trigram_index))
 
-    create(
+    create_if_not_exists(
       index(:users, ["(nickname || name) gist_trgm_ops"], name: :users_trigram_index, using: :gist)
     )
   end

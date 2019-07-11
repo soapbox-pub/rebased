@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Object.FetcherTest do
   use Pleroma.DataCase
 
@@ -7,7 +11,17 @@ defmodule Pleroma.Object.FetcherTest do
   import Tesla.Mock
 
   setup do
-    mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    mock(fn
+      %{method: :get, url: "https://mastodon.example.org/users/userisgone"} ->
+        %Tesla.Env{status: 410}
+
+      %{method: :get, url: "https://mastodon.example.org/users/userisgone404"} ->
+        %Tesla.Env{status: 404}
+
+      env ->
+        apply(HttpRequestMock, :request, [env])
+    end)
+
     :ok
   end
 
@@ -81,10 +95,24 @@ defmodule Pleroma.Object.FetcherTest do
     end
 
     test "all objects with fake directions are rejected by the object fetcher" do
-      {:error, _} =
-        Fetcher.fetch_and_contain_remote_object_from_id(
-          "https://info.pleroma.site/activity4.json"
-        )
+      assert {:error, _} =
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://info.pleroma.site/activity4.json"
+               )
+    end
+
+    test "handle HTTP 410 Gone response" do
+      assert {:error, "Object has been deleted"} ==
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://mastodon.example.org/users/userisgone"
+               )
+    end
+
+    test "handle HTTP 404 response" do
+      assert {:error, "Object has been deleted"} ==
+               Fetcher.fetch_and_contain_remote_object_from_id(
+                 "https://mastodon.example.org/users/userisgone404"
+               )
     end
   end
 

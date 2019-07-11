@@ -38,22 +38,23 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
 
   test "a note activity" do
     note_activity = insert(:note_activity)
+    object_data = Object.normalize(note_activity).data
 
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
     expected = """
     <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
     <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
-    <id>#{note_activity.data["object"]["id"]}</id>
+    <id>#{object_data["id"]}</id>
     <title>New note by #{user.nickname}</title>
-    <content type="html">#{note_activity.data["object"]["content"]}</content>
-    <published>#{note_activity.data["object"]["published"]}</published>
-    <updated>#{note_activity.data["object"]["published"]}</updated>
+    <content type="html">#{object_data["content"]}</content>
+    <published>#{object_data["published"]}</published>
+    <updated>#{object_data["published"]}</updated>
     <ostatus:conversation ref="#{note_activity.data["context"]}">#{note_activity.data["context"]}</ostatus:conversation>
     <link ref="#{note_activity.data["context"]}" rel="ostatus:conversation" />
-    <summary>#{note_activity.data["object"]["summary"]}</summary>
-    <link type="application/atom+xml" href="#{note_activity.data["object"]["id"]}" rel="self" />
-    <link type="text/html" href="#{note_activity.data["object"]["id"]}" rel="alternate" />
+    <summary>#{object_data["summary"]}</summary>
+    <link type="application/atom+xml" href="#{object_data["id"]}" rel="self" />
+    <link type="text/html" href="#{object_data["id"]}" rel="alternate" />
     <category term="2hu"/>
     <link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>
     <link name="2hu" rel="emoji" href="corndog.png" />
@@ -106,7 +107,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
   test "an announce activity" do
     note = insert(:note_activity)
     user = insert(:user)
-    object = Object.get_cached_by_ap_id(note.data["object"]["id"])
+    object = Object.normalize(note)
 
     {:ok, announce, _object} = ActivityPub.announce(user, object)
 
@@ -125,7 +126,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenterTest do
     <activity:verb>http://activitystrea.ms/schema/1.0/share</activity:verb>
     <id>#{announce.data["id"]}</id>
     <title>#{user.nickname} repeated a notice</title>
-    <content type="html">RT #{note.data["object"]["content"]}</content>
+    <content type="html">RT #{object.data["content"]}</content>
     <published>#{announce.data["published"]}</published>
     <updated>#{announce.data["published"]}</updated>
     <ostatus:conversation ref="#{announce.data["context"]}">#{announce.data["context"]}</ostatus:conversation>

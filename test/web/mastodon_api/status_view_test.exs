@@ -55,7 +55,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note with null content" do
     note = insert(:note_activity)
-    note_object = Object.normalize(note.data["object"])
+    note_object = Object.normalize(note)
 
     data =
       note_object.data
@@ -73,26 +73,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
   test "a note activity" do
     note = insert(:note_activity)
+    object_data = Object.normalize(note).data
     user = User.get_cached_by_ap_id(note.data["actor"])
 
-    convo_id = Utils.context_to_conversation_id(note.data["object"]["context"])
+    convo_id = Utils.context_to_conversation_id(object_data["context"])
 
     status = StatusView.render("status.json", %{activity: note})
 
     created_at =
-      (note.data["object"]["published"] || "")
+      (object_data["published"] || "")
       |> String.replace(~r/\.\d+Z/, ".000Z")
 
     expected = %{
       id: to_string(note.id),
-      uri: note.data["object"]["id"],
+      uri: object_data["id"],
       url: Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, note),
       account: AccountView.render("account.json", %{user: user}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       card: nil,
       reblog: nil,
-      content: HtmlSanitizeEx.basic_html(note.data["object"]["content"]),
+      content: HtmlSanitizeEx.basic_html(object_data["content"]),
       created_at: created_at,
       reblogs_count: 0,
       replies_count: 0,
@@ -104,14 +105,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       pinned: false,
       sensitive: false,
       poll: nil,
-      spoiler_text: HtmlSanitizeEx.basic_html(note.data["object"]["summary"]),
+      spoiler_text: HtmlSanitizeEx.basic_html(object_data["summary"]),
       visibility: "public",
       media_attachments: [],
       mentions: [],
       tags: [
         %{
-          name: "#{note.data["object"]["tag"]}",
-          url: "/tag/#{note.data["object"]["tag"]}"
+          name: "#{object_data["tag"]}",
+          url: "/tag/#{object_data["tag"]}"
         }
       ],
       application: %{
@@ -131,8 +132,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         local: true,
         conversation_id: convo_id,
         in_reply_to_account_acct: nil,
-        content: %{"text/plain" => HtmlSanitizeEx.strip_tags(note.data["object"]["content"])},
-        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(note.data["object"]["summary"])}
+        content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
+        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])}
       }
     }
 
@@ -202,10 +203,71 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
 
     status = StatusView.render("status.json", %{activity: activity})
 
-    actor = User.get_cached_by_ap_id(activity.actor)
-
     assert status.mentions ==
-             Enum.map([user, actor], fn u -> AccountView.render("mention.json", %{user: u}) end)
+             Enum.map([user], fn u -> AccountView.render("mention.json", %{user: u}) end)
+  end
+
+  test "create mentions from the 'to' field" do
+    %User{ap_id: recipient_ap_id} = insert(:user)
+    cc = insert_pair(:user) |> Enum.map(& &1.ap_id)
+
+    object =
+      insert(:note, %{
+        data: %{
+          "to" => [recipient_ap_id],
+          "cc" => cc
+        }
+      })
+
+    activity =
+      insert(:note_activity, %{
+        note: object,
+        recipients: [recipient_ap_id | cc]
+      })
+
+    assert length(activity.recipients) == 3
+
+    %{mentions: [mention] = mentions} = StatusView.render("status.json", %{activity: activity})
+
+    assert length(mentions) == 1
+    assert mention.url == recipient_ap_id
+  end
+
+  test "create mentions from the 'tag' field" do
+    recipient = insert(:user)
+    cc = insert_pair(:user) |> Enum.map(& &1.ap_id)
+
+    object =
+      insert(:note, %{
+        data: %{
+          "cc" => cc,
+          "tag" => [
+            %{
+              "href" => recipient.ap_id,
+              "name" => recipient.nickname,
+              "type" => "Mention"
+            },
+            %{
+              "href" => "https://example.com/search?tag=test",
+              "name" => "#test",
+              "type" => "Hashtag"
+            }
+          ]
+        }
+      })
+
+    activity =
+      insert(:note_activity, %{
+        note: object,
+        recipients: [recipient.ap_id | cc]
+      })
+
+    assert length(activity.recipients) == 3
+
+    %{mentions: [mention] = mentions} = StatusView.render("status.json", %{activity: activity})
+
+    assert length(mentions) == 1
+    assert mention.url == recipient.ap_id
   end
 
   test "attachments" do
@@ -443,5 +505,40 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       assert Enum.at(result[:options], 1)[:votes_count] == 1
       assert Enum.at(result[:options], 2)[:votes_count] == 1
     end
+  end
+
+  test "embeds a relationship in the account" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" => "drink more water"
+      })
+
+    result = StatusView.render("status.json", %{activity: activity, for: other_user})
+
+    assert result[:account][:pleroma][:relationship] ==
+             AccountView.render("relationship.json", %{user: other_user, target: user})
+  end
+
+  test "embeds a relationship in the account in reposts" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{
+        "status" => "˙˙ɐʎns"
+      })
+
+    {:ok, activity, _object} = CommonAPI.repeat(activity.id, other_user)
+
+    result = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert result[:account][:pleroma][:relationship] ==
+             AccountView.render("relationship.json", %{user: user, target: other_user})
+
+    assert result[:reblog][:account][:pleroma][:relationship] ==
+             AccountView.render("relationship.json", %{user: user, target: user})
   end
 end

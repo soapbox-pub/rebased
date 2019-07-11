@@ -10,6 +10,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   alias Pleroma.Registration
   alias Pleroma.Repo
   alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.OAuth.Token
 
   @oauth_config_path [:oauth2, :issue_new_refresh_token]
@@ -49,7 +50,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           %{
             "response_type" => "code",
             "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
+            "redirect_uri" => OAuthController.default_redirect_uri(app),
             "scope" => "read"
           }
         )
@@ -72,7 +73,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "authorization" => %{
               "scope" => "read follow",
               "client_id" => app.client_id,
-              "redirect_uri" => app.redirect_uris,
+              "redirect_uri" => OAuthController.default_redirect_uri(app),
               "state" => "a_state"
             }
           }
@@ -98,11 +99,12 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     test "with user-bound registration, GET /oauth/<provider>/callback redirects to `redirect_uri` with `code`",
          %{app: app, conn: conn} do
       registration = insert(:registration)
+      redirect_uri = OAuthController.default_redirect_uri(app)
 
       state_params = %{
         "scope" => Enum.join(app.scopes, " "),
         "client_id" => app.client_id,
-        "redirect_uri" => app.redirect_uris,
+        "redirect_uri" => redirect_uri,
         "state" => ""
       }
 
@@ -121,7 +123,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           )
 
         assert response = html_response(conn, 302)
-        assert redirected_to(conn) =~ ~r/#{app.redirect_uris}\?code=.+/
+        assert redirected_to(conn) =~ ~r/#{redirect_uri}\?code=.+/
       end
     end
 
@@ -132,7 +134,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       state_params = %{
         "scope" => "read write",
         "client_id" => app.client_id,
-        "redirect_uri" => app.redirect_uris,
+        "redirect_uri" => OAuthController.default_redirect_uri(app),
         "state" => "a_state"
       }
 
@@ -165,7 +167,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       state_params = %{
         "scope" => Enum.join(app.scopes, " "),
         "client_id" => app.client_id,
-        "redirect_uri" => app.redirect_uris,
+        "redirect_uri" => OAuthController.default_redirect_uri(app),
         "state" => ""
       }
 
@@ -199,7 +201,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "authorization" => %{
               "scopes" => app.scopes,
               "client_id" => app.client_id,
-              "redirect_uri" => app.redirect_uris,
+              "redirect_uri" => OAuthController.default_redirect_uri(app),
               "state" => "a_state",
               "nickname" => nil,
               "email" => "john@doe.com"
@@ -218,6 +220,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
            conn: conn
          } do
       registration = insert(:registration, user: nil, info: %{"nickname" => nil, "email" => nil})
+      redirect_uri = OAuthController.default_redirect_uri(app)
 
       conn =
         conn
@@ -229,7 +232,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "authorization" => %{
               "scopes" => app.scopes,
               "client_id" => app.client_id,
-              "redirect_uri" => app.redirect_uris,
+              "redirect_uri" => redirect_uri,
               "state" => "a_state",
               "nickname" => "availablenick",
               "email" => "available@email.com"
@@ -238,7 +241,36 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         )
 
       assert response = html_response(conn, 302)
-      assert redirected_to(conn) =~ ~r/#{app.redirect_uris}\?code=.+/
+      assert redirected_to(conn) =~ ~r/#{redirect_uri}\?code=.+/
+    end
+
+    test "with unlisted `redirect_uri`, POST /oauth/register?op=register results in HTTP 401",
+         %{
+           app: app,
+           conn: conn
+         } do
+      registration = insert(:registration, user: nil, info: %{"nickname" => nil, "email" => nil})
+      unlisted_redirect_uri = "http://cross-site-request.com"
+
+      conn =
+        conn
+        |> put_session(:registration_id, registration.id)
+        |> post(
+          "/oauth/register",
+          %{
+            "op" => "register",
+            "authorization" => %{
+              "scopes" => app.scopes,
+              "client_id" => app.client_id,
+              "redirect_uri" => unlisted_redirect_uri,
+              "state" => "a_state",
+              "nickname" => "availablenick",
+              "email" => "available@email.com"
+            }
+          }
+        )
+
+      assert response = html_response(conn, 401)
     end
 
     test "with invalid params, POST /oauth/register?op=register renders registration_details page",
@@ -254,7 +286,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         "authorization" => %{
           "scopes" => app.scopes,
           "client_id" => app.client_id,
-          "redirect_uri" => app.redirect_uris,
+          "redirect_uri" => OAuthController.default_redirect_uri(app),
           "state" => "a_state",
           "nickname" => "availablenickname",
           "email" => "available@email.com"
@@ -286,6 +318,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
          } do
       user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt("testpassword"))
       registration = insert(:registration, user: nil)
+      redirect_uri = OAuthController.default_redirect_uri(app)
 
       conn =
         conn
@@ -297,7 +330,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "authorization" => %{
               "scopes" => app.scopes,
               "client_id" => app.client_id,
-              "redirect_uri" => app.redirect_uris,
+              "redirect_uri" => redirect_uri,
               "state" => "a_state",
               "name" => user.nickname,
               "password" => "testpassword"
@@ -306,7 +339,37 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         )
 
       assert response = html_response(conn, 302)
-      assert redirected_to(conn) =~ ~r/#{app.redirect_uris}\?code=.+/
+      assert redirected_to(conn) =~ ~r/#{redirect_uri}\?code=.+/
+    end
+
+    test "with unlisted `redirect_uri`, POST /oauth/register?op=connect results in HTTP 401`",
+         %{
+           app: app,
+           conn: conn
+         } do
+      user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt("testpassword"))
+      registration = insert(:registration, user: nil)
+      unlisted_redirect_uri = "http://cross-site-request.com"
+
+      conn =
+        conn
+        |> put_session(:registration_id, registration.id)
+        |> post(
+          "/oauth/register",
+          %{
+            "op" => "connect",
+            "authorization" => %{
+              "scopes" => app.scopes,
+              "client_id" => app.client_id,
+              "redirect_uri" => unlisted_redirect_uri,
+              "state" => "a_state",
+              "name" => user.nickname,
+              "password" => "testpassword"
+            }
+          }
+        )
+
+      assert response = html_response(conn, 401)
     end
 
     test "with invalid params, POST /oauth/register?op=connect renders registration_details page",
@@ -322,7 +385,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         "authorization" => %{
           "scopes" => app.scopes,
           "client_id" => app.client_id,
-          "redirect_uri" => app.redirect_uris,
+          "redirect_uri" => OAuthController.default_redirect_uri(app),
           "state" => "a_state",
           "name" => user.nickname,
           "password" => "wrong password"
@@ -358,7 +421,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           %{
             "response_type" => "code",
             "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
+            "redirect_uri" => OAuthController.default_redirect_uri(app),
             "scope" => "read"
           }
         )
@@ -378,7 +441,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "authorization" => %{
               "response_type" => "code",
               "client_id" => app.client_id,
-              "redirect_uri" => app.redirect_uris,
+              "redirect_uri" => OAuthController.default_redirect_uri(app),
               "scope" => "read"
             }
           }
@@ -399,7 +462,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           %{
             "response_type" => "code",
             "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
+            "redirect_uri" => OAuthController.default_redirect_uri(app),
             "scope" => "read",
             "force_login" => "true"
           }
@@ -408,7 +471,11 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
       assert html_response(conn, 200) =~ ~s(type="submit")
     end
 
-    test "redirects to app if user is already authenticated", %{app: app, conn: conn} do
+    test "with existing authentication and non-OOB `redirect_uri`, redirects to app with `token` and `state` params",
+         %{
+           app: app,
+           conn: conn
+         } do
       token = insert(:oauth_token, app_id: app.id)
 
       conn =
@@ -419,12 +486,62 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           %{
             "response_type" => "code",
             "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
+            "redirect_uri" => OAuthController.default_redirect_uri(app),
+            "state" => "specific_client_state",
             "scope" => "read"
           }
         )
 
-      assert redirected_to(conn) == "https://redirect.url"
+      assert URI.decode(redirected_to(conn)) ==
+               "https://redirect.url?access_token=#{token.token}&state=specific_client_state"
+    end
+
+    test "with existing authentication and unlisted non-OOB `redirect_uri`, redirects without credentials",
+         %{
+           app: app,
+           conn: conn
+         } do
+      unlisted_redirect_uri = "http://cross-site-request.com"
+      token = insert(:oauth_token, app_id: app.id)
+
+      conn =
+        conn
+        |> put_session(:oauth_token, token.token)
+        |> get(
+          "/oauth/authorize",
+          %{
+            "response_type" => "code",
+            "client_id" => app.client_id,
+            "redirect_uri" => unlisted_redirect_uri,
+            "state" => "specific_client_state",
+            "scope" => "read"
+          }
+        )
+
+      assert redirected_to(conn) == unlisted_redirect_uri
+    end
+
+    test "with existing authentication and OOB `redirect_uri`, redirects to app with `token` and `state` params",
+         %{
+           app: app,
+           conn: conn
+         } do
+      token = insert(:oauth_token, app_id: app.id)
+
+      conn =
+        conn
+        |> put_session(:oauth_token, token.token)
+        |> get(
+          "/oauth/authorize",
+          %{
+            "response_type" => "code",
+            "client_id" => app.client_id,
+            "redirect_uri" => "urn:ietf:wg:oauth:2.0:oob",
+            "scope" => "read"
+          }
+        )
+
+      assert html_response(conn, 200) =~ "Authorization exists"
     end
   end
 
@@ -432,6 +549,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     test "redirects with oauth authorization" do
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write", "follow"])
+      redirect_uri = OAuthController.default_redirect_uri(app)
 
       conn =
         build_conn()
@@ -440,14 +558,14 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "name" => user.nickname,
             "password" => "test",
             "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
+            "redirect_uri" => redirect_uri,
             "scope" => "read write",
             "state" => "statepassed"
           }
         })
 
       target = redirected_to(conn)
-      assert target =~ app.redirect_uris
+      assert target =~ redirect_uri
 
       query = URI.parse(target).query |> URI.query_decoder() |> Map.new()
 
@@ -460,6 +578,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     test "returns 401 for wrong credentials", %{conn: conn} do
       user = insert(:user)
       app = insert(:oauth_app)
+      redirect_uri = OAuthController.default_redirect_uri(app)
 
       result =
         conn
@@ -468,7 +587,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "name" => user.nickname,
             "password" => "wrong",
             "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
+            "redirect_uri" => redirect_uri,
             "state" => "statepassed",
             "scope" => Enum.join(app.scopes, " ")
           }
@@ -477,7 +596,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       # Keep the details
       assert result =~ app.client_id
-      assert result =~ app.redirect_uris
+      assert result =~ redirect_uri
 
       # Error message
       assert result =~ "Invalid Username/Password"
@@ -486,6 +605,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     test "returns 401 for missing scopes", %{conn: conn} do
       user = insert(:user)
       app = insert(:oauth_app)
+      redirect_uri = OAuthController.default_redirect_uri(app)
 
       result =
         conn
@@ -494,7 +614,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "name" => user.nickname,
             "password" => "test",
             "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
+            "redirect_uri" => redirect_uri,
             "state" => "statepassed",
             "scope" => ""
           }
@@ -503,7 +623,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       # Keep the details
       assert result =~ app.client_id
-      assert result =~ app.redirect_uris
+      assert result =~ redirect_uri
 
       # Error message
       assert result =~ "This action is outside the authorized scopes"
@@ -512,6 +632,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     test "returns 401 for scopes beyond app scopes", %{conn: conn} do
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write"])
+      redirect_uri = OAuthController.default_redirect_uri(app)
 
       result =
         conn
@@ -520,7 +641,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
             "name" => user.nickname,
             "password" => "test",
             "client_id" => app.client_id,
-            "redirect_uri" => app.redirect_uris,
+            "redirect_uri" => redirect_uri,
             "state" => "statepassed",
             "scope" => "read write follow"
           }
@@ -529,7 +650,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
 
       # Keep the details
       assert result =~ app.client_id
-      assert result =~ app.redirect_uris
+      assert result =~ redirect_uri
 
       # Error message
       assert result =~ "This action is outside the authorized scopes"
@@ -548,7 +669,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         |> post("/oauth/token", %{
           "grant_type" => "authorization_code",
           "code" => auth.token,
-          "redirect_uri" => app.redirect_uris,
+          "redirect_uri" => OAuthController.default_redirect_uri(app),
           "client_id" => app.client_id,
           "client_secret" => app.client_secret
         })
@@ -602,7 +723,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         |> post("/oauth/token", %{
           "grant_type" => "authorization_code",
           "code" => auth.token,
-          "redirect_uri" => app.redirect_uris
+          "redirect_uri" => OAuthController.default_redirect_uri(app)
         })
 
       assert %{"access_token" => token, "scope" => scope} = json_response(conn, 200)
@@ -647,7 +768,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         |> post("/oauth/token", %{
           "grant_type" => "authorization_code",
           "code" => auth.token,
-          "redirect_uri" => app.redirect_uris
+          "redirect_uri" => OAuthController.default_redirect_uri(app)
         })
 
       assert resp = json_response(conn, 400)
@@ -726,7 +847,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
         |> post("/oauth/token", %{
           "grant_type" => "authorization_code",
           "code" => "Imobviouslyinvalid",
-          "redirect_uri" => app.redirect_uris,
+          "redirect_uri" => OAuthController.default_redirect_uri(app),
           "client_id" => app.client_id,
           "client_secret" => app.client_secret
         })

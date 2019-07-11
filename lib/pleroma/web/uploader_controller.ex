@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.UploaderController do
   use Pleroma.Web, :controller
 
@@ -8,7 +12,7 @@ defmodule Pleroma.Web.UploaderController do
   end
 
   def callbacks(conn, _) do
-    send_resp(conn, 400, "bad request")
+    render_error(conn, :bad_request, "bad request")
   end
 
   defp process_callback(conn, pid, params) when is_pid(pid) do
@@ -20,6 +24,6 @@ defmodule Pleroma.Web.UploaderController do
   end
 
   defp process_callback(conn, _, _) do
-    send_resp(conn, 400, "bad request")
+    render_error(conn, :bad_request, "bad request")
   end
 end
