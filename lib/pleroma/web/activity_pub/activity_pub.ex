@@ -994,6 +994,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       avatar: avatar,
       name: data["name"],
       follower_address: data["followers"],
+      following_address: data["following"],
       bio: data["summary"]
     }
 
