@@ -551,7 +551,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["first"]["orderedItems"] == [user.ap_id]
     end
 
-    test "it returns returns empty if the user has 'hide_followers' set", %{conn: conn} do
+    test "it returns returns a uri if the user has 'hide_followers' set", %{conn: conn} do
       user = insert(:user)
       user_two = insert(:user, %{info: %{hide_followers: true}})
       User.follow(user, user_two)
@@ -561,8 +561,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user_two.nickname}/followers")
         |> json_response(200)
 
-      assert result["first"]["orderedItems"] == []
-      assert result["totalItems"] == 0
+      assert is_binary(result["first"])
     end
 
     test "it works for more than 10 users", %{conn: conn} do
@@ -606,7 +605,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert result["first"]["orderedItems"] == [user_two.ap_id]
     end
 
-    test "it returns returns empty if the user has 'hide_follows' set", %{conn: conn} do
+    test "it returns a uri if the user has 'hide_follows' set", %{conn: conn} do
       user = insert(:user, %{info: %{hide_follows: true}})
       user_two = insert(:user)
       User.follow(user, user_two)
@@ -616,8 +615,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> get("/users/#{user.nickname}/following")
         |> json_response(200)
 
-      assert result["first"]["orderedItems"] == []
-      assert result["totalItems"] == 0
+      assert is_binary(result["first"])
     end
 
     test "it works for more than 10 users", %{conn: conn} do
