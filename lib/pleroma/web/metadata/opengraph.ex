@@ -9,6 +9,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
   alias Pleroma.Web.Metadata.Utils
 
   @behaviour Provider
+  @media_types ["image", "audio", "video"]
 
   @impl Provider
   def build_tags(%{
@@ -81,26 +82,19 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
     Enum.reduce(attachments, [], fn attachment, acc ->
       rendered_tags =
         Enum.reduce(attachment["url"], [], fn url, acc ->
-          media_type =
-            Enum.find(["image", "audio", "video"], fn media_type ->
-              String.starts_with?(url["mediaType"], media_type)
-            end)
-
           # TODO: Add additional properties to objects when we have the data available.
           # Also, Whatsapp only wants JPEG or PNGs. It seems that if we add a second og:image
           # object when a Video or GIF is attached it will display that in Whatsapp Rich Preview.
-          case media_type do
+          case Utils.fetch_media_type(@media_types, url["mediaType"]) do
             "audio" ->
               [
-                {:meta,
-                 [property: "og:" <> media_type, content: Utils.attachment_url(url["href"])], []}
+                {:meta, [property: "og:audio", content: Utils.attachment_url(url["href"])], []}
                 | acc
               ]
 
             "image" ->
               [
-                {:meta,
-                 [property: "og:" <> media_type, content: Utils.attachment_url(url["href"])], []},
+                {:meta, [property: "og:image", content: Utils.attachment_url(url["href"])], []},
                 {:meta, [property: "og:image:width", content: 150], []},
                 {:meta, [property: "og:image:height", content: 150], []}
                 | acc
@@ -108,8 +102,7 @@ defmodule Pleroma.Web.Metadata.Providers.OpenGraph do
 
             "video" ->
               [
-                {:meta,
-                 [property: "og:" <> media_type, content: Utils.attachment_url(url["href"])], []}
+                {:meta, [property: "og:video", content: Utils.attachment_url(url["href"])], []}
                 | acc
               ]
 
