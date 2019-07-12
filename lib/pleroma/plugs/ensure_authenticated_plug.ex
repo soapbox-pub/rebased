@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Plugs.EnsureAuthenticatedPlug do
   import Plug.Conn
+  import Pleroma.Web.TranslationHelpers
   alias Pleroma.User
 
   def init(options) do
@@ -16,8 +17,7 @@ defmodule Pleroma.Plugs.EnsureAuthenticatedPlug do
 
   def call(conn, _) do
     conn
-    |> put_resp_content_type("application/json")
-    |> send_resp(403, Jason.encode!(%{error: "Invalid credentials."}))
+    |> render_error(:forbidden, "Invalid credentials.")
     |> halt
   end
 end

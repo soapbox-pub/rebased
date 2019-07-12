@@ -573,7 +573,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   configs: [
     {
       "group": string,
-      "key": string,
+      "key": string or string with leading `:` for atoms,
       "value": string or {} or [] or {"tuple": []}
      }
   ]
@@ -583,10 +583,11 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 ## `/api/pleroma/admin/config`
 ### Update config settings
 Module name can be passed as string, which starts with `Pleroma`, e.g. `"Pleroma.Upload"`.
-Atom or boolean value can be passed with `:` in the beginning, e.g. `":true"`, `":upload"`. For keys it is not needed.
-Integer with `i:`, e.g. `"i:150"`.
-Tuple with more than 2 values with `{"tuple": ["first_val", Pleroma.Module, []]}`.
+Atom keys and values can be passed with `:` in the beginning, e.g. `":upload"`.
+Tuples can be passed as `{"tuple": ["first_val", Pleroma.Module, []]}`.
 `{"tuple": ["some_string", "Pleroma.Some.Module", []]}` will be converted to `{"some_string", Pleroma.Some.Module, []}`.
+Keywords can be passed as lists with 2 child tuples, e.g.
+`[{"tuple": ["first_val", Pleroma.Module]}, {"tuple": ["second_val", true]}]`.
 
 Compile time settings (need instance reboot):
 - all settings by this keys:
@@ -603,7 +604,7 @@ Compile time settings (need instance reboot):
 - Params:
   - `configs` => [
     - `group` (string)
-    - `key` (string)
+    - `key` (string or string with leading `:` for atoms)
     - `value` (string, [], {} or {"tuple": []})
     - `delete` = true (optional, if parameter must be deleted)
   ]
@@ -616,24 +617,25 @@ Compile time settings (need instance reboot):
     {
       "group": "pleroma",
       "key": "Pleroma.Upload",
-      "value": {
-        "uploader": "Pleroma.Uploaders.Local",
-        "filters": ["Pleroma.Upload.Filter.Dedupe"],
-        "link_name": ":true",
-        "proxy_remote": ":false",
-        "proxy_opts": {
-          "redirect_on_failure": ":false",
-          "max_body_length": "i:1048576",
-          "http": {
-            "follow_redirect": ":true",
-            "pool": ":upload"
-          }
-        },
-        "dispatch": {
+      "value": [
+        {"tuple": [":uploader", "Pleroma.Uploaders.Local"]},
+        {"tuple": [":filters", ["Pleroma.Upload.Filter.Dedupe"]]},
+        {"tuple": [":link_name", true]},
+        {"tuple": [":proxy_remote", false]},
+        {"tuple": [":proxy_opts", [
+          {"tuple": [":redirect_on_failure", false]},
+          {"tuple": [":max_body_length", 1048576]},
+          {"tuple": [":http": [
+            {"tuple": [":follow_redirect", true]},
+            {"tuple": [":pool", ":upload"]},
+          ]]}
+        ]
+        ]},
+        {"tuple": [":dispatch", {
           "tuple": ["/api/v1/streaming", "Pleroma.Web.MastodonAPI.WebsocketHandler", []]
-        }
-      }
-     }
+        }]}
+      ]
+    }
   ]
 }
 
@@ -644,7 +646,7 @@ Compile time settings (need instance reboot):
   configs: [
     {
       "group": string,
-      "key": string,
+      "key": string or string with leading `:` for atoms,
       "value": string or {} or [] or {"tuple": []}
      }
   ]

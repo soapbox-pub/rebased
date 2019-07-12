@@ -255,5 +255,57 @@ defmodule Pleroma.UserSearchTest do
       [result] = User.search("lain@localhost", resolve: true, for_user: user)
       assert Map.put(result, :search_rank, nil) |> Map.put(:search_type, nil) == local_user
     end
+
+    test "works with idna domains" do
+      user = insert(:user, nickname: "lain@" <> to_string(:idna.encode("zetsubou.みんな")))
+
+      results = User.search("lain@zetsubou.みんな", resolve: false, for_user: user)
+
+      result = List.first(results)
+
+      assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)
+    end
+
+    test "works with idna domains converted input" do
+      user = insert(:user, nickname: "lain@" <> to_string(:idna.encode("zetsubou.みんな")))
+
+      results =
+        User.search("lain@zetsubou." <> to_string(:idna.encode("zetsubou.みんな")),
+          resolve: false,
+          for_user: user
+        )
+
+      result = List.first(results)
+
+      assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)
+    end
+
+    test "works with idna domains and bad chars in domain" do
+      user = insert(:user, nickname: "lain@" <> to_string(:idna.encode("zetsubou.みんな")))
+
+      results =
+        User.search("lain@zetsubou!@#$%^&*()+,-/:;<=>?[]'_{}|~`.みんな",
+          resolve: false,
+          for_user: user
+        )
+
+      result = List.first(results)
+
+      assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)
+    end
+
+    test "works with idna domains and query as link" do
+      user = insert(:user, nickname: "lain@" <> to_string(:idna.encode("zetsubou.みんな")))
+
+      results =
+        User.search("https://zetsubou.みんな/users/lain",
+          resolve: false,
+          for_user: user
+        )
+
+      result = List.first(results)
+
+      assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)
+    end
   end
 end

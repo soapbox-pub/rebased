@@ -31,9 +31,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       conn
     else
       conn
-      |> put_status(404)
-      |> json(%{error: "not found"})
-      |> halt
+      |> render_error(:not_found, "not found")
+      |> halt()
     end
   end
 
@@ -190,7 +189,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       Logger.info(inspect(conn.req_headers))
     end
 
-    json(conn, "error")
+    json(conn, dgettext("errors", "error"))
   end
 
   def relay(conn, _params) do
@@ -218,9 +217,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("inbox.json", %{user: user, max_id: params["max_id"]}))
     else
+      err =
+        dgettext("errors", "can't read inbox of %{nickname} as %{as_nickname}",
+          nickname: nickname,
+          as_nickname: user.nickname
+        )
+
       conn
       |> put_status(:forbidden)
-      |> json("can't read inbox of #{nickname} as #{user.nickname}")
+      |> json(err)
     end
   end
 
@@ -246,7 +251,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          {:ok, delete} <- ActivityPub.delete(object) do
       {:ok, delete}
     else
-      _ -> {:error, "Can't delete object"}
+      _ -> {:error, dgettext("errors", "Can't delete object")}
     end
   end
 
@@ -255,12 +260,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          {:ok, activity, _object} <- ActivityPub.like(user, object) do
       {:ok, activity}
     else
-      _ -> {:error, "Can't like object"}
+      _ -> {:error, dgettext("errors", "Can't like object")}
     end
   end
 
   def handle_user_activity(_, _) do
-    {:error, "Unhandled activity type"}
+    {:error, dgettext("errors", "Unhandled activity type")}
   end
 
   def update_outbox(
@@ -288,22 +293,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
           |> json(message)
       end
     else
+      err =
+        dgettext("errors", "can't update outbox of %{nickname} as %{as_nickname}",
+          nickname: nickname,
+          as_nickname: user.nickname
+        )
+
       conn
       |> put_status(:forbidden)
-      |> json("can't update outbox of #{nickname} as #{user.nickname}")
+      |> json(err)
     end
   end
 
   def errors(conn, {:error, :not_found}) do
     conn
-    |> put_status(404)
-    |> json("Not found")
+    |> put_status(:not_found)
+    |> json(dgettext("errors", "Not found"))
   end
 
   def errors(conn, _e) do
     conn
-    |> put_status(500)
-    |> json("error")
+    |> put_status(:internal_server_error)
+    |> json(dgettext("errors", "error"))
   end
 
   defp set_requester_reachable(%Plug.Conn{} = conn, _) do

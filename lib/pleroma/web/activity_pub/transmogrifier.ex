@@ -641,7 +641,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   # an error or a tombstone.  This would allow us to verify that a deletion actually took
   # place.
   def handle_incoming(
-        %{"type" => "Delete", "object" => object_id, "actor" => _actor, "id" => _id} = data,
+        %{"type" => "Delete", "object" => object_id, "actor" => actor, "id" => _id} = data,
         _options
       ) do
     object_id = Utils.get_ap_id(object_id)
@@ -653,7 +653,30 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          {:ok, activity} <- ActivityPub.delete(object, false) do
       {:ok, activity}
     else
-      _e -> :error
+      nil ->
+        case User.get_cached_by_ap_id(object_id) do
+          %User{ap_id: ^actor} = user ->
+            {:ok, followers} = User.get_followers(user)
+
+            Enum.each(followers, fn follower ->
+              User.unfollow(follower, user)
+            end)
+
+            {:ok, friends} = User.get_friends(user)
+
+            Enum.each(friends, fn followed ->
+              User.unfollow(user, followed)
+            end)
+
+            User.invalidate_cache(user)
+            Repo.delete(user)
+
+          nil ->
+            :error
+        end
+
+      _e ->
+        :error
     end
   end
 
@@ -1064,6 +1087,10 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         PleromaJobQueue.enqueue(:transmogrifier, __MODULE__, [:user_upgrade, user])
       end
 
+      if Pleroma.Config.get([:instance, :external_user_synchronization]) do
+        update_following_followers_counters(user)
+      end
+
       {:ok, user}
     else
       %User{} = user -> {:ok, user}
@@ -1095,5 +1122,28 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def maybe_fix_user_object(data) do
     data
     |> maybe_fix_user_url
+  end
+
+  def update_following_followers_counters(user) do
+    info = %{}
+
+    following = fetch_counter(user.following_address)
+    info = if following, do: Map.put(info, :following_count, following), else: info
+
+    followers = fetch_counter(user.follower_address)
+    info = if followers, do: Map.put(info, :follower_count, followers), else: info
+
+    User.set_info_cache(user, info)
+  end
+
+  defp fetch_counter(url) do
+    with {:ok, %{body: body, status: code}} when code in 200..299 <-
+           Pleroma.HTTP.get(
+             url,
+             [{:Accept, "application/activity+json"}]
+           ),
+         {:ok, data} <- Jason.decode(body) do
+      data["totalItems"]
+    end
   end
 end

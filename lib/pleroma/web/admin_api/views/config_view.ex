@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.AdminAPI.ConfigView do
   use Pleroma.Web, :view
 
@@ -11,7 +15,7 @@ defmodule Pleroma.Web.AdminAPI.ConfigView do
     %{
       key: config.key,
       group: config.group,
-      value: Pleroma.Web.AdminAPI.Config.from_binary_to_map(config.value)
+      value: Pleroma.Web.AdminAPI.Config.from_binary_with_convert(config.value)
     }
   end
 end

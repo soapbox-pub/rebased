@@ -9,21 +9,24 @@ defmodule Pleroma.Web.OAuth.FallbackController do
   def call(conn, {:register, :generic_error}) do
     conn
     |> put_status(:internal_server_error)
-    |> put_flash(:error, "Unknown error, please check the details and try again.")
+    |> put_flash(
+      :error,
+      dgettext("errors", "Unknown error, please check the details and try again.")
+    )
     |> OAuthController.registration_details(conn.params)
   end
 
   def call(conn, {:register, _error}) do
     conn
     |> put_status(:unauthorized)
-    |> put_flash(:error, "Invalid Username/Password")
+    |> put_flash(:error, dgettext("errors", "Invalid Username/Password"))
     |> OAuthController.registration_details(conn.params)
   end
 
   def call(conn, _error) do
     conn
     |> put_status(:unauthorized)
-    |> put_flash(:error, "Invalid Username/Password")
+    |> put_flash(:error, dgettext("errors", "Invalid Username/Password"))
     |> OAuthController.authorize(conn.params)
   end
 end

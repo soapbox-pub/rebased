@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Uploaders.Uploader do
+  import Pleroma.Web.Gettext
+
   @moduledoc """
   Defines the contract to put and get an uploaded file to any backend.
   """
@@ -66,7 +68,7 @@ defmodule Pleroma.Uploaders.Uploader do
             {:error, error}
         end
     after
-      30_000 -> {:error, "Uploader callback timeout"}
+      30_000 -> {:error, dgettext("errors", "Uploader callback timeout")}
     end
   end
 end

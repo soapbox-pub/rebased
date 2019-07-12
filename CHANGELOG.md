@@ -4,28 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
-### Added
-- MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
-Configuration: `federation_incoming_replies_max_depth` option
-- Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
-- Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
-- Admin API: Return users' tags when querying reports
-- Admin API: Return avatar and display name when querying users
-- Admin API: Allow querying user by ID
-- Added synchronization of following/followers counters for external users
+### Changed
+- **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
+- Configuration: OpenGraph and TwitterCard providers enabled by default
+- Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+- NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
 
 ### Fixed
 - Not being able to pin unlisted posts
 - Metadata rendering errors resulting in the entire page being inaccessible
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
+- Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
+
+### Added
+- MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
+Configuration: `federation_incoming_replies_max_depth` option
+- Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
+- Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
+- Mastodon API, extension: Ability to reset avatar, profile banner, and background
+- Admin API: Return users' tags when querying reports
+- Admin API: Return avatar and display name when querying users
+- Admin API: Allow querying user by ID
+- Admin API: Added support for `tuples`.
+- Added synchronization of following/followers counters for external users
+- Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
+- Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
 
 ### Changed
-- Configuration: OpenGraph and TwitterCard providers enabled by default
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
-
-### Changed
-- NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
+- Admin API: changed json structure for saving config settings.
 
 ## [1.0.0] - 2019-06-29
 ### Security
@@ -88,7 +96,6 @@ Configuration: `federation_incoming_replies_max_depth` option
 - OAuth: added job to clean expired access tokens
 - MRF: Support for rejecting reports from specific instances (`mrf_simple`)
 - MRF: Support for stripping avatars and banner images from specific instances (`mrf_simple`)
-- Ability to reset avatar, profile banner and backgroud
 - MRF: Support for running subchains.
 - Configuration: `skip_thread_containment` option
 - Configuration: `rate_limit` option. See `Pleroma.Plugs.RateLimiter` documentation for details.

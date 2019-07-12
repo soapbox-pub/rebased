@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Factory do
   use ExMachina.Ecto, repo: Pleroma.Repo
+  alias Pleroma.Object
   alias Pleroma.User
 
   def participation_factory do
@@ -38,6 +39,7 @@ defmodule Pleroma.Factory do
       user
       | ap_id: User.ap_id(user),
         follower_address: User.ap_followers(user),
+        following_address: User.ap_following(user),
         following: [User.ap_id(user)]
     }
   end
@@ -117,13 +119,14 @@ defmodule Pleroma.Factory do
   def note_activity_factory(attrs \\ %{}) do
     user = attrs[:user] || insert(:user)
     note = attrs[:note] || insert(:note, user: user)
+    attrs = Map.drop(attrs, [:user, :note])
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
       "type" => "Create",
       "actor" => note.data["actor"],
       "to" => note.data["to"],
-      "object" => note.data,
+      "object" => note.data["id"],
       "published" => DateTime.utc_now() |> DateTime.to_iso8601(),
       "context" => note.data["context"]
     }
@@ -133,6 +136,7 @@ defmodule Pleroma.Factory do
       actor: data["actor"],
       recipients: data["to"]
     }
+    |> Map.merge(attrs)
   end
 
   def article_activity_factory do
@@ -177,13 +181,14 @@ defmodule Pleroma.Factory do
 
   def like_activity_factory do
     note_activity = insert(:note_activity)
+    object = Object.normalize(note_activity)
     user = insert(:user)
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
       "actor" => user.ap_id,
       "type" => "Like",
-      "object" => note_activity.data["object"]["id"],
+      "object" => object.data["id"],
       "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 

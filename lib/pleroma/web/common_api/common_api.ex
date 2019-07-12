@@ -13,6 +13,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
 
+  import Pleroma.Web.Gettext
   import Pleroma.Web.CommonAPI.Utils
 
   def follow(follower, followed) do
@@ -74,7 +75,7 @@ defmodule Pleroma.Web.CommonAPI do
       {:ok, delete}
     else
       _ ->
-        {:error, "Could not delete"}
+        {:error, dgettext("errors", "Could not delete")}
     end
   end
 
@@ -85,7 +86,7 @@ defmodule Pleroma.Web.CommonAPI do
       ActivityPub.announce(user, object)
     else
       _ ->
-        {:error, "Could not repeat"}
+        {:error, dgettext("errors", "Could not repeat")}
     end
   end
 
@@ -95,7 +96,7 @@ defmodule Pleroma.Web.CommonAPI do
       ActivityPub.unannounce(user, object)
     else
       _ ->
-        {:error, "Could not unrepeat"}
+        {:error, dgettext("errors", "Could not unrepeat")}
     end
   end
 
@@ -106,7 +107,7 @@ defmodule Pleroma.Web.CommonAPI do
       ActivityPub.like(user, object)
     else
       _ ->
-        {:error, "Could not favorite"}
+        {:error, dgettext("errors", "Could not favorite")}
     end
   end
 
@@ -116,7 +117,7 @@ defmodule Pleroma.Web.CommonAPI do
       ActivityPub.unlike(user, object)
     else
       _ ->
-        {:error, "Could not unfavorite"}
+        {:error, dgettext("errors", "Could not unfavorite")}
     end
   end
 
@@ -148,10 +149,10 @@ defmodule Pleroma.Web.CommonAPI do
       object = Object.get_cached_by_ap_id(object.data["id"])
       {:ok, answer_activities, object}
     else
-      {:author, _} -> {:error, "Poll's author can't vote"}
-      {:existing_votes, _} -> {:error, "Already voted"}
-      {:choice_check, {_, false}} -> {:error, "Invalid indices"}
-      {:count_check, false} -> {:error, "Too many choices"}
+      {:author, _} -> {:error, dgettext("errors", "Poll's author can't vote")}
+      {:existing_votes, _} -> {:error, dgettext("errors", "Already voted")}
+      {:choice_check, {_, false}} -> {:error, dgettext("errors", "Invalid indices")}
+      {:count_check, false} -> {:error, dgettext("errors", "Too many choices")}
     end
   end
 
@@ -248,9 +249,14 @@ defmodule Pleroma.Web.CommonAPI do
 
       res
     else
-      {:private_to_public, true} -> {:error, "The message visibility must be direct"}
-      {:error, _} = e -> e
-      e -> {:error, e}
+      {:private_to_public, true} ->
+        {:error, dgettext("errors", "The message visibility must be direct")}
+
+      {:error, _} = e ->
+        e
+
+      e ->
+        {:error, e}
     end
   end
 
@@ -301,7 +307,7 @@ defmodule Pleroma.Web.CommonAPI do
         {:error, err}
 
       _ ->
-        {:error, "Could not pin"}
+        {:error, dgettext("errors", "Could not pin")}
     end
   end
 
@@ -318,7 +324,7 @@ defmodule Pleroma.Web.CommonAPI do
         {:error, err}
 
       _ ->
-        {:error, "Could not unpin"}
+        {:error, dgettext("errors", "Could not unpin")}
     end
   end
 
@@ -326,7 +332,7 @@ defmodule Pleroma.Web.CommonAPI do
     with {:ok, _} <- ThreadMute.add_mute(user.id, activity.data["context"]) do
       {:ok, activity}
     else
-      {:error, _} -> {:error, "conversation is already muted"}
+      {:error, _} -> {:error, dgettext("errors", "conversation is already muted")}
     end
   end
 
@@ -371,8 +377,8 @@ defmodule Pleroma.Web.CommonAPI do
       {:ok, activity}
     else
       {:error, err} -> {:error, err}
-      {:account_id, %{}} -> {:error, "Valid `account_id` required"}
-      {:account, nil} -> {:error, "Account not found"}
+      {:account_id, %{}} -> {:error, dgettext("errors", "Valid `account_id` required")}
+      {:account, nil} -> {:error, dgettext("errors", "Account not found")}
     end
   end
 
@@ -381,14 +387,9 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, activity} <- Utils.update_report_state(activity, state) do
       {:ok, activity}
     else
-      nil ->
-        {:error, :not_found}
-
-      {:error, reason} ->
-        {:error, reason}
-
-      _ ->
-        {:error, "Could not update state"}
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
+      _ -> {:error, dgettext("errors", "Could not update state")}
     end
   end
 
@@ -398,11 +399,8 @@ defmodule Pleroma.Web.CommonAPI do
          {:ok, activity} <- set_visibility(activity, opts) do
       {:ok, activity}
     else
-      nil ->
-        {:error, :not_found}
-
-      {:error, reason} ->
-        {:error, reason}
+      nil -> {:error, :not_found}
+      {:error, reason} -> {:error, reason}
     end
   end
 

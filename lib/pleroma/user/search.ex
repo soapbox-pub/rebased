@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.User.Search do
+  alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.User
   import Ecto.Query
@@ -18,8 +19,7 @@ defmodule Pleroma.User.Search do
 
     for_user = Keyword.get(opts, :for_user)
 
-    # Strip the beginning @ off if there is a query
-    query_string = String.trim_leading(query_string, "@")
+    query_string = format_query(query_string)
 
     maybe_resolve(resolve, for_user, query_string)
 
@@ -33,11 +33,22 @@ defmodule Pleroma.User.Search do
 
         query_string
         |> search_query(for_user, following)
-        |> paginate(result_limit, offset)
-        |> Repo.all()
+        |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => result_limit}, :offset)
       end)
 
     results
+  end
+
+  defp format_query(query_string) do
+    # Strip the beginning @ off if there is a query
+    query_string = String.trim_leading(query_string, "@")
+
+    with [name, domain] <- String.split(query_string, "@"),
+         formatted_domain <- String.replace(domain, ~r/[!-\-|@|[-`|{-~|\/|:]+/, "") do
+      name <> "@" <> to_string(:idna.encode(formatted_domain))
+    else
+      _ -> query_string
+    end
   end
 
   defp search_query(query_string, for_user, following) do
@@ -75,10 +86,6 @@ defmodule Pleroma.User.Search do
   end
 
   defp filter_blocked_domains(query, _), do: query
-
-  defp paginate(query, limit, offset) do
-    from(q in query, limit: ^limit, offset: ^offset)
-  end
 
   defp union_subqueries({fts_subquery, trigram_subquery}) do
     from(s in trigram_subquery, union_all: ^fts_subquery)
@@ -151,7 +158,7 @@ defmodule Pleroma.User.Search do
   defp fts_search_subquery(query, term) do
     processed_query =
       String.trim_trailing(term, "@" <> local_domain())
-      |> String.replace(~r/\W+/, " ")
+      |> String.replace(~r/[!-\/|@|[-`|{-~|:-?]+/, " ")
       |> String.trim()
       |> String.split()
       |> Enum.map(&(&1 <> ":*"))

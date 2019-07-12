@@ -52,6 +52,7 @@ defmodule Pleroma.User do
     field(:avatar, :map)
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
+    field(:following_address, :string)
     field(:search_rank, :float, virtual: true)
     field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
@@ -108,6 +109,10 @@ defmodule Pleroma.User do
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
   def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
 
+  @spec ap_following(User.t()) :: Sring.t()
+  def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
+  def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
+
   def user_info(%User{} = user, args \\ %{}) do
     following_count =
       if args[:following_count], do: args[:following_count], else: following_count(user)
@@ -129,6 +134,7 @@ defmodule Pleroma.User do
     Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user, args))
   end
 
+  @spec restrict_deactivated(Ecto.Query.t()) :: Ecto.Query.t()
   def restrict_deactivated(query) do
     from(u in query,
       where: not fragment("? \\? 'deactivated' AND ?->'deactivated' @> 'true'", u.info, u.info)
@@ -163,9 +169,10 @@ defmodule Pleroma.User do
 
     if changes.valid? do
       case info_cng.changes[:source_data] do
-        %{"followers" => followers} ->
+        %{"followers" => followers, "following" => following} ->
           changes
           |> put_change(:follower_address, followers)
+          |> put_change(:following_address, following)
 
         _ ->
           followers = User.ap_followers(%User{nickname: changes.changes[:nickname]})
@@ -197,7 +204,14 @@ defmodule Pleroma.User do
       |> User.Info.user_upgrade(params[:info])
 
     struct
-    |> cast(params, [:bio, :name, :follower_address, :avatar, :last_refreshed_at])
+    |> cast(params, [
+      :bio,
+      :name,
+      :follower_address,
+      :following_address,
+      :avatar,
+      :last_refreshed_at
+    ])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
@@ -938,6 +952,8 @@ defmodule Pleroma.User do
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
   def perform(:delete, %User{} = user) do
+    {:ok, _user} = ActivityPub.delete(user)
+
     # Remove all relationships
     {:ok, followers} = User.get_followers(user)
 
@@ -954,8 +970,8 @@ defmodule Pleroma.User do
     end)
 
     delete_user_activities(user)
-
-    {:ok, _user} = Repo.delete(user)
+    invalidate_cache(user)
+    Repo.delete(user)
   end
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
@@ -1011,42 +1027,20 @@ defmodule Pleroma.User do
     )
   end
 
-  @spec sync_follow_counter() :: :ok
-  def sync_follow_counter,
-    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:sync_follow_counters])
-
-  @spec perform(:sync_follow_counters) :: :ok
-  def perform(:sync_follow_counters) do
-    {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
-    config = Pleroma.Config.get([:instance, :external_user_synchronization])
-
-    :ok = sync_follow_counters(config)
-    Agent.stop(:domain_errors)
-  end
-
-  @spec sync_follow_counters(keyword()) :: :ok
-  def sync_follow_counters(opts \\ []) do
-    users = external_users(opts)
-
-    if length(users) > 0 do
-      errors = Agent.get(:domain_errors, fn state -> state end)
-      {last, updated_errors} = User.Synchronization.call(users, errors, opts)
-      Agent.update(:domain_errors, fn _state -> updated_errors end)
-      sync_follow_counters(max_id: last.id, limit: opts[:limit])
-    else
-      :ok
-    end
+  @spec external_users_query() :: Ecto.Query.t()
+  def external_users_query do
+    User.Query.build(%{
+      external: true,
+      active: true,
+      order_by: :id
+    })
   end
 
   @spec external_users(keyword()) :: [User.t()]
   def external_users(opts \\ []) do
     query =
-      User.Query.build(%{
-        external: true,
-        active: true,
-        order_by: :id,
-        select: [:id, :ap_id, :info]
-      })
+      external_users_query()
+      |> select([u], struct(u, [:id, :ap_id, :info]))
 
     query =
       if opts[:max_id],

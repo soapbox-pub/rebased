@@ -14,6 +14,7 @@ defmodule Pleroma.UserTest do
   use Pleroma.DataCase
 
   import Pleroma.Factory
+  import Mock
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -51,6 +52,14 @@ defmodule Pleroma.UserTest do
     expected_followers_collection = "#{User.ap_id(user)}/followers"
 
     assert expected_followers_collection == User.ap_followers(user)
+  end
+
+  test "ap_following returns the following collection for the user" do
+    user = UserBuilder.build()
+
+    expected_followers_collection = "#{User.ap_id(user)}/following"
+
+    assert expected_followers_collection == User.ap_following(user)
   end
 
   test "returns all pending follow requests" do
@@ -915,49 +924,80 @@ defmodule Pleroma.UserTest do
     end
   end
 
-  test ".delete_user_activities deletes all create activities" do
-    user = insert(:user)
+  describe "delete" do
+    setup do
+      {:ok, user} = insert(:user) |> User.set_cache()
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
+      [user: user]
+    end
 
-    {:ok, _} = User.delete_user_activities(user)
+    test ".delete_user_activities deletes all create activities", %{user: user} do
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
 
-    # TODO: Remove favorites, repeats, delete activities.
-    refute Activity.get_by_id(activity.id)
-  end
+      {:ok, _} = User.delete_user_activities(user)
 
-  test ".delete deactivates a user, all follow relationships and all activities" do
-    user = insert(:user)
-    follower = insert(:user)
+      # TODO: Remove favorites, repeats, delete activities.
+      refute Activity.get_by_id(activity.id)
+    end
 
-    {:ok, follower} = User.follow(follower, user)
+    test "it deletes a user, all follow relationships and all activities", %{user: user} do
+      follower = insert(:user)
+      {:ok, follower} = User.follow(follower, user)
 
-    {:ok, activity} = CommonAPI.post(user, %{"status" => "2hu"})
-    {:ok, activity_two} = CommonAPI.post(follower, %{"status" => "3hu"})
+      object = insert(:note, user: user)
+      activity = insert(:note_activity, user: user, note: object)
 
-    {:ok, like, _} = CommonAPI.favorite(activity_two.id, user)
-    {:ok, like_two, _} = CommonAPI.favorite(activity.id, follower)
-    {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
+      object_two = insert(:note, user: follower)
+      activity_two = insert(:note_activity, user: follower, note: object_two)
 
-    {:ok, _} = User.delete(user)
+      {:ok, like, _} = CommonAPI.favorite(activity_two.id, user)
+      {:ok, like_two, _} = CommonAPI.favorite(activity.id, follower)
+      {:ok, repeat, _} = CommonAPI.repeat(activity_two.id, user)
 
-    follower = User.get_cached_by_id(follower.id)
+      {:ok, _} = User.delete(user)
 
-    refute User.following?(follower, user)
-    refute User.get_by_id(user.id)
+      follower = User.get_cached_by_id(follower.id)
 
-    user_activities =
-      user.ap_id
-      |> Activity.query_by_actor()
-      |> Repo.all()
-      |> Enum.map(fn act -> act.data["type"] end)
+      refute User.following?(follower, user)
+      refute User.get_by_id(user.id)
+      assert {:ok, nil} == Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
 
-    assert Enum.all?(user_activities, fn act -> act in ~w(Delete Undo) end)
+      user_activities =
+        user.ap_id
+        |> Activity.query_by_actor()
+        |> Repo.all()
+        |> Enum.map(fn act -> act.data["type"] end)
 
-    refute Activity.get_by_id(activity.id)
-    refute Activity.get_by_id(like.id)
-    refute Activity.get_by_id(like_two.id)
-    refute Activity.get_by_id(repeat.id)
+      assert Enum.all?(user_activities, fn act -> act in ~w(Delete Undo) end)
+
+      refute Activity.get_by_id(activity.id)
+      refute Activity.get_by_id(like.id)
+      refute Activity.get_by_id(like_two.id)
+      refute Activity.get_by_id(repeat.id)
+    end
+
+    test_with_mock "it sends out User Delete activity",
+                   %{user: user},
+                   Pleroma.Web.ActivityPub.Publisher,
+                   [:passthrough],
+                   [] do
+      config_path = [:instance, :federating]
+      initial_setting = Pleroma.Config.get(config_path)
+      Pleroma.Config.put(config_path, true)
+
+      {:ok, follower} = User.get_or_fetch_by_ap_id("http://mastodon.example.org/users/admin")
+      {:ok, _} = User.follow(follower, user)
+
+      {:ok, _user} = User.delete(user)
+
+      assert called(
+               Pleroma.Web.ActivityPub.Publisher.publish_one(%{
+                 inbox: "http://mastodon.example.org/inbox"
+               })
+             )
+
+      Pleroma.Config.put(config_path, initial_setting)
+    end
   end
 
   test "get_public_key_for_ap_id fetches a user that's not in the db" do
@@ -1310,52 +1350,6 @@ defmodule Pleroma.UserTest do
       assert fdb_user2.id == user2.id
 
       assert User.external_users(max_id: fdb_user2.id, limit: 1) == []
-    end
-
-    test "sync_follow_counters/1", %{user1: user1, user2: user2} do
-      {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
-
-      :ok = User.sync_follow_counters()
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
-
-      Agent.stop(:domain_errors)
-    end
-
-    test "sync_follow_counters/1 in separate batches", %{user1: user1, user2: user2} do
-      {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
-
-      :ok = User.sync_follow_counters(limit: 1)
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
-
-      Agent.stop(:domain_errors)
-    end
-
-    test "perform/1 with :sync_follow_counters", %{user1: user1, user2: user2} do
-      :ok = User.perform(:sync_follow_counters)
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
     end
   end
 

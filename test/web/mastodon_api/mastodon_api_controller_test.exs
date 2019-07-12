@@ -2958,6 +2958,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert Map.has_key?(emoji, "static_url")
       assert Map.has_key?(emoji, "tags")
       assert is_list(emoji["tags"])
+      assert Map.has_key?(emoji, "category")
       assert Map.has_key?(emoji, "url")
       assert Map.has_key?(emoji, "visible_in_picker")
     end

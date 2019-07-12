@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.BBS.HandlerTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
@@ -59,6 +63,7 @@ defmodule Pleroma.BBS.HandlerTest do
     another_user = insert(:user)
 
     {:ok, activity} = CommonAPI.post(another_user, %{"status" => "this is a test post"})
+    activity_object = Object.normalize(activity)
 
     output =
       capture_io(fn ->
@@ -76,8 +81,9 @@ defmodule Pleroma.BBS.HandlerTest do
       )
 
     assert reply.actor == user.ap_id
-    object = Object.normalize(reply)
-    assert object.data["content"] == "this is a reply"
-    assert object.data["inReplyTo"] == activity.data["object"]
+
+    reply_object_data = Object.normalize(reply).data
+    assert reply_object_data["content"] == "this is a reply"
+    assert reply_object_data["inReplyTo"] == activity_object.data["id"]
   end
 end
