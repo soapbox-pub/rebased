@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.CommonAPI
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -564,6 +565,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       assert is_binary(result["first"])
     end
 
+    test "it returns a 403 error on pages, if the user has 'hide_followers' set and the request is not authenticated",
+         %{conn: conn} do
+      user = insert(:user, %{info: %{hide_followers: true}})
+
+      result =
+        conn
+        |> get("/users/#{user.nickname}/followers?page=1")
+
+      assert result.status == 403
+      assert result.resp_body == ""
+    end
+
+    test "it renders the page, if the user has 'hide_followers' set and the request is authenticated with the same user",
+         %{conn: conn} do
+      user = insert(:user, %{info: %{hide_followers: true}})
+      other_user = insert(:user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/users/#{user.nickname}/followers?page=1")
+        |> json_response(200)
+
+      assert result["totalItems"] == 1
+      assert result["orderedItems"] == [other_user.ap_id]
+    end
+
     test "it works for more than 10 users", %{conn: conn} do
       user = insert(:user)
 
@@ -616,6 +645,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
         |> json_response(200)
 
       assert is_binary(result["first"])
+    end
+
+    test "it returns a 403 error on pages, if the user has 'hide_follows' set and the request is not authenticated",
+         %{conn: conn} do
+      user = insert(:user, %{info: %{hide_follows: true}})
+
+      result =
+        conn
+        |> get("/users/#{user.nickname}/following?page=1")
+
+      assert result.status == 403
+      assert result.resp_body == ""
+    end
+
+    test "it renders the page, if the user has 'hide_follows' set and the request is authenticated with the same user",
+         %{conn: conn} do
+      user = insert(:user, %{info: %{hide_follows: true}})
+      other_user = insert(:user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
+
+      result =
+        conn
+        |> assign(:user, user)
+        |> get("/users/#{user.nickname}/following?page=1")
+        |> json_response(200)
+
+      assert result["totalItems"] == 1
+      assert result["orderedItems"] == [other_user.ap_id]
     end
 
     test "it works for more than 10 users", %{conn: conn} do

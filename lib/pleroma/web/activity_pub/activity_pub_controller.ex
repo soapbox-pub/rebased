@@ -103,43 +103,57 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
-  def following(conn, %{"nickname" => nickname, "page" => page}) do
+  def following(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- User.ensure_keys_present(user) do
+         {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user),
+         {:show_follows, true} <-
+           {:show_follows, (for_user && for_user == user) || !user.info.hide_follows} do
       {page, _} = Integer.parse(page)
 
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json(UserView.render("following.json", %{user: user, page: page}))
+      |> json(UserView.render("following.json", %{user: user, page: page, for: for_user}))
+    else
+      {:show_follows, _} ->
+        conn
+        |> put_resp_header("content-type", "application/activity+json")
+        |> send_resp(403, "")
     end
   end
 
-  def following(conn, %{"nickname" => nickname}) do
+  def following(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- User.ensure_keys_present(user) do
+         {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json(UserView.render("following.json", %{user: user}))
+      |> json(UserView.render("following.json", %{user: user, for: for_user}))
     end
   end
 
-  def followers(conn, %{"nickname" => nickname, "page" => page}) do
+  def followers(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- User.ensure_keys_present(user) do
+         {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user),
+         {:show_followers, true} <-
+           {:show_followers, (for_user && for_user == user) || !user.info.hide_followers} do
       {page, _} = Integer.parse(page)
 
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json(UserView.render("followers.json", %{user: user, page: page}))
+      |> json(UserView.render("followers.json", %{user: user, page: page, for: for_user}))
+    else
+      {:show_followers, _} ->
+        conn
+        |> put_resp_header("content-type", "application/activity+json")
+        |> send_resp(403, "")
     end
   end
 
-  def followers(conn, %{"nickname" => nickname}) do
+  def followers(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
-         {:ok, user} <- User.ensure_keys_present(user) do
+         {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
-      |> json(UserView.render("followers.json", %{user: user}))
+      |> json(UserView.render("followers.json", %{user: user, for: for_user}))
     end
   end
 
@@ -324,5 +338,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
 
     conn
+  end
+
+  defp ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
+    {:ok, new_user} = User.ensure_keys_present(user)
+
+    for_user =
+      if new_user != user and match?(%User{}, for_user) do
+        User.get_cached_by_nickname(for_user.nickname)
+      else
+        for_user
+      end
+
+    {new_user, for_user}
   end
 end

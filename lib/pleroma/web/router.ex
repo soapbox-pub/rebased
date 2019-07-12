@@ -623,8 +623,6 @@ defmodule Pleroma.Web.Router do
     # XXX: not really ostatus
     pipe_through(:ostatus)
 
-    get("/users/:nickname/followers", ActivityPubController, :followers)
-    get("/users/:nickname/following", ActivityPubController, :following)
     get("/users/:nickname/outbox", ActivityPubController, :outbox)
     get("/objects/:uuid/likes", ActivityPubController, :object_likes)
   end
@@ -655,6 +653,12 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
       post("/users/:nickname/outbox", ActivityPubController, :update_outbox)
+    end
+
+    scope [] do
+      pipe_through(:oauth_read_or_public)
+      get("/users/:nickname/followers", ActivityPubController, :followers)
+      get("/users/:nickname/following", ActivityPubController, :following)
     end
   end
 
