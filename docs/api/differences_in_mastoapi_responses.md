@@ -46,14 +46,6 @@ Has these additional fields under the `pleroma` object:
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
 - `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
 
-### Extensions for PleromaFE
-
-These endpoints added for controlling PleromaFE features over the Mastodon API
-
-- PATCH `/api/v1/accounts/update_avatar`: Set/clear user avatar image
-- PATCH `/api/v1/accounts/update_banner`: Set/clear user banner image
-- PATCH `/api/v1/accounts/update_background`: Set/clear user background image
-
 ### Source
 
 Has these additional fields under the `pleroma` object:

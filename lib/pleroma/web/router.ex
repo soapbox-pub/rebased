@@ -322,10 +322,6 @@ defmodule Pleroma.Web.Router do
 
       patch("/accounts/update_credentials", MastodonAPIController, :update_credentials)
 
-      patch("/accounts/update_avatar", MastodonAPIController, :update_avatar)
-      patch("/accounts/update_banner", MastodonAPIController, :update_banner)
-      patch("/accounts/update_background", MastodonAPIController, :update_background)
-
       post("/statuses", MastodonAPIController, :post_status)
       delete("/statuses/:id", MastodonAPIController, :delete_status)
 
@@ -359,6 +355,10 @@ defmodule Pleroma.Web.Router do
       get("/filters/:id", MastodonAPIController, :get_filter)
       put("/filters/:id", MastodonAPIController, :update_filter)
       delete("/filters/:id", MastodonAPIController, :delete_filter)
+
+      patch("/pleroma/accounts/update_avatar", MastodonAPIController, :update_avatar)
+      patch("/pleroma/accounts/update_banner", MastodonAPIController, :update_banner)
+      patch("/pleroma/accounts/update_background", MastodonAPIController, :update_background)
 
       get("/pleroma/mascot", MastodonAPIController, :get_mascot)
       put("/pleroma/mascot", MastodonAPIController, :set_mascot)
