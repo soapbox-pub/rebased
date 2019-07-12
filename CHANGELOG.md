@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Not being able to pin unlisted posts
 - Metadata rendering errors resulting in the entire page being inaccessible
+- Federation/MediaProxy not working with instances that have wrong certificate order
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
 - Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
