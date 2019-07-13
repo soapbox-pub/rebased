@@ -238,6 +238,13 @@ See [Admin-API](Admin-API.md)
 ]
 ```
 
+## `/api/v1/pleroma/accounts/update_*`
+### Set and clear account avatar, banner, and background
+
+- PATCH `/api/v1/pleroma/accounts/update_avatar`: Set/clear user avatar image
+- PATCH `/api/v1/pleroma/accounts/update_banner`: Set/clear user banner image
+- PATCH `/api/v1/pleroma/accounts/update_background`: Set/clear user background image
+
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image
 * Method `GET`

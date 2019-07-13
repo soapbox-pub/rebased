@@ -593,7 +593,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     conn =
       conn
       |> assign(:user, user)
-      |> patch("/api/v1/accounts/update_avatar", %{img: avatar_image})
+      |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: avatar_image})
 
     user = refresh_record(user)
 
@@ -618,7 +618,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     conn =
       conn
       |> assign(:user, user)
-      |> patch("/api/v1/accounts/update_avatar", %{img: ""})
+      |> patch("/api/v1/pleroma/accounts/update_avatar", %{img: ""})
 
     user = User.get_cached_by_id(user.id)
 
@@ -633,7 +633,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     conn =
       conn
       |> assign(:user, user)
-      |> patch("/api/v1/accounts/update_banner", %{"banner" => @image})
+      |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => @image})
 
     user = refresh_record(user)
     assert user.info.banner["type"] == "Image"
@@ -647,7 +647,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     conn =
       conn
       |> assign(:user, user)
-      |> patch("/api/v1/accounts/update_banner", %{"banner" => ""})
+      |> patch("/api/v1/pleroma/accounts/update_banner", %{"banner" => ""})
 
     user = refresh_record(user)
     assert user.info.banner == %{}
@@ -661,7 +661,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     conn =
       conn
       |> assign(:user, user)
-      |> patch("/api/v1/accounts/update_background", %{"img" => @image})
+      |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => @image})
 
     user = refresh_record(user)
     assert user.info.background["type"] == "Image"
@@ -674,7 +674,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     conn =
       conn
       |> assign(:user, user)
-      |> patch("/api/v1/accounts/update_background", %{"img" => ""})
+      |> patch("/api/v1/pleroma/accounts/update_background", %{"img" => ""})
 
     user = refresh_record(user)
     assert user.info.background == %{}

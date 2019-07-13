@@ -106,6 +106,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML)
 * `mrf_transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
+* `mrf_transparency_exclusions`: Exclude specific instance names from MRF transparency.  The use of the exclusions feature will be disclosed in nodeinfo as a boolean value.
 * `scope_copy`: Copy the scope (private/unlisted/public) in replies to posts by default.
 * `subject_line_behavior`: Allows changing the default behaviour of subject lines in replies. Valid values:
   * "email": Copy and preprend re:, as in email.
@@ -640,3 +641,10 @@ A keyword list of rate limiters where a key is a limiter name and value is the l
 It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
 
 See [`Pleroma.Plugs.RateLimiter`](Pleroma.Plugs.RateLimiter.html) documentation for examples.
+
+Supported rate limiters:
+
+* `:search` for the search requests (account & status search etc.)
+* `:app_account_creation` for registering user accounts from the same IP address
+* `:statuses_actions` for create / delete / fav / unfav / reblog / unreblog actions on any statuses
+* `:status_id_action` for fav / unfav or reblog / unreblog actions on the same status by the same user
