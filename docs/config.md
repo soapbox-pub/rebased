@@ -640,3 +640,10 @@ A keyword list of rate limiters where a key is a limiter name and value is the l
 It is also possible to have different limits for unauthenticated and authenticated users: the keyword value must be a list of two tuples where the first one is a config for unauthenticated users and the second one is for authenticated.
 
 See [`Pleroma.Plugs.RateLimiter`](Pleroma.Plugs.RateLimiter.html) documentation for examples.
+
+Supported rate limiters:
+
+* `:search` for the search requests (account & status search etc.)
+* `:app_account_creation` for registering user accounts from the same IP address
+* `:statuses_actions` for create / delete / fav / unfav / reblog / unreblog actions on any statuses
+* `:status_id_action` for fav / unfav or reblog / unreblog actions on the same status by the same user

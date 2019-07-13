@@ -521,7 +521,9 @@ config :http_signatures,
 
 config :pleroma, :rate_limit,
   search: [{1000, 10}, {1000, 30}],
-  app_account_creation: {1_800_000, 25}
+  app_account_creation: {1_800_000, 25},
+  statuses_actions: {10_000, 15},
+  status_id_action: {60_000, 3}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
