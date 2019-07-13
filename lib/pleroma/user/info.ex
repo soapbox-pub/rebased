@@ -330,4 +330,14 @@ defmodule Pleroma.User.Info do
 
     cast(info, params, [:muted_reblogs])
   end
+
+  def follow_information_update(info, params) do
+    info
+    |> cast(params, [
+      :hide_followers,
+      :hide_follows,
+      :follower_count,
+      :following_count
+    ])
+  end
 end

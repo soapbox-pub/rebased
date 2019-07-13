@@ -1022,15 +1022,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
          followers_count when is_integer(followers_count) <- followers_data["totalItems"],
          {:ok, hide_followers} <- collection_private(followers_data) do
-      info = %{
-        hide_follows: hide_follows,
-        follower_count: followers_count,
-        following_count: following_count,
-        hide_followers: hide_followers
-      }
-
-      info = Map.merge(user.info, info)
-      {:ok, Map.put(user, :info, info)}
+      {:ok,
+       %{
+         hide_follows: hide_follows,
+         follower_count: followers_count,
+         following_count: following_count,
+         hide_followers: hide_followers
+       }}
     else
       {:error, _} = e ->
         e
@@ -1043,8 +1041,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp maybe_update_follow_information(data) do
     with {:enabled, true} <-
            {:enabled, Pleroma.Config.get([:instance, :external_user_synchronization])},
-         {:ok, data} <- fetch_follow_information_for_user(data) do
-      data
+         {:ok, info} <- fetch_follow_information_for_user(data) do
+      info = Map.merge(data.info, info)
+      Map.put(data, :info, info)
     else
       {:enabled, false} ->
         data

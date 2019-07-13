@@ -406,6 +406,8 @@ defmodule Pleroma.User do
 
         {1, [follower]} = Repo.update_all(q, [])
 
+        follower = maybe_update_following_count(follower)
+
         {:ok, _} = update_follower_count(followed)
 
         set_cache(follower)
@@ -424,6 +426,8 @@ defmodule Pleroma.User do
         )
 
       {1, [follower]} = Repo.update_all(q, [])
+
+      follower = maybe_update_following_count(follower)
 
       {:ok, followed} = update_follower_count(followed)
 
@@ -698,31 +702,74 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  def update_follower_count(%User{} = user) do
-    follower_count_query =
-      User.Query.build(%{followers: user, deactivated: false})
-      |> select([u], %{count: count(u.id)})
+  def maybe_fetch_follow_information(user) do
+    with {:ok, user} <- fetch_follow_information(user) do
+      user
+    else
+      e ->
+        Logger.error(
+          "Follower/Following counter update for #{user.ap_id} failed.\n" <> inspect(e)
+        )
 
-    User
-    |> where(id: ^user.id)
-    |> join(:inner, [u], s in subquery(follower_count_query))
-    |> update([u, s],
-      set: [
-        info:
-          fragment(
-            "jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
-            u.info,
-            s.count
-          )
-      ]
-    )
-    |> select([u], u)
-    |> Repo.update_all([])
-    |> case do
-      {1, [user]} -> set_cache(user)
-      _ -> {:error, user}
+        user
     end
   end
+
+  def fetch_follow_information(user) do
+    with {:ok, info} <- ActivityPub.fetch_follow_information_for_user(user) do
+      info_cng = User.Info.follow_information_update(user.info, info)
+
+      changeset =
+        user
+        |> change()
+        |> put_embed(:info, info_cng)
+
+      update_and_set_cache(changeset)
+    else
+      {:error, _} = e -> e
+      e -> {:error, e}
+    end
+  end
+
+  def update_follower_count(%User{} = user) do
+    unless user.local == false and Pleroma.Config.get([:instance, :external_user_synchronization]) do
+      follower_count_query =
+        User.Query.build(%{followers: user, deactivated: false})
+        |> select([u], %{count: count(u.id)})
+
+      User
+      |> where(id: ^user.id)
+      |> join(:inner, [u], s in subquery(follower_count_query))
+      |> update([u, s],
+        set: [
+          info:
+            fragment(
+              "jsonb_set(?, '{follower_count}', ?::varchar::jsonb, true)",
+              u.info,
+              s.count
+            )
+        ]
+      )
+      |> select([u], u)
+      |> Repo.update_all([])
+      |> case do
+        {1, [user]} -> set_cache(user)
+        _ -> {:error, user}
+      end
+    else
+      {:ok, maybe_fetch_follow_information(user)}
+    end
+  end
+
+  def maybe_update_following_count(%User{local: false} = user) do
+    if Pleroma.Config.get([:instance, :external_user_synchronization]) do
+      {:ok, maybe_fetch_follow_information(user)}
+    else
+      user
+    end
+  end
+
+  def maybe_update_following_count(user), do: user
 
   def remove_duplicated_following(%User{following: following} = user) do
     uniq_following = Enum.uniq(following)
