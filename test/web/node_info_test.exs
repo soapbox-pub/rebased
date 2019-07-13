@@ -83,4 +83,47 @@ defmodule Pleroma.Web.NodeInfoTest do
 
     Pleroma.Config.put([:instance, :safe_dm_mentions], option)
   end
+
+  test "it shows MRF transparency data if enabled", %{conn: conn} do
+    option = Pleroma.Config.get([:instance, :mrf_transparency])
+    Pleroma.Config.put([:instance, :mrf_transparency], true)
+
+    simple_config = %{"reject" => ["example.com"]}
+    Pleroma.Config.put(:mrf_simple, simple_config)
+
+    response =
+      conn
+      |> get("/nodeinfo/2.1.json")
+      |> json_response(:ok)
+
+    assert response["metadata"]["federation"]["mrf_simple"] == simple_config
+
+    Pleroma.Config.put([:instance, :mrf_transparency], option)
+    Pleroma.Config.put(:mrf_simple, %{})
+  end
+
+  test "it performs exclusions from MRF transparency data if configured", %{conn: conn} do
+    option = Pleroma.Config.get([:instance, :mrf_transparency])
+    Pleroma.Config.put([:instance, :mrf_transparency], true)
+
+    exclusions = Pleroma.Config.get([:instance, :mrf_transparency_exclusions])
+    Pleroma.Config.put([:instance, :mrf_transparency_exclusions], ["other.site"])
+
+    simple_config = %{"reject" => ["example.com", "other.site"]}
+    expected_config = %{"reject" => ["example.com"]}
+
+    Pleroma.Config.put(:mrf_simple, simple_config)
+
+    response =
+      conn
+      |> get("/nodeinfo/2.1.json")
+      |> json_response(:ok)
+
+    assert response["metadata"]["federation"]["mrf_simple"] == expected_config
+    assert response["metadata"]["federation"]["exclusions"] == true
+
+    Pleroma.Config.put([:instance, :mrf_transparency], option)
+    Pleroma.Config.put([:instance, :mrf_transparency_exclusions], exclusions)
+    Pleroma.Config.put(:mrf_simple, %{})
+  end
 end

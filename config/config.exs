@@ -240,6 +240,7 @@ config :pleroma, :instance,
     "text/bbcode"
   ],
   mrf_transparency: true,
+  mrf_transparency_exclusions: [],
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
   no_attachment_links: false,
