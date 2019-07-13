@@ -609,13 +609,13 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     with %User{ap_id: ^actor_id} = actor <- User.get_cached_by_ap_id(object["id"]) do
       {:ok, new_user_data} = ActivityPub.user_data_from_user_object(object)
 
-      banner = new_user_data[:info]["banner"]
-      locked = new_user_data[:info]["locked"] || false
+      banner = new_user_data[:info][:banner]
+      locked = new_user_data[:info][:locked] || false
 
       update_data =
         new_user_data
         |> Map.take([:name, :bio, :avatar])
-        |> Map.put(:info, %{"banner" => banner, "locked" => locked})
+        |> Map.put(:info, %{banner: banner, locked: locked})
 
       actor
       |> User.upgrade_changeset(update_data)

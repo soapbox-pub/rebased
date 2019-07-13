@@ -986,10 +986,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     user_data = %{
       ap_id: data["id"],
       info: %{
-        "ap_enabled" => true,
-        "source_data" => data,
-        "banner" => banner,
-        "locked" => locked
+        ap_enabled: true,
+        source_data: data,
+        banner: banner,
+        locked: locked
       },
       avatar: avatar,
       name: data["name"],
@@ -1023,10 +1023,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          followers_count when is_integer(followers_count) <- followers_data["totalItems"],
          {:ok, hide_followers} <- collection_private(followers_data) do
       info = %{
-        "hide_follows" => hide_follows,
-        "follower_count" => followers_count,
-        "following_count" => following_count,
-        "hide_followers" => hide_followers
+        hide_follows: hide_follows,
+        follower_count: followers_count,
+        following_count: following_count,
+        hide_followers: hide_followers
       }
 
       info = Map.merge(user.info, info)
