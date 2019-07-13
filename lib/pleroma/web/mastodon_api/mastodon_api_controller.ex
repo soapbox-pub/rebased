@@ -47,9 +47,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
-  @rate_limited_status_crud_actions ~w(post_status delete_status)a
-  @rate_limited_status_reactions ~w(reblog_status unreblog_status fav_status unfav_status)a
-  @rate_limited_status_actions @rate_limited_status_crud_actions ++ @rate_limited_status_reactions
+  @rate_limited_status_actions ~w(reblog_status unreblog_status fav_status unfav_status
+    post_status delete_status)a
 
   plug(
     RateLimiter,
