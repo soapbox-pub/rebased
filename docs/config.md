@@ -106,6 +106,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
 * `allowed_post_formats`: MIME-type list of formats allowed to be posted (transformed into HTML)
 * `mrf_transparency`: Make the content of your Message Rewrite Facility settings public (via nodeinfo).
+* `mrf_transparency_exclusions`: Exclude specific instance names from MRF transparency.
 * `scope_copy`: Copy the scope (private/unlisted/public) in replies to posts by default.
 * `subject_line_behavior`: Allows changing the default behaviour of subject lines in replies. Valid values:
   * "email": Copy and preprend re:, as in email.
