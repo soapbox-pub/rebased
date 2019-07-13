@@ -30,6 +30,7 @@ Configuration: `federation_incoming_replies_max_depth` option
 - Added synchronization of following/followers counters for external users
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
 - Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
+- Admin API: Endpoint for fetching latest user's statuses
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
