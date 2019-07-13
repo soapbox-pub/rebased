@@ -114,7 +114,9 @@ defmodule Pleroma.User do
 
   def user_info(%User{} = user, args \\ %{}) do
     following_count =
-      if args[:following_count], do: args[:following_count], else: following_count(user)
+      if args[:following_count],
+        do: args[:following_count],
+        else: user.info.following_count || following_count(user)
 
     follower_count =
       if args[:follower_count], do: args[:follower_count], else: user.info.follower_count

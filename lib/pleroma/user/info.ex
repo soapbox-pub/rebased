@@ -16,6 +16,7 @@ defmodule Pleroma.User.Info do
     field(:source_data, :map, default: %{})
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
+    field(:following_count, :integer, default: nil)
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
@@ -195,7 +196,11 @@ defmodule Pleroma.User.Info do
       :uri,
       :hub,
       :topic,
-      :salmon
+      :salmon,
+      :hide_followers,
+      :hide_follows,
+      :follower_count,
+      :following_count
     ])
   end
 
@@ -206,7 +211,11 @@ defmodule Pleroma.User.Info do
       :source_data,
       :banner,
       :locked,
-      :magic_key
+      :magic_key,
+      :follower_count,
+      :following_count,
+      :hide_follows,
+      :hide_followers
     ])
   end
 
