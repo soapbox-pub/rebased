@@ -1013,17 +1013,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, user_data}
   end
 
-  defp maybe_update_follow_information(data) do
-    with {:enabled, true} <-
-           {:enabled, Pleroma.Config.get([:instance, :external_user_synchronization])},
-         {:ok, following_data} <-
-           Fetcher.fetch_and_contain_remote_object_from_id(data.following_address),
-         following_count <- following_data["totalItems"],
-         hide_follows <- collection_private?(following_data),
+  def fetch_follow_information_for_user(user) do
+    with {:ok, following_data} <-
+           Fetcher.fetch_and_contain_remote_object_from_id(user.following_address),
+         following_count when is_integer(following_count) <- following_data["totalItems"],
+         {:ok, hide_follows} <- collection_private(following_data),
          {:ok, followers_data} <-
-           Fetcher.fetch_and_contain_remote_object_from_id(data.follower_address),
-         followers_count <- followers_data["totalItems"],
-         hide_followers <- collection_private?(followers_data) do
+           Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
+         followers_count when is_integer(followers_count) <- followers_data["totalItems"],
+         {:ok, hide_followers} <- collection_private(followers_data) do
       info = %{
         "hide_follows" => hide_follows,
         "follower_count" => followers_count,
@@ -1031,8 +1029,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         "hide_followers" => hide_followers
       }
 
-      info = Map.merge(data.info, info)
-      Map.put(data, :info, info)
+      info = Map.merge(user.info, info)
+      {:ok, Map.put(user, :info, info)}
+    else
+      {:error, _} = e ->
+        e
+
+      e ->
+        {:error, e}
+    end
+  end
+
+  defp maybe_update_follow_information(data) do
+    with {:enabled, true} <-
+           {:enabled, Pleroma.Config.get([:instance, :external_user_synchronization])},
+         {:ok, data} <- fetch_follow_information_for_user(data) do
+      data
     else
       {:enabled, false} ->
         data
@@ -1046,19 +1058,22 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  defp collection_private?(data) do
+  defp collection_private(data) do
     if is_map(data["first"]) and
          data["first"]["type"] in ["CollectionPage", "OrderedCollectionPage"] do
-      false
+      {:ok, false}
     else
       with {:ok, _data} <- Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
-        false
+        {:ok, false}
       else
         {:error, {:ok, %{status: code}}} when code in [401, 403] ->
-          true
+          {:ok, true}
 
-        _e ->
-          false
+        {:error, _} = e ->
+          e
+
+        e ->
+          {:error, e}
       end
     end
   end
