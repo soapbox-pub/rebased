@@ -1063,7 +1063,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          data["first"]["type"] in ["CollectionPage", "OrderedCollectionPage"] do
       {:ok, false}
     else
-      with {:ok, _data} <- Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
+      with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
+             Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
         {:ok, false}
       else
         {:error, {:ok, %{status: code}}} when code in [401, 403] ->

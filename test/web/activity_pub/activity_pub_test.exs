@@ -1222,4 +1222,85 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert result.id == activity.id
     end
   end
+
+  describe "fetch_follow_information_for_user" do
+    test "syncronizes following/followers counters" do
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/fuser2/followers",
+          following_address: "http://localhost:4001/users/fuser2/following"
+        )
+
+      {:ok, user} = ActivityPub.fetch_follow_information_for_user(user)
+      assert user.info.follower_count == 527
+      assert user.info.following_count == 267
+    end
+
+    test "detects hidden followers" do
+      mock(fn env ->
+        case env.url do
+          "http://localhost:4001/users/masto_closed/followers?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+
+          "http://localhost:4001/users/masto_closed/following?page=1" ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "id" => "http://localhost:4001/users/masto_closed/following?page=1",
+                  "type" => "OrderedCollectionPage"
+                })
+            }
+
+          _ ->
+            apply(HttpRequestMock, :request, [env])
+        end
+      end)
+
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following"
+        )
+
+      {:ok, user} = ActivityPub.fetch_follow_information_for_user(user)
+      assert user.info.hide_followers == true
+      assert user.info.hide_follows == false
+    end
+
+    test "detects hidden follows" do
+      mock(fn env ->
+        case env.url do
+          "http://localhost:4001/users/masto_closed/following?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+
+          "http://localhost:4001/users/masto_closed/followers?page=1" ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "id" => "http://localhost:4001/users/masto_closed/followers?page=1",
+                  "type" => "OrderedCollectionPage"
+                })
+            }
+
+          _ ->
+            apply(HttpRequestMock, :request, [env])
+        end
+      end)
+
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following"
+        )
+
+      {:ok, user} = ActivityPub.fetch_follow_information_for_user(user)
+      assert user.info.hide_followers == false
+      assert user.info.hide_follows == true
+    end
+  end
 end
