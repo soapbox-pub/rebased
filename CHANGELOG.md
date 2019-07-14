@@ -42,6 +42,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: changed json structure for saving config settings.
 - RichMedia: parsers and their order are configured in `rich_media` config.
 
+## [1.0.1] - 2019-07-14
+### Security
+- OStatus: fix an object spoofing vulnerability.
+
 ## [1.0.0] - 2019-06-29
 ### Security
 - Mastodon API: Fix display names not being sanitized

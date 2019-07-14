@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Conversation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Object.Containment
   alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.Repo
@@ -126,6 +127,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
+         :ok <- Containment.contain_child(map),
          {:ok, map, object} <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
