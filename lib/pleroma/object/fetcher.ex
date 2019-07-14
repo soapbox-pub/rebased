@@ -38,6 +38,7 @@ defmodule Pleroma.Object.Fetcher do
              "type" => "Create",
              "to" => data["to"],
              "cc" => data["cc"],
+             # TODO: Should we seriously keep this attributedTo thing?
              "actor" => data["actor"] || data["attributedTo"],
              "object" => data
            },
@@ -55,6 +56,9 @@ defmodule Pleroma.Object.Fetcher do
 
         object = %Object{} ->
           {:ok, object}
+
+        :error ->
+          {:error, "Object containment failed."}
 
         _e ->
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
