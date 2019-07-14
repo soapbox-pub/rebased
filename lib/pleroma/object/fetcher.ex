@@ -31,43 +31,36 @@ defmodule Pleroma.Object.Fetcher do
       {:ok, object}
     else
       Logger.info("Fetching #{id} via AP")
-      {status, data} = fetch_and_contain_remote_object_from_id(id)
-      object = Object.normalize(data, false)
 
-      if status == :ok and object == nil do
-        with params <- %{
-               "type" => "Create",
-               "to" => data["to"],
-               "cc" => data["cc"],
-               # Should we seriously keep this attributedTo thing?
-               "actor" => data["actor"] || data["attributedTo"],
-               "object" => data
-             },
-             :ok <- Containment.contain_origin(id, params),
-             {:ok, activity} <- Transmogrifier.handle_incoming(params, options),
-             {:object, _data, %Object{} = object} <-
-               {:object, data, Object.normalize(activity, false)} do
-          {:ok, object}
-        else
-          {:error, {:reject, nil}} ->
-            {:reject, nil}
-
-          {:object, data, nil} ->
-            reinject_object(data)
-
-          object = %Object{} ->
-            {:ok, object}
-
-          :error ->
-            {:error, "Object containment failed."}
-
-          e ->
-            e
-        end
+      with {:fetch, {:ok, data}} <- {:fetch, fetch_and_contain_remote_object_from_id(id)},
+           {:normalize, nil} <- {:normalize, Object.normalize(data, false)},
+           params <- %{
+             "type" => "Create",
+             "to" => data["to"],
+             "cc" => data["cc"],
+             # Should we seriously keep this attributedTo thing?
+             "actor" => data["actor"] || data["attributedTo"],
+             "object" => data
+           },
+           {:containment, :ok} <- {:containment, Containment.contain_origin(id, params)},
+           {:ok, activity} <- Transmogrifier.handle_incoming(params, options),
+           {:object, _data, %Object{} = object} <-
+             {:object, data, Object.normalize(activity, false)} do
+        {:ok, object}
       else
-        if status == :ok and object != nil do
+        {:containment, _} ->
+          {:error, "Object containment failed."}
+
+        {:error, {:reject, nil}} ->
+          {:reject, nil}
+
+        {:object, data, nil} ->
+          reinject_object(data)
+
+        {:normalize, object = %Object{}} ->
           {:ok, object}
-        else
+
+        _e ->
           # Only fallback when receiving a fetch/normalization error with ActivityPub
           Logger.info("Couldn't get object via AP, trying out OStatus fetching...")
 
@@ -76,7 +69,6 @@ defmodule Pleroma.Object.Fetcher do
             {:ok, [activity | _]} -> {:ok, Object.normalize(activity, false)}
             e -> e
           end
-        end
       end
     end
   end
