@@ -6,11 +6,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   import Pleroma.Web.Gettext
 
   alias Calendar.Strftime
-  alias Comeonin.Pbkdf2
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Formatter
   alias Pleroma.Object
+  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
@@ -371,7 +371,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def confirm_current_password(user, password) do
     with %User{local: true} = db_user <- User.get_cached_by_id(user.id),
-         true <- Pbkdf2.checkpw(password, db_user.password_hash) do
+         true <- AuthenticationPlug.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else
       _ -> {:error, dgettext("errors", "Invalid password.")}

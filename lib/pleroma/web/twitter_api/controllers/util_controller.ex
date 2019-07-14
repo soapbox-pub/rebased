@@ -7,10 +7,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   require Logger
 
-  alias Comeonin.Pbkdf2
   alias Pleroma.Activity
   alias Pleroma.Emoji
   alias Pleroma.Notification
+  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -96,7 +96,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     name = followee.nickname
 
     with %User{} = user <- User.get_cached_by_nickname(username),
-         true <- Pbkdf2.checkpw(password, user.password_hash),
+         true <- AuthenticationPlug.checkpw(password, user.password_hash),
          %User{} = _followed <- User.get_cached_by_id(id),
          {:ok, follower} <- User.follow(user, followee),
          {:ok, _activity} <- ActivityPub.follow(follower, followee) do
