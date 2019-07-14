@@ -13,7 +13,7 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     with config <- Pleroma.Config.get([:media_proxy], []),
          true <- Keyword.get(config, :enabled, false),
          {:ok, url} <- MediaProxy.decode_url(sig64, url64),
-         :ok <- filename_matches(Map.has_key?(params, "filename"), conn.request_path, url) do
+         :ok <- filename_matches(params, conn.request_path, url) do
       ReverseProxy.call(conn, url, Keyword.get(config, :proxy_opts, @default_proxy_opts))
     else
       false ->
@@ -27,13 +27,15 @@ defmodule Pleroma.Web.MediaProxy.MediaProxyController do
     end
   end
 
-  def filename_matches(has_filename, path, url) do
-    filename = url |> MediaProxy.filename()
+  def filename_matches(%{"filename" => _} = _, path, url) do
+    filename = MediaProxy.filename(url)
 
-    if has_filename && filename && Path.basename(path) != filename do
+    if filename && Path.basename(path) != filename do
       {:wrong_filename, filename}
     else
       :ok
     end
   end
+
+  def filename_matches(_, _, _), do: :ok
 end
