@@ -1068,9 +1068,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def mute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
+  def mute(%{assigns: %{user: muter}} = conn, %{"id" => id} = params) do
+    notifications =
+      if Map.has_key?(params, "notifications"),
+        do: params["notifications"] in [true, "True", "true", "1"],
+        else: true
+
     with %User{} = muted <- User.get_cached_by_id(id),
-         {:ok, muter} <- User.mute(muter, muted) do
+         {:ok, muter} <- User.mute(muter, muted, notifications) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: muter, target: muted})

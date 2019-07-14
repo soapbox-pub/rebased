@@ -11,7 +11,6 @@ defmodule Pleroma.Notification do
   alias Pleroma.Pagination
   alias Pleroma.Repo
   alias Pleroma.User
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Push
   alias Pleroma.Web.Streamer
@@ -32,31 +31,47 @@ defmodule Pleroma.Notification do
     |> cast(attrs, [:seen])
   end
 
-  def for_user_query(user) do
-    Notification
-    |> where(user_id: ^user.id)
-    |> where(
-      [n, a],
-      fragment(
-        "? not in (SELECT ap_id FROM users WHERE info->'deactivated' @> 'true')",
-        a.actor
-      )
-    )
-    |> join(:inner, [n], activity in assoc(n, :activity))
-    |> join(:left, [n, a], object in Object,
-      on:
+  def for_user_query(user, opts) do
+    query =
+      Notification
+      |> where(user_id: ^user.id)
+      |> where(
+        [n, a],
         fragment(
-          "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
-          object.data,
-          a.data
+          "? not in (SELECT ap_id FROM users WHERE info->'deactivated' @> 'true')",
+          a.actor
         )
-    )
-    |> preload([n, a, o], activity: {a, object: o})
+      )
+      |> join(:inner, [n], activity in assoc(n, :activity))
+      |> join(:left, [n, a], object in Object,
+        on:
+          fragment(
+            "(?->>'id') = COALESCE((? -> 'object'::text) ->> 'id'::text)",
+            object.data,
+            a.data
+          )
+      )
+      |> preload([n, a, o], activity: {a, object: o})
+
+    if opts[:with_muted] do
+      query
+    else
+      where(query, [n, a], a.actor not in ^user.info.muted_notifications)
+      |> where([n, a], a.actor not in ^user.info.blocks)
+      |> where(
+        [n, a],
+        fragment("substring(? from '.*://([^/]*)')", a.actor) not in ^user.info.domain_blocks
+      )
+      |> join(:left, [n, a], tm in Pleroma.ThreadMute,
+        on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
+      )
+      |> where([n, a, o, tm], is_nil(tm.id))
+    end
   end
 
   def for_user(user, opts \\ %{}) do
     user
-    |> for_user_query()
+    |> for_user_query(opts)
     |> Pagination.fetch_paginated(opts)
   end
 
@@ -179,11 +194,10 @@ defmodule Pleroma.Notification do
 
   def get_notified_from_activity(_, _local_only), do: []
 
+  @spec skip?(Activity.t(), User.t()) :: boolean()
   def skip?(activity, user) do
     [
       :self,
-      :blocked,
-      :muted,
       :followers,
       :follows,
       :non_followers,
@@ -193,19 +207,9 @@ defmodule Pleroma.Notification do
     |> Enum.any?(&skip?(&1, activity, user))
   end
 
+  @spec skip?(atom(), Activity.t(), User.t()) :: boolean()
   def skip?(:self, activity, user) do
     activity.data["actor"] == user.ap_id
-  end
-
-  def skip?(:blocked, activity, user) do
-    actor = activity.data["actor"]
-    User.blocks?(user, %{ap_id: actor})
-  end
-
-  def skip?(:muted, activity, user) do
-    actor = activity.data["actor"]
-
-    User.mutes?(user, %{ap_id: actor}) or CommonAPI.thread_muted?(user, activity)
   end
 
   def skip?(
