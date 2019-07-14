@@ -1,6 +1,8 @@
 defmodule Pleroma.DigestEmailWorker do
   import Ecto.Query
 
+  @queue_name :digest_emails
+
   def run do
     config = Pleroma.Config.get([:email_notifications, :digest])
     negative_interval = -Map.fetch!(config, :interval)
@@ -15,18 +17,19 @@ defmodule Pleroma.DigestEmailWorker do
       select: u
     )
     |> Pleroma.Repo.all()
-    |> run()
+    |> Enum.each(&PleromaJobQueue.enqueue(@queue_name, __MODULE__, [&1]))
   end
 
-  def run([]), do: :ok
-
-  def run([user | users]) do
+  @doc """
+  Send digest email to the given user.
+  Updates `last_digest_emailed_at` field for the user and returns the updated user.
+  """
+  @spec perform(Pleroma.User.t()) :: Pleroma.User.t()
+  def perform(user) do
     with %Swoosh.Email{} = email <- Pleroma.Emails.UserEmail.digest_email(user) do
       Pleroma.Emails.Mailer.deliver_async(email)
     end
 
     Pleroma.User.touch_last_digest_emailed_at(user)
-
-    run(users)
   end
 end

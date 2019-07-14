@@ -27,7 +27,7 @@ defmodule Mix.Tasks.Pleroma.Digest do
 
     patched_user = %{user | last_digest_emailed_at: last_digest_emailed_at}
 
-    :ok = Pleroma.DigestEmailWorker.run([patched_user])
+    _user = Pleroma.DigestEmailWorker.perform(patched_user)
     Mix.shell().info("Digest email have been sent to #{nickname} (#{user.email})")
   end
 end
