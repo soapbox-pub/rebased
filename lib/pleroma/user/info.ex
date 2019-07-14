@@ -24,6 +24,7 @@ defmodule Pleroma.User.Info do
     field(:domain_blocks, {:array, :string}, default: [])
     field(:mutes, {:array, :string}, default: [])
     field(:muted_reblogs, {:array, :string}, default: [])
+    field(:muted_notifications, {:array, :string}, default: [])
     field(:subscribers, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
@@ -146,6 +147,16 @@ defmodule Pleroma.User.Info do
     |> validate_required([:mutes])
   end
 
+  @spec set_notification_mutes(Changeset.t(), [String.t()], boolean()) :: Changeset.t()
+  def set_notification_mutes(changeset, muted_notifications, notifications?) do
+    if notifications? do
+      put_change(changeset, :muted_notifications, muted_notifications)
+      |> validate_required([:muted_notifications])
+    else
+      changeset
+    end
+  end
+
   def set_blocks(info, blocks) do
     params = %{blocks: blocks}
 
@@ -162,12 +173,29 @@ defmodule Pleroma.User.Info do
     |> validate_required([:subscribers])
   end
 
+  @spec add_to_mutes(Info.t(), String.t()) :: Changeset.t()
   def add_to_mutes(info, muted) do
     set_mutes(info, Enum.uniq([muted | info.mutes]))
   end
 
+  @spec add_to_muted_notifications(Changeset.t(), Info.t(), String.t(), boolean()) ::
+          Changeset.t()
+  def add_to_muted_notifications(changeset, info, muted, notifications?) do
+    set_notification_mutes(
+      changeset,
+      Enum.uniq([muted | info.muted_notifications]),
+      notifications?
+    )
+  end
+
+  @spec remove_from_mutes(Info.t(), String.t()) :: Changeset.t()
   def remove_from_mutes(info, muted) do
     set_mutes(info, List.delete(info.mutes, muted))
+  end
+
+  @spec remove_from_muted_notifications(Changeset.t(), Info.t(), String.t()) :: Changeset.t()
+  def remove_from_muted_notifications(changeset, info, muted) do
+    set_notification_mutes(changeset, List.delete(info.muted_notifications, muted), true)
   end
 
   def add_to_block(info, blocked) do

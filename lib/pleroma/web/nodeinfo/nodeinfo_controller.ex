@@ -34,8 +34,11 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
   def raw_nodeinfo do
     stats = Stats.get_stats()
 
+    exclusions = Config.get([:instance, :mrf_transparency_exclusions])
+
     mrf_simple =
       Config.get(:mrf_simple)
+      |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn v -> v in exclusions end)} end)
       |> Enum.into(%{})
 
     # This horror is needed to convert regex sigils to strings
@@ -86,7 +89,8 @@ defmodule Pleroma.Web.Nodeinfo.NodeinfoController do
           mrf_simple: mrf_simple,
           mrf_keyword: mrf_keyword,
           mrf_user_allowlist: mrf_user_allowlist,
-          quarantined_instances: quarantined
+          quarantined_instances: quarantined,
+          exclusions: length(exclusions) > 0
         }
       else
         %{}

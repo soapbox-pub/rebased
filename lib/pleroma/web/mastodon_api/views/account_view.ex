@@ -52,7 +52,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       followed_by: User.following?(target, user),
       blocking: User.blocks?(user, target),
       muting: User.mutes?(user, target),
-      muting_notifications: false,
+      muting_notifications: User.muted_notifications?(user, target),
       subscribing: User.subscribed_to?(user, target),
       requested: requested,
       domain_blocking: false,

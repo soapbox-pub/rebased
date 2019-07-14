@@ -76,26 +76,37 @@ defmodule Pleroma.NotificationTest do
       Task.await(task_user_notification)
     end
 
-    test "it doesn't create a notification for user if the user blocks the activity author" do
+    test "it creates a notification for user if the user blocks the activity author" do
       activity = insert(:note_activity)
       author = User.get_cached_by_ap_id(activity.data["actor"])
       user = insert(:user)
       {:ok, user} = User.block(user, author)
 
-      refute Notification.create_notification(activity, user)
+      assert Notification.create_notification(activity, user)
     end
 
-    test "it doesn't create a notificatin for the user if the user mutes the activity author" do
+    test "it creates a notificatin for the user if the user mutes the activity author" do
       muter = insert(:user)
       muted = insert(:user)
       {:ok, _} = User.mute(muter, muted)
       muter = Repo.get(User, muter.id)
       {:ok, activity} = CommonAPI.post(muted, %{"status" => "Hi @#{muter.nickname}"})
 
-      refute Notification.create_notification(activity, muter)
+      assert Notification.create_notification(activity, muter)
     end
 
-    test "it doesn't create a notification for an activity from a muted thread" do
+    test "notification created if user is muted without notifications" do
+      muter = insert(:user)
+      muted = insert(:user)
+
+      {:ok, muter} = User.mute(muter, muted, false)
+
+      {:ok, activity} = CommonAPI.post(muted, %{"status" => "Hi @#{muter.nickname}"})
+
+      assert Notification.create_notification(activity, muter)
+    end
+
+    test "it creates a notification for an activity from a muted thread" do
       muter = insert(:user)
       other_user = insert(:user)
       {:ok, activity} = CommonAPI.post(muter, %{"status" => "hey"})
@@ -107,7 +118,7 @@ defmodule Pleroma.NotificationTest do
           "in_reply_to_status_id" => activity.id
         })
 
-      refute Notification.create_notification(activity, muter)
+      assert Notification.create_notification(activity, muter)
     end
 
     test "it disables notifications from followers" do
@@ -577,6 +588,100 @@ defmodule Pleroma.NotificationTest do
         })
 
       assert Enum.empty?(Notification.for_user(user))
+    end
+  end
+
+  describe "for_user" do
+    test "it returns notifications for muted user without notifications" do
+      user = insert(:user)
+      muted = insert(:user)
+      {:ok, user} = User.mute(user, muted, false)
+
+      {:ok, _activity} = TwitterAPI.create_status(muted, %{"status" => "hey @#{user.nickname}"})
+
+      assert length(Notification.for_user(user)) == 1
+    end
+
+    test "it doesn't return notifications for muted user with notifications" do
+      user = insert(:user)
+      muted = insert(:user)
+      {:ok, user} = User.mute(user, muted)
+
+      {:ok, _activity} = TwitterAPI.create_status(muted, %{"status" => "hey @#{user.nickname}"})
+
+      assert Notification.for_user(user) == []
+    end
+
+    test "it doesn't return notifications for blocked user" do
+      user = insert(:user)
+      blocked = insert(:user)
+      {:ok, user} = User.block(user, blocked)
+
+      {:ok, _activity} = TwitterAPI.create_status(blocked, %{"status" => "hey @#{user.nickname}"})
+
+      assert Notification.for_user(user) == []
+    end
+
+    test "it doesn't return notificatitons for blocked domain" do
+      user = insert(:user)
+      blocked = insert(:user, ap_id: "http://some-domain.com")
+      {:ok, user} = User.block_domain(user, "some-domain.com")
+
+      {:ok, _activity} = TwitterAPI.create_status(blocked, %{"status" => "hey @#{user.nickname}"})
+
+      assert Notification.for_user(user) == []
+    end
+
+    test "it doesn't return notifications for muted thread" do
+      user = insert(:user)
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        TwitterAPI.create_status(another_user, %{"status" => "hey @#{user.nickname}"})
+
+      {:ok, _} = Pleroma.ThreadMute.add_mute(user.id, activity.data["context"])
+      assert Notification.for_user(user) == []
+    end
+
+    test "it returns notifications for muted user with notifications and with_muted parameter" do
+      user = insert(:user)
+      muted = insert(:user)
+      {:ok, user} = User.mute(user, muted)
+
+      {:ok, _activity} = TwitterAPI.create_status(muted, %{"status" => "hey @#{user.nickname}"})
+
+      assert length(Notification.for_user(user, %{with_muted: true})) == 1
+    end
+
+    test "it returns notifications for blocked user and with_muted parameter" do
+      user = insert(:user)
+      blocked = insert(:user)
+      {:ok, user} = User.block(user, blocked)
+
+      {:ok, _activity} = TwitterAPI.create_status(blocked, %{"status" => "hey @#{user.nickname}"})
+
+      assert length(Notification.for_user(user, %{with_muted: true})) == 1
+    end
+
+    test "it returns notificatitons for blocked domain and with_muted parameter" do
+      user = insert(:user)
+      blocked = insert(:user, ap_id: "http://some-domain.com")
+      {:ok, user} = User.block_domain(user, "some-domain.com")
+
+      {:ok, _activity} = TwitterAPI.create_status(blocked, %{"status" => "hey @#{user.nickname}"})
+
+      assert length(Notification.for_user(user, %{with_muted: true})) == 1
+    end
+
+    test "it returns notifications for muted thread with_muted parameter" do
+      user = insert(:user)
+      another_user = insert(:user)
+
+      {:ok, activity} =
+        TwitterAPI.create_status(another_user, %{"status" => "hey @#{user.nickname}"})
+
+      {:ok, _} = Pleroma.ThreadMute.add_mute(user.id, activity.data["context"])
+      assert length(Notification.for_user(user, %{with_muted: true})) == 1
     end
   end
 end

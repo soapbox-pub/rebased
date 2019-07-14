@@ -15,6 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Pagination
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.Stats
@@ -46,8 +47,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
-  plug(Pleroma.Plugs.RateLimiter, :app_account_creation when action == :account_register)
-  plug(Pleroma.Plugs.RateLimiter, :search when action in [:search, :search2, :account_search])
+  @rate_limited_status_actions ~w(reblog_status unreblog_status fav_status unfav_status
+    post_status delete_status)a
+
+  plug(
+    RateLimiter,
+    {:status_id_action, bucket_name: "status_id_action:reblog_unreblog", params: ["id"]}
+    when action in ~w(reblog_status unreblog_status)a
+  )
+
+  plug(
+    RateLimiter,
+    {:status_id_action, bucket_name: "status_id_action:fav_unfav", params: ["id"]}
+    when action in ~w(fav_status unfav_status)a
+  )
+
+  plug(RateLimiter, :statuses_actions when action in @rate_limited_status_actions)
+  plug(RateLimiter, :app_account_creation when action == :account_register)
+  plug(RateLimiter, :search when action in [:search, :search2, :account_search])
 
   @local_mastodon_name "Mastodon-Local"
 
@@ -1051,9 +1068,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def mute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
+  def mute(%{assigns: %{user: muter}} = conn, %{"id" => id} = params) do
+    notifications =
+      if Map.has_key?(params, "notifications"),
+        do: params["notifications"] in [true, "True", "true", "1"],
+        else: true
+
     with %User{} = muted <- User.get_cached_by_id(id),
-         {:ok, muter} <- User.mute(muter, muted) do
+         {:ok, muter} <- User.mute(muter, muted, notifications) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: muter, target: muted})

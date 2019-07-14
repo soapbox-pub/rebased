@@ -88,10 +88,10 @@ defmodule Pleroma.MediaProxyTest do
       assert decode_url(sig, base64) == {:error, :invalid_signature}
     end
 
-    test "filename_matches matches url encoded paths" do
+    test "filename_matches preserves the encoded or decoded path" do
       assert MediaProxyController.filename_matches(
                true,
-               "/Hello%20world.jpg",
+               "/Hello world.jpg",
                "http://pleroma.social/Hello world.jpg"
              ) == :ok
 
@@ -100,19 +100,11 @@ defmodule Pleroma.MediaProxyTest do
                "/Hello%20world.jpg",
                "http://pleroma.social/Hello%20world.jpg"
              ) == :ok
-    end
-
-    test "filename_matches matches non-url encoded paths" do
-      assert MediaProxyController.filename_matches(
-               true,
-               "/Hello world.jpg",
-               "http://pleroma.social/Hello%20world.jpg"
-             ) == :ok
 
       assert MediaProxyController.filename_matches(
                true,
-               "/Hello world.jpg",
-               "http://pleroma.social/Hello world.jpg"
+               "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
+               "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"
              ) == :ok
     end
 

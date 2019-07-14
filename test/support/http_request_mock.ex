@@ -879,6 +879,42 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://info.pleroma.site/activity.json", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/https__info.pleroma.site_activity.json")
+     }}
+  end
+
+  def get("https://info.pleroma.site/activity.json", _, _, _) do
+    {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
+  def get("https://info.pleroma.site/activity2.json", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/https__info.pleroma.site_activity2.json")
+     }}
+  end
+
+  def get("https://info.pleroma.site/activity2.json", _, _, _) do
+    {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
+  def get("https://info.pleroma.site/activity3.json", _, _, Accept: "application/activity+json") do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/https__info.pleroma.site_activity3.json")
+     }}
+  end
+
+  def get("https://info.pleroma.site/activity3.json", _, _, _) do
+    {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Not implemented the mock response for get #{inspect(url)}, #{query}, #{inspect(body)}, #{
