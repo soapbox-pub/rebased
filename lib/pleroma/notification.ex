@@ -33,7 +33,7 @@ defmodule Pleroma.Notification do
     |> cast(attrs, [:seen])
   end
 
-  def for_user_query(user, opts) do
+  def for_user_query(user, opts \\ []) do
     query =
       Notification
       |> where(user_id: ^user.id)
