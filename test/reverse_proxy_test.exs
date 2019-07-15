@@ -5,7 +5,6 @@
 defmodule Pleroma.ReverseProxyTest do
   use Pleroma.Web.ConnCase, async: true
   import ExUnit.CaptureLog
-  import ExUnit.CaptureLog
   import Mox
   alias Pleroma.ReverseProxy
   alias Pleroma.ReverseProxy.ClientMock
