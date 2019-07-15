@@ -129,6 +129,18 @@ defmodule Pleroma.Web.CommonAPITest do
                  })
       end)
     end
+
+    test "it allows to address a list" do
+      user = insert(:user)
+      {:ok, list} = Pleroma.List.create("foo", user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+
+      assert activity.data["bcc"] == [list.ap_id]
+      assert activity.recipients == [list.ap_id, user.ap_id]
+      assert activity.data["listMessage"] == list.ap_id
+    end
   end
 
   describe "reactions" do

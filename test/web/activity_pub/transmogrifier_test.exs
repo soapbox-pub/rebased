@@ -1098,6 +1098,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       assert modified["directMessage"] == true
     end
+
+    test "it strips BCC field" do
+      user = insert(:user)
+      {:ok, list} = Pleroma.List.create("foo", user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert is_nil(modified["bcc"])
+    end
   end
 
   describe "user upgrade" do
