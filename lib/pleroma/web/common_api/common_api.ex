@@ -243,18 +243,15 @@ defmodule Pleroma.Web.CommonAPI do
       preview? = Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
       direct? = visibility == "direct"
 
-      additional_data =
-        %{"cc" => cc, "directMessage" => direct?} |> maybe_add_list_data(user, visibility)
-
-      params = %{
+      %{
         to: to,
         actor: user,
         context: context,
         object: object,
-        additional: additional_data
+        additional: %{"cc" => cc, "directMessage" => direct?}
       }
-
-      ActivityPub.create(params, preview?)
+      |> maybe_add_list_data(user, visibility)
+      |> ActivityPub.create(preview?)
     else
       {:private_to_public, true} ->
         {:error, dgettext("errors", "The message visibility must be direct")}

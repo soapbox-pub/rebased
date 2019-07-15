@@ -541,4 +541,17 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert result[:reblog][:account][:pleroma][:relationship] ==
              AccountView.render("relationship.json", %{user: user, target: user})
   end
+
+  test "visibility/list" do
+    user = insert(:user)
+
+    {:ok, list} = Pleroma.List.create("foo", user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+
+    status = StatusView.render("status.json", activity: activity)
+
+    assert status.visibility == "list"
+  end
 end
