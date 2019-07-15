@@ -28,6 +28,14 @@ defmodule Mix.Tasks.Pleroma.Config do
       |> Enum.reject(fn {k, _v} -> k in [Pleroma.Repo, :env] end)
       |> Enum.each(fn {k, v} ->
         key = to_string(k) |> String.replace("Elixir.", "")
+
+        key =
+          if String.starts_with?(key, "Pleroma.") do
+            key
+          else
+            ":" <> key
+          end
+
         {:ok, _} = Config.update_or_create(%{group: "pleroma", key: key, value: v})
         Mix.shell().info("#{key} is migrated.")
       end)
@@ -53,17 +61,9 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       Repo.all(Config)
       |> Enum.each(fn config ->
-        mark =
-          if String.starts_with?(config.key, "Pleroma.") or
-               String.starts_with?(config.key, "Ueberauth"),
-             do: ",",
-             else: ":"
-
-        key = String.trim_leading(config.key, ":")
-
         IO.write(
           file,
-          "config :#{config.group}, #{key}#{mark} #{inspect(Config.from_binary(config.value))}\r\n"
+          "config :#{config.group}, #{config.key}, #{inspect(Config.from_binary(config.value))}\r\n\r\n"
         )
 
         if delete? do
