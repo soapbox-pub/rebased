@@ -180,7 +180,6 @@ mix set_moderator username [true|false]
 
 #### コンフィギュレーションとカスタマイズ
 
-* [Admin tasks](Admin tasks)
 * [Backup your instance](backup.html)
 * [Configuration tips](general-tips-for-customizing-pleroma-fe.html)
 * [Hardening your instance](hardening.html)
