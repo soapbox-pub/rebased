@@ -131,6 +131,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       %User{ap_id: ap_id} =
         Enum.find(recipients, fn %{info: %{source_data: data}} -> data["inbox"] == inbox end)
 
+      # Get all the recipients on the same host and add them to cc. Otherwise it a remote
+      # instance would only accept a first message for the first recipient and ignore the rest.
       cc = get_cc_ap_ids(ap_id, recipients)
 
       json =
