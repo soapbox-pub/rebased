@@ -34,8 +34,8 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
 
     Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
 
-    first_db = Config.get_by_params(%{group: "pleroma", key: "first_setting"})
-    second_db = Config.get_by_params(%{group: "pleroma", key: "second_setting"})
+    first_db = Config.get_by_params(%{group: "pleroma", key: ":first_setting"})
+    second_db = Config.get_by_params(%{group: "pleroma", key: ":second_setting"})
     refute Config.get_by_params(%{group: "pleroma", key: "Pleroma.Repo"})
 
     assert Config.from_binary(first_db.value) == [key: "value", key2: [Pleroma.Repo]]
@@ -45,13 +45,13 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
   test "settings are migrated to file and deleted from db", %{temp_file: temp_file} do
     Config.create(%{
       group: "pleroma",
-      key: "setting_first",
+      key: ":setting_first",
       value: [key: "value", key2: [Pleroma.Activity]]
     })
 
     Config.create(%{
       group: "pleroma",
-      key: "setting_second",
+      key: ":setting_second",
       value: [key: "valu2", key2: [Pleroma.Repo]]
     })
 
@@ -61,7 +61,7 @@ defmodule Mix.Tasks.Pleroma.ConfigTest do
     assert File.exists?(temp_file)
     {:ok, file} = File.read(temp_file)
 
-    assert file =~ "config :pleroma, setting_first:"
-    assert file =~ "config :pleroma, setting_second:"
+    assert file =~ "config :pleroma, :setting_first,"
+    assert file =~ "config :pleroma, :setting_second,"
   end
 end
