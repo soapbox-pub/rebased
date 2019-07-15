@@ -416,6 +416,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("attributedTo", user.ap_id)
         |> Map.put("to", ["https://www.w3.org/ns/activitystreams#Public"])
         |> Map.put("cc", [])
+        |> Map.put("id", user.ap_id <> "/activities/12345678")
 
       data = Map.put(data, "object", object)
 
@@ -439,6 +440,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("attributedTo", user.ap_id)
         |> Map.put("to", nil)
         |> Map.put("cc", nil)
+        |> Map.put("id", user.ap_id <> "/activities/12345678")
 
       data = Map.put(data, "object", object)
 
@@ -1133,6 +1135,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.info.ap_enabled
       assert user.info.note_count == 1
       assert user.follower_address == "https://niu.moe/users/rye/followers"
+      assert user.following_address == "https://niu.moe/users/rye/following"
 
       user = User.get_cached_by_id(user.id)
       assert user.info.note_count == 1
@@ -1369,5 +1372,33 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute recipient.follower_address in fixed_object["cc"]
       refute recipient.follower_address in fixed_object["to"]
     end
+  end
+
+  test "update_following_followers_counters/1" do
+    user1 =
+      insert(:user,
+        local: false,
+        follower_address: "http://localhost:4001/users/masto_closed/followers",
+        following_address: "http://localhost:4001/users/masto_closed/following"
+      )
+
+    user2 =
+      insert(:user,
+        local: false,
+        follower_address: "http://localhost:4001/users/fuser2/followers",
+        following_address: "http://localhost:4001/users/fuser2/following"
+      )
+
+    Transmogrifier.update_following_followers_counters(user1)
+    Transmogrifier.update_following_followers_counters(user2)
+
+    %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
+    assert followers == 437
+    assert following == 152
+
+    %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
+
+    assert followers == 527
+    assert following == 267
   end
 end

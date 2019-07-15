@@ -54,6 +54,14 @@ defmodule Pleroma.UserTest do
     assert expected_followers_collection == User.ap_followers(user)
   end
 
+  test "ap_following returns the following collection for the user" do
+    user = UserBuilder.build()
+
+    expected_followers_collection = "#{User.ap_id(user)}/following"
+
+    assert expected_followers_collection == User.ap_following(user)
+  end
+
   test "returns all pending follow requests" do
     unlocked = insert(:user)
     locked = insert(:user, %{info: %{locked: true}})
@@ -679,10 +687,12 @@ defmodule Pleroma.UserTest do
       muted_user = insert(:user)
 
       refute User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
 
       {:ok, user} = User.mute(user, muted_user)
 
       assert User.mutes?(user, muted_user)
+      assert User.muted_notifications?(user, muted_user)
     end
 
     test "it unmutes users" do
@@ -693,6 +703,20 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.unmute(user, muted_user)
 
       refute User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
+    end
+
+    test "it mutes user without notifications" do
+      user = insert(:user)
+      muted_user = insert(:user)
+
+      refute User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
+
+      {:ok, user} = User.mute(user, muted_user, false)
+
+      assert User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
     end
   end
 
@@ -1239,52 +1263,6 @@ defmodule Pleroma.UserTest do
       assert fdb_user2.id == user2.id
 
       assert User.external_users(max_id: fdb_user2.id, limit: 1) == []
-    end
-
-    test "sync_follow_counters/1", %{user1: user1, user2: user2} do
-      {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
-
-      :ok = User.sync_follow_counters()
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
-
-      Agent.stop(:domain_errors)
-    end
-
-    test "sync_follow_counters/1 in separate batches", %{user1: user1, user2: user2} do
-      {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
-
-      :ok = User.sync_follow_counters(limit: 1)
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
-
-      Agent.stop(:domain_errors)
-    end
-
-    test "perform/1 with :sync_follow_counters", %{user1: user1, user2: user2} do
-      :ok = User.perform(:sync_follow_counters)
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-      assert followers == 437
-      assert following == 152
-
-      %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-      assert followers == 527
-      assert following == 267
     end
   end
 

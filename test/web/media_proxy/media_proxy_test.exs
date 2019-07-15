@@ -2,7 +2,7 @@
 # Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.MediaProxyTest do
+defmodule Pleroma.Web.MediaProxyTest do
   use ExUnit.Case
   import Pleroma.Web.MediaProxy
   alias Pleroma.Web.MediaProxy.MediaProxyController
@@ -88,32 +88,30 @@ defmodule Pleroma.MediaProxyTest do
       assert decode_url(sig, base64) == {:error, :invalid_signature}
     end
 
-    test "filename_matches matches url encoded paths" do
+    test "filename_matches preserves the encoded or decoded path" do
       assert MediaProxyController.filename_matches(
-               true,
-               "/Hello%20world.jpg",
+               %{"filename" => "/Hello world.jpg"},
+               "/Hello world.jpg",
                "http://pleroma.social/Hello world.jpg"
              ) == :ok
 
       assert MediaProxyController.filename_matches(
-               true,
+               %{"filename" => "/Hello%20world.jpg"},
                "/Hello%20world.jpg",
-               "http://pleroma.social/Hello%20world.jpg"
-             ) == :ok
-    end
-
-    test "filename_matches matches non-url encoded paths" do
-      assert MediaProxyController.filename_matches(
-               true,
-               "/Hello world.jpg",
                "http://pleroma.social/Hello%20world.jpg"
              ) == :ok
 
       assert MediaProxyController.filename_matches(
-               true,
-               "/Hello world.jpg",
-               "http://pleroma.social/Hello world.jpg"
+               %{"filename" => "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"},
+               "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
+               "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"
              ) == :ok
+
+      assert MediaProxyController.filename_matches(
+               %{"filename" => "/my%2Flong%2Furl%2F2019%2F07%2FS.jp"},
+               "/my%2Flong%2Furl%2F2019%2F07%2FS.jp",
+               "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"
+             ) == {:wrong_filename, "my%2Flong%2Furl%2F2019%2F07%2FS.jpg"}
     end
 
     test "uses the configured base_url" do

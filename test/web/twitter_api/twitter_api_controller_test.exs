@@ -521,6 +521,38 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  for: current_user
                })
     end
+
+    test "muted user", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
+      {:ok, current_user} = User.mute(current_user, other_user)
+
+      {:ok, _activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json")
+
+      assert json_response(conn, 200) == []
+    end
+
+    test "muted user with with_muted parameter", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
+      {:ok, current_user} = User.mute(current_user, other_user)
+
+      {:ok, _activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json", %{"with_muted" => "true"})
+
+      assert length(json_response(conn, 200)) == 1
+    end
   end
 
   describe "POST /api/qvitter/statuses/notifications/read" do

@@ -3,18 +3,16 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser do
-  @parsers [
-    Pleroma.Web.RichMedia.Parsers.OGP,
-    Pleroma.Web.RichMedia.Parsers.TwitterCard,
-    Pleroma.Web.RichMedia.Parsers.OEmbed
-  ]
-
   @hackney_options [
     pool: :media,
     recv_timeout: 2_000,
     max_body: 2_000_000,
     with_body: true
   ]
+
+  defp parsers do
+    Pleroma.Config.get([:rich_media, :parsers])
+  end
 
   def parse(nil), do: {:error, "No URL provided"}
 
@@ -48,7 +46,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
   end
 
   defp maybe_parse(html) do
-    Enum.reduce_while(@parsers, %{}, fn parser, acc ->
+    Enum.reduce_while(parsers(), %{}, fn parser, acc ->
       case parser.parse(html, acc) do
         {:ok, data} -> {:halt, data}
         {:error, _msg} -> {:cont, acc}

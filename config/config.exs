@@ -194,6 +194,8 @@ config :pleroma, :http,
   send_user_agent: true,
   adapter: [
     ssl_options: [
+      # Workaround for remote server certificate chain issues
+      partial_chain: &:hackney_connect.partial_chain/1,
       # We don't support TLS v1.3 yet
       versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
     ]
@@ -238,6 +240,7 @@ config :pleroma, :instance,
     "text/bbcode"
   ],
   mrf_transparency: true,
+  mrf_transparency_exclusions: [],
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
   no_attachment_links: false,
@@ -250,13 +253,7 @@ config :pleroma, :instance,
   skip_thread_containment: true,
   limit_to_local_content: :unauthenticated,
   dynamic_configuration: false,
-  external_user_synchronization: [
-    enabled: false,
-    # every 2 hours
-    interval: 60 * 60 * 2,
-    max_retries: 3,
-    limit: 500
-  ]
+  external_user_synchronization: true
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -342,7 +339,12 @@ config :pleroma, :mrf_subchain, match_actor: %{}
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
-  ignore_tld: ["local", "localdomain", "lan"]
+  ignore_tld: ["local", "localdomain", "lan"],
+  parsers: [
+    Pleroma.Web.RichMedia.Parsers.TwitterCard,
+    Pleroma.Web.RichMedia.Parsers.OGP,
+    Pleroma.Web.RichMedia.Parsers.OEmbed
+  ]
 
 config :pleroma, :media_proxy,
   enabled: false,
@@ -525,7 +527,9 @@ config :http_signatures,
 
 config :pleroma, :rate_limit,
   search: [{1000, 10}, {1000, 30}],
-  app_account_creation: {1_800_000, 25}
+  app_account_creation: {1_800_000, 25},
+  statuses_actions: {10_000, 15},
+  status_id_action: {60_000, 3}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

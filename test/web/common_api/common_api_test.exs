@@ -358,6 +358,20 @@ defmodule Pleroma.Web.CommonAPITest do
     end
   end
 
+  describe "unfollow/2" do
+    test "also unsubscribes a user" do
+      [follower, followed] = insert_pair(:user)
+      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+      {:ok, followed} = User.subscribe(follower, followed)
+
+      assert User.subscribed_to?(follower, followed)
+
+      {:ok, follower} = CommonAPI.unfollow(follower, followed)
+
+      refute User.subscribed_to?(follower, followed)
+    end
+  end
+
   describe "accept_follow_request/2" do
     test "after acceptance, it sets all existing pending follow request states to 'accept'" do
       user = insert(:user, info: %{locked: true})

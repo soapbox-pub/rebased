@@ -39,4 +39,11 @@ defmodule Pleroma.Web.Metadata.Utils do
         "(@#{user.nickname})"
       end
   end
+
+  @spec fetch_media_type(list(String.t()), String.t()) :: String.t() | nil
+  def fetch_media_type(supported_types, media_type) do
+    Enum.find(supported_types, fn support_type ->
+      String.starts_with?(media_type, support_type)
+    end)
+  end
 end

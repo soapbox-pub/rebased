@@ -22,7 +22,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "it returns empty result if user or status search return undefined error", %{conn: conn} do
       with_mocks [
         {Pleroma.User, [], [search: fn _q, _o -> raise "Oops" end]},
-        {Pleroma.Activity, [], [search: fn _u, _q -> raise "Oops" end]}
+        {Pleroma.Activity, [], [search: fn _u, _q, _o -> raise "Oops" end]}
       ] do
         conn = get(conn, "/api/v2/search", %{"q" => "2hu"})
 
@@ -51,7 +51,6 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
       conn = get(conn, "/api/v2/search", %{"q" => "2hu #private"})
 
       assert results = json_response(conn, 200)
-      # IO.inspect results
 
       [account | _] = results["accounts"]
       assert account["id"] == to_string(user_three.id)
@@ -98,7 +97,7 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
     test "it returns empty result if user or status search return undefined error", %{conn: conn} do
       with_mocks [
         {Pleroma.User, [], [search: fn _q, _o -> raise "Oops" end]},
-        {Pleroma.Activity, [], [search: fn _u, _q -> raise "Oops" end]}
+        {Pleroma.Activity, [], [search: fn _u, _q, _o -> raise "Oops" end]}
       ] do
         conn =
           conn
@@ -194,6 +193,75 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       assert results = json_response(conn, 200)
       assert [] == results["accounts"]
+    end
+
+    test "search with limit and offset", %{conn: conn} do
+      user = insert(:user)
+      _user_two = insert(:user, %{nickname: "shp@shitposter.club"})
+      _user_three = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
+
+      {:ok, _activity1} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
+      {:ok, _activity2} = CommonAPI.post(user, %{"status" => "This is also about 2hu"})
+
+      result =
+        conn
+        |> get("/api/v1/search", %{"q" => "2hu", "limit" => 1})
+
+      assert results = json_response(result, 200)
+      assert [%{"id" => activity_id1}] = results["statuses"]
+      assert [_] = results["accounts"]
+
+      results =
+        conn
+        |> get("/api/v1/search", %{"q" => "2hu", "limit" => 1, "offset" => 1})
+        |> json_response(200)
+
+      assert [%{"id" => activity_id2}] = results["statuses"]
+      assert [] = results["accounts"]
+
+      assert activity_id1 != activity_id2
+    end
+
+    test "search returns results only for the given type", %{conn: conn} do
+      user = insert(:user)
+      _user_two = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
+
+      {:ok, _activity} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
+
+      assert %{"statuses" => [_activity], "accounts" => [], "hashtags" => []} =
+               conn
+               |> get("/api/v1/search", %{"q" => "2hu", "type" => "statuses"})
+               |> json_response(200)
+
+      assert %{"statuses" => [], "accounts" => [_user_two], "hashtags" => []} =
+               conn
+               |> get("/api/v1/search", %{"q" => "2hu", "type" => "accounts"})
+               |> json_response(200)
+    end
+
+    test "search uses account_id to filter statuses by the author", %{conn: conn} do
+      user = insert(:user, %{nickname: "shp@shitposter.club"})
+      user_two = insert(:user, %{nickname: "shp@heldscal.la", name: "I love 2hu"})
+
+      {:ok, activity1} = CommonAPI.post(user, %{"status" => "This is about 2hu"})
+      {:ok, activity2} = CommonAPI.post(user_two, %{"status" => "This is also about 2hu"})
+
+      results =
+        conn
+        |> get("/api/v1/search", %{"q" => "2hu", "account_id" => user.id})
+        |> json_response(200)
+
+      assert [%{"id" => activity_id1}] = results["statuses"]
+      assert activity_id1 == activity1.id
+      assert [_] = results["accounts"]
+
+      results =
+        conn
+        |> get("/api/v1/search", %{"q" => "2hu", "account_id" => user_two.id})
+        |> json_response(200)
+
+      assert [%{"id" => activity_id2}] = results["statuses"]
+      assert activity_id2 == activity2.id
     end
   end
 end

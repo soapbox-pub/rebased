@@ -52,6 +52,7 @@ defmodule Pleroma.User do
     field(:avatar, :map)
     field(:local, :boolean, default: true)
     field(:follower_address, :string)
+    field(:following_address, :string)
     field(:search_rank, :float, virtual: true)
     field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
@@ -107,6 +108,10 @@ defmodule Pleroma.User do
   def ap_followers(%User{follower_address: fa}) when is_binary(fa), do: fa
   def ap_followers(%User{} = user), do: "#{ap_id(user)}/followers"
 
+  @spec ap_following(User.t()) :: Sring.t()
+  def ap_following(%User{following_address: fa}) when is_binary(fa), do: fa
+  def ap_following(%User{} = user), do: "#{ap_id(user)}/following"
+
   def user_info(%User{} = user, args \\ %{}) do
     following_count =
       if args[:following_count], do: args[:following_count], else: following_count(user)
@@ -128,6 +133,7 @@ defmodule Pleroma.User do
     Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user, args))
   end
 
+  @spec restrict_deactivated(Ecto.Query.t()) :: Ecto.Query.t()
   def restrict_deactivated(query) do
     from(u in query,
       where: not fragment("? \\? 'deactivated' AND ?->'deactivated' @> 'true'", u.info, u.info)
@@ -162,9 +168,10 @@ defmodule Pleroma.User do
 
     if changes.valid? do
       case info_cng.changes[:source_data] do
-        %{"followers" => followers} ->
+        %{"followers" => followers, "following" => following} ->
           changes
           |> put_change(:follower_address, followers)
+          |> put_change(:following_address, following)
 
         _ ->
           followers = User.ap_followers(%User{nickname: changes.changes[:nickname]})
@@ -196,7 +203,14 @@ defmodule Pleroma.User do
       |> User.Info.user_upgrade(params[:info])
 
     struct
-    |> cast(params, [:bio, :name, :follower_address, :avatar, :last_refreshed_at])
+    |> cast(params, [
+      :bio,
+      :name,
+      :follower_address,
+      :following_address,
+      :avatar,
+      :last_refreshed_at
+    ])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
     |> validate_length(:bio, max: 5000)
@@ -735,10 +749,13 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  def mute(muter, %User{ap_id: ap_id}) do
+  @spec mute(User.t(), User.t(), boolean()) :: {:ok, User.t()} | {:error, String.t()}
+  def mute(muter, %User{ap_id: ap_id}, notifications? \\ true) do
+    info = muter.info
+
     info_cng =
-      muter.info
-      |> User.Info.add_to_mutes(ap_id)
+      User.Info.add_to_mutes(info, ap_id)
+      |> User.Info.add_to_muted_notifications(info, ap_id, notifications?)
 
     cng =
       change(muter)
@@ -748,9 +765,11 @@ defmodule Pleroma.User do
   end
 
   def unmute(muter, %{ap_id: ap_id}) do
+    info = muter.info
+
     info_cng =
-      muter.info
-      |> User.Info.remove_from_mutes(ap_id)
+      User.Info.remove_from_mutes(info, ap_id)
+      |> User.Info.remove_from_muted_notifications(info, ap_id)
 
     cng =
       change(muter)
@@ -845,6 +864,12 @@ defmodule Pleroma.User do
 
   def mutes?(nil, _), do: false
   def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.info.mutes, ap_id)
+
+  @spec muted_notifications?(User.t() | nil, User.t() | map()) :: boolean()
+  def muted_notifications?(nil, _), do: false
+
+  def muted_notifications?(user, %{ap_id: ap_id}),
+    do: Enum.member?(user.info.muted_notifications, ap_id)
 
   def blocks?(%User{info: info} = _user, %{ap_id: ap_id}) do
     blocks = info.blocks
@@ -1012,42 +1037,20 @@ defmodule Pleroma.User do
     )
   end
 
-  @spec sync_follow_counter() :: :ok
-  def sync_follow_counter,
-    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:sync_follow_counters])
-
-  @spec perform(:sync_follow_counters) :: :ok
-  def perform(:sync_follow_counters) do
-    {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :domain_errors)
-    config = Pleroma.Config.get([:instance, :external_user_synchronization])
-
-    :ok = sync_follow_counters(config)
-    Agent.stop(:domain_errors)
-  end
-
-  @spec sync_follow_counters(keyword()) :: :ok
-  def sync_follow_counters(opts \\ []) do
-    users = external_users(opts)
-
-    if length(users) > 0 do
-      errors = Agent.get(:domain_errors, fn state -> state end)
-      {last, updated_errors} = User.Synchronization.call(users, errors, opts)
-      Agent.update(:domain_errors, fn _state -> updated_errors end)
-      sync_follow_counters(max_id: last.id, limit: opts[:limit])
-    else
-      :ok
-    end
+  @spec external_users_query() :: Ecto.Query.t()
+  def external_users_query do
+    User.Query.build(%{
+      external: true,
+      active: true,
+      order_by: :id
+    })
   end
 
   @spec external_users(keyword()) :: [User.t()]
   def external_users(opts \\ []) do
     query =
-      User.Query.build(%{
-        external: true,
-        active: true,
-        order_by: :id,
-        select: [:id, :ap_id, :info]
-      })
+      external_users_query()
+      |> select([u], struct(u, [:id, :ap_id, :info]))
 
     query =
       if opts[:max_id],
