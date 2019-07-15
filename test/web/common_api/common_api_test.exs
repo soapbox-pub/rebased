@@ -129,6 +129,18 @@ defmodule Pleroma.Web.CommonAPITest do
                  })
       end)
     end
+
+    test "it allows to address a list" do
+      user = insert(:user)
+      {:ok, list} = Pleroma.List.create("foo", user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+
+      assert activity.data["bcc"] == [list.ap_id]
+      assert activity.recipients == [list.ap_id, user.ap_id]
+      assert activity.data["listMessage"] == list.ap_id
+    end
   end
 
   describe "reactions" do
@@ -343,6 +355,20 @@ defmodule Pleroma.Web.CommonAPITest do
       {:ok, muter} = CommonAPI.show_reblogs(muter, muted)
 
       assert User.showing_reblogs?(muter, muted) == true
+    end
+  end
+
+  describe "unfollow/2" do
+    test "also unsubscribes a user" do
+      [follower, followed] = insert_pair(:user)
+      {:ok, follower, followed, _} = CommonAPI.follow(follower, followed)
+      {:ok, followed} = User.subscribe(follower, followed)
+
+      assert User.subscribed_to?(follower, followed)
+
+      {:ok, follower} = CommonAPI.unfollow(follower, followed)
+
+      refute User.subscribed_to?(follower, followed)
     end
   end
 

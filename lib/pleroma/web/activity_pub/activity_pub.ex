@@ -8,6 +8,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Conversation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Object.Containment
   alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.Repo
@@ -26,19 +27,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
   defp get_recipients(%{"type" => "Announce"} = data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
     actor = User.get_cached_by_ap_id(data["actor"])
 
     recipients =
-      (to ++ cc)
-      |> Enum.filter(fn recipient ->
+      Enum.filter(Enum.concat([to, cc, bcc]), fn recipient ->
         case User.get_cached_by_ap_id(recipient) do
-          nil ->
-            true
-
-          user ->
-            User.following?(user, actor)
+          nil -> true
+          user -> User.following?(user, actor)
         end
       end)
 
@@ -46,17 +44,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp get_recipients(%{"type" => "Create"} = data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
-    actor = data["actor"] || []
-    recipients = (to ++ cc ++ [actor]) |> Enum.uniq()
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
+    actor = Map.get(data, "actor", [])
+    recipients = [to, cc, bcc, [actor]] |> Enum.concat() |> Enum.uniq()
     {recipients, to, cc}
   end
 
   defp get_recipients(data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
-    recipients = to ++ cc
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
+    recipients = Enum.concat([to, cc, bcc])
     {recipients, to, cc}
   end
 
@@ -126,6 +126,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
+         :ok <- Containment.contain_child(map),
          {:ok, map, object} <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
@@ -896,13 +897,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp maybe_order(query, _), do: query
 
   def fetch_activities_query(recipients, opts \\ %{}) do
-    base_query = from(activity in Activity)
-
     config = %{
       skip_thread_containment: Config.get([:instance, :skip_thread_containment])
     }
 
-    base_query
+    Activity
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
     |> maybe_set_thread_muted_field(opts)
@@ -931,10 +930,30 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
-    fetch_activities_query(recipients, opts)
+    list_memberships = Pleroma.List.memberships(opts["user"])
+
+    fetch_activities_query(recipients ++ list_memberships, opts)
     |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
+    |> maybe_update_cc(list_memberships, opts["user"])
   end
+
+  defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
+       when is_list(list_memberships) and length(list_memberships) > 0 do
+    Enum.map(activities, fn
+      %{data: %{"bcc" => bcc}} = activity when is_list(bcc) and length(bcc) > 0 ->
+        if Enum.any?(bcc, &(&1 in list_memberships)) do
+          update_in(activity.data["cc"], &[user_ap_id | &1])
+        else
+          activity
+        end
+
+      activity ->
+        activity
+    end)
+  end
+
+  defp maybe_update_cc(activities, _, _), do: activities
 
   def fetch_activities_bounded_query(query, recipients, recipients_with_public) do
     from(activity in query,

@@ -31,7 +31,8 @@ defmodule Pleroma.Web.CommonAPI do
 
   def unfollow(follower, unfollowed) do
     with {:ok, follower, _follow_activity} <- User.unfollow(follower, unfollowed),
-         {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed) do
+         {:ok, _activity} <- ActivityPub.unfollow(follower, unfollowed),
+         {:ok, _unfollowed} <- User.unsubscribe(follower, unfollowed) do
       {:ok, follower}
     end
   end
@@ -175,6 +176,11 @@ defmodule Pleroma.Web.CommonAPI do
       when visibility in ~w{public unlisted private direct},
       do: {visibility, get_replied_to_visibility(in_reply_to)}
 
+  def get_visibility(%{"visibility" => "list:" <> list_id}, in_reply_to) do
+    visibility = {:list, String.to_integer(list_id)}
+    {visibility, get_replied_to_visibility(in_reply_to)}
+  end
+
   def get_visibility(_, in_reply_to) when not is_nil(in_reply_to) do
     visibility = get_replied_to_visibility(in_reply_to)
     {visibility, visibility}
@@ -235,19 +241,18 @@ defmodule Pleroma.Web.CommonAPI do
              "emoji",
              Map.merge(Formatter.get_emoji_map(full_payload), poll_emoji)
            ) do
-      res =
-        ActivityPub.create(
-          %{
-            to: to,
-            actor: user,
-            context: context,
-            object: object,
-            additional: %{"cc" => cc, "directMessage" => visibility == "direct"}
-          },
-          Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
-        )
+      preview? = Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
+      direct? = visibility == "direct"
 
-      res
+      %{
+        to: to,
+        actor: user,
+        context: context,
+        object: object,
+        additional: %{"cc" => cc, "directMessage" => direct?}
+      }
+      |> maybe_add_list_data(user, visibility)
+      |> ActivityPub.create(preview?)
     else
       {:private_to_public, true} ->
         {:error, dgettext("errors", "The message visibility must be direct")}

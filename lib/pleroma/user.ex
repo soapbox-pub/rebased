@@ -749,10 +749,13 @@ defmodule Pleroma.User do
     |> Repo.all()
   end
 
-  def mute(muter, %User{ap_id: ap_id}) do
+  @spec mute(User.t(), User.t(), boolean()) :: {:ok, User.t()} | {:error, String.t()}
+  def mute(muter, %User{ap_id: ap_id}, notifications? \\ true) do
+    info = muter.info
+
     info_cng =
-      muter.info
-      |> User.Info.add_to_mutes(ap_id)
+      User.Info.add_to_mutes(info, ap_id)
+      |> User.Info.add_to_muted_notifications(info, ap_id, notifications?)
 
     cng =
       change(muter)
@@ -762,9 +765,11 @@ defmodule Pleroma.User do
   end
 
   def unmute(muter, %{ap_id: ap_id}) do
+    info = muter.info
+
     info_cng =
-      muter.info
-      |> User.Info.remove_from_mutes(ap_id)
+      User.Info.remove_from_mutes(info, ap_id)
+      |> User.Info.remove_from_muted_notifications(info, ap_id)
 
     cng =
       change(muter)
@@ -859,6 +864,12 @@ defmodule Pleroma.User do
 
   def mutes?(nil, _), do: false
   def mutes?(user, %{ap_id: ap_id}), do: Enum.member?(user.info.mutes, ap_id)
+
+  @spec muted_notifications?(User.t() | nil, User.t() | map()) :: boolean()
+  def muted_notifications?(nil, _), do: false
+
+  def muted_notifications?(user, %{ap_id: ap_id}),
+    do: Enum.member?(user.info.muted_notifications, ap_id)
 
   def blocks?(%User{info: info} = _user, %{ap_id: ap_id}) do
     blocks = info.blocks
@@ -1179,9 +1190,11 @@ defmodule Pleroma.User do
   end
 
   # OStatus Magic Key
-  def public_key_from_info(%{magic_key: magic_key}) do
+  def public_key_from_info(%{magic_key: magic_key}) when not is_nil(magic_key) do
     {:ok, Pleroma.Web.Salmon.decode_key(magic_key)}
   end
+
+  def public_key_from_info(_), do: {:error, "not found key"}
 
   def get_public_key_for_ap_id(ap_id) do
     with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
@@ -1368,23 +1381,16 @@ defmodule Pleroma.User do
     }
   end
 
-  def ensure_keys_present(user) do
-    info = user.info
-
+  def ensure_keys_present(%User{info: info} = user) do
     if info.keys do
       {:ok, user}
     else
       {:ok, pem} = Keys.generate_rsa_pem()
 
-      info_cng =
-        info
-        |> User.Info.set_keys(pem)
-
-      cng =
-        Ecto.Changeset.change(user)
-        |> Ecto.Changeset.put_embed(:info, info_cng)
-
-      update_and_set_cache(cng)
+      user
+      |> Ecto.Changeset.change()
+      |> Ecto.Changeset.put_embed(:info, User.Info.set_keys(info, pem))
+      |> update_and_set_cache()
     end
   end
 

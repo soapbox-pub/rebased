@@ -192,6 +192,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def notifications(%{assigns: %{user: user}} = conn, params) do
+    params =
+      if Map.has_key?(params, "with_muted") do
+        Map.put(params, :with_muted, params["with_muted"] in [true, "True", "true", "1"])
+      else
+        params
+      end
+
     notifications = Notification.for_user(user, params)
 
     conn
