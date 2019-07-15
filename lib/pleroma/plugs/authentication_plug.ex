@@ -16,8 +16,10 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
     cond do
       String.starts_with?(password_hash, "$pbkdf2") ->
         Pbkdf2.checkpw(password, password_hash)
+
       String.starts_with?(password_hash, "$6") ->
         :crypt.crypt(password, password_hash) == password_hash
+
       true ->
         Logger.error("Password hash not recognized")
         false
