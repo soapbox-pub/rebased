@@ -16,9 +16,11 @@ Adding the parameter `with_muted=true` to the timeline queries will also return 
 
 ## Statuses
 
+- `visibility`: has an additional possible value `list`
+
 Has these additional fields under the `pleroma` object:
 
-- `local`: true if the post was made on the local instance.
+- `local`: true if the post was made on the local instance
 - `conversation_id`: the ID of the conversation the status is associated with (if any)
 - `in_reply_to_account_acct`: the `acct` property of User entity for replied user (if any)
 - `content`: a map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
