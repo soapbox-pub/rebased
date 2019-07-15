@@ -6,9 +6,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Activity
+  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Web.MediaProxy
   import Pleroma.Factory
 
   describe "/api/pleroma/admin/users" do
@@ -58,7 +60,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         "local" => true,
         "nickname" => user.nickname,
         "roles" => %{"admin" => false, "moderator" => false},
-        "tags" => []
+        "tags" => [],
+        "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+        "display_name" => HTML.strip_tags(user.name || user.nickname)
       }
 
       assert expected == json_response(conn, 200)
@@ -445,7 +449,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
             "local" => true,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(admin.name || admin.nickname)
           },
           %{
             "deactivated" => user.info.deactivated,
@@ -453,7 +459,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => user.nickname,
             "roles" => %{"admin" => false, "moderator" => false},
             "local" => false,
-            "tags" => ["foo", "bar"]
+            "tags" => ["foo", "bar"],
+            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user.name || user.nickname)
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -492,7 +500,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -514,7 +524,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -536,7 +548,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -558,7 +572,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -580,7 +596,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -602,7 +620,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -619,7 +639,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user2.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user2.name || user2.nickname)
                  }
                ]
              }
@@ -646,7 +668,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => true,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -671,7 +695,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => user.nickname,
             "roles" => %{"admin" => false, "moderator" => false},
             "local" => true,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user.name || user.nickname)
           },
           %{
             "deactivated" => admin.info.deactivated,
@@ -679,7 +705,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
             "local" => true,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(admin.name || admin.nickname)
           },
           %{
             "deactivated" => false,
@@ -687,7 +715,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "local" => true,
             "nickname" => old_admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(old_admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(old_admin.name || old_admin.nickname)
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -714,7 +744,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
             "local" => admin.local,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(admin.name || admin.nickname)
           },
           %{
             "deactivated" => false,
@@ -722,7 +754,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => second_admin.nickname,
             "roles" => %{"admin" => true, "moderator" => false},
             "local" => second_admin.local,
-            "tags" => []
+            "tags" => [],
+            "avatar" => User.avatar_url(second_admin) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(second_admin.name || second_admin.nickname)
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -751,7 +785,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => moderator.nickname,
                    "roles" => %{"admin" => false, "moderator" => true},
                    "local" => moderator.local,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(moderator) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(moderator.name || moderator.nickname)
                  }
                ]
              }
@@ -773,7 +809,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => user1.nickname,
             "roles" => %{"admin" => false, "moderator" => false},
             "local" => user1.local,
-            "tags" => ["first"]
+            "tags" => ["first"],
+            "avatar" => User.avatar_url(user1) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user1.name || user1.nickname)
           },
           %{
             "deactivated" => false,
@@ -781,7 +819,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
             "nickname" => user2.nickname,
             "roles" => %{"admin" => false, "moderator" => false},
             "local" => user2.local,
-            "tags" => ["second"]
+            "tags" => ["second"],
+            "avatar" => User.avatar_url(user2) |> MediaProxy.url(),
+            "display_name" => HTML.strip_tags(user2.name || user2.nickname)
           }
         ]
         |> Enum.sort_by(& &1["nickname"])
@@ -815,7 +855,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                    "nickname" => user.nickname,
                    "roles" => %{"admin" => false, "moderator" => false},
                    "local" => user.local,
-                   "tags" => []
+                   "tags" => [],
+                   "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+                   "display_name" => HTML.strip_tags(user.name || user.nickname)
                  }
                ]
              }
@@ -838,7 +880,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "nickname" => user.nickname,
                "roles" => %{"admin" => false, "moderator" => false},
                "local" => true,
-               "tags" => []
+               "tags" => [],
+               "avatar" => User.avatar_url(user) |> MediaProxy.url(),
+               "display_name" => HTML.strip_tags(user.name || user.nickname)
              }
   end
 
@@ -1190,7 +1234,6 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       recipients = Enum.map(response["mentions"], & &1["username"])
 
-      assert conn.assigns[:user].nickname in recipients
       assert reporter.nickname in recipients
       assert response["content"] == "I will check it out"
       assert response["visibility"] == "direct"
@@ -1292,4 +1335,578 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert json_response(conn, :bad_request) == "Could not delete"
     end
   end
+
+  describe "GET /api/pleroma/admin/config" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+
+      %{conn: assign(conn, :user, admin)}
+    end
+
+    test "without any settings in db", %{conn: conn} do
+      conn = get(conn, "/api/pleroma/admin/config")
+
+      assert json_response(conn, 200) == %{"configs" => []}
+    end
+
+    test "with settings in db", %{conn: conn} do
+      config1 = insert(:config)
+      config2 = insert(:config)
+
+      conn = get(conn, "/api/pleroma/admin/config")
+
+      %{
+        "configs" => [
+          %{
+            "key" => key1,
+            "value" => _
+          },
+          %{
+            "key" => key2,
+            "value" => _
+          }
+        ]
+      } = json_response(conn, 200)
+
+      assert key1 == config1.key
+      assert key2 == config2.key
+    end
+  end
+
+  describe "POST /api/pleroma/admin/config" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+
+      temp_file = "config/test.exported_from_db.secret.exs"
+
+      on_exit(fn ->
+        Application.delete_env(:pleroma, :key1)
+        Application.delete_env(:pleroma, :key2)
+        Application.delete_env(:pleroma, :key3)
+        Application.delete_env(:pleroma, :key4)
+        Application.delete_env(:pleroma, :keyaa1)
+        Application.delete_env(:pleroma, :keyaa2)
+        Application.delete_env(:pleroma, Pleroma.Web.Endpoint.NotReal)
+        Application.delete_env(:pleroma, Pleroma.Captcha.NotReal)
+        :ok = File.rm(temp_file)
+      end)
+
+      dynamic = Pleroma.Config.get([:instance, :dynamic_configuration])
+
+      Pleroma.Config.put([:instance, :dynamic_configuration], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :dynamic_configuration], dynamic)
+      end)
+
+      %{conn: assign(conn, :user, admin)}
+    end
+
+    test "create new config setting in db", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{group: "pleroma", key: "key1", value: "value1"},
+            %{
+              group: "ueberauth",
+              key: "Ueberauth.Strategy.Twitter.OAuth",
+              value: [%{"tuple" => [":consumer_secret", "aaaa"]}]
+            },
+            %{
+              group: "pleroma",
+              key: "key2",
+              value: %{
+                ":nested_1" => "nested_value1",
+                ":nested_2" => [
+                  %{":nested_22" => "nested_value222"},
+                  %{":nested_33" => %{":nested_44" => "nested_444"}}
+                ]
+              }
+            },
+            %{
+              group: "pleroma",
+              key: "key3",
+              value: [
+                %{"nested_3" => ":nested_3", "nested_33" => "nested_33"},
+                %{"nested_4" => true}
+              ]
+            },
+            %{
+              group: "pleroma",
+              key: "key4",
+              value: %{":nested_5" => ":upload", "endpoint" => "https://example.com"}
+            },
+            %{
+              group: "idna",
+              key: "key5",
+              value: %{"tuple" => ["string", "Pleroma.Captcha.NotReal", []]}
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => "pleroma",
+                   "key" => "key1",
+                   "value" => "value1"
+                 },
+                 %{
+                   "group" => "ueberauth",
+                   "key" => "Ueberauth.Strategy.Twitter.OAuth",
+                   "value" => [%{"tuple" => [":consumer_secret", "aaaa"]}]
+                 },
+                 %{
+                   "group" => "pleroma",
+                   "key" => "key2",
+                   "value" => %{
+                     ":nested_1" => "nested_value1",
+                     ":nested_2" => [
+                       %{":nested_22" => "nested_value222"},
+                       %{":nested_33" => %{":nested_44" => "nested_444"}}
+                     ]
+                   }
+                 },
+                 %{
+                   "group" => "pleroma",
+                   "key" => "key3",
+                   "value" => [
+                     %{"nested_3" => ":nested_3", "nested_33" => "nested_33"},
+                     %{"nested_4" => true}
+                   ]
+                 },
+                 %{
+                   "group" => "pleroma",
+                   "key" => "key4",
+                   "value" => %{"endpoint" => "https://example.com", ":nested_5" => ":upload"}
+                 },
+                 %{
+                   "group" => "idna",
+                   "key" => "key5",
+                   "value" => %{"tuple" => ["string", "Pleroma.Captcha.NotReal", []]}
+                 }
+               ]
+             }
+
+      assert Application.get_env(:pleroma, :key1) == "value1"
+
+      assert Application.get_env(:pleroma, :key2) == %{
+               nested_1: "nested_value1",
+               nested_2: [
+                 %{nested_22: "nested_value222"},
+                 %{nested_33: %{nested_44: "nested_444"}}
+               ]
+             }
+
+      assert Application.get_env(:pleroma, :key3) == [
+               %{"nested_3" => :nested_3, "nested_33" => "nested_33"},
+               %{"nested_4" => true}
+             ]
+
+      assert Application.get_env(:pleroma, :key4) == %{
+               "endpoint" => "https://example.com",
+               nested_5: :upload
+             }
+
+      assert Application.get_env(:idna, :key5) == {"string", Pleroma.Captcha.NotReal, []}
+    end
+
+    test "update config setting & delete", %{conn: conn} do
+      config1 = insert(:config, key: "keyaa1")
+      config2 = insert(:config, key: "keyaa2")
+
+      insert(:config,
+        group: "ueberauth",
+        key: "Ueberauth.Strategy.Microsoft.OAuth",
+        value: :erlang.term_to_binary([])
+      )
+
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{group: config1.group, key: config1.key, value: "another_value"},
+            %{group: config2.group, key: config2.key, delete: "true"},
+            %{
+              group: "ueberauth",
+              key: "Ueberauth.Strategy.Microsoft.OAuth",
+              delete: "true"
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => "pleroma",
+                   "key" => config1.key,
+                   "value" => "another_value"
+                 }
+               ]
+             }
+
+      assert Application.get_env(:pleroma, :keyaa1) == "another_value"
+      refute Application.get_env(:pleroma, :keyaa2)
+    end
+
+    test "common config example", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "group" => "pleroma",
+              "key" => "Pleroma.Captcha.NotReal",
+              "value" => [
+                %{"tuple" => [":enabled", false]},
+                %{"tuple" => [":method", "Pleroma.Captcha.Kocaptcha"]},
+                %{"tuple" => [":seconds_valid", 60]},
+                %{"tuple" => [":path", ""]},
+                %{"tuple" => [":key1", nil]}
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => "pleroma",
+                   "key" => "Pleroma.Captcha.NotReal",
+                   "value" => [
+                     %{"tuple" => [":enabled", false]},
+                     %{"tuple" => [":method", "Pleroma.Captcha.Kocaptcha"]},
+                     %{"tuple" => [":seconds_valid", 60]},
+                     %{"tuple" => [":path", ""]},
+                     %{"tuple" => [":key1", nil]}
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "tuples with more than two values", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "group" => "pleroma",
+              "key" => "Pleroma.Web.Endpoint.NotReal",
+              "value" => [
+                %{
+                  "tuple" => [
+                    ":http",
+                    [
+                      %{
+                        "tuple" => [
+                          ":key2",
+                          [
+                            %{
+                              "tuple" => [
+                                ":_",
+                                [
+                                  %{
+                                    "tuple" => [
+                                      "/api/v1/streaming",
+                                      "Pleroma.Web.MastodonAPI.WebsocketHandler",
+                                      []
+                                    ]
+                                  },
+                                  %{
+                                    "tuple" => [
+                                      "/websocket",
+                                      "Phoenix.Endpoint.CowboyWebSocket",
+                                      %{
+                                        "tuple" => [
+                                          "Phoenix.Transports.WebSocket",
+                                          %{
+                                            "tuple" => [
+                                              "Pleroma.Web.Endpoint",
+                                              "Pleroma.Web.UserSocket",
+                                              []
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  %{
+                                    "tuple" => [
+                                      ":_",
+                                      "Phoenix.Endpoint.Cowboy2Handler",
+                                      %{"tuple" => ["Pleroma.Web.Endpoint", []]}
+                                    ]
+                                  }
+                                ]
+                              ]
+                            }
+                          ]
+                        ]
+                      }
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => "pleroma",
+                   "key" => "Pleroma.Web.Endpoint.NotReal",
+                   "value" => [
+                     %{
+                       "tuple" => [
+                         ":http",
+                         [
+                           %{
+                             "tuple" => [
+                               ":key2",
+                               [
+                                 %{
+                                   "tuple" => [
+                                     ":_",
+                                     [
+                                       %{
+                                         "tuple" => [
+                                           "/api/v1/streaming",
+                                           "Pleroma.Web.MastodonAPI.WebsocketHandler",
+                                           []
+                                         ]
+                                       },
+                                       %{
+                                         "tuple" => [
+                                           "/websocket",
+                                           "Phoenix.Endpoint.CowboyWebSocket",
+                                           %{
+                                             "tuple" => [
+                                               "Phoenix.Transports.WebSocket",
+                                               %{
+                                                 "tuple" => [
+                                                   "Pleroma.Web.Endpoint",
+                                                   "Pleroma.Web.UserSocket",
+                                                   []
+                                                 ]
+                                               }
+                                             ]
+                                           }
+                                         ]
+                                       },
+                                       %{
+                                         "tuple" => [
+                                           ":_",
+                                           "Phoenix.Endpoint.Cowboy2Handler",
+                                           %{"tuple" => ["Pleroma.Web.Endpoint", []]}
+                                         ]
+                                       }
+                                     ]
+                                   ]
+                                 }
+                               ]
+                             ]
+                           }
+                         ]
+                       ]
+                     }
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "settings with nesting map", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "group" => "pleroma",
+              "key" => ":key1",
+              "value" => [
+                %{"tuple" => [":key2", "some_val"]},
+                %{
+                  "tuple" => [
+                    ":key3",
+                    %{
+                      ":max_options" => 20,
+                      ":max_option_chars" => 200,
+                      ":min_expiration" => 0,
+                      ":max_expiration" => 31_536_000,
+                      "nested" => %{
+                        ":max_options" => 20,
+                        ":max_option_chars" => 200,
+                        ":min_expiration" => 0,
+                        ":max_expiration" => 31_536_000
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) ==
+               %{
+                 "configs" => [
+                   %{
+                     "group" => "pleroma",
+                     "key" => ":key1",
+                     "value" => [
+                       %{"tuple" => [":key2", "some_val"]},
+                       %{
+                         "tuple" => [
+                           ":key3",
+                           %{
+                             ":max_expiration" => 31_536_000,
+                             ":max_option_chars" => 200,
+                             ":max_options" => 20,
+                             ":min_expiration" => 0,
+                             "nested" => %{
+                               ":max_expiration" => 31_536_000,
+                               ":max_option_chars" => 200,
+                               ":max_options" => 20,
+                               ":min_expiration" => 0
+                             }
+                           }
+                         ]
+                       }
+                     ]
+                   }
+                 ]
+               }
+    end
+
+    test "value as map", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "group" => "pleroma",
+              "key" => ":key1",
+              "value" => %{"key" => "some_val"}
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) ==
+               %{
+                 "configs" => [
+                   %{
+                     "group" => "pleroma",
+                     "key" => ":key1",
+                     "value" => %{"key" => "some_val"}
+                   }
+                 ]
+               }
+    end
+
+    test "dispatch setting", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "group" => "pleroma",
+              "key" => "Pleroma.Web.Endpoint.NotReal",
+              "value" => [
+                %{
+                  "tuple" => [
+                    ":http",
+                    [
+                      %{"tuple" => [":ip", %{"tuple" => [127, 0, 0, 1]}]},
+                      %{"tuple" => [":dispatch", ["{:_,
+       [
+         {\"/api/v1/streaming\", Pleroma.Web.MastodonAPI.WebsocketHandler, []},
+         {\"/websocket\", Phoenix.Endpoint.CowboyWebSocket,
+          {Phoenix.Transports.WebSocket,
+           {Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, [path: \"/websocket\"]}}},
+         {:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}
+       ]}"]]}
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        })
+
+      dispatch_string =
+        "{:_, [{\"/api/v1/streaming\", Pleroma.Web.MastodonAPI.WebsocketHandler, []}, " <>
+          "{\"/websocket\", Phoenix.Endpoint.CowboyWebSocket, {Phoenix.Transports.WebSocket, " <>
+          "{Pleroma.Web.Endpoint, Pleroma.Web.UserSocket, [path: \"/websocket\"]}}}, " <>
+          "{:_, Phoenix.Endpoint.Cowboy2Handler, {Pleroma.Web.Endpoint, []}}]}"
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => "pleroma",
+                   "key" => "Pleroma.Web.Endpoint.NotReal",
+                   "value" => [
+                     %{
+                       "tuple" => [
+                         ":http",
+                         [
+                           %{"tuple" => [":ip", %{"tuple" => [127, 0, 0, 1]}]},
+                           %{
+                             "tuple" => [
+                               ":dispatch",
+                               [
+                                 dispatch_string
+                               ]
+                             ]
+                           }
+                         ]
+                       ]
+                     }
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "queues key as atom", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "group" => "pleroma_job_queue",
+              "key" => ":queues",
+              "value" => [
+                %{"tuple" => [":federator_incoming", 50]},
+                %{"tuple" => [":federator_outgoing", 50]},
+                %{"tuple" => [":web_push", 50]},
+                %{"tuple" => [":mailer", 10]},
+                %{"tuple" => [":transmogrifier", 20]},
+                %{"tuple" => [":scheduled_activities", 10]},
+                %{"tuple" => [":background", 5]}
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => "pleroma_job_queue",
+                   "key" => ":queues",
+                   "value" => [
+                     %{"tuple" => [":federator_incoming", 50]},
+                     %{"tuple" => [":federator_outgoing", 50]},
+                     %{"tuple" => [":web_push", 50]},
+                     %{"tuple" => [":mailer", 10]},
+                     %{"tuple" => [":transmogrifier", 20]},
+                     %{"tuple" => [":scheduled_activities", 10]},
+                     %{"tuple" => [":background", 5]}
+                   ]
+                 }
+               ]
+             }
+    end
+  end
+end
+
+# Needed for testing
+defmodule Pleroma.Web.Endpoint.NotReal do
+end
+
+defmodule Pleroma.Captcha.NotReal do
 end

@@ -6,6 +6,7 @@ defmodule Pleroma.Web.Streamer do
   use GenServer
   require Logger
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Conversation.Participation
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -109,23 +110,18 @@ defmodule Pleroma.Web.Streamer do
     {:noreply, topics}
   end
 
-  def handle_cast(%{action: :stream, topic: "user", item: %Notification{} = item}, topics) do
-    topic = "user:#{item.user_id}"
-
-    Enum.each(topics[topic] || [], fn socket ->
-      json =
-        %{
-          event: "notification",
-          payload:
-            NotificationView.render("show.json", %{
-              notification: item,
-              for: socket.assigns["user"]
-            })
-            |> Jason.encode!()
-        }
-        |> Jason.encode!()
-
-      send(socket.transport_pid, {:text, json})
+  def handle_cast(
+        %{action: :stream, topic: topic, item: %Notification{} = item},
+        topics
+      )
+      when topic in ["user", "user:notification"] do
+    topics
+    |> Map.get("#{topic}:#{item.user_id}", [])
+    |> Enum.each(fn socket ->
+      send(
+        socket.transport_pid,
+        {:text, represent_notification(socket.assigns[:user], item)}
+      )
     end)
 
     {:noreply, topics}
@@ -215,6 +211,20 @@ defmodule Pleroma.Web.Streamer do
     |> Jason.encode!()
   end
 
+  @spec represent_notification(User.t(), Notification.t()) :: binary()
+  defp represent_notification(%User{} = user, %Notification{} = notify) do
+    %{
+      event: "notification",
+      payload:
+        NotificationView.render(
+          "show.json",
+          %{notification: notify, for: user}
+        )
+        |> Jason.encode!()
+    }
+    |> Jason.encode!()
+  end
+
   def push_to_socket(topics, topic, %Activity{data: %{"type" => "Announce"}} = item) do
     Enum.each(topics[topic] || [], fn socket ->
       # Get the current user so we have up-to-date blocks etc.
@@ -224,11 +234,10 @@ defmodule Pleroma.Web.Streamer do
         mutes = user.info.mutes || []
         reblog_mutes = user.info.muted_reblogs || []
 
-        parent = Object.normalize(item)
-
-        unless is_nil(parent) or item.actor in blocks or item.actor in mutes or
-                 item.actor in reblog_mutes or not ActivityPub.contain_activity(item, user) or
-                 parent.data["actor"] in blocks or parent.data["actor"] in mutes do
+        with parent when not is_nil(parent) <- Object.normalize(item),
+             true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
+             true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
+             true <- thread_containment(item, user) do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
@@ -264,8 +273,8 @@ defmodule Pleroma.Web.Streamer do
         blocks = user.info.blocks || []
         mutes = user.info.mutes || []
 
-        unless item.actor in blocks or item.actor in mutes or
-                 not ActivityPub.contain_activity(item, user) do
+        with true <- Enum.all?([blocks, mutes], &(item.actor not in &1)),
+             true <- thread_containment(item, user) do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
@@ -274,9 +283,20 @@ defmodule Pleroma.Web.Streamer do
     end)
   end
 
-  defp internal_topic(topic, socket) when topic in ~w[user direct] do
+  defp internal_topic(topic, socket) when topic in ~w[user user:notification direct] do
     "#{topic}:#{socket.assigns[:user].id}"
   end
 
   defp internal_topic(topic, _), do: topic
+
+  @spec thread_containment(Activity.t(), User.t()) :: boolean()
+  defp thread_containment(_activity, %User{info: %{skip_thread_containment: true}}), do: true
+
+  defp thread_containment(activity, user) do
+    if Config.get([:instance, :skip_thread_containment]) do
+      true
+    else
+      ActivityPub.contain_activity(activity, user)
+    end
+  end
 end

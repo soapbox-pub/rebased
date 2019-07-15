@@ -113,4 +113,30 @@ defmodule Pleroma.ListTest do
     assert owned_list in lists_2
     refute not_owned_list in lists_2
   end
+
+  test "get by ap_id" do
+    user = insert(:user)
+    {:ok, list} = Pleroma.List.create("foo", user)
+    assert Pleroma.List.get_by_ap_id(list.ap_id) == list
+  end
+
+  test "memberships" do
+    user = insert(:user)
+    member = insert(:user)
+    {:ok, list} = Pleroma.List.create("foo", user)
+    {:ok, list} = Pleroma.List.follow(list, member)
+
+    assert Pleroma.List.memberships(member) == [list.ap_id]
+  end
+
+  test "member?" do
+    user = insert(:user)
+    member = insert(:user)
+
+    {:ok, list} = Pleroma.List.create("foo", user)
+    {:ok, list} = Pleroma.List.follow(list, member)
+
+    assert Pleroma.List.member?(list, member)
+    refute Pleroma.List.member?(list, user)
+  end
 end

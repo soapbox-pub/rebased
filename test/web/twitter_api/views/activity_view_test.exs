@@ -126,7 +126,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     other_user = insert(:user, %{nickname: "shp"})
 
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     result = ActivityView.render("activity.json", activity: activity)
 
@@ -177,7 +177,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
     user = insert(:user)
     other_user = insert(:user, %{nickname: "shp"})
     {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!"})
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     convo_id = Utils.context_to_conversation_id(object.data["context"])
 
@@ -351,7 +351,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityViewTest do
       "is_post_verb" => false,
       "statusnet_html" => "deleted notice {{tag",
       "text" => "deleted notice {{tag",
-      "uri" => delete.data["object"],
+      "uri" => Object.normalize(delete).data["id"],
       "user" => UserView.render("show.json", user: user)
     }
 

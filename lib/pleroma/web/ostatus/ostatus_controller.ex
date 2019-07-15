@@ -245,14 +245,10 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   end
 
   def errors(conn, {:error, :not_found}) do
-    conn
-    |> put_status(404)
-    |> text("Not found")
+    render_error(conn, :not_found, "Not found")
   end
 
   def errors(conn, _) do
-    conn
-    |> put_status(500)
-    |> text("Something went wrong")
+    render_error(conn, :internal_server_error, "Something went wrong")
   end
 end

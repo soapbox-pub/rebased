@@ -19,18 +19,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   require Logger
 
-  @supported_object_types ["Article", "Note", "Video", "Page"]
+  @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer"]
   @supported_report_states ~w(open closed resolved)
   @valid_visibilities ~w(public unlisted private direct)
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
-  def get_ap_id(object) do
-    case object do
-      %{"id" => id} -> id
-      id -> id
-    end
-  end
+  def get_ap_id(%{"id" => id} = _), do: id
+  def get_ap_id(id), do: id
 
   def normalize_params(params) do
     Map.put(params, "actor", get_ap_id(params["actor"]))
@@ -151,16 +147,18 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def create_context(context) do
     context = context || generate_id("contexts")
-    changeset = Object.context_mapping(context)
 
-    case Repo.insert(changeset) do
-      {:ok, object} ->
+    # Ecto has problems accessing the constraint inside the jsonb,
+    # so we explicitly check for the existed object before insert
+    object = Object.get_cached_by_ap_id(context)
+
+    with true <- is_nil(object),
+         changeset <- Object.context_mapping(context),
+         {:ok, inserted_object} <- Repo.insert(changeset) do
+      inserted_object
+    else
+      _ ->
         object
-
-      # This should be solved by an upsert, but it seems ecto
-      # has problems accessing the constraint inside the jsonb.
-      {:error, _} ->
-        Object.get_cached_by_ap_id(context)
     end
   end
 
@@ -168,14 +166,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Enqueues an activity for federation if it's local
   """
   def maybe_federate(%Activity{local: true} = activity) do
-    priority =
-      case activity.data["type"] do
-        "Delete" -> 10
-        "Create" -> 1
-        _ -> 5
-      end
+    if Pleroma.Config.get!([:instance, :federating]) do
+      priority =
+        case activity.data["type"] do
+          "Delete" -> 10
+          "Create" -> 1
+          _ -> 5
+        end
 
-    Pleroma.Web.Federator.publish(activity, priority)
+      Pleroma.Web.Federator.publish(activity, priority)
+    end
+
     :ok
   end
 
@@ -376,8 +377,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Updates a follow activity's state (for locked accounts).
   """
-  def update_follow_state(
-        %Activity{data: %{"actor" => actor, "object" => object, "state" => "pending"}} = activity,
+  def update_follow_state_for_all(
+        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
         state
       ) do
     try do
@@ -788,5 +789,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       _ ->
         [to, cc, recipients]
     end
+  end
+
+  def get_existing_votes(actor, %{data: %{"id" => id}}) do
+    query =
+      from(
+        [activity, object: object] in Activity.with_preloaded_object(Activity),
+        where: fragment("(?)->>'type' = 'Create'", activity.data),
+        where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
+        where:
+          fragment(
+            "(?)->>'inReplyTo' = ?",
+            object.data,
+            ^to_string(id)
+          ),
+        where: fragment("(?)->>'type' = 'Answer'", object.data)
+      )
+
+    Repo.all(query)
   end
 end

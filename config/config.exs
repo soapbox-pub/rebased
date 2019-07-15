@@ -99,6 +99,7 @@ config :pleroma, Pleroma.Uploaders.MDII,
 
 config :pleroma, :emoji,
   shortcode_globs: ["/emoji/custom/**/*.png"],
+  pack_extensions: [".png", ".gif"],
   groups: [
     # Put groups that have higher priority than defaults here. Example in `docs/config/custom_emoji.md`
     Custom: ["/emoji/*.png", "/emoji/**/*.png"]
@@ -139,6 +140,7 @@ config :pleroma, Pleroma.Web.Endpoint,
   instrumenters: [Pleroma.Web.Endpoint.Instrumenter],
   url: [host: "localhost"],
   http: [
+    ip: {127, 0, 0, 1},
     dispatch: [
       {:_,
        [
@@ -167,7 +169,7 @@ config :logger, :console,
 
 config :logger, :ex_syslogger,
   level: :debug,
-  ident: "Pleroma",
+  ident: "pleroma",
   format: "$metadata[$level] $message",
   metadata: [:request_id]
 
@@ -192,6 +194,8 @@ config :pleroma, :http,
   send_user_agent: true,
   adapter: [
     ssl_options: [
+      # Workaround for remote server certificate chain issues
+      partial_chain: &:hackney_connect.partial_chain/1,
       # We don't support TLS v1.3 yet
       versions: [:tlsv1, :"tlsv1.1", :"tlsv1.2"]
     ]
@@ -208,8 +212,15 @@ config :pleroma, :instance,
   avatar_upload_limit: 2_000_000,
   background_upload_limit: 4_000_000,
   banner_upload_limit: 4_000_000,
+  poll_limits: %{
+    max_options: 20,
+    max_option_chars: 200,
+    min_expiration: 0,
+    max_expiration: 365 * 24 * 60 * 60
+  },
   registrations_open: true,
   federating: true,
+  federation_incoming_replies_max_depth: 100,
   federation_reachability_timeout_days: 7,
   federation_publisher_modules: [
     Pleroma.Web.ActivityPub.Publisher,
@@ -229,6 +240,7 @@ config :pleroma, :instance,
     "text/bbcode"
   ],
   mrf_transparency: true,
+  mrf_transparency_exclusions: [],
   autofollowed_nicknames: [],
   max_pinned_statuses: 1,
   no_attachment_links: false,
@@ -237,9 +249,11 @@ config :pleroma, :instance,
   max_report_comment_size: 1000,
   safe_dm_mentions: false,
   healthcheck: false,
-  remote_post_retention_days: 90
-
-config :pleroma, :app_account_creation, enabled: true, max_requests: 25, interval: 1800
+  remote_post_retention_days: 90,
+  skip_thread_containment: true,
+  limit_to_local_content: :unauthenticated,
+  dynamic_configuration: false,
+  external_user_synchronization: true
 
 config :pleroma, :markup,
   # XXX - unfortunately, inline images must be enabled by default right now, because
@@ -320,7 +334,17 @@ config :pleroma, :mrf_keyword,
   federated_timeline_removal: [],
   replace: []
 
-config :pleroma, :rich_media, enabled: true
+config :pleroma, :mrf_subchain, match_actor: %{}
+
+config :pleroma, :rich_media,
+  enabled: true,
+  ignore_hosts: [],
+  ignore_tld: ["local", "localdomain", "lan"],
+  parsers: [
+    Pleroma.Web.RichMedia.Parsers.TwitterCard,
+    Pleroma.Web.RichMedia.Parsers.OGP,
+    Pleroma.Web.RichMedia.Parsers.OEmbed
+  ]
 
 config :pleroma, :media_proxy,
   enabled: false,
@@ -344,7 +368,11 @@ config :pleroma, :gopher,
   port: 9999
 
 config :pleroma, Pleroma.Web.Metadata,
-  providers: [Pleroma.Web.Metadata.Providers.RelMe],
+  providers: [
+    Pleroma.Web.Metadata.Providers.OpenGraph,
+    Pleroma.Web.Metadata.Providers.TwitterCard,
+    Pleroma.Web.Metadata.Providers.RelMe
+  ],
   unfurl_nsfw: false
 
 config :pleroma, :suggestions,
@@ -352,8 +380,8 @@ config :pleroma, :suggestions,
   third_party_engine:
     "http://vinayaka.distsn.org/cgi-bin/vinayaka-user-match-suggestions-api.cgi?{{host}}+{{user}}",
   timeout: 300_000,
-  limit: 23,
-  web: "https://vinayaka.distsn.org/?{{host}}+{{user}}"
+  limit: 40,
+  web: "https://vinayaka.distsn.org"
 
 config :pleroma, :http_security,
   enabled: true,
@@ -433,6 +461,8 @@ config :auto_linker,
   opts: [
     scheme: true,
     extra: true,
+    # TODO: Set to :no_scheme when it works properly
+    validate_tld: true,
     class: false,
     strip_prefix: false,
     new_window: false,
@@ -453,7 +483,11 @@ config :pleroma, :ldap,
 config :esshd,
   enabled: false
 
-oauth_consumer_strategies = String.split(System.get_env("OAUTH_CONSUMER_STRATEGIES") || "")
+oauth_consumer_strategies =
+  System.get_env("OAUTH_CONSUMER_STRATEGIES")
+  |> to_string()
+  |> String.split()
+  |> Enum.map(&hd(String.split(&1, ":")))
 
 ueberauth_providers =
   for strategy <- oauth_consumer_strategies do
@@ -469,7 +503,7 @@ config :ueberauth,
 
 config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
-config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail
+config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 
@@ -486,8 +520,16 @@ config :pleroma, :oauth2,
 
 config :pleroma, :database, rum_enabled: false
 
+config :pleroma, :env, Mix.env()
+
 config :http_signatures,
   adapter: Pleroma.Signature
+
+config :pleroma, :rate_limit,
+  search: [{1000, 10}, {1000, 30}],
+  app_account_creation: {1_800_000, 25},
+  statuses_actions: {10_000, 15},
+  status_id_action: {60_000, 3}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

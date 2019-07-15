@@ -88,22 +88,72 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       true
     else
       inbox_info = URI.parse(inbox)
-      !Enum.member?(Pleroma.Config.get([:instance, :quarantined_instances], []), inbox_info.host)
+      !Enum.member?(Config.get([:instance, :quarantined_instances], []), inbox_info.host)
     end
+  end
+
+  defp recipients(actor, activity) do
+    followers =
+      if actor.follower_address in activity.recipients do
+        {:ok, followers} = User.get_followers(actor)
+        Enum.filter(followers, &(!&1.local))
+      else
+        []
+      end
+
+    Pleroma.Web.Salmon.remote_users(actor, activity) ++ followers
+  end
+
+  defp get_cc_ap_ids(ap_id, recipients) do
+    host = Map.get(URI.parse(ap_id), :host)
+
+    recipients
+    |> Enum.filter(fn %User{ap_id: ap_id} -> Map.get(URI.parse(ap_id), :host) == host end)
+    |> Enum.map(& &1.ap_id)
+  end
+
+  @doc """
+  Publishes an activity with BCC to all relevant peers.
+  """
+
+  def publish(actor, %{data: %{"bcc" => bcc}} = activity) when is_list(bcc) and bcc != [] do
+    public = is_public?(activity)
+    {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
+
+    recipients = recipients(actor, activity)
+
+    recipients
+    |> Enum.filter(&User.ap_enabled?/1)
+    |> Enum.map(fn %{info: %{source_data: data}} -> data["inbox"] end)
+    |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
+    |> Instances.filter_reachable()
+    |> Enum.each(fn {inbox, unreachable_since} ->
+      %User{ap_id: ap_id} =
+        Enum.find(recipients, fn %{info: %{source_data: data}} -> data["inbox"] == inbox end)
+
+      # Get all the recipients on the same host and add them to cc. Otherwise it a remote
+      # instance would only accept a first message for the first recipient and ignore the rest.
+      cc = get_cc_ap_ids(ap_id, recipients)
+
+      json =
+        data
+        |> Map.put("cc", cc)
+        |> Jason.encode!()
+
+      Pleroma.Web.Federator.Publisher.enqueue_one(__MODULE__, %{
+        inbox: inbox,
+        json: json,
+        actor: actor,
+        id: activity.data["id"],
+        unreachable_since: unreachable_since
+      })
+    end)
   end
 
   @doc """
   Publishes an activity to all relevant peers.
   """
   def publish(%User{} = actor, %Activity{} = activity) do
-    remote_followers =
-      if actor.follower_address in activity.recipients do
-        {:ok, followers} = User.get_followers(actor)
-        followers |> Enum.filter(&(!&1.local))
-      else
-        []
-      end
-
     public = is_public?(activity)
 
     if public && Config.get([:instance, :allow_relay]) do
@@ -114,7 +164,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     {:ok, data} = Transmogrifier.prepare_outgoing(activity.data)
     json = Jason.encode!(data)
 
-    (Pleroma.Web.Salmon.remote_users(activity) ++ remote_followers)
+    recipients(actor, activity)
     |> Enum.filter(fn user -> User.ap_enabled?(user) end)
     |> Enum.map(fn %{info: %{source_data: data}} ->
       (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]

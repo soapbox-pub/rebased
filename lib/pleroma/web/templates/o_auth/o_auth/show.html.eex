@@ -6,26 +6,38 @@
 <% end %>
 
 <h2>OAuth Authorization</h2>
-
 <%= form_for @conn, o_auth_path(@conn, :authorize), [as: "authorization"], fn f -> %>
-<div class="input">
-  <%= label f, :name, "Name or email" %>
-  <%= text_input f, :name %>
-</div>
-<div class="input">
-  <%= label f, :password, "Password" %>
-  <%= password_input f, :password %>
-</div>
 
-<%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
+<%= if @params["registration"] in ["true", true] do %>
+  <h3>This is the first time you visit! Please enter your Pleroma handle.</h3>
+  <p>Choose carefully! You won't be able to change this later. You will be able to change your display name, though.</p>
+  <div class="input">
+    <%= label f, :nickname, "Pleroma Handle" %>
+    <%= text_input f, :nickname, placeholder: "lain" %>
+  </div>
+  <%= hidden_input f, :name, value: @params["name"] %>
+  <%= hidden_input f, :password, value: @params["password"] %>
+  <br>
+<% else %>
+  <div class="input">
+    <%= label f, :name, "Username" %>
+    <%= text_input f, :name %>
+  </div>
+  <div class="input">
+    <%= label f, :password, "Password" %>
+    <%= password_input f, :password %>
+  </div>
+  <%= submit "Log In" %>
+  <%= render @view_module, "_scopes.html", Map.merge(assigns, %{form: f}) %>
+<% end %>
 
 <%= hidden_input f, :client_id, value: @client_id %>
 <%= hidden_input f, :response_type, value: @response_type %>
 <%= hidden_input f, :redirect_uri, value: @redirect_uri %>
 <%= hidden_input f, :state, value: @state %>
-<%= submit "Authorize" %>
 <% end %>
 
 <%= if Pleroma.Config.oauth_consumer_enabled?() do %>
   <%= render @view_module, Pleroma.Web.Auth.Authenticator.oauth_consumer_template(), assigns %>
 <% end %>
+

@@ -4,11 +4,11 @@
 <meta charset='utf-8'>
 <meta content='width=device-width, initial-scale=1' name='viewport'>
 <title>
-<%= Application.get_env(:pleroma, :instance)[:name] %>
+<%= Pleroma.Config.get([:instance, :name]) %>
 </title>
 <link rel="icon" type="image/png" href="/favicon.png"/>
 <script crossorigin='anonymous' src="/packs/locales.js"></script>
-<script crossorigin='anonymous' src="/packs/locales/<%= @flavour %>/en.js"></script>
+<script crossorigin='anonymous' src="/packs/locales/glitch/en.js"></script>
 
 <link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/getting_started.js'>
 <link rel='preload' as='script' crossorigin='anonymous' href='/packs/features/compose.js'>
@@ -19,10 +19,10 @@
 <script src="/packs/core/common.js"></script>
 <link rel="stylesheet" media="all" href="/packs/core/common.css" />
 
-<script src="/packs/flavours/<%= @flavour %>/common.js"></script>
-<link rel="stylesheet" media="all" href="/packs/flavours/<%= @flavour %>/common.css" />
+<script src="/packs/flavours/glitch/common.js"></script>
+<link rel="stylesheet" media="all" href="/packs/flavours/glitch/common.css" />
 
-<script src="/packs/flavours/<%= @flavour %>/home.js"></script>
+<script src="/packs/flavours/glitch/home.js"></script>
 </head>
 <body class='app-body no-reduce-motion system-font'>
   <div class='app-holder' data-props='{&quot;locale&quot;:&quot;en&quot;}' id='mastodon'>

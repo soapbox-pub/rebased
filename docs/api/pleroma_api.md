@@ -126,20 +126,6 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 ## `/api/pleroma/admin/`…
 See [Admin-API](Admin-API.md)
 
-## `/api/v1/pleroma/flavour/:flavour`
-* Method `POST`
-* Authentication: required
-* Response: JSON string. Returns the user flavour or the default one on success, otherwise returns `{"error": "error_msg"}`
-* Example response: "glitch"
-* Note: This is intended to be used only by mastofe
-
-## `/api/v1/pleroma/flavour`
-* Method `GET`
-* Authentication: required
-* Response: JSON string. Returns the user flavour or the default one.
-* Example response: "glitch"
-* Note: This is intended to be used only by mastofe
-
 ## `/api/pleroma/notifications/read`
 ### Mark a single notification as read
 * Method `POST`
@@ -251,6 +237,13 @@ See [Admin-API](Admin-API.md)
   }
 ]
 ```
+
+## `/api/v1/pleroma/accounts/update_*`
+### Set and clear account avatar, banner, and background
+
+- PATCH `/api/v1/pleroma/accounts/update_avatar`: Set/clear user avatar image
+- PATCH `/api/v1/pleroma/accounts/update_banner`: Set/clear user banner image
+- PATCH `/api/v1/pleroma/accounts/update_background`: Set/clear user background image
 
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image

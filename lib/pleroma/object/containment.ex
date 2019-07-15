@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Object.Containment do
   @moduledoc """
   This module contains some useful functions for containing objects to specific
@@ -44,6 +48,9 @@ defmodule Pleroma.Object.Containment do
     end
   end
 
+  def contain_origin(id, %{"attributedTo" => actor} = params),
+    do: contain_origin(id, Map.put(params, "actor", actor))
+
   def contain_origin_from_id(_id, %{"id" => nil}), do: :error
 
   def contain_origin_from_id(id, %{"id" => other_id} = _params) do
@@ -56,4 +63,9 @@ defmodule Pleroma.Object.Containment do
       :error
     end
   end
+
+  def contain_child(%{"object" => %{"id" => id, "attributedTo" => _} = object}),
+    do: contain_origin(id, object)
+
+  def contain_child(_), do: :ok
 end

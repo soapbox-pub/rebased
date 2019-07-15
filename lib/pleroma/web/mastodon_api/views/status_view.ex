@@ -19,6 +19,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   import Pleroma.Web.ActivityPub.Visibility, only: [get_visibility: 1]
 
   # TODO: Add cached version.
+  defp get_replied_to_activities([]), do: %{}
+
   defp get_replied_to_activities(activities) do
     activities
     |> Enum.map(fn
@@ -104,7 +106,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       id: to_string(activity.id),
       uri: activity_object.data["id"],
       url: activity_object.data["id"],
-      account: AccountView.render("account.json", %{user: user}),
+      account: AccountView.render("account.json", %{user: user, for: opts[:for]}),
       in_reply_to_id: nil,
       in_reply_to_account_id: nil,
       reblog: reblogged,
@@ -147,8 +149,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     tags = object.data["tag"] || []
     sensitive = object.data["sensitive"] || Enum.member?(tags, "nsfw")
 
+    tag_mentions =
+      tags
+      |> Enum.filter(fn tag -> is_map(tag) and tag["type"] == "Mention" end)
+      |> Enum.map(fn tag -> tag["href"] end)
+
     mentions =
-      activity.recipients
+      (object.data["to"] ++ tag_mentions)
+      |> Enum.uniq()
       |> Enum.map(fn ap_id -> User.get_cached_by_ap_id(ap_id) end)
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
@@ -221,7 +229,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       id: to_string(activity.id),
       uri: object.data["id"],
       url: url,
-      account: AccountView.render("account.json", %{user: user}),
+      account: AccountView.render("account.json", %{user: user, for: opts[:for]}),
       in_reply_to_id: reply_to && to_string(reply_to.id),
       in_reply_to_account_id: reply_to_user && to_string(reply_to_user.id),
       reblog: nil,
@@ -240,6 +248,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       spoiler_text: summary_html,
       visibility: get_visibility(object),
       media_attachments: attachments,
+      poll: render("poll.json", %{object: object, for: opts[:for]}),
       mentions: mentions,
       tags: build_tags(tags),
       application: %{
@@ -290,8 +299,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       provider_url: page_url_data.scheme <> "://" <> page_url_data.host,
       url: page_url,
       image: image_url |> MediaProxy.url(),
-      title: rich_media[:title],
-      description: rich_media[:description],
+      title: rich_media[:title] || "",
+      description: rich_media[:description] || "",
       pleroma: %{
         opengraph: rich_media
       }
@@ -327,6 +336,64 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       description: attachment["name"],
       pleroma: %{mime_type: media_type}
     }
+  end
+
+  def render("poll.json", %{object: object} = opts) do
+    {multiple, options} =
+      case object.data do
+        %{"anyOf" => options} when is_list(options) -> {true, options}
+        %{"oneOf" => options} when is_list(options) -> {false, options}
+        _ -> {nil, nil}
+      end
+
+    if options do
+      end_time =
+        (object.data["closed"] || object.data["endTime"])
+        |> NaiveDateTime.from_iso8601!()
+
+      expired =
+        end_time
+        |> NaiveDateTime.compare(NaiveDateTime.utc_now())
+        |> case do
+          :lt -> true
+          _ -> false
+        end
+
+      voted =
+        if opts[:for] do
+          existing_votes =
+            Pleroma.Web.ActivityPub.Utils.get_existing_votes(opts[:for].ap_id, object)
+
+          existing_votes != [] or opts[:for].ap_id == object.data["actor"]
+        else
+          false
+        end
+
+      {options, votes_count} =
+        Enum.map_reduce(options, 0, fn %{"name" => name} = option, count ->
+          current_count = option["replies"]["totalItems"] || 0
+
+          {%{
+             title: HTML.strip_tags(name),
+             votes_count: current_count
+           }, current_count + count}
+        end)
+
+      %{
+        # Mastodon uses separate ids for polls, but an object can't have
+        # more than one poll embedded so object id is fine
+        id: object.id,
+        expires_at: Utils.to_masto_date(end_time),
+        expired: expired,
+        multiple: multiple,
+        votes_count: votes_count,
+        options: options,
+        voted: voted,
+        emojis: build_emojis(object.data["emoji"])
+      }
+    else
+      nil
+    end
   end
 
   def get_reply_to(activity, %{replied_to_activities: replied_to_activities}) do

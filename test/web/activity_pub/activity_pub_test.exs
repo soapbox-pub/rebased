@@ -254,10 +254,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       }
 
       {:ok, %Activity{} = activity} = ActivityPub.insert(data)
-      object = Object.normalize(activity.data["object"])
-
+      assert object = Object.normalize(activity)
       assert is_binary(object.data["id"])
-      assert %Object{} = Object.get_by_ap_id(activity.data["object"])
     end
   end
 
@@ -659,7 +657,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "like an object" do
     test "adds a like activity to the db" do
       note_activity = insert(:note_activity)
-      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      assert object = Object.normalize(note_activity)
+
       user = insert(:user)
       user_two = insert(:user)
 
@@ -678,19 +677,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert like_activity == same_like_activity
       assert object.data["likes"] == [user.ap_id]
+      assert object.data["like_count"] == 1
 
       [note_activity] = Activity.get_all_create_by_object_ap_id(object.data["id"])
       assert note_activity.data["object"]["like_count"] == 1
 
       {:ok, _like_activity, object} = ActivityPub.like(user_two, object)
       assert object.data["like_count"] == 2
+
+      [note_activity] = Activity.get_all_create_by_object_ap_id(object.data["id"])
+      assert note_activity.data["object"]["like_count"] == 2
     end
   end
 
   describe "unliking" do
     test "unliking a previously liked object" do
       note_activity = insert(:note_activity)
-      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      object = Object.normalize(note_activity)
       user = insert(:user)
 
       # Unliking something that hasn't been liked does nothing
@@ -710,7 +713,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "announcing an object" do
     test "adds an announce activity to the db" do
       note_activity = insert(:note_activity)
-      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      object = Object.normalize(note_activity)
       user = insert(:user)
 
       {:ok, announce_activity, object} = ActivityPub.announce(user, object)
@@ -731,7 +734,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   describe "unannouncing an object" do
     test "unannouncing a previously announced object" do
       note_activity = insert(:note_activity)
-      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      object = Object.normalize(note_activity)
       user = insert(:user)
 
       # Unannouncing an object that is not announced does nothing
@@ -810,10 +813,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["type"] == "Undo"
       assert activity.data["actor"] == follower.ap_id
 
-      assert is_map(activity.data["object"])
-      assert activity.data["object"]["type"] == "Follow"
-      assert activity.data["object"]["object"] == followed.ap_id
-      assert activity.data["object"]["id"] == follow_activity.data["id"]
+      embedded_object = activity.data["object"]
+      assert is_map(embedded_object)
+      assert embedded_object["type"] == "Follow"
+      assert embedded_object["object"] == followed.ap_id
+      assert embedded_object["id"] == follow_activity.data["id"]
     end
   end
 
@@ -839,22 +843,23 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert activity.data["type"] == "Undo"
       assert activity.data["actor"] == blocker.ap_id
 
-      assert is_map(activity.data["object"])
-      assert activity.data["object"]["type"] == "Block"
-      assert activity.data["object"]["object"] == blocked.ap_id
-      assert activity.data["object"]["id"] == block_activity.data["id"]
+      embedded_object = activity.data["object"]
+      assert is_map(embedded_object)
+      assert embedded_object["type"] == "Block"
+      assert embedded_object["object"] == blocked.ap_id
+      assert embedded_object["id"] == block_activity.data["id"]
     end
   end
 
   describe "deletion" do
     test "it creates a delete activity and deletes the original object" do
       note = insert(:note_activity)
-      object = Object.get_by_ap_id(note.data["object"]["id"])
+      object = Object.normalize(note)
       {:ok, delete} = ActivityPub.delete(object)
 
       assert delete.data["type"] == "Delete"
       assert delete.data["actor"] == note.data["actor"]
-      assert delete.data["object"] == note.data["object"]["id"]
+      assert delete.data["object"] == object.data["id"]
 
       assert Activity.get_by_id(delete.id) != nil
 
@@ -900,13 +905,14 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     test "it creates a delete activity and checks that it is also sent to users mentioned by the deleted object" do
       user = insert(:user)
       note = insert(:note_activity)
+      object = Object.normalize(note)
 
       {:ok, object} =
-        Object.get_by_ap_id(note.data["object"]["id"])
+        object
         |> Object.change(%{
           data: %{
-            "actor" => note.data["object"]["actor"],
-            "id" => note.data["object"]["id"],
+            "actor" => object.data["actor"],
+            "id" => object.data["id"],
             "to" => [user.ap_id],
             "type" => "Note"
           }
@@ -1018,8 +1024,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       assert update.data["actor"] == user.ap_id
       assert update.data["to"] == [user.follower_address]
-      assert update.data["object"]["id"] == user_data["id"]
-      assert update.data["object"]["type"] == user_data["type"]
+      assert embedded_object = update.data["object"]
+      assert embedded_object["id"] == user_data["id"]
+      assert embedded_object["type"] == user_data["type"]
     end
   end
 
@@ -1183,7 +1190,51 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  test "fetch_activities/2 returns activities addressed to a list " do
+    user = insert(:user)
+    member = insert(:user)
+    {:ok, list} = Pleroma.List.create("foo", user)
+    {:ok, list} = Pleroma.List.follow(list, member)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+
+    activity = Repo.preload(activity, :bookmark)
+    activity = %Activity{activity | thread_muted?: !!activity.thread_muted?}
+
+    assert ActivityPub.fetch_activities([], %{"user" => user}) == [activity]
+  end
+
   def data_uri do
     File.read!("test/fixtures/avatar_data_uri")
+  end
+
+  describe "fetch_activities_bounded" do
+    test "fetches private posts for followed users" do
+      user = insert(:user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{
+          "status" => "thought I looked cute might delete later :3",
+          "visibility" => "private"
+        })
+
+      [result] = ActivityPub.fetch_activities_bounded([user.follower_address], [])
+      assert result.id == activity.id
+    end
+
+    test "fetches only public posts for other users" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "#cofe", "visibility" => "public"})
+
+      {:ok, _private_activity} =
+        CommonAPI.post(user, %{
+          "status" => "why is tenshi eating a corndog so cute?",
+          "visibility" => "private"
+        })
+
+      [result] = ActivityPub.fetch_activities_bounded([], [user.follower_address])
+      assert result.id == activity.id
+    end
   end
 end

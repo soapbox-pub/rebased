@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XRD
+  xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
+  <Subject>acct:lain@zetsubou.xn--q9jyb4c</Subject>
+  <Alias>https://zetsubou.xn--q9jyb4c/users/lain</Alias>
+  <Link href="https://zetsubou.xn--q9jyb4c/users/lain/feed.atom" rel="http://schemas.google.com/g/2010#updates-from" type="application/atom+xml" />
+  <Link href="https://zetsubou.xn--q9jyb4c/users/lain" rel="http://webfinger.net/rel/profile-page" type="text/html" />
+  <Link href="https://zetsubou.xn--q9jyb4c/users/lain/salmon" rel="salmon" />
+  <Link href="data:application/magic-public-key,RSA.7yTJNuPH7wSsg6sMH4XLi-OL6JL8idyRMwNsWy2xzKWPJRWVK5hxG1kMGQ4qC_9ksqIaT7c7DIQFJYYbhRTnXYdac1UxaWivzl5l2HYPOOF1_-gbE6TCaI4ItTQo5eB4yyy3zozrIuv_GY8W0Ww58Re8Z_G4DFFmnipgiBKNaHthxNQqtxcK-o4rUv3xdyr_M9KYi3QISCGiaV_t8xkdVREixzNmWpsqM5YZ46xXT0SiGSHDubLE_OGhyvWqf_WkJrnDBETL3WjXU4QsPmBbVBgLvLcHei_uAD-9d3QImSuWwBXXQZIzY7Diro6u8dZuPIoLmnbUp1-mViBwCUMWSQ==.AQAB" rel="magic-public-key" />
+  <Link href="https://zetsubou.xn--q9jyb4c/users/lain" rel="self" type="application/activity+json" />
+  <Link rel="http://ostatus.org/schema/1.0/subscribe" template="https://zetsubou.xn--q9jyb4c/ostatus_subscribe?acct={uri}" />
+</XRD>

@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   import Ecto.Query
   import Ecto.Changeset
@@ -49,7 +53,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     options = cast_params(params)
 
     user
-    |> Notification.for_user_query()
+    |> Notification.for_user_query(options)
     |> restrict(:exclude_types, options)
     |> Pagination.fetch_paginated(params)
   end
@@ -63,7 +67,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   defp cast_params(params) do
     param_types = %{
       exclude_types: {:array, :string},
-      reblogs: :boolean
+      reblogs: :boolean,
+      with_muted: :boolean
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))

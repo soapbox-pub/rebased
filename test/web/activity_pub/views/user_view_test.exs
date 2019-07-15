@@ -1,9 +1,14 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.UserViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
 
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.UserView
+  alias Pleroma.Web.CommonAPI
 
   test "Renders a user, including the public key" do
     user = insert(:user)
@@ -76,6 +81,30 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
       refute result["endpoints"]["oauthAuthorizationEndpoint"]
       refute result["endpoints"]["oauthRegistrationEndpoint"]
       refute result["endpoints"]["oauthTokenEndpoint"]
+    end
+  end
+
+  describe "followers" do
+    test "sets totalItems to zero when followers are hidden" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, _other_user, user, _activity} = CommonAPI.follow(other_user, user)
+      assert %{"totalItems" => 1} = UserView.render("followers.json", %{user: user})
+      info = Map.put(user.info, :hide_followers, true)
+      user = Map.put(user, :info, info)
+      assert %{"totalItems" => 0} = UserView.render("followers.json", %{user: user})
+    end
+  end
+
+  describe "following" do
+    test "sets totalItems to zero when follows are hidden" do
+      user = insert(:user)
+      other_user = insert(:user)
+      {:ok, user, _other_user, _activity} = CommonAPI.follow(user, other_user)
+      assert %{"totalItems" => 1} = UserView.render("following.json", %{user: user})
+      info = Map.put(user.info, :hide_follows, true)
+      user = Map.put(user, :info, info)
+      assert %{"totalItems" => 0} = UserView.render("following.json", %{user: user})
     end
   end
 end

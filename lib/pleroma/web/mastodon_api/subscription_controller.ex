@@ -59,13 +59,13 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
   #
   def errors(conn, {:error, :not_found}) do
     conn
-    |> put_status(404)
-    |> json("Not found")
+    |> put_status(:not_found)
+    |> json(dgettext("errors", "Not found"))
   end
 
   def errors(conn, _) do
     conn
-    |> put_status(500)
-    |> json("Something went wrong")
+    |> put_status(:internal_server_error)
+    |> json(dgettext("errors", "Something went wrong"))
   end
 end

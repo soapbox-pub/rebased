@@ -15,7 +15,9 @@ defmodule Pleroma.Web.Federator.RetryQueue do
 
   def start_link do
     enabled =
-      if Mix.env() == :test, do: true, else: Pleroma.Config.get([__MODULE__, :enabled], false)
+      if Pleroma.Config.get(:env) == :test,
+        do: true,
+        else: Pleroma.Config.get([__MODULE__, :enabled], false)
 
     if enabled do
       Logger.info("Starting retry queue")
@@ -219,7 +221,7 @@ defmodule Pleroma.Web.Federator.RetryQueue do
     {:noreply, state}
   end
 
-  if Mix.env() == :test do
+  if Pleroma.Config.get(:env) == :test do
     defp growth_function(_retries) do
       _shutit = Pleroma.Config.get([__MODULE__, :initial_timeout])
       DateTime.to_unix(DateTime.utc_now()) - 1

@@ -72,8 +72,11 @@ defmodule Pleroma.Conversation.ParticipationTest do
     object2 = Pleroma.Object.normalize(activity_two)
     object3 = Pleroma.Object.normalize(activity_three)
 
+    user = Repo.get(Pleroma.User, user.id)
+
     assert participation_one.conversation.ap_id == object3.data["context"]
     assert participation_two.conversation.ap_id == object2.data["context"]
+    assert participation_one.conversation.users == [user]
 
     # Pagination
     assert [participation_one] = Participation.for_user(user, %{"limit" => 1})
@@ -85,5 +88,18 @@ defmodule Pleroma.Conversation.ParticipationTest do
              Participation.for_user_with_last_activity_id(user, %{"limit" => 1})
 
     assert participation_one.last_activity_id == activity_three.id
+  end
+
+  test "Doesn't die when the conversation gets empty" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+    [participation] = Participation.for_user_with_last_activity_id(user)
+
+    assert participation.last_activity_id == activity.id
+
+    {:ok, _} = CommonAPI.delete(activity.id, user)
+
+    [] = Participation.for_user_with_last_activity_id(user)
   end
 end

@@ -35,50 +35,55 @@ defmodule Pleroma.Object do
     |> unique_constraint(:ap_id, name: :objects_unique_apid_index)
   end
 
+  def get_by_id(nil), do: nil
+  def get_by_id(id), do: Repo.get(Object, id)
+
   def get_by_ap_id(nil), do: nil
 
   def get_by_ap_id(ap_id) do
     Repo.one(from(object in Object, where: fragment("(?)->>'id' = ?", object.data, ^ap_id)))
   end
 
-  def normalize(_, fetch_remote \\ true)
+  defp warn_on_no_object_preloaded(ap_id) do
+    "Object.normalize() called without preloaded object (#{ap_id}). Consider preloading the object"
+    |> Logger.debug()
+
+    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
+  end
+
+  def normalize(_, fetch_remote \\ true, options \\ [])
+
   # If we pass an Activity to Object.normalize(), we can try to use the preloaded object.
   # Use this whenever possible, especially when walking graphs in an O(N) loop!
-  def normalize(%Object{} = object, _), do: object
-  def normalize(%Activity{object: %Object{} = object}, _), do: object
+  def normalize(%Object{} = object, _, _), do: object
+  def normalize(%Activity{object: %Object{} = object}, _, _), do: object
 
   # A hack for fake activities
-  def normalize(%Activity{data: %{"object" => %{"fake" => true} = data}}, _) do
+  def normalize(%Activity{data: %{"object" => %{"fake" => true} = data}}, _, _) do
     %Object{id: "pleroma:fake_object_id", data: data}
   end
 
-  # Catch and log Object.normalize() calls where the Activity's child object is not
-  # preloaded.
-  def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}, fetch_remote) do
-    Logger.debug(
-      "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
-    )
-
-    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
-
+  # No preloaded object
+  def normalize(%Activity{data: %{"object" => %{"id" => ap_id}}}, fetch_remote, _) do
+    warn_on_no_object_preloaded(ap_id)
     normalize(ap_id, fetch_remote)
   end
 
-  def normalize(%Activity{data: %{"object" => ap_id}}, fetch_remote) do
-    Logger.debug(
-      "Object.normalize() called without preloaded object (#{ap_id}).  Consider preloading the object!"
-    )
-
-    Logger.debug("Backtrace: #{inspect(Process.info(:erlang.self(), :current_stacktrace))}")
-
+  # No preloaded object
+  def normalize(%Activity{data: %{"object" => ap_id}}, fetch_remote, _) do
+    warn_on_no_object_preloaded(ap_id)
     normalize(ap_id, fetch_remote)
   end
 
   # Old way, try fetching the object through cache.
-  def normalize(%{"id" => ap_id}, fetch_remote), do: normalize(ap_id, fetch_remote)
-  def normalize(ap_id, false) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
-  def normalize(ap_id, true) when is_binary(ap_id), do: Fetcher.fetch_object_from_id!(ap_id)
-  def normalize(_, _), do: nil
+  def normalize(%{"id" => ap_id}, fetch_remote, _), do: normalize(ap_id, fetch_remote)
+  def normalize(ap_id, false, _) when is_binary(ap_id), do: get_cached_by_ap_id(ap_id)
+
+  def normalize(ap_id, true, options) when is_binary(ap_id) do
+    Fetcher.fetch_object_from_id!(ap_id, options)
+  end
+
+  def normalize(_, _, _), do: nil
 
   # Owned objects can only be mutated by their owner
   def authorize_mutation(%Object{data: %{"actor" => actor}}, %User{ap_id: ap_id}),
@@ -193,6 +198,36 @@ defmodule Pleroma.Object do
     |> case do
       {1, [object]} -> set_cache(object)
       _ -> {:error, "Not found"}
+    end
+  end
+
+  def increase_vote_count(ap_id, name) do
+    with %Object{} = object <- Object.normalize(ap_id),
+         "Question" <- object.data["type"] do
+      multiple = Map.has_key?(object.data, "anyOf")
+
+      options =
+        (object.data["anyOf"] || object.data["oneOf"] || [])
+        |> Enum.map(fn
+          %{"name" => ^name} = option ->
+            Kernel.update_in(option["replies"]["totalItems"], &(&1 + 1))
+
+          option ->
+            option
+        end)
+
+      data =
+        if multiple do
+          Map.put(object.data, "anyOf", options)
+        else
+          Map.put(object.data, "oneOf", options)
+        end
+
+      object
+      |> Object.change(%{data: data})
+      |> update_and_set_cache()
+    else
+      _ -> :noop
     end
   end
 end

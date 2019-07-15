@@ -10,6 +10,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.AdminAPI.AccountView
+  alias Pleroma.Web.AdminAPI.Config
+  alias Pleroma.Web.AdminAPI.ConfigView
   alias Pleroma.Web.AdminAPI.ReportView
   alias Pleroma.Web.AdminAPI.Search
   alias Pleroma.Web.CommonAPI
@@ -72,7 +74,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def user_show(conn, %{"nickname" => nickname}) do
-    with %User{} = user <- User.get_cached_by_nickname(nickname) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
       conn
       |> json(AccountView.render("show.json", %{user: user}))
     else
@@ -158,9 +160,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def right_add(conn, _) do
-    conn
-    |> put_status(404)
-    |> json(%{error: "No such permission_group"})
+    render_error(conn, :not_found, "No such permission_group")
   end
 
   def right_get(conn, %{"nickname" => nickname}) do
@@ -182,9 +182,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       )
       when permission_group in ["moderator", "admin"] do
     if admin_nickname == nickname do
-      conn
-      |> put_status(403)
-      |> json(%{error: "You can't revoke your own admin status."})
+      render_error(conn, :forbidden, "You can't revoke your own admin status.")
     else
       user = User.get_cached_by_nickname(nickname)
 
@@ -205,9 +203,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
   end
 
   def right_delete(conn, _) do
-    conn
-    |> put_status(404)
-    |> json(%{error: "No such permission_group"})
+    render_error(conn, :not_found, "No such permission_group")
   end
 
   def set_activation_status(conn, %{"nickname" => nickname, "status" => status}) do
@@ -362,28 +358,63 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
+  def config_show(conn, _params) do
+    configs = Pleroma.Repo.all(Config)
+
+    conn
+    |> put_view(ConfigView)
+    |> render("index.json", %{configs: configs})
+  end
+
+  def config_update(conn, %{"configs" => configs}) do
+    updated =
+      if Pleroma.Config.get([:instance, :dynamic_configuration]) do
+        updated =
+          Enum.map(configs, fn
+            %{"group" => group, "key" => key, "delete" => "true"} ->
+              {:ok, _} = Config.delete(%{group: group, key: key})
+              nil
+
+            %{"group" => group, "key" => key, "value" => value} ->
+              {:ok, config} = Config.update_or_create(%{group: group, key: key, value: value})
+              config
+          end)
+          |> Enum.reject(&is_nil(&1))
+
+        Pleroma.Config.TransferTask.load_and_update_env()
+        Mix.Tasks.Pleroma.Config.run(["migrate_from_db", Pleroma.Config.get(:env), "false"])
+        updated
+      else
+        []
+      end
+
+    conn
+    |> put_view(ConfigView)
+    |> render("index.json", %{configs: updated})
+  end
+
   def errors(conn, {:error, :not_found}) do
     conn
-    |> put_status(404)
-    |> json("Not found")
+    |> put_status(:not_found)
+    |> json(dgettext("errors", "Not found"))
   end
 
   def errors(conn, {:error, reason}) do
     conn
-    |> put_status(400)
+    |> put_status(:bad_request)
     |> json(reason)
   end
 
   def errors(conn, {:param_cast, _}) do
     conn
-    |> put_status(400)
-    |> json("Invalid parameters")
+    |> put_status(:bad_request)
+    |> json(dgettext("errors", "Invalid parameters"))
   end
 
   def errors(conn, _) do
     conn
-    |> put_status(500)
-    |> json("Something went wrong")
+    |> put_status(:internal_server_error)
+    |> json(dgettext("errors", "Something went wrong"))
   end
 
   defp page_params(params) do

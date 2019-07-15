@@ -4,9 +4,11 @@
 
 defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Conversation
   alias Pleroma.Notification
   alias Pleroma.Object
+  alias Pleroma.Object.Containment
   alias Pleroma.Object.Fetcher
   alias Pleroma.Pagination
   alias Pleroma.Repo
@@ -25,19 +27,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
   defp get_recipients(%{"type" => "Announce"} = data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
     actor = User.get_cached_by_ap_id(data["actor"])
 
     recipients =
-      (to ++ cc)
-      |> Enum.filter(fn recipient ->
+      Enum.filter(Enum.concat([to, cc, bcc]), fn recipient ->
         case User.get_cached_by_ap_id(recipient) do
-          nil ->
-            true
-
-          user ->
-            User.following?(user, actor)
+          nil -> true
+          user -> User.following?(user, actor)
         end
       end)
 
@@ -45,17 +44,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp get_recipients(%{"type" => "Create"} = data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
-    actor = data["actor"] || []
-    recipients = (to ++ cc ++ [actor]) |> Enum.uniq()
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
+    actor = Map.get(data, "actor", [])
+    recipients = [to, cc, bcc, [actor]] |> Enum.concat() |> Enum.uniq()
     {recipients, to, cc}
   end
 
   defp get_recipients(data) do
-    to = data["to"] || []
-    cc = data["cc"] || []
-    recipients = to ++ cc
+    to = Map.get(data, "to", [])
+    cc = Map.get(data, "cc", [])
+    bcc = Map.get(data, "bcc", [])
+    recipients = Enum.concat([to, cc, bcc])
     {recipients, to, cc}
   end
 
@@ -73,7 +74,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp check_remote_limit(%{"object" => %{"content" => content}}) when not is_nil(content) do
-    limit = Pleroma.Config.get([:instance, :remote_limit])
+    limit = Config.get([:instance, :remote_limit])
     String.length(content) <= limit
   end
 
@@ -108,6 +109,15 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def decrease_replies_count_if_reply(_object), do: :noop
 
+  def increase_poll_votes_if_vote(%{
+        "object" => %{"inReplyTo" => reply_ap_id, "name" => name},
+        "type" => "Create"
+      }) do
+    Object.increase_vote_count(reply_ap_id, name)
+  end
+
+  def increase_poll_votes_if_vote(_create_data), do: :noop
+
   def insert(map, local \\ true, fake \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
@@ -116,6 +126,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
          {:fake, false, map, recipients} <- {:fake, fake, map, recipients},
+         :ok <- Containment.contain_child(map),
          {:ok, map, object} <- insert_full_object(map) do
       {:ok, activity} =
         Repo.insert(%Activity{
@@ -179,44 +190,62 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end)
   end
 
+  def stream_out_participations(%Object{data: %{"context" => context}}, user) do
+    with %Conversation{} = conversation <- Conversation.get_for_ap_id(context),
+         conversation = Repo.preload(conversation, :participations),
+         last_activity_id =
+           fetch_latest_activity_id_for_context(conversation.ap_id, %{
+             "user" => user,
+             "blocking_user" => user
+           }) do
+      if last_activity_id do
+        stream_out_participations(conversation.participations)
+      end
+    end
+  end
+
+  def stream_out_participations(_, _), do: :noop
+
   def stream_out(activity) do
     public = "https://www.w3.org/ns/activitystreams#Public"
 
     if activity.data["type"] in ["Create", "Announce", "Delete"] do
-      Pleroma.Web.Streamer.stream("user", activity)
-      Pleroma.Web.Streamer.stream("list", activity)
+      object = Object.normalize(activity)
+      # Do not stream out poll replies
+      unless object.data["type"] == "Answer" do
+        Pleroma.Web.Streamer.stream("user", activity)
+        Pleroma.Web.Streamer.stream("list", activity)
 
-      if Enum.member?(activity.data["to"], public) do
-        Pleroma.Web.Streamer.stream("public", activity)
+        if Enum.member?(activity.data["to"], public) do
+          Pleroma.Web.Streamer.stream("public", activity)
 
-        if activity.local do
-          Pleroma.Web.Streamer.stream("public:local", activity)
-        end
+          if activity.local do
+            Pleroma.Web.Streamer.stream("public:local", activity)
+          end
 
-        if activity.data["type"] in ["Create"] do
-          object = Object.normalize(activity)
+          if activity.data["type"] in ["Create"] do
+            object.data
+            |> Map.get("tag", [])
+            |> Enum.filter(fn tag -> is_bitstring(tag) end)
+            |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
 
-          object.data
-          |> Map.get("tag", [])
-          |> Enum.filter(fn tag -> is_bitstring(tag) end)
-          |> Enum.each(fn tag -> Pleroma.Web.Streamer.stream("hashtag:" <> tag, activity) end)
+            if object.data["attachment"] != [] do
+              Pleroma.Web.Streamer.stream("public:media", activity)
 
-          if object.data["attachment"] != [] do
-            Pleroma.Web.Streamer.stream("public:media", activity)
-
-            if activity.local do
-              Pleroma.Web.Streamer.stream("public:local:media", activity)
+              if activity.local do
+                Pleroma.Web.Streamer.stream("public:local:media", activity)
+              end
             end
           end
+        else
+          # TODO: Write test, replace with visibility test
+          if !Enum.member?(activity.data["cc"] || [], public) &&
+               !Enum.member?(
+                 activity.data["to"],
+                 User.get_cached_by_ap_id(activity.data["actor"]).follower_address
+               ),
+             do: Pleroma.Web.Streamer.stream("direct", activity)
         end
-      else
-        # TODO: Write test, replace with visibility test
-        if !Enum.member?(activity.data["cc"] || [], public) &&
-             !Enum.member?(
-               activity.data["to"],
-               User.get_cached_by_ap_id(activity.data["actor"]).follower_address
-             ),
-           do: Pleroma.Web.Streamer.stream("direct", activity)
       end
     end
   end
@@ -235,6 +264,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          {:ok, activity} <- insert(create_data, local, fake),
          {:fake, false, activity} <- {:fake, fake, activity},
          _ <- increase_replies_count_if_reply(create_data),
+         _ <- increase_poll_votes_if_vote(create_data),
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
          {:ok, _actor} <- increase_note_count_if_public(actor, activity),
@@ -376,6 +406,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def delete(%User{ap_id: ap_id, follower_address: follower_address} = user) do
+    with data <- %{
+           "to" => [follower_address],
+           "type" => "Delete",
+           "actor" => ap_id,
+           "object" => %{"type" => "Person", "id" => ap_id}
+         },
+         {:ok, activity} <- insert(data, true, true),
+         :ok <- maybe_federate(activity) do
+      {:ok, user}
+    end
+  end
+
   def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
@@ -388,7 +431,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "to" => to,
            "deleted_activity_id" => activity && activity.id
          },
-         {:ok, activity} <- insert(data, local),
+         {:ok, activity} <- insert(data, local, false),
+         stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
          # Changing note count prior to enqueuing federation task in order to avoid
          # race conditions on updating user.info
@@ -399,16 +443,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   def block(blocker, blocked, activity_id \\ nil, local \\ true) do
-    ap_config = Application.get_env(:pleroma, :activitypub)
-    unfollow_blocked = Keyword.get(ap_config, :unfollow_blocked)
-    outgoing_blocks = Keyword.get(ap_config, :outgoing_blocks)
+    outgoing_blocks = Config.get([:activitypub, :outgoing_blocks])
+    unfollow_blocked = Config.get([:activitypub, :unfollow_blocked])
 
-    with true <- unfollow_blocked do
+    if unfollow_blocked do
       follow_activity = fetch_latest_follow(blocker, blocked)
-
-      if follow_activity do
-        unfollow(blocker, blocked, nil, local)
-      end
+      if follow_activity, do: unfollow(blocker, blocked, nil, local)
     end
 
     with true <- outgoing_blocks,
@@ -480,6 +520,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       if opts["user"], do: [opts["user"].ap_id | opts["user"].following] ++ public, else: public
 
     from(activity in Activity)
+    |> maybe_preload_objects(opts)
     |> restrict_blocked(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> where(
@@ -492,6 +533,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         ^context
       )
     )
+    |> exclude_poll_votes(opts)
     |> order_by([activity], desc: activity.id)
   end
 
@@ -499,7 +541,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def fetch_activities_for_context(context, opts \\ %{}) do
     context
     |> fetch_activities_for_context_query(opts)
-    |> Activity.with_preloaded_object()
     |> Repo.all()
   end
 
@@ -507,7 +548,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           Pleroma.FlakeId.t() | nil
   def fetch_latest_activity_id_for_context(context, opts \\ %{}) do
     context
-    |> fetch_activities_for_context_query(opts)
+    |> fetch_activities_for_context_query(Map.merge(%{"skip_preload" => true}, opts))
     |> limit(1)
     |> select([a], a.id)
     |> Repo.one()
@@ -548,14 +589,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_visibility(query, %{visibility: visibility})
        when visibility in @valid_visibilities do
-    query =
-      from(
-        a in query,
-        where:
-          fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
-      )
-
-    query
+    from(
+      a in query,
+      where:
+        fragment("activity_visibility(?, ?, ?) = ?", a.actor, a.recipients, a.data, ^visibility)
+    )
   end
 
   defp restrict_visibility(_query, %{visibility: visibility})
@@ -565,17 +603,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_visibility(query, _visibility), do: query
 
-  defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}) do
-    query =
-      from(
-        a in query,
-        where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
-      )
+  defp restrict_thread_visibility(query, _, %{skip_thread_containment: true} = _),
+    do: query
 
-    query
+  defp restrict_thread_visibility(
+         query,
+         %{"user" => %User{info: %{skip_thread_containment: true}}},
+         _
+       ),
+       do: query
+
+  defp restrict_thread_visibility(query, %{"user" => %User{ap_id: ap_id}}, _) do
+    from(
+      a in query,
+      where: fragment("thread_visibility(?, (?)->>'id') = true", ^ap_id, a.data)
+    )
   end
 
-  defp restrict_thread_visibility(query, _), do: query
+  defp restrict_thread_visibility(query, _, _), do: query
 
   def fetch_user_activities(user, reading_user, params \\ %{}) do
     params =
@@ -652,20 +697,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   end
 
   defp restrict_tag(query, _), do: query
-
-  defp restrict_to_cc(query, recipients_to, recipients_cc) do
-    from(
-      activity in query,
-      where:
-        fragment(
-          "(?->'to' \\?| ?) or (?->'cc' \\?| ?)",
-          activity.data,
-          ^recipients_to,
-          activity.data,
-          ^recipients_cc
-        )
-    )
-  end
 
   defp restrict_recipients(query, [], _user), do: query
 
@@ -820,6 +851,18 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted_reblogs(query, _), do: query
 
+  defp exclude_poll_votes(query, %{"include_poll_votes" => "true"}), do: query
+
+  defp exclude_poll_votes(query, _) do
+    if has_named_binding?(query, :object) do
+      from([activity, object: o] in query,
+        where: fragment("not(?->>'type' = ?)", o.data, "Answer")
+      )
+    else
+      query
+    end
+  end
+
   defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
 
   defp maybe_preload_objects(query, _) do
@@ -854,9 +897,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   defp maybe_order(query, _), do: query
 
   def fetch_activities_query(recipients, opts \\ %{}) do
-    base_query = from(activity in Activity)
+    config = %{
+      skip_thread_containment: Config.get([:instance, :skip_thread_containment])
+    }
 
-    base_query
+    Activity
     |> maybe_preload_objects(opts)
     |> maybe_preload_bookmarks(opts)
     |> maybe_set_thread_muted_field(opts)
@@ -875,23 +920,53 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     |> restrict_muted(opts)
     |> restrict_media(opts)
     |> restrict_visibility(opts)
-    |> restrict_thread_visibility(opts)
+    |> restrict_thread_visibility(opts, config)
     |> restrict_replies(opts)
     |> restrict_reblogs(opts)
     |> restrict_pinned(opts)
     |> restrict_muted_reblogs(opts)
     |> Activity.restrict_deactivated_users()
+    |> exclude_poll_votes(opts)
   end
 
   def fetch_activities(recipients, opts \\ %{}) do
-    fetch_activities_query(recipients, opts)
+    list_memberships = Pleroma.List.memberships(opts["user"])
+
+    fetch_activities_query(recipients ++ list_memberships, opts)
     |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
+    |> maybe_update_cc(list_memberships, opts["user"])
   end
 
-  def fetch_activities_bounded(recipients_to, recipients_cc, opts \\ %{}) do
+  defp maybe_update_cc(activities, list_memberships, %User{ap_id: user_ap_id})
+       when is_list(list_memberships) and length(list_memberships) > 0 do
+    Enum.map(activities, fn
+      %{data: %{"bcc" => bcc}} = activity when is_list(bcc) and length(bcc) > 0 ->
+        if Enum.any?(bcc, &(&1 in list_memberships)) do
+          update_in(activity.data["cc"], &[user_ap_id | &1])
+        else
+          activity
+        end
+
+      activity ->
+        activity
+    end)
+  end
+
+  defp maybe_update_cc(activities, _, _), do: activities
+
+  def fetch_activities_bounded_query(query, recipients, recipients_with_public) do
+    from(activity in query,
+      where:
+        fragment("? && ?", activity.recipients, ^recipients) or
+          (fragment("? && ?", activity.recipients, ^recipients_with_public) and
+             "https://www.w3.org/ns/activitystreams#Public" in activity.recipients)
+    )
+  end
+
+  def fetch_activities_bounded(recipients, recipients_with_public, opts \\ %{}) do
     fetch_activities_query([], opts)
-    |> restrict_to_cc(recipients_to, recipients_cc)
+    |> fetch_activities_bounded_query(recipients, recipients_with_public)
     |> Pagination.fetch_paginated(opts)
     |> Enum.reverse()
   end
@@ -938,6 +1013,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       avatar: avatar,
       name: data["name"],
       follower_address: data["followers"],
+      following_address: data["following"],
       bio: data["summary"]
     }
 

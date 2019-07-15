@@ -24,6 +24,7 @@ defmodule Pleroma.User.Info do
     field(:domain_blocks, {:array, :string}, default: [])
     field(:mutes, {:array, :string}, default: [])
     field(:muted_reblogs, {:array, :string}, default: [])
+    field(:muted_notifications, {:array, :string}, default: [])
     field(:subscribers, {:array, :string}, default: [])
     field(:deactivated, :boolean, default: false)
     field(:no_rich_text, :boolean, default: false)
@@ -42,13 +43,20 @@ defmodule Pleroma.User.Info do
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
     field(:pinned_activities, {:array, :string}, default: [])
-    field(:flavour, :string, default: nil)
     field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
+    field(:pleroma_settings_store, :map, default: %{})
 
     field(:notification_settings, :map,
-      default: %{"remote" => true, "local" => true, "followers" => true, "follows" => true}
+      default: %{
+        "followers" => true,
+        "follows" => true,
+        "non_follows" => true,
+        "non_followers" => true
+      }
     )
+
+    field(:skip_thread_containment, :boolean, default: false)
 
     # Found in the wild
     # ap_id -> Where is this used?
@@ -68,10 +76,15 @@ defmodule Pleroma.User.Info do
   end
 
   def update_notification_settings(info, settings) do
+    settings =
+      settings
+      |> Enum.map(fn {k, v} -> {k, v in [true, "true", "True", "1"]} end)
+      |> Map.new()
+
     notification_settings =
       info.notification_settings
       |> Map.merge(settings)
-      |> Map.take(["remote", "local", "followers", "follows"])
+      |> Map.take(["followers", "follows", "non_follows", "non_followers"])
 
     params = %{notification_settings: notification_settings}
 
@@ -108,6 +121,16 @@ defmodule Pleroma.User.Info do
     |> validate_required([:mutes])
   end
 
+  @spec set_notification_mutes(Changeset.t(), [String.t()], boolean()) :: Changeset.t()
+  def set_notification_mutes(changeset, muted_notifications, notifications?) do
+    if notifications? do
+      put_change(changeset, :muted_notifications, muted_notifications)
+      |> validate_required([:muted_notifications])
+    else
+      changeset
+    end
+  end
+
   def set_blocks(info, blocks) do
     params = %{blocks: blocks}
 
@@ -124,12 +147,29 @@ defmodule Pleroma.User.Info do
     |> validate_required([:subscribers])
   end
 
+  @spec add_to_mutes(Info.t(), String.t()) :: Changeset.t()
   def add_to_mutes(info, muted) do
     set_mutes(info, Enum.uniq([muted | info.mutes]))
   end
 
+  @spec add_to_muted_notifications(Changeset.t(), Info.t(), String.t(), boolean()) ::
+          Changeset.t()
+  def add_to_muted_notifications(changeset, info, muted, notifications?) do
+    set_notification_mutes(
+      changeset,
+      Enum.uniq([muted | info.muted_notifications]),
+      notifications?
+    )
+  end
+
+  @spec remove_from_mutes(Info.t(), String.t()) :: Changeset.t()
   def remove_from_mutes(info, muted) do
     set_mutes(info, List.delete(info.mutes, muted))
+  end
+
+  @spec remove_from_muted_notifications(Changeset.t(), Info.t(), String.t()) :: Changeset.t()
+  def remove_from_muted_notifications(changeset, info, muted) do
+    set_notification_mutes(changeset, List.delete(info.muted_notifications, muted), true)
   end
 
   def add_to_block(info, blocked) do
@@ -209,7 +249,9 @@ defmodule Pleroma.User.Info do
       :hide_followers,
       :hide_favorites,
       :background,
-      :show_role
+      :show_role,
+      :skip_thread_containment,
+      :pleroma_settings_store
     ])
   end
 
@@ -239,14 +281,6 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:settings])
     |> validate_required([:settings])
-  end
-
-  def mastodon_flavour_update(info, flavour) do
-    params = %{flavour: flavour}
-
-    info
-    |> cast(params, [:flavour])
-    |> validate_required([:flavour])
   end
 
   def mascot_update(info, url) do

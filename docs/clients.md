@@ -49,13 +49,6 @@ Feel free to contact us to be added to this list!
 - Platforms: iOS, Android
 - Features: No Streaming
 
-### Tootdon
-- Homepage: <http://tootdon.club/>, <http://blog.mastodon-tootdon.com/>
-- Source Code: ???
-- Contact: [@tootdon@mstdn.jp](https://mstdn.jp/users/tootdon)
-- Platforms: Android, iOS
-- Features: No Streaming
-
 ### Tusky
 - Homepage: <https://tuskyapp.github.io/>
 - Source Code: <https://github.com/tuskyapp/Tusky>

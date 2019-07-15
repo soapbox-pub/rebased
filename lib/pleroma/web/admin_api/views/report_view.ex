@@ -5,9 +5,9 @@
 defmodule Pleroma.Web.AdminAPI.ReportView do
   use Pleroma.Web, :view
   alias Pleroma.Activity
+  alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
-  alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{reports: reports}) do
@@ -23,6 +23,13 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
     [account_ap_id | status_ap_ids] = report.data["object"]
     account = User.get_cached_by_ap_id(account_ap_id)
 
+    content =
+      unless is_nil(report.data["content"]) do
+        HTML.filter_tags(report.data["content"])
+      else
+        nil
+      end
+
     statuses =
       Enum.map(status_ap_ids, fn ap_id ->
         Activity.get_by_ap_id_with_object(ap_id)
@@ -30,12 +37,19 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
 
     %{
       id: report.id,
-      account: AccountView.render("account.json", %{user: account}),
-      actor: AccountView.render("account.json", %{user: user}),
-      content: report.data["content"],
+      account: merge_account_views(account),
+      actor: merge_account_views(user),
+      content: content,
       created_at: created_at,
       statuses: StatusView.render("index.json", %{activities: statuses, as: :activity}),
       state: report.data["state"]
     }
   end
+
+  defp merge_account_views(%User{} = user) do
+    Pleroma.Web.MastodonAPI.AccountView.render("account.json", %{user: user})
+    |> Map.merge(Pleroma.Web.AdminAPI.AccountView.render("show.json", %{user: user}))
+  end
+
+  defp merge_account_views(_), do: %{}
 end

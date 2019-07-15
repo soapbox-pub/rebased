@@ -3,12 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser do
-  @parsers [
-    Pleroma.Web.RichMedia.Parsers.OGP,
-    Pleroma.Web.RichMedia.Parsers.TwitterCard,
-    Pleroma.Web.RichMedia.Parsers.OEmbed
-  ]
-
   @hackney_options [
     pool: :media,
     recv_timeout: 2_000,
@@ -16,9 +10,13 @@ defmodule Pleroma.Web.RichMedia.Parser do
     with_body: true
   ]
 
+  defp parsers do
+    Pleroma.Config.get([:rich_media, :parsers])
+  end
+
   def parse(nil), do: {:error, "No URL provided"}
 
-  if Mix.env() == :test do
+  if Pleroma.Config.get(:env) == :test do
     def parse(url), do: parse_url(url)
   else
     def parse(url) do
@@ -37,7 +35,10 @@ defmodule Pleroma.Web.RichMedia.Parser do
     try do
       {:ok, %Tesla.Env{body: html}} = Pleroma.HTTP.get(url, [], adapter: @hackney_options)
 
-      html |> maybe_parse() |> clean_parsed_data() |> check_parsed_data()
+      html
+      |> maybe_parse()
+      |> clean_parsed_data()
+      |> check_parsed_data()
     rescue
       e ->
         {:error, "Parsing error: #{inspect(e)}"}
@@ -45,7 +46,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
   end
 
   defp maybe_parse(html) do
-    Enum.reduce_while(@parsers, %{}, fn parser, acc ->
+    Enum.reduce_while(parsers(), %{}, fn parser, acc ->
       case parser.parse(html, acc) do
         {:ok, data} -> {:halt, data}
         {:error, _msg} -> {:cont, acc}

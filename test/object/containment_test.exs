@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Object.ContainmentTest do
   use Pleroma.DataCase
 
@@ -5,6 +9,12 @@ defmodule Pleroma.Object.ContainmentTest do
   alias Pleroma.User
 
   import Pleroma.Factory
+  import ExUnit.CaptureLog
+
+  setup_all do
+    Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+    :ok
+  end
 
   describe "general origin containment" do
     test "contain_origin_from_id() catches obvious spoofing attempts" do
@@ -52,7 +62,40 @@ defmodule Pleroma.Object.ContainmentTest do
           follower_address: User.ap_followers(%User{nickname: "rye@niu.moe"})
         })
 
-      {:error, _} = User.get_or_fetch_by_ap_id("https://n1u.moe/users/rye")
+      assert capture_log(fn ->
+               {:error, _} = User.get_or_fetch_by_ap_id("https://n1u.moe/users/rye")
+             end) =~
+               "[error] Could not decode user at fetch https://n1u.moe/users/rye, {:error, :error}"
+    end
+  end
+
+  describe "containment of children" do
+    test "contain_child() catches spoofing attempts" do
+      data = %{
+        "id" => "http://example.com/whatever",
+        "type" => "Create",
+        "object" => %{
+          "id" => "http://example.net/~alyssa/activities/1234",
+          "attributedTo" => "http://example.org/~alyssa"
+        },
+        "actor" => "http://example.com/~bob"
+      }
+
+      :error = Containment.contain_child(data)
+    end
+
+    test "contain_child() allows correct origins" do
+      data = %{
+        "id" => "http://example.org/~alyssa/activities/5678",
+        "type" => "Create",
+        "object" => %{
+          "id" => "http://example.org/~alyssa/activities/1234",
+          "attributedTo" => "http://example.org/~alyssa"
+        },
+        "actor" => "http://example.org/~alyssa"
+      }
+
+      :ok = Containment.contain_child(data)
     end
   end
 end

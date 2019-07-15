@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
 
@@ -102,7 +106,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       conn
       |> assign(:user, user)
       |> put("/api/pleroma/notification_settings", %{
-        "remote" => false,
         "followers" => false,
         "bar" => 1
       })
@@ -110,8 +113,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
       user = Repo.get(User, user.id)
 
-      assert %{"remote" => false, "local" => true, "followers" => false, "follows" => true} ==
-               user.info.notification_settings
+      assert %{
+               "followers" => false,
+               "follows" => true,
+               "non_follows" => true,
+               "non_followers" => true
+             } == user.info.notification_settings
     end
   end
 

@@ -40,6 +40,18 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = refresh_record(user)
       assert user.info.banner["type"] == "Image"
     end
+
+    test "profile banner can be reset", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> post(authenticated_twitter_api__path(conn, :update_banner), %{"banner" => ""})
+      |> json_response(200)
+
+      user = refresh_record(user)
+      assert user.info.banner == %{}
+    end
   end
 
   describe "POST /api/qvitter/update_background_image" do
@@ -53,6 +65,18 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
       user = refresh_record(user)
       assert user.info.background["type"] == "Image"
+    end
+
+    test "background can be reset", %{conn: conn} do
+      user = insert(:user)
+
+      conn
+      |> assign(:user, user)
+      |> post(authenticated_twitter_api__path(conn, :update_background), %{"img" => ""})
+      |> json_response(200)
+
+      user = refresh_record(user)
+      assert user.info.background == %{}
     end
   end
 
@@ -144,41 +168,25 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], false)
 
       conn
       |> get("/api/statuses/public_timeline.json")
       |> json_response(403)
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to authenticated request when the instance is not public",
          %{conn: conn, user: user} do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], false)
 
       conn
       |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_timeline.json")
       |> json_response(200)
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
@@ -214,41 +222,25 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     setup [:valid_user]
 
     test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], false)
 
       conn
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(403)
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to authenticated request when the instance is not public",
          %{conn: conn, user: user} do
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, false)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], false)
 
       conn
       |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(200)
 
-      instance =
-        Application.get_env(:pleroma, :instance)
-        |> Keyword.put(:public, true)
-
-      Application.put_env(:pleroma, :instance, instance)
+      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
@@ -528,6 +520,38 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  notifications: Notification.for_user(current_user),
                  for: current_user
                })
+    end
+
+    test "muted user", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
+      {:ok, current_user} = User.mute(current_user, other_user)
+
+      {:ok, _activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json")
+
+      assert json_response(conn, 200) == []
+    end
+
+    test "muted user with with_muted parameter", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
+      {:ok, current_user} = User.mute(current_user, other_user)
+
+      {:ok, _activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json", %{"with_muted" => "true"})
+
+      assert length(json_response(conn, 200)) == 1
     end
   end
 
@@ -853,6 +877,19 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert json_response(conn, 200) ==
                UserView.render("show.json", %{user: current_user, for: current_user})
     end
+
+    test "user avatar can be reset", %{conn: conn, user: current_user} do
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> post("/api/qvitter/update_avatar.json", %{img: ""})
+
+      current_user = User.get_cached_by_id(current_user.id)
+      assert current_user.avatar == nil
+
+      assert json_response(conn, 200) ==
+               UserView.render("show.json", %{user: current_user, for: current_user})
+    end
   end
 
   describe "GET /api/qvitter/mutes.json" do
@@ -924,7 +961,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
     test "with credentials", %{conn: conn, user: current_user} do
       note_activity = insert(:note_activity)
-      object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+      object = Object.normalize(note_activity)
       ActivityPub.like(current_user, object)
 
       conn =
@@ -1527,7 +1564,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
           "hide_follows" => "false"
         })
 
-      user = Repo.get!(User, user.id)
+      user = refresh_record(user)
       assert user.info.hide_follows == false
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
     end
@@ -1578,6 +1615,29 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       user = Repo.get!(User, user.id)
       assert user.info.show_role == false
       assert json_response(conn, 200) == UserView.render("user.json", %{user: user, for: user})
+    end
+
+    test "it sets and un-sets skip_thread_containment", %{conn: conn} do
+      user = insert(:user)
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{"skip_thread_containment" => "true"})
+        |> json_response(200)
+
+      assert response["pleroma"]["skip_thread_containment"] == true
+      user = refresh_record(user)
+      assert user.info.skip_thread_containment
+
+      response =
+        conn
+        |> assign(:user, user)
+        |> post("/api/account/update_profile.json", %{"skip_thread_containment" => "false"})
+        |> json_response(200)
+
+      assert response["pleroma"]["skip_thread_containment"] == false
+      refute refresh_record(user).info.skip_thread_containment
     end
 
     test "it locks an account", %{conn: conn} do

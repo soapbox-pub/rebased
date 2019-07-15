@@ -46,7 +46,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     }
 
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     expected_text =
       "Hello again, <span class='h-card'><a data-user='#{mentioned_user.id}' class='u-url mention' href='shp'>@<span>shp</span></a></span>.&lt;script&gt;&lt;/script&gt;<br>This is on another :firefox: line. <a class='hashtag' data-tag='2hu' href='http://localhost:4001/tag/2hu' rel='tag'>#2hu</a> <a class='hashtag' data-tag='epic' href='http://localhost:4001/tag/epic' rel='tag'>#epic</a> <a class='hashtag' data-tag='phantasmagoric' href='http://localhost:4001/tag/phantasmagoric' rel='tag'>#phantasmagoric</a><br><a href=\"http://example.org/image.jpg\" class='attachment'>image.jpg</a>"
@@ -91,7 +91,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     }
 
     {:ok, activity = %Activity{}} = TwitterAPI.create_status(user, input)
-    object = Object.normalize(activity.data["object"])
+    object = Object.normalize(activity)
 
     input = %{
       "status" => "Here's your (you).",
@@ -99,7 +99,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     }
 
     {:ok, reply = %Activity{}} = TwitterAPI.create_status(user, input)
-    reply_object = Object.normalize(reply.data["object"])
+    reply_object = Object.normalize(reply)
 
     assert get_in(reply.data, ["context"]) == get_in(activity.data, ["context"])
 
@@ -116,8 +116,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     {:ok, user, followed, _activity} = TwitterAPI.follow(user, %{"user_id" => followed.id})
     assert User.ap_followers(followed) in user.following
 
-    {:error, msg} = TwitterAPI.follow(user, %{"user_id" => followed.id})
-    assert msg == "Could not follow user: #{followed.nickname} is already on your list."
+    {:ok, _, _, _} = TwitterAPI.follow(user, %{"user_id" => followed.id})
   end
 
   test "Follow another user using screen_name" do
@@ -132,8 +131,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     followed = User.get_cached_by_ap_id(followed.ap_id)
     assert followed.info.follower_count == 1
 
-    {:error, msg} = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
-    assert msg == "Could not follow user: #{followed.nickname} is already on your list."
+    {:ok, _, _, _} = TwitterAPI.follow(user, %{"screen_name" => followed.nickname})
   end
 
   test "Unfollow another user using user_id" do
@@ -218,7 +216,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])
     assert ActivityView.render("activity.json", %{activity: updated_activity})["fave_num"] == 1
 
-    object = Object.normalize(note_activity.data["object"])
+    object = Object.normalize(note_activity)
 
     assert object.data["like_count"] == 1
 
@@ -226,7 +224,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
 
     {:ok, _status} = TwitterAPI.fav(other_user, note_activity.id)
 
-    object = Object.normalize(note_activity.data["object"])
+    object = Object.normalize(note_activity)
 
     assert object.data["like_count"] == 2
 
@@ -237,7 +235,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   test "it unfavorites a status, returns the updated activity" do
     user = insert(:user)
     note_activity = insert(:note_activity)
-    object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+    object = Object.normalize(note_activity)
 
     {:ok, _like_activity, _object} = ActivityPub.like(user, object)
     updated_activity = Activity.get_by_ap_id(note_activity.data["id"])

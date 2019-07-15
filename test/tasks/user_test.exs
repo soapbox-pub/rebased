@@ -89,8 +89,7 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ " deleted"
 
-      user = User.get_cached_by_nickname(user.nickname)
-      assert user.info.deactivated
+      refute User.get_by_nickname(user.nickname)
     end
 
     test "no user to delete" do
@@ -364,6 +363,27 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       user = Repo.get(User, id)
       refute user.info.confirmation_pending
       refute user.info.confirmation_token
+    end
+  end
+
+  describe "search" do
+    test "it returns users matching" do
+      user = insert(:user)
+      moon = insert(:user, nickname: "moon", name: "fediverse expert moon")
+      moot = insert(:user, nickname: "moot")
+      kawen = insert(:user, nickname: "kawen", name: "fediverse expert moon")
+
+      {:ok, user} = User.follow(user, kawen)
+
+      assert [moon.id, kawen.id] == User.Search.search("moon") |> Enum.map(& &1.id)
+      res = User.search("moo") |> Enum.map(& &1.id)
+      assert moon.id in res
+      assert moot.id in res
+      assert kawen.id in res
+      assert [moon.id, kawen.id] == User.Search.search("moon fediverse") |> Enum.map(& &1.id)
+
+      assert [kawen.id, moon.id] ==
+               User.Search.search("moon fediverse", for_user: user) |> Enum.map(& &1.id)
     end
   end
 end

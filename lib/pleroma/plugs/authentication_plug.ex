@@ -6,9 +6,24 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   alias Comeonin.Pbkdf2
   import Plug.Conn
   alias Pleroma.User
+  require Logger
 
   def init(options) do
     options
+  end
+
+  def checkpw(password, password_hash) do
+    cond do
+      String.starts_with?(password_hash, "$pbkdf2") ->
+        Pbkdf2.checkpw(password, password_hash)
+
+      String.starts_with?(password_hash, "$6") ->
+        :crypt.crypt(password, password_hash) == password_hash
+
+      true ->
+        Logger.error("Password hash not recognized")
+        false
+    end
   end
 
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn

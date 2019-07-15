@@ -59,10 +59,10 @@ defmodule Pleroma.Conversation.Participation do
   def for_user(user, params \\ %{}) do
     from(p in __MODULE__,
       where: p.user_id == ^user.id,
-      order_by: [desc: p.updated_at]
+      order_by: [desc: p.updated_at],
+      preload: [conversation: [:users]]
     )
     |> Pleroma.Pagination.fetch_paginated(params)
-    |> Repo.preload(conversation: [:users])
   end
 
   def for_user_with_last_activity_id(user, params \\ %{}) do
@@ -79,5 +79,6 @@ defmodule Pleroma.Conversation.Participation do
         | last_activity_id: activity_id
       }
     end)
+    |> Enum.filter(& &1.last_activity_id)
   end
 end

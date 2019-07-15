@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,minimal-ui" />
     <title>
-    <%= Application.get_env(:pleroma, :instance)[:name] %>
+    <%= Pleroma.Config.get([:instance, :name]) %>
     </title>
     <style>
       body {
@@ -63,13 +63,14 @@
 
       .scopes-input {
         display: flex;
+        flex-direction: column;
         margin-top: 1em;
         text-align: left;
         color: #89898a;
       }
 
       .scopes-input label:first-child {
-        flex-basis: 40%;
+        height: 2em;
       }
 
       .scopes {
@@ -80,13 +81,22 @@
       }
 
       .scope {
-        flex-basis: 100%;
         display: flex;
+        flex-basis: 100%;
         height: 2em;
         align-items: center;
       }
 
+      .scope:before {
+        color: #b9b9ba;
+        content: "✔\fe0e";
+        margin-left: 1em;
+        margin-right: 1em;
+      }
+
       [type="checkbox"] + label {
+        display: none;
+        cursor: pointer;
         margin: 0.5em;
       }
 
@@ -95,10 +105,12 @@
       }
 
       [type="checkbox"] + label:before {
+        cursor: pointer;
         display: inline-block;
         color: white;
         background-color: #121a24;
         border: 4px solid #121a24;
+        box-shadow: 0px 0px 1px 0 #d8a070;
         box-sizing: border-box;
         width: 1.2em;
         height: 1.2em;
@@ -128,7 +140,8 @@
         border-radius: 4px;
         border: none;
         padding: 10px;
-        margin-top: 30px;
+        margin-top: 20px;
+        margin-bottom: 20px;
         text-transform: uppercase;
         font-size: 16px;
         box-shadow: 0px 0px 2px 0px black,
@@ -147,8 +160,8 @@
         box-sizing: border-box;
         width: 100%;
         background-color: #931014;
+        border: 1px solid #a06060;
         border-radius: 4px;
-        border: none;
         padding: 10px;
         margin-top: 20px;
         font-weight: 500;
@@ -171,12 +184,27 @@
           margin-top: 0
         }
 
-        .scopes-input {
-          flex-direction: column;
+        .scope {
+          flex-basis: 0%;
         }
 
-        .scope {
-          flex-basis: 50%;
+        .scope:before {
+          content: "";
+          margin-left: 0em;
+          margin-right: 1em;
+        }
+
+        .scope:first-child:before {
+          margin-left: 1em;
+          content: "✔\fe0e";
+        }
+
+        .scope:after {
+          content: ",";
+        }
+
+        .scope:last-child:after {
+          content: "";
         }
       }
       .form-row {
@@ -194,7 +222,7 @@
   </head>
   <body>
     <div class="container">
-      <h1><%= Application.get_env(:pleroma, :instance)[:name] %></h1>
+      <h1><%= Pleroma.Config.get([:instance, :name]) %></h1>
       <%= render @view_module, @view_template, assigns %>
     </div>
   </body>

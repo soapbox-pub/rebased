@@ -5,9 +5,15 @@
 defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Builders.UserBuilder
   alias Pleroma.Object
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils
   alias Pleroma.Web.Endpoint
   use Pleroma.DataCase
+
+  import ExUnit.CaptureLog
+  import Pleroma.Factory
+
+  @public_address "https://www.w3.org/ns/activitystreams#Public"
 
   test "it adds attachment links to a given text and attachment set" do
     name =
@@ -197,7 +203,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       expected = ""
 
-      assert Utils.date_to_asctime(date) == expected
+      assert capture_log(fn ->
+               assert Utils.date_to_asctime(date) == expected
+             end) =~ "[warn] Date #{date} in wrong format, must be ISO 8601"
     end
 
     test "when date is a Unix timestamp" do
@@ -205,13 +213,151 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       expected = ""
 
-      assert Utils.date_to_asctime(date) == expected
+      assert capture_log(fn ->
+               assert Utils.date_to_asctime(date) == expected
+             end) =~ "[warn] Date #{date} in wrong format, must be ISO 8601"
     end
 
     test "when date is nil" do
       expected = ""
 
-      assert Utils.date_to_asctime(nil) == expected
+      assert capture_log(fn ->
+               assert Utils.date_to_asctime(nil) == expected
+             end) =~ "[warn] Date  in wrong format, must be ISO 8601"
+    end
+
+    test "when date is a random string" do
+      assert capture_log(fn ->
+               assert Utils.date_to_asctime("foo") == ""
+             end) =~ "[warn] Date foo in wrong format, must be ISO 8601"
+    end
+  end
+
+  describe "get_to_and_cc" do
+    test "for public posts, not a reply" do
+      user = insert(:user)
+      mentioned_user = insert(:user)
+      mentions = [mentioned_user.ap_id]
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "public")
+
+      assert length(to) == 2
+      assert length(cc) == 1
+
+      assert @public_address in to
+      assert mentioned_user.ap_id in to
+      assert user.follower_address in cc
+    end
+
+    test "for public posts, a reply" do
+      user = insert(:user)
+      mentioned_user = insert(:user)
+      third_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      mentions = [mentioned_user.ap_id]
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "public")
+
+      assert length(to) == 3
+      assert length(cc) == 1
+
+      assert @public_address in to
+      assert mentioned_user.ap_id in to
+      assert third_user.ap_id in to
+      assert user.follower_address in cc
+    end
+
+    test "for unlisted posts, not a reply" do
+      user = insert(:user)
+      mentioned_user = insert(:user)
+      mentions = [mentioned_user.ap_id]
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "unlisted")
+
+      assert length(to) == 2
+      assert length(cc) == 1
+
+      assert @public_address in cc
+      assert mentioned_user.ap_id in to
+      assert user.follower_address in to
+    end
+
+    test "for unlisted posts, a reply" do
+      user = insert(:user)
+      mentioned_user = insert(:user)
+      third_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      mentions = [mentioned_user.ap_id]
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "unlisted")
+
+      assert length(to) == 3
+      assert length(cc) == 1
+
+      assert @public_address in cc
+      assert mentioned_user.ap_id in to
+      assert third_user.ap_id in to
+      assert user.follower_address in to
+    end
+
+    test "for private posts, not a reply" do
+      user = insert(:user)
+      mentioned_user = insert(:user)
+      mentions = [mentioned_user.ap_id]
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "private")
+
+      assert length(to) == 2
+      assert length(cc) == 0
+
+      assert mentioned_user.ap_id in to
+      assert user.follower_address in to
+    end
+
+    test "for private posts, a reply" do
+      user = insert(:user)
+      mentioned_user = insert(:user)
+      third_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      mentions = [mentioned_user.ap_id]
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private")
+
+      assert length(to) == 3
+      assert length(cc) == 0
+
+      assert mentioned_user.ap_id in to
+      assert third_user.ap_id in to
+      assert user.follower_address in to
+    end
+
+    test "for direct posts, not a reply" do
+      user = insert(:user)
+      mentioned_user = insert(:user)
+      mentions = [mentioned_user.ap_id]
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "direct")
+
+      assert length(to) == 1
+      assert length(cc) == 0
+
+      assert mentioned_user.ap_id in to
+    end
+
+    test "for direct posts, a reply" do
+      user = insert(:user)
+      mentioned_user = insert(:user)
+      third_user = insert(:user)
+      {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
+      mentions = [mentioned_user.ap_id]
+
+      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct")
+
+      assert length(to) == 2
+      assert length(cc) == 0
+
+      assert mentioned_user.ap_id in to
+      assert third_user.ap_id in to
     end
   end
 end

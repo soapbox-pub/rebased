@@ -35,10 +35,12 @@ defmodule Pleroma.Keys do
   end
 
   def keys_from_pem(pem) do
-    [private_key_code] = :public_key.pem_decode(pem)
-    private_key = :public_key.pem_entry_decode(private_key_code)
-    {:RSAPrivateKey, _, modulus, exponent, _, _, _, _, _, _, _} = private_key
-    public_key = {:RSAPublicKey, modulus, exponent}
-    {:ok, private_key, public_key}
+    with [private_key_code] <- :public_key.pem_decode(pem),
+         private_key <- :public_key.pem_entry_decode(private_key_code),
+         {:RSAPrivateKey, _, modulus, exponent, _, _, _, _, _, _, _} <- private_key do
+      {:ok, private_key, {:RSAPublicKey, modulus, exponent}}
+    else
+      error -> {:error, error}
+    end
   end
 end

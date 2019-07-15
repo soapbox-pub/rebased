@@ -1,3 +1,7 @@
+# Pleroma: A lightweight social networking server
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
+# SPDX-License-Identifier: AGPL-3.0-only
+
 defmodule Pleroma.Web.ActivityPub.Visibility do
   alias Pleroma.Activity
   alias Pleroma.Object
@@ -29,6 +33,20 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   def is_direct?(activity) do
     !is_public?(activity) && !is_private?(activity)
   end
+
+  def is_list?(%{data: %{"listMessage" => _}}), do: true
+  def is_list?(_), do: false
+
+  def visible_for_user?(%{actor: ap_id}, %User{ap_id: ap_id}), do: true
+
+  def visible_for_user?(%{data: %{"listMessage" => list_ap_id}} = activity, %User{} = user) do
+    user.ap_id in activity.data["to"] ||
+      list_ap_id
+      |> Pleroma.List.get_by_ap_id()
+      |> Pleroma.List.member?(user)
+  end
+
+  def visible_for_user?(%{data: %{"listMessage" => _}}, nil), do: false
 
   def visible_for_user?(activity, nil) do
     is_public?(activity)
@@ -65,6 +83,12 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
       # this should use the sql for the object's activity
       Enum.any?(to, &String.contains?(&1, "/followers")) ->
         "private"
+
+      object.data["directMessage"] == true ->
+        "direct"
+
+      is_binary(object.data["listMessage"]) ->
+        "list"
 
       length(cc) > 0 ->
         "private"

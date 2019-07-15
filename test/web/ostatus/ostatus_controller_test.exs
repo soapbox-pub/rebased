@@ -12,6 +12,13 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
+
+    config_path = [:instance, :federating]
+    initial_setting = Pleroma.Config.get(config_path)
+
+    Pleroma.Config.put(config_path, true)
+    on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
+
     :ok
   end
 
@@ -65,6 +72,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   test "gets a feed", %{conn: conn} do
     note_activity = insert(:note_activity)
+    object = Object.normalize(note_activity)
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
 
     conn =
@@ -72,7 +80,7 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       |> put_req_header("content-type", "application/atom+xml")
       |> get("/users/#{user.nickname}/feed.atom")
 
-    assert response(conn, 200) =~ note_activity.data["object"]["content"]
+    assert response(conn, 200) =~ object.data["content"]
   end
 
   test "returns 404 for a missing feed", %{conn: conn} do
@@ -86,8 +94,9 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   test "gets an object", %{conn: conn} do
     note_activity = insert(:note_activity)
+    object = Object.normalize(note_activity)
     user = User.get_cached_by_ap_id(note_activity.data["actor"])
-    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"]))
+    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, object.data["id"]))
     url = "/objects/#{uuid}"
 
     conn =
@@ -106,7 +115,8 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   test "404s on private objects", %{conn: conn} do
     note_activity = insert(:direct_note_activity)
-    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"]))
+    object = Object.normalize(note_activity)
+    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, object.data["id"]))
 
     conn
     |> get("/objects/#{uuid}")
@@ -131,8 +141,8 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   test "404s on deleted objects", %{conn: conn} do
     note_activity = insert(:note_activity)
-    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, note_activity.data["object"]["id"]))
-    object = Object.get_by_ap_id(note_activity.data["object"]["id"])
+    object = Object.normalize(note_activity)
+    [_, uuid] = hd(Regex.scan(~r/.+\/([\w-]+)$/, object.data["id"]))
 
     conn
     |> put_req_header("accept", "application/xml")

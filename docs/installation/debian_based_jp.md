@@ -69,7 +69,7 @@ cd ~
 
 *  Gitリポジトリをクローンします。
 ```
-git clone https://git.pleroma.social/pleroma/pleroma
+git clone -b master https://git.pleroma.social/pleroma/pleroma
 ```
 
 *  新しいディレクトリに移動します。
@@ -180,9 +180,12 @@ mix set_moderator username [true|false]
 
 #### コンフィギュレーションとカスタマイズ
 
-* [Configuration tips](General tips for customizing pleroma fe)
-* [Small Pleroma-FE customizations](Small customizations)
-* [Admin tasks](Admin tasks)
+* [Backup your instance](backup.html)
+* [Configuration tips](general-tips-for-customizing-pleroma-fe.html)
+* [Hardening your instance](hardening.html)
+* [How to activate mediaproxy](howto_mediaproxy.html)
+* [Small Pleroma-FE customizations](small_customizations.html)
+* [Updating your instance](updating.html)
 
 ## 質問ある？
 

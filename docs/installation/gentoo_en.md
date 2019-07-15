@@ -106,7 +106,7 @@ It is highly recommended you use your own fork for the `https://path/to/repo` pa
 
 ```shell
  pleroma$ cd ~
- pleroma$ git clone https://path/to/repo
+ pleroma$ git clone -b master https://path/to/repo
 ```
 
 * Change to the new directory:
@@ -283,13 +283,12 @@ If you opted to allow sudo for the `pleroma` user but would like to remove the a
 
 #### Further reading
 
-* [Admin tasks](Admin tasks)
-* [Backup your instance](Backup-your-instance)
-* [Configuration tips](General tips for customizing pleroma fe)
-* [Hardening your instance](Hardening-your-instance)
-* [How to activate mediaproxy](How-to-activate-mediaproxy)
-* [Small Pleroma-FE customizations](Small customizations)
-* [Updating your instance](Updating-your-instance)
+* [Backup your instance](backup.html)
+* [Configuration tips](general-tips-for-customizing-pleroma-fe.html)
+* [Hardening your instance](hardening.html)
+* [How to activate mediaproxy](howto_mediaproxy.html)
+* [Small Pleroma-FE customizations](small_customizations.html)
+* [Updating your instance](updating.html)
 
 ## Questions
 

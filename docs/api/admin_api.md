@@ -38,7 +38,9 @@ Authentication is required and the user must be an admin.
         "moderator": bool
       },
       "local": bool,
-      "tags": array
+      "tags": array,
+      "avatar": string,
+      "display_name": string
     },
     ...
   ]
@@ -174,13 +176,13 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `nickname`
   - `status` BOOLEAN field, false value means deactivation.
 
-## `/api/pleroma/admin/users/:nickname`
+## `/api/pleroma/admin/users/:nickname_or_id`
 
 ### Retrive the details of a user
 
 - Method: `GET`
 - Params:
-  - `nickname`
+  - `nickname` or `id`
 - Response:
   - On failure: `Not found`
   - On success: JSON of the user
@@ -289,7 +291,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `limit`: optional, the number of records to retrieve
   - `since_id`: optional, returns results that are more recent than the specified id
   - `max_id`: optional, returns results that are older than the specified id
-- Response: 
+- Response:
   - On failure: 403 Forbidden error `{"error": "error_msg"}` when requested by anonymous or non-admin
   - On success: JSON, returns a list of reports, where:
     - `account`: the user who has been reported
@@ -331,6 +333,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
           "pleroma": {},
           "sensitive": false
         },
+        "tags": ["force_unlisted"],
         "statuses_count": 3,
         "url": "https://pleroma.example.org/users/user",
         "username": "user"
@@ -366,6 +369,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
           "pleroma": {},
           "sensitive": false
         },
+        "tags": ["force_unlisted"],
         "statuses_count": 1,
         "url": "https://pleroma.example.org/users/lain",
         "username": "lain"
@@ -443,7 +447,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `id`
 - Response:
-  - On failure: 
+  - On failure:
     - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
   - On success: JSON, Report object (see above)
@@ -454,8 +458,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `id`
   - `state`: required, the new state. Valid values are `open`, `closed` and `resolved`
-- Response: 
-  - On failure: 
+- Response:
+  - On failure:
     - 400 Bad Request `"Unsupported state"`
     - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
@@ -467,10 +471,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `id`
   - `status`: required, the message
-- Response: 
-  - On failure: 
-    - 400 Bad Request `"Invalid parameters"` when `status` is missing 
-    - 403 Forbidden `{"error": "error_msg"}` 
+- Response:
+  - On failure:
+    - 400 Bad Request `"Invalid parameters"` when `status` is missing
+    - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
   - On success: JSON, created Mastodon Status entity
 
@@ -540,10 +544,10 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
   - `id`
   - `sensitive`: optional, valid values are `true` or `false`
   - `visibility`: optional, valid values are `public`, `private` and `unlisted`
-- Response: 
-  - On failure: 
+- Response:
+  - On failure:
     - 400 Bad Request `"Unsupported visibility"`
-    - 403 Forbidden `{"error": "error_msg"}` 
+    - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
   - On success: JSON, Mastodon Status entity
 
@@ -552,8 +556,99 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Method `DELETE`
 - Params:
   - `id`
-- Response: 
-  - On failure: 
-    - 403 Forbidden `{"error": "error_msg"}` 
+- Response:
+  - On failure:
+    - 403 Forbidden `{"error": "error_msg"}`
     - 404 Not Found `"Not found"`
   - On success: 200 OK `{}`
+
+## `/api/pleroma/admin/config`
+### List config settings
+- Method `GET`
+- Params: none
+- Response:
+
+```json
+{
+  configs: [
+    {
+      "group": string,
+      "key": string or string with leading `:` for atoms,
+      "value": string or {} or [] or {"tuple": []}
+     }
+  ]
+}
+```
+
+## `/api/pleroma/admin/config`
+### Update config settings
+Module name can be passed as string, which starts with `Pleroma`, e.g. `"Pleroma.Upload"`.
+Atom keys and values can be passed with `:` in the beginning, e.g. `":upload"`.
+Tuples can be passed as `{"tuple": ["first_val", Pleroma.Module, []]}`.
+`{"tuple": ["some_string", "Pleroma.Some.Module", []]}` will be converted to `{"some_string", Pleroma.Some.Module, []}`.
+Keywords can be passed as lists with 2 child tuples, e.g.
+`[{"tuple": ["first_val", Pleroma.Module]}, {"tuple": ["second_val", true]}]`.
+
+Compile time settings (need instance reboot):
+- all settings by this keys:
+  - `:hackney_pools`
+  - `:chat`
+  - `Pleroma.Web.Endpoint`
+  - `Pleroma.Repo`
+- part settings:
+  - `Pleroma.Captcha` -> `:seconds_valid`
+  - `Pleroma.Upload` -> `:proxy_remote`
+  - `:instance` -> `:upload_limit`
+
+- Method `POST`
+- Params:
+  - `configs` => [
+    - `group` (string)
+    - `key` (string or string with leading `:` for atoms)
+    - `value` (string, [], {} or {"tuple": []})
+    - `delete` = true (optional, if parameter must be deleted)
+  ]
+
+- Request (example):
+
+```json
+{
+  configs: [
+    {
+      "group": "pleroma",
+      "key": "Pleroma.Upload",
+      "value": [
+        {"tuple": [":uploader", "Pleroma.Uploaders.Local"]},
+        {"tuple": [":filters", ["Pleroma.Upload.Filter.Dedupe"]]},
+        {"tuple": [":link_name", true]},
+        {"tuple": [":proxy_remote", false]},
+        {"tuple": [":proxy_opts", [
+          {"tuple": [":redirect_on_failure", false]},
+          {"tuple": [":max_body_length", 1048576]},
+          {"tuple": [":http": [
+            {"tuple": [":follow_redirect", true]},
+            {"tuple": [":pool", ":upload"]},
+          ]]}
+        ]
+        ]},
+        {"tuple": [":dispatch", {
+          "tuple": ["/api/v1/streaming", "Pleroma.Web.MastodonAPI.WebsocketHandler", []]
+        }]}
+      ]
+    }
+  ]
+}
+
+- Response:
+
+```json
+{
+  configs: [
+    {
+      "group": string,
+      "key": string or string with leading `:` for atoms,
+      "value": string or {} or [] or {"tuple": []}
+     }
+  ]
+}
+```

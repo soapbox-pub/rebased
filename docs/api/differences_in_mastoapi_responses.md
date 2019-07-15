@@ -16,9 +16,11 @@ Adding the parameter `with_muted=true` to the timeline queries will also return 
 
 ## Statuses
 
+- `visibility`: has an additional possible value `list`
+
 Has these additional fields under the `pleroma` object:
 
-- `local`: true if the post was made on the local instance.
+- `local`: true if the post was made on the local instance
 - `conversation_id`: the ID of the conversation the status is associated with (if any)
 - `in_reply_to_account_acct`: the `acct` property of User entity for replied user (if any)
 - `content`: a map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
@@ -46,6 +48,8 @@ Has these additional fields under the `pleroma` object:
 - `confirmation_pending`: boolean, true if a new user account is waiting on email confirmation to be activated
 - `hide_followers`: boolean, true when the user has follower hiding enabled
 - `hide_follows`: boolean, true when the user has follow hiding enabled
+- `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
+- `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
 
 ### Source
 
@@ -72,6 +76,8 @@ Additional parameters can be added to the JSON body/Form data:
 
 - `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
+- `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
+- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 
 ## PATCH `/api/v1/update_credentials`
 
@@ -83,6 +89,16 @@ Additional parameters can be added to the JSON body/Form data:
 - `hide_favorites` - if true, user's favorites timeline will be hidden
 - `show_role` - if true, user's role (e.g admin, moderator) will be exposed to anyone in the API
 - `default_scope` - the scope returned under `privacy` key in Source subentity
+- `pleroma_settings_store` - Opaque user settings to be saved on the backend.
+- `skip_thread_containment` - if true, skip filtering out broken threads
+- `pleroma_background_image` - sets the background image of the user.
+
+### Pleroma Settings Store
+Pleroma has mechanism that allows frontends to save blobs of json for each user on the backend. This can be used to save frontend-specific settings for a user that the backend does not need to know about.
+
+The parameter should have a form of `{frontend_name: {...}}`, with `frontend_name` identifying your type of client, e.g. `pleroma_fe`. It will overwrite everything under this property, but will not overwrite other frontend's settings.
+
+This information is returned in the `verify_credentials` endpoint.
 
 ## Authentication
 

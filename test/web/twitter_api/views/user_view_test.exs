@@ -99,7 +99,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "skip_thread_containment" => false
       },
       "rights" => %{"admin" => false, "delete_others_notice" => false},
       "role" => "member"
@@ -112,9 +113,11 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
     as_user = UserView.render("show.json", %{user: user, for: user})
     assert as_user["default_scope"] == user.info.default_scope
     assert as_user["no_rich_text"] == user.info.no_rich_text
+    assert as_user["pleroma"]["notification_settings"] == user.info.notification_settings
     as_stranger = UserView.render("show.json", %{user: user})
     refute as_stranger["default_scope"]
     refute as_stranger["no_rich_text"]
+    refute as_stranger["pleroma"]["notification_settings"]
   end
 
   test "A user for a given other follower", %{user: user} do
@@ -152,7 +155,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "skip_thread_containment" => false
       },
       "rights" => %{"admin" => false, "delete_others_notice" => false},
       "role" => "member"
@@ -197,7 +201,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "skip_thread_containment" => false
       },
       "rights" => %{"admin" => false, "delete_others_notice" => false},
       "role" => "member"
@@ -279,7 +284,8 @@ defmodule Pleroma.Web.TwitterAPI.UserViewTest do
       "fields" => [],
       "pleroma" => %{
         "confirmation_pending" => false,
-        "tags" => []
+        "tags" => [],
+        "skip_thread_containment" => false
       },
       "rights" => %{"admin" => false, "delete_others_notice" => false},
       "role" => "member"

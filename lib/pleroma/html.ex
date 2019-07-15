@@ -89,7 +89,7 @@ defmodule Pleroma.HTML do
     Cachex.fetch!(:scrubber_cache, key, fn _key ->
       result =
         content
-        |> Floki.filter_out("a.mention")
+        |> Floki.filter_out("a.mention,a.hashtag,a[rel~=\"tag\"]")
         |> Floki.attribute("a", "href")
         |> Enum.at(0)
 
@@ -104,7 +104,6 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   paragraphs, breaks and links are allowed through the filter.
   """
 
-  @markup Application.get_env(:pleroma, :markup)
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   require HtmlSanitizeEx.Scrubber.Meta
@@ -142,9 +141,7 @@ defmodule Pleroma.HTML.Scrubber.TwitterText do
   Meta.allow_tag_with_these_attributes("span", [])
 
   # allow inline images for custom emoji
-  @allow_inline_images Keyword.get(@markup, :allow_inline_images)
-
-  if @allow_inline_images do
+  if Pleroma.Config.get([:markup, :allow_inline_images]) do
     # restrict img tags to http/https only, because of MediaProxy.
     Meta.allow_tag_with_uri_attributes("img", ["src"], ["http", "https"])
 
@@ -168,7 +165,6 @@ defmodule Pleroma.HTML.Scrubber.Default do
   # credo:disable-for-previous-line
   # No idea how to fix this one…
 
-  @markup Application.get_env(:pleroma, :markup)
   @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
 
   Meta.remove_cdata_sections_before_scrub()
@@ -213,7 +209,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_this_attribute_values("span", "class", ["h-card"])
   Meta.allow_tag_with_these_attributes("span", [])
 
-  @allow_inline_images Keyword.get(@markup, :allow_inline_images)
+  @allow_inline_images Pleroma.Config.get([:markup, :allow_inline_images])
 
   if @allow_inline_images do
     # restrict img tags to http/https only, because of MediaProxy.
@@ -228,9 +224,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
     ])
   end
 
-  @allow_tables Keyword.get(@markup, :allow_tables)
-
-  if @allow_tables do
+  if Pleroma.Config.get([:markup, :allow_tables]) do
     Meta.allow_tag_with_these_attributes("table", [])
     Meta.allow_tag_with_these_attributes("tbody", [])
     Meta.allow_tag_with_these_attributes("td", [])
@@ -239,9 +233,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
     Meta.allow_tag_with_these_attributes("tr", [])
   end
 
-  @allow_headings Keyword.get(@markup, :allow_headings)
-
-  if @allow_headings do
+  if Pleroma.Config.get([:markup, :allow_headings]) do
     Meta.allow_tag_with_these_attributes("h1", [])
     Meta.allow_tag_with_these_attributes("h2", [])
     Meta.allow_tag_with_these_attributes("h3", [])
@@ -249,9 +241,7 @@ defmodule Pleroma.HTML.Scrubber.Default do
     Meta.allow_tag_with_these_attributes("h5", [])
   end
 
-  @allow_fonts Keyword.get(@markup, :allow_fonts)
-
-  if @allow_fonts do
+  if Pleroma.Config.get([:markup, :allow_fonts]) do
     Meta.allow_tag_with_these_attributes("font", ["face"])
   end
 
