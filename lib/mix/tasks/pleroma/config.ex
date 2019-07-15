@@ -59,11 +59,11 @@ defmodule Mix.Tasks.Pleroma.Config do
              do: ",",
              else: ":"
 
+        key = String.trim_leading(config.key, ":")
+
         IO.write(
           file,
-          "config :#{config.group}, #{config.key}#{mark} #{
-            inspect(Config.from_binary(config.value))
-          }\r\n"
+          "config :#{config.group}, #{key}#{mark} #{inspect(Config.from_binary(config.value))}\r\n"
         )
 
         if delete? do
