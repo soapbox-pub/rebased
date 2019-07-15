@@ -126,13 +126,13 @@ defmodule Pleroma.Web.ActivityPub.VisibilityTest do
     assert Visibility.visible_for_user?(direct, user)
     assert Visibility.visible_for_user?(list, user)
 
-    # All visible to a mentioned user, except when it's a list activity
+    # All visible to a mentioned user
 
     assert Visibility.visible_for_user?(public, mentioned)
     assert Visibility.visible_for_user?(private, mentioned)
     assert Visibility.visible_for_user?(unlisted, mentioned)
     assert Visibility.visible_for_user?(direct, mentioned)
-    refute(Visibility.visible_for_user?(list, mentioned))
+    assert Visibility.visible_for_user?(list, mentioned)
 
     # DM not visible for just follower
 
