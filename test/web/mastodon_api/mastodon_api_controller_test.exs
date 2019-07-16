@@ -3576,7 +3576,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> get("/api/v1/polls/#{object.id}")
 
       response = json_response(conn, 200)
-      id = object.id
+      id = to_string(object.id)
       assert %{"id" => ^id, "expired" => false, "multiple" => false} = response
     end
 

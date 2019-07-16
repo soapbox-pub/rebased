@@ -423,7 +423,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       expected = %{
         emojis: [],
         expired: false,
-        id: object.id,
+        id: to_string(object.id),
         multiple: false,
         options: [
           %{title: "absolutely!", votes_count: 0},
