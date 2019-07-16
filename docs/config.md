@@ -647,5 +647,7 @@ Supported rate limiters:
 
 * `:search` for the search requests (account & status search etc.)
 * `:app_account_creation` for registering user accounts from the same IP address
+* `:relations_actions` for actions on relations with other users (follow, unfollow)
+* `:relation_id_action` for actions on relation with specific another user (follow, unfollow)
 * `:statuses_actions` for create / delete / fav / unfav / reblog / unreblog actions on any statuses
 * `:status_id_action` for fav / unfav or reblog / unreblog actions on the same status by the same user

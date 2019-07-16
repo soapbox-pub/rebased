@@ -47,6 +47,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
+  @rate_limited_relations_actions ~w(follow unfollow)a
+
   @rate_limited_status_actions ~w(reblog_status unreblog_status fav_status unfav_status
     post_status delete_status)a
 
@@ -62,6 +64,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     when action in ~w(fav_status unfav_status)a
   )
 
+  plug(
+    RateLimiter,
+    {:relations_id_action, params: ["id", "uri"]} when action in @rate_limited_relations_actions
+  )
+
+  plug(RateLimiter, :relations_actions when action in @rate_limited_relations_actions)
   plug(RateLimiter, :statuses_actions when action in @rate_limited_status_actions)
   plug(RateLimiter, :app_account_creation when action == :account_register)
   plug(RateLimiter, :search when action in [:search, :search2, :account_search])
