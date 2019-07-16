@@ -14,7 +14,7 @@ defmodule Pleroma.Mixfile do
       aliases: aliases(),
       deps: deps(),
       test_coverage: [tool: ExCoveralls],
-
+      preferred_cli_env: ["coveralls.html": :test],
       # Docs
       name: "Pleroma",
       homepage_url: "https://pleroma.social/",
@@ -95,6 +95,7 @@ defmodule Pleroma.Mixfile do
   defp deps do
     [
       {:phoenix, "~> 1.4.8"},
+      {:tzdata, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},

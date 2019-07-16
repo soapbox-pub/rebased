@@ -16,9 +16,11 @@ Adding the parameter `with_muted=true` to the timeline queries will also return 
 
 ## Statuses
 
+- `visibility`: has an additional possible value `list`
+
 Has these additional fields under the `pleroma` object:
 
-- `local`: true if the post was made on the local instance.
+- `local`: true if the post was made on the local instance
 - `conversation_id`: the ID of the conversation the status is associated with (if any)
 - `in_reply_to_account_acct`: the `acct` property of User entity for replied user (if any)
 - `content`: a map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
@@ -45,6 +47,7 @@ Has these additional fields under the `pleroma` object:
 - `hide_follows`: boolean, true when the user has follow hiding enabled
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
 - `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
+- `deactivated`: boolean, true when the user is deactivated
 
 ### Source
 
@@ -72,6 +75,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `preview`: boolean, if set to `true` the post won't be actually posted, but the status entitiy would still be rendered back. This could be useful for previewing rich text/custom emoji, for example.
 - `content_type`: string, contain the MIME type of the status, it is transformed into HTML by the backend. You can get the list of the supported MIME types with the nodeinfo endpoint.
 - `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
+- `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 
 ## PATCH `/api/v1/update_credentials`
 

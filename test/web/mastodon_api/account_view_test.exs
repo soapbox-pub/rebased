@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
   use Pleroma.DataCase
   import Pleroma.Factory
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.AccountView
 
   test "Represent a user account" do
@@ -152,6 +153,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("account.json", %{user: user})
   end
 
+  test "Represent a deactivated user for an admin" do
+    admin = insert(:user, %{info: %{is_admin: true}})
+    deactivated_user = insert(:user, %{info: %{deactivated: true}})
+    represented = AccountView.render("account.json", %{user: deactivated_user, for: admin})
+    assert represented[:pleroma][:deactivated] == true
+  end
+
   test "Represent a smaller mention" do
     user = insert(:user)
 
@@ -165,28 +173,90 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("mention.json", %{user: user})
   end
 
-  test "represent a relationship" do
-    user = insert(:user)
-    other_user = insert(:user)
+  describe "relationship" do
+    test "represent a relationship for the following and followed user" do
+      user = insert(:user)
+      other_user = insert(:user)
 
-    {:ok, user} = User.follow(user, other_user)
-    {:ok, user} = User.block(user, other_user)
+      {:ok, user} = User.follow(user, other_user)
+      {:ok, other_user} = User.follow(other_user, user)
+      {:ok, other_user} = User.subscribe(user, other_user)
+      {:ok, user} = User.mute(user, other_user, true)
+      {:ok, user} = CommonAPI.hide_reblogs(user, other_user)
 
-    expected = %{
-      id: to_string(other_user.id),
-      following: false,
-      followed_by: false,
-      blocking: true,
-      muting: false,
-      muting_notifications: false,
-      subscribing: false,
-      requested: false,
-      domain_blocking: false,
-      showing_reblogs: true,
-      endorsed: false
-    }
+      expected = %{
+        id: to_string(other_user.id),
+        following: true,
+        followed_by: true,
+        blocking: false,
+        blocked_by: false,
+        muting: true,
+        muting_notifications: true,
+        subscribing: true,
+        requested: false,
+        domain_blocking: false,
+        showing_reblogs: false,
+        endorsed: false
+      }
 
-    assert expected == AccountView.render("relationship.json", %{user: user, target: other_user})
+      assert expected ==
+               AccountView.render("relationship.json", %{user: user, target: other_user})
+    end
+
+    test "represent a relationship for the blocking and blocked user" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, user} = User.follow(user, other_user)
+      {:ok, other_user} = User.subscribe(user, other_user)
+      {:ok, user} = User.block(user, other_user)
+      {:ok, other_user} = User.block(other_user, user)
+
+      expected = %{
+        id: to_string(other_user.id),
+        following: false,
+        followed_by: false,
+        blocking: true,
+        blocked_by: true,
+        muting: false,
+        muting_notifications: false,
+        subscribing: false,
+        requested: false,
+        domain_blocking: false,
+        showing_reblogs: true,
+        endorsed: false
+      }
+
+      assert expected ==
+               AccountView.render("relationship.json", %{user: user, target: other_user})
+    end
+
+    test "represent a relationship for the user with a pending follow request" do
+      user = insert(:user)
+      other_user = insert(:user, %{info: %User.Info{locked: true}})
+
+      {:ok, user, other_user, _} = CommonAPI.follow(user, other_user)
+      user = User.get_cached_by_id(user.id)
+      other_user = User.get_cached_by_id(other_user.id)
+
+      expected = %{
+        id: to_string(other_user.id),
+        following: false,
+        followed_by: false,
+        blocking: false,
+        blocked_by: false,
+        muting: false,
+        muting_notifications: false,
+        subscribing: false,
+        requested: true,
+        domain_blocking: false,
+        showing_reblogs: true,
+        endorsed: false
+      }
+
+      assert expected ==
+               AccountView.render("relationship.json", %{user: user, target: other_user})
+    end
   end
 
   test "represent an embedded relationship" do
@@ -240,6 +310,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
           following: false,
           followed_by: false,
           blocking: true,
+          blocked_by: false,
           subscribing: false,
           muting: false,
           muting_notifications: false,

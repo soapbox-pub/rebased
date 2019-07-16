@@ -2,7 +2,7 @@
 # Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.MediaProxyTest do
+defmodule Pleroma.Web.MediaProxyTest do
   use ExUnit.Case
   import Pleroma.Web.MediaProxy
   alias Pleroma.Web.MediaProxy.MediaProxyController
@@ -90,21 +90,38 @@ defmodule Pleroma.MediaProxyTest do
 
     test "filename_matches preserves the encoded or decoded path" do
       assert MediaProxyController.filename_matches(
-               true,
+               %{"filename" => "/Hello world.jpg"},
                "/Hello world.jpg",
                "http://pleroma.social/Hello world.jpg"
              ) == :ok
 
       assert MediaProxyController.filename_matches(
-               true,
+               %{"filename" => "/Hello%20world.jpg"},
                "/Hello%20world.jpg",
                "http://pleroma.social/Hello%20world.jpg"
              ) == :ok
 
       assert MediaProxyController.filename_matches(
-               true,
+               %{"filename" => "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"},
                "/my%2Flong%2Furl%2F2019%2F07%2FS.jpg",
                "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"
+             ) == :ok
+
+      assert MediaProxyController.filename_matches(
+               %{"filename" => "/my%2Flong%2Furl%2F2019%2F07%2FS.jp"},
+               "/my%2Flong%2Furl%2F2019%2F07%2FS.jp",
+               "http://pleroma.social/my%2Flong%2Furl%2F2019%2F07%2FS.jpg"
+             ) == {:wrong_filename, "my%2Flong%2Furl%2F2019%2F07%2FS.jpg"}
+    end
+
+    test "encoded url are tried to match for proxy as `conn.request_path` encodes the url" do
+      # conn.request_path will return encoded url
+      request_path = "/ANALYSE-DAI-_-LE-STABLECOIN-100-D%C3%89CENTRALIS%C3%89-BQ.jpg"
+
+      assert MediaProxyController.filename_matches(
+               true,
+               request_path,
+               "https://mydomain.com/uploads/2019/07/ANALYSE-DAI-_-LE-STABLECOIN-100-DÉCENTRALISÉ-BQ.jpg"
              ) == :ok
     end
 

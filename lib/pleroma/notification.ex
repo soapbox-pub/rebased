@@ -67,7 +67,7 @@ defmodule Pleroma.Notification do
       |> join(:left, [n, a], tm in Pleroma.ThreadMute,
         on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data)
       )
-      |> where([n, a, o, tm], is_nil(tm.id))
+      |> where([n, a, o, tm], is_nil(tm.user_id))
     end
   end
 

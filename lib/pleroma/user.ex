@@ -1191,9 +1191,11 @@ defmodule Pleroma.User do
   end
 
   # OStatus Magic Key
-  def public_key_from_info(%{magic_key: magic_key}) do
+  def public_key_from_info(%{magic_key: magic_key}) when not is_nil(magic_key) do
     {:ok, Pleroma.Web.Salmon.decode_key(magic_key)}
   end
+
+  def public_key_from_info(_), do: {:error, "not found key"}
 
   def get_public_key_for_ap_id(ap_id) do
     with {:ok, %User{} = user} <- get_or_fetch_by_ap_id(ap_id),
@@ -1454,23 +1456,16 @@ defmodule Pleroma.User do
     }
   end
 
-  def ensure_keys_present(user) do
-    info = user.info
-
+  def ensure_keys_present(%User{info: info} = user) do
     if info.keys do
       {:ok, user}
     else
       {:ok, pem} = Keys.generate_rsa_pem()
 
-      info_cng =
-        info
-        |> User.Info.set_keys(pem)
-
-      cng =
-        Ecto.Changeset.change(user)
-        |> Ecto.Changeset.put_embed(:info, info_cng)
-
-      update_and_set_cache(cng)
+      user
+      |> Ecto.Changeset.change()
+      |> Ecto.Changeset.put_embed(:info, User.Info.set_keys(info, pem))
+      |> update_and_set_cache()
     end
   end
 

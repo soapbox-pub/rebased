@@ -20,6 +20,10 @@
             "sensitive": "as:sensitive",
             "litepub": "http://litepub.social/ns#",
             "directMessage": "litepub:directMessage",
+            "listMessage": {
+                "@id": "litepub:listMessage",
+                "@type": "@id"
+            },
             "oauthRegistrationEndpoint": {
                 "@id": "litepub:oauthRegistrationEndpoint",
                 "@type": "@id"

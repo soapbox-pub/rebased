@@ -283,7 +283,6 @@ If you opted to allow sudo for the `pleroma` user but would like to remove the a
 
 #### Further reading
 
-* [Admin tasks](Admin tasks)
 * [Backup your instance](backup.html)
 * [Configuration tips](general-tips-for-customizing-pleroma-fe.html)
 * [Hardening your instance](hardening.html)
