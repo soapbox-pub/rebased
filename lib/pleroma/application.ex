@@ -115,10 +115,6 @@ defmodule Pleroma.Application do
         %{
           id: Pleroma.ScheduledActivityWorker,
           start: {Pleroma.ScheduledActivityWorker, :start_link, []}
-        },
-        %{
-          id: Pleroma.QuantumScheduler,
-          start: {Pleroma.QuantumScheduler, :start_link, []}
         }
       ] ++
         hackney_pool_children() ++
@@ -231,14 +227,12 @@ defmodule Pleroma.Application do
 
   defp after_supervisor_start do
     with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
-         true <- digest_config[:active],
-         %Crontab.CronExpression{} = schedule <-
-           Crontab.CronExpression.Parser.parse!(digest_config[:schedule]) do
-      Pleroma.QuantumScheduler.new_job()
-      |> Quantum.Job.set_name(:digest_emails)
-      |> Quantum.Job.set_schedule(schedule)
-      |> Quantum.Job.set_task(&Pleroma.DigestEmailWorker.run/0)
-      |> Pleroma.QuantumScheduler.add_job()
+         true <- digest_config[:active] do
+      PleromaJobQueue.schedule(
+        digest_config[:schedule],
+        :digest_emails,
+        Pleroma.DigestEmailWorker
+      )
     end
 
     :ok

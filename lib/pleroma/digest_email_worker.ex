@@ -3,7 +3,7 @@ defmodule Pleroma.DigestEmailWorker do
 
   @queue_name :digest_emails
 
-  def run do
+  def perform do
     config = Pleroma.Config.get([:email_notifications, :digest])
     negative_interval = -Map.fetch!(config, :interval)
     inactivity_threshold = Map.fetch!(config, :inactivity_threshold)
