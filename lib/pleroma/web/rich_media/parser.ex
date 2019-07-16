@@ -24,12 +24,53 @@ defmodule Pleroma.Web.RichMedia.Parser do
         Cachex.fetch!(:rich_media_cache, url, fn _ ->
           {:commit, parse_url(url)}
         end)
+        |> set_ttl_based_on_image(url)
       rescue
         e ->
           {:error, "Cachex error: #{inspect(e)}"}
       end
     end
   end
+
+  @doc """
+  Set the rich media cache based on the expiration time of image.
+
+  Define a module that has `run` function
+
+  ## Example
+
+      defmodule MyModule do
+        def run(data, url) do
+          image_url = Map.get(data, :image)
+          # do some parsing in the url and get the ttl of the image
+          # ttl is unix time
+          ttl = parse_ttl_from_url(image_url)  
+          Cachex.expire_at(:rich_media_cache, url, ttl * 1000)
+        end
+      end
+
+  Define the module in the config
+
+      config :pleroma, :rich_media,
+        ttl_setters: [MyModule]
+  """
+  def set_ttl_based_on_image({:ok, data}, url) do
+    case Cachex.ttl(:rich_media_cache, url) do
+      {:ok, nil} ->
+        modules = Pleroma.Config.get([:rich_media, :ttl_setters])
+
+        if Enum.count(modules) > 0 do
+          Enum.each(modules, & &1.run(data, url))
+        end
+
+        {:ok, data}
+
+      _ ->
+        {:ok, data}
+    end
+  end
+
+  def set_ttl_based_on_image(data, _url), do: data
 
   defp parse_url(url) do
     try do
