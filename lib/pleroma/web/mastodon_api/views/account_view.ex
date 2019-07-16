@@ -137,6 +137,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
     |> maybe_put_notification_settings(user, opts[:for])
     |> maybe_put_settings_store(user, opts[:for], opts)
     |> maybe_put_chat_token(user, opts[:for], opts)
+    |> maybe_put_activation_status(user, opts[:for])
   end
 
   defp username_from_nickname(string) when is_binary(string) do
@@ -196,6 +197,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
   end
 
   defp maybe_put_notification_settings(data, _, _), do: data
+
+  defp maybe_put_activation_status(data, user, %User{info: %{is_admin: true}}) do
+    Kernel.put_in(data, [:pleroma, :deactivated], user.info.deactivated)
+  end
+
+  defp maybe_put_activation_status(data, _, _), do: data
 
   defp image_url(%{"url" => [%{"href" => href} | _]}), do: href
   defp image_url(_), do: nil

@@ -153,6 +153,13 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
     assert expected == AccountView.render("account.json", %{user: user})
   end
 
+  test "Represent a deactivated user for an admin" do
+    admin = insert(:user, %{info: %{is_admin: true}})
+    deactivated_user = insert(:user, %{info: %{deactivated: true}})
+    represented = AccountView.render("account.json", %{user: deactivated_user, for: admin})
+    assert represented[:pleroma][:deactivated] == true
+  end
+
   test "Represent a smaller mention" do
     user = insert(:user)
 
