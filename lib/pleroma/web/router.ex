@@ -691,6 +691,8 @@ defmodule Pleroma.Web.Router do
     get("/web/login", MastodonAPIController, :login)
     delete("/auth/sign_out", MastodonAPIController, :logout)
 
+    post("/auth/password", MastodonAPIController, :password_reset)
+
     scope [] do
       pipe_through(:oauth_read_or_public)
       get("/web/*path", MastodonAPIController, :index)
