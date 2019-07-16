@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API, extension: Ability to reset avatar, profile banner, and background
 - Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
 - Mastodon API: Add support for muting/unmuting notifications
+- Mastodon API: Add support for the `blocked_by` attribute in the relationship API (`GET /api/v1/accounts/relationships`). <https://github.com/tootsuite/mastodon/pull/10373>
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
