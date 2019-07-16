@@ -1116,15 +1116,17 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "POST /api/account/password_reset, with invalid parameters" do
     setup [:valid_user]
 
-    test "it returns 500 when user is not found", %{conn: conn, user: user} do
+    test "it returns 404 when user is not found", %{conn: conn, user: user} do
       conn = post(conn, "/api/account/password_reset?email=nonexisting_#{user.email}")
-      assert json_response(conn, :internal_server_error)
+      assert conn.status == 404
+      refute conn.resp_body
     end
 
-    test "it returns 500 when user is not local", %{conn: conn, user: user} do
+    test "it returns 400 when user is not local", %{conn: conn, user: user} do
       {:ok, user} = Repo.update(Changeset.change(user, local: false))
       conn = post(conn, "/api/account/password_reset?email=#{user.email}")
-      assert json_response(conn, :internal_server_error)
+      assert conn.status == 400
+      refute conn.resp_body
     end
   end
 
