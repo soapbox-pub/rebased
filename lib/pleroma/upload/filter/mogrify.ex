@@ -11,15 +11,18 @@ defmodule Pleroma.Upload.Filter.Mogrify do
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
     filters = Pleroma.Config.get!([__MODULE__, :args])
 
-    file
-    |> Mogrify.open()
-    |> mogrify_filter(filters)
-    |> Mogrify.save(in_place: true)
-
+    do_filter(file, filters)
     :ok
   end
 
   def filter(_), do: :ok
+
+  def do_filter(file, filters) do
+    file
+    |> Mogrify.open()
+    |> mogrify_filter(filters)
+    |> Mogrify.save(in_place: true)
+  end
 
   defp mogrify_filter(mogrify, nil), do: mogrify
 
