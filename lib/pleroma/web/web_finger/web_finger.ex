@@ -32,7 +32,7 @@ defmodule Pleroma.Web.WebFinger do
 
   def webfinger(resource, fmt) when fmt in ["XML", "JSON"] do
     host = Pleroma.Web.Endpoint.host()
-    regex = ~r/(acct:)?(?<username>\w+)@#{host}/
+    regex = ~r/(acct:)?(?<username>[a-z0-9A-Z_\.-]+)@#{host}/
 
     with %{"username" => username} <- Regex.named_captures(regex, resource),
          %User{} = user <- User.get_cached_by_nickname(username) do
