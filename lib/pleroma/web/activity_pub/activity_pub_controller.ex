@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Object.Fetcher
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -206,15 +207,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     json(conn, dgettext("errors", "error"))
   end
 
-  def relay(conn, _params) do
-    with %User{} = user <- Relay.get_actor(),
-         {:ok, user} <- User.ensure_keys_present(user) do
+  defp represent_service_actor(%User{} = user, conn) do
+    with {:ok, user} <- User.ensure_keys_present(user) do
       conn
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("user.json", %{user: user}))
     else
       nil -> {:error, :not_found}
     end
+  end
+
+  defp represent_service_actor(nil, _), do: {:error, :not_found}
+
+  def relay(conn, _params) do
+    Relay.get_actor()
+    |> represent_service_actor(conn)
+  end
+
+  def internal_fetch(conn, _params) do
+    InternalFetchActor.get_actor()
+    |> represent_service_actor(conn)
   end
 
   def whoami(%{assigns: %{user: %User{} = user}} = conn, _params) do

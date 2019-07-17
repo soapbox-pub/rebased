@@ -1157,19 +1157,18 @@ defmodule Pleroma.User do
     end
   end
 
-  def get_or_create_instance_user do
-    relay_uri = "#{Pleroma.Web.Endpoint.url()}/relay"
-
-    if user = get_cached_by_ap_id(relay_uri) do
+  @doc "Creates an internal service actor by URI if missing.  Optionally takes nickname for addressing."
+  def get_or_create_service_actor_by_ap_id(uri, nickname \\ nil) do
+    if user = get_cached_by_ap_id(uri) do
       user
     else
       changes =
         %User{info: %User.Info{}}
         |> cast(%{}, [:ap_id, :nickname, :local])
-        |> put_change(:ap_id, relay_uri)
-        |> put_change(:nickname, nil)
+        |> put_change(:ap_id, uri)
+        |> put_change(:nickname, nickname)
         |> put_change(:local, true)
-        |> put_change(:follower_address, relay_uri <> "/followers")
+        |> put_change(:follower_address, uri <> "/followers")
 
       {:ok, user} = Repo.insert(changes)
       user
@@ -1411,4 +1410,8 @@ defmodule Pleroma.User do
   end
 
   defp put_password_hash(changeset), do: changeset
+
+  def is_internal_user?(%User{nickname: nil}), do: true
+  def is_internal_user?(%User{local: true, nickname: "internal." <> _}), do: true
+  def is_internal_user?(_), do: false
 end

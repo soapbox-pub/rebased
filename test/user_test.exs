@@ -1310,4 +1310,21 @@ defmodule Pleroma.UserTest do
       assert following == 0
     end
   end
+
+  describe "is_internal_user?/1" do
+    test "non-internal user returns false" do
+      user = insert(:user)
+      refute User.is_internal_user?(user)
+    end
+
+    test "user with no nickname returns true" do
+      user = insert(:user, %{nickname: nil})
+      assert User.is_internal_user?(user)
+    end
+
+    test "user with internal-prefixed nickname returns true" do
+      user = insert(:user, %{nickname: "internal.test"})
+      assert User.is_internal_user?(user)
+    end
+  end
 end

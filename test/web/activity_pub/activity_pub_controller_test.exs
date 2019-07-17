@@ -48,6 +48,17 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
     end
   end
 
+  describe "/internal/fetch" do
+    test "it returns the internal fetch user", %{conn: conn} do
+      res =
+        conn
+        |> get(activity_pub_path(conn, :internal_fetch))
+        |> json_response(200)
+
+      assert res["id"] =~ "/fetch"
+    end
+  end
+
   describe "/users/:nickname" do
     test "it returns a json representation of the user with accept application/json", %{
       conn: conn
