@@ -138,7 +138,7 @@ defmodule Pleroma.Mixfile do
        ref: "95e8188490e97505c56636c1379ffdf036c1fdde"},
       {:http_signatures,
        git: "https://git.pleroma.social/pleroma/http_signatures.git",
-       ref: "9789401987096ead65646b52b5a2ca6bf52fc531"},
+       ref: "a2a5982fa167fb1352fbd518ce6b606ba233a989"},
       {:pleroma_job_queue, "~> 0.2.0"},
       {:telemetry, "~> 0.3"},
       {:prometheus_ex, "~> 3.0"},

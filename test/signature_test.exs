@@ -31,25 +31,29 @@ defmodule Pleroma.SignatureTest do
     65_537
   }
 
+  defp make_fake_signature(key_id), do: "keyId=\"#{key_id}\""
+
+  defp make_fake_conn(key_id),
+    do: %Plug.Conn{req_headers: %{"signature" => make_fake_signature(key_id <> "#main-key")}}
+
   describe "fetch_public_key/1" do
     test "it returns key" do
       expected_result = {:ok, @rsa_public_key}
 
       user = insert(:user, %{info: %{source_data: %{"publicKey" => @public_key}}})
 
-      assert Signature.fetch_public_key(%Plug.Conn{params: %{"actor" => user.ap_id}}) ==
-               expected_result
+      assert Signature.fetch_public_key(make_fake_conn(user.ap_id)) == expected_result
     end
 
     test "it returns error when not found user" do
-      assert Signature.fetch_public_key(%Plug.Conn{params: %{"actor" => "test-ap_id"}}) ==
+      assert Signature.fetch_public_key(make_fake_conn("test-ap_id")) ==
                {:error, :error}
     end
 
     test "it returns error if public key is empty" do
       user = insert(:user, %{info: %{source_data: %{"publicKey" => %{}}}})
 
-      assert Signature.fetch_public_key(%Plug.Conn{params: %{"actor" => user.ap_id}}) ==
+      assert Signature.fetch_public_key(make_fake_conn(user.ap_id)) ==
                {:error, :error}
     end
   end
@@ -58,12 +62,12 @@ defmodule Pleroma.SignatureTest do
     test "it returns key" do
       ap_id = "https://mastodon.social/users/lambadalambda"
 
-      assert Signature.refetch_public_key(%Plug.Conn{params: %{"actor" => ap_id}}) ==
+      assert Signature.refetch_public_key(make_fake_conn(ap_id)) ==
                {:ok, @rsa_public_key}
     end
 
     test "it returns error when not found user" do
-      assert Signature.refetch_public_key(%Plug.Conn{params: %{"actor" => "test-ap_id"}}) ==
+      assert Signature.refetch_public_key(make_fake_conn("test-ap_id")) ==
                {:error, {:error, :ok}}
     end
   end
