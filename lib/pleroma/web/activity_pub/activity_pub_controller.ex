@@ -10,6 +10,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   alias Pleroma.Object.Fetcher
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
@@ -220,6 +221,11 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def relay(conn, _params) do
     Relay.get_actor()
+    |> represent_service_actor(conn)
+  end
+
+  def internal_fetch(conn, _params) do
+    InternalFetchActor.get_actor()
     |> represent_service_actor(conn)
   end
 
