@@ -31,6 +31,8 @@ config :pleroma, :instance,
   skip_thread_containment: false,
   federating: false
 
+config :pleroma, :activitypub, sign_object_fetches: false
+
 # Configure your database
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
