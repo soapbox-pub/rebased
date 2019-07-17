@@ -305,7 +305,8 @@ config :pleroma, :activitypub,
   accept_blocks: true,
   unfollow_blocked: true,
   outgoing_blocks: true,
-  follow_handshake_timeout: 500
+  follow_handshake_timeout: 500,
+  sign_object_fetches: true
 
 config :pleroma, :user, deny_follow_blocked: true
 
