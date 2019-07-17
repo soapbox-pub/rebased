@@ -3849,14 +3849,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     test "it returns 404 when user is not found", %{conn: conn, user: user} do
       conn = post(conn, "/auth/password?email=nonexisting_#{user.email}")
       assert conn.status == 404
-      refute conn.resp_body
+      assert conn.resp_body == ""
     end
 
     test "it returns 400 when user is not local", %{conn: conn, user: user} do
       {:ok, user} = Repo.update(Changeset.change(user, local: false))
       conn = post(conn, "/auth/password?email=#{user.email}")
       assert conn.status == 400
-      refute conn.resp_body
+      assert conn.resp_body == ""
     end
   end
 end

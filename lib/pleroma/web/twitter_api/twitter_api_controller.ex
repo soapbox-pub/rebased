@@ -440,10 +440,10 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       json_response(conn, :no_content, "")
     else
       {:error, "unknown user"} ->
-        put_status(conn, :not_found)
+        send_resp(conn, :not_found, "")
 
       {:error, _} ->
-        put_status(conn, :bad_request)
+        send_resp(conn, :bad_request, "")
     end
   end
 
