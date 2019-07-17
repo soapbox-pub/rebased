@@ -1410,4 +1410,8 @@ defmodule Pleroma.User do
   end
 
   defp put_password_hash(changeset), do: changeset
+
+  def is_internal_user?(%User{nickname: nil}), do: true
+  def is_internal_user?(%User{local: true, nickname: "internal." <> _}), do: true
+  def is_internal_user?(_), do: false
 end
