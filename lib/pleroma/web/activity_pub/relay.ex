@@ -10,7 +10,8 @@ defmodule Pleroma.Web.ActivityPub.Relay do
   require Logger
 
   def get_actor do
-    User.get_or_create_instance_user()
+    "#{Pleroma.Web.Endpoint.url()}/relay"
+    |> User.get_or_create_service_actor_by_ap_id()
   end
 
   def follow(target_instance) do
