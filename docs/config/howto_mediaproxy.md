@@ -24,7 +24,9 @@ If you came here from one of the installation guides, take a look at the example
 ```
 config :pleroma, :media_proxy,
       enabled: true,
-      redirect_on_failure: true
+      proxy_opts: [
+            redirect_on_failure: true
+      ]
       #base_url: "https://cache.pleroma.social"
 ```
 If you want to use a subdomain to serve the files, uncomment `base_url`, change the url and add a comma after `true` in the previous line.
