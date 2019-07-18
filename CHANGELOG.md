@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Addressable lists
 - Twitter API: added rate limit for `/api/account/password_reset` endpoint.
 - ActivityPub: Add an internal service actor for fetching ActivityPub objects.
+- ActivityPub: Optional signing of ActivityPub object fetches.
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text

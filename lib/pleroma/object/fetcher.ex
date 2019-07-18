@@ -6,6 +6,8 @@ defmodule Pleroma.Object.Fetcher do
   alias Pleroma.HTTP
   alias Pleroma.Object
   alias Pleroma.Object.Containment
+  alias Pleroma.Signature
+  alias Pleroma.Web.ActivityPub.InternalFetchActor
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.OStatus
 
@@ -82,15 +84,52 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
+  defp make_signature(id, date) do
+    uri = URI.parse(id)
+
+    signature =
+      InternalFetchActor.get_actor()
+      |> Signature.sign(%{
+        "(request-target)": "get #{uri.path}",
+        host: uri.host,
+        date: date
+      })
+
+    [{:Signature, signature}]
+  end
+
+  defp sign_fetch(headers, id, date) do
+    if Pleroma.Config.get([:activitypub, :sign_object_fetches]) do
+      headers ++ make_signature(id, date)
+    else
+      headers
+    end
+  end
+
+  defp maybe_date_fetch(headers, date) do
+    if Pleroma.Config.get([:activitypub, :sign_object_fetches]) do
+      headers ++ [{:Date, date}]
+    else
+      headers
+    end
+  end
+
   def fetch_and_contain_remote_object_from_id(id) do
     Logger.info("Fetching object #{id} via AP")
 
+    date =
+      NaiveDateTime.utc_now()
+      |> Timex.format!("{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
+
+    headers =
+      [{:Accept, "application/activity+json"}]
+      |> maybe_date_fetch(date)
+      |> sign_fetch(id, date)
+
+    Logger.debug("Fetch headers: #{inspect(headers)}")
+
     with true <- String.starts_with?(id, "http"),
-         {:ok, %{body: body, status: code}} when code in 200..299 <-
-           HTTP.get(
-             id,
-             [{:Accept, "application/activity+json"}]
-           ),
+         {:ok, %{body: body, status: code}} when code in 200..299 <- HTTP.get(id, headers),
          {:ok, data} <- Jason.decode(body),
          :ok <- Containment.contain_origin_from_id(id, data) do
       {:ok, data}

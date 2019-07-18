@@ -332,6 +332,7 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed
 * ``outgoing_blocks``: Whether to federate blocks to other instances
 * ``deny_follow_blocked``: Whether to disallow following an account that has blocked the user in question
+* ``sign_object_fetches``: Sign object fetches with HTTP signatures
 
 ## :http_security
 * ``enabled``: Whether the managed content security policy is enabled
