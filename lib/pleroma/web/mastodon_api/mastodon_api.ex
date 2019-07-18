@@ -53,7 +53,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
     options = cast_params(params)
 
     user
-    |> Notification.for_user_query()
+    |> Notification.for_user_query(options)
     |> restrict(:exclude_types, options)
     |> Pagination.fetch_paginated(params)
   end
@@ -67,7 +67,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   defp cast_params(params) do
     param_types = %{
       exclude_types: {:array, :string},
-      reblogs: :boolean
+      reblogs: :boolean,
+      with_muted: :boolean
     }
 
     changeset = cast({%{}, param_types}, params, Map.keys(param_types))

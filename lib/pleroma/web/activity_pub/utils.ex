@@ -25,12 +25,8 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   # Some implementations send the actor URI as the actor field, others send the entire actor object,
   # so figure out what the actor's URI is based on what we have.
-  def get_ap_id(object) do
-    case object do
-      %{"id" => id} -> id
-      id -> id
-    end
-  end
+  def get_ap_id(%{"id" => id} = _), do: id
+  def get_ap_id(id), do: id
 
   def normalize_params(params) do
     Map.put(params, "actor", get_ap_id(params["actor"]))

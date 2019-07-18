@@ -101,6 +101,7 @@ config :pleroma, Pleroma.Emails.Mailer,
   * `Pleroma.Web.ActivityPub.MRF.EnsureRePrepended`: Rewrites posts to ensure that replies to posts with subjects do not have an identical subject and instead begin with re:.
   * `Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy`: Rejects posts from likely spambots by rejecting posts from new users that contain links.
   * `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`: Crawls attachments using their MediaProxy URLs so that the MediaProxy cache is primed.
+  * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (see `:mrf_mention` section)
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
@@ -271,6 +272,9 @@ config :pleroma, :mrf_subchain,
 * `federated_timeline_removal`: A list of patterns which result in message being removed from federated timelines (a.k.a unlisted), each pattern can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
 * `replace`: A list of tuples containing `{pattern, replacement}`, `pattern` can be a string or a [regular expression](https://hexdocs.pm/elixir/Regex.html)
 
+## :mrf_mention
+* `actors`: A list of actors, for which to drop any posts mentioning.
+
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
@@ -328,6 +332,7 @@ This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls start
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed
 * ``outgoing_blocks``: Whether to federate blocks to other instances
 * ``deny_follow_blocked``: Whether to disallow following an account that has blocked the user in question
+* ``sign_object_fetches``: Sign object fetches with HTTP signatures
 
 ## :http_security
 * ``enabled``: Whether the managed content security policy is enabled
@@ -425,6 +430,7 @@ This config contains two queues: `federator_incoming` and `federator_outgoing`. 
 * `enabled`: if enabled the instance will parse metadata from attached links to generate link previews
 * `ignore_hosts`: list of hosts which will be ignored by the metadata parser. For example `["accounts.google.com", "xss.website"]`, defaults to `[]`.
 * `ignore_tld`: list TLDs (top-level domains) which will ignore for parse metadata. default is ["local", "localdomain", "lan"]
+* `parsers`: list of Rich Media parsers
 
 ## :fetch_initial_posts
 * `enabled`: if enabled, when a new user is federated with, fetch some of their latest posts
@@ -646,5 +652,7 @@ Supported rate limiters:
 
 * `:search` for the search requests (account & status search etc.)
 * `:app_account_creation` for registering user accounts from the same IP address
+* `:relations_actions` for actions on relations with all users (follow, unfollow)
+* `:relation_id_action` for actions on relation with a specific user (follow, unfollow)
 * `:statuses_actions` for create / delete / fav / unfav / reblog / unreblog actions on any statuses
 * `:status_id_action` for fav / unfav or reblog / unreblog actions on the same status by the same user

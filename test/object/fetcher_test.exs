@@ -9,6 +9,7 @@ defmodule Pleroma.Object.FetcherTest do
   alias Pleroma.Object
   alias Pleroma.Object.Fetcher
   import Tesla.Mock
+  import Mock
 
   setup do
     mock(fn
@@ -26,16 +27,31 @@ defmodule Pleroma.Object.FetcherTest do
   end
 
   describe "actor origin containment" do
-    test "it rejects objects with a bogus origin" do
+    test_with_mock "it rejects objects with a bogus origin",
+                   Pleroma.Web.OStatus,
+                   [:passthrough],
+                   [] do
       {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity.json")
+
+      refute called(Pleroma.Web.OStatus.fetch_activity_from_url(:_))
     end
 
-    test "it rejects objects when attributedTo is wrong (variant 1)" do
+    test_with_mock "it rejects objects when attributedTo is wrong (variant 1)",
+                   Pleroma.Web.OStatus,
+                   [:passthrough],
+                   [] do
       {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity2.json")
+
+      refute called(Pleroma.Web.OStatus.fetch_activity_from_url(:_))
     end
 
-    test "it rejects objects when attributedTo is wrong (variant 2)" do
+    test_with_mock "it rejects objects when attributedTo is wrong (variant 2)",
+                   Pleroma.Web.OStatus,
+                   [:passthrough],
+                   [] do
       {:error, _} = Fetcher.fetch_object_from_id("https://info.pleroma.site/activity3.json")
+
+      refute called(Pleroma.Web.OStatus.fetch_activity_from_url(:_))
     end
   end
 
@@ -132,6 +148,36 @@ defmodule Pleroma.Object.FetcherTest do
 
       assert object.data["id"] == object_two.data["id"]
       assert object.id != object_two.id
+    end
+  end
+
+  describe "signed fetches" do
+    test_with_mock "it signs fetches when configured to do so",
+                   Pleroma.Signature,
+                   [:passthrough],
+                   [] do
+      option = Pleroma.Config.get([:activitypub, :sign_object_fetches])
+      Pleroma.Config.put([:activitypub, :sign_object_fetches], true)
+
+      Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      assert called(Pleroma.Signature.sign(:_, :_))
+
+      Pleroma.Config.put([:activitypub, :sign_object_fetches], option)
+    end
+
+    test_with_mock "it doesn't sign fetches when not configured to do so",
+                   Pleroma.Signature,
+                   [:passthrough],
+                   [] do
+      option = Pleroma.Config.get([:activitypub, :sign_object_fetches])
+      Pleroma.Config.put([:activitypub, :sign_object_fetches], false)
+
+      Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      refute called(Pleroma.Signature.sign(:_, :_))
+
+      Pleroma.Config.put([:activitypub, :sign_object_fetches], option)
     end
   end
 end

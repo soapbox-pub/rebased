@@ -16,6 +16,7 @@ defmodule Pleroma.List do
     belongs_to(:user, User, type: Pleroma.FlakeId)
     field(:title, :string)
     field(:following, {:array, :string}, default: [])
+    field(:ap_id, :string)
 
     timestamps()
   end
@@ -53,6 +54,10 @@ defmodule Pleroma.List do
       )
 
     Repo.one(query)
+  end
+
+  def get_by_ap_id(ap_id) do
+    Repo.get_by(__MODULE__, ap_id: ap_id)
   end
 
   def get_following(%Pleroma.List{following: following} = _list) do
@@ -105,7 +110,14 @@ defmodule Pleroma.List do
 
   def create(title, %User{} = creator) do
     list = %Pleroma.List{user_id: creator.id, title: title}
-    Repo.insert(list)
+
+    Repo.transaction(fn ->
+      list = Repo.insert!(list)
+
+      list
+      |> change(ap_id: "#{creator.ap_id}/lists/#{list.id}")
+      |> Repo.update!()
+    end)
   end
 
   def follow(%Pleroma.List{following: following} = list, %User{} = followed) do
@@ -125,4 +137,19 @@ defmodule Pleroma.List do
     |> follow_changeset(attrs)
     |> Repo.update()
   end
+
+  def memberships(%User{follower_address: follower_address}) do
+    Pleroma.List
+    |> where([l], ^follower_address in l.following)
+    |> select([l], l.ap_id)
+    |> Repo.all()
+  end
+
+  def memberships(_), do: []
+
+  def member?(%Pleroma.List{following: following}, %User{follower_address: follower_address}) do
+    Enum.member?(following, follower_address)
+  end
+
+  def member?(_, _), do: false
 end

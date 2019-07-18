@@ -14,7 +14,7 @@ defmodule Pleroma.Mixfile do
       aliases: aliases(),
       deps: deps(),
       test_coverage: [tool: ExCoveralls],
-
+      preferred_cli_env: ["coveralls.html": :test],
       # Docs
       name: "Pleroma",
       homepage_url: "https://pleroma.social/",
@@ -95,6 +95,7 @@ defmodule Pleroma.Mixfile do
   defp deps do
     [
       {:phoenix, "~> 1.4.8"},
+      {:tzdata, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
@@ -137,7 +138,7 @@ defmodule Pleroma.Mixfile do
        ref: "95e8188490e97505c56636c1379ffdf036c1fdde"},
       {:http_signatures,
        git: "https://git.pleroma.social/pleroma/http_signatures.git",
-       ref: "9789401987096ead65646b52b5a2ca6bf52fc531"},
+       ref: "a2a5982fa167fb1352fbd518ce6b606ba233a989"},
       {:pleroma_job_queue, "~> 0.2.0"},
       {:telemetry, "~> 0.3"},
       {:prometheus_ex, "~> 3.0"},

@@ -687,10 +687,12 @@ defmodule Pleroma.UserTest do
       muted_user = insert(:user)
 
       refute User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
 
       {:ok, user} = User.mute(user, muted_user)
 
       assert User.mutes?(user, muted_user)
+      assert User.muted_notifications?(user, muted_user)
     end
 
     test "it unmutes users" do
@@ -701,6 +703,20 @@ defmodule Pleroma.UserTest do
       {:ok, user} = User.unmute(user, muted_user)
 
       refute User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
+    end
+
+    test "it mutes user without notifications" do
+      user = insert(:user)
+      muted_user = insert(:user)
+
+      refute User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
+
+      {:ok, user} = User.mute(user, muted_user, false)
+
+      assert User.mutes?(user, muted_user)
+      refute User.muted_notifications?(user, muted_user)
     end
   end
 
@@ -1292,6 +1308,23 @@ defmodule Pleroma.UserTest do
 
       assert followers == 0
       assert following == 0
+    end
+  end
+
+  describe "is_internal_user?/1" do
+    test "non-internal user returns false" do
+      user = insert(:user)
+      refute User.is_internal_user?(user)
+    end
+
+    test "user with no nickname returns true" do
+      user = insert(:user, %{nickname: nil})
+      assert User.is_internal_user?(user)
+    end
+
+    test "user with internal-prefixed nickname returns true" do
+      user = insert(:user, %{nickname: "internal.test"})
+      assert User.is_internal_user?(user)
     end
   end
 end

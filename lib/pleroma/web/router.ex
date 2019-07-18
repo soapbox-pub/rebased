@@ -587,7 +587,7 @@ defmodule Pleroma.Web.Router do
     end
   end
 
-  pipeline :ap_relay do
+  pipeline :ap_service_actor do
     plug(:accepts, ["activity+json", "json"])
   end
 
@@ -664,8 +664,17 @@ defmodule Pleroma.Web.Router do
   end
 
   scope "/relay", Pleroma.Web.ActivityPub do
-    pipe_through(:ap_relay)
+    pipe_through(:ap_service_actor)
+
     get("/", ActivityPubController, :relay)
+    post("/inbox", ActivityPubController, :inbox)
+  end
+
+  scope "/internal/fetch", Pleroma.Web.ActivityPub do
+    pipe_through(:ap_service_actor)
+
+    get("/", ActivityPubController, :internal_fetch)
+    post("/inbox", ActivityPubController, :inbox)
   end
 
   scope "/", Pleroma.Web.ActivityPub do
@@ -691,6 +700,8 @@ defmodule Pleroma.Web.Router do
 
     get("/web/login", MastodonAPIController, :login)
     delete("/auth/sign_out", MastodonAPIController, :logout)
+
+    post("/auth/password", MastodonAPIController, :password_reset)
 
     scope [] do
       pipe_through(:oauth_read_or_public)

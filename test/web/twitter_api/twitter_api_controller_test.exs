@@ -521,6 +521,38 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
                  for: current_user
                })
     end
+
+    test "muted user", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
+      {:ok, current_user} = User.mute(current_user, other_user)
+
+      {:ok, _activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json")
+
+      assert json_response(conn, 200) == []
+    end
+
+    test "muted user with with_muted parameter", %{conn: conn, user: current_user} do
+      other_user = insert(:user)
+
+      {:ok, current_user} = User.mute(current_user, other_user)
+
+      {:ok, _activity} =
+        ActivityBuilder.insert(%{"to" => [current_user.ap_id]}, %{user: other_user})
+
+      conn =
+        conn
+        |> with_credentials(current_user.nickname, "test")
+        |> get("/api/qvitter/statuses/notifications.json", %{"with_muted" => "true"})
+
+      assert length(json_response(conn, 200)) == 1
+    end
   end
 
   describe "POST /api/qvitter/statuses/notifications/read" do
@@ -1084,15 +1116,17 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   describe "POST /api/account/password_reset, with invalid parameters" do
     setup [:valid_user]
 
-    test "it returns 500 when user is not found", %{conn: conn, user: user} do
+    test "it returns 404 when user is not found", %{conn: conn, user: user} do
       conn = post(conn, "/api/account/password_reset?email=nonexisting_#{user.email}")
-      assert json_response(conn, :internal_server_error)
+      assert conn.status == 404
+      assert conn.resp_body == ""
     end
 
-    test "it returns 500 when user is not local", %{conn: conn, user: user} do
+    test "it returns 400 when user is not local", %{conn: conn, user: user} do
       {:ok, user} = Repo.update(Changeset.change(user, local: false))
       conn = post(conn, "/api/account/password_reset?email=#{user.email}")
-      assert json_response(conn, :internal_server_error)
+      assert conn.status == 400
+      assert conn.resp_body == ""
     end
   end
 

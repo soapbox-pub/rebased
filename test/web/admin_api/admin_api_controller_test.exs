@@ -1720,7 +1720,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           configs: [
             %{
               "group" => "pleroma",
-              "key" => "key1",
+              "key" => ":key1",
               "value" => [
                 %{"tuple" => [":key2", "some_val"]},
                 %{
@@ -1750,7 +1750,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  "configs" => [
                    %{
                      "group" => "pleroma",
-                     "key" => "key1",
+                     "key" => ":key1",
                      "value" => [
                        %{"tuple" => [":key2", "some_val"]},
                        %{
@@ -1782,7 +1782,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
           configs: [
             %{
               "group" => "pleroma",
-              "key" => "key1",
+              "key" => ":key1",
               "value" => %{"key" => "some_val"}
             }
           ]
@@ -1793,7 +1793,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                  "configs" => [
                    %{
                      "group" => "pleroma",
-                     "key" => "key1",
+                     "key" => ":key1",
                      "value" => %{"key" => "some_val"}
                    }
                  ]
@@ -1857,6 +1857,45 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                          ]
                        ]
                      }
+                   ]
+                 }
+               ]
+             }
+    end
+
+    test "queues key as atom", %{conn: conn} do
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              "group" => "pleroma_job_queue",
+              "key" => ":queues",
+              "value" => [
+                %{"tuple" => [":federator_incoming", 50]},
+                %{"tuple" => [":federator_outgoing", 50]},
+                %{"tuple" => [":web_push", 50]},
+                %{"tuple" => [":mailer", 10]},
+                %{"tuple" => [":transmogrifier", 20]},
+                %{"tuple" => [":scheduled_activities", 10]},
+                %{"tuple" => [":background", 5]}
+              ]
+            }
+          ]
+        })
+
+      assert json_response(conn, 200) == %{
+               "configs" => [
+                 %{
+                   "group" => "pleroma_job_queue",
+                   "key" => ":queues",
+                   "value" => [
+                     %{"tuple" => [":federator_incoming", 50]},
+                     %{"tuple" => [":federator_outgoing", 50]},
+                     %{"tuple" => [":web_push", 50]},
+                     %{"tuple" => [":mailer", 10]},
+                     %{"tuple" => [":transmogrifier", 20]},
+                     %{"tuple" => [":scheduled_activities", 10]},
+                     %{"tuple" => [":background", 5]}
                    ]
                  }
                ]

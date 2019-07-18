@@ -31,6 +31,7 @@ Feel free to contact us to be added to this list!
 - Features: No Streaming
 
 ### Fedilab
+- Homepage: <https://fedilab.app/>
 - Source Code: <https://gitlab.com/tom79/mastalab/>
 - Contact: [@tom79@mastodon.social](https://mastodon.social/users/tom79)
 - Platforms: Android

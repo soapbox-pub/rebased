@@ -27,6 +27,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   require Logger
 
+  plug(Pleroma.Plugs.RateLimiter, :password_reset when action == :password_reset)
   plug(:only_if_public_instance when action in [:public_timeline, :public_and_external_timeline])
   action_fallback(:errors)
 
@@ -192,6 +193,13 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   end
 
   def notifications(%{assigns: %{user: user}} = conn, params) do
+    params =
+      if Map.has_key?(params, "with_muted") do
+        Map.put(params, :with_muted, params["with_muted"] in [true, "True", "true", "1"])
+      else
+        params
+      end
+
     notifications = Notification.for_user(user, params)
 
     conn
@@ -430,6 +438,12 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
     with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
       json_response(conn, :no_content, "")
+    else
+      {:error, "unknown user"} ->
+        send_resp(conn, :not_found, "")
+
+      {:error, _} ->
+        send_resp(conn, :bad_request, "")
     end
   end
 
