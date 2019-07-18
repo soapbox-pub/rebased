@@ -8,22 +8,19 @@ defmodule Pleroma.Plugs.AuthenticationPlug do
   alias Pleroma.User
   require Logger
 
-  def init(options) do
-    options
+  def init(options), do: options
+
+  def checkpw(password, "$6" <> _ = password_hash) do
+    :crypt.crypt(password, password_hash) == password_hash
   end
 
-  def checkpw(password, password_hash) do
-    cond do
-      String.starts_with?(password_hash, "$pbkdf2") ->
-        Pbkdf2.checkpw(password, password_hash)
+  def checkpw(password, "$pbkdf2" <> _ = password_hash) do
+    Pbkdf2.checkpw(password, password_hash)
+  end
 
-      String.starts_with?(password_hash, "$6") ->
-        :crypt.crypt(password, password_hash) == password_hash
-
-      true ->
-        Logger.error("Password hash not recognized")
-        false
-    end
+  def checkpw(_password, _password_hash) do
+    Logger.error("Password hash not recognized")
+    false
   end
 
   def call(%{assigns: %{user: %User{}}} = conn, _), do: conn
