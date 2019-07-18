@@ -23,7 +23,7 @@ defmodule Pleroma.Web.Plugs.MappedSignatureToIdentityPlug do
 
   defp user_from_key_id(conn) do
     with key_actor_id when is_binary(key_actor_id) <- key_id_from_conn(conn),
-         %User{} = user <- User.get_or_fetch_by_ap_id(key_actor_id) do
+         {:ok, %User{} = user} <- User.get_or_fetch_by_ap_id(key_actor_id) do
       user
     else
       _ ->
