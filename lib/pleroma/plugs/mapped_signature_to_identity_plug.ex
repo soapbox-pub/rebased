@@ -31,14 +31,14 @@ defmodule Pleroma.Web.Plugs.MappedSignatureToIdentityPlug do
     end
   end
 
-  def call(%{assigns: %{mapped_identity: _}} = conn, _opts), do: conn
+  def call(%{assigns: %{user: _}} = conn, _opts), do: conn
 
   # if this has payload make sure it is signed by the same actor that made it
   def call(%{assigns: %{valid_signature: true}, params: %{"actor" => actor}} = conn, _opts) do
     with actor_id <- Utils.get_ap_id(actor),
          {:user, %User{} = user} <- {:user, user_from_key_id(conn)},
          {:user_match, true} <- {:user_match, user.ap_id == actor_id} do
-      assign(conn, :mapped_identity, user)
+      assign(conn, :user, user)
     else
       {:user_match, false} ->
         Logger.debug("Failed to map identity from signature (payload actor mismatch)")
@@ -56,7 +56,7 @@ defmodule Pleroma.Web.Plugs.MappedSignatureToIdentityPlug do
   # no payload, probably a signed fetch
   def call(%{assigns: %{valid_signature: true}} = conn, _opts) do
     with %User{} = user <- user_from_key_id(conn) do
-      assign(conn, :mapped_identity, user)
+      assign(conn, :user, user)
     else
       _ ->
         Logger.debug("Failed to map identity from signature (no payload actor mismatch)")

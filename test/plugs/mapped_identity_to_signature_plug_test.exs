@@ -26,7 +26,7 @@ defmodule Pleroma.Web.Plugs.MappedSignatureToIdentityPlugTest do
       |> set_signature("http://mastodon.example.org/users/admin")
       |> MappedSignatureToIdentityPlug.call(%{})
 
-    refute is_nil(conn.assigns.mapped_identity)
+    refute is_nil(conn.assigns.user)
   end
 
   test "it successfully maps a valid identity with a valid signature with payload" do
@@ -35,7 +35,7 @@ defmodule Pleroma.Web.Plugs.MappedSignatureToIdentityPlugTest do
       |> set_signature("http://mastodon.example.org/users/admin")
       |> MappedSignatureToIdentityPlug.call(%{})
 
-    refute is_nil(conn.assigns.mapped_identity)
+    refute is_nil(conn.assigns.user)
   end
 
   test "it considers a mapped identity to be invalid when it mismatches a payload" do
