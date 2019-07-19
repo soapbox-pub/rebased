@@ -50,6 +50,7 @@ Has these additional fields under the `pleroma` object:
 - `hide_follows`: boolean, true when the user has follow hiding enabled
 - `settings_store`: A generic map of settings for frontends. Opaque to the backend. Only returned in `verify_credentials` and `update_credentials`
 - `chat_token`: The token needed for Pleroma chat. Only returned in `verify_credentials`
+- `deactivated`: boolean, true when the user is deactivated
 
 ### Source
 

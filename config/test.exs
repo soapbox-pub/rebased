@@ -31,6 +31,8 @@ config :pleroma, :instance,
   skip_thread_containment: false,
   federating: false
 
+config :pleroma, :activitypub, sign_object_fetches: false
+
 # Configure your database
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
@@ -67,7 +69,8 @@ config :pleroma, Pleroma.ScheduledActivity,
 
 config :pleroma, :rate_limit,
   search: [{1000, 30}, {1000, 30}],
-  app_account_creation: {10_000, 5}
+  app_account_creation: {10_000, 5},
+  password_reset: {1000, 30}
 
 config :pleroma, :http_security, report_uri: "https://endpoint.com"
 

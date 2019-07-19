@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Upload.Filter.Mogrifun do
   @behaviour Pleroma.Upload.Filter
+  alias Pleroma.Upload.Filter
 
   @filters [
     {"implode", "1"},
@@ -34,31 +35,10 @@ defmodule Pleroma.Upload.Filter.Mogrifun do
   ]
 
   def filter(%Pleroma.Upload{tempfile: file, content_type: "image" <> _}) do
-    filter = Enum.random(@filters)
-
-    file
-    |> Mogrify.open()
-    |> mogrify_filter(filter)
-    |> Mogrify.save(in_place: true)
+    Filter.Mogrify.do_filter(file, [Enum.random(@filters)])
 
     :ok
   end
 
   def filter(_), do: :ok
-
-  defp mogrify_filter(mogrify, [filter | rest]) do
-    mogrify
-    |> mogrify_filter(filter)
-    |> mogrify_filter(rest)
-  end
-
-  defp mogrify_filter(mogrify, []), do: mogrify
-
-  defp mogrify_filter(mogrify, {action, options}) do
-    Mogrify.custom(mogrify, action, options)
-  end
-
-  defp mogrify_filter(mogrify, string) when is_binary(string) do
-    Mogrify.custom(mogrify, string)
-  end
 end

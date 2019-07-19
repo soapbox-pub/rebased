@@ -221,6 +221,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       user
       |> UserEmail.password_reset_email(token_record.token)
       |> Mailer.deliver_async()
+
+      {:ok, :enqueued}
     else
       false ->
         {:error, "bad user identifier"}

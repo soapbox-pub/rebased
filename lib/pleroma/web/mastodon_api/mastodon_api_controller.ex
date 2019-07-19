@@ -47,6 +47,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
+  @rate_limited_relations_actions ~w(follow unfollow)a
+
   @rate_limited_status_actions ~w(reblog_status unreblog_status fav_status unfav_status
     post_status delete_status)a
 
@@ -62,9 +64,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     when action in ~w(fav_status unfav_status)a
   )
 
+  plug(
+    RateLimiter,
+    {:relations_id_action, params: ["id", "uri"]} when action in @rate_limited_relations_actions
+  )
+
+  plug(RateLimiter, :relations_actions when action in @rate_limited_relations_actions)
   plug(RateLimiter, :statuses_actions when action in @rate_limited_status_actions)
   plug(RateLimiter, :app_account_creation when action == :account_register)
   plug(RateLimiter, :search when action in [:search, :search2, :account_search])
+  plug(RateLimiter, :password_reset when action == :password_reset)
 
   @local_mastodon_name "Mastodon-Local"
 
@@ -1805,6 +1814,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       conn
       |> json(participation_view)
+    end
+  end
+
+  def password_reset(conn, params) do
+    nickname_or_email = params["email"] || params["nickname"]
+
+    with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
+      conn
+      |> put_status(:no_content)
+      |> json("")
+    else
+      {:error, "unknown user"} ->
+        send_resp(conn, :not_found, "")
+
+      {:error, _} ->
+        send_resp(conn, :bad_request, "")
     end
   end
 

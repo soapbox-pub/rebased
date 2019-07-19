@@ -305,7 +305,8 @@ config :pleroma, :activitypub,
   accept_blocks: true,
   unfollow_blocked: true,
   outgoing_blocks: true,
-  follow_handshake_timeout: 500
+  follow_handshake_timeout: 500,
+  sign_object_fetches: true
 
 config :pleroma, :user, deny_follow_blocked: true
 
@@ -528,8 +529,11 @@ config :http_signatures,
 config :pleroma, :rate_limit,
   search: [{1000, 10}, {1000, 30}],
   app_account_creation: {1_800_000, 25},
+  relations_actions: {10_000, 10},
+  relation_id_action: {60_000, 2},
   statuses_actions: {10_000, 15},
-  status_id_action: {60_000, 3}
+  status_id_action: {60_000, 3},
+  password_reset: {1_800_000, 5}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

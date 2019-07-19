@@ -150,4 +150,34 @@ defmodule Pleroma.Object.FetcherTest do
       assert object.id != object_two.id
     end
   end
+
+  describe "signed fetches" do
+    test_with_mock "it signs fetches when configured to do so",
+                   Pleroma.Signature,
+                   [:passthrough],
+                   [] do
+      option = Pleroma.Config.get([:activitypub, :sign_object_fetches])
+      Pleroma.Config.put([:activitypub, :sign_object_fetches], true)
+
+      Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      assert called(Pleroma.Signature.sign(:_, :_))
+
+      Pleroma.Config.put([:activitypub, :sign_object_fetches], option)
+    end
+
+    test_with_mock "it doesn't sign fetches when not configured to do so",
+                   Pleroma.Signature,
+                   [:passthrough],
+                   [] do
+      option = Pleroma.Config.get([:activitypub, :sign_object_fetches])
+      Pleroma.Config.put([:activitypub, :sign_object_fetches], false)
+
+      Fetcher.fetch_object_from_id("http://mastodon.example.org/@admin/99541947525187367")
+
+      refute called(Pleroma.Signature.sign(:_, :_))
+
+      Pleroma.Config.put([:activitypub, :sign_object_fetches], option)
+    end
+  end
 end

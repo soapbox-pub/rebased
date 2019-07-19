@@ -11,10 +11,6 @@ defmodule Pleroma.Web.UploaderController do
     process_callback(conn, :global.whereis_name({Uploader, upload_path}), params)
   end
 
-  def callbacks(conn, _) do
-    render_error(conn, :bad_request, "bad request")
-  end
-
   defp process_callback(conn, pid, params) when is_pid(pid) do
     send(pid, {Uploader, self(), conn, params})
 
