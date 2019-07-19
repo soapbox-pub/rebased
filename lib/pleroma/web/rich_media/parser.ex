@@ -35,17 +35,17 @@ defmodule Pleroma.Web.RichMedia.Parser do
   @doc """
   Set the rich media cache based on the expiration time of image.
 
-  Define a module that has `run` function
+  Adopt behaviour `Pleroma.Web.RichMedia.Parser.TTL`
 
   ## Example
 
       defmodule MyModule do
-        def run(data, url) do
+        @behaviour Pleroma.Web.RichMedia.Parser.TTL
+        def ttl(data, url) do
           image_url = Map.get(data, :image)
           # do some parsing in the url and get the ttl of the image
-          # ttl is unix time
-          ttl = parse_ttl_from_url(image_url)  
-          Cachex.expire_at(:rich_media_cache, url, ttl * 1000)
+          # and return ttl is unix time
+          parse_ttl_from_url(image_url)
         end
       end
 
@@ -55,22 +55,26 @@ defmodule Pleroma.Web.RichMedia.Parser do
         ttl_setters: [MyModule]
   """
   def set_ttl_based_on_image({:ok, data}, url) do
-    case Cachex.ttl(:rich_media_cache, url) do
-      {:ok, nil} ->
-        modules = Pleroma.Config.get([:rich_media, :ttl_setters])
-
-        if Enum.count(modules) > 0 do
-          Enum.each(modules, & &1.run(data, url))
-        end
-
-        {:ok, data}
-
+    with {:ok, nil} <- Cachex.ttl(:rich_media_cache, url) do
+      ttl = get_ttl_from_image(data, url)
+      Cachex.expire_at(:rich_media_cache, url, ttl * 1000)
+      {:ok, data}
+    else
       _ ->
         {:ok, data}
     end
   end
 
-  def set_ttl_based_on_image(data, _url), do: data
+  defp get_ttl_from_image(data, url) do
+    Pleroma.Config.get([:rich_media, :ttl_setters])
+    |> Enum.reduce({:ok, nil}, fn
+      module, {:ok, _ttl} ->
+        module.ttl(data, url)
+
+      _, error ->
+        error
+    end)
+  end
 
   defp parse_url(url) do
     try do

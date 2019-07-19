@@ -1,5 +1,8 @@
 defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
-  def run(data, url) do
+  @behaviour Pleroma.Web.RichMedia.Parser.TTL
+
+  @impl Pleroma.Web.RichMedia.Parser.TTL
+  def ttl(data, _url) do
     image = Map.get(data, :image)
 
     if is_aws_signed_url(image) do
@@ -7,7 +10,6 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
       |> parse_query_params()
       |> format_query_params()
       |> get_expiration_timestamp()
-      |> set_ttl(url)
     end
   end
 
@@ -46,9 +48,5 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
       |> Timex.parse("{ISO:Basic:Z}")
 
     Timex.to_unix(date) + String.to_integer(Map.get(params, "X-Amz-Expires"))
-  end
-
-  defp set_ttl(ttl, url) do
-    Cachex.expire_at(:rich_media_cache, url, ttl * 1000)
   end
 end

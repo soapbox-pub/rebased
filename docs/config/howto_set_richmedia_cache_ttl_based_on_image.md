@@ -4,7 +4,7 @@
 Richmedia are cached without the ttl but the rich media may have image which can expire, like aws signed url.
 In such cases the old image url (expired) is returned from the media cache.
 
-So to avoid such situation we can define a moddule that will set ttl based no image.
+So to avoid such situation we can define a moddule that will set ttl based on image.
 
 The module must have a `run` function and it should be registered in the config.
 
