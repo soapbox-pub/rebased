@@ -33,7 +33,7 @@ Feel free to contact us to be added to this list!
 ### Fedilab
 - Homepage: <https://fedilab.app/>
 - Source Code: <https://framagit.org/tom79/fedilab/>
-- Contact: [@fedilab@mastodon.social](https://framapiaf.org/users/fedilab)
+- Contact: [@fedilab@framapiaf.org](https://framapiaf.org/users/fedilab)
 - Platforms: Android
 - Features: Streaming Ready, Moderation, Text Formatting 
 
