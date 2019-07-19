@@ -140,6 +140,11 @@ defmodule Pleroma.Application do
             id: :federator_init,
             start: {Task, :start_link, [&Pleroma.Web.Federator.init/0]},
             restart: :temporary
+          },
+          %{
+            id: :internal_fetch_init,
+            start: {Task, :start_link, [&Pleroma.Web.ActivityPub.InternalFetchActor.init/0]},
+            restart: :temporary
           }
         ] ++
         streamer_child() ++

@@ -8,10 +8,16 @@ defmodule Pleroma.Signature do
   alias Pleroma.Keys
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.ActivityPub.Utils
+
+  def key_id_to_actor_id(key_id) do
+    URI.parse(key_id)
+    |> Map.put(:fragment, nil)
+    |> URI.to_string()
+  end
 
   def fetch_public_key(conn) do
-    with actor_id <- Utils.get_ap_id(conn.params["actor"]),
+    with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
+         actor_id <- key_id_to_actor_id(kid),
          {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
       {:ok, public_key}
     else
@@ -21,7 +27,8 @@ defmodule Pleroma.Signature do
   end
 
   def refetch_public_key(conn) do
-    with actor_id <- Utils.get_ap_id(conn.params["actor"]),
+    with %{"keyId" => kid} <- HTTPSignatures.signature_for_conn(conn),
+         actor_id <- key_id_to_actor_id(kid),
          {:ok, _user} <- ActivityPub.make_user_from_ap_id(actor_id),
          {:ok, public_key} <- User.get_public_key_for_ap_id(actor_id) do
       {:ok, public_key}

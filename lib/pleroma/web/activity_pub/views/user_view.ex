@@ -31,8 +31,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
 
   def render("endpoints.json", _), do: %{}
 
-  # the instance itself is not a Person, but instead an Application
-  def render("user.json", %{user: %{nickname: nil} = user}) do
+  def render("service.json", %{user: user}) do
     {:ok, user} = User.ensure_keys_present(user)
     {:ok, _, public_key} = Keys.keys_from_pem(user.info.keys)
     public_key = :public_key.pem_entry_encode(:SubjectPublicKeyInfo, public_key)
@@ -47,7 +46,8 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "followers" => "#{user.ap_id}/followers",
       "inbox" => "#{user.ap_id}/inbox",
       "name" => "Pleroma",
-      "summary" => "Virtual actor for Pleroma relay",
+      "summary" =>
+        "An internal service actor for this Pleroma instance.  No user-serviceable parts inside.",
       "url" => user.ap_id,
       "manuallyApprovesFollowers" => false,
       "publicKey" => %{
@@ -59,6 +59,13 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     }
     |> Map.merge(Utils.make_json_ld_header())
   end
+
+  # the instance itself is not a Person, but instead an Application
+  def render("user.json", %{user: %User{nickname: nil} = user}),
+    do: render("service.json", %{user: user})
+
+  def render("user.json", %{user: %User{nickname: "internal." <> _} = user}),
+    do: render("service.json", %{user: user})
 
   def render("user.json", %{user: user}) do
     {:ok, user} = User.ensure_keys_present(user)

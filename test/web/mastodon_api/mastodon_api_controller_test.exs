@@ -23,6 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock
+  import Swoosh.TestAssertions
 
   @image "data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKudfOulrSOp3WOyDZu6QdvCchPGolfO0o/XBs/fNwfjZ0frl3/zy7////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAkAABAALAAAAAAQABAAAAVVICSOZGlCQAosJ6mu7fiyZeKqNKToQGDsM8hBADgUXoGAiqhSvp5QAnQKGIgUhwFUYLCVDFCrKUE1lBavAViFIDlTImbKC5Gm2hB0SlBCBMQiB0UjIQA7"
 
@@ -3805,6 +3806,57 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> json_response(:ok)
 
       assert Enum.empty?(response)
+    end
+  end
+
+  describe "POST /auth/password, with valid parameters" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      conn = post(conn, "/auth/password?email=#{user.email}")
+      %{conn: conn, user: user}
+    end
+
+    test "it returns 204", %{conn: conn} do
+      assert json_response(conn, :no_content)
+    end
+
+    test "it creates a PasswordResetToken record for user", %{user: user} do
+      token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
+      assert token_record
+    end
+
+    test "it sends an email to user", %{user: user} do
+      token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
+
+      email = Pleroma.Emails.UserEmail.password_reset_email(user, token_record.token)
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: email.html_body
+      )
+    end
+  end
+
+  describe "POST /auth/password, with invalid parameters" do
+    setup do
+      user = insert(:user)
+      {:ok, user: user}
+    end
+
+    test "it returns 404 when user is not found", %{conn: conn, user: user} do
+      conn = post(conn, "/auth/password?email=nonexisting_#{user.email}")
+      assert conn.status == 404
+      assert conn.resp_body == ""
+    end
+
+    test "it returns 400 when user is not local", %{conn: conn, user: user} do
+      {:ok, user} = Repo.update(Changeset.change(user, local: false))
+      conn = post(conn, "/auth/password?email=#{user.email}")
+      assert conn.status == 400
+      assert conn.resp_body == ""
     end
   end
 end

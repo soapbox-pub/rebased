@@ -31,10 +31,11 @@ Feel free to contact us to be added to this list!
 - Features: No Streaming
 
 ### Fedilab
-- Source Code: <https://gitlab.com/tom79/mastalab/>
-- Contact: [@tom79@mastodon.social](https://mastodon.social/users/tom79)
+- Homepage: <https://fedilab.app/>
+- Source Code: <https://framagit.org/tom79/fedilab/>
+- Contact: [@fedilab@framapiaf.org](https://framapiaf.org/users/fedilab)
 - Platforms: Android
-- Features: Streaming Ready
+- Features: Streaming Ready, Moderation, Text Formatting 
 
 ### Nekonium
 - Homepage: [F-Droid Repository](https://repo.gdgd.jp.net/), [Google Play](https://play.google.com/store/apps/details?id=com.apps.nekonium), [Amazon](https://www.amazon.co.jp/dp/B076FXPRBC/)

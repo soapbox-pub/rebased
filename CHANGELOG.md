@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
 - MRF: Support for excluding specific domains from Transparency.
+- MRF: Support for filtering posts based on who they mention (`Pleroma.Web.ActivityPub.MRF.MentionPolicy`)
 - Configuration: `federation_incoming_replies_max_depth` option
 - Mastodon API: Support for the [`tagged` filter](https://github.com/tootsuite/mastodon/pull/9755) in [`GET /api/v1/accounts/:id/statuses`](https://docs.joinmastodon.org/api/rest/accounts/#get-api-v1-accounts-id-statuses)
 - Mastodon API, streaming: Add support for passing the token in the `Sec-WebSocket-Protocol` header
@@ -32,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add support for muting/unmuting notifications
 - Mastodon API: Add support for the `blocked_by` attribute in the relationship API (`GET /api/v1/accounts/relationships`). <https://github.com/tootsuite/mastodon/pull/10373>
 - Mastodon API: Add `pleroma.deactivated` to the Account entity
+- Mastodon API: added `/auth/password` endpoint for password reset with rate limit.
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
@@ -40,11 +42,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
 - Configuration: Pleroma.Plugs.RateLimiter `bucket_name`, `params` options.
 - Addressable lists
+- Twitter API: added rate limit for `/api/account/password_reset` endpoint.
+- ActivityPub: Add an internal service actor for fetching ActivityPub objects.
+- ActivityPub: Optional signing of ActivityPub object fetches.
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
 - Admin API: changed json structure for saving config settings.
 - RichMedia: parsers and their order are configured in `rich_media` config.
+- RichMedia: add the rich media ttl based on image expiration time.
 
 ## [1.0.1] - 2019-07-14
 ### Security

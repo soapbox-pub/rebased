@@ -8,7 +8,9 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   require Logger
 
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Emoji
+  alias Pleroma.Healthcheck
   alias Pleroma.Notification
   alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
@@ -23,7 +25,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
-    with %User{} = user <- User.get_cached_by_nickname(nick), avatar = User.avatar_url(user) do
+    with %User{} = user <- User.get_cached_by_nickname(nick),
+         avatar = User.avatar_url(user) do
       conn
       |> render("subscribe.html", %{nickname: nick, avatar: avatar, error: false})
     else
@@ -338,20 +341,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def healthcheck(conn, _params) do
-    info =
-      if Pleroma.Config.get([:instance, :healthcheck]) do
-        Pleroma.Healthcheck.system_info()
-      else
-        %{}
-      end
+    with true <- Config.get([:instance, :healthcheck]),
+         %{healthy: true} = info <- Healthcheck.system_info() do
+      json(conn, info)
+    else
+      %{healthy: false} = info ->
+        service_unavailable(conn, info)
 
-    conn =
-      if info[:healthy] do
-        conn
-      else
-        Plug.Conn.put_status(conn, :service_unavailable)
-      end
+      _ ->
+        service_unavailable(conn, %{})
+    end
+  end
 
-    json(conn, info)
+  defp service_unavailable(conn, info) do
+    conn
+    |> put_status(:service_unavailable)
+    |> json(info)
   end
 end
