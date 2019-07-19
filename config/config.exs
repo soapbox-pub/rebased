@@ -345,7 +345,8 @@ config :pleroma, :rich_media,
     Pleroma.Web.RichMedia.Parsers.TwitterCard,
     Pleroma.Web.RichMedia.Parsers.OGP,
     Pleroma.Web.RichMedia.Parsers.OEmbed
-  ]
+  ],
+  ttl_setters: [Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl]
 
 config :pleroma, :media_proxy,
   enabled: false,
