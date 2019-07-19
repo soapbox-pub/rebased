@@ -9,7 +9,7 @@ defmodule Pleroma.Signature do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
 
-  defp key_id_to_actor_id(key_id) do
+  def key_id_to_actor_id(key_id) do
     URI.parse(key_id)
     |> Map.put(:fragment, nil)
     |> URI.to_string()

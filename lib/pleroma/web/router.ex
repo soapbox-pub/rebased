@@ -617,6 +617,7 @@ defmodule Pleroma.Web.Router do
   pipeline :activitypub do
     plug(:accepts, ["activity+json", "json"])
     plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
+    plug(Pleroma.Web.Plugs.MappedSignatureToIdentityPlug)
   end
 
   scope "/", Pleroma.Web.ActivityPub do
