@@ -62,6 +62,10 @@ defmodule Mix.Tasks.Pleroma.User do
 
       mix pleroma.user unsubscribe NICKNAME
 
+  ## Unsubscribe local users from an entire instance and deactivate all accounts
+
+      mix pleroma.user unsubscribe_all_from_instance INSTANCE
+
   ## Create a password reset link.
 
       mix pleroma.user reset_password NICKNAME
@@ -244,6 +248,20 @@ defmodule Mix.Tasks.Pleroma.User do
       _ ->
         shell_error("No user #{nickname}")
     end
+  end
+
+  def run(["unsubscribe_all_from_instance", instance]) do
+    start_pleroma()
+
+    Pleroma.User.Query.build(%{nickname: "@#{instance}"})
+    |> Pleroma.RepoStreamer.chunk_stream(500)
+    |> Stream.each(fn users ->
+      users
+      |> Enum.each(fn user ->
+        run(["unsubscribe", user.nickname])
+      end)
+    end)
+    |> Stream.run()
   end
 
   def run(["set", nickname | rest]) do
