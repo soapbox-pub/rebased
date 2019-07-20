@@ -68,4 +68,34 @@ defmodule Pleroma.Object.ContainmentTest do
                "[error] Could not decode user at fetch https://n1u.moe/users/rye, {:error, :error}"
     end
   end
+
+  describe "containment of children" do
+    test "contain_child() catches spoofing attempts" do
+      data = %{
+        "id" => "http://example.com/whatever",
+        "type" => "Create",
+        "object" => %{
+          "id" => "http://example.net/~alyssa/activities/1234",
+          "attributedTo" => "http://example.org/~alyssa"
+        },
+        "actor" => "http://example.com/~bob"
+      }
+
+      :error = Containment.contain_child(data)
+    end
+
+    test "contain_child() allows correct origins" do
+      data = %{
+        "id" => "http://example.org/~alyssa/activities/5678",
+        "type" => "Create",
+        "object" => %{
+          "id" => "http://example.org/~alyssa/activities/1234",
+          "attributedTo" => "http://example.org/~alyssa"
+        },
+        "actor" => "http://example.org/~alyssa"
+      }
+
+      :ok = Containment.contain_child(data)
+    end
+  end
 end

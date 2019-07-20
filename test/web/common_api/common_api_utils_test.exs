@@ -10,6 +10,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
   alias Pleroma.Web.Endpoint
   use Pleroma.DataCase
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
 
   @public_address "https://www.w3.org/ns/activitystreams#Public"
@@ -202,7 +203,9 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       expected = ""
 
-      assert Utils.date_to_asctime(date) == expected
+      assert capture_log(fn ->
+               assert Utils.date_to_asctime(date) == expected
+             end) =~ "[warn] Date #{date} in wrong format, must be ISO 8601"
     end
 
     test "when date is a Unix timestamp" do
@@ -210,13 +213,23 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
       expected = ""
 
-      assert Utils.date_to_asctime(date) == expected
+      assert capture_log(fn ->
+               assert Utils.date_to_asctime(date) == expected
+             end) =~ "[warn] Date #{date} in wrong format, must be ISO 8601"
     end
 
     test "when date is nil" do
       expected = ""
 
-      assert Utils.date_to_asctime(nil) == expected
+      assert capture_log(fn ->
+               assert Utils.date_to_asctime(nil) == expected
+             end) =~ "[warn] Date  in wrong format, must be ISO 8601"
+    end
+
+    test "when date is a random string" do
+      assert capture_log(fn ->
+               assert Utils.date_to_asctime("foo") == ""
+             end) =~ "[warn] Date foo in wrong format, must be ISO 8601"
     end
   end
 

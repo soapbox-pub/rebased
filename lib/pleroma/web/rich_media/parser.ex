@@ -3,18 +3,16 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.RichMedia.Parser do
-  @parsers [
-    Pleroma.Web.RichMedia.Parsers.OGP,
-    Pleroma.Web.RichMedia.Parsers.TwitterCard,
-    Pleroma.Web.RichMedia.Parsers.OEmbed
-  ]
-
   @hackney_options [
     pool: :media,
     recv_timeout: 2_000,
     max_body: 2_000_000,
     with_body: true
   ]
+
+  defp parsers do
+    Pleroma.Config.get([:rich_media, :parsers])
+  end
 
   def parse(nil), do: {:error, "No URL provided"}
 
@@ -26,11 +24,56 @@ defmodule Pleroma.Web.RichMedia.Parser do
         Cachex.fetch!(:rich_media_cache, url, fn _ ->
           {:commit, parse_url(url)}
         end)
+        |> set_ttl_based_on_image(url)
       rescue
         e ->
           {:error, "Cachex error: #{inspect(e)}"}
       end
     end
+  end
+
+  @doc """
+  Set the rich media cache based on the expiration time of image.
+
+  Adopt behaviour `Pleroma.Web.RichMedia.Parser.TTL`
+
+  ## Example
+
+      defmodule MyModule do
+        @behaviour Pleroma.Web.RichMedia.Parser.TTL
+        def ttl(data, url) do
+          image_url = Map.get(data, :image)
+          # do some parsing in the url and get the ttl of the image
+          # and return ttl is unix time
+          parse_ttl_from_url(image_url)
+        end
+      end
+
+  Define the module in the config
+
+      config :pleroma, :rich_media,
+        ttl_setters: [MyModule]
+  """
+  def set_ttl_based_on_image({:ok, data}, url) do
+    with {:ok, nil} <- Cachex.ttl(:rich_media_cache, url) do
+      ttl = get_ttl_from_image(data, url)
+      Cachex.expire_at(:rich_media_cache, url, ttl * 1000)
+      {:ok, data}
+    else
+      _ ->
+        {:ok, data}
+    end
+  end
+
+  defp get_ttl_from_image(data, url) do
+    Pleroma.Config.get([:rich_media, :ttl_setters])
+    |> Enum.reduce({:ok, nil}, fn
+      module, {:ok, _ttl} ->
+        module.ttl(data, url)
+
+      _, error ->
+        error
+    end)
   end
 
   defp parse_url(url) do
@@ -48,7 +91,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
   end
 
   defp maybe_parse(html) do
-    Enum.reduce_while(@parsers, %{}, fn parser, acc ->
+    Enum.reduce_while(parsers(), %{}, fn parser, acc ->
       case parser.parse(html, acc) do
         {:ok, data} -> {:halt, data}
         {:error, _msg} -> {:cont, acc}

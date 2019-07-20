@@ -65,10 +65,7 @@ defmodule Pleroma.HTTP do
   end
 
   def process_request_options(options) do
-    case Pleroma.Config.get([:http, :proxy_url]) do
-      nil -> options
-      proxy -> options ++ [proxy: proxy]
-    end
+    Keyword.merge(Pleroma.HTTP.Connection.hackney_options([]), options)
   end
 
   @doc """

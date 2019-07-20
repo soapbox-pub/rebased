@@ -416,6 +416,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("attributedTo", user.ap_id)
         |> Map.put("to", ["https://www.w3.org/ns/activitystreams#Public"])
         |> Map.put("cc", [])
+        |> Map.put("id", user.ap_id <> "/activities/12345678")
 
       data = Map.put(data, "object", object)
 
@@ -439,6 +440,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
         |> Map.put("attributedTo", user.ap_id)
         |> Map.put("to", nil)
         |> Map.put("cc", nil)
+        |> Map.put("id", user.ap_id <> "/activities/12345678")
 
       data = Map.put(data, "object", object)
 
@@ -1095,6 +1097,18 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
 
       assert modified["directMessage"] == true
+    end
+
+    test "it strips BCC field" do
+      user = insert(:user)
+      {:ok, list} = Pleroma.List.create("foo", user)
+
+      {:ok, activity} =
+        CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+
+      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
+
+      assert is_nil(modified["bcc"])
     end
   end
 

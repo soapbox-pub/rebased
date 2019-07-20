@@ -6,11 +6,11 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   import Pleroma.Web.Gettext
 
   alias Calendar.Strftime
-  alias Comeonin.Pbkdf2
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.Formatter
   alias Pleroma.Object
+  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Utils
@@ -100,11 +100,28 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
+  def get_to_and_cc(_user, mentions, _inReplyTo, {:list, _}), do: {mentions, []}
+
   def get_addressed_users(_, to) when is_list(to) do
     User.get_ap_ids_by_nicknames(to)
   end
 
   def get_addressed_users(mentioned_users, _), do: mentioned_users
+
+  def maybe_add_list_data(activity_params, user, {:list, list_id}) do
+    case Pleroma.List.get(list_id, user) do
+      %Pleroma.List{} = list ->
+        activity_params
+        |> put_in([:additional, "bcc"], [list.ap_id])
+        |> put_in([:additional, "listMessage"], list.ap_id)
+        |> put_in([:object, "listMessage"], list.ap_id)
+
+      _ ->
+        activity_params
+    end
+  end
+
+  def maybe_add_list_data(activity_params, _, _), do: activity_params
 
   def make_poll_data(%{"poll" => %{"options" => options, "expires_in" => expires_in}} = data)
       when is_list(options) do
@@ -371,7 +388,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def confirm_current_password(user, password) do
     with %User{local: true} = db_user <- User.get_cached_by_id(user.id),
-         true <- Pbkdf2.checkpw(password, db_user.password_hash) do
+         true <- AuthenticationPlug.checkpw(password, db_user.password_hash) do
       {:ok, db_user}
     else
       _ -> {:error, dgettext("errors", "Invalid password.")}

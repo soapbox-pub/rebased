@@ -202,7 +202,6 @@ sudo -Hu pleroma MIX_ENV=prod mix pleroma.user new <username> <your@emailaddress
 
 #### Further reading
 
-* [Admin tasks](Admin tasks)
 * [Backup your instance](backup.html)
 * [Configuration tips](general-tips-for-customizing-pleroma-fe.html)
 * [Hardening your instance](hardening.html)

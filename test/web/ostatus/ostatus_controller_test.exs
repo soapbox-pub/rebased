@@ -4,7 +4,10 @@
 
 defmodule Pleroma.Web.OStatus.OStatusControllerTest do
   use Pleroma.Web.ConnCase
+
+  import ExUnit.CaptureLog
   import Pleroma.Factory
+
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -27,24 +30,28 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       user = insert(:user)
       salmon = File.read!("test/fixtures/salmon.xml")
 
-      conn =
-        conn
-        |> put_req_header("content-type", "application/atom+xml")
-        |> post("/users/#{user.nickname}/salmon", salmon)
+      assert capture_log(fn ->
+               conn =
+                 conn
+                 |> put_req_header("content-type", "application/atom+xml")
+                 |> post("/users/#{user.nickname}/salmon", salmon)
 
-      assert response(conn, 200)
+               assert response(conn, 200)
+             end) =~ "[error]"
     end
 
     test "decodes a salmon with a changed magic key", %{conn: conn} do
       user = insert(:user)
       salmon = File.read!("test/fixtures/salmon.xml")
 
-      conn =
-        conn
-        |> put_req_header("content-type", "application/atom+xml")
-        |> post("/users/#{user.nickname}/salmon", salmon)
+      assert capture_log(fn ->
+               conn =
+                 conn
+                 |> put_req_header("content-type", "application/atom+xml")
+                 |> post("/users/#{user.nickname}/salmon", salmon)
 
-      assert response(conn, 200)
+               assert response(conn, 200)
+             end) =~ "[error]"
 
       # Set a wrong magic-key for a user so it has to refetch
       salmon_user = User.get_cached_by_ap_id("http://gs.example.org:4040/index.php/user/1")
@@ -61,12 +68,14 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
       |> Ecto.Changeset.put_embed(:info, info_cng)
       |> User.update_and_set_cache()
 
-      conn =
-        build_conn()
-        |> put_req_header("content-type", "application/atom+xml")
-        |> post("/users/#{user.nickname}/salmon", salmon)
+      assert capture_log(fn ->
+               conn =
+                 build_conn()
+                 |> put_req_header("content-type", "application/atom+xml")
+                 |> post("/users/#{user.nickname}/salmon", salmon)
 
-      assert response(conn, 200)
+               assert response(conn, 200)
+             end) =~ "[error]"
     end
   end
 

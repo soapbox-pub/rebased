@@ -35,7 +35,7 @@ defmodule Pleroma.Config.TransferTask do
         if String.starts_with?(setting.key, "Pleroma.") do
           "Elixir." <> setting.key
         else
-          setting.key
+          String.trim_leading(setting.key, ":")
         end
 
       group = String.to_existing_atom(setting.group)

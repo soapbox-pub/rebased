@@ -15,6 +15,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Pagination
+  alias Pleroma.Plugs.RateLimiter
   alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.Stats
@@ -46,8 +47,33 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   require Logger
 
-  plug(Pleroma.Plugs.RateLimiter, :app_account_creation when action == :account_register)
-  plug(Pleroma.Plugs.RateLimiter, :search when action in [:search, :search2, :account_search])
+  @rate_limited_relations_actions ~w(follow unfollow)a
+
+  @rate_limited_status_actions ~w(reblog_status unreblog_status fav_status unfav_status
+    post_status delete_status)a
+
+  plug(
+    RateLimiter,
+    {:status_id_action, bucket_name: "status_id_action:reblog_unreblog", params: ["id"]}
+    when action in ~w(reblog_status unreblog_status)a
+  )
+
+  plug(
+    RateLimiter,
+    {:status_id_action, bucket_name: "status_id_action:fav_unfav", params: ["id"]}
+    when action in ~w(fav_status unfav_status)a
+  )
+
+  plug(
+    RateLimiter,
+    {:relations_id_action, params: ["id", "uri"]} when action in @rate_limited_relations_actions
+  )
+
+  plug(RateLimiter, :relations_actions when action in @rate_limited_relations_actions)
+  plug(RateLimiter, :statuses_actions when action in @rate_limited_status_actions)
+  plug(RateLimiter, :app_account_creation when action == :account_register)
+  plug(RateLimiter, :search when action in [:search, :search2, :account_search])
+  plug(RateLimiter, :password_reset when action == :password_reset)
 
   @local_mastodon_name "Mastodon-Local"
 
@@ -414,7 +440,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_id(params["id"]) do
+    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"]) do
       params =
         params
         |> Map.put("tag", params["tagged"])
@@ -676,11 +702,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
-    else
-      {:error, reason} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{"error" => reason})
     end
   end
 
@@ -721,11 +742,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       conn
       |> put_view(StatusView)
       |> try_render("status.json", %{activity: activity, for: user, as: :activity})
-    else
-      {:error, reason} ->
-        conn
-        |> put_resp_content_type("application/json")
-        |> send_resp(:bad_request, Jason.encode!(%{"error" => reason}))
     end
   end
 
@@ -864,7 +880,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => object}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"object" => object}} <- Activity.get_by_id(id),
          %Object{data: %{"likes" => likes}} <- Object.normalize(object) do
       q = from(u in User, where: u.ap_id in ^likes)
       users = Repo.all(q)
@@ -878,7 +894,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def reblogged_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => object}} <- Repo.get(Activity, id),
+    with %Activity{data: %{"object" => object}} <- Activity.get_by_id(id),
          %Object{data: %{"announcements" => announces}} <- Object.normalize(object) do
       q = from(u in User, where: u.ap_id in ^announces)
       users = Repo.all(q)
@@ -1051,9 +1067,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def mute(%{assigns: %{user: muter}} = conn, %{"id" => id}) do
+  def mute(%{assigns: %{user: muter}} = conn, %{"id" => id} = params) do
+    notifications =
+      if Map.has_key?(params, "notifications"),
+        do: params["notifications"] in [true, "True", "true", "1"],
+        else: true
+
     with %User{} = muted <- User.get_cached_by_id(id),
-         {:ok, muter} <- User.mute(muter, muted) do
+         {:ok, muter} <- User.mute(muter, muted, notifications) do
       conn
       |> put_view(AccountView)
       |> render("relationship.json", %{user: muter, target: muted})
@@ -1629,6 +1650,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     render_error(conn, :not_found, "Record not found")
   end
 
+  def errors(conn, {:error, error_message}) do
+    conn
+    |> put_status(:bad_request)
+    |> json(%{error: error_message})
+  end
+
   def errors(conn, _) do
     conn
     |> put_status(:internal_server_error)
@@ -1787,6 +1814,22 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       conn
       |> json(participation_view)
+    end
+  end
+
+  def password_reset(conn, params) do
+    nickname_or_email = params["email"] || params["nickname"]
+
+    with {:ok, _} <- TwitterAPI.password_reset(nickname_or_email) do
+      conn
+      |> put_status(:no_content)
+      |> json("")
+    else
+      {:error, "unknown user"} ->
+        send_resp(conn, :not_found, "")
+
+      {:error, _} ->
+        send_resp(conn, :bad_request, "")
     end
   end
 

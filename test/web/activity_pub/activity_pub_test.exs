@@ -1190,6 +1190,21 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  test "fetch_activities/2 returns activities addressed to a list " do
+    user = insert(:user)
+    member = insert(:user)
+    {:ok, list} = Pleroma.List.create("foo", user)
+    {:ok, list} = Pleroma.List.follow(list, member)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{"status" => "foobar", "visibility" => "list:#{list.id}"})
+
+    activity = Repo.preload(activity, :bookmark)
+    activity = %Activity{activity | thread_muted?: !!activity.thread_muted?}
+
+    assert ActivityPub.fetch_activities([], %{"user" => user}) == [activity]
+  end
+
   def data_uri do
     File.read!("test/fixtures/avatar_data_uri")
   end

@@ -814,13 +814,16 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def prepare_outgoing(%{"type" => "Create", "object" => object_id} = data) do
     object =
-      Object.normalize(object_id).data
+      object_id
+      |> Object.normalize()
+      |> Map.get(:data)
       |> prepare_object
 
     data =
       data
       |> Map.put("object", object)
       |> Map.merge(Utils.make_json_ld_header())
+      |> Map.delete("bcc")
 
     {:ok, data}
   end

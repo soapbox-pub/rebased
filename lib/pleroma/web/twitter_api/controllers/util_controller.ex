@@ -7,10 +7,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
 
   require Logger
 
-  alias Comeonin.Pbkdf2
   alias Pleroma.Activity
+  alias Pleroma.Config
   alias Pleroma.Emoji
+  alias Pleroma.Healthcheck
   alias Pleroma.Notification
+  alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -23,7 +25,8 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def remote_subscribe(conn, %{"nickname" => nick, "profile" => _}) do
-    with %User{} = user <- User.get_cached_by_nickname(nick), avatar = User.avatar_url(user) do
+    with %User{} = user <- User.get_cached_by_nickname(nick),
+         avatar = User.avatar_url(user) do
       conn
       |> render("subscribe.html", %{nickname: nick, avatar: avatar, error: false})
     else
@@ -96,7 +99,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     name = followee.nickname
 
     with %User{} = user <- User.get_cached_by_nickname(username),
-         true <- Pbkdf2.checkpw(password, user.password_hash),
+         true <- AuthenticationPlug.checkpw(password, user.password_hash),
          %User{} = _followed <- User.get_cached_by_id(id),
          {:ok, follower} <- User.follow(user, followee),
          {:ok, _activity} <- ActivityPub.follow(follower, followee) do
@@ -338,20 +341,21 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   end
 
   def healthcheck(conn, _params) do
-    info =
-      if Pleroma.Config.get([:instance, :healthcheck]) do
-        Pleroma.Healthcheck.system_info()
-      else
-        %{}
-      end
+    with true <- Config.get([:instance, :healthcheck]),
+         %{healthy: true} = info <- Healthcheck.system_info() do
+      json(conn, info)
+    else
+      %{healthy: false} = info ->
+        service_unavailable(conn, info)
 
-    conn =
-      if info[:healthy] do
-        conn
-      else
-        Plug.Conn.put_status(conn, :service_unavailable)
-      end
+      _ ->
+        service_unavailable(conn, %{})
+    end
+  end
 
-    json(conn, info)
+  defp service_unavailable(conn, info) do
+    conn
+    |> put_status(:service_unavailable)
+    |> json(info)
   end
 end

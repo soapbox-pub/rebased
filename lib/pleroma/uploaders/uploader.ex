@@ -68,7 +68,14 @@ defmodule Pleroma.Uploaders.Uploader do
             {:error, error}
         end
     after
-      30_000 -> {:error, dgettext("errors", "Uploader callback timeout")}
+      callback_timeout() -> {:error, dgettext("errors", "Uploader callback timeout")}
+    end
+  end
+
+  defp callback_timeout do
+    case Mix.env() do
+      :test -> 1_000
+      _ -> 30_000
     end
   end
 end
