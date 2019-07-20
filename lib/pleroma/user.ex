@@ -708,7 +708,7 @@ defmodule Pleroma.User do
     else
       e ->
         Logger.error(
-          "Follower/Following counter update for #{user.ap_id} failed.\n" <> inspect(e)
+          "Follower/Following counter update for #{user.ap_id} failed.\n#{inspect(e)}"
         )
 
         user
