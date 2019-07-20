@@ -5,6 +5,7 @@
 defmodule Pleroma.SignatureTest do
   use Pleroma.DataCase
 
+  import ExUnit.CaptureLog
   import Pleroma.Factory
   import Tesla.Mock
 
@@ -46,8 +47,10 @@ defmodule Pleroma.SignatureTest do
     end
 
     test "it returns error when not found user" do
-      assert Signature.fetch_public_key(make_fake_conn("test-ap_id")) ==
-               {:error, :error}
+      assert capture_log(fn ->
+               assert Signature.fetch_public_key(make_fake_conn("test-ap_id")) ==
+                        {:error, :error}
+             end) =~ "[error] Could not decode user"
     end
 
     test "it returns error if public key is empty" do
@@ -67,8 +70,10 @@ defmodule Pleroma.SignatureTest do
     end
 
     test "it returns error when not found user" do
-      assert Signature.refetch_public_key(make_fake_conn("test-ap_id")) ==
-               {:error, {:error, :ok}}
+      assert capture_log(fn ->
+               assert Signature.refetch_public_key(make_fake_conn("test-ap_id")) ==
+                        {:error, {:error, :ok}}
+             end) =~ "[error] Could not decode user"
     end
   end
 

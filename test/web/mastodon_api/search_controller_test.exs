@@ -24,12 +24,16 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         {Pleroma.User, [], [search: fn _q, _o -> raise "Oops" end]},
         {Pleroma.Activity, [], [search: fn _u, _q, _o -> raise "Oops" end]}
       ] do
-        conn = get(conn, "/api/v2/search", %{"q" => "2hu"})
+        capture_log(fn ->
+          results =
+            conn
+            |> get("/api/v2/search", %{"q" => "2hu"})
+            |> json_response(200)
 
-        assert results = json_response(conn, 200)
-
-        assert results["accounts"] == []
-        assert results["statuses"] == []
+          assert results["accounts"] == []
+          assert results["statuses"] == []
+        end) =~
+          "[error] Elixir.Pleroma.Web.MastodonAPI.SearchController search error: %RuntimeError{message: \"Oops\"}"
       end
     end
 
@@ -99,14 +103,16 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
         {Pleroma.User, [], [search: fn _q, _o -> raise "Oops" end]},
         {Pleroma.Activity, [], [search: fn _u, _q, _o -> raise "Oops" end]}
       ] do
-        conn =
-          conn
-          |> get("/api/v1/search", %{"q" => "2hu"})
+        capture_log(fn ->
+          results =
+            conn
+            |> get("/api/v1/search", %{"q" => "2hu"})
+            |> json_response(200)
 
-        assert results = json_response(conn, 200)
-
-        assert results["accounts"] == []
-        assert results["statuses"] == []
+          assert results["accounts"] == []
+          assert results["statuses"] == []
+        end) =~
+          "[error] Elixir.Pleroma.Web.MastodonAPI.SearchController search error: %RuntimeError{message: \"Oops\"}"
       end
     end
 
