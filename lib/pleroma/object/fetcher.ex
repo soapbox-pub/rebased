@@ -97,7 +97,8 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  def fetch_and_contain_remote_object_from_id(_id) do
+  def fetch_and_contain_remote_object_from_id(%{"id" => id), do: fetch_and_contain_remote_object_from_id(id)
+  def fetch_and_contain_remote_object_from_id(_id), do: {:error, "id must be a string"}
     {:error, "id must be a string"}
   end
 end
