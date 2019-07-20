@@ -8,6 +8,9 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
   alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
 
+  import ExUnit.CaptureLog
+  import Mock
+
   setup %{conn: conn} do
     user = %User{
       id: 1,
@@ -68,15 +71,18 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
       hash =
         "$6$9psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
 
-      assert AuthenticationPlug.checkpw("password", hash)
-      refute AuthenticationPlug.checkpw("password1", hash)
+      with_mock :crypt, crypt: fn _password, password_hash -> password_hash end do
+        assert AuthenticationPlug.checkpw("password", hash)
+      end
     end
 
     test "it returns false when hash invalid" do
       hash =
         "psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
 
-      refute Pleroma.Plugs.AuthenticationPlug.checkpw("password", hash)
+      assert capture_log(fn ->
+               refute Pleroma.Plugs.AuthenticationPlug.checkpw("password", hash)
+             end) =~ "[error] Password hash not recognized"
     end
   end
 end
