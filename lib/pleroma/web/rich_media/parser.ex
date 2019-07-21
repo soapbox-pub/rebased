@@ -55,8 +55,8 @@ defmodule Pleroma.Web.RichMedia.Parser do
         ttl_setters: [MyModule]
   """
   def set_ttl_based_on_image({:ok, data}, url) do
-    with {:ok, nil} <- Cachex.ttl(:rich_media_cache, url) do
-      ttl = get_ttl_from_image(data, url)
+    with {:ok, nil} <- Cachex.ttl(:rich_media_cache, url),
+         ttl when is_number(ttl) <- get_ttl_from_image(data, url) do
       Cachex.expire_at(:rich_media_cache, url, ttl * 1000)
       {:ok, data}
     else
