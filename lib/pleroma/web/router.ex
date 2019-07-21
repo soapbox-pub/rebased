@@ -663,6 +663,12 @@ defmodule Pleroma.Web.Router do
     end
   end
 
+  scope "/", Pleroma.Web.ActivityPub do
+    pipe_through(:activitypub)
+    post("/inbox", ActivityPubController, :inbox)
+    post("/users/:nickname/inbox", ActivityPubController, :inbox)
+  end
+
   scope "/relay", Pleroma.Web.ActivityPub do
     pipe_through(:ap_service_actor)
 
@@ -675,12 +681,6 @@ defmodule Pleroma.Web.Router do
 
     get("/", ActivityPubController, :internal_fetch)
     post("/inbox", ActivityPubController, :inbox)
-  end
-
-  scope "/", Pleroma.Web.ActivityPub do
-    pipe_through(:activitypub)
-    post("/inbox", ActivityPubController, :inbox)
-    post("/users/:nickname/inbox", ActivityPubController, :inbox)
   end
 
   scope "/.well-known", Pleroma.Web do
