@@ -65,6 +65,7 @@ federated-testing:
     - mix deps.get
     - mix ecto.create
     - mix ecto.migrate
+    - epmd -daemon
     - mix test --trace --only federated
 
 unit-testing-rum:
