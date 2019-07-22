@@ -74,7 +74,7 @@ defmodule Pleroma.UserInviteToken do
 
   @spec find_by_token(token()) :: {:ok, UserInviteToken.t()} | nil
   def find_by_token(token) do
-    with invite <- Repo.get_by(UserInviteToken, token: token) do
+    with %UserInviteToken{} = invite <- Repo.get_by(UserInviteToken, token: token) do
       {:ok, invite}
     end
   end

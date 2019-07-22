@@ -1010,6 +1010,17 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                "uses" => 0
              }
     end
+
+    test "with invalid token" do
+      admin = insert(:user, info: %{is_admin: true})
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> post("/api/pleroma/admin/users/revoke_invite", %{"token" => "foo"})
+
+      assert json_response(conn, :not_found) == "Not found"
+    end
   end
 
   describe "GET /api/pleroma/admin/reports/:id" do
