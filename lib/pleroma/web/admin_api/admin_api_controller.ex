@@ -272,11 +272,13 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   @doc "Revokes invite by token"
   def revoke_invite(conn, %{"token" => token}) do
-    invite = UserInviteToken.find_by_token!(token)
-    {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true})
-
-    conn
-    |> json(AccountView.render("invite.json", %{invite: updated_invite}))
+    with {:ok, invite} <- UserInviteToken.find_by_token(token),
+         {:ok, updated_invite} = UserInviteToken.update_invite(invite, %{used: true}) do
+      conn
+      |> json(AccountView.render("invite.json", %{invite: updated_invite}))
+    else
+      nil -> {:error, :not_found}
+    end
   end
 
   @doc "Get a password reset token (base64 string) for given nickname"
