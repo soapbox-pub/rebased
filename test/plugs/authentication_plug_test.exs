@@ -9,7 +9,6 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
   alias Pleroma.User
 
   import ExUnit.CaptureLog
-  import Mock
 
   setup %{conn: conn} do
     user = %User{
@@ -67,13 +66,12 @@ defmodule Pleroma.Plugs.AuthenticationPlugTest do
       refute AuthenticationPlug.checkpw("test-password1", hash)
     end
 
+    @tag :skip_on_mac
     test "check sha512-crypt hash" do
       hash =
         "$6$9psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
 
-      with_mock :crypt, crypt: fn _password, password_hash -> password_hash end do
-        assert AuthenticationPlug.checkpw("password", hash)
-      end
+      assert AuthenticationPlug.checkpw("password", hash)
     end
 
     test "it returns false when hash invalid" do
