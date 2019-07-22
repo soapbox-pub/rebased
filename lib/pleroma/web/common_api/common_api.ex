@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
+  alias Pleroma.ActivityExpiration
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.ThreadMute
@@ -218,6 +219,7 @@ defmodule Pleroma.Web.CommonAPI do
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
+         {:ok, expires_at} <- Ecto.Type.cast(:naive_datetime, data["expires_at"]),
          full_payload <- String.trim(status <> cw),
          :ok <- validate_character_limit(full_payload, attachments, limit),
          object <-
@@ -243,15 +245,24 @@ defmodule Pleroma.Web.CommonAPI do
       preview? = Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
       direct? = visibility == "direct"
 
-      %{
-        to: to,
-        actor: user,
-        context: context,
-        object: object,
-        additional: %{"cc" => cc, "directMessage" => direct?}
-      }
-      |> maybe_add_list_data(user, visibility)
-      |> ActivityPub.create(preview?)
+      result =
+        %{
+          to: to,
+          actor: user,
+          context: context,
+          object: object,
+          additional: %{"cc" => cc, "directMessage" => direct?}
+        }
+        |> maybe_add_list_data(user, visibility)
+        |> ActivityPub.create(preview?)
+
+      if expires_at do
+        with {:ok, activity} <- result do
+          ActivityExpiration.create(activity, expires_at)
+        end
+      end
+
+      result
     else
       {:private_to_public, true} ->
         {:error, dgettext("errors", "The message visibility must be direct")}

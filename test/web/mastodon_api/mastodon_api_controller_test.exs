@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   alias Ecto.Changeset
   alias Pleroma.Activity
+  alias Pleroma.ActivityExpiration
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -151,6 +152,24 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{"id" => third_id} = json_response(conn_three, 200)
       refute id == third_id
+
+      # An activity that will expire:
+      expires_at =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(120), :millisecond)
+        |> NaiveDateTime.truncate(:second)
+
+      conn_four =
+        conn
+        |> post("api/v1/statuses", %{
+          "status" => "oolong",
+          "expires_at" => expires_at
+        })
+
+      assert %{"id" => fourth_id} = json_response(conn_four, 200)
+      assert activity = Activity.get_by_id(fourth_id)
+      assert expiration = ActivityExpiration.get_by_activity_id(fourth_id)
+      assert expiration.scheduled_at == expires_at
     end
 
     test "replying to a status", %{conn: conn} do

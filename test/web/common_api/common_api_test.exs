@@ -160,6 +160,23 @@ defmodule Pleroma.Web.CommonAPITest do
 
       Pleroma.Config.put([:instance, :limit], limit)
     end
+
+    test "it can handle activities that expire" do
+      user = insert(:user)
+
+      expires_at =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.truncate(:second)
+        |> NaiveDateTime.add(1_000_000, :second)
+
+      expires_at_iso8601 = expires_at |> NaiveDateTime.to_iso8601()
+
+      assert {:ok, activity} =
+               CommonAPI.post(user, %{"status" => "chai", "expires_at" => expires_at_iso8601})
+
+      assert expiration = Pleroma.ActivityExpiration.get_by_activity_id(activity.id)
+      assert expiration.scheduled_at == expires_at
+    end
   end
 
   describe "reactions" do

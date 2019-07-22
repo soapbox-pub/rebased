@@ -10,6 +10,7 @@ defmodule Pleroma.ActivityExpiration do
   alias Pleroma.FlakeId
   alias Pleroma.Repo
 
+  import Ecto.Changeset
   import Ecto.Query
 
   @type t :: %__MODULE__{}
@@ -17,6 +18,24 @@ defmodule Pleroma.ActivityExpiration do
   schema "activity_expirations" do
     belongs_to(:activity, Activity, type: FlakeId)
     field(:scheduled_at, :naive_datetime)
+  end
+
+  def changeset(%ActivityExpiration{} = expiration, attrs) do
+    expiration
+    |> cast(attrs, [:scheduled_at])
+    |> validate_required([:scheduled_at])
+  end
+
+  def get_by_activity_id(activity_id) do
+    ActivityExpiration
+    |> where([exp], exp.activity_id == ^activity_id)
+    |> Repo.one()
+  end
+
+  def create(%Activity{} = activity, scheduled_at) do
+    %ActivityExpiration{activity_id: activity.id}
+    |> changeset(%{scheduled_at: scheduled_at})
+    |> Repo.insert()
   end
 
   def due_expirations(offset \\ 0) do
