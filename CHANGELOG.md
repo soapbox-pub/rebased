@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
 - Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
+- Mastodon API, streaming: Fix filtering of notifications based on blocks/mutes/thread mutes
 - ActivityPub C2S: follower/following collection pages being inaccessible even when authentifucated if `hide_followers`/ `hide_follows` was set
 - Existing user id not being preserved on insert conflict
 - Rich Media: Parser failing when no TTL can be found by image TTL setters
