@@ -4,11 +4,15 @@
 
 defmodule Pleroma.Integration.FederationTest do
   use Pleroma.DataCase
-
+  @moduletag :federated
   import Pleroma.Cluster
 
-  @federated1 :"federated1@127.0.0.1"
+  setup_all do
+    Pleroma.Cluster.spawn_default_cluster()
+    :ok
+  end
 
+  @federated1 :"federated1@127.0.0.1"
   describe "federated cluster primitives" do
     test "within/2 captures local bindings and executes block on remote node" do
       captured_binding = :captured
