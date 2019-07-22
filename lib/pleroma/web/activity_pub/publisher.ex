@@ -112,6 +112,45 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     |> Enum.map(& &1.ap_id)
   end
 
+  @as_public "https://www.w3.org/ns/activitystreams#Public"
+
+  defp maybe_use_sharedinbox(%User{info: %{source_data: data}}),
+    do: (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
+
+  @doc """
+  Determine a user inbox to use based on heuristics.  These heuristics
+  are based on an approximation of the ``sharedInbox`` rules in the
+  [ActivityPub specification][ap-sharedinbox].
+
+  Please do not edit this function (or its children) without reading
+  the spec, as editing the code is likely to introduce some breakage
+  without some familiarity.
+
+     [ap-sharedinbox]: https://www.w3.org/TR/activitypub/#shared-inbox-delivery
+  """
+  def determine_inbox(
+        %Activity{data: activity_data},
+        %User{info: %{source_data: data}} = user
+      ) do
+    to = activity_data["to"] || []
+    cc = activity_data["cc"] || []
+    type = activity_data["type"]
+
+    cond do
+      type == "Delete" ->
+        maybe_use_sharedinbox(user)
+
+      @as_public in to || @as_public in cc ->
+        maybe_use_sharedinbox(user)
+
+      length(to) + length(cc) > 1 ->
+        maybe_use_sharedinbox(user)
+
+      true ->
+        data["inbox"]
+    end
+  end
+
   @doc """
   Publishes an activity with BCC to all relevant peers.
   """
@@ -166,8 +205,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
 
     recipients(actor, activity)
     |> Enum.filter(fn user -> User.ap_enabled?(user) end)
-    |> Enum.map(fn %{info: %{source_data: data}} ->
-      (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
+    |> Enum.map(fn %User{} = user ->
+      determine_inbox(activity, user)
     end)
     |> Enum.uniq()
     |> Enum.filter(fn inbox -> should_federate?(inbox, public) end)
