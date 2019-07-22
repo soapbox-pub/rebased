@@ -13,6 +13,7 @@ defmodule Pleroma.Web.Streamer do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Visibility
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.NotificationView
 
   @keepalive_interval :timer.seconds(30)
@@ -118,10 +119,14 @@ defmodule Pleroma.Web.Streamer do
     topics
     |> Map.get("#{topic}:#{item.user_id}", [])
     |> Enum.each(fn socket ->
-      send(
-        socket.transport_pid,
-        {:text, represent_notification(socket.assigns[:user], item)}
-      )
+      with %User{} = user <- User.get_cached_by_ap_id(socket.assigns[:user].ap_id),
+           true <- should_send?(user, item),
+           false <- CommonAPI.thread_muted?(user, item.activity) do
+        send(
+          socket.transport_pid,
+          {:text, represent_notification(socket.assigns[:user], item)}
+        )
+      end
     end)
 
     {:noreply, topics}
@@ -225,19 +230,32 @@ defmodule Pleroma.Web.Streamer do
     |> Jason.encode!()
   end
 
+  defp should_send?(%User{} = user, %Activity{} = item) do
+    blocks = user.info.blocks || []
+    mutes = user.info.mutes || []
+    reblog_mutes = user.info.muted_reblogs || []
+
+    with parent when not is_nil(parent) <- Object.normalize(item),
+         true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
+         true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
+         true <- thread_containment(item, user) do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  defp should_send?(%User{} = user, %Notification{activity: activity}) do
+    should_send?(user, activity)
+  end
+
   def push_to_socket(topics, topic, %Activity{data: %{"type" => "Announce"}} = item) do
     Enum.each(topics[topic] || [], fn socket ->
       # Get the current user so we have up-to-date blocks etc.
       if socket.assigns[:user] do
         user = User.get_cached_by_ap_id(socket.assigns[:user].ap_id)
-        blocks = user.info.blocks || []
-        mutes = user.info.mutes || []
-        reblog_mutes = user.info.muted_reblogs || []
 
-        with parent when not is_nil(parent) <- Object.normalize(item),
-             true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
-             true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
-             true <- thread_containment(item, user) do
+        if should_send?(user, item) do
           send(socket.transport_pid, {:text, represent_update(item, user)})
         end
       else
