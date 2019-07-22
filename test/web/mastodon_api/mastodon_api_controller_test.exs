@@ -405,7 +405,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"visibility" => "direct"} = status
     assert status["url"] != direct.data["id"]
 
-    # User should be able to see his own direct message
+    # User should be able to see their own direct message
     res_conn =
       build_conn()
       |> assign(:user, user_one)
