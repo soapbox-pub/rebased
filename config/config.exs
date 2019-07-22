@@ -447,6 +447,7 @@ config :pleroma, Pleroma.Web.Federator.RetryQueue,
   max_retries: 5
 
 config :pleroma_job_queue, :queues,
+  activity_expiration: 10,
   federator_incoming: 50,
   federator_outgoing: 50,
   web_push: 50,
@@ -535,6 +536,8 @@ config :pleroma, :rate_limit,
   statuses_actions: {10_000, 15},
   status_id_action: {60_000, 3},
   password_reset: {1_800_000, 5}
+
+config :pleroma, Pleroma.ActivityExpiration, enabled: true
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

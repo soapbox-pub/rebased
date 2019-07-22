@@ -115,6 +115,10 @@ defmodule Pleroma.Application do
         %{
           id: Pleroma.ScheduledActivityWorker,
           start: {Pleroma.ScheduledActivityWorker, :start_link, []}
+        },
+        %{
+          id: Pleroma.ActivityExpirationWorker,
+          start: {Pleroma.ActivityExpirationWorker, :start_link, []}
         }
       ] ++
         hackney_pool_children() ++
