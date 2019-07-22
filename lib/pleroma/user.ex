@@ -873,10 +873,13 @@ defmodule Pleroma.User do
 
   def blocks?(%User{info: info} = _user, %{ap_id: ap_id}) do
     blocks = info.blocks
-    domain_blocks = info.domain_blocks
+
+    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(info.domain_blocks)
+
     %{host: host} = URI.parse(ap_id)
 
-    Enum.member?(blocks, ap_id) || Enum.any?(domain_blocks, &(&1 == host))
+    Enum.member?(blocks, ap_id) ||
+      Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, host)
   end
 
   def subscribed_to?(user, %{ap_id: ap_id}) do
