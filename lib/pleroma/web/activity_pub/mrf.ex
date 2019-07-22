@@ -25,4 +25,14 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   defp get_policies(policy) when is_atom(policy), do: [policy]
   defp get_policies(policies) when is_list(policies), do: policies
   defp get_policies(_), do: []
+
+  @spec subdomains_regex([String.t()]) :: [Regex.t()]
+  def subdomains_regex(domains) when is_list(domains) do
+    for domain <- domains, do: ~r(^#{String.replace(domain, "*.", "(.*\\.)*")}$)
+  end
+
+  @spec subdomain_match?([Regex.t()], String.t()) :: boolean()
+  def subdomain_match?(domains, host) do
+    Enum.any?(domains, fn domain -> Regex.match?(domain, host) end)
+  end
 end
