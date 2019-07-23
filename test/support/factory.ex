@@ -120,8 +120,6 @@ defmodule Pleroma.Factory do
     note = attrs[:note] || insert(:note, user: user)
     published = attrs[:published] || DateTime.utc_now() |> DateTime.to_iso8601()
     attrs = Map.drop(attrs, [:user, :note])
-    require IEx
-    IEx.pry()
 
     data = %{
       "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
