@@ -97,13 +97,13 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     end
   end
 
+  @spec recipients(User.t(), Activity.t()) :: list(User.t()) | []
   defp recipients(actor, activity) do
-    followers =
+    {:ok, followers} =
       if actor.follower_address in activity.recipients do
-        {:ok, followers} = User.get_followers(actor)
-        Enum.filter(followers, &(!&1.local))
+        User.get_external_followers(actor)
       else
-        []
+        {:ok, []}
       end
 
     Pleroma.Web.Salmon.remote_users(actor, activity) ++ followers
