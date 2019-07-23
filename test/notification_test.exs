@@ -52,13 +52,17 @@ defmodule Pleroma.NotificationTest do
 
       {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
 
-      {:ok, reply_activity} =
+      {:ok, _reply_activity} =
         CommonAPI.post(other_user, %{
           "status" => "test reply",
           "in_reply_to_status_id" => activity.id
         })
 
-      refute Notification.create_notification(reply_activity, subscriber)
+      user_notifications = Notification.for_user(user)
+      assert length(user_notifications) == 1
+
+      subscriber_notifications = Notification.for_user(subscriber)
+      assert Enum.empty?(subscriber_notifications)
     end
   end
 
