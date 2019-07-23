@@ -82,6 +82,7 @@ defmodule Pleroma.Web.RichMedia.Parser do
 
       html
       |> maybe_parse()
+      |> Map.put(:url, url)
       |> clean_parsed_data()
       |> check_parsed_data()
     rescue
