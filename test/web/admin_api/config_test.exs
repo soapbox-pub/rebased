@@ -238,6 +238,14 @@ defmodule Pleroma.Web.AdminAPI.ConfigTest do
       assert Config.from_binary(binary) == [key: "value"]
     end
 
+    test "keyword with partial_chain key" do
+      binary =
+        Config.transform([%{"tuple" => [":partial_chain", "&:hackney_connect.partial_chain/1"]}])
+
+      assert binary == :erlang.term_to_binary(partial_chain: &:hackney_connect.partial_chain/1)
+      assert Config.from_binary(binary) == [partial_chain: &:hackney_connect.partial_chain/1]
+    end
+
     test "keyword" do
       binary =
         Config.transform([
