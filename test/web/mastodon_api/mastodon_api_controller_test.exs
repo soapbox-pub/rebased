@@ -3787,7 +3787,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert Enum.empty?(response)
     end
 
-    test "does not fail on an unauthententicated request", %{conn: conn, activity: activity} do
+    test "does not fail on an unauthenticated request", %{conn: conn, activity: activity} do
       other_user = insert(:user)
       {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
@@ -3858,7 +3858,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert Enum.empty?(response)
     end
 
-    test "does not fail on an unauthententicated request", %{conn: conn, activity: activity} do
+    test "does not fail on an unauthenticated request", %{conn: conn, activity: activity} do
       other_user = insert(:user)
       {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
 
