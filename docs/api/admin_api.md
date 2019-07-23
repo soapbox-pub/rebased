@@ -195,6 +195,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 - Params:
   - `nickname` or `id`
   - *optional* `page_size`: number of statuses to return (default is `20`)
+  - *optional* `godmode`: `true`/`false` – allows to see private statuses
 - Response:
   - On failure: `Not found`
   - On success: JSON array of user's latest statuses

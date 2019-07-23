@@ -631,15 +631,26 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       |> Map.put("pinned_activity_ids", user.info.pinned_activities)
 
     recipients =
-      if reading_user do
-        ["https://www.w3.org/ns/activitystreams#Public"] ++
-          [reading_user.ap_id | reading_user.following]
-      else
-        ["https://www.w3.org/ns/activitystreams#Public"]
-      end
+      user_activities_recipients(%{
+        "godmode" => params["godmode"],
+        "reading_user" => reading_user
+      })
 
     fetch_activities(recipients, params)
     |> Enum.reverse()
+  end
+
+  defp user_activities_recipients(%{"godmode" => true}) do
+    []
+  end
+
+  defp user_activities_recipients(%{"reading_user" => reading_user}) do
+    if reading_user do
+      ["https://www.w3.org/ns/activitystreams#Public"] ++
+        [reading_user.ap_id | reading_user.following]
+    else
+      ["https://www.w3.org/ns/activitystreams#Public"]
+    end
   end
 
   defp restrict_since(query, %{"since_id" => ""}), do: query

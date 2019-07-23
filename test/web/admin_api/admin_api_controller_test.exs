@@ -1934,6 +1934,30 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert json_response(conn, 200) |> length() == 2
     end
+
+    test "doesn't return private statuses by default", %{conn: conn, user: user} do
+      {:ok, _private_status} =
+        CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
+
+      {:ok, _public_status} =
+        CommonAPI.post(user, %{"status" => "public", "visibility" => "public"})
+
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
+
+      assert json_response(conn, 200) |> length() == 4
+    end
+
+    test "returns private statuses with godmode on", %{conn: conn, user: user} do
+      {:ok, _private_status} =
+        CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
+
+      {:ok, _public_status} =
+        CommonAPI.post(user, %{"status" => "public", "visibility" => "public"})
+
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
+
+      assert json_response(conn, 200) |> length() == 5
+    end
   end
 end
 
