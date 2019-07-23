@@ -882,6 +882,8 @@ defmodule Pleroma.User do
       Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, host)
   end
 
+  def blocks?(nil, _), do: false
+
   def subscribed_to?(user, %{ap_id: ap_id}) do
     with %User{} = target <- get_cached_by_ap_id(ap_id) do
       Enum.member?(target.info.subscribers, user.ap_id)
