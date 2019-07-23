@@ -14,6 +14,7 @@ defmodule Pleroma.ActivityExpiration do
   import Ecto.Query
 
   @type t :: %__MODULE__{}
+  @min_activity_lifetime :timer.hours(1)
 
   schema "activity_expirations" do
     belongs_to(:activity, Activity, type: FlakeId)
@@ -24,6 +25,7 @@ defmodule Pleroma.ActivityExpiration do
     expiration
     |> cast(attrs, [:scheduled_at])
     |> validate_required([:scheduled_at])
+    |> validate_scheduled_at()
   end
 
   def get_by_activity_id(activity_id) do
@@ -46,5 +48,21 @@ defmodule Pleroma.ActivityExpiration do
     ActivityExpiration
     |> where([exp], exp.scheduled_at < ^naive_datetime)
     |> Repo.all()
+  end
+
+  def validate_scheduled_at(changeset) do
+    validate_change(changeset, :scheduled_at, fn _, scheduled_at ->
+      if not expires_late_enough?(scheduled_at) do
+        [scheduled_at: "an ephemeral activity must live for at least one hour"]
+      else
+        []
+      end
+    end)
+  end
+
+  def expires_late_enough?(scheduled_at) do
+    now = NaiveDateTime.utc_now()
+    diff = NaiveDateTime.diff(scheduled_at, now, :millisecond)
+    diff >= @min_activity_lifetime
   end
 end

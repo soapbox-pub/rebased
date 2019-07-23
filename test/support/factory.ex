@@ -158,7 +158,7 @@ defmodule Pleroma.Factory do
   end
 
   def expiration_in_the_future_factory(attrs \\ %{}) do
-    expiration_offset_by_minutes(attrs, 60)
+    expiration_offset_by_minutes(attrs, 61)
   end
 
   def article_activity_factory do

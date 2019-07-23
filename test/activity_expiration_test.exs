@@ -18,4 +18,10 @@ defmodule Pleroma.ActivityExpirationTest do
     assert length(expirations) == 1
     assert hd(expirations) == expiration_due
   end
+
+  test "denies expirations that don't live long enough" do
+    activity = insert(:note_activity)
+    now = NaiveDateTime.utc_now()
+    assert {:error, _} = ActivityExpiration.create(activity, now)
+  end
 end
