@@ -439,6 +439,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
 
+  def maybe_notify_subscribers(_, %Activity{
+        data: %{"object" => %Object{data: %{"inReplyTo" => _ap_id}}}
+      }) do
+    :nothing
+  end
+
   def maybe_notify_subscribers(
         recipients,
         %Activity{data: %{"actor" => actor, "type" => type}} = activity
