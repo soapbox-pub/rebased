@@ -2815,11 +2815,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       card_data = %{
         "image" => "http://ia.media-imdb.com/images/rock.jpg",
-        "provider_name" => "www.imdb.com",
-        "provider_url" => "http://www.imdb.com",
+        "provider_name" => "example.com",
+        "provider_url" => "https://example.com",
         "title" => "The Rock",
         "type" => "link",
-        "url" => "http://www.imdb.com/title/tt0117500/",
+        "url" => "https://example.com/ogp",
         "description" =>
           "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
         "pleroma" => %{
@@ -2827,7 +2827,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
             "image" => "http://ia.media-imdb.com/images/rock.jpg",
             "title" => "The Rock",
             "type" => "video.movie",
-            "url" => "http://www.imdb.com/title/tt0117500/",
+            "url" => "https://example.com/ogp",
             "description" =>
               "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer."
           }
@@ -2868,14 +2868,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
                "title" => "Pleroma",
                "description" => "",
                "image" => nil,
-               "provider_name" => "pleroma.social",
-               "provider_url" => "https://pleroma.social",
-               "url" => "https://pleroma.social/",
+               "provider_name" => "example.com",
+               "provider_url" => "https://example.com",
+               "url" => "https://example.com/ogp-missing-data",
                "pleroma" => %{
                  "opengraph" => %{
                    "title" => "Pleroma",
                    "type" => "website",
-                   "url" => "https://pleroma.social/"
+                   "url" => "https://example.com/ogp-missing-data"
                  }
                }
              }
