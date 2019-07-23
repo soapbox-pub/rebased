@@ -3860,7 +3860,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
     test "does not fail on an unauthententicated request", %{conn: conn, activity: activity} do
       other_user = insert(:user)
-      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      {:ok, _, _} = CommonAPI.repeat(activity.id, other_user)
 
       response =
         conn
