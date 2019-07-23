@@ -3794,7 +3794,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       response =
         conn
         |> assign(:user, nil)
-        |> get("/api/v1/#{activity.id}/favourited_by")
+        |> get("/api/v1/statuses/#{activity.id}/favourited_by")
         |> json_response(:ok)
 
       [%{"id" => id}] = response
@@ -3865,7 +3865,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       response =
         conn
         |> assign(:user, nil)
-        |> get("/api/v1/#{activity.id}/reblogged_by")
+        |> get("/api/v1/statuses/#{activity.id}/reblogged_by")
         |> json_response(:ok)
 
       [%{"id" => id}] = response
