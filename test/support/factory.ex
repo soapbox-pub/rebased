@@ -118,6 +118,7 @@ defmodule Pleroma.Factory do
   def note_activity_factory(attrs \\ %{}) do
     user = attrs[:user] || insert(:user)
     note = attrs[:note] || insert(:note, user: user)
+
     data_attrs = attrs[:data_attrs] || %{}
     attrs = Map.drop(attrs, [:user, :note, :data_attrs])
 

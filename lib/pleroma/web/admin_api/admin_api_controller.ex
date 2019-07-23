@@ -82,6 +82,25 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
+  def list_user_statuses(conn, %{"nickname" => nickname} = params) do
+    godmode = params["godmode"] == "true" || params["godmode"] == true
+
+    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname) do
+      {_, page_size} = page_params(params)
+
+      activities =
+        ActivityPub.fetch_user_activities(user, nil, %{
+          "limit" => page_size,
+          "godmode" => godmode
+        })
+
+      conn
+      |> json(StatusView.render("index.json", %{activities: activities, as: :activity}))
+    else
+      _ -> {:error, :not_found}
+    end
+  end
+
   def user_toggle_activation(conn, %{"nickname" => nickname}) do
     user = User.get_cached_by_nickname(nickname)
 

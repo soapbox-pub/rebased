@@ -1915,6 +1915,63 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
              }
     end
   end
+
+  describe "GET /api/pleroma/admin/users/:nickname/statuses" do
+    setup do
+      admin = insert(:user, info: %{is_admin: true})
+      user = insert(:user)
+
+      date1 = (DateTime.to_unix(DateTime.utc_now()) + 2000) |> DateTime.from_unix!()
+      date2 = (DateTime.to_unix(DateTime.utc_now()) + 1000) |> DateTime.from_unix!()
+      date3 = (DateTime.to_unix(DateTime.utc_now()) + 3000) |> DateTime.from_unix!()
+
+      insert(:note_activity, user: user, published: date1)
+      insert(:note_activity, user: user, published: date2)
+      insert(:note_activity, user: user, published: date3)
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+
+      {:ok, conn: conn, user: user}
+    end
+
+    test "renders user's statuses", %{conn: conn, user: user} do
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
+
+      assert json_response(conn, 200) |> length() == 3
+    end
+
+    test "renders user's statuses with a limit", %{conn: conn, user: user} do
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?page_size=2")
+
+      assert json_response(conn, 200) |> length() == 2
+    end
+
+    test "doesn't return private statuses by default", %{conn: conn, user: user} do
+      {:ok, _private_status} =
+        CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
+
+      {:ok, _public_status} =
+        CommonAPI.post(user, %{"status" => "public", "visibility" => "public"})
+
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses")
+
+      assert json_response(conn, 200) |> length() == 4
+    end
+
+    test "returns private statuses with godmode on", %{conn: conn, user: user} do
+      {:ok, _private_status} =
+        CommonAPI.post(user, %{"status" => "private", "visibility" => "private"})
+
+      {:ok, _public_status} =
+        CommonAPI.post(user, %{"status" => "public", "visibility" => "public"})
+
+      conn = get(conn, "/api/pleroma/admin/users/#{user.nickname}/statuses?godmode=true")
+
+      assert json_response(conn, 200) |> length() == 5
+    end
+  end
 end
 
 # Needed for testing
