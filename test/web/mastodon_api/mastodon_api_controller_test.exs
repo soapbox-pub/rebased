@@ -3786,6 +3786,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert Enum.empty?(response)
     end
+
+    test "does not fail on an unauthententicated request", %{conn: conn, activity: activity} do
+        other_user = insert(:user)
+        {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+
+        response =
+            conn
+            |> assign(:user, nil)
+            |> get("/api/v1/#{activity.id}/favourited_by")
+            |> json_response(:ok)
+
+        [%{"id" => id}] = response
+        assert id == other_user.id
+    end
   end
 
   describe "GET /api/v1/statuses/:id/reblogged_by" do
@@ -3842,6 +3856,20 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         |> json_response(:ok)
 
       assert Enum.empty?(response)
+    end
+
+    test "does not fail on an unauthententicated request", %{conn: conn, activity: activity} do
+        other_user = insert(:user)
+        {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+
+        response =
+            conn
+            |> assign(:user, nil)
+            |> get("/api/v1/#{activity.id}/reblogged_by")
+            |> json_response(:ok)
+
+        [%{"id" => id}] = response
+        assert id == other_user.id
     end
   end
 
