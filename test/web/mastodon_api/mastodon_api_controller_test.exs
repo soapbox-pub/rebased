@@ -3788,17 +3788,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "does not fail on an unauthententicated request", %{conn: conn, activity: activity} do
-        other_user = insert(:user)
-        {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      other_user = insert(:user)
+      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
-        response =
-            conn
-            |> assign(:user, nil)
-            |> get("/api/v1/#{activity.id}/favourited_by")
-            |> json_response(:ok)
+      response =
+        conn
+        |> assign(:user, nil)
+        |> get("/api/v1/#{activity.id}/favourited_by")
+        |> json_response(:ok)
 
-        [%{"id" => id}] = response
-        assert id == other_user.id
+      [%{"id" => id}] = response
+      assert id == other_user.id
     end
   end
 
@@ -3859,17 +3859,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
 
     test "does not fail on an unauthententicated request", %{conn: conn, activity: activity} do
-        other_user = insert(:user)
-        {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
+      other_user = insert(:user)
+      {:ok, _, _} = CommonAPI.favorite(activity.id, other_user)
 
-        response =
-            conn
-            |> assign(:user, nil)
-            |> get("/api/v1/#{activity.id}/reblogged_by")
-            |> json_response(:ok)
+      response =
+        conn
+        |> assign(:user, nil)
+        |> get("/api/v1/#{activity.id}/reblogged_by")
+        |> json_response(:ok)
 
-        [%{"id" => id}] = response
-        assert id == other_user.id
+      [%{"id" => id}] = response
+      assert id == other_user.id
     end
   end
 

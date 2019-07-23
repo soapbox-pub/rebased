@@ -885,11 +885,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       q = from(u in User, where: u.ap_id in ^likes)
 
       users = Repo.all(q)
-      users = if is_nil(user) do
-        users
-      else
-        Enum.filter(users, &(not User.blocks?(user, &1)))
-      end
+
+      users =
+        if is_nil(user) do
+          users
+        else
+          Enum.filter(users, &(not User.blocks?(user, &1)))
+        end
 
       conn
       |> put_view(AccountView)
@@ -905,11 +907,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       q = from(u in User, where: u.ap_id in ^announces)
 
       users = Repo.all(q)
-      users = if is_nil(user) do
-        users
-      else
-        Enum.filter(users, &(not User.blocks?(user, &1)))
-      end
+
+      users =
+        if is_nil(user) do
+          users
+        else
+          Enum.filter(users, &(not User.blocks?(user, &1)))
+        end
 
       conn
       |> put_view(AccountView)
