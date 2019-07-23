@@ -143,7 +143,7 @@ defmodule Pleroma.Mixfile do
       {:telemetry, "~> 0.3"},
       {:prometheus_ex, "~> 3.0"},
       {:prometheus_plugs, "~> 1.1"},
-      {:prometheus_phoenix, "~> 1.2"},
+      {:prometheus_phoenix, "~> 1.3"},
       {:prometheus_ecto, "~> 1.4"},
       {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"},
