@@ -10,9 +10,18 @@ defmodule Pleroma.Signature do
   alias Pleroma.Web.ActivityPub.ActivityPub
 
   def key_id_to_actor_id(key_id) do
-    URI.parse(key_id)
-    |> Map.put(:fragment, nil)
-    |> URI.to_string()
+    uri =
+      URI.parse(key_id)
+      |> Map.put(:fragment, nil)
+
+    uri =
+      if String.ends_with?(uri.path, "/publickey") do
+        Map.put(uri, :path, String.replace(uri.path, "/publickey", ""))
+      else
+        uri
+      end
+
+    URI.to_string(uri)
   end
 
   def fetch_public_key(conn) do
