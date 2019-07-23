@@ -5,19 +5,18 @@
 defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
   use Pleroma.Web.ConnCase
 
+  import Pleroma.Factory
+
   alias Pleroma.Plugs.LegacyAuthenticationPlug
   alias Pleroma.User
 
-  import Mock
-
   setup do
-    # password is "password"
-    user = %User{
-      id: 1,
-      name: "dude",
-      password_hash:
-        "$6$9psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
-    }
+    user =
+      insert(:user,
+        password: "password",
+        password_hash:
+          "$6$9psBWV8gxkGOZWBz$PmfCycChoxeJ3GgGzwvhlgacb9mUoZ.KUXNCssekER4SJ7bOK53uXrHNb2e4i8yPFgSKyzaW9CcmrDXWIEMtD1"
+      )
 
     %{user: user}
   end
@@ -36,6 +35,7 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
     assert ret_conn == conn
   end
 
+  @tag :skip_on_mac
   test "it authenticates the auth_user if present and password is correct and resets the password",
        %{
          conn: conn,
@@ -46,22 +46,12 @@ defmodule Pleroma.Plugs.LegacyAuthenticationPlugTest do
       |> assign(:auth_credentials, %{username: "dude", password: "password"})
       |> assign(:auth_user, user)
 
-    conn =
-      with_mocks([
-        {:crypt, [], [crypt: fn _password, password_hash -> password_hash end]},
-        {User, [],
-         [
-           reset_password: fn user, %{password: password, password_confirmation: password} ->
-             {:ok, user}
-           end
-         ]}
-      ]) do
-        LegacyAuthenticationPlug.call(conn, %{})
-      end
+    conn = LegacyAuthenticationPlug.call(conn, %{})
 
-    assert conn.assigns.user == user
+    assert conn.assigns.user.id == user.id
   end
 
+  @tag :skip_on_mac
   test "it does nothing if the password is wrong", %{
     conn: conn,
     user: user

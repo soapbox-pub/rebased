@@ -26,22 +26,4 @@ defmodule Pleroma.Web.Plugs.HTTPSignaturePlugTest do
       assert called(HTTPSignatures.validate_conn(:_))
     end
   end
-
-  test "bails out early if the signature isn't by the activity actor" do
-    params = %{"actor" => "https://mst3k.interlinked.me/users/luciferMysticus"}
-    conn = build_conn(:get, "/doesntmattter", params)
-
-    with_mock HTTPSignatures, validate_conn: fn _ -> false end do
-      conn =
-        conn
-        |> put_req_header(
-          "signature",
-          "keyId=\"http://mastodon.example.org/users/admin#main-key"
-        )
-        |> HTTPSignaturePlug.call(%{})
-
-      assert conn.assigns.valid_signature == false
-      refute called(HTTPSignatures.validate_conn(:_))
-    end
-  end
 end

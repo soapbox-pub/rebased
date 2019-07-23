@@ -577,6 +577,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ## `/api/pleroma/admin/config`
 ### List config settings
+List config settings only works with `:pleroma => :instance => :dynamic_configuration` setting to `true`.
 - Method `GET`
 - Params: none
 - Response:
@@ -595,6 +596,7 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 ## `/api/pleroma/admin/config`
 ### Update config settings
+Updating config settings only works with `:pleroma => :instance => :dynamic_configuration` setting to `true`.
 Module name can be passed as string, which starts with `Pleroma`, e.g. `"Pleroma.Upload"`.
 Atom keys and values can be passed with `:` in the beginning, e.g. `":upload"`.
 Tuples can be passed as `{"tuple": ["first_val", Pleroma.Module, []]}`.

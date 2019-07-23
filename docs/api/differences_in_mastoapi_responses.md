@@ -34,7 +34,10 @@ Has these additional fields under the `pleroma` object:
 
 ## Accounts
 
-- `/api/v1/accounts/:id`: The `id` parameter can also be the `nickname` of the user. This only works in this endpoint, not the deeper nested ones for following etc.
+The `id` parameter can also be the `nickname` of the user. This only works in these endpoints, not the deeper nested ones for following etc.
+
+- `/api/v1/accounts/:id`
+- `/api/v1/accounts/:id/statuses`
 
 Has these additional fields under the `pleroma` object:
 

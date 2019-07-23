@@ -5,6 +5,8 @@
 defmodule Pleroma.UploadTest do
   use Pleroma.DataCase
 
+  import ExUnit.CaptureLog
+
   alias Pleroma.Upload
   alias Pleroma.Uploaders.Uploader
 
@@ -77,8 +79,12 @@ defmodule Pleroma.UploadTest do
 
     test "it returns error" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
-      assert Upload.store(@upload_file) == {:error, "Errors"}
-      Task.await(Agent.get(TestUploaderError, fn task_pid -> task_pid end))
+
+      assert capture_log(fn ->
+               assert Upload.store(@upload_file) == {:error, "Errors"}
+               Task.await(Agent.get(TestUploaderError, fn task_pid -> task_pid end))
+             end) =~
+               "[error] Elixir.Pleroma.Upload store (using Pleroma.UploadTest.TestUploaderError) failed: \"Errors\""
     end
   end
 
@@ -89,7 +95,11 @@ defmodule Pleroma.UploadTest do
 
     test "it returns error" do
       File.cp!("test/fixtures/image.jpg", "test/fixtures/image_tmp.jpg")
-      assert Upload.store(@upload_file) == {:error, "Uploader callback timeout"}
+
+      assert capture_log(fn ->
+               assert Upload.store(@upload_file) == {:error, "Uploader callback timeout"}
+             end) =~
+               "[error] Elixir.Pleroma.Upload store (using Pleroma.UploadTest.TestUploader) failed: \"Uploader callback timeout\""
     end
   end
 

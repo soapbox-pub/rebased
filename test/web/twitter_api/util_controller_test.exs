@@ -10,6 +10,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
+  import Mock
 
   setup do
     Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -231,10 +232,67 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
   end
 
-  test "GET /api/pleroma/healthcheck", %{conn: conn} do
-    conn = get(conn, "/api/pleroma/healthcheck")
+  describe "GET /api/pleroma/healthcheck" do
+    setup do
+      config_healthcheck = Pleroma.Config.get([:instance, :healthcheck])
 
-    assert conn.status in [200, 503]
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :healthcheck], config_healthcheck)
+      end)
+
+      :ok
+    end
+
+    test "returns 503 when healthcheck disabled", %{conn: conn} do
+      Pleroma.Config.put([:instance, :healthcheck], false)
+
+      response =
+        conn
+        |> get("/api/pleroma/healthcheck")
+        |> json_response(503)
+
+      assert response == %{}
+    end
+
+    test "returns 200 when healthcheck enabled and all ok", %{conn: conn} do
+      Pleroma.Config.put([:instance, :healthcheck], true)
+
+      with_mock Pleroma.Healthcheck,
+        system_info: fn -> %Pleroma.Healthcheck{healthy: true} end do
+        response =
+          conn
+          |> get("/api/pleroma/healthcheck")
+          |> json_response(200)
+
+        assert %{
+                 "active" => _,
+                 "healthy" => true,
+                 "idle" => _,
+                 "memory_used" => _,
+                 "pool_size" => _
+               } = response
+      end
+    end
+
+    test "returns 503 when healthcheck enabled and  health is false", %{conn: conn} do
+      Pleroma.Config.put([:instance, :healthcheck], true)
+
+      with_mock Pleroma.Healthcheck,
+        system_info: fn -> %Pleroma.Healthcheck{healthy: false} end do
+        response =
+          conn
+          |> get("/api/pleroma/healthcheck")
+          |> json_response(503)
+
+        assert %{
+                 "active" => _,
+                 "healthy" => false,
+                 "idle" => _,
+                 "memory_used" => _,
+                 "pool_size" => _
+               } = response
+      end
+    end
   end
 
   describe "POST /api/pleroma/disable_account" do

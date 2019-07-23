@@ -5,6 +5,9 @@
 defmodule Mix.Tasks.Pleroma.UserTest do
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.OAuth.Authorization
+  alias Pleroma.Web.OAuth.Token
+
   use Pleroma.DataCase
 
   import Pleroma.Factory
@@ -327,6 +330,13 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert_received {:mix_shell, :info, [message]}
       assert message =~ "Invite for token #{invite.token} was revoked."
     end
+
+    test "it prints an error message when invite is not exist" do
+      Mix.Tasks.Pleroma.User.run(["revoke_invite", "foo"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "No invite found"
+    end
   end
 
   describe "running delete_activities" do
@@ -336,6 +346,13 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       assert :ok == Mix.Tasks.Pleroma.User.run(["delete_activities", nickname])
       assert_received {:mix_shell, :info, [message]}
       assert message == "User #{nickname} statuses deleted."
+    end
+
+    test "it prints an error message when user is not exist" do
+      Mix.Tasks.Pleroma.User.run(["delete_activities", "foo"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "No local user"
     end
   end
 
@@ -364,6 +381,13 @@ defmodule Mix.Tasks.Pleroma.UserTest do
       refute user.info.confirmation_pending
       refute user.info.confirmation_token
     end
+
+    test "it prints an error message when user is not exist" do
+      Mix.Tasks.Pleroma.User.run(["toggle_confirmed", "foo"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "No local user"
+    end
   end
 
   describe "search" do
@@ -384,6 +408,66 @@ defmodule Mix.Tasks.Pleroma.UserTest do
 
       assert [kawen.id, moon.id] ==
                User.Search.search("moon fediverse", for_user: user) |> Enum.map(& &1.id)
+    end
+  end
+
+  describe "signing out" do
+    test "it deletes all user's tokens and authorizations" do
+      user = insert(:user)
+      insert(:oauth_token, user: user)
+      insert(:oauth_authorization, user: user)
+
+      assert Repo.get_by(Token, user_id: user.id)
+      assert Repo.get_by(Authorization, user_id: user.id)
+
+      :ok = Mix.Tasks.Pleroma.User.run(["sign_out", user.nickname])
+
+      refute Repo.get_by(Token, user_id: user.id)
+      refute Repo.get_by(Authorization, user_id: user.id)
+    end
+
+    test "it prints an error message when user is not exist" do
+      Mix.Tasks.Pleroma.User.run(["sign_out", "foo"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "No local user"
+    end
+  end
+
+  describe "tagging" do
+    test "it add tags to a user" do
+      user = insert(:user)
+
+      :ok = Mix.Tasks.Pleroma.User.run(["tag", user.nickname, "pleroma"])
+
+      user = User.get_cached_by_nickname(user.nickname)
+      assert "pleroma" in user.tags
+    end
+
+    test "it prints an error message when user is not exist" do
+      Mix.Tasks.Pleroma.User.run(["tag", "foo"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "Could not change user tags"
+    end
+  end
+
+  describe "untagging" do
+    test "it deletes tags from a user" do
+      user = insert(:user, tags: ["pleroma"])
+      assert "pleroma" in user.tags
+
+      :ok = Mix.Tasks.Pleroma.User.run(["untag", user.nickname, "pleroma"])
+
+      user = User.get_cached_by_nickname(user.nickname)
+      assert Enum.empty?(user.tags)
+    end
+
+    test "it prints an error message when user is not exist" do
+      Mix.Tasks.Pleroma.User.run(["untag", "foo"])
+
+      assert_received {:mix_shell, :error, [message]}
+      assert message =~ "Could not change user tags"
     end
   end
 end

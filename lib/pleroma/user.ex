@@ -586,8 +586,19 @@ defmodule Pleroma.User do
   @spec get_followers_query(User.t()) :: Ecto.Query.t()
   def get_followers_query(user), do: get_followers_query(user, nil)
 
+  @spec get_followers(User.t(), pos_integer()) :: {:ok, list(User.t())}
   def get_followers(user, page \\ nil) do
     q = get_followers_query(user, page)
+
+    {:ok, Repo.all(q)}
+  end
+
+  @spec get_external_followers(User.t(), pos_integer()) :: {:ok, list(User.t())}
+  def get_external_followers(user, page \\ nil) do
+    q =
+      user
+      |> get_followers_query(page)
+      |> User.Query.build(%{external: true})
 
     {:ok, Repo.all(q)}
   end
@@ -873,11 +884,16 @@ defmodule Pleroma.User do
 
   def blocks?(%User{info: info} = _user, %{ap_id: ap_id}) do
     blocks = info.blocks
-    domain_blocks = info.domain_blocks
+
+    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(info.domain_blocks)
+
     %{host: host} = URI.parse(ap_id)
 
-    Enum.member?(blocks, ap_id) || Enum.any?(domain_blocks, &(&1 == host))
+    Enum.member?(blocks, ap_id) ||
+      Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, host)
   end
+
+  def blocks?(nil, _), do: false
 
   def subscribed_to?(user, %{ap_id: ap_id}) do
     with %User{} = target <- get_cached_by_ap_id(ap_id) do
@@ -1211,7 +1227,7 @@ defmodule Pleroma.User do
     data
     |> Map.put(:name, blank?(data[:name]) || data[:nickname])
     |> remote_user_creation()
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: :nickname)
+    |> Repo.insert(on_conflict: :replace_all_except_primary_key, conflict_target: :nickname)
     |> set_cache()
   end
 
