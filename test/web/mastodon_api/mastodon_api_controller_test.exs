@@ -154,23 +154,27 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       refute id == third_id
 
       # An activity that will expire:
-      expires_at =
-        NaiveDateTime.utc_now()
-        |> NaiveDateTime.add(:timer.minutes(120), :millisecond)
-        |> NaiveDateTime.truncate(:second)
+      expires_in = 120
 
       conn_four =
         conn
         |> post("api/v1/statuses", %{
           "status" => "oolong",
-          "expires_at" => expires_at
+          "expires_in" => expires_in
         })
 
       assert fourth_response = %{"id" => fourth_id} = json_response(conn_four, 200)
       assert activity = Activity.get_by_id(fourth_id)
       assert expiration = ActivityExpiration.get_by_activity_id(fourth_id)
-      assert expiration.scheduled_at == expires_at
-      assert fourth_response["pleroma"]["expires_at"] == NaiveDateTime.to_iso8601(expires_at)
+
+      estimated_expires_at =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(:timer.minutes(expires_in), :millisecond)
+        |> NaiveDateTime.truncate(:second)
+
+      # This assert will fail if the test takes longer than a minute. I sure hope it never does:
+      assert abs(NaiveDateTime.diff(expiration.scheduled_at, estimated_expires_at, :second)) < 60
+      assert fourth_response["pleroma"]["expires_at"] == NaiveDateTime.to_iso8601(expiration.scheduled_at)
     end
 
     test "replying to a status", %{conn: conn} do
