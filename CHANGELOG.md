@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Added
+- Expiring/ephemeral activites. All activities can have expires_on value set, which controls when they should be deleted automatically.
+- Mastodon API: in post_status, expires_at datetime parameter lets you set when an activity should expire
+- Mastodon API: all status JSON responses contain a `pleroma.expires_in` item which states the number of minutes until an activity expires. The value is only shown to the user who created the activity. To everyone else it's empty.
+- Configuration: `ActivityExpiration.enabled` controls whether expired activites will get deleted at the appropriate time. Enabled by default.
+
 ### Changed
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
 - Configuration: OpenGraph and TwitterCard providers enabled by default
