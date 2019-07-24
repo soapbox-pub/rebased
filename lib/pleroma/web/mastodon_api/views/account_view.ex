@@ -93,10 +93,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       end)
 
-    fields =
-      (user.info.source_data["attachment"] || [])
-      |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
-      |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+    fields = User.Info.fields(user.info)
+    fields_html = Enum.map(fields, fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
 
     bio = HTML.filter_tags(user.bio, User.html_filter_policy(opts[:for]))
 
@@ -119,11 +117,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       header: header,
       header_static: header,
       emojis: emojis,
-      fields: fields,
+      fields: fields_html,
       bot: bot,
       source: %{
         note: HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
         sensitive: false,
+        fields: fields,
         pleroma: %{}
       },
 

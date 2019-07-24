@@ -132,6 +132,7 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
+* `max_account_fields`: The maximum number of custom fields in the user profile (default: `4`)
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 
 

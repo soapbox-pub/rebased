@@ -255,6 +255,7 @@ config :pleroma, :instance,
   dynamic_configuration: false,
   user_bio_length: 5000,
   user_name_length: 100,
+  max_account_fields: 4,
   external_user_synchronization: true
 
 config :pleroma, :markup,

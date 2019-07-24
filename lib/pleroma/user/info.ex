@@ -49,6 +49,7 @@ defmodule Pleroma.User.Info do
     field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
     field(:pleroma_settings_store, :map, default: %{})
+    field(:fields, {:array, :map}, default: [])
 
     field(:notification_settings, :map,
       default: %{
@@ -286,9 +287,31 @@ defmodule Pleroma.User.Info do
       :background,
       :show_role,
       :skip_thread_containment,
+      :fields,
       :pleroma_settings_store
     ])
+    |> validate_fields()
   end
+
+  def validate_fields(changeset) do
+    limit = Pleroma.Config.get([:instance, :max_account_fields], 0)
+
+    changeset
+    |> validate_length(:fields, max: limit)
+    |> validate_change(:fields, fn :fields, fields ->
+      if Enum.all?(fields, &valid_field?/1) do
+        []
+      else
+        [fields: "invalid"]
+      end
+    end)
+  end
+
+  defp valid_field?(%{"name" => name, "value" => value}) do
+    is_binary(name) && is_binary(value)
+  end
+
+  defp valid_field?(_), do: false
 
   @spec confirmation_changeset(Info.t(), keyword()) :: Changeset.t()
   def confirmation_changeset(info, opts) do
@@ -383,6 +406,14 @@ defmodule Pleroma.User.Info do
 
     cast(info, params, [:muted_reblogs])
   end
+
+  def fields(%{source_data: %{"attachment" => attachment}}) do
+    attachment
+    |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
+    |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+  end
+
+  def fields(%{fields: fields}), do: fields
 
   def follow_information_update(info, params) do
     info

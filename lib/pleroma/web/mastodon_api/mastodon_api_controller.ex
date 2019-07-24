@@ -156,6 +156,17 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end)
       end)
       |> add_if_present(params, "default_scope", :default_scope)
+      |> add_if_present(params, "fields", :fields, fn fields ->
+        fields =
+          Enum.map(fields, fn field ->
+            %{
+              "name" => Formatter.html_escape(field["name"], "text/plain"),
+              "value" => Formatter.html_escape(field["value"], "text/plain")
+            }
+          end)
+
+        {:ok, fields}
+      end)
       |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store, fn value ->
         {:ok, Map.merge(user.info.pleroma_settings_store, value)}
       end)
