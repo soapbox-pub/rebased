@@ -228,7 +228,14 @@ defmodule Pleroma.Upload do
           ""
         end
 
-    [base_url, "media", path]
+    prefix =
+      if is_nil(Pleroma.Config.get([__MODULE__, :base_url])) do
+        "media"
+      else
+        ""
+      end
+
+    [base_url, prefix, path]
     |> Path.join()
   end
 
