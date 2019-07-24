@@ -13,6 +13,8 @@ Alternatively, you can overwrite this value in your configuration to use a diffe
 
 This document is written assuming `instance/static/`.
 
+Or, if you want to manage your custom file in git repository, basically remove the `instance/` entry from `.gitignore`.
+
 ## robots.txt
 
 By default, the `robots.txt` that ships in `priv/static/` is permissive. It allows well-behaved search engines to index all of your instance's URIs.
