@@ -134,7 +134,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         in_reply_to_account_acct: nil,
         content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])},
-        expires_at: nil
+        expires_in: nil
       }
     }
 

@@ -168,11 +168,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     client_posted_this_activity = opts[:for] && user.id == opts[:for].id
 
-    expires_at =
+    expires_in =
       with true <- client_posted_this_activity,
            expiration when not is_nil(expiration) <-
              ActivityExpiration.get_by_activity_id(activity.id) do
-        expiration.scheduled_at
+        expires_in_seconds =
+          expiration.scheduled_at
+          |> NaiveDateTime.diff(NaiveDateTime.utc_now(), :second)
+
+        round(expires_in_seconds / 60)
       end
 
     thread_muted? =
@@ -273,7 +277,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary_plaintext},
-        expires_at: expires_at
+        expires_in: expires_in
       }
     }
   end
