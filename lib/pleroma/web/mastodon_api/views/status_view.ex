@@ -6,6 +6,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   use Pleroma.Web, :view
 
   alias Pleroma.Activity
+  alias Pleroma.ActivityExpiration
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -165,6 +166,15 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
 
     bookmarked = Activity.get_bookmark(activity, opts[:for]) != nil
 
+    client_posted_this_activity = opts[:for] && user.id == opts[:for].id
+
+    expires_at =
+      with true <- client_posted_this_activity,
+           expiration when not is_nil(expiration) <-
+             ActivityExpiration.get_by_activity_id(activity.id) do
+        expiration.scheduled_at
+      end
+
     thread_muted? =
       case activity.thread_muted? do
         thread_muted? when is_boolean(thread_muted?) -> thread_muted?
@@ -262,7 +272,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         conversation_id: get_context_id(activity),
         in_reply_to_account_acct: reply_to_user && reply_to_user.nickname,
         content: %{"text/plain" => content_plaintext},
-        spoiler_text: %{"text/plain" => summary_plaintext}
+        spoiler_text: %{"text/plain" => summary_plaintext},
+        expires_at: expires_at
       }
     }
   end

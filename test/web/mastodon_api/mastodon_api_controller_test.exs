@@ -166,10 +166,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
           "expires_at" => expires_at
         })
 
-      assert %{"id" => fourth_id} = json_response(conn_four, 200)
+      assert fourth_response = %{"id" => fourth_id} = json_response(conn_four, 200)
       assert activity = Activity.get_by_id(fourth_id)
       assert expiration = ActivityExpiration.get_by_activity_id(fourth_id)
       assert expiration.scheduled_at == expires_at
+      assert fourth_response["pleroma"]["expires_at"] == NaiveDateTime.to_iso8601(expires_at)
     end
 
     test "replying to a status", %{conn: conn} do

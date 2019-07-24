@@ -25,6 +25,7 @@ Has these additional fields under the `pleroma` object:
 - `in_reply_to_account_acct`: the `acct` property of User entity for replied user (if any)
 - `content`: a map consisting of alternate representations of the `content` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
 - `spoiler_text`: a map consisting of alternate representations of the `spoiler_text` property with the key being it's mimetype. Currently the only alternate representation supported is `text/plain`
+- `expires_on`: a datetime (iso8601) that states when the post will expire (be deleted automatically), or empty if the post won't expire
 
 ## Attachments
 
