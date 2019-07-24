@@ -187,6 +187,7 @@ defmodule Pleroma.Web.WebFinger do
     end
   end
 
+  @spec finger(String.t()) :: {:ok, map()} | {:error, any()}
   def finger(account) do
     account = String.trim_leading(account, "@")
 
@@ -220,8 +221,6 @@ defmodule Pleroma.Web.WebFinger do
       else
         with {:ok, doc} <- Jason.decode(body) do
           webfinger_from_json(doc)
-        else
-          {:error, e} -> e
         end
       end
     else

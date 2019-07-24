@@ -614,6 +614,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "https://social.heldscal.la/.well-known/webfinger?resource=invalid_content@social.heldscal.la",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
   def get("http://framatube.org/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
