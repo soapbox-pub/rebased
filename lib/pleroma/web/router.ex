@@ -154,21 +154,11 @@ defmodule Pleroma.Web.Router do
     post("/users/follow", AdminAPIController, :user_follow)
     post("/users/unfollow", AdminAPIController, :user_unfollow)
 
-    # TODO: to be removed at version 1.0
-    delete("/user", AdminAPIController, :user_delete)
-    post("/user", AdminAPIController, :user_create)
-
     delete("/users", AdminAPIController, :user_delete)
     post("/users", AdminAPIController, :user_create)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
-
-    # TODO: to be removed at version 1.0
-    get("/permission_group/:nickname", AdminAPIController, :right_get)
-    get("/permission_group/:nickname/:permission_group", AdminAPIController, :right_get)
-    post("/permission_group/:nickname/:permission_group", AdminAPIController, :right_add)
-    delete("/permission_group/:nickname/:permission_group", AdminAPIController, :right_delete)
 
     get("/users/:nickname/permission_group", AdminAPIController, :right_get)
     get("/users/:nickname/permission_group/:permission_group", AdminAPIController, :right_get)
@@ -190,13 +180,11 @@ defmodule Pleroma.Web.Router do
     post("/users/revoke_invite", AdminAPIController, :revoke_invite)
     post("/users/email_invite", AdminAPIController, :email_invite)
 
-    # TODO: to be removed at version 1.0
-    get("/password_reset", AdminAPIController, :get_password_reset)
-
     get("/users/:nickname/password_reset", AdminAPIController, :get_password_reset)
 
     get("/users", AdminAPIController, :list_users)
     get("/users/:nickname", AdminAPIController, :user_show)
+    get("/users/:nickname/statuses", AdminAPIController, :list_user_statuses)
 
     get("/reports", AdminAPIController, :list_reports)
     get("/reports/:id", AdminAPIController, :report_show)
@@ -665,6 +653,12 @@ defmodule Pleroma.Web.Router do
     end
   end
 
+  scope "/", Pleroma.Web.ActivityPub do
+    pipe_through(:activitypub)
+    post("/inbox", ActivityPubController, :inbox)
+    post("/users/:nickname/inbox", ActivityPubController, :inbox)
+  end
+
   scope "/relay", Pleroma.Web.ActivityPub do
     pipe_through(:ap_service_actor)
 
@@ -677,12 +671,6 @@ defmodule Pleroma.Web.Router do
 
     get("/", ActivityPubController, :internal_fetch)
     post("/inbox", ActivityPubController, :inbox)
-  end
-
-  scope "/", Pleroma.Web.ActivityPub do
-    pipe_through(:activitypub)
-    post("/inbox", ActivityPubController, :inbox)
-    post("/users/:nickname/inbox", ActivityPubController, :inbox)
   end
 
   scope "/.well-known", Pleroma.Web do

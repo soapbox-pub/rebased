@@ -44,6 +44,28 @@ defmodule Pleroma.NotificationTest do
 
       assert notification.user_id == subscriber.id
     end
+
+    test "does not create a notification for subscribed users if status is a reply" do
+      user = insert(:user)
+      other_user = insert(:user)
+      subscriber = insert(:user)
+
+      User.subscribe(subscriber, other_user)
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test post"})
+
+      {:ok, _reply_activity} =
+        CommonAPI.post(other_user, %{
+          "status" => "test reply",
+          "in_reply_to_status_id" => activity.id
+        })
+
+      user_notifications = Notification.for_user(user)
+      assert length(user_notifications) == 1
+
+      subscriber_notifications = Notification.for_user(subscriber)
+      assert Enum.empty?(subscriber_notifications)
+    end
   end
 
   describe "create_notification" do

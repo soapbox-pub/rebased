@@ -59,7 +59,8 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
 
   test "doesn't just add a title" do
     assert Pleroma.Web.RichMedia.Parser.parse("http://example.com/non-ogp") ==
-             {:error, "Found metadata was invalid or incomplete: %{}"}
+             {:error,
+              "Found metadata was invalid or incomplete: %{url: \"http://example.com/non-ogp\"}"}
   end
 
   test "parses ogp" do
@@ -71,7 +72,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 description:
                   "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
                 type: "video.movie",
-                url: "http://www.imdb.com/title/tt0117500/"
+                url: "http://example.com/ogp"
               }}
   end
 
@@ -84,7 +85,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 description:
                   "Directed by Michael Bay. With Sean Connery, Nicolas Cage, Ed Harris, John Spencer.",
                 type: "video.movie",
-                url: "http://www.imdb.com/title/tt0117500/"
+                url: "http://example.com/ogp-missing-title"
               }}
   end
 
@@ -96,7 +97,8 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 site: "@flickr",
                 image: "https://farm6.staticflickr.com/5510/14338202952_93595258ff_z.jpg",
                 title: "Small Island Developing States Photo Submission",
-                description: "View the album on Flickr."
+                description: "View the album on Flickr.",
+                url: "http://example.com/twitter-card"
               }}
   end
 
@@ -120,7 +122,7 @@ defmodule Pleroma.Web.RichMedia.ParserTest do
                 thumbnail_width: 150,
                 title: "Bacon Lollys",
                 type: "photo",
-                url: "https://farm4.staticflickr.com/3040/2362225867_4a87ab8baf_b.jpg",
+                url: "http://example.com/oembed",
                 version: "1.0",
                 web_page: "https://www.flickr.com/photos/bees/2362225867/",
                 web_page_short_url: "https://flic.kr/p/4AK2sc",

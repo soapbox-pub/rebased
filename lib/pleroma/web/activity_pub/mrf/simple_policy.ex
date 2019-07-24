@@ -4,22 +4,29 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   alias Pleroma.User
+  alias Pleroma.Web.ActivityPub.MRF
   @moduledoc "Filter activities depending on their origin instance"
-  @behaviour Pleroma.Web.ActivityPub.MRF
+  @behaviour MRF
 
   defp check_accept(%{host: actor_host} = _actor_info, object) do
-    accepts = Pleroma.Config.get([:mrf_simple, :accept])
+    accepts =
+      Pleroma.Config.get([:mrf_simple, :accept])
+      |> MRF.subdomains_regex()
 
     cond do
       accepts == [] -> {:ok, object}
       actor_host == Pleroma.Config.get([Pleroma.Web.Endpoint, :url, :host]) -> {:ok, object}
-      Enum.member?(accepts, actor_host) -> {:ok, object}
+      MRF.subdomain_match?(accepts, actor_host) -> {:ok, object}
       true -> {:reject, nil}
     end
   end
 
   defp check_reject(%{host: actor_host} = _actor_info, object) do
-    if Enum.member?(Pleroma.Config.get([:mrf_simple, :reject]), actor_host) do
+    rejects =
+      Pleroma.Config.get([:mrf_simple, :reject])
+      |> MRF.subdomains_regex()
+
+    if MRF.subdomain_match?(rejects, actor_host) do
       {:reject, nil}
     else
       {:ok, object}
@@ -31,8 +38,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
          %{"type" => "Create", "object" => %{"attachment" => child_attachment}} = object
        )
        when length(child_attachment) > 0 do
+    media_removal =
+      Pleroma.Config.get([:mrf_simple, :media_removal])
+      |> MRF.subdomains_regex()
+
     object =
-      if Enum.member?(Pleroma.Config.get([:mrf_simple, :media_removal]), actor_host) do
+      if MRF.subdomain_match?(media_removal, actor_host) do
         child_object = Map.delete(object["object"], "attachment")
         Map.put(object, "object", child_object)
       else
@@ -51,8 +62,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
            "object" => child_object
          } = object
        ) do
+    media_nsfw =
+      Pleroma.Config.get([:mrf_simple, :media_nsfw])
+      |> MRF.subdomains_regex()
+
     object =
-      if Enum.member?(Pleroma.Config.get([:mrf_simple, :media_nsfw]), actor_host) do
+      if MRF.subdomain_match?(media_nsfw, actor_host) do
         tags = (child_object["tag"] || []) ++ ["nsfw"]
         child_object = Map.put(child_object, "tag", tags)
         child_object = Map.put(child_object, "sensitive", true)
@@ -67,12 +82,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   defp check_media_nsfw(_actor_info, object), do: {:ok, object}
 
   defp check_ftl_removal(%{host: actor_host} = _actor_info, object) do
+    timeline_removal =
+      Pleroma.Config.get([:mrf_simple, :federated_timeline_removal])
+      |> MRF.subdomains_regex()
+
     object =
-      with true <-
-             Enum.member?(
-               Pleroma.Config.get([:mrf_simple, :federated_timeline_removal]),
-               actor_host
-             ),
+      with true <- MRF.subdomain_match?(timeline_removal, actor_host),
            user <- User.get_cached_by_ap_id(object["actor"]),
            true <- "https://www.w3.org/ns/activitystreams#Public" in object["to"] do
         to =
@@ -94,7 +109,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   end
 
   defp check_report_removal(%{host: actor_host} = _actor_info, %{"type" => "Flag"} = object) do
-    if actor_host in Pleroma.Config.get([:mrf_simple, :report_removal]) do
+    report_removal =
+      Pleroma.Config.get([:mrf_simple, :report_removal])
+      |> MRF.subdomains_regex()
+
+    if MRF.subdomain_match?(report_removal, actor_host) do
       {:reject, nil}
     else
       {:ok, object}
@@ -104,7 +123,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   defp check_report_removal(_actor_info, object), do: {:ok, object}
 
   defp check_avatar_removal(%{host: actor_host} = _actor_info, %{"icon" => _icon} = object) do
-    if actor_host in Pleroma.Config.get([:mrf_simple, :avatar_removal]) do
+    avatar_removal =
+      Pleroma.Config.get([:mrf_simple, :avatar_removal])
+      |> MRF.subdomains_regex()
+
+    if MRF.subdomain_match?(avatar_removal, actor_host) do
       {:ok, Map.delete(object, "icon")}
     else
       {:ok, object}
@@ -114,7 +137,11 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   defp check_avatar_removal(_actor_info, object), do: {:ok, object}
 
   defp check_banner_removal(%{host: actor_host} = _actor_info, %{"image" => _image} = object) do
-    if actor_host in Pleroma.Config.get([:mrf_simple, :banner_removal]) do
+    banner_removal =
+      Pleroma.Config.get([:mrf_simple, :banner_removal])
+      |> MRF.subdomains_regex()
+
+    if MRF.subdomain_match?(banner_removal, actor_host) do
       {:ok, Map.delete(object, "image")}
     else
       {:ok, object}
