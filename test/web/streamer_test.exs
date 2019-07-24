@@ -115,9 +115,10 @@ defmodule Pleroma.Web.StreamerTest do
         %{transport_pid: task.pid, assigns: %{user: user}}
       )
 
-      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
       {:ok, user} = User.block_domain(user, "hecking-lewd-place.com")
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
       {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
+
       Streamer.stream("user:notification", notif)
       Task.await(task)
     end
