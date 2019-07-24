@@ -86,11 +86,17 @@ defmodule Pleroma.Web.WebFinger do
     |> XmlBuilder.to_doc()
   end
 
-  defp get_magic_key(magic_key) do
-    "data:application/magic-public-key," <> magic_key = magic_key
+  defp get_magic_key("data:application/magic-public-key," <> magic_key) do
     {:ok, magic_key}
-  rescue
-    MatchError -> {:error, "Missing magic key data."}
+  end
+
+  defp get_magic_key(nil) do
+    Logger.debug("Undefined magic key.")
+    {:ok, nil}
+  end
+
+  defp get_magic_key(_) do
+    {:error, "Missing magic key data."}
   end
 
   defp webfinger_from_xml(doc) do
