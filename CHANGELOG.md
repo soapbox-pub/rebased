@@ -6,8 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 ### Added
 - Expiring/ephemeral activites. All activities can have expires_on value set, which controls when they should be deleted automatically.
-- Mastodon API: in post_status, expires_at datetime parameter lets you set when an activity should expire
-- Mastodon API: all status JSON responses contain a `pleroma.expires_in` item which states the number of minutes until an activity expires. The value is only shown to the user who created the activity. To everyone else it's empty.
+- Mastodon API: in post_status, the expires_in parameter lets you set the number of minutes until an activity expires. It must be at least one hour.
+- Mastodon API: all status JSON responses contain a `pleroma.expires_on` item which states when an activity will expire. The value is only shown to the user who created the activity. To everyone else it's empty.
 - Configuration: `ActivityExpiration.enabled` controls whether expired activites will get deleted at the appropriate time. Enabled by default.
 
 ### Changed
