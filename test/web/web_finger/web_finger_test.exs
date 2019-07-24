@@ -86,6 +86,20 @@ defmodule Pleroma.Web.WebFingerTest do
       assert data["subscribe_address"] == "https://gnusocial.de/main/ostatussub?profile={uri}"
     end
 
+    test "it work for AP-only user" do
+      user = "kpherox@mstdn.jp"
+
+      {:ok, data} = WebFinger.finger(user)
+
+      assert data["magic_key"] == nil
+      assert data["salmon"] == nil
+
+      assert data["topic"] == "https://mstdn.jp/users/kPherox.atom"
+      assert data["subject"] == "acct:kPherox@mstdn.jp"
+      assert data["ap_id"] == "https://mstdn.jp/users/kPherox"
+      assert data["subscribe_address"] == "https://mstdn.jp/authorize_interaction?acct={uri}"
+    end
+
     test "it works for friendica" do
       user = "lain@squeet.me"
 
