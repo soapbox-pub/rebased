@@ -882,18 +882,25 @@ defmodule Pleroma.User do
   def muted_notifications?(user, %{ap_id: ap_id}),
     do: Enum.member?(user.info.muted_notifications, ap_id)
 
-  def blocks?(%User{info: info} = _user, %{ap_id: ap_id}) do
-    blocks = info.blocks
-
-    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(info.domain_blocks)
-
-    %{host: host} = URI.parse(ap_id)
-
-    Enum.member?(blocks, ap_id) ||
-      Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, host)
+  def blocks?(%User{} = user, %User{} = target) do
+    blocks_ap_id?(user, target) || blocks_domain?(user, target)
   end
 
   def blocks?(nil, _), do: false
+
+  def blocks_ap_id?(%User{} = user, %User{} = target) do
+    Enum.member?(user.info.blocks, target.ap_id)
+  end
+
+  def blocks_ap_id?(_, _), do: false
+
+  def blocks_domain?(%User{} = user, %User{} = target) do
+    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.info.domain_blocks)
+    %{host: host} = URI.parse(target.ap_id)
+    Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, host)
+  end
+
+  def blocks_domain?(_, _), do: false
 
   def subscribed_to?(user, %{ap_id: ap_id}) do
     with %User{} = target <- get_cached_by_ap_id(ap_id) do

@@ -41,6 +41,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add support for categories for custom emojis by reusing the group feature. <https://github.com/tootsuite/mastodon/pull/11196>
 - Mastodon API: Add support for muting/unmuting notifications
 - Mastodon API: Add support for the `blocked_by` attribute in the relationship API (`GET /api/v1/accounts/relationships`). <https://github.com/tootsuite/mastodon/pull/10373>
+- Mastodon API: Add support for the `domain_blocking` attribute in the relationship API (`GET /api/v1/accounts/relationships`).
 - Mastodon API: Add `pleroma.deactivated` to the Account entity
 - Mastodon API: added `/auth/password` endpoint for password reset with rate limit.
 - Mastodon API: /api/v1/accounts/:id/statuses now supports nicknames or user id
