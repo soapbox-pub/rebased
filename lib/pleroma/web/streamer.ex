@@ -234,10 +234,15 @@ defmodule Pleroma.Web.Streamer do
     blocks = user.info.blocks || []
     mutes = user.info.mutes || []
     reblog_mutes = user.info.muted_reblogs || []
+    domain_blocks = Pleroma.Web.ActivityPub.MRF.subdomains_regex(user.info.domain_blocks)
 
     with parent when not is_nil(parent) <- Object.normalize(item),
          true <- Enum.all?([blocks, mutes, reblog_mutes], &(item.actor not in &1)),
          true <- Enum.all?([blocks, mutes], &(parent.data["actor"] not in &1)),
+         %{host: item_host} <- URI.parse(item.actor),
+         %{host: parent_host} <- URI.parse(parent.data["actor"]),
+         false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, item_host),
+         false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, parent_host),
          true <- thread_containment(item, user) do
       true
     else
