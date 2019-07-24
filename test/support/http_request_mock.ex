@@ -301,6 +301,22 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://wedistribute.org/wp-json/pterotype/v1/object/85810", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wedistribute-article.json")
+     }}
+  end
+
+  def get("https://wedistribute.org/wp-json/pterotype/v1/actor/-blog", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wedistribute-user.json")
+     }}
+  end
+
   def get("http://mastodon.example.org/users/admin", _, _, Accept: "application/activity+json") do
     {:ok,
      %Tesla.Env{
