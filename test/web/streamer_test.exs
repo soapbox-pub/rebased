@@ -103,6 +103,24 @@ defmodule Pleroma.Web.StreamerTest do
       Streamer.stream("user:notification", notif)
       Task.await(task)
     end
+
+    test "it doesn't send notify to the 'user:notification' stream' when a domain is blocked", %{
+      user: user
+    } do
+      user2 = insert(:user, %{ap_id: "https://hecking-lewd-place.com/user/meanie"})
+      task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
+
+      Streamer.add_socket(
+        "user:notification",
+        %{transport_pid: task.pid, assigns: %{user: user}}
+      )
+
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
+      {:ok, user} = User.block_domain(user, "hecking-lewd-place.com")
+      {:ok, notif, _} = CommonAPI.favorite(activity.id, user2)
+      Streamer.stream("user:notification", notif)
+      Task.await(task)
+    end
   end
 
   test "it sends to public" do
