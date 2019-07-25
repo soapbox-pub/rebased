@@ -407,6 +407,8 @@ defmodule Pleroma.User.Info do
     cast(info, params, [:muted_reblogs])
   end
 
+  # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
+  # For example: [{"name": "Pronoun", "value": "she/her"}, …]
   def fields(%{source_data: %{"attachment" => attachment}}) do
     attachment
     |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)

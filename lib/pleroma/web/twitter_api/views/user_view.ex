@@ -74,12 +74,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       |> HTML.filter_tags(User.html_filter_policy(for_user))
       |> Formatter.emojify(emoji)
 
-    # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
-    # For example: [{"name": "Pronoun", "value": "she/her"}, …]
-    fields =
-      (user.info.source_data["attachment"] || [])
-      |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
-      |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+    fields = User.Info.fields(user.info)
 
     data =
       %{
