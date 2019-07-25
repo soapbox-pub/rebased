@@ -64,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Add `pleroma.deactivated` to the Account entity
 - Mastodon API: added `/auth/password` endpoint for password reset with rate limit.
 - Mastodon API: /api/v1/accounts/:id/statuses now supports nicknames or user id
+- Mastodon API: Add support for the user profile custom fields
 - Admin API: Return users' tags when querying reports
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
