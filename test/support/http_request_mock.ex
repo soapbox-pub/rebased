@@ -301,6 +301,22 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://wedistribute.org/wp-json/pterotype/v1/object/85810", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wedistribute-article.json")
+     }}
+  end
+
+  def get("https://wedistribute.org/wp-json/pterotype/v1/actor/-blog", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wedistribute-user.json")
+     }}
+  end
+
   def get("http://mastodon.example.org/users/admin", _, _, Accept: "application/activity+json") do
     {:ok,
      %Tesla.Env{
@@ -614,6 +630,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "https://social.heldscal.la/.well-known/webfinger?resource=invalid_content@social.heldscal.la",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
   def get("http://framatube.org/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -913,6 +938,14 @@ defmodule HttpRequestMock do
 
   def get("https://info.pleroma.site/activity3.json", _, _, _) do
     {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
+  def get("https://mstdn.jp/.well-known/webfinger?resource=acct:kpherox@mstdn.jp", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/kpherox@mstdn.jp.xml")
+     }}
   end
 
   def get(url, query, body, headers) do

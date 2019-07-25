@@ -17,7 +17,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.OStatus
   alias Pleroma.Web.WebFinger
 
   def help_test(conn, _params) do
@@ -60,7 +59,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       %Activity{id: activity_id} = Activity.get_create_by_object_ap_id(object.data["id"])
       redirect(conn, to: "/notice/#{activity_id}")
     else
-      {err, followee} = OStatus.find_or_make_user(acct)
+      {err, followee} = User.get_or_fetch(acct)
       avatar = User.avatar_url(followee)
       name = followee.nickname
       id = followee.id

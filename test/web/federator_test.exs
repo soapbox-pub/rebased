@@ -22,6 +22,15 @@ defmodule Pleroma.Web.FederatorTest do
     :ok
   end
 
+  describe "Publisher.perform" do
+    test "call `perform` with unknown task" do
+      assert {
+               :error,
+               "Don't know what to do with this"
+             } = Pleroma.Web.Federator.Publisher.perform("test", :ok, :ok)
+    end
+  end
+
   describe "Publish an activity" do
     setup do
       user = insert(:user)

@@ -110,6 +110,13 @@ defmodule Pleroma.Object.FetcherTest do
       assert object
     end
 
+    test "it can fetch wedistribute articles" do
+      {:ok, object} =
+        Fetcher.fetch_object_from_id("https://wedistribute.org/wp-json/pterotype/v1/object/85810")
+
+      assert object
+    end
+
     test "all objects with fake directions are rejected by the object fetcher" do
       assert {:error, _} =
                Fetcher.fetch_and_contain_remote_object_from_id(

@@ -439,6 +439,13 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_notify_mentioned_recipients(recipients, _), do: recipients
 
+  # Do not notify subscribers if author is making a reply
+  def maybe_notify_subscribers(recipients, %Activity{
+        object: %Object{data: %{"inReplyTo" => _ap_id}}
+      }) do
+    recipients
+  end
+
   def maybe_notify_subscribers(
         recipients,
         %Activity{data: %{"actor" => actor, "type" => type}} = activity

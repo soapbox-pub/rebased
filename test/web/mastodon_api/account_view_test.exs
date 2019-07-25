@@ -231,6 +231,16 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
                AccountView.render("relationship.json", %{user: user, target: other_user})
     end
 
+    test "represent a relationship for the user blocking a domain" do
+      user = insert(:user)
+      other_user = insert(:user, ap_id: "https://bad.site/users/other_user")
+
+      {:ok, user} = User.block_domain(user, "bad.site")
+
+      assert %{domain_blocking: true, blocking: false} =
+               AccountView.render("relationship.json", %{user: user, target: other_user})
+    end
+
     test "represent a relationship for the user with a pending follow request" do
       user = insert(:user)
       other_user = insert(:user, %{info: %User.Info{locked: true}})
