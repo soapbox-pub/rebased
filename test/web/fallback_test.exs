@@ -30,6 +30,10 @@ defmodule Pleroma.Web.FallbackTest do
            |> json_response(404) == %{"error" => "Not implemented"}
   end
 
+  test "GET /pleroma/admin -> /pleroma/admin/", %{conn: conn} do
+    assert redirected_to(get(conn, "/pleroma/admin")) =~ "/pleroma/admin/"
+  end
+
   test "GET /*path", %{conn: conn} do
     assert conn
            |> get("/foo")
