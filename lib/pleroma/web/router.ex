@@ -412,6 +412,12 @@ defmodule Pleroma.Web.Router do
 
     get("/accounts/search", SearchController, :account_search)
 
+    post(
+      "/pleroma/accounts/confirmation_resend",
+      MastodonAPIController,
+      :account_confirmation_resend
+    )
+
     scope [] do
       pipe_through(:oauth_read_or_public)
 
