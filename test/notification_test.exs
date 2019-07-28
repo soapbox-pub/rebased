@@ -564,6 +564,64 @@ defmodule Pleroma.NotificationTest do
 
       assert Enum.empty?(Notification.for_user(user))
     end
+
+    test "notifications are deleted if a local user is deleted" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{"status" => "hi @#{other_user.nickname}", "visibility" => "direct"})
+
+      refute Enum.empty?(Notification.for_user(other_user))
+
+      User.delete(user)
+
+      assert Enum.empty?(Notification.for_user(other_user))
+    end
+
+    test "notifications are deleted if a remote user is deleted" do
+      remote_user = insert(:user)
+      local_user = insert(:user)
+
+      dm_message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "actor" => remote_user.ap_id,
+        "id" => remote_user.ap_id <> "/activities/test",
+        "to" => [local_user.ap_id],
+        "cc" => [],
+        "object" => %{
+          "type" => "Note",
+          "content" => "Hello!",
+          "tag" => [
+            %{
+              "type" => "Mention",
+              "href" => local_user.ap_id,
+              "name" => "@#{local_user.nickname}"
+            }
+          ],
+          "to" => [local_user.ap_id],
+          "cc" => [],
+          "attributedTo" => remote_user.ap_id
+        }
+      }
+
+      {:ok, _dm_activity} = Transmogrifier.handle_incoming(dm_message)
+
+      refute Enum.empty?(Notification.for_user(local_user))
+
+      delete_user_message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "id" => remote_user.ap_id <> "/activities/delete",
+        "actor" => remote_user.ap_id,
+        "type" => "Delete",
+        "object" => remote_user.ap_id
+      }
+
+      {:ok, _delete_activity} = Transmogrifier.handle_incoming(delete_user_message)
+
+      assert Enum.empty?(Notification.for_user(local_user))
+    end
   end
 
   describe "for_user" do
