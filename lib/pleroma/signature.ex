@@ -15,7 +15,7 @@ defmodule Pleroma.Signature do
       |> Map.put(:fragment, nil)
 
     uri =
-      if String.ends_with?(uri.path, "/publickey") do
+      if not is_nil(uri.path) and String.ends_with?(uri.path, "/publickey") do
         Map.put(uri, :path, String.replace(uri.path, "/publickey", ""))
       else
         uri
