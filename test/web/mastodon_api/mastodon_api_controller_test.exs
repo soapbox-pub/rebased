@@ -3923,4 +3923,45 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert conn.resp_body == ""
     end
   end
+
+  describe "POST /api/v1/pleroma/accounts/confirmation_resend" do
+    setup do
+      setting = Pleroma.Config.get([:instance, :account_activation_required])
+
+      unless setting do
+        Pleroma.Config.put([:instance, :account_activation_required], true)
+        on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
+      end
+
+      user = insert(:user)
+      info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
+
+      {:ok, user} =
+        user
+        |> Changeset.change()
+        |> Changeset.put_embed(:info, info_change)
+        |> Repo.update()
+
+      assert user.info.confirmation_pending
+
+      [user: user]
+    end
+
+    test "resend account confirmation email", %{conn: conn, user: user} do
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/accounts/confirmation_resend?email=#{user.email}")
+      |> json_response(:no_content)
+
+      email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: email.html_body
+      )
+    end
+  end
 end

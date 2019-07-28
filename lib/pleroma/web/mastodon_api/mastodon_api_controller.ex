@@ -4,6 +4,9 @@
 
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
+
+  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+
   alias Ecto.Changeset
   alias Pleroma.Activity
   alias Pleroma.Bookmark
@@ -74,6 +77,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   plug(RateLimiter, :app_account_creation when action == :account_register)
   plug(RateLimiter, :search when action in [:search, :search2, :account_search])
   plug(RateLimiter, :password_reset when action == :password_reset)
+  plug(RateLimiter, :account_confirmation_resend when action == :account_confirmation_resend)
 
   @local_mastodon_name "Mastodon-Local"
 
@@ -1836,6 +1840,16 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       {:error, _} ->
         send_resp(conn, :bad_request, "")
+    end
+  end
+
+  def account_confirmation_resend(conn, params) do
+    nickname_or_email = params["email"] || params["nickname"]
+
+    with %User{} = user <- User.get_by_nickname_or_email(nickname_or_email),
+         {:ok, _} <- User.try_send_confirmation_email(user) do
+      conn
+      |> json_response(:no_content, "")
     end
   end
 
