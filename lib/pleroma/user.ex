@@ -471,7 +471,7 @@ defmodule Pleroma.User do
   end
 
   def update_and_set_cache(changeset) do
-    with {:ok, user} <- Repo.update(changeset) do
+    with {:ok, user} <- Repo.update(changeset, stale_error_field: :id) do
       set_cache(user)
     else
       e -> e
