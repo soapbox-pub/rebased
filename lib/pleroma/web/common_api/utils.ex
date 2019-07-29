@@ -300,6 +300,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> Earmark.as_html!()
     |> Formatter.linkify(options)
     |> Formatter.html_escape("text/html")
+    |> (fn {text, mentions, tags} ->
+          {String.replace(text, ~r/\r?\n/, ""), mentions, tags}
+        end).()
   end
 
   def make_note_data(

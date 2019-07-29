@@ -99,14 +99,14 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
 
     test "works for bare text/markdown" do
       text = "**hello world**"
-      expected = "<p><strong>hello world</strong></p>\n"
+      expected = "<p><strong>hello world</strong></p>"
 
       {output, [], []} = Utils.format_input(text, "text/markdown")
 
       assert output == expected
 
       text = "**hello world**\n\n*another paragraph*"
-      expected = "<p><strong>hello world</strong></p>\n<p><em>another paragraph</em></p>\n"
+      expected = "<p><strong>hello world</strong></p><p><em>another paragraph</em></p>"
 
       {output, [], []} = Utils.format_input(text, "text/markdown")
 
@@ -118,7 +118,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       by someone
       """
 
-      expected = "<blockquote><p>cool quote</p>\n</blockquote>\n<p>by someone</p>\n"
+      expected = "<blockquote><p>cool quote</p></blockquote><p>by someone</p>"
 
       {output, [], []} = Utils.format_input(text, "text/markdown")
 
@@ -157,11 +157,11 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       text = "**hello world**\n\n*another @user__test and @user__test google.com paragraph*"
 
       expected =
-        "<p><strong>hello world</strong></p>\n<p><em>another <span class=\"h-card\"><a data-user=\"#{
+        "<p><strong>hello world</strong></p><p><em>another <span class=\"h-card\"><a data-user=\"#{
           user.id
         }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> and <span class=\"h-card\"><a data-user=\"#{
           user.id
-        }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> <a href=\"http://google.com\">google.com</a> paragraph</em></p>\n"
+        }\" class=\"u-url mention\" href=\"http://foo.com/user__test\">@<span>user__test</span></a></span> <a href=\"http://google.com\">google.com</a> paragraph</em></p>"
 
       {output, _, _} = Utils.format_input(text, "text/markdown")
 
