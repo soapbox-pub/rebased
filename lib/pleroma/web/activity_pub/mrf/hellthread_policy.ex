@@ -4,6 +4,9 @@
 
 defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   alias Pleroma.User
+
+  require Pleroma.Constants
+
   @moduledoc "Block messages with too much mentions (configurable)"
 
   @behaviour Pleroma.Web.ActivityPub.MRF
@@ -19,12 +22,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
         when follower_collection? and recipients > threshold ->
           message
           |> Map.put("to", [follower_collection])
-          |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])
+          |> Map.put("cc", [Pleroma.Constants.as_public()])
 
         {:public, recipients} when recipients > threshold ->
           message
           |> Map.put("to", [])
-          |> Map.put("cc", ["https://www.w3.org/ns/activitystreams#Public"])
+          |> Map.put("cc", [Pleroma.Constants.as_public()])
 
         _ ->
           message
@@ -51,10 +54,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
     recipients = (message["to"] || []) ++ (message["cc"] || [])
     follower_collection = User.get_cached_by_ap_id(message["actor"]).follower_address
 
-    if Enum.member?(recipients, "https://www.w3.org/ns/activitystreams#Public") do
+    if Enum.member?(recipients, Pleroma.Constants.as_public()) do
       recipients =
         recipients
-        |> List.delete("https://www.w3.org/ns/activitystreams#Public")
+        |> List.delete(Pleroma.Constants.as_public())
         |> List.delete(follower_collection)
 
       {:public, length(recipients)}

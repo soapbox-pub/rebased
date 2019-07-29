@@ -49,6 +49,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   import Ecto.Query
 
   require Logger
+  require Pleroma.Constants
 
   @rate_limited_relations_actions ~w(follow unfollow)a
 
@@ -1224,10 +1225,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
       recipients =
         if for_user do
-          ["https://www.w3.org/ns/activitystreams#Public"] ++
-            [for_user.ap_id | for_user.following]
+          [Pleroma.Constants.as_public()] ++ [for_user.ap_id | for_user.following]
         else
-          ["https://www.w3.org/ns/activitystreams#Public"]
+          [Pleroma.Constants.as_public()]
         end
 
       activities =

@@ -21,8 +21,7 @@ defmodule Pleroma.Web.Auth.Authenticator do
   def create_from_registration(plug, registration),
     do: implementation().create_from_registration(plug, registration)
 
-  @callback get_registration(Plug.Conn.t()) ::
-              {:ok, Registration.t()} | {:error, any()}
+  @callback get_registration(Plug.Conn.t()) :: {:ok, Registration.t()} | {:error, any()}
   def get_registration(plug), do: implementation().get_registration(plug)
 
   @callback handle_error(Plug.Conn.t(), any()) :: any()

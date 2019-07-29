@@ -19,6 +19,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
 
   import Ecto.Query
   require Logger
+  require Pleroma.Constants
 
   defp query_context_ids([]), do: []
 
@@ -91,7 +92,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       String.ends_with?(ap_id, "/followers") ->
         nil
 
-      ap_id == "https://www.w3.org/ns/activitystreams#Public" ->
+      ap_id == Pleroma.Constants.as_public() ->
         nil
 
       user = User.get_cached_by_ap_id(ap_id) ->

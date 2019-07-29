@@ -19,8 +19,7 @@ defmodule Pleroma.Web.RichMedia.Parser.TTL.AwsSignedUrl do
   defp is_aws_signed_url(image) when is_binary(image) do
     %URI{host: host, query: query} = URI.parse(image)
 
-    if String.contains?(host, "amazonaws.com") and
-         String.contains?(query, "X-Amz-Expires") do
+    if String.contains?(host, "amazonaws.com") and String.contains?(query, "X-Amz-Expires") do
       image
     else
       nil

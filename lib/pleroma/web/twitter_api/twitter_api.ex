@@ -15,6 +15,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
 
   import Ecto.Query
 
+  require Pleroma.Constants
+
   def create_status(%User{} = user, %{"status" => _} = data) do
     CommonAPI.post(user, data)
   end
@@ -286,7 +288,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPI do
       from(
         [a, o] in Activity.with_preloaded_object(Activity),
         where: fragment("?->>'type' = 'Create'", a.data),
-        where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients,
+        where: ^Pleroma.Constants.as_public() in a.recipients,
         where:
           fragment(
             "to_tsvector('english', ?->>'content') @@ plainto_tsquery('english', ?)",
