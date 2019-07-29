@@ -509,6 +509,42 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert user.bio == "<p>Some bio</p>"
     end
 
+    test "it works with custom profile fields" do
+      {:ok, activity} =
+        "test/fixtures/mastodon-post-activity.json"
+        |> File.read!()
+        |> Poison.decode!()
+        |> Transmogrifier.handle_incoming()
+
+      user = User.get_cached_by_ap_id(activity.actor)
+
+      assert user.info.source_data["attachment"] == [
+               %{"name" => "foo", "type" => "PropertyValue", "value" => "bar"},
+               %{"name" => "foo1", "type" => "PropertyValue", "value" => "bar1"}
+             ]
+
+      update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
+
+      object =
+        update_data["object"]
+        |> Map.put("actor", user.ap_id)
+        |> Map.put("id", user.ap_id)
+
+      update_data =
+        update_data
+        |> Map.put("actor", user.ap_id)
+        |> Map.put("object", object)
+
+      {:ok, _update_activity} = Transmogrifier.handle_incoming(update_data)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert user.info.source_data["attachment"] == [
+               %{"name" => "foo", "type" => "PropertyValue", "value" => "updated"},
+               %{"name" => "foo1", "type" => "PropertyValue", "value" => "updated"}
+             ]
+    end
+
     test "it works for incoming update activities which lock the account" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
