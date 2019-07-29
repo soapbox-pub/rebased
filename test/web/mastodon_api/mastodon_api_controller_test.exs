@@ -3154,6 +3154,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert redirected_to(conn) == "/web/login"
     end
 
+    test "redirects not logged-in users to the login page on private instances", %{
+      conn: conn,
+      path: path
+    } do
+      is_public = Pleroma.Config.get([:instance, :public])
+      Pleroma.Config.put([:instance, :public], false)
+
+      conn = get(conn, path)
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/web/login"
+
+      Pleroma.Config.put([:instance, :public], is_public)
+    end
+
     test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
       token = insert(:oauth_token)
 
