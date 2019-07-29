@@ -33,7 +33,11 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert %{
              "attachment" => [
                %{"name" => "foo", "type" => "PropertyValue", "value" => "bar"},
-               %{"name" => "website", "type" => "PropertyValue", "value" => "cofe.my"}
+               %{
+                 "name" => "website",
+                 "type" => "PropertyValue",
+                 "value" => "<a href=\"http://cofe.my\">cofe.my</a>"
+               }
              ]
            } = UserView.render("user.json", %{user: user})
   end
