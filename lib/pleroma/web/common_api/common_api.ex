@@ -300,8 +300,7 @@ defmodule Pleroma.Web.CommonAPI do
            }
          } = activity <- get_by_id_or_ap_id(id_or_ap_id),
          true <- Visibility.is_public?(activity),
-         %{valid?: true} = info_changeset <-
-           User.Info.add_pinnned_activity(user.info, activity),
+         %{valid?: true} = info_changeset <- User.Info.add_pinnned_activity(user.info, activity),
          changeset <-
            Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_changeset),
          {:ok, _user} <- User.update_and_set_cache(changeset) do

@@ -365,8 +365,7 @@ defmodule Pleroma.Web.OAuth.OAuthController do
   def register(%Plug.Conn{} = conn, %{"authorization" => _, "op" => "connect"} = params) do
     with registration_id when not is_nil(registration_id) <- get_session_registration_id(conn),
          %Registration{} = registration <- Repo.get(Registration, registration_id),
-         {_, {:ok, auth}} <-
-           {:create_authorization, do_create_authorization(conn, params)},
+         {_, {:ok, auth}} <- {:create_authorization, do_create_authorization(conn, params)},
          %User{} = user <- Repo.preload(auth, :user).user,
          {:ok, _updated_registration} <- Registration.bind_to_user(registration, user) do
       conn

@@ -10,7 +10,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
 
   @behaviour Pleroma.Web.ActivityPub.MRF
 
-  @public "https://www.w3.org/ns/activitystreams#Public"
+  require Pleroma.Constants
 
   @impl true
   def filter(%{"type" => "Create"} = object) do
@@ -19,8 +19,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
     # Determine visibility
     visibility =
       cond do
-        @public in object["to"] -> "public"
-        @public in object["cc"] -> "unlisted"
+        Pleroma.Constants.as_public() in object["to"] -> "public"
+        Pleroma.Constants.as_public() in object["cc"] -> "unlisted"
         user.follower_address in object["to"] -> "followers"
         true -> "direct"
       end

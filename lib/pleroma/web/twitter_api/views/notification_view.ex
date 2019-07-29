@@ -10,6 +10,8 @@ defmodule Pleroma.Web.TwitterAPI.NotificationView do
   alias Pleroma.Web.TwitterAPI.ActivityView
   alias Pleroma.Web.TwitterAPI.UserView
 
+  require Pleroma.Constants
+
   defp get_user(ap_id, opts) do
     cond do
       user = opts[:users][ap_id] ->
@@ -18,7 +20,7 @@ defmodule Pleroma.Web.TwitterAPI.NotificationView do
       String.ends_with?(ap_id, "/followers") ->
         nil
 
-      ap_id == "https://www.w3.org/ns/activitystreams#Public" ->
+      ap_id == Pleroma.Constants.as_public() ->
         nil
 
       true ->

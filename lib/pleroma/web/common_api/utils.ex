@@ -19,6 +19,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Web.MediaProxy
 
   require Logger
+  require Pleroma.Constants
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
@@ -66,7 +67,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   @spec get_to_and_cc(User.t(), list(String.t()), Activity.t() | nil, String.t()) ::
           {list(String.t()), list(String.t())}
   def get_to_and_cc(user, mentioned_users, inReplyTo, "public") do
-    to = ["https://www.w3.org/ns/activitystreams#Public" | mentioned_users]
+    to = [Pleroma.Constants.as_public() | mentioned_users]
     cc = [user.follower_address]
 
     if inReplyTo do
@@ -78,7 +79,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_to_and_cc(user, mentioned_users, inReplyTo, "unlisted") do
     to = [user.follower_address | mentioned_users]
-    cc = ["https://www.w3.org/ns/activitystreams#Public"]
+    cc = [Pleroma.Constants.as_public()]
 
     if inReplyTo do
       {Enum.uniq([inReplyTo.data["actor"] | to]), cc}

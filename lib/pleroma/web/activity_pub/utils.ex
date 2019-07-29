@@ -18,6 +18,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   import Ecto.Query
 
   require Logger
+  require Pleroma.Constants
 
   @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer"]
   @supported_report_states ~w(open closed resolved)
@@ -418,7 +419,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "type" => "Follow",
       "actor" => follower_id,
       "to" => [followed_id],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [Pleroma.Constants.as_public()],
       "object" => followed_id,
       "state" => "pending"
     }
@@ -510,7 +511,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => ap_id,
       "object" => id,
       "to" => [user.follower_address, object.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [Pleroma.Constants.as_public()],
       "context" => object.data["context"]
     }
 
@@ -530,7 +531,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => ap_id,
       "object" => activity.data,
       "to" => [user.follower_address, activity.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
 
@@ -547,7 +548,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => ap_id,
       "object" => activity.data,
       "to" => [user.follower_address, activity.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
 
@@ -556,7 +557,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def add_announce_to_object(
         %Activity{
-          data: %{"actor" => actor, "cc" => ["https://www.w3.org/ns/activitystreams#Public"]}
+          data: %{"actor" => actor, "cc" => [Pleroma.Constants.as_public()]}
         },
         object
       ) do
@@ -765,7 +766,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
        ) do
     cc = Map.get(data, "cc", [])
     follower_address = User.get_cached_by_ap_id(data["actor"]).follower_address
-    public = "https://www.w3.org/ns/activitystreams#Public"
+    public = Pleroma.Constants.as_public()
 
     case visibility do
       "public" ->
