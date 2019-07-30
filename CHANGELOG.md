@@ -53,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
 - Admin API: Added support for `tuples`.
+- Admin API: Added endpoints to run mix tasks pleroma.config migrate_to_db & pleroma.config migrate_from_db
 - Added synchronization of following/followers counters for external users
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
 - Configuration: Pleroma.Plugs.RateLimiter `bucket_name`, `params` options.

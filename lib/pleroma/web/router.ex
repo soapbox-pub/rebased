@@ -196,6 +196,8 @@ defmodule Pleroma.Web.Router do
 
     get("/config", AdminAPIController, :config_show)
     post("/config", AdminAPIController, :config_update)
+    get("/config/migrate_to_db", AdminAPIController, :migrate_to_db)
+    get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do

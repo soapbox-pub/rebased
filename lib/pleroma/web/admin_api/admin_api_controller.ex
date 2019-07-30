@@ -379,6 +379,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
+  def migrate_to_db(conn, _params) do
+    Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
+    json(conn, %{})
+  end
+
+  def migrate_from_db(conn, _params) do
+    Mix.Tasks.Pleroma.Config.run(["migrate_from_db", Pleroma.Config.get(:env), "true"])
+    json(conn, %{})
+  end
+
   def config_show(conn, _params) do
     configs = Pleroma.Repo.all(Config)
 
