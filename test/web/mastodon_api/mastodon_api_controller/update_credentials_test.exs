@@ -325,6 +325,26 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                %{"name" => "link", "value" => "cofe.io"}
              ]
 
+      value_limit = Pleroma.Config.get([:instance, :account_field_value_length])
+
+      long_str = Enum.map(0..value_limit, fn _ -> "x" end) |> Enum.join()
+
+      fields = [%{"name" => "<b>foo<b>", "value" => long_str}]
+
+      assert %{"error" => "Invalid request"} ==
+               conn
+               |> assign(:user, user)
+               |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
+               |> json_response(403)
+
+      fields = [%{"name" => long_str, "value" => "bar"}]
+
+      assert %{"error" => "Invalid request"} ==
+               conn
+               |> assign(:user, user)
+               |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
+               |> json_response(403)
+
       Pleroma.Config.put([:instance, :max_account_fields], 1)
 
       fields = [
@@ -332,12 +352,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
         %{"name" => "link", "value" => "cofe.io"}
       ]
 
-      conn =
-        conn
-        |> assign(:user, user)
-        |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
-
-      assert %{"error" => "Invalid request"} == json_response(conn, 403)
+      assert %{"error" => "Invalid request"} ==
+               conn
+               |> assign(:user, user)
+               |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
+               |> json_response(403)
     end
   end
 end

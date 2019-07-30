@@ -308,7 +308,12 @@ defmodule Pleroma.User.Info do
   end
 
   defp valid_field?(%{"name" => name, "value" => value}) do
-    is_binary(name) && is_binary(value)
+    value_limit = Pleroma.Config.get([:instance, :account_field_value_length], 255)
+
+    is_binary(name) &&
+      is_binary(value) &&
+      String.length(name) <= 255 &&
+      String.length(value) <= value_limit
   end
 
   defp valid_field?(_), do: false
