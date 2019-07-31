@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
+  require Pleroma.Constants
+
   @moduledoc "Reject or Word-Replace messages with a keyword or regex"
 
   @behaviour Pleroma.Web.ActivityPub.MRF
@@ -31,12 +33,12 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   defp check_ftl_removal(
          %{"to" => to, "object" => %{"content" => content, "summary" => summary}} = message
        ) do
-    if "https://www.w3.org/ns/activitystreams#Public" in to and
+    if Pleroma.Constants.as_public() in to and
          Enum.any?(Pleroma.Config.get([:mrf_keyword, :federated_timeline_removal]), fn pattern ->
            string_matches?(content, pattern) or string_matches?(summary, pattern)
          end) do
-      to = List.delete(to, "https://www.w3.org/ns/activitystreams#Public")
-      cc = ["https://www.w3.org/ns/activitystreams#Public" | message["cc"] || []]
+      to = List.delete(to, Pleroma.Constants.as_public())
+      cc = [Pleroma.Constants.as_public() | message["cc"] || []]
 
       message =
         message

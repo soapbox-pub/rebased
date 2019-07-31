@@ -1369,4 +1369,28 @@ defmodule Pleroma.UserTest do
       assert User.is_internal_user?(user)
     end
   end
+
+  describe "update_and_set_cache/1" do
+    test "returns error when user is stale instead Ecto.StaleEntryError" do
+      user = insert(:user)
+
+      changeset = Ecto.Changeset.change(user, bio: "test")
+
+      Repo.delete(user)
+
+      assert {:error, %Ecto.Changeset{errors: [id: {"is stale", [stale: true]}], valid?: false}} =
+               User.update_and_set_cache(changeset)
+    end
+
+    test "performs update cache if user updated" do
+      user = insert(:user)
+      assert {:ok, nil} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+
+      changeset = Ecto.Changeset.change(user, bio: "test-bio")
+
+      assert {:ok, %User{bio: "test-bio"} = user} = User.update_and_set_cache(changeset)
+      assert {:ok, user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
+      assert %User{bio: "test-bio"} = User.get_cached_by_ap_id(user.ap_id)
+    end
+  end
 end

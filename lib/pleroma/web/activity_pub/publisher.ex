@@ -11,6 +11,8 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.Transmogrifier
 
+  require Pleroma.Constants
+
   import Pleroma.Web.ActivityPub.Visibility
 
   @behaviour Pleroma.Web.Federator.Publisher
@@ -117,8 +119,6 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
     |> Enum.map(& &1.ap_id)
   end
 
-  @as_public "https://www.w3.org/ns/activitystreams#Public"
-
   defp maybe_use_sharedinbox(%User{info: %{source_data: data}}),
     do: (is_map(data["endpoints"]) && Map.get(data["endpoints"], "sharedInbox")) || data["inbox"]
 
@@ -145,7 +145,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
       type == "Delete" ->
         maybe_use_sharedinbox(user)
 
-      @as_public in to || @as_public in cc ->
+      Pleroma.Constants.as_public() in to || Pleroma.Constants.as_public() in cc ->
         maybe_use_sharedinbox(user)
 
       length(to) + length(cc) > 1 ->

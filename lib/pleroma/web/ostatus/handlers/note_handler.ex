@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.OStatus.NoteHandler do
   require Logger
+  require Pleroma.Constants
 
   alias Pleroma.Activity
   alias Pleroma.Object
@@ -49,7 +50,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   def get_collection_mentions(entry) do
     transmogrify = fn
       "http://activityschema.org/collection/public" ->
-        "https://www.w3.org/ns/activitystreams#Public"
+        Pleroma.Constants.as_public()
 
       group ->
         group
@@ -126,7 +127,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          to <- make_to_list(actor, mentions),
          date <- XML.string_from_xpath("//published", entry),
          unlisted <- XML.string_from_xpath("//mastodon:scope", entry) == "unlisted",
-         cc <- if(unlisted, do: ["https://www.w3.org/ns/activitystreams#Public"], else: []),
+         cc <- if(unlisted, do: [Pleroma.Constants.as_public()], else: []),
          note <-
            CommonAPI.Utils.make_note_data(
              actor.ap_id,
