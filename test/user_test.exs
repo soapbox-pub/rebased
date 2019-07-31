@@ -1393,4 +1393,78 @@ defmodule Pleroma.UserTest do
       assert %User{bio: "test-bio"} = User.get_cached_by_ap_id(user.ap_id)
     end
   end
+
+  describe "following/followers synchronization" do
+    setup do
+      sync = Pleroma.Config.get([:instance, :external_user_synchronization])
+      on_exit(fn -> Pleroma.Config.put([:instance, :external_user_synchronization], sync) end)
+    end
+
+    test "updates the counters normally on following/getting a follow when disabled" do
+      Pleroma.Config.put([:instance, :external_user_synchronization], false)
+      user = insert(:user)
+
+      other_user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following",
+          info: %{ap_enabled: true}
+        )
+
+      assert User.user_info(other_user).following_count == 0
+      assert User.user_info(other_user).follower_count == 0
+
+      {:ok, user} = Pleroma.User.follow(user, other_user)
+      other_user = Pleroma.User.get_by_id(other_user.id)
+
+      assert User.user_info(user).following_count == 1
+      assert User.user_info(other_user).follower_count == 1
+    end
+
+    test "syncronizes the counters with the remote instance for the followed when enabled" do
+      Pleroma.Config.put([:instance, :external_user_synchronization], false)
+
+      user = insert(:user)
+
+      other_user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following",
+          info: %{ap_enabled: true}
+        )
+
+      assert User.user_info(other_user).following_count == 0
+      assert User.user_info(other_user).follower_count == 0
+
+      Pleroma.Config.put([:instance, :external_user_synchronization], true)
+      {:ok, _user} = User.follow(user, other_user)
+      other_user = User.get_by_id(other_user.id)
+
+      assert User.user_info(other_user).follower_count == 437
+    end
+
+    test "syncronizes the counters with the remote instance for the follower when enabled" do
+      Pleroma.Config.put([:instance, :external_user_synchronization], false)
+
+      user = insert(:user)
+
+      other_user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following",
+          info: %{ap_enabled: true}
+        )
+
+      assert User.user_info(other_user).following_count == 0
+      assert User.user_info(other_user).follower_count == 0
+
+      Pleroma.Config.put([:instance, :external_user_synchronization], true)
+      {:ok, other_user} = User.follow(other_user, user)
+
+      assert User.user_info(other_user).following_count == 152
+    end
+  end
 end

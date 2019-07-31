@@ -1149,16 +1149,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
           "http://localhost:4001/users/masto_closed/followers?page=1" ->
             %Tesla.Env{status: 403, body: ""}
 
-          "http://localhost:4001/users/masto_closed/following?page=1" ->
-            %Tesla.Env{
-              status: 200,
-              body:
-                Jason.encode!(%{
-                  "id" => "http://localhost:4001/users/masto_closed/following?page=1",
-                  "type" => "OrderedCollectionPage"
-                })
-            }
-
           _ ->
             apply(HttpRequestMock, :request, [env])
         end
@@ -1181,16 +1171,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
         case env.url do
           "http://localhost:4001/users/masto_closed/following?page=1" ->
             %Tesla.Env{status: 403, body: ""}
-
-          "http://localhost:4001/users/masto_closed/followers?page=1" ->
-            %Tesla.Env{
-              status: 200,
-              body:
-                Jason.encode!(%{
-                  "id" => "http://localhost:4001/users/masto_closed/followers?page=1",
-                  "type" => "OrderedCollectionPage"
-                })
-            }
 
           _ ->
             apply(HttpRequestMock, :request, [env])
