@@ -741,7 +741,7 @@ defmodule Pleroma.User do
   end
 
   def update_follower_count(%User{} = user) do
-    unless user.local == false and Pleroma.Config.get([:instance, :external_user_synchronization]) do
+    unless !user.local and Pleroma.Config.get([:instance, :external_user_synchronization]) do
       follower_count_query =
         User.Query.build(%{followers: user, deactivated: false})
         |> select([u], %{count: count(u.id)})
