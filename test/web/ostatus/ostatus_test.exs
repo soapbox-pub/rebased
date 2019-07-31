@@ -326,6 +326,14 @@ defmodule Pleroma.Web.OStatusTest do
     assert User.following?(follower, followed)
   end
 
+  test "refuse following over OStatus if the followed's account is locked" do
+    incoming = File.read!("test/fixtures/follow.xml")
+    _user = insert(:user, info: %{locked: true}, ap_id: "https://pawoo.net/users/pekorino")
+
+    {:ok, [{:error, "It's not possible to follow locked accounts over OStatus"}]} =
+      OStatus.handle_incoming(incoming)
+  end
+
   test "handle incoming unfollows with existing follow" do
     incoming_follow = File.read!("test/fixtures/follow.xml")
     {:ok, [_activity]} = OStatus.handle_incoming(incoming_follow)
