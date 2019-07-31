@@ -360,4 +360,24 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       assert third_user.ap_id in to
     end
   end
+
+  describe "get_by_id_or_ap_id/1" do
+    test "get activity by id" do
+      activity = insert(:note_activity)
+      %Pleroma.Activity{} = note = Utils.get_by_id_or_ap_id(activity.id)
+      assert note.id == activity.id
+    end
+
+    test "get activity by ap_id" do
+      activity = insert(:note_activity)
+      %Pleroma.Activity{} = note = Utils.get_by_id_or_ap_id(activity.data["object"])
+      assert note.id == activity.id
+    end
+
+    test "get activity by object when type isn't `Create` " do
+      activity = insert(:like_activity)
+      %Pleroma.Activity{} = like = Utils.get_by_id_or_ap_id(activity.id)
+      assert like.data["object"] == activity.data["object"]
+    end
+  end
 end

@@ -24,7 +24,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
     activity =
-      Activity.get_by_id_with_object(id) || Activity.get_create_by_object_ap_id_with_object(id)
+      with true <- Pleroma.FlakeId.is_flake_id?(id),
+           %Activity{} = activity <- Activity.get_by_id_with_object(id) do
+        activity
+      else
+        _ -> Activity.get_create_by_object_ap_id_with_object(id)
+      end
 
     activity &&
       if activity.data["type"] == "Create" do

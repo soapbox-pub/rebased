@@ -39,4 +39,9 @@ defmodule Pleroma.FlakeIdTest do
     assert dump(flake_s) == {:ok, flake}
     assert dump(flake) == {:ok, flake}
   end
+
+  test "is_flake_id?/1" do
+    assert is_flake_id?("9eoozpwTul5mjSEDRI")
+    refute is_flake_id?("http://example.com/activities/3ebbadd1-eb14-4e20-8118-b6f79c0c7b0b")
+  end
 end
