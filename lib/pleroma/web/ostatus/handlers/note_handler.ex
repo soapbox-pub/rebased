@@ -111,7 +111,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     with id <- XML.string_from_xpath("//id", entry),
          activity when is_nil(activity) <- Activity.get_create_by_object_ap_id_with_object(id),
          [author] <- :xmerl_xpath.string('//author[1]', doc),
-         {:ok, actor} <- OStatus.find_make_or_update_user(author),
+         {:ok, actor} <- OStatus.find_make_or_update_actor(author),
          content_html <- OStatus.get_content(entry),
          cw <- OStatus.get_cw(entry),
          in_reply_to <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
