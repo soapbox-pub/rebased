@@ -65,6 +65,14 @@ defmodule Pleroma.Conversation.Participation do
     |> Pleroma.Pagination.fetch_paginated(params)
   end
 
+  def for_user_and_conversation(user, conversation) do
+    from(p in __MODULE__,
+      where: p.user_id == ^user.id,
+      where: p.conversation_id == ^conversation.id
+    )
+    |> Repo.one()
+  end
+
   def for_user_with_last_activity_id(user, params \\ %{}) do
     for_user(user, params)
     |> Enum.map(fn participation ->
