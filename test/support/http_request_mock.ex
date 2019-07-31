@@ -51,6 +51,10 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mastodon.social/users/not_found", _, _, _) do
+    {:ok, %Tesla.Env{status: 404}}
+  end
+
   def get("https://mastodon.sdf.org/users/rinpatch", _, _, _) do
     {:ok,
      %Tesla.Env{

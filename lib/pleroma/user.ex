@@ -226,6 +226,7 @@ defmodule Pleroma.User do
     |> put_password_hash
   end
 
+  @spec reset_password(User.t(), map) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def reset_password(%User{id: user_id} = user, data) do
     multi =
       Multi.new()
@@ -330,6 +331,7 @@ defmodule Pleroma.User do
 
   def needs_update?(_), do: true
 
+  @spec maybe_direct_follow(User.t(), User.t()) :: {:ok, User.t()} | {:error, String.t()}
   def maybe_direct_follow(%User{} = follower, %User{local: true, info: %{locked: true}}) do
     {:ok, follower}
   end
