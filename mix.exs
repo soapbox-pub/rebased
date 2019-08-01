@@ -101,6 +101,7 @@ defmodule Pleroma.Mixfile do
       {:phoenix_ecto, "~> 4.0"},
       {:ecto_sql, "~> 3.1"},
       {:postgrex, ">= 0.13.5"},
+      {:oban, "~> 0.6"},
       {:gettext, "~> 0.15"},
       {:comeonin, "~> 4.1.1"},
       {:pbkdf2_elixir, "~> 0.12.3"},

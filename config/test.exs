@@ -62,6 +62,10 @@ config :web_push_encryption, :http_client, Pleroma.Web.WebPushHttpClientMock
 
 config :pleroma_job_queue, disabled: true
 
+config :pleroma, Oban,
+  queues: false,
+  prune: :disabled
+
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 2,
   total_user_limit: 3,

@@ -412,13 +412,6 @@ config :pleroma_job_queue, :queues,
 
 This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the `max_jobs` set to `50`.
 
-## Pleroma.Web.Federator.RetryQueue
-
-* `enabled`: If set to `true`, failed federation jobs will be retried
-* `max_jobs`: The maximum amount of parallel federation jobs running at the same time.
-* `initial_timeout`: The initial timeout in seconds
-* `max_retries`: The maximum number of times a federation job is retried
-
 ## Pleroma.Web.Metadata
 * `providers`: a list of metadata providers to enable. Providers available:
   * Pleroma.Web.Metadata.Providers.OpenGraph

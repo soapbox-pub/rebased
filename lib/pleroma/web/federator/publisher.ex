@@ -6,7 +6,6 @@ defmodule Pleroma.Web.Federator.Publisher do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.User
-  alias Pleroma.Web.Federator.RetryQueue
 
   require Logger
 
@@ -30,23 +29,10 @@ defmodule Pleroma.Web.Federator.Publisher do
   Enqueue publishing a single activity.
   """
   @spec enqueue_one(module(), Map.t()) :: :ok
-  def enqueue_one(module, %{} = params),
-    do: PleromaJobQueue.enqueue(:federator_outgoing, __MODULE__, [:publish_one, module, params])
-
-  @spec perform(atom(), module(), any()) :: {:ok, any()} | {:error, any()}
-  def perform(:publish_one, module, params) do
-    case apply(module, :publish_one, [params]) do
-      {:ok, _} ->
-        :ok
-
-      {:error, _e} ->
-        RetryQueue.enqueue(params, module)
-    end
-  end
-
-  def perform(type, _, _) do
-    Logger.debug("Unknown task: #{type}")
-    {:error, "Don't know what to do with this"}
+  def enqueue_one(module, %{} = params) do
+    %{module: to_string(module), params: params}
+    |> Pleroma.Workers.Publisher.new()
+    |> Pleroma.Repo.insert()
   end
 
   @doc """

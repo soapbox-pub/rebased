@@ -12,9 +12,9 @@ defmodule Pleroma.UserTest do
   alias Pleroma.Web.CommonAPI
 
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
   import Pleroma.Factory
-  import Mock
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
@@ -1034,11 +1034,7 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(repeat.id)
     end
 
-    test_with_mock "it sends out User Delete activity",
-                   %{user: user},
-                   Pleroma.Web.ActivityPub.Publisher,
-                   [:passthrough],
-                   [] do
+    test "it sends out User Delete activity", %{user: user} do
       config_path = [:instance, :federating]
       initial_setting = Pleroma.Config.get(config_path)
       Pleroma.Config.put(config_path, true)
@@ -1048,11 +1044,8 @@ defmodule Pleroma.UserTest do
 
       {:ok, _user} = User.delete(user)
 
-      assert called(
-               Pleroma.Web.ActivityPub.Publisher.publish_one(%{
-                 inbox: "http://mastodon.example.org/inbox"
-               })
-             )
+      assert [%{args: %{"params" => %{"inbox" => "http://mastodon.example.org/inbox"}}}] =
+               all_enqueued(worker: Pleroma.Workers.Publisher)
 
       Pleroma.Config.put(config_path, initial_setting)
     end

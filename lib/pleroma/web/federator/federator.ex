@@ -10,7 +10,6 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.Federator.Publisher
-  alias Pleroma.Web.Federator.RetryQueue
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Websub
 
@@ -127,19 +126,6 @@ defmodule Pleroma.Web.Federator do
         Logger.info("Unhandled activity")
         Logger.info(Jason.encode!(params, pretty: true))
         :error
-    end
-  end
-
-  def perform(
-        :publish_single_websub,
-        %{xml: _xml, topic: _topic, callback: _callback, secret: _secret} = params
-      ) do
-    case Websub.publish_one(params) do
-      {:ok, _} ->
-        :ok
-
-      {:error, _} ->
-        RetryQueue.enqueue(params, Websub)
     end
   end
 

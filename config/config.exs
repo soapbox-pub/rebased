@@ -440,13 +440,7 @@ config :pleroma, Pleroma.User,
     "web"
   ]
 
-config :pleroma, Pleroma.Web.Federator.RetryQueue,
-  enabled: false,
-  max_jobs: 20,
-  initial_timeout: 30,
-  max_retries: 5
-
-config :pleroma_job_queue, :queues,
+job_queues = [
   federator_incoming: 50,
   federator_outgoing: 50,
   web_push: 50,
@@ -454,6 +448,15 @@ config :pleroma_job_queue, :queues,
   transmogrifier: 20,
   scheduled_activities: 10,
   background: 5
+]
+
+config :pleroma_job_queue, :queues, job_queues
+
+config :pleroma, Oban,
+  repo: Pleroma.Repo,
+  verbose: false,
+  prune: {:maxage, 60 * 60 * 24 * 7},
+  queues: job_queues
 
 config :pleroma, :fetch_initial_posts,
   enabled: false,

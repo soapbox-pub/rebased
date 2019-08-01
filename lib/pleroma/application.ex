@@ -120,8 +120,8 @@ defmodule Pleroma.Application do
         hackney_pool_children() ++
         [
           %{
-            id: Pleroma.Web.Federator.RetryQueue,
-            start: {Pleroma.Web.Federator.RetryQueue, :start_link, []}
+            id: Oban,
+            start: {Oban, :start_link, [Application.get_env(:pleroma, Oban)]}
           },
           %{
             id: Pleroma.Web.OAuth.Token.CleanWorker,

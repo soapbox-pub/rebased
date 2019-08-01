@@ -6,7 +6,10 @@ defmodule Pleroma.Web.FederatorTest do
   alias Pleroma.Instances
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Federator
+
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
+
   import Pleroma.Factory
   import Mock
 
@@ -20,15 +23,6 @@ defmodule Pleroma.Web.FederatorTest do
     on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
 
     :ok
-  end
-
-  describe "Publisher.perform" do
-    test "call `perform` with unknown task" do
-      assert {
-               :error,
-               "Don't know what to do with this"
-             } = Pleroma.Web.Federator.Publisher.perform("test", :ok, :ok)
-    end
   end
 
   describe "Publish an activity" do
@@ -73,10 +67,7 @@ defmodule Pleroma.Web.FederatorTest do
   end
 
   describe "Targets reachability filtering in `publish`" do
-    test_with_mock "it federates only to reachable instances via AP",
-                   Pleroma.Web.ActivityPub.Publisher,
-                   [:passthrough],
-                   [] do
+    test "it federates only to reachable instances via AP" do
       user = insert(:user)
 
       {inbox1, inbox2} =
@@ -104,20 +95,13 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
-      assert called(
-               Pleroma.Web.ActivityPub.Publisher.publish_one(%{
-                 inbox: inbox1,
-                 unreachable_since: dt
-               })
-             )
+      expected_dt = NaiveDateTime.to_iso8601(dt)
 
-      refute called(Pleroma.Web.ActivityPub.Publisher.publish_one(%{inbox: inbox2}))
+      assert [%{args: %{"params" => %{"inbox" => ^inbox1, "unreachable_since" => ^expected_dt}}}] =
+               all_enqueued(worker: Pleroma.Workers.Publisher)
     end
 
-    test_with_mock "it federates only to reachable instances via Websub",
-                   Pleroma.Web.Websub,
-                   [:passthrough],
-                   [] do
+    test "it federates only to reachable instances via Websub" do
       user = insert(:user)
       websub_topic = Pleroma.Web.OStatus.feed_path(user)
 
@@ -142,23 +126,25 @@ defmodule Pleroma.Web.FederatorTest do
 
       {:ok, _activity} = CommonAPI.post(user, %{"status" => "HI"})
 
-      assert called(
-               Pleroma.Web.Websub.publish_one(%{
-                 callback: sub2.callback,
-                 unreachable_since: dt
-               })
-             )
+      expected_callback = sub2.callback
+      expected_dt = NaiveDateTime.to_iso8601(dt)
 
-      refute called(Pleroma.Web.Websub.publish_one(%{callback: sub1.callback}))
+      assert [
+               %{
+                 args: %{
+                   "params" => %{
+                     "callback" => ^expected_callback,
+                     "unreachable_since" => ^expected_dt
+                   }
+                 }
+               }
+             ] = all_enqueued(worker: Pleroma.Workers.Publisher)
     end
 
-    test_with_mock "it federates only to reachable instances via Salmon",
-                   Pleroma.Web.Salmon,
-                   [:passthrough],
-                   [] do
+    test "it federates only to reachable instances via Salmon" do
       user = insert(:user)
 
-      remote_user1 =
+      _remote_user1 =
         insert(:user, %{
           local: false,
           nickname: "nick1@domain.com",
@@ -174,6 +160,8 @@ defmodule Pleroma.Web.FederatorTest do
           info: %{salmon: "https://domain2.com/salmon"}
         })
 
+      remote_user2_id = remote_user2.id
+
       dt = NaiveDateTime.utc_now()
       Instances.set_unreachable(remote_user2.ap_id, dt)
 
@@ -182,14 +170,18 @@ defmodule Pleroma.Web.FederatorTest do
       {:ok, _activity} =
         CommonAPI.post(user, %{"status" => "HI @nick1@domain.com, @nick2@domain2.com!"})
 
-      assert called(
-               Pleroma.Web.Salmon.publish_one(%{
-                 recipient: remote_user2,
-                 unreachable_since: dt
-               })
-             )
+      expected_dt = NaiveDateTime.to_iso8601(dt)
 
-      refute called(Pleroma.Web.Salmon.publish_one(%{recipient: remote_user1}))
+      assert [
+               %{
+                 args: %{
+                   "params" => %{
+                     "recipient_id" => ^remote_user2_id,
+                     "unreachable_since" => ^expected_dt
+                   }
+                 }
+               }
+             ] = all_enqueued(worker: Pleroma.Workers.Publisher)
     end
   end
 
