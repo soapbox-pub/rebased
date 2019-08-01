@@ -149,10 +149,10 @@ defmodule Pleroma.User do
   end
 
   def remote_user_creation(params) do
-    params =
-      params
-      |> Map.put(:info, params[:info] || %{})
+    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
+    params = Map.put(params, :info, params[:info] || %{})
     info_cng = User.Info.remote_user_creation(%User.Info{}, params[:info])
 
     changes =
@@ -161,8 +161,8 @@ defmodule Pleroma.User do
       |> validate_required([:name, :ap_id])
       |> unique_constraint(:nickname)
       |> validate_format(:nickname, @email_regex)
-      |> validate_length(:bio, max: 5000)
-      |> validate_length(:name, max: 100)
+      |> validate_length(:bio, max: bio_limit)
+      |> validate_length(:name, max: name_limit)
       |> put_change(:local, false)
       |> put_embed(:info, info_cng)
 
@@ -185,22 +185,23 @@ defmodule Pleroma.User do
   end
 
   def update_changeset(struct, params \\ %{}) do
+    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
+
     struct
     |> cast(params, [:bio, :name, :avatar, :following])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
-    |> validate_length(:bio, max: 5000)
-    |> validate_length(:name, min: 1, max: 100)
+    |> validate_length(:bio, max: bio_limit)
+    |> validate_length(:name, min: 1, max: name_limit)
   end
 
   def upgrade_changeset(struct, params \\ %{}) do
-    params =
-      params
-      |> Map.put(:last_refreshed_at, NaiveDateTime.utc_now())
+    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
-    info_cng =
-      struct.info
-      |> User.Info.user_upgrade(params[:info])
+    params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
+    info_cng = User.Info.user_upgrade(struct.info, params[:info])
 
     struct
     |> cast(params, [
@@ -213,8 +214,8 @@ defmodule Pleroma.User do
     ])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
-    |> validate_length(:bio, max: 5000)
-    |> validate_length(:name, max: 100)
+    |> validate_length(:bio, max: bio_limit)
+    |> validate_length(:name, max: name_limit)
     |> put_embed(:info, info_cng)
   end
 
@@ -241,6 +242,9 @@ defmodule Pleroma.User do
   end
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
+    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
+
     need_confirmation? =
       if is_nil(opts[:need_confirmation]) do
         Pleroma.Config.get([:instance, :account_activation_required])
@@ -261,8 +265,8 @@ defmodule Pleroma.User do
       |> validate_exclusion(:nickname, Pleroma.Config.get([User, :restricted_nicknames]))
       |> validate_format(:nickname, local_nickname_regex())
       |> validate_format(:email, @email_regex)
-      |> validate_length(:bio, max: 1000)
-      |> validate_length(:name, min: 1, max: 100)
+      |> validate_length(:bio, max: bio_limit)
+      |> validate_length(:name, min: 1, max: name_limit)
       |> put_change(:info, info_change)
 
     changeset =
