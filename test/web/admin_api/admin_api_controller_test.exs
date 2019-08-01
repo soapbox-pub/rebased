@@ -1922,7 +1922,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       temp_file = "config/test.exported_from_db.secret.exs"
 
+      Mix.shell(Mix.Shell.Quiet)
+
       on_exit(fn ->
+        Mix.shell(Mix.Shell.IO)
         :ok = File.rm(temp_file)
       end)
 
