@@ -325,11 +325,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                %{"name" => "link", "value" => "cofe.io"}
              ]
 
+      name_limit = Pleroma.Config.get([:instance, :account_field_name_length])
       value_limit = Pleroma.Config.get([:instance, :account_field_value_length])
 
-      long_str = Enum.map(0..value_limit, fn _ -> "x" end) |> Enum.join()
+      long_value = Enum.map(0..value_limit, fn _ -> "x" end) |> Enum.join()
 
-      fields = [%{"name" => "<b>foo<b>", "value" => long_str}]
+      fields = [%{"name" => "<b>foo<b>", "value" => long_value}]
 
       assert %{"error" => "Invalid request"} ==
                conn
@@ -337,7 +338,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
                |> json_response(403)
 
-      fields = [%{"name" => long_str, "value" => "bar"}]
+      long_name = Enum.map(0..name_limit, fn _ -> "x" end) |> Enum.join()
+
+      fields = [%{"name" => long_name, "value" => "bar"}]
 
       assert %{"error" => "Invalid request"} ==
                conn
