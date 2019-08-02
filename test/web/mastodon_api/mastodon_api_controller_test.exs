@@ -1671,40 +1671,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       object = Repo.get(Object, media["id"])
       assert object.data["actor"] == User.ap_id(conn.assigns[:user])
     end
-
-    test "returns proxied url when media proxy is enabled", %{conn: conn, image: image} do
-      Pleroma.Config.put([Pleroma.Upload, :base_url], "https://media.pleroma.social")
-
-      proxy_url = "https://cache.pleroma.social"
-      Pleroma.Config.put([:media_proxy, :enabled], true)
-      Pleroma.Config.put([:media_proxy, :base_url], proxy_url)
-
-      media =
-        conn
-        |> post("/api/v1/media", %{"file" => image})
-        |> json_response(:ok)
-
-      assert String.starts_with?(media["url"], proxy_url)
-    end
-
-    test "returns media url when proxy is enabled but media url is whitelisted", %{
-      conn: conn,
-      image: image
-    } do
-      media_url = "https://media.pleroma.social"
-      Pleroma.Config.put([Pleroma.Upload, :base_url], media_url)
-
-      Pleroma.Config.put([:media_proxy, :enabled], true)
-      Pleroma.Config.put([:media_proxy, :base_url], "https://cache.pleroma.social")
-      Pleroma.Config.put([:media_proxy, :whitelist], ["media.pleroma.social"])
-
-      media =
-        conn
-        |> post("/api/v1/media", %{"file" => image})
-        |> json_response(:ok)
-
-      assert String.starts_with?(media["url"], media_url)
-    end
   end
 
   describe "locked accounts" do
