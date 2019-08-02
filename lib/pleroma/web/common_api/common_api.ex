@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.ThreadMute
@@ -171,21 +172,25 @@ defmodule Pleroma.Web.CommonAPI do
     end)
   end
 
-  def get_visibility(%{"visibility" => visibility}, in_reply_to)
+  def get_visibility(_, _, %Participation{}) do
+    {"direct", "direct"}
+  end
+
+  def get_visibility(%{"visibility" => visibility}, in_reply_to, _)
       when visibility in ~w{public unlisted private direct},
       do: {visibility, get_replied_to_visibility(in_reply_to)}
 
-  def get_visibility(%{"visibility" => "list:" <> list_id}, in_reply_to) do
+  def get_visibility(%{"visibility" => "list:" <> list_id}, in_reply_to, _) do
     visibility = {:list, String.to_integer(list_id)}
     {visibility, get_replied_to_visibility(in_reply_to)}
   end
 
-  def get_visibility(_, in_reply_to) when not is_nil(in_reply_to) do
+  def get_visibility(_, in_reply_to, _) when not is_nil(in_reply_to) do
     visibility = get_replied_to_visibility(in_reply_to)
     {visibility, visibility}
   end
 
-  def get_visibility(_, in_reply_to), do: {"public", get_replied_to_visibility(in_reply_to)}
+  def get_visibility(_, in_reply_to, _), do: {"public", get_replied_to_visibility(in_reply_to)}
 
   def get_replied_to_visibility(nil), do: nil
 
@@ -201,7 +206,9 @@ defmodule Pleroma.Web.CommonAPI do
     with status <- String.trim(status),
          attachments <- attachments_from_ids(data),
          in_reply_to <- get_replied_to_activity(data["in_reply_to_status_id"]),
-         {visibility, in_reply_to_visibility} <- get_visibility(data, in_reply_to),
+         in_reply_to_conversation <- Participation.get(data["in_reply_to_conversation_id"]),
+         {visibility, in_reply_to_visibility} <-
+           get_visibility(data, in_reply_to, in_reply_to_conversation),
          {_, false} <-
            {:private_to_public, in_reply_to_visibility == "direct" && visibility != "direct"},
          {content_html, mentions, tags} <-
@@ -214,7 +221,8 @@ defmodule Pleroma.Web.CommonAPI do
          mentioned_users <- for({_, mentioned_user} <- mentions, do: mentioned_user.ap_id),
          addressed_users <- get_addressed_users(mentioned_users, data["to"]),
          {poll, poll_emoji} <- make_poll_data(data),
-         {to, cc} <- get_to_and_cc(user, addressed_users, in_reply_to, visibility),
+         {to, cc} <-
+           get_to_and_cc(user, addressed_users, in_reply_to, visibility, in_reply_to_conversation),
          context <- make_context(in_reply_to),
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),

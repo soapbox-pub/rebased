@@ -5,12 +5,42 @@
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  test "when replying to a conversation / participation, it only mentions the recipients explicitly declared in the participation" do
+    har = insert(:user)
+    jafnhar = insert(:user)
+    tridi = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(har, %{
+        "status" => "@#{jafnhar.nickname} hey",
+        "visibility" => "direct"
+      })
+
+    assert har.ap_id in activity.recipients
+    assert jafnhar.ap_id in activity.recipients
+
+    [participation] = Participation.for_user(har)
+
+    {:ok, activity} =
+      CommonAPI.post(har, %{
+        "status" => "I don't really like @#{tridi.nickname}",
+        "visibility" => "direct",
+        "in_reply_to_status_id" => activity.id,
+        "in_reply_to_conversation_id" => participation.id
+      })
+
+    assert har.ap_id in activity.recipients
+    assert jafnhar.ap_id in activity.recipients
+    refute tridi.ap_id in activity.recipients
+  end
 
   test "with the safe_dm_mention option set, it does not mention people beyond the initial tags" do
     har = insert(:user)

@@ -93,4 +93,10 @@ defmodule Pleroma.Conversation.Participation do
     end)
     |> Enum.filter(& &1.last_activity_id)
   end
+
+  def get(nil), do: nil
+
+  def get(id) do
+    Repo.get(__MODULE__, id)
+  end
 end
