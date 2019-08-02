@@ -5,6 +5,7 @@
 defmodule Pleroma.Conversation.Participation do
   use Ecto.Schema
   alias Pleroma.Conversation
+  alias Pleroma.Conversation.Participation.RecipientShip
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -16,6 +17,9 @@ defmodule Pleroma.Conversation.Participation do
     belongs_to(:conversation, Conversation)
     field(:read, :boolean, default: false)
     field(:last_activity_id, Pleroma.FlakeId, virtual: true)
+
+    has_many(:recipient_ships, RecipientShip)
+    has_many(:recipients, through: [:recipient_ships, :user])
 
     timestamps()
   end

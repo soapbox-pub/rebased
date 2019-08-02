@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Conversation do
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Conversation.Participation.RecipientShip
   alias Pleroma.Repo
   alias Pleroma.User
   use Ecto.Schema
@@ -39,6 +40,15 @@ defmodule Pleroma.Conversation do
     Repo.get_by(__MODULE__, ap_id: ap_id)
   end
 
+  def maybe_set_recipients(participation, activity) do
+    participation = Repo.preload(participation, :recipients)
+
+    if participation.recipients |> Enum.empty?() do
+      recipients = User.get_all_by_ap_id(activity.recipients)
+      RecipientShip.create(recipients, participation)
+    end
+  end
+
   @doc """
   This will
   1. Create a conversation if there isn't one already
@@ -60,6 +70,7 @@ defmodule Pleroma.Conversation do
           {:ok, participation} =
             Participation.create_for_user_and_conversation(user, conversation, opts)
 
+          maybe_set_recipients(participation, activity)
           participation
         end)
 

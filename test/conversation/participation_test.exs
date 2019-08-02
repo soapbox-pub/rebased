@@ -8,6 +8,36 @@ defmodule Pleroma.Conversation.ParticipationTest do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Web.CommonAPI
 
+  test "for a new conversation, it sets the recipents of the participation" do
+    user = insert(:user)
+    other_user = insert(:user)
+    third_user = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(user, %{"status" => "Hey @#{other_user.nickname}.", "visibility" => "direct"})
+
+    [participation] = Participation.for_user(user)
+    participation = Pleroma.Repo.preload(participation, :recipients)
+
+    assert length(participation.recipients) == 2
+    assert user in participation.recipients
+    assert other_user in participation.recipients
+
+    # Mentioning another user in the same conversation will not add a new recipients.
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{
+        "in_reply_to_status_id" => activity.id,
+        "status" => "Hey @#{third_user.nickname}.",
+        "visibility" => "direct"
+      })
+
+    [participation] = Participation.for_user(user)
+    participation = Pleroma.Repo.preload(participation, :recipients)
+
+    assert length(participation.recipients) == 2
+  end
+
   test "it creates a participation for a conversation and a user" do
     user = insert(:user)
     conversation = insert(:conversation)
