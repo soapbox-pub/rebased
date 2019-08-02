@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub S2S: remote user deletions now work the same as local user deletions.
 - Not being able to access the Mastodon FE login page on private instances
 - Invalid SemVer version generation, when the current branch does not have commits ahead of tag/checked out on a tag
+- Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
 
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
