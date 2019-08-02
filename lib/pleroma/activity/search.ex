@@ -9,6 +9,8 @@ defmodule Pleroma.Activity.Search do
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Visibility
 
+  require Pleroma.Constants
+
   import Ecto.Query
 
   def search(user, search_query, options \\ []) do
@@ -39,7 +41,7 @@ defmodule Pleroma.Activity.Search do
   defp restrict_public(q) do
     from([a, o] in q,
       where: fragment("?->>'type' = 'Create'", a.data),
-      where: "https://www.w3.org/ns/activitystreams#Public" in a.recipients
+      where: ^Pleroma.Constants.as_public() in a.recipients
     )
   end
 

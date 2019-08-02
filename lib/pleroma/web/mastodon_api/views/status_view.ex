@@ -222,7 +222,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       if user.local do
         Pleroma.Web.Router.Helpers.o_status_url(Pleroma.Web.Endpoint, :notice, activity)
       else
-        object.data["external_url"] || object.data["id"]
+        object.data["url"] || object.data["external_url"] || object.data["id"]
       end
 
     %{

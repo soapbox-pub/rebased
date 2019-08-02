@@ -245,6 +245,14 @@ See [Admin-API](Admin-API.md)
 - PATCH `/api/v1/pleroma/accounts/update_banner`: Set/clear user banner image
 - PATCH `/api/v1/pleroma/accounts/update_background`: Set/clear user background image
 
+## `/api/v1/pleroma/accounts/confirmation_resend`
+### Resend confirmation email
+* Method `POST`
+* Params:
+    * `email`: email of that needs to be verified
+* Authentication: not required
+* Response: 204 No Content 
+
 ## `/api/v1/pleroma/mascot`
 ### Gets user mascot image
 * Method `GET`

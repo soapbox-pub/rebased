@@ -1916,6 +1916,46 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
   end
 
+  describe "config mix tasks run" do
+    setup %{conn: conn} do
+      admin = insert(:user, info: %{is_admin: true})
+
+      temp_file = "config/test.exported_from_db.secret.exs"
+
+      Mix.shell(Mix.Shell.Quiet)
+
+      on_exit(fn ->
+        Mix.shell(Mix.Shell.IO)
+        :ok = File.rm(temp_file)
+      end)
+
+      dynamic = Pleroma.Config.get([:instance, :dynamic_configuration])
+
+      Pleroma.Config.put([:instance, :dynamic_configuration], true)
+
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :dynamic_configuration], dynamic)
+      end)
+
+      %{conn: assign(conn, :user, admin), admin: admin}
+    end
+
+    test "transfer settings to DB and to file", %{conn: conn, admin: admin} do
+      assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) == []
+      conn = get(conn, "/api/pleroma/admin/config/migrate_to_db")
+      assert json_response(conn, 200) == %{}
+      assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) > 0
+
+      conn =
+        build_conn()
+        |> assign(:user, admin)
+        |> get("/api/pleroma/admin/config/migrate_from_db")
+
+      assert json_response(conn, 200) == %{}
+      assert Pleroma.Repo.all(Pleroma.Web.AdminAPI.Config) == []
+    end
+  end
+
   describe "GET /api/pleroma/admin/users/:nickname/statuses" do
     setup do
       admin = insert(:user, info: %{is_admin: true})

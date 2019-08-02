@@ -8,14 +8,14 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  @public "https://www.w3.org/ns/activitystreams#Public"
+  require Pleroma.Constants
 
   @spec is_public?(Object.t() | Activity.t() | map()) :: boolean()
   def is_public?(%Object{data: %{"type" => "Tombstone"}}), do: false
   def is_public?(%Object{data: data}), do: is_public?(data)
   def is_public?(%Activity{data: data}), do: is_public?(data)
   def is_public?(%{"directMessage" => true}), do: false
-  def is_public?(data), do: @public in (data["to"] ++ (data["cc"] || []))
+  def is_public?(data), do: Pleroma.Constants.as_public() in (data["to"] ++ (data["cc"] || []))
 
   def is_private?(activity) do
     with false <- is_public?(activity),
@@ -73,10 +73,10 @@ defmodule Pleroma.Web.ActivityPub.Visibility do
     cc = object.data["cc"] || []
 
     cond do
-      @public in to ->
+      Pleroma.Constants.as_public() in to ->
         "public"
 
-      @public in cc ->
+      Pleroma.Constants.as_public() in cc ->
         "unlisted"
 
       # this should use the sql for the object's activity

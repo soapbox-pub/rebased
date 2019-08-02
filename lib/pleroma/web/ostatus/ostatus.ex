@@ -56,7 +56,7 @@ defmodule Pleroma.Web.OStatus do
 
   def handle_incoming(xml_string, options \\ []) do
     with doc when doc != :error <- parse_document(xml_string) do
-      with {:ok, actor_user} <- find_make_or_update_user(doc),
+      with {:ok, actor_user} <- find_make_or_update_actor(doc),
            do: Pleroma.Instances.set_reachable(actor_user.ap_id)
 
       entries = :xmerl_xpath.string('//entry', doc)
@@ -120,7 +120,7 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def make_share(entry, doc, retweeted_activity) do
-    with {:ok, actor} <- find_make_or_update_user(doc),
+    with {:ok, actor} <- find_make_or_update_actor(doc),
          %Object{} = object <- Object.normalize(retweeted_activity),
          id when not is_nil(id) <- string_from_xpath("/entry/id", entry),
          {:ok, activity, _object} = ActivityPub.announce(actor, object, id, false) do
@@ -138,7 +138,7 @@ defmodule Pleroma.Web.OStatus do
   end
 
   def make_favorite(entry, doc, favorited_activity) do
-    with {:ok, actor} <- find_make_or_update_user(doc),
+    with {:ok, actor} <- find_make_or_update_actor(doc),
          %Object{} = object <- Object.normalize(favorited_activity),
          id when not is_nil(id) <- string_from_xpath("/entry/id", entry),
          {:ok, activity, _object} = ActivityPub.like(actor, object, id, false) do
@@ -264,11 +264,18 @@ defmodule Pleroma.Web.OStatus do
     end
   end
 
-  def find_make_or_update_user(doc) do
+  def find_make_or_update_actor(doc) do
     uri = string_from_xpath("//author/uri[1]", doc)
 
-    with {:ok, user} <- find_or_make_user(uri) do
+    with {:ok, %User{} = user} <- find_or_make_user(uri),
+         {:ap_enabled, false} <- {:ap_enabled, User.ap_enabled?(user)} do
       maybe_update(doc, user)
+    else
+      {:ap_enabled, true} ->
+        {:error, :invalid_protocol}
+
+      _ ->
+        {:error, :unknown_user}
     end
   end
 

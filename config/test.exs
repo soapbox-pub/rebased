@@ -29,7 +29,8 @@ config :pleroma, :instance,
   email: "admin@example.com",
   notify_email: "noreply@example.com",
   skip_thread_containment: false,
-  federating: false
+  federating: false,
+  external_user_synchronization: false
 
 config :pleroma, :activitypub, sign_object_fetches: false
 

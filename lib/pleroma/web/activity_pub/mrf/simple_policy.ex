@@ -8,6 +8,8 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   @moduledoc "Filter activities depending on their origin instance"
   @behaviour MRF
 
+  require Pleroma.Constants
+
   defp check_accept(%{host: actor_host} = _actor_info, object) do
     accepts =
       Pleroma.Config.get([:mrf_simple, :accept])
@@ -89,14 +91,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
     object =
       with true <- MRF.subdomain_match?(timeline_removal, actor_host),
            user <- User.get_cached_by_ap_id(object["actor"]),
-           true <- "https://www.w3.org/ns/activitystreams#Public" in object["to"] do
-        to =
-          List.delete(object["to"], "https://www.w3.org/ns/activitystreams#Public") ++
-            [user.follower_address]
+           true <- Pleroma.Constants.as_public() in object["to"] do
+        to = List.delete(object["to"], Pleroma.Constants.as_public()) ++ [user.follower_address]
 
-        cc =
-          List.delete(object["cc"], user.follower_address) ++
-            ["https://www.w3.org/ns/activitystreams#Public"]
+        cc = List.delete(object["cc"], user.follower_address) ++ [Pleroma.Constants.as_public()]
 
         object
         |> Map.put("to", to)

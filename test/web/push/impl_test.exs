@@ -124,8 +124,7 @@ defmodule Pleroma.Web.Push.ImplTest do
     {:ok, _, _, activity} = CommonAPI.follow(user, other_user)
     object = Object.normalize(activity)
 
-    assert Impl.format_body(%{activity: activity}, user, object) ==
-             "@Bob has followed you"
+    assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has followed you"
   end
 
   test "renders body for announce activity" do
@@ -156,7 +155,6 @@ defmodule Pleroma.Web.Push.ImplTest do
     {:ok, activity, _} = CommonAPI.favorite(activity.id, user)
     object = Object.normalize(activity)
 
-    assert Impl.format_body(%{activity: activity}, user, object) ==
-             "@Bob has favorited your post"
+    assert Impl.format_body(%{activity: activity}, user, object) == "@Bob has favorited your post"
   end
 end

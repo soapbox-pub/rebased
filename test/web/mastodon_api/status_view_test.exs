@@ -300,6 +300,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     assert %{id: "2"} = StatusView.render("attachment.json", %{attachment: object})
   end
 
+  test "put the url advertised in the Activity in to the url attribute" do
+    id = "https://wedistribute.org/wp-json/pterotype/v1/object/85810"
+    [activity] = Activity.search(nil, id)
+
+    status = StatusView.render("status.json", %{activity: activity})
+
+    assert status.uri == id
+    assert status.url == "https://wedistribute.org/2019/07/mastodon-drops-ostatus/"
+  end
+
   test "a reblog" do
     user = insert(:user)
     activity = insert(:note_activity)

@@ -152,6 +152,7 @@ defmodule Pleroma.Mixfile do
       {:benchee, "~> 1.0"},
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_rated, "~> 1.3"},
+      {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test},
       {:mox, "~> 0.5", only: :test}
@@ -191,12 +192,13 @@ defmodule Pleroma.Mixfile do
            tag = String.trim(tag),
            {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
            describe = String.trim(describe),
-           ahead <- String.replace(describe, tag, "") do
+           ahead <- String.replace(describe, tag, ""),
+           ahead <- String.trim_leading(ahead, "-") do
         {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
       else
         _ ->
           {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-          {nil, "-0-g" <> String.trim(commit_hash)}
+          {nil, "0-g" <> String.trim(commit_hash)}
       end
 
     if git_tag && version != git_tag do
@@ -208,14 +210,15 @@ defmodule Pleroma.Mixfile do
     # Branch name as pre-release version component, denoted with a dot
     branch_name =
       with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+           branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
-           true <- branch_name != "master" do
+           true <- branch_name not in ["master", "HEAD"] do
         branch_name =
           branch_name
           |> String.trim()
           |> String.replace(identifier_filter, "-")
 
-        "." <> branch_name
+        branch_name
       end
 
     build_name =
@@ -235,6 +238,17 @@ defmodule Pleroma.Mixfile do
         env_override -> env_override
       end
 
+    # Pre-release version, denoted by appending a hyphen
+    # and a series of dot separated identifiers
+    pre_release =
+      [git_pre_release, branch_name]
+      |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.join(".")
+      |> (fn
+            "" -> nil
+            string -> "-" <> String.replace(string, identifier_filter, "-")
+          end).()
+
     # Build metadata, denoted with a plus sign
     build_metadata =
       [build_name, env_name]
@@ -245,7 +259,7 @@ defmodule Pleroma.Mixfile do
             string -> "+" <> String.replace(string, identifier_filter, "-")
           end).()
 
-    [version, git_pre_release, branch_name, build_metadata]
+    [version, pre_release, build_metadata]
     |> Enum.filter(fn string -> string && string != "" end)
     |> Enum.join()
   end

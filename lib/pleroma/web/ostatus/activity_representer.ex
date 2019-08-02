@@ -9,6 +9,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   alias Pleroma.Web.OStatus.UserRepresenter
 
   require Logger
+  require Pleroma.Constants
 
   defp get_href(id) do
     with %Object{data: %{"external_url" => external_url}} <- Object.get_cached_by_ap_id(id) do
@@ -34,7 +35,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     Enum.map(to, fn id ->
       cond do
         # Special handling for the AP/Ostatus public collections
-        "https://www.w3.org/ns/activitystreams#Public" == id ->
+        Pleroma.Constants.as_public() == id ->
           {:link,
            [
              rel: "mentioned",

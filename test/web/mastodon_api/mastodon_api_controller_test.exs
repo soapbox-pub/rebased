@@ -3154,6 +3154,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert redirected_to(conn) == "/web/login"
     end
 
+    test "redirects not logged-in users to the login page on private instances", %{
+      conn: conn,
+      path: path
+    } do
+      is_public = Pleroma.Config.get([:instance, :public])
+      Pleroma.Config.put([:instance, :public], false)
+
+      conn = get(conn, path)
+
+      assert conn.status == 302
+      assert redirected_to(conn) == "/web/login"
+
+      Pleroma.Config.put([:instance, :public], is_public)
+    end
+
     test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
       token = insert(:oauth_token)
 
@@ -3921,6 +3936,47 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       conn = post(conn, "/auth/password?email=#{user.email}")
       assert conn.status == 400
       assert conn.resp_body == ""
+    end
+  end
+
+  describe "POST /api/v1/pleroma/accounts/confirmation_resend" do
+    setup do
+      setting = Pleroma.Config.get([:instance, :account_activation_required])
+
+      unless setting do
+        Pleroma.Config.put([:instance, :account_activation_required], true)
+        on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
+      end
+
+      user = insert(:user)
+      info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
+
+      {:ok, user} =
+        user
+        |> Changeset.change()
+        |> Changeset.put_embed(:info, info_change)
+        |> Repo.update()
+
+      assert user.info.confirmation_pending
+
+      [user: user]
+    end
+
+    test "resend account confirmation email", %{conn: conn, user: user} do
+      conn
+      |> assign(:user, user)
+      |> post("/api/v1/pleroma/accounts/confirmation_resend?email=#{user.email}")
+      |> json_response(:no_content)
+
+      email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
+      notify_email = Pleroma.Config.get([:instance, :notify_email])
+      instance_name = Pleroma.Config.get([:instance, :name])
+
+      assert_email_sent(
+        from: {instance_name, notify_email},
+        to: {user.name, user.email},
+        html_body: email.html_body
+      )
     end
   end
 end
