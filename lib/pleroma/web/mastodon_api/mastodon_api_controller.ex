@@ -5,7 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   use Pleroma.Web, :controller
 
-  import Pleroma.Web.ControllerHelper, only: [json_response: 3]
+  import Pleroma.Web.ControllerHelper,
+    only: [json_response: 3, add_link_headers: 5, add_link_headers: 4, add_link_headers: 3]
 
   alias Ecto.Changeset
   alias Pleroma.Activity
@@ -340,71 +341,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def custom_emojis(conn, _params) do
     mastodon_emoji = mastodonized_emoji()
     json(conn, mastodon_emoji)
-  end
-
-  defp add_link_headers(conn, method, activities, param \\ nil, params \\ %{}) do
-    params =
-      conn.params
-      |> Map.drop(["since_id", "max_id", "min_id"])
-      |> Map.merge(params)
-
-    last = List.last(activities)
-
-    if last do
-      max_id = last.id
-
-      limit =
-        params
-        |> Map.get("limit", "20")
-        |> String.to_integer()
-
-      min_id =
-        if length(activities) <= limit do
-          activities
-          |> List.first()
-          |> Map.get(:id)
-        else
-          activities
-          |> Enum.at(limit * -1)
-          |> Map.get(:id)
-        end
-
-      {next_url, prev_url} =
-        if param do
-          {
-            mastodon_api_url(
-              Pleroma.Web.Endpoint,
-              method,
-              param,
-              Map.merge(params, %{max_id: max_id})
-            ),
-            mastodon_api_url(
-              Pleroma.Web.Endpoint,
-              method,
-              param,
-              Map.merge(params, %{min_id: min_id})
-            )
-          }
-        else
-          {
-            mastodon_api_url(
-              Pleroma.Web.Endpoint,
-              method,
-              Map.merge(params, %{max_id: max_id})
-            ),
-            mastodon_api_url(
-              Pleroma.Web.Endpoint,
-              method,
-              Map.merge(params, %{min_id: min_id})
-            )
-          }
-        end
-
-      conn
-      |> put_resp_header("link", "<#{next_url}>; rel=\"next\", <#{prev_url}>; rel=\"prev\"")
-    else
-      conn
-    end
   end
 
   def home_timeline(%{assigns: %{user: user}} = conn, params) do

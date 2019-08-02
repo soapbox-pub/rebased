@@ -33,4 +33,80 @@ defmodule Pleroma.Web.ControllerHelper do
   end
 
   defp param_to_integer(_, default), do: default
+
+  def add_link_headers(
+        conn,
+        method,
+        activities,
+        param \\ nil,
+        params \\ %{},
+        func3 \\ nil,
+        func4 \\ nil
+      ) do
+    params =
+      conn.params
+      |> Map.drop(["since_id", "max_id", "min_id"])
+      |> Map.merge(params)
+
+    last = List.last(activities)
+
+    func3 = func3 || (&mastodon_api_url/3)
+    func4 = func4 || (&mastodon_api_url/4)
+
+    if last do
+      max_id = last.id
+
+      limit =
+        params
+        |> Map.get("limit", "20")
+        |> String.to_integer()
+
+      min_id =
+        if length(activities) <= limit do
+          activities
+          |> List.first()
+          |> Map.get(:id)
+        else
+          activities
+          |> Enum.at(limit * -1)
+          |> Map.get(:id)
+        end
+
+      {next_url, prev_url} =
+        if param do
+          {
+            func4.(
+              Pleroma.Web.Endpoint,
+              method,
+              param,
+              Map.merge(params, %{max_id: max_id})
+            ),
+            func4.(
+              Pleroma.Web.Endpoint,
+              method,
+              param,
+              Map.merge(params, %{min_id: min_id})
+            )
+          }
+        else
+          {
+            func3.(
+              Pleroma.Web.Endpoint,
+              method,
+              Map.merge(params, %{max_id: max_id})
+            ),
+            func3.(
+              Pleroma.Web.Endpoint,
+              method,
+              Map.merge(params, %{min_id: min_id})
+            )
+          }
+        end
+
+      conn
+      |> put_resp_header("link", "<#{next_url}>; rel=\"next\", <#{prev_url}>; rel=\"prev\"")
+    else
+      conn
+    end
+  end
 end
