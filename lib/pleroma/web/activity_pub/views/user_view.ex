@@ -57,7 +57,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       },
       "endpoints" => endpoints
     }
-    |> Map.merge(if user.nickname == nil do %{} else %{ "preferredUsername" => user.nickname})
     |> Map.merge(Utils.make_json_ld_header())
   end
 
@@ -66,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     do: render("service.json", %{user: user})
 
   def render("user.json", %{user: %User{nickname: "internal." <> _} = user}),
-    do: render("service.json", %{user: user})
+    do: render("service.json", %{user: user}) |> Map.put("preferredUsername", user.nickname)
 
   def render("user.json", %{user: user}) do
     {:ok, user} = User.ensure_keys_present(user)
