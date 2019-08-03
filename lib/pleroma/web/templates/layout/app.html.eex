@@ -36,6 +36,11 @@
         margin-bottom: 20px;
       }
 
+      a {
+        color: color: #d8a070;
+        text-decoration: none;
+      }
+
       form {
         width: 100%;
       }
