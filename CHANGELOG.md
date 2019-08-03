@@ -69,6 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Optional signing of ActivityPub object fetches.
 - Admin API: Endpoint for fetching latest user's statuses
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
+- Relays: Added a task to list relay subscriptions.
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
