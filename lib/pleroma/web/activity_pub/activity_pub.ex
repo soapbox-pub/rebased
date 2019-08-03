@@ -267,6 +267,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     else
       {:fake, true, activity} ->
         {:ok, activity}
+
+      {:error, message} ->
+        {:error, message}
     end
   end
 
