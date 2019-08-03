@@ -45,7 +45,6 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       "following" => "#{user.ap_id}/following",
       "followers" => "#{user.ap_id}/followers",
       "inbox" => "#{user.ap_id}/inbox",
-      "preferredUsername" => user.nickname,
       "name" => "Pleroma",
       "summary" =>
         "An internal service actor for this Pleroma instance.  No user-serviceable parts inside.",
@@ -58,6 +57,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       },
       "endpoints" => endpoints
     }
+    |> Map.merge(if user.nickname == nil do %{} else %{ "preferredUsername" => user.nickname})
     |> Map.merge(Utils.make_json_ld_header())
   end
 
