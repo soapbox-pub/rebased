@@ -24,7 +24,6 @@ defmodule Pleroma.Emails.AdminEmailTest do
 
     assert res.to == [{to_user.name, to_user.email}]
     assert res.from == {config[:name], config[:notify_email]}
-    assert res.reply_to == {reporter.name, reporter.email}
     assert res.subject == "#{config[:name]} Report"
 
     assert res.html_body ==
@@ -33,5 +32,18 @@ defmodule Pleroma.Emails.AdminEmailTest do
              }\">#{account.nickname}</a></p>\n<p>Comment: Test comment\n<p> Statuses:\n  <ul>\n    <li><a href=\"#{
                status_url
              }\">#{status_url}</li>\n  </ul>\n</p>\n\n"
+  end
+
+  test "it works when the reporter is a remote user without email" do
+    config = Pleroma.Config.get(:instance)
+    to_user = insert(:user)
+    reporter = insert(:user, email: nil, local: false)
+    account = insert(:user)
+
+    res =
+      AdminEmail.report(to_user, reporter, account, [%{name: "Test", id: "12"}], "Test comment")
+
+    assert res.to == [{to_user.name, to_user.email}]
+    assert res.from == {config[:name], config[:notify_email]}
   end
 end
