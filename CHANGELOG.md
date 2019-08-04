@@ -76,6 +76,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
 
+### Removed
+- Emoji: Remove longfox emojis.
+
 ## [1.0.1] - 2019-07-14
 ### Security
 - OStatus: fix an object spoofing vulnerability.
