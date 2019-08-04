@@ -182,8 +182,8 @@ defmodule Pleroma.Factory do
     }
   end
 
-  def like_activity_factory do
-    note_activity = insert(:note_activity)
+  def like_activity_factory(attrs \\ %{}) do
+    note_activity = attrs[:note_activity] || insert(:note_activity)
     object = Object.normalize(note_activity)
     user = insert(:user)
 
