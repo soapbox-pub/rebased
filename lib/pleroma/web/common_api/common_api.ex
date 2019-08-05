@@ -223,7 +223,7 @@ defmodule Pleroma.Web.CommonAPI do
          {poll, poll_emoji} <- make_poll_data(data),
          {to, cc} <-
            get_to_and_cc(user, addressed_users, in_reply_to, visibility, in_reply_to_conversation),
-         context <- make_context(in_reply_to),
+         context <- make_context(in_reply_to, in_reply_to_conversation),
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
          full_payload <- String.trim(status <> cw),

@@ -244,8 +244,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   defp maybe_add_nsfw_tag(data, _), do: data
 
-  def make_context(%Activity{data: %{"context" => context}}), do: context
-  def make_context(_), do: Utils.generate_context_id()
+  def make_context(_, %Participation{} = participation) do
+    Repo.preload(participation, :conversation).conversation.ap_id
+  end
+
+  def make_context(%Activity{data: %{"context" => context}}, _), do: context
+  def make_context(_, _), do: Utils.generate_context_id()
 
   def maybe_add_attachments(parsed, _attachments, true = _no_links), do: parsed
 

@@ -9,9 +9,24 @@ defmodule Pleroma.Web.CommonAPITest do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  test "when replying to a conversation / participation, it will set the correct context id even if no explicit reply_to is given" do
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+
+    [participation] = Participation.for_user(user)
+
+    {:ok, convo_reply} =
+      CommonAPI.post(user, %{"status" => ".", "in_reply_to_conversation_id" => participation.id})
+
+    assert Visibility.is_direct?(convo_reply)
+
+    assert activity.data["context"] == convo_reply.data["context"]
+  end
 
   test "when replying to a conversation / participation, it only mentions the recipients explicitly declared in the participation" do
     har = insert(:user)
