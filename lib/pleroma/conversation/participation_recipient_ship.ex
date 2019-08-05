@@ -6,8 +6,8 @@ defmodule Pleroma.Conversation.Participation.RecipientShip do
   use Ecto.Schema
 
   alias Pleroma.Conversation.Participation
-  alias Pleroma.User
   alias Pleroma.Repo
+  alias Pleroma.User
 
   import Ecto.Changeset
 

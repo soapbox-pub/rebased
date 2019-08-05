@@ -6,8 +6,8 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
   use Pleroma.Web.ConnCase
 
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Repo
+  alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
 

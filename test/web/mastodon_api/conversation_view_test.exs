@@ -5,8 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.ConversationViewTest do
   use Pleroma.DataCase
 
-  alias Pleroma.Web.CommonAPI
   alias Pleroma.Conversation.Participation
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.MastodonAPI.ConversationView
 
   import Pleroma.Factory

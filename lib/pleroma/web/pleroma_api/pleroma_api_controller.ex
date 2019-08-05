@@ -8,10 +8,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 7]
 
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Web.ActivityPub.ActivityPub
-  alias Pleroma.Web.MastodonAPI.StatusView
-  alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Repo
+  alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.MastodonAPI.ConversationView
+  alias Pleroma.Web.MastodonAPI.StatusView
 
   def conversation_statuses(
         %{assigns: %{user: user}} = conn,
