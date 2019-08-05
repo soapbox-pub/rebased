@@ -10,7 +10,7 @@ config :pleroma, :instance,
   notify_email: System.get_env("NOTIFY_EMAIL"),
   limit: 5000,
   registrations_open: false,
-  dynamic_configuration: true
+  healthcheck: true
 
 config :pleroma, Pleroma.Repo,
   adapter: Ecto.Adapters.Postgres,
