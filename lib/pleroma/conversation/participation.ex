@@ -99,4 +99,24 @@ defmodule Pleroma.Conversation.Participation do
   def get(id) do
     Repo.get(__MODULE__, id)
   end
+
+  def set_recipients(participation, user_ids) do
+    Repo.transaction(fn ->
+      query =
+        from(r in RecipientShip,
+          where: r.participation_id == ^participation.id
+        )
+
+      Repo.delete_all(query)
+
+      users =
+        from(u in User,
+          where: u.id in ^user_ids
+        )
+        |> Repo.all()
+
+      RecipientShip.create(users, participation)
+      :ok
+    end)
+  end
 end

@@ -7,6 +7,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
   alias Pleroma.Conversation.Participation
   alias Pleroma.Web.CommonAPI
+  alias Pleroma.Repo
 
   import Pleroma.Factory
 
@@ -41,5 +42,35 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
     id_one = activity.id
     id_two = activity_two.id
     assert [%{"id" => ^id_one}, %{"id" => ^id_two}] = result
+  end
+
+  test "PATCH /api/v1/pleroma/conversations/:id", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => "Hi", "visibility" => "direct"})
+
+    [participation] = Participation.for_user(user)
+
+    participation = Repo.preload(participation, :recipients)
+
+    assert [user] == participation.recipients
+    assert other_user not in participation.recipients
+
+    result =
+      conn
+      |> assign(:user, user)
+      |> patch("/api/v1/pleroma/conversations/#{participation.id}", %{
+        "recipients" => [user.id, other_user.id]
+      })
+      |> json_response(200)
+
+    assert result["id"] == participation.id |> to_string
+
+    assert recipients = result["pleroma"]["recipients"]
+    recipient_ids = Enum.map(recipients, & &1["id"])
+
+    assert user.id in recipient_ids
+    assert other_user.id in recipient_ids
   end
 end

@@ -12,7 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("participation.json", %{participation: participation, user: user}) do
-    participation = Repo.preload(participation, conversation: :users)
+    participation = Repo.preload(participation, conversation: :users, recipients: [])
 
     last_activity_id =
       with nil <- participation.last_activity_id do
@@ -37,11 +37,20 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
         as: :user
       })
 
+    recipients =
+      AccountView.render("accounts.json", %{
+        users: participation.recipients,
+        as: :user
+      })
+
     %{
       id: participation.id |> to_string(),
       accounts: accounts,
       unread: !participation.read,
-      last_status: last_status
+      last_status: last_status,
+      pleroma: %{
+        recipients: recipients
+      }
     }
   end
 end

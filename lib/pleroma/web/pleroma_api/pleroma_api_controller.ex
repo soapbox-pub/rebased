@@ -10,6 +10,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.StatusView
+  alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Repo
 
   def conversation_statuses(
@@ -44,6 +45,22 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
       )
       |> put_view(StatusView)
       |> render("index.json", %{activities: activities, for: user, as: :activity})
+    end
+  end
+
+  def update_conversation(
+        %{assigns: %{user: user}} = conn,
+        %{"id" => participation_id, "recipients" => recipients}
+      ) do
+    participation =
+      participation_id
+      |> Participation.get()
+
+    with true <- user.id == participation.user_id,
+         {:ok, _} <- Participation.set_recipients(participation, recipients) do
+      conn
+      |> put_view(ConversationView)
+      |> render("participation.json", %{participation: participation, user: user})
     end
   end
 end

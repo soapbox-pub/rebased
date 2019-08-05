@@ -263,6 +263,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
       get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
+      patch("/conversations/:id", PleromaAPIController, :update_conversation)
     end
   end
 
