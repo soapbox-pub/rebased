@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Not being able to pin unlisted posts
+- Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
 - Metadata rendering errors resulting in the entire page being inaccessible
 - Federation/MediaProxy not working with instances that have wrong certificate order
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
