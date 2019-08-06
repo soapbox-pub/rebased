@@ -40,7 +40,7 @@ defmodule Pleroma.Conversation do
     Repo.get_by(__MODULE__, ap_id: ap_id)
   end
 
-  def maybe_set_recipients(participation, activity) do
+  def maybe_create_recipientships(participation, activity) do
     participation = Repo.preload(participation, :recipients)
 
     if participation.recipients |> Enum.empty?() do
@@ -70,7 +70,7 @@ defmodule Pleroma.Conversation do
           {:ok, participation} =
             Participation.create_for_user_and_conversation(user, conversation, opts)
 
-          maybe_set_recipients(participation, activity)
+          maybe_create_recipientships(participation, activity)
           participation
         end)
 
