@@ -199,7 +199,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == user.ap_id
     assert retweeted_activity.local
-    assert retweeted_activity.data["object"]["announcement_count"] == 1
+    assert Object.normalize(retweeted_activity).data["announcement_count"] == 1
   end
 
   test "handle incoming retweets - Mastodon, salmon" do
