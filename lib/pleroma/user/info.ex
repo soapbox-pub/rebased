@@ -50,6 +50,7 @@ defmodule Pleroma.User.Info do
     field(:emoji, {:array, :map}, default: [])
     field(:pleroma_settings_store, :map, default: %{})
     field(:fields, {:array, :map}, default: [])
+    field(:raw_fields, {:array, :map}, default: [])
 
     field(:notification_settings, :map,
       default: %{
@@ -270,8 +271,10 @@ defmodule Pleroma.User.Info do
       :follower_count,
       :following_count,
       :hide_follows,
+      :fields,
       :hide_followers
     ])
+    |> validate_fields()
   end
 
   def profile_update(info, params) do
@@ -288,6 +291,7 @@ defmodule Pleroma.User.Info do
       :show_role,
       :skip_thread_containment,
       :fields,
+      :raw_fields,
       :pleroma_settings_store
     ])
     |> validate_fields()
@@ -415,7 +419,7 @@ defmodule Pleroma.User.Info do
 
   # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
   # For example: [{"name": "Pronoun", "value": "she/her"}, …]
-  def fields(%{source_data: %{"attachment" => attachment}}) do
+  def fields(%{fields: [], source_data: %{"attachment" => attachment}}) do
     attachment
     |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
     |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)

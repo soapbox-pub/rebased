@@ -93,11 +93,19 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
         }
       end)
 
-    fields = User.Info.fields(user.info)
-    fields_html = Enum.map(fields, fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
+    fields =
+      user.info
+      |> User.Info.fields()
+      |> Enum.map(fn %{"name" => name, "value" => value} ->
+        %{
+          "name" => Pleroma.HTML.strip_tags(name),
+          "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+        }
+      end)
+
+    raw_fields = Map.get(user.info, :raw_fields, [])
 
     bio = HTML.filter_tags(user.bio, User.html_filter_policy(opts[:for]))
-
     relationship = render("relationship.json", %{user: opts[:for], target: user})
 
     %{
@@ -117,12 +125,12 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       header: header,
       header_static: header,
       emojis: emojis,
-      fields: fields_html,
+      fields: fields,
       bot: bot,
       source: %{
         note: HTML.strip_tags((user.bio || "") |> String.replace("<br>", "\n")),
         sensitive: false,
-        fields: fields,
+        fields: raw_fields,
         pleroma: %{}
       },
 

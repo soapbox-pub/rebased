@@ -305,7 +305,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       user = insert(:user)
 
       fields = [
-        %{"name" => "<b>foo<b>", "value" => "<i>bar</i>"},
+        %{"name" => "<a href=\"http://google.com\">foo</a>", "value" => "<script>bar</script>"},
         %{"name" => "link", "value" => "cofe.io"}
       ]
 
@@ -316,12 +316,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
         |> json_response(200)
 
       assert account["fields"] == [
-               %{"name" => "&lt;b&gt;foo&lt;b&gt;", "value" => "&lt;i&gt;bar&lt;/i&gt;"},
+               %{"name" => "foo", "value" => "bar"},
                %{"name" => "link", "value" => "<a href=\"http://cofe.io\">cofe.io</a>"}
              ]
 
       assert account["source"]["fields"] == [
-               %{"name" => "&lt;b&gt;foo&lt;b&gt;", "value" => "&lt;i&gt;bar&lt;/i&gt;"},
+               %{
+                 "name" => "<a href=\"http://google.com\">foo</a>",
+                 "value" => "<script>bar</script>"
+               },
                %{"name" => "link", "value" => "cofe.io"}
              ]
 

@@ -74,7 +74,15 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
       |> HTML.filter_tags(User.html_filter_policy(for_user))
       |> Formatter.emojify(emoji)
 
-    fields = User.Info.fields(user.info)
+    fields =
+      user.info
+      |> User.Info.fields()
+      |> Enum.map(fn %{"name" => name, "value" => value} ->
+        %{
+          "name" => Pleroma.HTML.strip_tags(name),
+          "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+        }
+      end)
 
     data =
       %{

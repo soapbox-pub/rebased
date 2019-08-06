@@ -518,9 +518,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(activity.actor)
 
-      assert user.info.source_data["attachment"] == [
-               %{"name" => "foo", "type" => "PropertyValue", "value" => "bar"},
-               %{"name" => "foo1", "type" => "PropertyValue", "value" => "bar1"}
+      assert User.Info.fields(user.info) == [
+               %{"name" => "foo", "value" => "bar"},
+               %{"name" => "foo1", "value" => "bar1"}
              ]
 
       update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
@@ -539,9 +539,9 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
 
       user = User.get_cached_by_ap_id(user.ap_id)
 
-      assert user.info.source_data["attachment"] == [
-               %{"name" => "foo", "type" => "PropertyValue", "value" => "updated"},
-               %{"name" => "foo1", "type" => "PropertyValue", "value" => "updated"}
+      assert User.Info.fields(user.info) == [
+               %{"name" => "foo", "value" => "updated"},
+               %{"name" => "foo1", "value" => "updated"}
              ]
     end
 

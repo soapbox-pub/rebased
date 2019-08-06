@@ -24,21 +24,16 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
 
   test "Renders profile fields" do
     fields = [
-      %{"name" => "foo", "value" => "bar"},
-      %{"name" => "website", "value" => "cofe.my"}
+      %{"name" => "foo", "value" => "bar"}
     ]
 
-    user = insert(:user, info: %{fields: fields})
+    {:ok, user} =
+      insert(:user)
+      |> User.upgrade_changeset(%{info: %{fields: fields}})
+      |> User.update_and_set_cache()
 
     assert %{
-             "attachment" => [
-               %{"name" => "foo", "type" => "PropertyValue", "value" => "bar"},
-               %{
-                 "name" => "website",
-                 "type" => "PropertyValue",
-                 "value" => "<a href=\"http://cofe.my\">cofe.my</a>"
-               }
-             ]
+             "attachment" => [%{"name" => "foo", "type" => "PropertyValue", "value" => "bar"}]
            } = UserView.render("user.json", %{user: user})
   end
 

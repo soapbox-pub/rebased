@@ -83,8 +83,13 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     fields =
       user.info
       |> User.Info.fields()
+      |> Enum.map(fn %{"name" => name, "value" => value} ->
+        %{
+          "name" => Pleroma.HTML.strip_tags(name),
+          "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+        }
+      end)
       |> Enum.map(&Map.put(&1, "type", "PropertyValue"))
-      |> Enum.map(fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
 
     %{
       "id" => user.ap_id,

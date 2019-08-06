@@ -137,7 +137,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     emojis_text = (user_params["display_name"] || "") <> (user_params["note"] || "")
 
     user_info_emojis =
-      ((user.info.emoji || []) ++ Formatter.get_emoji_map(emojis_text))
+      user.info
+      |> Map.get(:emoji, [])
+      |> Enum.concat(Formatter.get_emoji_map(emojis_text))
       |> Enum.dedup()
 
     info_params =
@@ -157,16 +159,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       end)
       |> add_if_present(params, "default_scope", :default_scope)
       |> add_if_present(params, "fields", :fields, fn fields ->
-        fields =
-          Enum.map(fields, fn field ->
-            %{
-              "name" => Formatter.html_escape(field["name"], "text/plain"),
-              "value" => Formatter.html_escape(field["value"], "text/plain")
-            }
-          end)
+        fields = Enum.map(fields, fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
 
         {:ok, fields}
       end)
+      |> add_if_present(params, "fields", :raw_fields)
       |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store, fn value ->
         {:ok, Map.merge(user.info.pleroma_settings_store, value)}
       end)
