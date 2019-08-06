@@ -101,6 +101,10 @@ defmodule Pleroma.Conversation.Participation do
   end
 
   def set_recipients(participation, user_ids) do
+    user_ids =
+      [participation.user_id | user_ids]
+      |> Enum.uniq()
+
     Repo.transaction(fn ->
       query =
         from(r in RecipientShip,
@@ -118,5 +122,7 @@ defmodule Pleroma.Conversation.Participation do
       RecipientShip.create(users, participation)
       :ok
     end)
+
+    {:ok, Repo.preload(participation, :recipients, force: true)}
   end
 end

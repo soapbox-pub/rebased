@@ -346,5 +346,5 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Method `PATCH`
 * Authentication: required
 * Params:
-    * `recipients`: A list of ids of users that should receive posts to this conversation.
+    * `recipients`: A list of ids of users that should receive posts to this conversation. This will replace the current list of recipients, so submit the full list. The owner of owner of the conversation will always be part of the set of recipients, though.
 * Response: JSON, statuses (200 - healthy, 503 unhealthy)

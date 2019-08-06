@@ -132,4 +132,23 @@ defmodule Pleroma.Conversation.ParticipationTest do
 
     [] = Participation.for_user_with_last_activity_id(user)
   end
+
+  test "it sets recipients, always keeping the owner of the participation even when not explicitly set" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+    [participation] = Participation.for_user_with_last_activity_id(user)
+
+    participation = Repo.preload(participation, :recipients)
+
+    assert participation.recipients |> length() == 1
+    assert user in participation.recipients
+
+    {:ok, participation} = Participation.set_recipients(participation, [other_user.id])
+
+    assert participation.recipients |> length() == 2
+    assert user in participation.recipients
+    assert other_user in participation.recipients
+  end
 end
