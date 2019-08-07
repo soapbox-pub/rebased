@@ -423,9 +423,12 @@ defmodule Pleroma.User.Info do
   # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
   # For example: [{"name": "Pronoun", "value": "she/her"}, …]
   def fields(%{fields: [], source_data: %{"attachment" => attachment}}) do
+    limit = Pleroma.Config.get([:instance, :max_remote_account_fields], 0)
+
     attachment
     |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
     |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+    |> Enum.take(limit)
   end
 
   def fields(%{fields: fields}), do: fields
