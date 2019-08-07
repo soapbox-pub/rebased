@@ -28,7 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.AccountView do
       id: to_string(user.id),
       acct: user.nickname,
       username: username_from_nickname(user.nickname),
-      url: user.ap_id
+      url: User.profile_url(user) || user.ap_id
     }
   end
 
