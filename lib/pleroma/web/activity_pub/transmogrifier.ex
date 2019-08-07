@@ -611,7 +611,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         |> Map.put(:info, %{banner: banner, locked: locked, fields: fields})
 
       actor
-      |> User.upgrade_changeset(update_data)
+      |> User.upgrade_changeset(update_data, true)
       |> User.update_and_set_cache()
 
       ActivityPub.update(%{

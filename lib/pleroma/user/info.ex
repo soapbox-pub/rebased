@@ -256,11 +256,13 @@ defmodule Pleroma.User.Info do
       :hide_followers,
       :hide_follows,
       :follower_count,
+      :fields,
       :following_count
     ])
+    |> validate_fields(true)
   end
 
-  def user_upgrade(info, params) do
+  def user_upgrade(info, params, remote? \\ false) do
     info
     |> cast(params, [
       :ap_enabled,
@@ -274,7 +276,7 @@ defmodule Pleroma.User.Info do
       :fields,
       :hide_followers
     ])
-    |> validate_fields()
+    |> validate_fields(remote?)
   end
 
   def profile_update(info, params) do
@@ -297,8 +299,9 @@ defmodule Pleroma.User.Info do
     |> validate_fields()
   end
 
-  def validate_fields(changeset) do
-    limit = Pleroma.Config.get([:instance, :max_account_fields], 0)
+  def validate_fields(changeset, remote? \\ false) do
+    limit_name = if remote?, do: :max_remote_account_fields, else: :max_account_fields
+    limit = Pleroma.Config.get([:instance, limit_name], 0)
 
     changeset
     |> validate_length(:fields, max: limit)

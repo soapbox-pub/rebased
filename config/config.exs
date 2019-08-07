@@ -256,6 +256,7 @@ config :pleroma, :instance,
   user_bio_length: 5000,
   user_name_length: 100,
   max_account_fields: 4,
+  max_remote_account_fields: 10,
   account_field_name_length: 255,
   account_field_value_length: 255,
   external_user_synchronization: true

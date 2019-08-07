@@ -1016,6 +1016,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "url" => [%{"href" => data["image"]["url"]}]
         }
 
+    fields =
+      data
+      |> Map.get("attachment", [])
+      |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
+      |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
 
@@ -1025,6 +1031,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         ap_enabled: true,
         source_data: data,
         banner: banner,
+        fields: fields,
         locked: locked
       },
       avatar: avatar,
