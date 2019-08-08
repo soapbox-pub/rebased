@@ -25,7 +25,7 @@ At this time, write CNAME to CDN in public_endpoint.
 
 ## Pleroma.Upload.Filter.Mogrify
 
-* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"impode", "1"}]`.
+* `args`: List of actions for the `mogrify` command like `"strip"` or `["strip", "auto-orient", {"implode", "1"}]`.
 
 ## Pleroma.Upload.Filter.Dedupe
 

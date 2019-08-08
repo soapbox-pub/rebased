@@ -114,7 +114,7 @@ defmodule Pleroma.Object.Fetcher do
     end
   end
 
-  def fetch_and_contain_remote_object_from_id(id) do
+  def fetch_and_contain_remote_object_from_id(id) when is_binary(id) do
     Logger.info("Fetching object #{id} via AP")
 
     date =
@@ -141,4 +141,9 @@ defmodule Pleroma.Object.Fetcher do
         {:error, e}
     end
   end
+
+  def fetch_and_contain_remote_object_from_id(%{"id" => id}),
+    do: fetch_and_contain_remote_object_from_id(id)
+
+  def fetch_and_contain_remote_object_from_id(_id), do: {:error, "id must be a string"}
 end

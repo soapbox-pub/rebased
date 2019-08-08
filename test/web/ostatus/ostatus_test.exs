@@ -199,7 +199,7 @@ defmodule Pleroma.Web.OStatusTest do
     assert retweeted_activity.data["type"] == "Create"
     assert retweeted_activity.data["actor"] == user.ap_id
     assert retweeted_activity.local
-    assert retweeted_activity.data["object"]["announcement_count"] == 1
+    assert Object.normalize(retweeted_activity).data["announcement_count"] == 1
   end
 
   test "handle incoming retweets - Mastodon, salmon" do
@@ -326,6 +326,14 @@ defmodule Pleroma.Web.OStatusTest do
     assert User.following?(follower, followed)
   end
 
+  test "refuse following over OStatus if the followed's account is locked" do
+    incoming = File.read!("test/fixtures/follow.xml")
+    _user = insert(:user, info: %{locked: true}, ap_id: "https://pawoo.net/users/pekorino")
+
+    {:ok, [{:error, "It's not possible to follow locked accounts over OStatus"}]} =
+      OStatus.handle_incoming(incoming)
+  end
+
   test "handle incoming unfollows with existing follow" do
     incoming_follow = File.read!("test/fixtures/follow.xml")
     {:ok, [_activity]} = OStatus.handle_incoming(incoming_follow)
@@ -426,7 +434,7 @@ defmodule Pleroma.Web.OStatusTest do
                }
     end
 
-    test "find_make_or_update_user takes an author element and returns an updated user" do
+    test "find_make_or_update_actor takes an author element and returns an updated user" do
       uri = "https://social.heldscal.la/user/23211"
 
       {:ok, user} = OStatus.find_or_make_user(uri)
@@ -439,13 +447,55 @@ defmodule Pleroma.Web.OStatusTest do
 
       doc = XML.parse_document(File.read!("test/fixtures/23211.atom"))
       [author] = :xmerl_xpath.string('//author[1]', doc)
-      {:ok, user} = OStatus.find_make_or_update_user(author)
+      {:ok, user} = OStatus.find_make_or_update_actor(author)
       assert user.avatar["type"] == "Image"
       assert user.name == old_name
       assert user.bio == old_bio
 
-      {:ok, user_again} = OStatus.find_make_or_update_user(author)
+      {:ok, user_again} = OStatus.find_make_or_update_actor(author)
       assert user_again == user
+    end
+
+    test "find_or_make_user disallows protocol downgrade" do
+      user = insert(:user, %{local: true})
+      {:ok, user} = OStatus.find_or_make_user(user.ap_id)
+
+      assert User.ap_enabled?(user)
+
+      user =
+        insert(:user, %{
+          ap_id: "https://social.heldscal.la/user/23211",
+          info: %{ap_enabled: true},
+          local: false
+        })
+
+      assert User.ap_enabled?(user)
+
+      {:ok, user} = OStatus.find_or_make_user(user.ap_id)
+      assert User.ap_enabled?(user)
+    end
+
+    test "find_make_or_update_actor disallows protocol downgrade" do
+      user = insert(:user, %{local: true})
+      {:ok, user} = OStatus.find_or_make_user(user.ap_id)
+
+      assert User.ap_enabled?(user)
+
+      user =
+        insert(:user, %{
+          ap_id: "https://social.heldscal.la/user/23211",
+          info: %{ap_enabled: true},
+          local: false
+        })
+
+      assert User.ap_enabled?(user)
+
+      {:ok, user} = OStatus.find_or_make_user(user.ap_id)
+      assert User.ap_enabled?(user)
+
+      doc = XML.parse_document(File.read!("test/fixtures/23211.atom"))
+      [author] = :xmerl_xpath.string('//author[1]', doc)
+      {:error, :invalid_protocol} = OStatus.find_make_or_update_actor(author)
     end
   end
 

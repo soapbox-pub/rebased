@@ -183,6 +183,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
     retweeted_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
+    retweeted_object = Object.normalize(retweeted_activity)
     retweeted_user = User.get_cached_by_ap_id(retweeted_activity.data["actor"])
 
     retweeted_xml = to_simple_form(retweeted_activity, retweeted_user, true)
@@ -197,7 +198,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/share']},
       {:id, h.(activity.data["id"])},
       {:title, ['#{user.nickname} repeated a notice']},
-      {:content, [type: 'html'], ['RT #{retweeted_activity.data["object"]["content"]}']},
+      {:content, [type: 'html'], ['RT #{retweeted_object.data["content"]}']},
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [ref: h.(activity.data["context"])],

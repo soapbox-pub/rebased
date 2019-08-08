@@ -55,8 +55,19 @@ defmodule Pleroma.Web.AdminAPI.Config do
 
   @spec delete(map()) :: {:ok, Config.t()} | {:error, Changeset.t()}
   def delete(params) do
-    with %Config{} = config <- Config.get_by_params(params) do
-      Repo.delete(config)
+    with %Config{} = config <- Config.get_by_params(Map.delete(params, :subkeys)) do
+      if params[:subkeys] do
+        updated_value =
+          Keyword.drop(
+            :erlang.binary_to_term(config.value),
+            Enum.map(params[:subkeys], &do_transform_string(&1))
+          )
+
+        Config.update(config, %{value: updated_value})
+      else
+        Repo.delete(config)
+        {:ok, nil}
+      end
     else
       nil ->
         err =

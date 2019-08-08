@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Security
+- OStatus: eliminate the possibility of a protocol downgrade attack.
+- OStatus: prevent following locked accounts, bypassing the approval process.
+
 ### Changed
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
 - **Breaking:** Configuration: `/media/` is now removed when `base_url` is configured, append `/media/` to your `base_url` config to keep the old behaviour if desired
@@ -17,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Not being able to pin unlisted posts
+- Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
 - Metadata rendering errors resulting in the entire page being inaccessible
 - Federation/MediaProxy not working with instances that have wrong certificate order
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
@@ -30,6 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub S2S: sharedInbox usage has been mostly aligned with the rules in the AP specification.
 - ActivityPub S2S: remote user deletions now work the same as local user deletions.
 - Not being able to access the Mastodon FE login page on private instances
+- Invalid SemVer version generation, when the current branch does not have commits ahead of tag/checked out on a tag
+- Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
+- Report email not being sent to admins when the reporter is a remote user
 
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
@@ -53,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Return avatar and display name when querying users
 - Admin API: Allow querying user by ID
 - Admin API: Added support for `tuples`.
+- Admin API: Added endpoints to run mix tasks pleroma.config migrate_to_db & pleroma.config migrate_from_db
 - Added synchronization of following/followers counters for external users
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
 - Configuration: Pleroma.Plugs.RateLimiter `bucket_name`, `params` options.
@@ -62,12 +71,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Optional signing of ActivityPub object fetches.
 - Admin API: Endpoint for fetching latest user's statuses
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
+- Relays: Added a task to list relay subscriptions.
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
 - Admin API: changed json structure for saving config settings.
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
+
+### Removed
+- Emoji: Remove longfox emojis.
+- Remove `Reply-To` header from report emails for admins.
 
 ## [1.0.1] - 2019-07-14
 ### Security

@@ -267,6 +267,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     else
       {:fake, true, activity} ->
         {:ok, activity}
+
+      {:error, message} ->
+        {:error, message}
     end
   end
 
@@ -746,8 +749,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_favorited_by(query, %{"favorited_by" => ap_id}) do
     from(
-      activity in query,
-      where: fragment(~s(? <@ (? #> '{"object","likes"}'\)), ^ap_id, activity.data)
+      [_activity, object] in query,
+      where: fragment("(?)->'likes' \\? (?)", object.data, ^ap_id)
     )
   end
 
@@ -1009,10 +1012,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     user_data = %{
       ap_id: data["id"],
       info: %{
-        "ap_enabled" => true,
-        "source_data" => data,
-        "banner" => banner,
-        "locked" => locked
+        ap_enabled: true,
+        source_data: data,
+        banner: banner,
+        locked: locked
       },
       avatar: avatar,
       name: data["name"],
@@ -1036,6 +1039,71 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {:ok, user_data}
   end
 
+  def fetch_follow_information_for_user(user) do
+    with {:ok, following_data} <-
+           Fetcher.fetch_and_contain_remote_object_from_id(user.following_address),
+         following_count when is_integer(following_count) <- following_data["totalItems"],
+         {:ok, hide_follows} <- collection_private(following_data),
+         {:ok, followers_data} <-
+           Fetcher.fetch_and_contain_remote_object_from_id(user.follower_address),
+         followers_count when is_integer(followers_count) <- followers_data["totalItems"],
+         {:ok, hide_followers} <- collection_private(followers_data) do
+      {:ok,
+       %{
+         hide_follows: hide_follows,
+         follower_count: followers_count,
+         following_count: following_count,
+         hide_followers: hide_followers
+       }}
+    else
+      {:error, _} = e ->
+        e
+
+      e ->
+        {:error, e}
+    end
+  end
+
+  defp maybe_update_follow_information(data) do
+    with {:enabled, true} <-
+           {:enabled, Pleroma.Config.get([:instance, :external_user_synchronization])},
+         {:ok, info} <- fetch_follow_information_for_user(data) do
+      info = Map.merge(data.info, info)
+      Map.put(data, :info, info)
+    else
+      {:enabled, false} ->
+        data
+
+      e ->
+        Logger.error(
+          "Follower/Following counter update for #{data.ap_id} failed.\n" <> inspect(e)
+        )
+
+        data
+    end
+  end
+
+  defp collection_private(data) do
+    if is_map(data["first"]) and
+         data["first"]["type"] in ["CollectionPage", "OrderedCollectionPage"] do
+      {:ok, false}
+    else
+      with {:ok, %{"type" => type}} when type in ["CollectionPage", "OrderedCollectionPage"] <-
+             Fetcher.fetch_and_contain_remote_object_from_id(data["first"]) do
+        {:ok, false}
+      else
+        {:error, {:ok, %{status: code}}} when code in [401, 403] ->
+          {:ok, true}
+
+        {:error, _} = e ->
+          e
+
+        e ->
+          {:error, e}
+      end
+    end
+  end
+
   def user_data_from_user_object(data) do
     with {:ok, data} <- MRF.filter(data),
          {:ok, data} <- object_to_user_data(data) do
@@ -1047,7 +1115,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def fetch_and_prepare_user_from_ap_id(ap_id) do
     with {:ok, data} <- Fetcher.fetch_and_contain_remote_object_from_id(ap_id),
-         {:ok, data} <- user_data_from_user_object(data) do
+         {:ok, data} <- user_data_from_user_object(data),
+         data <- maybe_update_follow_information(data) do
       {:ok, data}
     else
       e -> Logger.error("Could not decode user at fetch #{ap_id}, #{inspect(e)}")

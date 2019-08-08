@@ -251,20 +251,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def insert_full_object(map), do: {:ok, map, nil}
 
-  def update_object_in_activities(%{data: %{"id" => id}} = object) do
-    # TODO
-    # Update activities that already had this. Could be done in a seperate process.
-    # Alternatively, just don't do this and fetch the current object each time. Most
-    # could probably be taken from cache.
-    relevant_activities = Activity.get_all_create_by_object_ap_id(id)
-
-    Enum.map(relevant_activities, fn activity ->
-      new_activity_data = activity.data |> Map.put("object", object.data)
-      changeset = Changeset.change(activity, data: new_activity_data)
-      Repo.update(changeset)
-    end)
-  end
-
   #### Like-related helpers
 
   @doc """
@@ -347,8 +333,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
            |> Map.put("#{property}_count", length(element))
            |> Map.put("#{property}s", element),
          changeset <- Changeset.change(object, data: new_data),
-         {:ok, object} <- Object.update_and_set_cache(changeset),
-         _ <- update_object_in_activities(object) do
+         {:ok, object} <- Object.update_and_set_cache(changeset) do
       {:ok, object}
     end
   end

@@ -51,6 +51,10 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mastodon.social/users/not_found", _, _, _) do
+    {:ok, %Tesla.Env{status: 404}}
+  end
+
   def get("https://mastodon.sdf.org/users/rinpatch", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -792,11 +796,27 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("http://localhost:4001/users/masto_closed/followers?page=1", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/masto_closed_followers_page.json")
+     }}
+  end
+
   def get("http://localhost:4001/users/masto_closed/following", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/users_mock/masto_closed_following.json")
+     }}
+  end
+
+  def get("http://localhost:4001/users/masto_closed/following?page=1", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/masto_closed_following_page.json")
      }}
   end
 

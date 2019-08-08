@@ -9,14 +9,18 @@ defmodule Pleroma.Web.OStatus.FollowHandler do
   alias Pleroma.Web.XML
 
   def handle(entry, doc) do
-    with {:ok, actor} <- OStatus.find_make_or_update_user(doc),
+    with {:ok, actor} <- OStatus.find_make_or_update_actor(doc),
          id when not is_nil(id) <- XML.string_from_xpath("/entry/id", entry),
          followed_uri when not is_nil(followed_uri) <-
            XML.string_from_xpath("/entry/activity:object/id", entry),
          {:ok, followed} <- OStatus.find_or_make_user(followed_uri),
+         {:locked, false} <- {:locked, followed.info.locked},
          {:ok, activity} <- ActivityPub.follow(actor, followed, id, false) do
       User.follow(actor, followed)
       {:ok, activity}
+    else
+      {:locked, true} ->
+        {:error, "It's not possible to follow locked accounts over OStatus"}
     end
   end
 end
