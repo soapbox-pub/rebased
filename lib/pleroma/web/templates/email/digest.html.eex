@@ -1,0 +1,20 @@
+<h1>Hey <%= @user.nickname %>, here is what you've missed!</h1>
+
+<h2>New Mentions:</h2>
+<ul>
+<%= for %{data: mention, object: object, from: from} <- @mentions do %>
+  <li><%= link from.nickname, to: mention.activity.actor %>: <%= raw object.data["content"] %></li>
+<% end %>
+</ul>
+
+<%= if @followers != [] do %>
+<h2><%= length(@followers) %> New Followers:</h2>
+<ul>
+<%= for %{data: follow, from: from} <- @followers do %>
+  <li><%= link from.nickname, to: follow.activity.actor %></li>
+<% end %>
+</ul>
+<% end %>
+
+<p>You have received this email because you have signed up to receive digest emails from <b><%= @instance %></b> Pleroma instance.</p>
+<p>The email address you are subscribed as is <%= @user.email %>. To unsubscribe, please go <%= link "here", to: @unsubscribe_link %>.</p>

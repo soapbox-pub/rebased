@@ -5,7 +5,7 @@
 defmodule Pleroma.Emails.UserEmail do
   @moduledoc "User emails"
 
-  import Swoosh.Email
+  use Phoenix.Swoosh, view: Pleroma.Web.EmailView, layout: {Pleroma.Web.LayoutView, :email}
 
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
@@ -86,5 +86,74 @@ defmodule Pleroma.Emails.UserEmail do
     |> from(sender())
     |> subject("#{instance_name()} account confirmation")
     |> html_body(html_body)
+  end
+
+  @doc """
+  Email used in digest email notifications
+  Includes Mentions and New Followers data
+  If there are no mentions (even when new followers exist), the function will return nil
+  """
+  @spec digest_email(Pleroma.User.t()) :: Swoosh.Email.t() | nil
+  def digest_email(user) do
+    new_notifications =
+      Pleroma.Notification.for_user_since(user, user.last_digest_emailed_at)
+      |> Enum.reduce(%{followers: [], mentions: []}, fn
+        %{activity: %{data: %{"type" => "Create"}, actor: actor} = activity} = notification,
+        acc ->
+          new_mention = %{
+            data: notification,
+            object: Pleroma.Object.normalize(activity),
+            from: Pleroma.User.get_by_ap_id(actor)
+          }
+
+          %{acc | mentions: [new_mention | acc.mentions]}
+
+        %{activity: %{data: %{"type" => "Follow"}, actor: actor} = activity} = notification,
+        acc ->
+          new_follower = %{
+            data: notification,
+            object: Pleroma.Object.normalize(activity),
+            from: Pleroma.User.get_by_ap_id(actor)
+          }
+
+          %{acc | followers: [new_follower | acc.followers]}
+
+        _, acc ->
+          acc
+      end)
+
+    with [_ | _] = mentions <- new_notifications.mentions do
+      html_data = %{
+        instance: instance_name(),
+        user: user,
+        mentions: mentions,
+        followers: new_notifications.followers,
+        unsubscribe_link: unsubscribe_url(user, "digest")
+      }
+
+      new()
+      |> to(recipient(user))
+      |> from(sender())
+      |> subject("Your digest from #{instance_name()}")
+      |> render_body("digest.html", html_data)
+    else
+      _ ->
+        nil
+    end
+  end
+
+  @doc """
+  Generate unsubscribe link for given user and notifications type.
+  The link contains JWT token with the data, and subscription can be modified without
+  authorization.
+  """
+  @spec unsubscribe_url(Pleroma.User.t(), String.t()) :: String.t()
+  def unsubscribe_url(user, notifications_type) do
+    token =
+      %{"sub" => user.id, "act" => %{"unsubscribe" => notifications_type}, "exp" => false}
+      |> Pleroma.JWT.generate_and_sign!()
+      |> Base.encode64()
+
+    Router.Helpers.subscription_url(Pleroma.Web.Endpoint, :unsubscribe, token)
   end
 end

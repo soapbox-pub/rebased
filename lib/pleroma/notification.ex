@@ -18,6 +18,8 @@ defmodule Pleroma.Notification do
   import Ecto.Query
   import Ecto.Changeset
 
+  @type t :: %__MODULE__{}
+
   schema "notifications" do
     field(:seen, :boolean, default: false)
     belongs_to(:user, User, type: Pleroma.FlakeId)
@@ -31,7 +33,7 @@ defmodule Pleroma.Notification do
     |> cast(attrs, [:seen])
   end
 
-  def for_user_query(user, opts) do
+  def for_user_query(user, opts \\ []) do
     query =
       Notification
       |> where(user_id: ^user.id)
@@ -75,6 +77,25 @@ defmodule Pleroma.Notification do
     |> Pagination.fetch_paginated(opts)
   end
 
+  @doc """
+  Returns notifications for user received since given date.
+
+  ## Examples
+
+      iex> Pleroma.Notification.for_user_since(%Pleroma.User{}, ~N[2019-04-13 11:22:33])
+      [%Pleroma.Notification{}, %Pleroma.Notification{}]
+
+      iex> Pleroma.Notification.for_user_since(%Pleroma.User{}, ~N[2019-04-15 11:22:33])
+      []
+  """
+  @spec for_user_since(Pleroma.User.t(), NaiveDateTime.t()) :: [t()]
+  def for_user_since(user, date) do
+    from(n in for_user_query(user),
+      where: n.updated_at > ^date
+    )
+    |> Repo.all()
+  end
+
   def set_read_up_to(%{id: user_id} = _user, id) do
     query =
       from(
@@ -82,7 +103,10 @@ defmodule Pleroma.Notification do
         where: n.user_id == ^user_id,
         where: n.id <= ^id,
         update: [
-          set: [seen: true]
+          set: [
+            seen: true,
+            updated_at: ^NaiveDateTime.utc_now()
+          ]
         ]
       )
 

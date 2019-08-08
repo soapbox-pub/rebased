@@ -1237,6 +1237,109 @@ defmodule Pleroma.UserTest do
     assert Map.get(user_show, "followers_count") == 2
   end
 
+  describe "list_inactive_users_query/1" do
+    defp days_ago(days) do
+      NaiveDateTime.add(
+        NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+        -days * 60 * 60 * 24,
+        :second
+      )
+    end
+
+    test "Users are inactive by default" do
+      total = 10
+
+      users =
+        Enum.map(1..total, fn _ ->
+          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+        end)
+
+      inactive_users_ids =
+        Pleroma.User.list_inactive_users_query()
+        |> Pleroma.Repo.all()
+        |> Enum.map(& &1.id)
+
+      Enum.each(users, fn user ->
+        assert user.id in inactive_users_ids
+      end)
+    end
+
+    test "Only includes users who has no recent activity" do
+      total = 10
+
+      users =
+        Enum.map(1..total, fn _ ->
+          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+        end)
+
+      {inactive, active} = Enum.split(users, trunc(total / 2))
+
+      Enum.map(active, fn user ->
+        to = Enum.random(users -- [user])
+
+        {:ok, _} =
+          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(user, %{
+            "status" => "hey @#{to.nickname}"
+          })
+      end)
+
+      inactive_users_ids =
+        Pleroma.User.list_inactive_users_query()
+        |> Pleroma.Repo.all()
+        |> Enum.map(& &1.id)
+
+      Enum.each(active, fn user ->
+        refute user.id in inactive_users_ids
+      end)
+
+      Enum.each(inactive, fn user ->
+        assert user.id in inactive_users_ids
+      end)
+    end
+
+    test "Only includes users with no read notifications" do
+      total = 10
+
+      users =
+        Enum.map(1..total, fn _ ->
+          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+        end)
+
+      [sender | recipients] = users
+      {inactive, active} = Enum.split(recipients, trunc(total / 2))
+
+      Enum.each(recipients, fn to ->
+        {:ok, _} =
+          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(sender, %{
+            "status" => "hey @#{to.nickname}"
+          })
+
+        {:ok, _} =
+          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(sender, %{
+            "status" => "hey again @#{to.nickname}"
+          })
+      end)
+
+      Enum.each(active, fn user ->
+        [n1, _n2] = Pleroma.Notification.for_user(user)
+        {:ok, _} = Pleroma.Notification.read_one(user, n1.id)
+      end)
+
+      inactive_users_ids =
+        Pleroma.User.list_inactive_users_query()
+        |> Pleroma.Repo.all()
+        |> Enum.map(& &1.id)
+
+      Enum.each(active, fn user ->
+        refute user.id in inactive_users_ids
+      end)
+
+      Enum.each(inactive, fn user ->
+        assert user.id in inactive_users_ids
+      end)
+    end
+  end
+
   describe "toggle_confirmation/1" do
     test "if user is confirmed" do
       user = insert(:user, info: %{confirmation_pending: false})
