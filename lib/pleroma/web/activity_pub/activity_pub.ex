@@ -403,11 +403,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def delete(%User{ap_id: ap_id, follower_address: follower_address} = user) do
+  def delete(data, opts \\ %{actor: nil, local: true})
+
+  def delete(%User{ap_id: ap_id, follower_address: follower_address} = user, opts) do
     with data <- %{
            "to" => [follower_address],
            "type" => "Delete",
-           "actor" => ap_id,
+           "actor" => opts[:actor] || ap_id,
            "object" => %{"type" => "Person", "id" => ap_id}
          },
          {:ok, activity} <- insert(data, true, true),
@@ -416,7 +418,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
+  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, opts) do
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
 
@@ -428,7 +430,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "to" => to,
            "deleted_activity_id" => activity && activity.id
          },
-         {:ok, activity} <- insert(data, local, false),
+         {:ok, activity} <- insert(data, opts[:local], false),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
          # Changing note count prior to enqueuing federation task in order to avoid

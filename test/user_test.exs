@@ -998,6 +998,14 @@ defmodule Pleroma.UserTest do
       refute Activity.get_by_id(activity.id)
     end
 
+    test "it deletes deactivated user" do
+      admin = insert(:user, %{info: %{is_admin: true}})
+      {:ok, user} = insert(:user, info: %{deactivated: true}) |> User.set_cache()
+
+      assert {:ok, _} = User.delete(user, admin.ap_id)
+      refute User.get_by_id(user.id)
+    end
+
     test "it deletes a user, all follow relationships and all activities", %{user: user} do
       follower = insert(:user)
       {:ok, follower} = User.follow(follower, user)
