@@ -627,6 +627,9 @@ Tuples can be passed as `{"tuple": ["first_val", Pleroma.Module, []]}`.
 Keywords can be passed as lists with 2 child tuples, e.g.
 `[{"tuple": ["first_val", Pleroma.Module]}, {"tuple": ["second_val", true]}]`.
 
+If value contains list of settings `[subkey: val1, subkey2: val2, subkey3: val3]`, it's possible to remove only subkeys instead of all settings passing `subkeys` parameter. E.g.:
+{"group": "pleroma", "key": "some_key", "delete": "true", "subkeys": [":subkey", ":subkey3"]}.
+
 Compile time settings (need instance reboot):
 - all settings by this keys:
   - `:hackney_pools`
@@ -645,6 +648,7 @@ Compile time settings (need instance reboot):
     - `key` (string or string with leading `:` for atoms)
     - `value` (string, [], {} or {"tuple": []})
     - `delete` = true (optional, if parameter must be deleted)
+    - `subkeys` [(string with leading `:` for atoms)] (optional, works only if `delete=true` parameter is passed, otherwise will be ignored)
   ]
 
 - Request (example):

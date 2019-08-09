@@ -1914,6 +1914,38 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
                ]
              }
     end
+
+    test "delete part of settings by atom subkeys", %{conn: conn} do
+      config =
+        insert(:config,
+          key: "keyaa1",
+          value: :erlang.term_to_binary(subkey1: "val1", subkey2: "val2", subkey3: "val3")
+        )
+
+      conn =
+        post(conn, "/api/pleroma/admin/config", %{
+          configs: [
+            %{
+              group: config.group,
+              key: config.key,
+              subkeys: [":subkey1", ":subkey3"],
+              delete: "true"
+            }
+          ]
+        })
+
+      assert(
+        json_response(conn, 200) == %{
+          "configs" => [
+            %{
+              "group" => "pleroma",
+              "key" => "keyaa1",
+              "value" => [%{"tuple" => [":subkey2", "val2"]}]
+            }
+          ]
+        }
+      )
+    end
   end
 
   describe "config mix tasks run" do
@@ -1922,7 +1954,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       temp_file = "config/test.exported_from_db.secret.exs"
 
+      Mix.shell(Mix.Shell.Quiet)
+
       on_exit(fn ->
+        Mix.shell(Mix.Shell.IO)
         :ok = File.rm(temp_file)
       end)
 

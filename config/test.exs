@@ -29,7 +29,8 @@ config :pleroma, :instance,
   email: "admin@example.com",
   notify_email: "noreply@example.com",
   skip_thread_containment: false,
-  federating: false
+  federating: false,
+  external_user_synchronization: false
 
 config :pleroma, :activitypub, sign_object_fetches: false
 
@@ -83,6 +84,8 @@ config :pleroma, :http, send_user_agent: false
 rum_enabled = System.get_env("RUM_ENABLED") == "true"
 config :pleroma, :database, rum_enabled: rum_enabled
 IO.puts("RUM enabled: #{rum_enabled}")
+
+config :joken, default_signer: "yU8uHKq+yyAkZ11Hx//jcdacWc8yQ1bxAAGrplzB0Zwwjkp35v0RK9SO8WTPr6QZ"
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 

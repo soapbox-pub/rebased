@@ -4,13 +4,15 @@
 
 defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
+
+  import Pleroma.Factory
+
   alias Pleroma.Notification
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  import Pleroma.Factory
 
   describe "create_notifications" do
     test "notifies someone when they are directly addressed" do
@@ -349,6 +351,51 @@ defmodule Pleroma.NotificationTest do
       assert n1.seen == true
       assert n2.seen == true
       assert n3.seen == false
+    end
+  end
+
+  describe "for_user_since/2" do
+    defp days_ago(days) do
+      NaiveDateTime.add(
+        NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+        -days * 60 * 60 * 24,
+        :second
+      )
+    end
+
+    test "Returns recent notifications" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      Enum.each(0..10, fn i ->
+        {:ok, _activity} =
+          CommonAPI.post(user1, %{
+            "status" => "hey ##{i} @#{user2.nickname}!"
+          })
+      end)
+
+      {old, new} = Enum.split(Notification.for_user(user2), 5)
+
+      Enum.each(old, fn notification ->
+        notification
+        |> cast(%{updated_at: days_ago(10)}, [:updated_at])
+        |> Pleroma.Repo.update!()
+      end)
+
+      recent_notifications_ids =
+        user2
+        |> Notification.for_user_since(
+          NaiveDateTime.add(NaiveDateTime.utc_now(), -5 * 86_400, :second)
+        )
+        |> Enum.map(& &1.id)
+
+      Enum.each(old, fn %{id: id} ->
+        refute id in recent_notifications_ids
+      end)
+
+      Enum.each(new, fn %{id: id} ->
+        assert id in recent_notifications_ids
+      end)
     end
   end
 

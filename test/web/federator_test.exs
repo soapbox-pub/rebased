@@ -238,5 +238,21 @@ defmodule Pleroma.Web.FederatorTest do
       assert {:ok, job} = Federator.incoming_ap_doc(params)
       assert :error = ObanHelpers.perform(job)
     end
+
+    test "it does not crash if MRF rejects the post" do
+      policies = Pleroma.Config.get([:instance, :rewrite_policy])
+      mrf_keyword_policy = Pleroma.Config.get(:mrf_keyword)
+      Pleroma.Config.put([:mrf_keyword, :reject], ["lain"])
+      Pleroma.Config.put([:instance, :rewrite_policy], Pleroma.Web.ActivityPub.MRF.KeywordPolicy)
+
+      params =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      assert Federator.incoming_ap_doc(params) == :error
+
+      Pleroma.Config.put([:instance, :rewrite_policy], policies)
+      Pleroma.Config.put(:mrf_keyword, mrf_keyword_policy)
+    end
   end
 end

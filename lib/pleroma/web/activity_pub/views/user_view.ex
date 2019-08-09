@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     do: render("service.json", %{user: user})
 
   def render("user.json", %{user: %User{nickname: "internal." <> _} = user}),
-    do: render("service.json", %{user: user})
+    do: render("service.json", %{user: user}) |> Map.put("preferredUsername", user.nickname)
 
   def render("user.json", %{user: user}) do
     {:ok, user} = User.ensure_keys_present(user)

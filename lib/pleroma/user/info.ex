@@ -16,6 +16,8 @@ defmodule Pleroma.User.Info do
     field(:source_data, :map, default: %{})
     field(:note_count, :integer, default: 0)
     field(:follower_count, :integer, default: 0)
+    # Should be filled in only for remote users
+    field(:following_count, :integer, default: nil)
     field(:locked, :boolean, default: false)
     field(:confirmation_pending, :boolean, default: false)
     field(:confirmation_token, :string, default: nil)
@@ -43,6 +45,7 @@ defmodule Pleroma.User.Info do
     field(:hide_follows, :boolean, default: false)
     field(:hide_favorites, :boolean, default: true)
     field(:pinned_activities, {:array, :string}, default: [])
+    field(:email_notifications, :map, default: %{"digest" => false})
     field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
     field(:pleroma_settings_store, :map, default: %{})
@@ -91,6 +94,30 @@ defmodule Pleroma.User.Info do
     info
     |> cast(params, [:notification_settings])
     |> validate_required([:notification_settings])
+  end
+
+  @doc """
+  Update email notifications in the given User.Info struct.
+
+  Examples:
+
+      iex> update_email_notifications(%Pleroma.User.Info{email_notifications: %{"digest" => false}}, %{"digest" => true})
+      %Pleroma.User.Info{email_notifications: %{"digest" => true}}
+
+  """
+  @spec update_email_notifications(t(), map()) :: Ecto.Changeset.t()
+  def update_email_notifications(info, settings) do
+    email_notifications =
+      info.email_notifications
+      |> Map.merge(settings)
+      |> Map.take(["digest"])
+
+    params = %{email_notifications: email_notifications}
+    fields = [:email_notifications]
+
+    info
+    |> cast(params, fields)
+    |> validate_required(fields)
   end
 
   def add_to_note_count(info, number) do
@@ -223,7 +250,11 @@ defmodule Pleroma.User.Info do
       :uri,
       :hub,
       :topic,
-      :salmon
+      :salmon,
+      :hide_followers,
+      :hide_follows,
+      :follower_count,
+      :following_count
     ])
   end
 
@@ -234,7 +265,11 @@ defmodule Pleroma.User.Info do
       :source_data,
       :banner,
       :locked,
-      :magic_key
+      :magic_key,
+      :follower_count,
+      :following_count,
+      :hide_follows,
+      :hide_followers
     ])
   end
 
@@ -347,5 +382,15 @@ defmodule Pleroma.User.Info do
     params = %{muted_reblogs: List.delete(info.muted_reblogs, ap_id)}
 
     cast(info, params, [:muted_reblogs])
+  end
+
+  def follow_information_update(info, params) do
+    info
+    |> cast(params, [
+      :hide_followers,
+      :hide_follows,
+      :follower_count,
+      :following_count
+    ])
   end
 end

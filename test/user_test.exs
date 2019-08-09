@@ -1239,6 +1239,109 @@ defmodule Pleroma.UserTest do
     assert Map.get(user_show, "followers_count") == 2
   end
 
+  describe "list_inactive_users_query/1" do
+    defp days_ago(days) do
+      NaiveDateTime.add(
+        NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+        -days * 60 * 60 * 24,
+        :second
+      )
+    end
+
+    test "Users are inactive by default" do
+      total = 10
+
+      users =
+        Enum.map(1..total, fn _ ->
+          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+        end)
+
+      inactive_users_ids =
+        Pleroma.User.list_inactive_users_query()
+        |> Pleroma.Repo.all()
+        |> Enum.map(& &1.id)
+
+      Enum.each(users, fn user ->
+        assert user.id in inactive_users_ids
+      end)
+    end
+
+    test "Only includes users who has no recent activity" do
+      total = 10
+
+      users =
+        Enum.map(1..total, fn _ ->
+          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+        end)
+
+      {inactive, active} = Enum.split(users, trunc(total / 2))
+
+      Enum.map(active, fn user ->
+        to = Enum.random(users -- [user])
+
+        {:ok, _} =
+          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(user, %{
+            "status" => "hey @#{to.nickname}"
+          })
+      end)
+
+      inactive_users_ids =
+        Pleroma.User.list_inactive_users_query()
+        |> Pleroma.Repo.all()
+        |> Enum.map(& &1.id)
+
+      Enum.each(active, fn user ->
+        refute user.id in inactive_users_ids
+      end)
+
+      Enum.each(inactive, fn user ->
+        assert user.id in inactive_users_ids
+      end)
+    end
+
+    test "Only includes users with no read notifications" do
+      total = 10
+
+      users =
+        Enum.map(1..total, fn _ ->
+          insert(:user, last_digest_emailed_at: days_ago(20), info: %{deactivated: false})
+        end)
+
+      [sender | recipients] = users
+      {inactive, active} = Enum.split(recipients, trunc(total / 2))
+
+      Enum.each(recipients, fn to ->
+        {:ok, _} =
+          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(sender, %{
+            "status" => "hey @#{to.nickname}"
+          })
+
+        {:ok, _} =
+          Pleroma.Web.TwitterAPI.TwitterAPI.create_status(sender, %{
+            "status" => "hey again @#{to.nickname}"
+          })
+      end)
+
+      Enum.each(active, fn user ->
+        [n1, _n2] = Pleroma.Notification.for_user(user)
+        {:ok, _} = Pleroma.Notification.read_one(user, n1.id)
+      end)
+
+      inactive_users_ids =
+        Pleroma.User.list_inactive_users_query()
+        |> Pleroma.Repo.all()
+        |> Enum.map(& &1.id)
+
+      Enum.each(active, fn user ->
+        refute user.id in inactive_users_ids
+      end)
+
+      Enum.each(inactive, fn user ->
+        assert user.id in inactive_users_ids
+      end)
+    end
+  end
+
   describe "toggle_confirmation/1" do
     test "if user is confirmed" do
       user = insert(:user, info: %{confirmation_pending: false})
@@ -1393,6 +1496,80 @@ defmodule Pleroma.UserTest do
       assert {:ok, %User{bio: "test-bio"} = user} = User.update_and_set_cache(changeset)
       assert {:ok, user} = Cachex.get(:user_cache, "ap_id:#{user.ap_id}")
       assert %User{bio: "test-bio"} = User.get_cached_by_ap_id(user.ap_id)
+    end
+  end
+
+  describe "following/followers synchronization" do
+    setup do
+      sync = Pleroma.Config.get([:instance, :external_user_synchronization])
+      on_exit(fn -> Pleroma.Config.put([:instance, :external_user_synchronization], sync) end)
+    end
+
+    test "updates the counters normally on following/getting a follow when disabled" do
+      Pleroma.Config.put([:instance, :external_user_synchronization], false)
+      user = insert(:user)
+
+      other_user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following",
+          info: %{ap_enabled: true}
+        )
+
+      assert User.user_info(other_user).following_count == 0
+      assert User.user_info(other_user).follower_count == 0
+
+      {:ok, user} = Pleroma.User.follow(user, other_user)
+      other_user = Pleroma.User.get_by_id(other_user.id)
+
+      assert User.user_info(user).following_count == 1
+      assert User.user_info(other_user).follower_count == 1
+    end
+
+    test "syncronizes the counters with the remote instance for the followed when enabled" do
+      Pleroma.Config.put([:instance, :external_user_synchronization], false)
+
+      user = insert(:user)
+
+      other_user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following",
+          info: %{ap_enabled: true}
+        )
+
+      assert User.user_info(other_user).following_count == 0
+      assert User.user_info(other_user).follower_count == 0
+
+      Pleroma.Config.put([:instance, :external_user_synchronization], true)
+      {:ok, _user} = User.follow(user, other_user)
+      other_user = User.get_by_id(other_user.id)
+
+      assert User.user_info(other_user).follower_count == 437
+    end
+
+    test "syncronizes the counters with the remote instance for the follower when enabled" do
+      Pleroma.Config.put([:instance, :external_user_synchronization], false)
+
+      user = insert(:user)
+
+      other_user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following",
+          info: %{ap_enabled: true}
+        )
+
+      assert User.user_info(other_user).following_count == 0
+      assert User.user_info(other_user).follower_count == 0
+
+      Pleroma.Config.put([:instance, :external_user_synchronization], true)
+      {:ok, other_user} = User.follow(other_user, user)
+
+      assert User.user_info(other_user).following_count == 152
     end
   end
 end

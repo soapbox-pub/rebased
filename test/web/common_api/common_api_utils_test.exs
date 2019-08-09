@@ -306,7 +306,6 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentions = [mentioned_user.ap_id]
 
       {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "private")
-
       assert length(to) == 2
       assert length(cc) == 0
 
@@ -378,6 +377,224 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       activity = insert(:like_activity)
       %Pleroma.Activity{} = like = Utils.get_by_id_or_ap_id(activity.id)
       assert like.data["object"] == activity.data["object"]
+    end
+  end
+
+  describe "to_master_date/1" do
+    test "removes microseconds from date (NaiveDateTime)" do
+      assert Utils.to_masto_date(~N[2015-01-23 23:50:07.123]) == "2015-01-23T23:50:07.000Z"
+    end
+
+    test "removes microseconds from date (String)" do
+      assert Utils.to_masto_date("2015-01-23T23:50:07.123Z") == "2015-01-23T23:50:07.000Z"
+    end
+
+    test "returns empty string when date invalid" do
+      assert Utils.to_masto_date("2015-01?23T23:50:07.123Z") == ""
+    end
+  end
+
+  describe "conversation_id_to_context/1" do
+    test "returns id" do
+      object = insert(:note)
+      assert Utils.conversation_id_to_context(object.id) == object.data["id"]
+    end
+
+    test "returns error if object not found" do
+      assert Utils.conversation_id_to_context("123") == {:error, "No such conversation"}
+    end
+  end
+
+  describe "maybe_notify_mentioned_recipients/2" do
+    test "returns recipients when activity is not `Create`" do
+      activity = insert(:like_activity)
+      assert Utils.maybe_notify_mentioned_recipients(["test"], activity) == ["test"]
+    end
+
+    test "returns recipients from tag" do
+      user = insert(:user)
+
+      object =
+        insert(:note,
+          user: user,
+          data: %{
+            "tag" => [
+              %{"type" => "Hashtag"},
+              "",
+              %{"type" => "Mention", "href" => "https://testing.pleroma.lol/users/lain"},
+              %{"type" => "Mention", "href" => "https://shitposter.club/user/5381"},
+              %{"type" => "Mention", "href" => "https://shitposter.club/user/5381"}
+            ]
+          }
+        )
+
+      activity = insert(:note_activity, user: user, note: object)
+
+      assert Utils.maybe_notify_mentioned_recipients(["test"], activity) == [
+               "test",
+               "https://testing.pleroma.lol/users/lain",
+               "https://shitposter.club/user/5381"
+             ]
+    end
+
+    test "returns recipients when object is map" do
+      user = insert(:user)
+      object = insert(:note, user: user)
+
+      activity =
+        insert(:note_activity,
+          user: user,
+          note: object,
+          data_attrs: %{
+            "object" => %{
+              "tag" => [
+                %{"type" => "Hashtag"},
+                "",
+                %{"type" => "Mention", "href" => "https://testing.pleroma.lol/users/lain"},
+                %{"type" => "Mention", "href" => "https://shitposter.club/user/5381"},
+                %{"type" => "Mention", "href" => "https://shitposter.club/user/5381"}
+              ]
+            }
+          }
+        )
+
+      Pleroma.Repo.delete(object)
+
+      assert Utils.maybe_notify_mentioned_recipients(["test"], activity) == [
+               "test",
+               "https://testing.pleroma.lol/users/lain",
+               "https://shitposter.club/user/5381"
+             ]
+    end
+
+    test "returns recipients when object not found" do
+      user = insert(:user)
+      object = insert(:note, user: user)
+
+      activity = insert(:note_activity, user: user, note: object)
+      Pleroma.Repo.delete(object)
+
+      assert Utils.maybe_notify_mentioned_recipients(["test-test"], activity) == [
+               "test-test"
+             ]
+    end
+  end
+
+  describe "attachments_from_ids_descs/2" do
+    test "returns [] when attachment ids is empty" do
+      assert Utils.attachments_from_ids_descs([], "{}") == []
+    end
+
+    test "returns list attachments with desc" do
+      object = insert(:note)
+      desc = Jason.encode!(%{object.id => "test-desc"})
+
+      assert Utils.attachments_from_ids_descs(["#{object.id}", "34"], desc) == [
+               Map.merge(object.data, %{"name" => "test-desc"})
+             ]
+    end
+  end
+
+  describe "attachments_from_ids/1" do
+    test "returns attachments with descs" do
+      object = insert(:note)
+      desc = Jason.encode!(%{object.id => "test-desc"})
+
+      assert Utils.attachments_from_ids(%{
+               "media_ids" => ["#{object.id}"],
+               "descriptions" => desc
+             }) == [
+               Map.merge(object.data, %{"name" => "test-desc"})
+             ]
+    end
+
+    test "returns attachments without descs" do
+      object = insert(:note)
+      assert Utils.attachments_from_ids(%{"media_ids" => ["#{object.id}"]}) == [object.data]
+    end
+
+    test "returns [] when not pass media_ids" do
+      assert Utils.attachments_from_ids(%{}) == []
+    end
+  end
+
+  describe "maybe_add_list_data/3" do
+    test "adds list params when found user list" do
+      user = insert(:user)
+      {:ok, %Pleroma.List{} = list} = Pleroma.List.create("title", user)
+
+      assert Utils.maybe_add_list_data(%{additional: %{}, object: %{}}, user, {:list, list.id}) ==
+               %{
+                 additional: %{"bcc" => [list.ap_id], "listMessage" => list.ap_id},
+                 object: %{"listMessage" => list.ap_id}
+               }
+    end
+
+    test "returns original params when list not found" do
+      user = insert(:user)
+      {:ok, %Pleroma.List{} = list} = Pleroma.List.create("title", insert(:user))
+
+      assert Utils.maybe_add_list_data(%{additional: %{}, object: %{}}, user, {:list, list.id}) ==
+               %{additional: %{}, object: %{}}
+    end
+  end
+
+  describe "make_note_data/11" do
+    test "returns note data" do
+      user = insert(:user)
+      note = insert(:note)
+      user2 = insert(:user)
+      user3 = insert(:user)
+
+      assert Utils.make_note_data(
+               user.ap_id,
+               [user2.ap_id],
+               "2hu",
+               "<h1>This is :moominmamma: note</h1>",
+               [],
+               note.id,
+               [name: "jimm"],
+               "test summary",
+               [user3.ap_id],
+               false,
+               %{"custom_tag" => "test"}
+             ) == %{
+               "actor" => user.ap_id,
+               "attachment" => [],
+               "cc" => [user3.ap_id],
+               "content" => "<h1>This is :moominmamma: note</h1>",
+               "context" => "2hu",
+               "sensitive" => false,
+               "summary" => "test summary",
+               "tag" => ["jimm"],
+               "to" => [user2.ap_id],
+               "type" => "Note",
+               "custom_tag" => "test"
+             }
+    end
+  end
+
+  describe "maybe_add_attachments/3" do
+    test "returns parsed results when no_links is true" do
+      assert Utils.maybe_add_attachments(
+               {"test", [], ["tags"]},
+               [],
+               true
+             ) == {"test", [], ["tags"]}
+    end
+
+    test "adds attachments to parsed results" do
+      attachment = %{"url" => [%{"href" => "SakuraPM.png"}]}
+
+      assert Utils.maybe_add_attachments(
+               {"test", [], ["tags"]},
+               [attachment],
+               false
+             ) == {
+               "test<br><a href=\"SakuraPM.png\" class='attachment'>SakuraPM.png</a>",
+               [],
+               ["tags"]
+             }
     end
   end
 end

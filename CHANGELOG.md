@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Not being able to pin unlisted posts
+- Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
 - Metadata rendering errors resulting in the entire page being inaccessible
 - Federation/MediaProxy not working with instances that have wrong certificate order
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
@@ -34,6 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub S2S: sharedInbox usage has been mostly aligned with the rules in the AP specification.
 - ActivityPub S2S: remote user deletions now work the same as local user deletions.
 - Not being able to access the Mastodon FE login page on private instances
+- Invalid SemVer version generation, when the current branch does not have commits ahead of tag/checked out on a tag
+- Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
+- Report email not being sent to admins when the reporter is a remote user
 
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
@@ -67,12 +71,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Optional signing of ActivityPub object fetches.
 - Admin API: Endpoint for fetching latest user's statuses
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
+- Relays: Added a task to list relay subscriptions.
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
 - Admin API: changed json structure for saving config settings.
 - RichMedia: parsers and their order are configured in `rich_media` config.
 - RichMedia: add the rich media ttl based on image expiration time.
+
+### Removed
+- Emoji: Remove longfox emojis.
+- Remove `Reply-To` header from report emails for admins.
 
 ## [1.0.1] - 2019-07-14
 ### Security
@@ -84,6 +93,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rich media: Do not crawl private IP ranges
 
 ### Added
+- Digest email for inactive users
 - Add a generic settings store for frontends / clients to use.
 - Explicit addressing option for posting.
 - Optional SSH access mode. (Needs `erlang-ssh` package on some distributions).
@@ -110,6 +120,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: `notify_email` option
 - Configuration: Media proxy `whitelist` option
 - Configuration: `report_uri` option
+- Configuration: `email_notifications` option
 - Configuration: `limit_to_local_content` option
 - Pleroma API: User subscriptions
 - Pleroma API: Healthcheck endpoint

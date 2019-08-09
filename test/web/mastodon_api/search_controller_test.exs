@@ -95,6 +95,18 @@ defmodule Pleroma.Web.MastodonAPI.SearchControllerTest do
 
       assert user_three.nickname in result_ids
     end
+
+    test "returns account if query contains a space", %{conn: conn} do
+      user = insert(:user, %{nickname: "shp@shitposter.club"})
+
+      results =
+        conn
+        |> assign(:user, user)
+        |> get("/api/v1/accounts/search", %{"q" => "shp@shitposter.club xxx "})
+        |> json_response(200)
+
+      assert length(results) == 1
+    end
   end
 
   describe ".search" do
