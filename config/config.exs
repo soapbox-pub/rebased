@@ -458,6 +458,13 @@ config :pleroma, Oban,
   prune: {:maxage, 60 * 60 * 24 * 7},
   queues: job_queues
 
+config :pleroma, :workers,
+  retries: [
+    compile_time_default: 1,
+    federator_incoming: 5,
+    federator_outgoing: 5
+  ]
+
 config :pleroma, :fetch_initial_posts,
   enabled: false,
   pages: 5

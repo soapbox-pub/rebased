@@ -4,11 +4,14 @@
 
 defmodule Pleroma.Web.WebsubTest do
   use Pleroma.DataCase
+  use Oban.Testing, repo: Pleroma.Repo
 
+  alias Pleroma.ObanHelpers
   alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubClientSubscription
   alias Pleroma.Web.Websub.WebsubServerSubscription
+  alias Pleroma.Workers.Subscriber, as: SubscriberWorker
 
   import Pleroma.Factory
   import Tesla.Mock
@@ -224,6 +227,7 @@ defmodule Pleroma.Web.WebsubTest do
         })
 
       _refresh = Websub.refresh_subscriptions()
+      ObanHelpers.perform(all_enqueued(worker: SubscriberWorker))
 
       assert still_good == Repo.get(WebsubClientSubscription, still_good.id)
       refute needs_refresh == Repo.get(WebsubClientSubscription, needs_refresh.id)

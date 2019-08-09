@@ -4,8 +4,10 @@
 
 defmodule Pleroma.Web.FederatorTest do
   alias Pleroma.Instances
+  alias Pleroma.ObanHelpers
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Federator
+  alias Pleroma.Workers.Publisher, as: PublisherWorker
 
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
@@ -45,6 +47,7 @@ defmodule Pleroma.Web.FederatorTest do
     } do
       with_mocks([relay_mock]) do
         Federator.publish(activity)
+        ObanHelpers.perform(all_enqueued(worker: PublisherWorker))
       end
 
       assert_received :relay_publish
@@ -58,6 +61,7 @@ defmodule Pleroma.Web.FederatorTest do
 
       with_mocks([relay_mock]) do
         Federator.publish(activity)
+        ObanHelpers.perform(all_enqueued(worker: PublisherWorker))
       end
 
       refute_received :relay_publish
@@ -97,8 +101,15 @@ defmodule Pleroma.Web.FederatorTest do
 
       expected_dt = NaiveDateTime.to_iso8601(dt)
 
-      assert [%{args: %{"params" => %{"inbox" => ^inbox1, "unreachable_since" => ^expected_dt}}}] =
-               all_enqueued(worker: Pleroma.Workers.Publisher)
+      ObanHelpers.perform(all_enqueued(worker: PublisherWorker))
+
+      assert ObanHelpers.member?(
+               %{
+                 "op" => "publish_one",
+                 "params" => %{"inbox" => inbox1, "unreachable_since" => expected_dt}
+               },
+               all_enqueued(worker: PublisherWorker)
+             )
     end
 
     test "it federates only to reachable instances via Websub" do
@@ -129,16 +140,18 @@ defmodule Pleroma.Web.FederatorTest do
       expected_callback = sub2.callback
       expected_dt = NaiveDateTime.to_iso8601(dt)
 
-      assert [
+      ObanHelpers.perform(all_enqueued(worker: PublisherWorker))
+
+      assert ObanHelpers.member?(
                %{
-                 args: %{
-                   "params" => %{
-                     "callback" => ^expected_callback,
-                     "unreachable_since" => ^expected_dt
-                   }
+                 "op" => "publish_one",
+                 "params" => %{
+                   "callback" => expected_callback,
+                   "unreachable_since" => expected_dt
                  }
-               }
-             ] = all_enqueued(worker: Pleroma.Workers.Publisher)
+               },
+               all_enqueued(worker: PublisherWorker)
+             )
     end
 
     test "it federates only to reachable instances via Salmon" do
@@ -172,16 +185,18 @@ defmodule Pleroma.Web.FederatorTest do
 
       expected_dt = NaiveDateTime.to_iso8601(dt)
 
-      assert [
+      ObanHelpers.perform(all_enqueued(worker: PublisherWorker))
+
+      assert ObanHelpers.member?(
                %{
-                 args: %{
-                   "params" => %{
-                     "recipient_id" => ^remote_user2_id,
-                     "unreachable_since" => ^expected_dt
-                   }
+                 "op" => "publish_one",
+                 "params" => %{
+                   "recipient_id" => remote_user2_id,
+                   "unreachable_since" => expected_dt
                  }
-               }
-             ] = all_enqueued(worker: Pleroma.Workers.Publisher)
+               },
+               all_enqueued(worker: PublisherWorker)
+             )
     end
   end
 
@@ -201,7 +216,8 @@ defmodule Pleroma.Web.FederatorTest do
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      {:ok, _activity} = Federator.incoming_ap_doc(params)
+      assert {:ok, job} = Federator.incoming_ap_doc(params)
+      assert {:ok, _activity} = ObanHelpers.perform(job)
     end
 
     test "rejects incoming AP docs with incorrect origin" do
@@ -219,7 +235,8 @@ defmodule Pleroma.Web.FederatorTest do
         "to" => ["https://www.w3.org/ns/activitystreams#Public"]
       }
 
-      :error = Federator.incoming_ap_doc(params)
+      assert {:ok, job} = Federator.incoming_ap_doc(params)
+      assert :error = ObanHelpers.perform(job)
     end
   end
 end

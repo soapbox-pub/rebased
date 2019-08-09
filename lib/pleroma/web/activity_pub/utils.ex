@@ -168,14 +168,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   """
   def maybe_federate(%Activity{local: true} = activity) do
     if Pleroma.Config.get!([:instance, :federating]) do
-      priority =
-        case activity.data["type"] do
-          "Delete" -> 10
-          "Create" -> 1
-          _ -> 5
-        end
-
-      Pleroma.Web.Federator.publish(activity, priority)
+      Pleroma.Web.Federator.publish(activity)
     end
 
     :ok

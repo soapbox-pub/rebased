@@ -5,6 +5,7 @@
 defmodule Pleroma.UserTest do
   alias Pleroma.Activity
   alias Pleroma.Builders.UserBuilder
+  alias Pleroma.ObanHelpers
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -1044,8 +1045,16 @@ defmodule Pleroma.UserTest do
 
       {:ok, _user} = User.delete(user)
 
-      assert [%{args: %{"params" => %{"inbox" => "http://mastodon.example.org/inbox"}}}] =
+      assert ObanHelpers.member?(
+               %{
+                 "op" => "publish_one",
+                 "params" => %{
+                   "inbox" => "http://mastodon.example.org/inbox",
+                   "id" => "pleroma:fakeid"
+                 }
+               },
                all_enqueued(worker: Pleroma.Workers.Publisher)
+             )
 
       Pleroma.Config.put(config_path, initial_setting)
     end
