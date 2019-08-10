@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Uploaders.MDII do
+  @moduledoc "Represents uploader for https://github.com/hakaba-hitoyo/minimal-digital-image-infrastructure"
+
   alias Pleroma.Config
   alias Pleroma.HTTP
 
