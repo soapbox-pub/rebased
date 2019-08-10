@@ -168,7 +168,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     thread_muted? =
       case activity.thread_muted? do
         thread_muted? when is_boolean(thread_muted?) -> thread_muted?
-        nil -> CommonAPI.thread_muted?(user, activity)
+        nil -> (opts[:for] && CommonAPI.thread_muted?(opts[:for], activity)) || false
       end
 
     attachment_data = object.data["attachment"] || []

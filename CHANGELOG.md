@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
 - Mastodon API: follower/following counters not being nullified, when `hide_follows`/`hide_followers` is set
+- Mastodon API: `muted` in the Status entity, using author's account to determine if the tread was muted
 - Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API, streaming: Fix filtering of notifications based on blocks/mutes/thread mutes
 - ActivityPub C2S: follower/following collection pages being inaccessible even when authentifucated if `hide_followers`/ `hide_follows` was set
@@ -73,6 +74,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Endpoint for fetching latest user's statuses
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
 - Relays: Added a task to list relay subscriptions.
+- Mix Tasks: `mix pleroma.database fix_likes_collections`
+- Federation: Remove `likes` from objects.
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
