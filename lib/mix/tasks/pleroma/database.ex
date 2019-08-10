@@ -36,6 +36,10 @@ defmodule Mix.Tasks.Pleroma.Database do
   ## Remove duplicated items from following and update followers count for all users
 
       mix pleroma.database update_users_following_followers_counts
+
+  ## Fix the pre-existing "likes" collections for all objects
+
+      mix pleroma.database fix_likes_collections
   """
   def run(["remove_embedded_objects" | args]) do
     {options, [], []} =
@@ -124,5 +128,37 @@ defmodule Mix.Tasks.Pleroma.Database do
         timeout: :infinity
       )
     end
+  end
+
+  def run(["fix_likes_collections"]) do
+    import Ecto.Query
+
+    start_pleroma()
+
+    from(object in Object,
+      where: fragment("(?)->>'likes' is not null", object.data),
+      select: %{id: object.id, likes: fragment("(?)->>'likes'", object.data)}
+    )
+    |> Pleroma.RepoStreamer.chunk_stream(100)
+    |> Stream.each(fn objects ->
+      ids =
+        objects
+        |> Enum.filter(fn object -> object.likes |> Jason.decode!() |> is_map() end)
+        |> Enum.map(& &1.id)
+
+      Object
+      |> where([object], object.id in ^ids)
+      |> update([object],
+        set: [
+          data:
+            fragment(
+              "jsonb_set(?, '{likes}', '[]'::jsonb, true)",
+              object.data
+            )
+        ]
+      )
+      |> Repo.update_all([], timeout: :infinity)
+    end)
+    |> Stream.run()
   end
 end
