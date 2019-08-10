@@ -40,6 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Invalid SemVer version generation, when the current branch does not have commits ahead of tag/checked out on a tag
 - Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
 - Report email not being sent to admins when the reporter is a remote user
+- MRF: ensure that subdomain_match calls are case-insensitive
 
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)

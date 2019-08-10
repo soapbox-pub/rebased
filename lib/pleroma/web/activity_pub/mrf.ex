@@ -28,7 +28,7 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   @spec subdomains_regex([String.t()]) :: [Regex.t()]
   def subdomains_regex(domains) when is_list(domains) do
-    for domain <- domains, do: ~r(^#{String.replace(domain, "*.", "(.*\\.)*")}$)
+    for domain <- domains, do: ~r(^#{String.replace(domain, "*.", "(.*\\.)*")}$)i
   end
 
   @spec subdomain_match?([Regex.t()], String.t()) :: boolean()
