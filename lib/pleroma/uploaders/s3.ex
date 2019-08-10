@@ -6,10 +6,12 @@ defmodule Pleroma.Uploaders.S3 do
   @behaviour Pleroma.Uploaders.Uploader
   require Logger
 
+  alias Pleroma.Config
+
   # The file name is re-encoded with S3's constraints here to comply with previous
   # links with less strict filenames
   def get_file(file) do
-    config = Pleroma.Config.get([__MODULE__])
+    config = Config.get([__MODULE__])
     bucket = Keyword.fetch!(config, :bucket)
 
     bucket_with_namespace =
@@ -34,15 +36,15 @@ defmodule Pleroma.Uploaders.S3 do
   end
 
   def put_file(%Pleroma.Upload{} = upload) do
-    config = Pleroma.Config.get([__MODULE__])
+    config = Config.get([__MODULE__])
     bucket = Keyword.get(config, :bucket)
-
-    {:ok, file_data} = File.read(upload.tempfile)
 
     s3_name = strict_encode(upload.path)
 
     op =
-      ExAws.S3.put_object(bucket, s3_name, file_data, [
+      upload.tempfile
+      |> ExAws.S3.Upload.stream_file()
+      |> ExAws.S3.upload(bucket, s3_name, [
         {:acl, :public_read},
         {:content_type, upload.content_type}
       ])
