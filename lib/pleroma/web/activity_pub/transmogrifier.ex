@@ -26,6 +26,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   """
   def fix_object(object, options \\ []) do
     object
+    |> strip_internal_fields
     |> fix_actor
     |> fix_url
     |> fix_attachments
@@ -34,7 +35,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> fix_emoji
     |> fix_tag
     |> fix_content_map
-    |> fix_likes
     |> fix_addressing
     |> fix_summary
     |> fix_type(options)
@@ -149,20 +149,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   def fix_actor(%{"attributedTo" => actor} = object) do
     object
     |> Map.put("actor", Containment.get_actor(%{"actor" => actor}))
-  end
-
-  # Check for standardisation
-  # This is what Peertube does
-  # curl -H 'Accept: application/activity+json' $likes | jq .totalItems
-  # Prismo returns only an integer (count) as "likes"
-  def fix_likes(%{"likes" => likes} = object) when not is_map(likes) do
-    object
-    |> Map.put("likes", [])
-    |> Map.put("like_count", 0)
-  end
-
-  def fix_likes(object) do
-    object
   end
 
   def fix_in_reply_to(object, options \\ [])
@@ -784,7 +770,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> add_mention_tags
     |> add_emoji_tags
     |> add_attributed_to
-    |> add_likes
     |> prepare_attachments
     |> set_conversation
     |> set_reply_to_uri
@@ -971,22 +956,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
     |> Map.put("attributedTo", attributed_to)
   end
 
-  def add_likes(%{"id" => id, "like_count" => likes} = object) do
-    likes = %{
-      "id" => "#{id}/likes",
-      "first" => "#{id}/likes?page=1",
-      "type" => "OrderedCollection",
-      "totalItems" => likes
-    }
-
-    object
-    |> Map.put("likes", likes)
-  end
-
-  def add_likes(object) do
-    object
-  end
-
   def prepare_attachments(object) do
     attachments =
       (object["attachment"] || [])
@@ -1002,6 +971,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   defp strip_internal_fields(object) do
     object
     |> Map.drop([
+      "likes",
       "like_count",
       "announcements",
       "announcement_count",
