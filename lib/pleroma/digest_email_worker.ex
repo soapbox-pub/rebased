@@ -1,8 +1,6 @@
 defmodule Pleroma.DigestEmailWorker do
   import Ecto.Query
 
-  @queue_name :digest_emails
-
   def perform do
     config = Pleroma.Config.get([:email_notifications, :digest])
     negative_interval = -Map.fetch!(config, :interval)
@@ -17,7 +15,7 @@ defmodule Pleroma.DigestEmailWorker do
       select: u
     )
     |> Pleroma.Repo.all()
-    |> Enum.each(&PleromaJobQueue.enqueue(@queue_name, __MODULE__, [&1]))
+    |> Enum.each(&PleromaJobQueue.enqueue(:digest_emails, __MODULE__, [&1]))
   end
 
   @doc """

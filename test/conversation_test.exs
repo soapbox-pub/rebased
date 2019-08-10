@@ -28,6 +28,8 @@ defmodule Pleroma.ConversationTest do
     {:ok, _activity} =
       CommonAPI.post(user, %{"visibility" => "direct", "status" => "hey @#{other_user.nickname}"})
 
+    Pleroma.ObanHelpers.perform_all()
+
     Repo.delete_all(Conversation)
     Repo.delete_all(Conversation.Participation)
 

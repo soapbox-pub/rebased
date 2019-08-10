@@ -249,7 +249,8 @@ defmodule Pleroma.Web.FederatorTest do
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Poison.decode!()
 
-      assert Federator.incoming_ap_doc(params) == :error
+      assert {:ok, job} = Federator.incoming_ap_doc(params)
+      assert :error = ObanHelpers.perform(job)
 
       Pleroma.Config.put([:instance, :rewrite_policy], policies)
       Pleroma.Config.put(:mrf_keyword, mrf_keyword_policy)

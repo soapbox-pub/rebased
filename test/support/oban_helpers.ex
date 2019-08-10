@@ -9,6 +9,12 @@ defmodule Pleroma.ObanHelpers do
 
   alias Pleroma.Repo
 
+  def perform_all do
+    Oban.Job
+    |> Repo.all()
+    |> perform()
+  end
+
   def perform(%Oban.Job{} = job) do
     res = apply(String.to_existing_atom("Elixir." <> job.worker), :perform, [job])
     Repo.delete(job)
