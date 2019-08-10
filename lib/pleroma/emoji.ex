@@ -143,23 +143,38 @@ defmodule Pleroma.Emoji do
   defp load_pack(pack_dir, emoji_groups) do
     pack_name = Path.basename(pack_dir)
 
-    emoji_txt = Path.join(pack_dir, "emoji.txt")
+    pack_toml = Path.join(pack_dir, "pack.toml")
 
-    if File.exists?(emoji_txt) do
-      load_from_file(emoji_txt, emoji_groups)
-    else
-      extensions = Pleroma.Config.get([:emoji, :pack_extensions])
+    if File.exists?(pack_toml) do
+      toml = Toml.decode_file!(pack_toml)
 
-      Logger.info(
-        "No emoji.txt found for pack \"#{pack_name}\", assuming all #{Enum.join(extensions, ", ")} files are emoji"
-      )
-
-      make_shortcode_to_file_map(pack_dir, extensions)
-      |> Enum.map(fn {shortcode, rel_file} ->
+      toml["files"]
+      |> Enum.map(fn {name, rel_file} ->
         filename = Path.join("/emoji/#{pack_name}", rel_file)
-
-        {shortcode, filename, [to_string(match_extra(emoji_groups, filename))]}
+        {name, filename, pack_name}
       end)
+    else
+      # Load from emoji.txt / all files
+      emoji_txt = Path.join(pack_dir, "emoji.txt")
+
+      if File.exists?(emoji_txt) do
+        load_from_file(emoji_txt, emoji_groups)
+      else
+        extensions = Pleroma.Config.get([:emoji, :pack_extensions])
+
+        Logger.info(
+          "No emoji.txt found for pack \"#{pack_name}\", assuming all #{
+            Enum.join(extensions, ", ")
+          } files are emoji"
+        )
+
+        make_shortcode_to_file_map(pack_dir, extensions)
+        |> Enum.map(fn {shortcode, rel_file} ->
+          filename = Path.join("/emoji/#{pack_name}", rel_file)
+
+          {shortcode, filename, [to_string(match_extra(emoji_groups, filename))]}
+        end)
+      end
     end
   end
 
