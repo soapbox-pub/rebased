@@ -207,6 +207,28 @@ defmodule Pleroma.Web.Router do
     get("/moderation_log", AdminAPIController, :list_log)
   end
 
+  scope "/api/pleroma/emoji", Pleroma.Web.EmojiAPI do
+    scope [] do
+      pipe_through([:admin_api, :oauth_write])
+
+      post("/reload", EmojiAPIController, :reload)
+    end
+
+    scope "/packs" do
+      # Modifying packs
+      pipe_through([:admin_api, :oauth_write])
+
+      post("/download_from", EmojiAPIController, :download_from)
+    end
+
+    scope "/packs" do
+      # Pack info / downloading
+      get("/list", EmojiAPIController, :list_packs)
+      get("/download_shared/:name", EmojiAPIController, :download_shared)
+      get("/sha_of_shared/:name", EmojiAPIController, :sha_of_shared)
+    end
+  end
+
   scope "/", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_html)
 
