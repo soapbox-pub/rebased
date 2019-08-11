@@ -333,13 +333,15 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
   def fix_type(object, options \\ [])
 
-  def fix_type(%{"inReplyTo" => reply_id} = object, options) when is_binary(reply_id) do
+  def fix_type(%{"inReplyTo" => reply_id, "name" => _} = object, options)
+      when is_binary(reply_id) do
     reply =
-      if Federator.allowed_incoming_reply_depth?(options[:depth]) do
-        Object.normalize(reply_id, true)
+      with true <- Federator.allowed_incoming_reply_depth?(options[:depth]),
+           {:ok, object} <- get_obj_helper(reply_id, options) do
+        object
       end
 
-    if reply && (reply.data["type"] == "Question" and object["name"]) do
+    if reply && reply.data["type"] == "Question" do
       Map.put(object, "type", "Answer")
     else
       object
