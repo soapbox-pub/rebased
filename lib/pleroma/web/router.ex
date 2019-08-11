@@ -225,7 +225,6 @@ defmodule Pleroma.Web.Router do
       # Pack info / downloading
       get("/list", EmojiAPIController, :list_packs)
       get("/download_shared/:name", EmojiAPIController, :download_shared)
-      get("/sha_of_shared/:name", EmojiAPIController, :sha_of_shared)
     end
   end
 

@@ -22,14 +22,14 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
           results
           |> Enum.filter(fn file ->
             dir_path = Path.join(@emoji_dir_path, file)
-            # Filter to only use the pack.toml packs
-            File.dir?(dir_path) and File.exists?(Path.join(dir_path, "pack.toml"))
+            # Filter to only use the pack.yml packs
+            File.dir?(dir_path) and File.exists?(Path.join(dir_path, "pack.yml"))
           end)
           |> Enum.map(fn pack_name ->
             pack_path = Path.join(@emoji_dir_path, pack_name)
-            pack_file = Path.join(pack_path, "pack.toml")
+            pack_file = Path.join(pack_path, "pack.yml")
 
-            {pack_name, Toml.decode_file!(pack_file)}
+            {pack_name, RelaxYaml.Decoder.read_from_file(pack_file)}
           end)
           # Transform into a map of pack-name => pack-data
           # Check if all the files are in place and can be sent
@@ -62,7 +62,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
 
   defp make_archive(name, pack, pack_dir) do
     files =
-      ['pack.toml'] ++
+      ['pack.yml'] ++
         (pack["files"] |> Enum.map(fn {_, path} -> to_charlist(path) end))
 
     {:ok, {_, zip_result}} = :zip.zip('#{name}.zip', files, [:memory, cwd: to_charlist(pack_dir)])
@@ -72,10 +72,10 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
 
   def download_shared(conn, %{"name" => name}) do
     pack_dir = Path.join(@emoji_dir_path, name)
-    pack_toml = Path.join(pack_dir, "pack.toml")
+    pack_yaml = Path.join(pack_dir, "pack.yml")
 
-    if File.exists?(pack_toml) do
-      pack = Toml.decode_file!(pack_toml)
+    if File.exists?(pack_yaml) do
+      pack = RelaxYaml.Decoder.read_from_file(pack_yaml)
 
       if can_download?(pack, pack_dir) do
         zip_result = make_archive(name, pack, pack_dir)
@@ -139,25 +139,21 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
           File.mkdir_p!(pack_dir)
 
           files =
-            ['pack.toml'] ++
+            ['pack.yml'] ++
               (pfiles |> Enum.map(fn {_, path} -> to_charlist(path) end))
 
           {:ok, _} = :zip.unzip(emoji_archive, cwd: to_charlist(pack_dir), file_list: files)
 
-          # Fallback URL might not contain a pack.toml file, if that happens - fail (for now)
-          # FIXME: there seems to be a lack of any kind of encoders besides JSON.
-          erres =
-            if pinfo[:fallback] do
-              toml_path = Path.join(pack_dir, "pack.toml")
+          # Fallback URL might not contain a pack.yml file. Put on we have if there's none
+          if pinfo[:fallback] do
+            yaml_path = Path.join(pack_dir, "pack.yml")
 
-              unless File.exists?(toml_path) do
-                conn
-                |> put_status(:internal_server_error)
-                |> text("No pack.toml in falblack source")
-              end
+            unless File.exists?(yaml_path) do
+              File.write!(yaml_path, RelaxYaml.Encoder.encode(full_pack, []))
             end
+          end
 
-          if not is_nil(erres), do: erres, else: conn |> text("ok")
+          conn |> text("ok")
         else
           conn
           |> put_status(:internal_server_error)
