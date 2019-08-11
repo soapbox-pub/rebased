@@ -36,13 +36,19 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
           |> Enum.map(fn {name, pack} ->
             pack_path = Path.join(@emoji_dir_path, name)
 
-            archive_for_sha = make_archive(name, pack, pack_path)
-            archive_sha = :crypto.hash(:sha256, archive_for_sha) |> Base.encode16()
+            if can_download?(pack, pack_path) do
+              archive_for_sha = make_archive(name, pack, pack_path)
+              archive_sha = :crypto.hash(:sha256, archive_for_sha) |> Base.encode16()
 
-            {name,
-             pack
-             |> put_in(["pack", "can-download"], can_download?(pack, pack_path))
-             |> put_in(["pack", "download-sha256"], archive_sha)}
+              {name,
+               pack
+               |> put_in(["pack", "can-download"], true)
+               |> put_in(["pack", "download-sha256"], archive_sha)}
+            else
+              {name,
+               pack
+               |> put_in(["pack", "can-download"], false)}
+            end
           end)
           |> Enum.into(%{})
       end
