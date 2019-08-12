@@ -88,7 +88,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
       ttl: cache_ms
     )
 
-    Logger.debug("Create an archive for the '#{name}' shared emoji pack, \
+    Logger.debug("Create an archive for the '#{name}' emoji pack, \
 keeping it in cache for #{div(cache_ms, 1000)}s")
 
     zip_result
@@ -132,14 +132,14 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         {:error,
          conn
          |> put_status(:forbidden)
-         |> json("Pack #{name} cannot be downloaded from this instance, either pack sharing\
+         |> text("Pack #{name} cannot be downloaded from this instance, either pack sharing\
            was disabled for this pack or some files are missing")}
       end
     else
       {:error,
        conn
        |> put_status(:not_found)
-       |> json("Pack #{name} does not exist")}
+       |> text("Pack #{name} does not exist")}
     end
   end
 
@@ -169,7 +169,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
            }}
 
         true ->
-          {:error, "The pack was not set as shared and the is no fallback url to download from"}
+          {:error, "The pack was not set as shared and there is no fallback src to download from"}
       end
 
     case pack_info_res do
