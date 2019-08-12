@@ -707,6 +707,8 @@ Configure OAuth 2 provider capabilities:
 * `pack_extensions`: A list of file extensions for emojis, when no emoji.txt for a pack is present. Example `[".png", ".gif"]`
 * `groups`: Emojis are ordered in groups (tags). This is an array of key-value pairs where the key is the groupname and the value the location or array of locations. `*` can be used as a wildcard. Example `[Custom: ["/emoji/*.png", "/emoji/custom/*.png"]]`
 * `default_manifest`: Location of the JSON-manifest. This manifest contains information about the emoji-packs you can download. Currently only one manifest can be added (no arrays).
+* `shared_pack_cache_seconds_per_file`: When an emoji pack is shared, the archive is created and cached in
+  memory for this amount of seconds multiplied by the number of files.
 
 ## Database options
 

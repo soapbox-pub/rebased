@@ -1,6 +1,8 @@
 defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
   use Pleroma.Web, :controller
 
+  require Logger
+
   def reload(conn, _params) do
     Pleroma.Emoji.reload()
 
@@ -11,6 +13,8 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
                     Pleroma.Config.get!([:instance, :static_dir]),
                     "emoji"
                   )
+
+  @cache_seconds_per_file Pleroma.Config.get!([:emoji, :shared_pack_cache_seconds_per_file])
 
   def list_packs(conn, _params) do
     pack_infos =
@@ -66,12 +70,48 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
       end)
   end
 
-  defp make_archive(name, pack, pack_dir) do
+  defp create_archive_and_cache(name, pack, pack_dir, md5) do
     files =
       ['pack.yml'] ++
         (pack["files"] |> Enum.map(fn {_, path} -> to_charlist(path) end))
 
     {:ok, {_, zip_result}} = :zip.zip('#{name}.zip', files, [:memory, cwd: to_charlist(pack_dir)])
+
+    cache_ms = :timer.seconds(@cache_seconds_per_file * Enum.count(files))
+
+    Cachex.put!(
+      :emoji_packs_cache,
+      name,
+      # if pack.yml MD5 changes, the cache is not valid anymore
+      %{pack_yml_md5: md5, pack_data: zip_result},
+      # Add a minute to cache time for every file in the pack
+      ttl: cache_ms
+    )
+
+    Logger.debug("Create an archive for the '#{name}' shared emoji pack, \
+keeping it in cache for #{div(cache_ms, 1000)}s")
+
+    zip_result
+  end
+
+  defp make_archive(name, pack, pack_dir) do
+    # Having a different pack.yml md5 invalidates cache
+    pack_yml_md5 = :crypto.hash(:md5, File.read!(Path.join(pack_dir, "pack.yml")))
+
+    maybe_cached_pack = Cachex.get!(:emoji_packs_cache, name)
+
+    zip_result =
+      if is_nil(maybe_cached_pack) do
+        create_archive_and_cache(name, pack, pack_dir, pack_yml_md5)
+      else
+        if maybe_cached_pack[:pack_yml_md5] == pack_yml_md5 do
+          Logger.debug("Using cache for the '#{name}' shared emoji pack")
+
+          maybe_cached_pack[:pack_data]
+        else
+          create_archive_and_cache(name, pack, pack_dir, pack_yml_md5)
+        end
+      end
 
     zip_result
   end
