@@ -42,7 +42,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
     assert Enum.find(arch, fn {n, _} -> n == 'blank.png' end)
   end
 
-  test "downloading a shared pack from another instance via download_from" do
+  test "downloading a shared pack from another instance via download_from, deleting it" do
     on_exit(fn ->
       File.rm_rf!("test/instance_static/emoji/test_pack2")
     end)
@@ -94,5 +94,12 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     assert File.exists?("test/instance_static/emoji/test_pack2/pack.yml")
     assert File.exists?("test/instance_static/emoji/test_pack2/blank.png")
+
+    assert conn
+           |> assign(:user, admin)
+           |> delete(emoji_api_path(conn, :delete, "test_pack2"))
+           |> response(200) == "ok"
+
+    refute File.exists?("test/instance_static/emoji/test_pack2")
   end
 end

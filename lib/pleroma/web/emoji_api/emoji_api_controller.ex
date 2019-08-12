@@ -210,4 +210,16 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         conn |> put_status(:internal_server_error) |> text(e)
     end
   end
+
+  def delete(conn, %{"name" => name}) do
+    pack_dir = Path.join(@emoji_dir_path, name)
+
+    case File.rm_rf(pack_dir) do
+      {:ok, _} ->
+        conn |> text("ok")
+
+      {:error, _} ->
+        conn |> put_status(:internal_server_error) |> text("Couldn't delete the pack #{name}")
+    end
+  end
 end
