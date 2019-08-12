@@ -6,7 +6,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
   def reload(conn, _params) do
     Pleroma.Emoji.reload()
 
-    conn |> json("ok")
+    conn |> text("ok")
   end
 
   @emoji_dir_path Path.join(
