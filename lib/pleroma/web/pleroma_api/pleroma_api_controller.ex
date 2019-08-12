@@ -13,6 +13,15 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.StatusView
 
+  def conversation(%{assigns: %{user: user}} = conn, %{"id" => participation_id}) do
+    with %Participation{} = participation <- Participation.get(participation_id),
+         true <- user.id == participation.user_id do
+      conn
+      |> put_view(ConversationView)
+      |> render("participation.json", %{participation: participation, user: user})
+    end
+  end
+
   def conversation_statuses(
         %{assigns: %{user: user}} = conn,
         %{"id" => participation_id} = params

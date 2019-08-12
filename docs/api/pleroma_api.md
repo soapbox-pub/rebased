@@ -340,6 +340,12 @@ The status posting endpoint takes an additional parameter, `in_reply_to_conversa
 * Params: Like other timelines
 * Response: JSON, statuses (200 - healthy, 503 unhealthy).
 
+## `GET /api/v1/pleroma/conversations/:id`
+### The conversation with the given ID.
+* Method `GET`
+* Authentication: required
+* Params: None
+* Response: JSON, statuses (200 - healthy, 503 unhealthy).
 
 ## `PATCH /api/v1/pleroma/conversations/:id`
 ### Update a conversation. Used to change the set of recipients.

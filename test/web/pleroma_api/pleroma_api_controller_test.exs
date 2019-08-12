@@ -11,6 +11,24 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
   import Pleroma.Factory
 
+  test "/api/v1/pleroma/conversations/:id", %{conn: conn} do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{"status" => "Hi @#{other_user.nickname}!", "visibility" => "direct"})
+
+    [participation] = Participation.for_user(other_user)
+
+    result =
+      conn
+      |> assign(:user, other_user)
+      |> get("/api/v1/pleroma/conversations/#{participation.id}")
+      |> json_response(200)
+
+    assert result["id"] == participation.id |> to_string()
+  end
+
   test "/api/v1/pleroma/conversations/:id/statuses", %{conn: conn} do
     user = insert(:user)
     other_user = insert(:user)
