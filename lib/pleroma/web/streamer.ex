@@ -209,7 +209,7 @@ defmodule Pleroma.Web.Streamer do
       payload:
         Pleroma.Web.MastodonAPI.ConversationView.render("participation.json", %{
           participation: participation,
-          user: participation.user
+          for: participation.user
         })
         |> Jason.encode!()
     }

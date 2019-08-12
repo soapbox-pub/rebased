@@ -11,7 +11,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.MastodonAPI.StatusView
 
-  def render("participation.json", %{participation: participation, user: user}) do
+  def render("participation.json", %{participation: participation, for: user}) do
     participation = Repo.preload(participation, conversation: [], recipients: [])
 
     last_activity_id =

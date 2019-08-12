@@ -23,7 +23,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationViewTest do
     assert participation
 
     conversation =
-      ConversationView.render("participation.json", %{participation: participation, user: user})
+      ConversationView.render("participation.json", %{participation: participation, for: user})
 
     assert conversation.id == participation.id |> to_string()
     assert conversation.last_status.id == activity.id
