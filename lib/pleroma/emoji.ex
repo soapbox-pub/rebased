@@ -122,6 +122,9 @@ defmodule Pleroma.Emoji do
             fn pack -> load_pack(Path.join(emoji_dir_path, pack), emoji_groups) end
           )
 
+        # Clear out old emojis
+        :ets.delete_all_objects(@ets)
+
         true = :ets.insert(@ets, emojis)
     end
 
