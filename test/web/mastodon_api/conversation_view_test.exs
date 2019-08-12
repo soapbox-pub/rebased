@@ -30,11 +30,5 @@ defmodule Pleroma.Web.MastodonAPI.ConversationViewTest do
 
     assert [account] = conversation.accounts
     assert account.id == other_user.id
-
-    assert recipients = conversation.pleroma.recipients
-    recipient_ids = recipients |> Enum.map(& &1.id)
-
-    assert user.id in recipient_ids
-    assert other_user.id in recipient_ids
   end
 end

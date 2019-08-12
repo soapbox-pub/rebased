@@ -67,10 +67,10 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIControllerTest do
 
     assert result["id"] == participation.id |> to_string
 
-    assert recipients = result["pleroma"]["recipients"]
-    recipient_ids = Enum.map(recipients, & &1["id"])
+    [participation] = Participation.for_user(user)
+    participation = Repo.preload(participation, :recipients)
 
-    assert user.id in recipient_ids
-    assert other_user.id in recipient_ids
+    assert user in participation.recipients
+    assert other_user in participation.recipients
   end
 end

@@ -12,7 +12,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("participation.json", %{participation: participation, user: user}) do
-    participation = Repo.preload(participation, conversation: :users, recipients: [])
+    participation = Repo.preload(participation, conversation: [], recipients: [])
 
     last_activity_id =
       with nil <- participation.last_activity_id do
@@ -28,7 +28,7 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
 
     # Conversations return all users except the current user.
     users =
-      participation.conversation.users
+      participation.recipients
       |> Enum.reject(&(&1.id == user.id))
 
     accounts =
@@ -37,20 +37,11 @@ defmodule Pleroma.Web.MastodonAPI.ConversationView do
         as: :user
       })
 
-    recipients =
-      AccountView.render("accounts.json", %{
-        users: participation.recipients,
-        as: :user
-      })
-
     %{
       id: participation.id |> to_string(),
       accounts: accounts,
       unread: !participation.read,
-      last_status: last_status,
-      pleroma: %{
-        recipients: recipients
-      }
+      last_status: last_status
     }
   end
 end
