@@ -1,0 +1,13 @@
+pack:
+  license: Test license
+  homepage: https://pleroma.social
+  description: Test description
+
+  fallblack-src: https://example.com
+  # SHA256 of the fallback-src
+  fallback-src-sha256: 65CDCCBCA9388A68023519F997367783BE69ED42864398CAC568E56F65CE0E75
+
+  share-files: false
+
+files:
+  blank: blank.png
