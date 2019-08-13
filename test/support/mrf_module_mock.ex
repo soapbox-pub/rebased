@@ -9,5 +9,5 @@ defmodule MRFModuleMock do
   def filter(message), do: {:ok, message}
 
   @impl true
-  def describe(), do: %{"mrf_module_mock" => "some config data"}
+  def describe(), do: {:ok, %{mrf_module_mock: "some config data"}}
 end

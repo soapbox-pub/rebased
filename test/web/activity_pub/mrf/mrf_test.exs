@@ -57,4 +57,30 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
       refute MRF.subdomain_match?(regexes, "example.com")
     end
   end
+
+  describe "describe/0" do
+    test "it works as expected with noop policy" do
+      expected = %{
+        mrf_policies: ["NoOpPolicy"],
+        exclusions: false
+      }
+
+      {:ok, ^expected} = MRF.describe()
+    end
+
+    test "it works as expected with mock policy" do
+      config = Pleroma.Config.get([:instance, :rewrite_policy])
+      Pleroma.Config.put([:instance, :rewrite_policy], [MRFModuleMock])
+
+      expected = %{
+        mrf_policies: ["MRFModuleMock"],
+        mrf_module_mock: "some config data",
+        exclusions: false
+      }
+
+      {:ok, ^expected} = MRF.describe()
+
+      Pleroma.Config.put([:instance, :rewrite_policy], config)
+    end
+  end
 end
