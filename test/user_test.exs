@@ -525,7 +525,10 @@ defmodule Pleroma.UserTest do
     end
 
     test "it restricts some sizes" do
-      [bio: 5000, name: 100]
+      bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+      name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
+
+      [bio: bio_limit, name: name_limit]
       |> Enum.each(fn {field, size} ->
         string = String.pad_leading(".", size)
         cs = User.remote_user_creation(Map.put(@valid_remote, field, string))

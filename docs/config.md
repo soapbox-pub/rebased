@@ -126,6 +126,8 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
+* `user_bio_length`: A user bio maximum length (default: `5000`)
+* `user_name_length`: A user name maximum length (default: `100`)
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
