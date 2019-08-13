@@ -58,10 +58,10 @@ defmodule Pleroma.Web do
       rescue
         error ->
           Logger.error(
-            "#{__MODULE__} failed to render #{inspect({view, template})}: #{inspect(error)}"
+            "#{__MODULE__} failed to render #{inspect({view, template})}\n" <>
+              Exception.format(:error, error, __STACKTRACE__)
           )
 
-          Logger.error(inspect(__STACKTRACE__))
           nil
       end
 
