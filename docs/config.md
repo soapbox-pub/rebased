@@ -278,7 +278,7 @@ config :pleroma, :mrf_subchain,
 * `actors`: A list of actors, for which to drop any posts mentioning.
 
 ## :mrf_vocabulary
-* `accept`: A list of ActivityStreams terms to accept.  If empty, all messages are accepted.
+* `accept`: A list of ActivityStreams terms to accept.  If empty, all supported messages are accepted.
 * `reject`: A list of ActivityStreams terms to reject.  If empty, no messages are rejected.
 
 ## :media_proxy
