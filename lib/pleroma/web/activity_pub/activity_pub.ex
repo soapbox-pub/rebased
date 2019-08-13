@@ -518,6 +518,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     from(activity in Activity)
     |> maybe_preload_objects(opts)
+    |> maybe_preload_bookmarks(opts)
+    |> maybe_set_thread_muted_field(opts)
     |> restrict_blocked(opts)
     |> restrict_recipients(recipients, opts["user"])
     |> where(
@@ -531,6 +533,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       )
     )
     |> exclude_poll_votes(opts)
+    |> exclude_id(opts)
     |> order_by([activity], desc: activity.id)
   end
 
@@ -869,6 +872,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
       query
     end
   end
+
+  defp exclude_id(query, %{"exclude_id" => id}) when is_binary(id) do
+    from(activity in query, where: activity.id != ^id)
+  end
+
+  defp exclude_id(query, _), do: query
 
   defp maybe_preload_objects(query, %{"skip_preload" => true}), do: query
 
