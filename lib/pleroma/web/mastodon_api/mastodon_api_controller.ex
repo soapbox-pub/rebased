@@ -435,6 +435,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
       |> Map.put("muting_user", user)
+      |> Map.put("user", user)
       |> ActivityPub.fetch_public_activities()
       |> Enum.reverse()
 
@@ -885,8 +886,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => object}} <- Activity.get_by_id(id),
-         %Object{data: %{"likes" => likes}} <- Object.normalize(object) do
+    with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         %Object{data: %{"likes" => likes}} <- Object.normalize(activity) do
       q = from(u in User, where: u.ap_id in ^likes)
 
       users =
@@ -902,8 +903,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def reblogged_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Activity{data: %{"object" => object}} <- Activity.get_by_id(id),
-         %Object{data: %{"announcements" => announces}} <- Object.normalize(object) do
+    with %Activity{} = activity <- Activity.get_by_id_with_object(id),
+         %Object{data: %{"announcements" => announces}} <- Object.normalize(activity) do
       q = from(u in User, where: u.ap_id in ^announces)
 
       users =
@@ -944,6 +945,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Map.put("local_only", local_only)
       |> Map.put("blocking_user", user)
       |> Map.put("muting_user", user)
+      |> Map.put("user", user)
       |> Map.put("tag", tags)
       |> Map.put("tag_all", tag_all)
       |> Map.put("tag_reject", tag_reject)
@@ -1350,6 +1352,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         params
         |> Map.put("type", "Create")
         |> Map.put("blocking_user", user)
+        |> Map.put("user", user)
         |> Map.put("muting_user", user)
 
       # we must filter the following list for the user to avoid leaking statuses the user

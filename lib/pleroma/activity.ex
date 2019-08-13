@@ -224,6 +224,29 @@ defmodule Pleroma.Activity do
 
   def get_create_by_object_ap_id(_), do: nil
 
+  def create_by_object_ap_id_with_object(ap_ids) when is_list(ap_ids) do
+    from(
+      activity in Activity,
+      where:
+        fragment(
+          "coalesce((?)->'object'->>'id', (?)->>'object') = ANY(?)",
+          activity.data,
+          activity.data,
+          ^ap_ids
+        ),
+      where: fragment("(?)->>'type' = 'Create'", activity.data),
+      inner_join: o in Object,
+      on:
+        fragment(
+          "(?->>'id') = COALESCE(?->'object'->>'id', ?->>'object')",
+          o.data,
+          activity.data,
+          activity.data
+        ),
+      preload: [object: o]
+    )
+  end
+
   def create_by_object_ap_id_with_object(ap_id) when is_binary(ap_id) do
     from(
       activity in Activity,
@@ -263,8 +286,8 @@ defmodule Pleroma.Activity do
 
   defp get_in_reply_to_activity_from_object(_), do: nil
 
-  def get_in_reply_to_activity(%Activity{data: %{"object" => object}}) do
-    get_in_reply_to_activity_from_object(Object.normalize(object))
+  def get_in_reply_to_activity(%Activity{} = activity) do
+    get_in_reply_to_activity_from_object(Object.normalize(activity))
   end
 
   def normalize(obj) when is_map(obj), do: get_by_ap_id_with_object(obj["id"])
