@@ -31,4 +31,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.VocabularyPolicy do
   end
 
   def filter(message), do: {:ok, message}
+
+  def describe, do: {:ok, %{mrf_vocabulary: Pleroma.Config.get(:mrf_vocabulary)}}
 end
