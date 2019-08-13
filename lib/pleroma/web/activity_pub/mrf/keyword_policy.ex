@@ -96,4 +96,36 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
 
   @impl true
   def filter(message), do: {:ok, message}
+
+  @impl true
+  def describe do
+    # This horror is needed to convert regex sigils to strings
+    mrf_keyword =
+      Pleroma.Config.get(:mrf_keyword, [])
+      |> Enum.map(fn {key, value} ->
+        {key,
+         Enum.map(value, fn
+           {pattern, replacement} ->
+             %{
+               "pattern" =>
+                 if not is_binary(pattern) do
+                   inspect(pattern)
+                 else
+                   pattern
+                 end,
+               "replacement" => replacement
+             }
+
+           pattern ->
+             if not is_binary(pattern) do
+               inspect(pattern)
+             else
+               pattern
+             end
+         end)}
+      end)
+      |> Enum.into(%{})
+
+    {:ok, %{mrf_keyword: mrf_keyword}}
+  end
 end

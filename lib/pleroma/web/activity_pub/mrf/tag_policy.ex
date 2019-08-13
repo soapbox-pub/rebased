@@ -165,4 +165,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
 
   @impl true
   def filter(message), do: {:ok, message}
+
+  @impl true
+  def describe, do: {:ok, %{}}
 end

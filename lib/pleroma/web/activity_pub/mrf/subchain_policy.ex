@@ -37,4 +37,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SubchainPolicy do
 
   @impl true
   def filter(message), do: {:ok, message}
+
+  @impl true
+  def describe, do: {:ok, %{}}
 end

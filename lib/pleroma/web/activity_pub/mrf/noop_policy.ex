@@ -10,4 +10,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoOpPolicy do
   def filter(object) do
     {:ok, object}
   end
+
+  @impl true
+  def describe, do: {:ok, %{}}
 end
