@@ -64,5 +64,5 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiFollowbotPolicy do
   def filter(message), do: {:ok, message}
 
   @impl true
-  def describe(), do: {:ok, %{}}
+  def describe, do: {:ok, %{}}
 end

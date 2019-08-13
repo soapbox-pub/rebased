@@ -98,7 +98,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.KeywordPolicy do
   def filter(message), do: {:ok, message}
 
   @impl true
-  def describe() do
+  def describe do
     # This horror is needed to convert regex sigils to strings
     mrf_keyword =
       Pleroma.Config.get(:mrf_keyword, [])

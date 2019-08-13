@@ -59,12 +59,12 @@ defmodule Pleroma.Web.ActivityPub.MRF do
     base =
       %{
         mrf_policies: mrf_policies,
-        exclusions: length(exclusions) > 0,
+        exclusions: length(exclusions) > 0
       }
       |> Map.merge(policy_configs)
 
     {:ok, base}
   end
 
-  def describe(), do: get_policies() |> describe()
+  def describe, do: get_policies() |> describe()
 end

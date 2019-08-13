@@ -12,5 +12,5 @@ defmodule Pleroma.Web.ActivityPub.MRF.NoOpPolicy do
   end
 
   @impl true
-  def describe(), do: {:ok, %{}}
+  def describe, do: {:ok, %{}}
 end

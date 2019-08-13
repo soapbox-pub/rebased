@@ -55,5 +55,5 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
   def filter(message), do: {:ok, message}
 
   @impl true
-  def describe(), do: {:ok, %{}}
+  def describe, do: {:ok, %{}}
 end

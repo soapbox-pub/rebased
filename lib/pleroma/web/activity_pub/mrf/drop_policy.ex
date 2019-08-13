@@ -14,5 +14,5 @@ defmodule Pleroma.Web.ActivityPub.MRF.DropPolicy do
   end
 
   @impl true
-  def describe(), do: {:ok, %{}}
+  def describe, do: {:ok, %{}}
 end
