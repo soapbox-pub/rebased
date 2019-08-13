@@ -701,8 +701,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         } = _data,
         _options
       ) do
-    with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
-         %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
+    with %User{local: true} = blocked <- User.get_cached_by_ap_id(blocked),
          {:ok, %User{} = blocker} <- User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.unblock(blocker, blocked, id, false) do
       User.unblock(blocker, blocked)
@@ -716,8 +715,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Block", "object" => blocked, "actor" => blocker, "id" => id} = _data,
         _options
       ) do
-    with true <- Pleroma.Config.get([:activitypub, :accept_blocks]),
-         %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
+    with %User{local: true} = blocked = User.get_cached_by_ap_id(blocked),
          {:ok, %User{} = blocker} = User.get_or_fetch_by_ap_id(blocker),
          {:ok, activity} <- ActivityPub.block(blocker, blocked, id, false) do
       User.unfollow(blocker, blocked)
