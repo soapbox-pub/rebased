@@ -536,8 +536,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(StatusView)
       |> try_render("poll.json", %{object: object, for: user})
     else
-      nil -> render_error(conn, :not_found, "Record not found")
-      false -> render_error(conn, :not_found, "Record not found")
+      error when is_nil(error) or error == false ->
+        render_error(conn, :not_found, "Record not found")
     end
   end
 
@@ -1690,42 +1690,32 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         |> String.replace("{{user}}", user)
 
       with {:ok, %{status: 200, body: body}} <-
-             HTTP.get(
-               url,
-               [],
-               adapter: [
-                 recv_timeout: timeout,
-                 pool: :default
-               ]
-             ),
+             HTTP.get(url, [], adapter: [recv_timeout: timeout, pool: :default]),
            {:ok, data} <- Jason.decode(body) do
         data =
           data
           |> Enum.slice(0, limit)
           |> Enum.map(fn x ->
-            Map.put(
-              x,
-              "id",
-              case User.get_or_fetch(x["acct"]) do
-                {:ok, %User{id: id}} -> id
-                _ -> 0
-              end
-            )
-          end)
-          |> Enum.map(fn x ->
-            Map.put(x, "avatar", MediaProxy.url(x["avatar"]))
-          end)
-          |> Enum.map(fn x ->
-            Map.put(x, "avatar_static", MediaProxy.url(x["avatar_static"]))
+            x
+            |> Map.put("id", fetch_suggestion_id(x))
+            |> Map.put("avatar", MediaProxy.url(x["avatar"]))
+            |> Map.put("avatar_static", MediaProxy.url(x["avatar_static"]))
           end)
 
-        conn
-        |> json(data)
+        json(conn, data)
       else
-        e -> Logger.error("Could not retrieve suggestions at fetch #{url}, #{inspect(e)}")
+        e ->
+          Logger.error("Could not retrieve suggestions at fetch #{url}, #{inspect(e)}")
       end
     else
       json(conn, [])
+    end
+  end
+
+  defp fetch_suggestion_id(attrs) do
+    case User.get_or_fetch(attrs["acct"]) do
+      {:ok, %User{id: id}} -> id
+      _ -> 0
     end
   end
 
