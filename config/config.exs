@@ -302,7 +302,6 @@ config :pleroma, :assets,
   default_mascot: :pleroma_fox_tan
 
 config :pleroma, :activitypub,
-  accept_blocks: true,
   unfollow_blocked: true,
   outgoing_blocks: true,
   follow_handshake_timeout: 500,

@@ -329,7 +329,6 @@ config :pleroma, Pleroma.Web.Endpoint,
 This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls starting with `https://example.com:2020`
 
 ## :activitypub
-* ``accept_blocks``: Whether to accept incoming block activities from other instances
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed
 * ``outgoing_blocks``: Whether to federate blocks to other instances
 * ``deny_follow_blocked``: Whether to disallow following an account that has blocked the user in question

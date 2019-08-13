@@ -88,6 +88,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - Emoji: Remove longfox emojis.
 - Remove `Reply-To` header from report emails for admins.
+- ActivityPub: The `accept_blocks` configuration setting.
 
 ## [1.0.1] - 2019-07-14
 ### Security
