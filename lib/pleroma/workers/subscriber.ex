@@ -4,10 +4,8 @@
 
 defmodule Pleroma.Workers.Subscriber do
   alias Pleroma.Repo
-  alias Pleroma.Web.Websub
+  alias Pleroma.Web.Federator
   alias Pleroma.Web.Websub.WebsubClientSubscription
-
-  require Logger
 
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
@@ -16,29 +14,16 @@ defmodule Pleroma.Workers.Subscriber do
 
   @impl Oban.Worker
   def perform(%{"op" => "refresh_subscriptions"}) do
-    Websub.refresh_subscriptions()
-    # Schedule the next run in 6 hours
-    Pleroma.Web.Federator.refresh_subscriptions(schedule_in: 3600 * 6)
+    Federator.perform(:refresh_subscriptions)
   end
 
   def perform(%{"op" => "request_subscription", "websub_id" => websub_id}) do
     websub = Repo.get(WebsubClientSubscription, websub_id)
-    Logger.debug("Refreshing #{websub.topic}")
-
-    with {:ok, websub} <- Websub.request_subscription(websub) do
-      Logger.debug("Successfully refreshed #{websub.topic}")
-    else
-      _e -> Logger.debug("Couldn't refresh #{websub.topic}")
-    end
+    Federator.perform(:request_subscription, websub)
   end
 
   def perform(%{"op" => "verify_websub", "websub_id" => websub_id}) do
     websub = Repo.get(WebsubClientSubscription, websub_id)
-
-    Logger.debug(fn ->
-      "Running WebSub verification for #{websub.id} (#{websub.topic}, #{websub.callback})"
-    end)
-
-    Websub.verify(websub)
+    Federator.perform(:verify_websub, websub)
   end
 end

@@ -2,20 +2,17 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Workers.Receiver do
-  alias Pleroma.Web.Federator
+defmodule Pleroma.Workers.Transmogrifier do
+  alias Pleroma.User
 
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
-    queue: "federator_incoming",
+    queue: "transmogrifier",
     max_attempts: Pleroma.Config.get([:workers, :retries, :compile_time_default])
 
   @impl Oban.Worker
-  def perform(%{"op" => "incoming_doc", "body" => doc}) do
-    Federator.perform(:incoming_doc, doc)
-  end
-
-  def perform(%{"op" => "incoming_ap_doc", "params" => params}) do
-    Federator.perform(:incoming_ap_doc, params)
+  def perform(%{"op" => "user_upgrade", "user_id" => user_id}) do
+    user = User.get_by_id(user_id)
+    Pleroma.Web.ActivityPub.Transmogrifier.perform(:user_upgrade, user)
   end
 end

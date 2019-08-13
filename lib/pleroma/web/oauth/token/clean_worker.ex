@@ -14,9 +14,12 @@ defmodule Pleroma.Web.OAuth.Token.CleanWorker do
               [:oauth2, :clean_expired_tokens_interval],
               86_400_000
             )
-  @queue :background
 
+  alias Pleroma.Repo
   alias Pleroma.Web.OAuth.Token
+  alias Pleroma.Workers.BackgroundWorker
+
+  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
 
   def start_link, do: GenServer.start_link(__MODULE__, nil)
 
@@ -31,8 +34,11 @@ defmodule Pleroma.Web.OAuth.Token.CleanWorker do
 
   @doc false
   def handle_info(:perform, state) do
+    %{"op" => "clean_expired_tokens"}
+    |> BackgroundWorker.new(worker_args(:background))
+    |> Repo.insert()
+
     Process.send_after(self(), :perform, @interval)
-    PleromaJobQueue.enqueue(@queue, __MODULE__, [:clean])
     {:noreply, state}
   end
 

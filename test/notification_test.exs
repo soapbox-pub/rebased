@@ -8,6 +8,7 @@ defmodule Pleroma.NotificationTest do
   import Pleroma.Factory
 
   alias Pleroma.Notification
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
@@ -621,7 +622,8 @@ defmodule Pleroma.NotificationTest do
 
       refute Enum.empty?(Notification.for_user(other_user))
 
-      User.delete(user)
+      {:ok, job} = User.delete(user)
+      ObanHelpers.perform(job)
 
       assert Enum.empty?(Notification.for_user(other_user))
     end
@@ -666,6 +668,7 @@ defmodule Pleroma.NotificationTest do
       }
 
       {:ok, _delete_activity} = Transmogrifier.handle_incoming(delete_user_message)
+      ObanHelpers.perform_all()
 
       assert Enum.empty?(Notification.for_user(local_user))
     end

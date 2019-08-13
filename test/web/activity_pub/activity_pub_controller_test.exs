@@ -9,8 +9,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   import Pleroma.Factory
   alias Pleroma.Activity
   alias Pleroma.Instances
-  alias Pleroma.ObanHelpers
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.UserView

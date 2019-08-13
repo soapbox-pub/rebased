@@ -6,8 +6,8 @@ defmodule Pleroma.ActivityTest do
   use Pleroma.DataCase
   alias Pleroma.Activity
   alias Pleroma.Bookmark
-  alias Pleroma.ObanHelpers
   alias Pleroma.Object
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.ThreadMute
   import Pleroma.Factory
 

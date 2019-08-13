@@ -4,7 +4,7 @@
 
 defmodule Pleroma.Web.FederatorTest do
   alias Pleroma.Instances
-  alias Pleroma.ObanHelpers
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Federator
   alias Pleroma.Workers.Publisher, as: PublisherWorker

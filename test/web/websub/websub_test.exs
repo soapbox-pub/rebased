@@ -6,7 +6,7 @@ defmodule Pleroma.Web.WebsubTest do
   use Pleroma.DataCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.ObanHelpers
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.Router.Helpers
   alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubClientSubscription

@@ -17,6 +17,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   alias Pleroma.Web.ActivityPub.MRF
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.WebFinger
+  alias Pleroma.Workers.BackgroundWorker
 
   import Ecto.Query
   import Pleroma.Web.ActivityPub.Utils
@@ -24,6 +25,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   require Logger
   require Pleroma.Constants
+
+  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
 
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
@@ -145,7 +148,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
-      PleromaJobQueue.enqueue(:background, Pleroma.Web.RichMedia.Helpers, [:fetch, activity])
+      %{"op" => "fetch_data_for_activity", "activity_id" => activity.id}
+      |> BackgroundWorker.new(worker_args(:background))
+      |> Repo.insert()
 
       Notification.create_notifications(activity)
 

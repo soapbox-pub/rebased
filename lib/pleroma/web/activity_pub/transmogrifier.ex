@@ -15,11 +15,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
+  alias Pleroma.Workers.Transmogrifier, as: TransmogrifierWorker
 
   import Ecto.Query
 
   require Logger
   require Pleroma.Constants
+
+  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
 
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
@@ -1073,7 +1076,9 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          already_ap <- User.ap_enabled?(user),
          {:ok, user} <- user |> User.upgrade_changeset(data) |> User.update_and_set_cache() do
       unless already_ap do
-        PleromaJobQueue.enqueue(:transmogrifier, __MODULE__, [:user_upgrade, user])
+        %{"op" => "user_upgrade", "user_id" => user.id}
+        |> TransmogrifierWorker.new(worker_args(:transmogrifier))
+        |> Repo.insert()
       end
 
       {:ok, user}

@@ -1,5 +1,10 @@
 defmodule Pleroma.DigestEmailWorker do
+  alias Pleroma.Repo
+  alias Pleroma.Workers.Mailer, as: MailerWorker
+
   import Ecto.Query
+
+  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
 
   def perform do
     config = Pleroma.Config.get([:email_notifications, :digest])
@@ -15,7 +20,11 @@ defmodule Pleroma.DigestEmailWorker do
       select: u
     )
     |> Pleroma.Repo.all()
-    |> Enum.each(&PleromaJobQueue.enqueue(:digest_emails, __MODULE__, [&1]))
+    |> Enum.each(fn user ->
+      %{"op" => "digest_email", "user_id" => user.id}
+      |> MailerWorker.new([queue: "digest_emails"] ++ worker_args(:digest_emails))
+      |> Repo.insert()
+    end)
   end
 
   @doc """

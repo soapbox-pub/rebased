@@ -4,9 +4,11 @@
 
 defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
+  use Oban.Testing, repo: Pleroma.Repo
 
   alias Pleroma.Notification
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
   import Pleroma.Factory
@@ -50,8 +52,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         {File, [],
          read!: fn "follow_list.txt" ->
            "Account address,Show boosts\n#{user2.ap_id},true"
-         end},
-        {PleromaJobQueue, [:passthrough], []}
+         end}
       ]) do
         response =
           conn
@@ -59,15 +60,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
           |> post("/api/pleroma/follow_import", %{"list" => %Plug.Upload{path: "follow_list.txt"}})
           |> json_response(:ok)
 
-        assert called(
-                 PleromaJobQueue.enqueue(
-                   :background,
-                   User,
-                   [:follow_import, user1, [user2.ap_id]]
-                 )
-               )
-
         assert response == "job started"
+
+        assert ObanHelpers.member?(
+                 %{
+                   "op" => "follow_import",
+                   "follower_id" => user1.id,
+                   "followed_identifiers" => [user2.ap_id]
+                 },
+                 all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
+               )
       end
     end
 
@@ -126,8 +128,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
       user3 = insert(:user)
 
       with_mocks([
-        {File, [], read!: fn "blocks_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end},
-        {PleromaJobQueue, [:passthrough], []}
+        {File, [], read!: fn "blocks_list.txt" -> "#{user2.ap_id} #{user3.ap_id}" end}
       ]) do
         response =
           conn
@@ -135,15 +136,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
           |> post("/api/pleroma/blocks_import", %{"list" => %Plug.Upload{path: "blocks_list.txt"}})
           |> json_response(:ok)
 
-        assert called(
-                 PleromaJobQueue.enqueue(
-                   :background,
-                   User,
-                   [:blocks_import, user1, [user2.ap_id, user3.ap_id]]
-                 )
-               )
-
         assert response == "job started"
+
+        assert ObanHelpers.member?(
+                 %{
+                   "op" => "blocks_import",
+                   "blocker_id" => user1.id,
+                   "blocked_identifiers" => [user2.ap_id, user3.ap_id]
+                 },
+                 all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
+               )
       end
     end
   end
@@ -607,6 +609,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> json_response(:ok)
 
       assert response == %{"status" => "success"}
+      ObanHelpers.perform_all()
 
       user = User.get_cached_by_id(user.id)
 
