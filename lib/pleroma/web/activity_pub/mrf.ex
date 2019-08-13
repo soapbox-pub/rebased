@@ -35,4 +35,20 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   def subdomain_match?(domains, host) do
     Enum.any?(domains, fn domain -> Regex.match?(domain, host) end)
   end
+
+  @callback describe() :: {:ok | :error, Map.t()}
+
+  def describe(policies) do
+    policies
+    |> Enum.reduce({:ok, %{}}, fn
+      policy, {:ok, data} ->
+        {:ok, policy_data} = policy.describe()
+        {:ok, Map.merge(data, policy_data)}
+
+      _, error ->
+        error
+    end)
+  end
+
+  def describe(), do: get_policies() |> describe()
 end
