@@ -177,4 +177,16 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicy do
   end
 
   def filter(object), do: {:ok, object}
+
+  @impl true
+  def describe() do
+    exclusions = Pleroma.Config.get([:instance, :mrf_transparency_exclusions])
+
+    mrf_simple =
+      Pleroma.Config.get(:mrf_simple)
+      |> Enum.map(fn {k, v} -> {k, Enum.reject(v, fn v -> v in exclusions end)} end)
+      |> Enum.into(%{})
+
+    {:ok, %{mrf_simple: mrf_simple}}
+  end
 end

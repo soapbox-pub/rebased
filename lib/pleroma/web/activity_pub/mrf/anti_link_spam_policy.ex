@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
   alias Pleroma.User
 
+  @behaviour Pleroma.Web.ActivityPub.MRF
+
   require Logger
 
   # has the user successfully posted before?
@@ -22,6 +24,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
 
   defp contains_links?(_), do: false
 
+  @impl true
   def filter(%{"type" => "Create", "actor" => actor, "object" => object} = message) do
     with {:ok, %User{} = u} <- User.get_or_fetch_by_ap_id(actor),
          {:contains_links, true} <- {:contains_links, contains_links?(object)},
@@ -45,4 +48,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy do
 
   # in all other cases, pass through
   def filter(message), do: {:ok, message}
+
+  @impl true
+  def describe(), do: {:ok, %{}}
 end

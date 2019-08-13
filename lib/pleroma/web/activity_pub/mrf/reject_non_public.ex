@@ -44,4 +44,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.RejectNonPublic do
 
   @impl true
   def filter(object), do: {:ok, object}
+
+  @impl true
+  def describe(), do: {:ok, %{mrf_rejectnonpublic: Pleroma.Config.get([:mrf_rejectnonpublic])}}
 end

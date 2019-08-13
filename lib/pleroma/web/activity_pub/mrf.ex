@@ -39,15 +39,31 @@ defmodule Pleroma.Web.ActivityPub.MRF do
   @callback describe() :: {:ok | :error, Map.t()}
 
   def describe(policies) do
-    policies
-    |> Enum.reduce({:ok, %{}}, fn
-      policy, {:ok, data} ->
-        {:ok, policy_data} = policy.describe()
-        {:ok, Map.merge(data, policy_data)}
+    {:ok, policy_configs} =
+      policies
+      |> Enum.reduce({:ok, %{}}, fn
+        policy, {:ok, data} ->
+          {:ok, policy_data} = policy.describe()
+          {:ok, Map.merge(data, policy_data)}
 
-      _, error ->
-        error
-    end)
+        _, error ->
+          error
+      end)
+
+    mrf_policies =
+      get_policies()
+      |> Enum.map(fn policy -> to_string(policy) |> String.split(".") |> List.last() end)
+
+    exclusions = Pleroma.Config.get([:instance, :mrf_transparency_exclusions])
+
+    base =
+      %{
+        mrf_policies: mrf_policies,
+        exclusions: length(exclusions) > 0,
+      }
+      |> Map.merge(policy_configs)
+
+    {:ok, base}
   end
 
   def describe(), do: get_policies() |> describe()
