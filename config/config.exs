@@ -338,6 +338,10 @@ config :pleroma, :mrf_keyword,
 
 config :pleroma, :mrf_subchain, match_actor: %{}
 
+config :pleroma, :mrf_vocabulary,
+  accept: [],
+  reject: []
+
 config :pleroma, :rich_media,
   enabled: true,
   ignore_hosts: [],
