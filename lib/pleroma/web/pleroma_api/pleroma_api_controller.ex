@@ -8,7 +8,6 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
   import Pleroma.Web.ControllerHelper, only: [add_link_headers: 7]
 
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Repo
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.MastodonAPI.ConversationView
   alias Pleroma.Web.MastodonAPI.StatusView
@@ -34,8 +33,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
 
     participation =
       participation_id
-      |> Participation.get()
-      |> Repo.preload(:conversation)
+      |> Participation.get(preload: [:conversation])
 
     if user.id == participation.user_id do
       activities =

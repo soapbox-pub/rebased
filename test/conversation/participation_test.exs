@@ -8,6 +8,20 @@ defmodule Pleroma.Conversation.ParticipationTest do
   alias Pleroma.Conversation.Participation
   alias Pleroma.Web.CommonAPI
 
+  test "getting a participation will also preload things" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, _activity} =
+      CommonAPI.post(user, %{"status" => "Hey @#{other_user.nickname}.", "visibility" => "direct"})
+
+    [participation] = Participation.for_user(user)
+
+    participation = Participation.get(participation.id, preload: [:conversation])
+
+    assert %Pleroma.Conversation{} = participation.conversation
+  end
+
   test "for a new conversation, it sets the recipents of the participation" do
     user = insert(:user)
     other_user = insert(:user)

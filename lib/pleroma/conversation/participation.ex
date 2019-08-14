@@ -94,10 +94,20 @@ defmodule Pleroma.Conversation.Participation do
     |> Enum.filter(& &1.last_activity_id)
   end
 
-  def get(nil), do: nil
+  def get(_, _ \\ [])
+  def get(nil, _), do: nil
 
-  def get(id) do
-    Repo.get(__MODULE__, id)
+  def get(id, params) do
+    query =
+      if preload = params[:preload] do
+        from(p in __MODULE__,
+          preload: ^preload
+        )
+      else
+        __MODULE__
+      end
+
+    Repo.get(query, id)
   end
 
   def set_recipients(participation, user_ids) do
