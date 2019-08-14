@@ -95,7 +95,7 @@ defmodule Pleroma.Mixfile do
   defp deps do
     [
       {:phoenix, "~> 1.4.8"},
-      {:tzdata, "~> 1.0"},
+      {:tzdata, "~> 0.5.21"},
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
@@ -115,8 +115,9 @@ defmodule Pleroma.Mixfile do
       {:tesla, "~> 1.2"},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
-      {:ex_aws, "~> 2.0"},
+      {:ex_aws, "~> 2.1"},
       {:ex_aws_s3, "~> 2.0"},
+      {:sweet_xml, "~> 0.6.6"},
       {:earmark, "~> 1.3"},
       {:bbcode, "~> 0.1.1"},
       {:ex_machina, "~> 2.3", only: :test},

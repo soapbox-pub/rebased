@@ -451,6 +451,27 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert !is_nil(data["cc"])
     end
 
+    test "it strips internal likes" do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      likes = %{
+        "first" =>
+          "http://mastodon.example.org/objects/dbdbc507-52c8-490d-9b7c-1e1d52e5c132/likes?page=1",
+        "id" => "http://mastodon.example.org/objects/dbdbc507-52c8-490d-9b7c-1e1d52e5c132/likes",
+        "totalItems" => 3,
+        "type" => "OrderedCollection"
+      }
+
+      object = Map.put(data["object"], "likes", likes)
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{object: object}} = Transmogrifier.handle_incoming(data)
+
+      refute Map.has_key?(object.data, "likes")
+    end
+
     test "it works for incoming update activities" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
@@ -1063,14 +1084,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["context_id"])
-    end
-
-    test "it adds like collection to object" do
-      activity = insert(:note_activity)
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"]["likes"]["type"] == "OrderedCollection"
-      assert modified["object"]["likes"]["totalItems"] == 0
+      assert is_nil(modified["object"]["likes"])
     end
 
     test "the directMessage flag is present" do

@@ -5,6 +5,8 @@
 defmodule Pleroma.Web.MastodonAPI.StatusView do
   use Pleroma.Web, :view
 
+  require Pleroma.Constants
+
   alias Pleroma.Activity
   alias Pleroma.HTML
   alias Pleroma.Object
@@ -24,19 +26,19 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
   defp get_replied_to_activities(activities) do
     activities
     |> Enum.map(fn
-      %{data: %{"type" => "Create", "object" => object}} ->
-        object = Object.normalize(object)
-        object.data["inReplyTo"] != "" && object.data["inReplyTo"]
+      %{data: %{"type" => "Create"}} = activity ->
+        object = Object.normalize(activity)
+        object && object.data["inReplyTo"] != "" && object.data["inReplyTo"]
 
       _ ->
         nil
     end)
     |> Enum.filter(& &1)
-    |> Activity.create_by_object_ap_id()
+    |> Activity.create_by_object_ap_id_with_object()
     |> Repo.all()
     |> Enum.reduce(%{}, fn activity, acc ->
       object = Object.normalize(activity)
-      Map.put(acc, object.data["id"], activity)
+      if object, do: Map.put(acc, object.data["id"], activity), else: acc
     end)
   end
 
@@ -88,6 +90,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     reblogged_activity =
       Activity.create_by_object_ap_id(activity_object.data["id"])
       |> Activity.with_preloaded_bookmark(opts[:for])
+      |> Activity.with_set_thread_muted_field(opts[:for])
       |> Repo.one()
 
     reblogged = render("status.json", Map.put(opts, :activity, reblogged_activity))
@@ -142,6 +145,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     object = Object.normalize(activity)
 
     user = get_user(activity.data["actor"])
+    user_follower_address = user.follower_address
 
     like_count = object.data["like_count"] || 0
     announcement_count = object.data["announcement_count"] || 0
@@ -157,7 +161,11 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     mentions =
       (object.data["to"] ++ tag_mentions)
       |> Enum.uniq()
-      |> Enum.map(fn ap_id -> User.get_cached_by_ap_id(ap_id) end)
+      |> Enum.map(fn
+        Pleroma.Constants.as_public() -> nil
+        ^user_follower_address -> nil
+        ap_id -> User.get_cached_by_ap_id(ap_id)
+      end)
       |> Enum.filter(& &1)
       |> Enum.map(fn user -> AccountView.render("mention.json", %{user: user}) end)
 
@@ -168,7 +176,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
     thread_muted? =
       case activity.thread_muted? do
         thread_muted? when is_boolean(thread_muted?) -> thread_muted?
-        nil -> CommonAPI.thread_muted?(user, activity)
+        nil -> (opts[:for] && CommonAPI.thread_muted?(opts[:for], activity)) || false
       end
 
     attachment_data = object.data["attachment"] || []

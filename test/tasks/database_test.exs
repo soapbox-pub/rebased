@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.DatabaseTest do
+  alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
+  alias Pleroma.Web.CommonAPI
+
   use Pleroma.DataCase
 
   import Pleroma.Factory
@@ -44,6 +47,39 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
 
       assert length(user.following) == 2
       assert user.info.follower_count == 0
+    end
+  end
+
+  describe "running fix_likes_collections" do
+    test "it turns OrderedCollection likes into empty arrays" do
+      [user, user2] = insert_pair(:user)
+
+      {:ok, %{id: id, object: object}} = CommonAPI.post(user, %{"status" => "test"})
+      {:ok, %{object: object2}} = CommonAPI.post(user, %{"status" => "test test"})
+
+      CommonAPI.favorite(id, user2)
+
+      likes = %{
+        "first" =>
+          "http://mastodon.example.org/objects/dbdbc507-52c8-490d-9b7c-1e1d52e5c132/likes?page=1",
+        "id" => "http://mastodon.example.org/objects/dbdbc507-52c8-490d-9b7c-1e1d52e5c132/likes",
+        "totalItems" => 3,
+        "type" => "OrderedCollection"
+      }
+
+      new_data = Map.put(object2.data, "likes", likes)
+
+      object2
+      |> Ecto.Changeset.change(%{data: new_data})
+      |> Repo.update()
+
+      assert length(Object.get_by_id(object.id).data["likes"]) == 1
+      assert is_map(Object.get_by_id(object2.id).data["likes"])
+
+      assert :ok == Mix.Tasks.Pleroma.Database.run(["fix_likes_collections"])
+
+      assert length(Object.get_by_id(object.id).data["likes"]) == 1
+      assert Enum.empty?(Object.get_by_id(object2.id).data["likes"])
     end
   end
 end
