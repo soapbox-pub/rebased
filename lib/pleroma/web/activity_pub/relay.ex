@@ -14,6 +14,7 @@ defmodule Pleroma.Web.ActivityPub.Relay do
     |> User.get_or_create_service_actor_by_ap_id()
   end
 
+  @spec follow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
   def follow(target_instance) do
     with %User{} = local_user <- get_actor(),
          {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_instance),
@@ -21,12 +22,17 @@ defmodule Pleroma.Web.ActivityPub.Relay do
       Logger.info("relay: followed instance: #{target_instance}; id=#{activity.data["id"]}")
       {:ok, activity}
     else
+      {:error, _} = error ->
+        Logger.error("error: #{inspect(error)}")
+        error
+
       e ->
         Logger.error("error: #{inspect(e)}")
         {:error, e}
     end
   end
 
+  @spec unfollow(String.t()) :: {:ok, Activity.t()} | {:error, any()}
   def unfollow(target_instance) do
     with %User{} = local_user <- get_actor(),
          {:ok, %User{} = target_user} <- User.get_or_fetch_by_ap_id(target_instance),
@@ -34,20 +40,27 @@ defmodule Pleroma.Web.ActivityPub.Relay do
       Logger.info("relay: unfollowed instance: #{target_instance}: id=#{activity.data["id"]}")
       {:ok, activity}
     else
+      {:error, _} = error ->
+        Logger.error("error: #{inspect(error)}")
+        error
+
       e ->
         Logger.error("error: #{inspect(e)}")
         {:error, e}
     end
   end
 
+  @spec publish(any()) :: {:ok, Activity.t(), Object.t()} | {:error, any()}
   def publish(%Activity{data: %{"type" => "Create"}} = activity) do
     with %User{} = user <- get_actor(),
          %Object{} = object <- Object.normalize(activity) do
       ActivityPub.announce(user, object, nil, true, false)
     else
-      e -> Logger.error("error: #{inspect(e)}")
+      e ->
+        Logger.error("error: #{inspect(e)}")
+        {:error, inspect(e)}
     end
   end
 
-  def publish(_), do: nil
+  def publish(_), do: {:error, "Not implemented"}
 end

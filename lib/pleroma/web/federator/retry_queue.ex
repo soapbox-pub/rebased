@@ -13,7 +13,7 @@ defmodule Pleroma.Web.Federator.RetryQueue do
     {:ok, %{args | queue_table: queue_table, running_jobs: :sets.new()}}
   end
 
-  def start_link do
+  def start_link(_) do
     enabled =
       if Pleroma.Config.get(:env) == :test,
         do: true,

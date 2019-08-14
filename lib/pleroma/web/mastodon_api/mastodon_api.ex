@@ -13,10 +13,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
 
+  @spec follow(User.t(), User.t(), map) :: {:ok, User.t()} | {:error, String.t()}
   def follow(follower, followed, params \\ %{}) do
-    options = cast_params(params)
-    reblogs = options[:reblogs]
-
     result =
       if not User.following?(follower, followed) do
         CommonAPI.follow(follower, followed)
@@ -24,19 +22,25 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPI do
         {:ok, follower, followed, nil}
       end
 
-    with {:ok, follower, followed, _} <- result do
-      reblogs
-      |> case do
-        false -> CommonAPI.hide_reblogs(follower, followed)
-        _ -> CommonAPI.show_reblogs(follower, followed)
-      end
-      |> case do
+    with {:ok, follower, _followed, _} <- result do
+      options = cast_params(params)
+
+      case reblogs_visibility(options[:reblogs], result) do
         {:ok, follower} -> {:ok, follower}
         _ -> {:ok, follower}
       end
     end
   end
 
+  defp reblogs_visibility(false, {:ok, follower, followed, _}) do
+    CommonAPI.hide_reblogs(follower, followed)
+  end
+
+  defp reblogs_visibility(_, {:ok, follower, followed, _}) do
+    CommonAPI.show_reblogs(follower, followed)
+  end
+
+  @spec get_followers(User.t(), map()) :: list(User.t())
   def get_followers(user, params \\ %{}) do
     user
     |> User.get_followers_query()

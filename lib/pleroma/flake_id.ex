@@ -98,7 +98,7 @@ defmodule Pleroma.FlakeId do
   def autogenerate, do: get()
 
   # -- GenServer API
-  def start_link do
+  def start_link(_) do
     :gen_server.start_link({:local, :flake}, __MODULE__, [], [])
   end
 

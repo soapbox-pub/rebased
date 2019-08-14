@@ -23,9 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Not being able to pin unlisted posts
 - Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
 - Metadata rendering errors resulting in the entire page being inaccessible
+- `federation_incoming_replies_max_depth` option being ignored in certain cases
 - Federation/MediaProxy not working with instances that have wrong certificate order
 - Mastodon API: Handling of search timeouts (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API: Embedded relationships not being properly rendered in the Account entity of Status entity
+- Mastodon API: follower/following counters not being nullified, when `hide_follows`/`hide_followers` is set
+- Mastodon API: `muted` in the Status entity, using author's account to determine if the tread was muted
 - Mastodon API: Add `account_id`, `type`, `offset`, and `limit` to search API (`/api/v1/search` and `/api/v2/search`)
 - Mastodon API, streaming: Fix filtering of notifications based on blocks/mutes/thread mutes
 - ActivityPub C2S: follower/following collection pages being inaccessible even when authentifucated if `hide_followers`/ `hide_follows` was set
@@ -34,16 +37,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Rich Media: The crawled URL is now spliced into the rich media data.
 - ActivityPub S2S: sharedInbox usage has been mostly aligned with the rules in the AP specification.
 - ActivityPub S2S: remote user deletions now work the same as local user deletions.
+- ActivityPub S2S: POST requests are now signed with `(request-target)` pseudo-header.
 - Not being able to access the Mastodon FE login page on private instances
 - Invalid SemVer version generation, when the current branch does not have commits ahead of tag/checked out on a tag
 - Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
 - Report email not being sent to admins when the reporter is a remote user
+- MRF: ensure that subdomain_match calls are case-insensitive
+- MRF: fix use of unserializable keyword lists in describe() implementations
 - ActivityPub: Deactivated user deletion
 
 ### Added
+- **Breaking:** MRF describe API, which adds support for exposing configuration information about MRF policies to NodeInfo.
+  Custom modules will need to be updated by adding, at the very least, `def describe, do: {:ok, %{}}` to the MRF policy modules.
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
 - MRF: Support for excluding specific domains from Transparency.
 - MRF: Support for filtering posts based on who they mention (`Pleroma.Web.ActivityPub.MRF.MentionPolicy`)
+- MRF: Support for filtering posts based on ActivityStreams vocabulary (`Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`)
 - MRF (Simple Policy): Support for wildcard domains.
 - Support for wildcard domains in user domain blocks setting.
 - Configuration: `quarantined_instances` support wildcard domains.
@@ -66,6 +75,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added synchronization of following/followers counters for external users
 - Configuration: `enabled` option for `Pleroma.Emails.Mailer`, defaulting to `false`.
 - Configuration: Pleroma.Plugs.RateLimiter `bucket_name`, `params` options.
+- Configuration: `user_bio_length` and `user_name_length` options.
 - Addressable lists
 - Twitter API: added rate limit for `/api/account/password_reset` endpoint.
 - ActivityPub: Add an internal service actor for fetching ActivityPub objects.
@@ -73,6 +83,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Admin API: Endpoint for fetching latest user's statuses
 - Pleroma API: Add `/api/v1/pleroma/accounts/confirmation_resend?email=<email>` for resending account confirmation.
 - Relays: Added a task to list relay subscriptions.
+- Mix Tasks: `mix pleroma.database fix_likes_collections`
+- Federation: Remove `likes` from objects.
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
@@ -83,6 +95,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Removed
 - Emoji: Remove longfox emojis.
 - Remove `Reply-To` header from report emails for admins.
+- ActivityPub: The `accept_blocks` configuration setting.
 
 ## [1.0.1] - 2019-07-14
 ### Security
