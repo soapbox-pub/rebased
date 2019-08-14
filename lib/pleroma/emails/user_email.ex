@@ -154,7 +154,7 @@ defmodule Pleroma.Emails.UserEmail do
   defp format_links(str) do
     re = ~r/<a.+href=['"].*>/iU
 
-    String.replace(str, re, fn link ->
+    Regex.replace(re, str, fn link ->
       String.replace(link, "<a", "<a style=\"color: #d8a070;text-decoration: none;\"")
     end)
   end
