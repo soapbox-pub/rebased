@@ -27,7 +27,15 @@ defmodule Mix.Tasks.Pleroma.Digest do
 
     patched_user = %{user | last_digest_emailed_at: last_digest_emailed_at}
 
-    _user = Pleroma.DigestEmailWorker.perform(patched_user)
-    Mix.shell().info("Digest email have been sent to #{nickname} (#{user.email})")
+    with %Swoosh.Email{} = email <- Pleroma.Emails.UserEmail.digest_email(patched_user) do
+      {:ok, _} = Pleroma.Emails.Mailer.deliver(email)
+
+      Mix.shell().info("Digest email have been sent to #{nickname} (#{user.email})")
+    else
+      _ ->
+        Mix.shell().info(
+          "Cound't find any mentions for #{nickname} since #{last_digest_emailed_at}"
+        )
+    end
   end
 end

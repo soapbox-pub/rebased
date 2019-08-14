@@ -123,6 +123,11 @@ defmodule Pleroma.Emails.UserEmail do
       end)
 
     with [_ | _] = mentions <- new_notifications.mentions do
+      mentions =
+        Enum.map(mentions, fn mention ->
+          update_in(mention.object.data["content"], &format_links/1)
+        end)
+
       html_data = %{
         instance: instance_name(),
         user: user,
@@ -131,15 +136,27 @@ defmodule Pleroma.Emails.UserEmail do
         unsubscribe_link: unsubscribe_url(user, "digest")
       }
 
+      logo_path = Path.join(:code.priv_dir(:pleroma), "static/static/logo.png")
+
       new()
       |> to(recipient(user))
       |> from(sender())
       |> subject("Your digest from #{instance_name()}")
+      |> put_layout(false)
       |> render_body("digest.html", html_data)
+      |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.png", type: :inline))
     else
       _ ->
         nil
     end
+  end
+
+  defp format_links(str) do
+    re = ~r/<a.+href=['"].*>/iU
+
+    String.replace(str, re, fn link ->
+      String.replace(link, "<a", "<a style=\"color: #d8a070;text-decoration: none;\"")
+    end)
   end
 
   @doc """
