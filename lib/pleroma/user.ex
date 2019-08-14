@@ -1029,26 +1029,13 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
-  @spec perform(atom(), User.t()) :: {:ok, User.t()}
-  def perform(:fetch_initial_posts, %User{} = user) do
-    pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
-
-    Enum.each(
-      # Insert all the posts in reverse order, so they're in the right order on the timeline
-      Enum.reverse(Utils.fetch_ordered_collection(user.info.source_data["outbox"], pages)),
-      &Pleroma.Web.Federator.incoming_ap_doc/1
-    )
-
-    {:ok, user}
-  end
-
   @spec delete(User.t()) :: :ok
-  def delete(%User{} = user, actor \\ nil),
-    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:delete, user, actor])
+  def delete(%User{} = user),
+    do: PleromaJobQueue.enqueue(:background, __MODULE__, [:delete, user])
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
-  def perform(:delete, %User{} = user, actor) do
-    {:ok, _user} = ActivityPub.delete(user, actor: actor)
+  def perform(:delete, %User{} = user) do
+    {:ok, _user} = ActivityPub.delete(user)
 
     # Remove all relationships
     {:ok, followers} = User.get_followers(user)
@@ -1068,6 +1055,19 @@ defmodule Pleroma.User do
     delete_user_activities(user)
     invalidate_cache(user)
     Repo.delete(user)
+  end
+
+  @spec perform(atom(), User.t()) :: {:ok, User.t()}
+  def perform(:fetch_initial_posts, %User{} = user) do
+    pages = Pleroma.Config.get!([:fetch_initial_posts, :pages])
+
+    Enum.each(
+      # Insert all the posts in reverse order, so they're in the right order on the timeline
+      Enum.reverse(Utils.fetch_ordered_collection(user.info.source_data["outbox"], pages)),
+      &Pleroma.Web.Federator.incoming_ap_doc/1
+    )
+
+    {:ok, user}
   end
 
   def perform(:deactivate_async, user, status), do: deactivate(user, status)

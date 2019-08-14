@@ -61,7 +61,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     {recipients, to, cc}
   end
 
-  defp check_actor_is_active(actor) do
+  defp check_actor_is_active(true, _), do: :ok
+
+  defp check_actor_is_active(false, actor) do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
            false <- user.info.deactivated do
@@ -119,10 +121,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
-  def insert(map, local \\ true, fake \\ false) when is_map(map) do
+  def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
-         :ok <- check_actor_is_active(map["actor"]),
+         :ok <- check_actor_is_active(bypass_actor_check, map["actor"]),
          {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
@@ -403,22 +405,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def delete(data, opts \\ %{actor: nil, local: true})
-
-  def delete(%User{ap_id: ap_id, follower_address: follower_address} = user, opts) do
+  def delete(%User{ap_id: ap_id, follower_address: follower_address} = user) do
     with data <- %{
            "to" => [follower_address],
            "type" => "Delete",
-           "actor" => opts[:actor] || ap_id,
+           "actor" => ap_id,
            "object" => %{"type" => "Person", "id" => ap_id}
          },
-         {:ok, activity} <- insert(data, true, true),
+         {:ok, activity} <- insert(data, true, true, true),
          :ok <- maybe_federate(activity) do
       {:ok, user}
     end
   end
 
-  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, opts) do
+  def delete(%Object{data: %{"id" => id, "actor" => actor}} = object, local \\ true) do
     user = User.get_cached_by_ap_id(actor)
     to = (object.data["to"] || []) ++ (object.data["cc"] || [])
 
@@ -430,7 +430,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "to" => to,
            "deleted_activity_id" => activity && activity.id
          },
-         {:ok, activity} <- insert(data, opts[:local], false),
+         {:ok, activity} <- insert(data, local, false),
          stream_out_participations(object, user),
          _ <- decrease_replies_count_if_reply(object),
          # Changing note count prior to enqueuing federation task in order to avoid

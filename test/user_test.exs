@@ -999,10 +999,9 @@ defmodule Pleroma.UserTest do
     end
 
     test "it deletes deactivated user" do
-      admin = insert(:user, %{info: %{is_admin: true}})
       {:ok, user} = insert(:user, info: %{deactivated: true}) |> User.set_cache()
 
-      assert {:ok, _} = User.delete(user, admin.ap_id)
+      assert {:ok, _} = User.delete(user)
       refute User.get_by_id(user.id)
     end
 

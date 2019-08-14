@@ -176,7 +176,7 @@ defmodule Mix.Tasks.Pleroma.User do
     start_pleroma()
 
     with %User{local: true} = user <- User.get_cached_by_nickname(nickname) do
-      User.perform(:delete, user, nil)
+      User.perform(:delete, user)
       shell_info("User #{nickname} deleted.")
     else
       _ ->
