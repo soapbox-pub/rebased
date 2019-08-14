@@ -46,9 +46,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   """
   def publish_one(%{inbox: inbox, json: json, actor: %User{} = actor, id: id} = params) do
     Logger.info("Federating #{id} to #{inbox}")
-    uri = URI.parse(inbox)
-    host = uri.host
-    path = uri.path
+    %{host: host, path: path} = URI.parse(inbox)
 
     digest = "SHA-256=" <> (:crypto.hash(:sha256, json) |> Base.encode64())
 
