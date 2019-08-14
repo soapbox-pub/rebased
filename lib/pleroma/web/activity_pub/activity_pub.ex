@@ -626,6 +626,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     params =
       params
       |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("user", reading_user)
       |> Map.put("actor_id", user.ap_id)
       |> Map.put("whole_db", true)
       |> Map.put("pinned_activity_ids", user.info.pinned_activities)
