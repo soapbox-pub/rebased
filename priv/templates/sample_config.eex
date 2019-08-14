@@ -68,3 +68,5 @@ config :pleroma, Pleroma.Uploaders.Local, uploads: "<%= uploads_dir %>"
 # For using third-party S3 clones like wasabi, also do:
 # config :ex_aws, :s3,
 #   host: "s3.wasabisys.com"
+
+config :joken, default_signer: "<%= jwt_secret %>"

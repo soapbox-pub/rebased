@@ -28,11 +28,43 @@ defmodule Pleroma.Web.ActivityPub.MRF do
 
   @spec subdomains_regex([String.t()]) :: [Regex.t()]
   def subdomains_regex(domains) when is_list(domains) do
-    for domain <- domains, do: ~r(^#{String.replace(domain, "*.", "(.*\\.)*")}$)
+    for domain <- domains, do: ~r(^#{String.replace(domain, "*.", "(.*\\.)*")}$)i
   end
 
   @spec subdomain_match?([Regex.t()], String.t()) :: boolean()
   def subdomain_match?(domains, host) do
     Enum.any?(domains, fn domain -> Regex.match?(domain, host) end)
   end
+
+  @callback describe() :: {:ok | :error, Map.t()}
+
+  def describe(policies) do
+    {:ok, policy_configs} =
+      policies
+      |> Enum.reduce({:ok, %{}}, fn
+        policy, {:ok, data} ->
+          {:ok, policy_data} = policy.describe()
+          {:ok, Map.merge(data, policy_data)}
+
+        _, error ->
+          error
+      end)
+
+    mrf_policies =
+      get_policies()
+      |> Enum.map(fn policy -> to_string(policy) |> String.split(".") |> List.last() end)
+
+    exclusions = Pleroma.Config.get([:instance, :mrf_transparency_exclusions])
+
+    base =
+      %{
+        mrf_policies: mrf_policies,
+        exclusions: length(exclusions) > 0
+      }
+      |> Map.merge(policy_configs)
+
+    {:ok, base}
+  end
+
+  def describe, do: get_policies() |> describe()
 end

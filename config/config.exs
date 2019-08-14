@@ -253,6 +253,8 @@ config :pleroma, :instance,
   skip_thread_containment: true,
   limit_to_local_content: :unauthenticated,
   dynamic_configuration: false,
+  user_bio_length: 5000,
+  user_name_length: 100,
   external_user_synchronization: true
 
 config :pleroma, :markup,
@@ -302,7 +304,6 @@ config :pleroma, :assets,
   default_mascot: :pleroma_fox_tan
 
 config :pleroma, :activitypub,
-  accept_blocks: true,
   unfollow_blocked: true,
   outgoing_blocks: true,
   follow_handshake_timeout: 500,
@@ -336,6 +337,10 @@ config :pleroma, :mrf_keyword,
   replace: []
 
 config :pleroma, :mrf_subchain, match_actor: %{}
+
+config :pleroma, :mrf_vocabulary,
+  accept: [],
+  reject: []
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -513,6 +518,14 @@ config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 25,
   total_user_limit: 300,
   enabled: true
+
+config :pleroma, :email_notifications,
+  digest: %{
+    active: false,
+    schedule: "0 0 * * 0",
+    interval: 7,
+    inactivity_threshold: 7
+  }
 
 config :pleroma, :oauth2,
   token_expires_in: 600,

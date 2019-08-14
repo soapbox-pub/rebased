@@ -57,6 +57,7 @@ defmodule Pleroma.User do
     field(:search_type, :integer, virtual: true)
     field(:tags, {:array, :string}, default: [])
     field(:last_refreshed_at, :naive_datetime_usec)
+    field(:last_digest_emailed_at, :naive_datetime)
     has_many(:notifications, Notification)
     has_many(:registrations, Registration)
     embeds_one(:info, User.Info)
@@ -151,10 +152,10 @@ defmodule Pleroma.User do
   end
 
   def remote_user_creation(params) do
-    params =
-      params
-      |> Map.put(:info, params[:info] || %{})
+    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
+    params = Map.put(params, :info, params[:info] || %{})
     info_cng = User.Info.remote_user_creation(%User.Info{}, params[:info])
 
     changes =
@@ -163,8 +164,8 @@ defmodule Pleroma.User do
       |> validate_required([:name, :ap_id])
       |> unique_constraint(:nickname)
       |> validate_format(:nickname, @email_regex)
-      |> validate_length(:bio, max: 5000)
-      |> validate_length(:name, max: 100)
+      |> validate_length(:bio, max: bio_limit)
+      |> validate_length(:name, max: name_limit)
       |> put_change(:local, false)
       |> put_embed(:info, info_cng)
 
@@ -187,22 +188,23 @@ defmodule Pleroma.User do
   end
 
   def update_changeset(struct, params \\ %{}) do
+    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
+
     struct
     |> cast(params, [:bio, :name, :avatar, :following])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
-    |> validate_length(:bio, max: 5000)
-    |> validate_length(:name, min: 1, max: 100)
+    |> validate_length(:bio, max: bio_limit)
+    |> validate_length(:name, min: 1, max: name_limit)
   end
 
   def upgrade_changeset(struct, params \\ %{}) do
-    params =
-      params
-      |> Map.put(:last_refreshed_at, NaiveDateTime.utc_now())
+    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
-    info_cng =
-      struct.info
-      |> User.Info.user_upgrade(params[:info])
+    params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
+    info_cng = User.Info.user_upgrade(struct.info, params[:info])
 
     struct
     |> cast(params, [
@@ -215,8 +217,8 @@ defmodule Pleroma.User do
     ])
     |> unique_constraint(:nickname)
     |> validate_format(:nickname, local_nickname_regex())
-    |> validate_length(:bio, max: 5000)
-    |> validate_length(:name, max: 100)
+    |> validate_length(:bio, max: bio_limit)
+    |> validate_length(:name, max: name_limit)
     |> put_embed(:info, info_cng)
   end
 
@@ -243,6 +245,9 @@ defmodule Pleroma.User do
   end
 
   def register_changeset(struct, params \\ %{}, opts \\ []) do
+    bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+    name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
+
     need_confirmation? =
       if is_nil(opts[:need_confirmation]) do
         Pleroma.Config.get([:instance, :account_activation_required])
@@ -263,8 +268,8 @@ defmodule Pleroma.User do
       |> validate_exclusion(:nickname, Pleroma.Config.get([User, :restricted_nicknames]))
       |> validate_format(:nickname, local_nickname_regex())
       |> validate_format(:email, @email_regex)
-      |> validate_length(:bio, max: 1000)
-      |> validate_length(:name, min: 1, max: 100)
+      |> validate_length(:bio, max: bio_limit)
+      |> validate_length(:name, min: 1, max: name_limit)
       |> put_change(:info, info_change)
 
     changeset =
@@ -1424,6 +1429,80 @@ defmodule Pleroma.User do
 
   def showing_reblogs?(%User{} = user, %User{} = target) do
     target.ap_id not in user.info.muted_reblogs
+  end
+
+  @doc """
+  The function returns a query to get users with no activity for given interval of days.
+  Inactive users are those who didn't read any notification, or had any activity where
+  the user is the activity's actor, during `inactivity_threshold` days.
+  Deactivated users will not appear in this list.
+
+  ## Examples
+
+      iex> Pleroma.User.list_inactive_users()
+      %Ecto.Query{}
+  """
+  @spec list_inactive_users_query(integer()) :: Ecto.Query.t()
+  def list_inactive_users_query(inactivity_threshold \\ 7) do
+    negative_inactivity_threshold = -inactivity_threshold
+    now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+    # Subqueries are not supported in `where` clauses, join gets too complicated.
+    has_read_notifications =
+      from(n in Pleroma.Notification,
+        where: n.seen == true,
+        group_by: n.id,
+        having: max(n.updated_at) > datetime_add(^now, ^negative_inactivity_threshold, "day"),
+        select: n.user_id
+      )
+      |> Pleroma.Repo.all()
+
+    from(u in Pleroma.User,
+      left_join: a in Pleroma.Activity,
+      on: u.ap_id == a.actor,
+      where: not is_nil(u.nickname),
+      where: fragment("not (?->'deactivated' @> 'true')", u.info),
+      where: u.id not in ^has_read_notifications,
+      group_by: u.id,
+      having:
+        max(a.inserted_at) < datetime_add(^now, ^negative_inactivity_threshold, "day") or
+          is_nil(max(a.inserted_at))
+    )
+  end
+
+  @doc """
+  Enable or disable email notifications for user
+
+  ## Examples
+
+      iex> Pleroma.User.switch_email_notifications(Pleroma.User{info: %{email_notifications: %{"digest" => false}}}, "digest", true)
+      Pleroma.User{info: %{email_notifications: %{"digest" => true}}}
+
+      iex> Pleroma.User.switch_email_notifications(Pleroma.User{info: %{email_notifications: %{"digest" => true}}}, "digest", false)
+      Pleroma.User{info: %{email_notifications: %{"digest" => false}}}
+  """
+  @spec switch_email_notifications(t(), String.t(), boolean()) ::
+          {:ok, t()} | {:error, Ecto.Changeset.t()}
+  def switch_email_notifications(user, type, status) do
+    info = Pleroma.User.Info.update_email_notifications(user.info, %{type => status})
+
+    change(user)
+    |> put_embed(:info, info)
+    |> update_and_set_cache()
+  end
+
+  @doc """
+  Set `last_digest_emailed_at` value for the user to current time
+  """
+  @spec touch_last_digest_emailed_at(t()) :: t()
+  def touch_last_digest_emailed_at(user) do
+    now = NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second)
+
+    {:ok, updated_user} =
+      user
+      |> change(%{last_digest_emailed_at: now})
+      |> update_and_set_cache()
+
+    updated_user
   end
 
   @spec toggle_confirmation(User.t()) :: {:ok, User.t()} | {:error, Changeset.t()}

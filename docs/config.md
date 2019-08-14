@@ -18,6 +18,7 @@ Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
 
 ## Pleroma.Uploaders.S3
 * `bucket`: S3 bucket name
+* `bucket_namespace`: S3 bucket namespace
 * `public_endpoint`: S3 endpoint that the user finally accesses(ex. "https://s3.dualstack.ap-northeast-1.amazonaws.com")
 * `truncated_namespace`: If you use S3 compatible service such as Digital Ocean Spaces or CDN, set folder name or "" etc.
 For example, when using CDN to S3 virtual host format, set "".
@@ -102,6 +103,7 @@ config :pleroma, Pleroma.Emails.Mailer,
   * `Pleroma.Web.ActivityPub.MRF.AntiLinkSpamPolicy`: Rejects posts from likely spambots by rejecting posts from new users that contain links.
   * `Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`: Crawls attachments using their MediaProxy URLs so that the MediaProxy cache is primed.
   * `Pleroma.Web.ActivityPub.MRF.MentionPolicy`: Drops posts mentioning configurable users. (see `:mrf_mention` section)
+  * `Pleroma.Web.ActivityPub.MRF.VocabularyPolicy`: Restricts activities to a configured set of vocabulary. (see `:mrf_vocabulary` section)
 * `public`: Makes the client API in authentificated mode-only except for user-profiles. Useful for disabling the Local Timeline and The Whole Known Network.
 * `quarantined_instances`: List of ActivityPub instances where private(DMs, followers-only) activities will not be send.
 * `managed_config`: Whenether the config for pleroma-fe is configured in this config or in ``static/config.json``
@@ -125,6 +127,8 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `safe_dm_mentions`: If set to true, only mentions at the beginning of a post will be used to address people in direct messages. This is to prevent accidental mentioning of people when talking about them (e.g. "@friend hey i really don't like @enemy"). Default: `false`.
 * `healthcheck`: If set to true, system data will be shown on ``/api/pleroma/healthcheck``.
 * `remote_post_retention_days`: The default amount of days to retain remote posts when pruning the database.
+* `user_bio_length`: A user bio maximum length (default: `5000`)
+* `user_name_length`: A user name maximum length (default: `100`)
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
@@ -275,6 +279,10 @@ config :pleroma, :mrf_subchain,
 ## :mrf_mention
 * `actors`: A list of actors, for which to drop any posts mentioning.
 
+## :mrf_vocabulary
+* `accept`: A list of ActivityStreams terms to accept.  If empty, all supported messages are accepted.
+* `reject`: A list of ActivityStreams terms to reject.  If empty, no messages are rejected.
+
 ## :media_proxy
 * `enabled`: Enables proxying of remote media to the instance’s proxy
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host/CDN fronts.
@@ -328,7 +336,6 @@ config :pleroma, Pleroma.Web.Endpoint,
 This will make Pleroma listen on `127.0.0.1` port `8080` and generate urls starting with `https://example.com:2020`
 
 ## :activitypub
-* ``accept_blocks``: Whether to accept incoming block activities from other instances
 * ``unfollow_blocked``: Whether blocks result in people getting unfollowed
 * ``outgoing_blocks``: Whether to federate blocks to other instances
 * ``deny_follow_blocked``: Whether to disallow following an account that has blocked the user in question
@@ -535,6 +542,18 @@ Authentication / authorization settings.
 * `auth_template`: authentication form template. By default it's `show.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/show.html.eex`.
 * `oauth_consumer_template`: OAuth consumer mode authentication form template. By default it's `consumer.html` which corresponds to `lib/pleroma/web/templates/o_auth/o_auth/consumer.html.eex`.
 * `oauth_consumer_strategies`: the list of enabled OAuth consumer strategies; by default it's set by `OAUTH_CONSUMER_STRATEGIES` environment variable. Each entry in this space-delimited string should be of format `<strategy>` or `<strategy>:<dependency>` (e.g. `twitter` or `keycloak:ueberauth_keycloak_strategy` in case dependency is named differently than `ueberauth_<strategy>`).
+
+## :email_notifications
+
+Email notifications settings.
+
+  - digest - emails of "what you've missed" for users who have been
+    inactive for a while.
+    - active: globally enable or disable digest emails
+    - schedule: When to send digest email, in [crontab format](https://en.wikipedia.org/wiki/Cron).
+      "0 0 * * 0" is the default, meaning "once a week at midnight on Sunday morning"
+    - interval: Minimum interval between digest emails to one user
+    - inactivity_threshold: Minimum user inactivity threshold
 
 ## OAuth consumer mode
 

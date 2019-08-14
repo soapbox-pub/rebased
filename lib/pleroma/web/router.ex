@@ -619,6 +619,8 @@ defmodule Pleroma.Web.Router do
     post("/push/hub/:nickname", Websub.WebsubController, :websub_subscription_request)
     get("/push/subscriptions/:id", Websub.WebsubController, :websub_subscription_confirmation)
     post("/push/subscriptions/:id", Websub.WebsubController, :websub_incoming)
+
+    get("/mailer/unsubscribe/:token", Mailer.SubscriptionController, :unsubscribe)
   end
 
   pipeline :activitypub do

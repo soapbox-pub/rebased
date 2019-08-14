@@ -193,7 +193,14 @@ defmodule Pleroma.UserSearchTest do
       user = User.get_cached_by_ap_id("http://mastodon.example.org/users/admin")
 
       assert length(results) == 1
-      assert user == result |> Map.put(:search_rank, nil) |> Map.put(:search_type, nil)
+
+      expected =
+        result
+        |> Map.put(:search_rank, nil)
+        |> Map.put(:search_type, nil)
+        |> Map.put(:last_digest_emailed_at, nil)
+
+      assert user == expected
     end
 
     test "excludes a blocked users from search result" do

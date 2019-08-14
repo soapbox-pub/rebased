@@ -32,4 +32,13 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy do
   end
 
   def filter(object), do: {:ok, object}
+
+  @impl true
+  def describe do
+    mrf_user_allowlist =
+      Config.get([:mrf_user_allowlist], [])
+      |> Enum.into(%{}, fn {k, v} -> {k, length(v)} end)
+
+    {:ok, %{mrf_user_allowlist: mrf_user_allowlist}}
+  end
 end
