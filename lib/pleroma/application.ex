@@ -121,17 +121,17 @@ defmodule Pleroma.Application do
   end
 
   defp idempotency_expiration,
-       do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))
+    do: expiration(default: :timer.seconds(6 * 60 * 60), interval: :timer.seconds(60))
 
   defp seconds_valid_interval,
-       do: :timer.seconds(Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid]))
+    do: :timer.seconds(Pleroma.Config.get!([Pleroma.Captcha, :seconds_valid]))
 
   defp build_cachex(type, opts),
-       do: %{
-         id: String.to_atom("cachex_" <> type),
-         start: {Cachex, :start_link, [String.to_atom(type <> "_cache"), opts]},
-         type: :worker
-       }
+    do: %{
+      id: String.to_atom("cachex_" <> type),
+      start: {Cachex, :start_link, [String.to_atom(type <> "_cache"), opts]},
+      type: :worker
+    }
 
   defp chat_enabled?, do: Pleroma.Config.get([:chat, :enabled])
 
@@ -145,7 +145,7 @@ defmodule Pleroma.Application do
   end
 
   defp oauth_cleanup_child(true),
-       do: [Pleroma.Web.OAuth.Token.CleanWorker]
+    do: [Pleroma.Web.OAuth.Token.CleanWorker]
 
   defp oauth_cleanup_child(_), do: []
 
