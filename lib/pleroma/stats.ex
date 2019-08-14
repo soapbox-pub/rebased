@@ -32,7 +32,7 @@ defmodule Pleroma.Stats do
   end
 
   def init(args) do
-    Process.send_after(self(), :run_update, @interval)
+    Process.send(self(), :run_update, [])
     {:ok, args}
   end
 
