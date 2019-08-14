@@ -7,7 +7,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Security
 - OStatus: eliminate the possibility of a protocol downgrade attack.
 - OStatus: prevent following locked accounts, bypassing the approval process.
-– ActivityPub: Do not check if actor is active when deleting a user
 
 ### Changed
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
@@ -39,6 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Invalid SemVer version generation, when the current branch does not have commits ahead of tag/checked out on a tag
 - Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
 - Report email not being sent to admins when the reporter is a remote user
+- ActivityPub: Deactivated user deletion
 
 ### Added
 - MRF: Support for priming the mediaproxy cache (`Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy`)
