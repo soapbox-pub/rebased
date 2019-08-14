@@ -233,6 +233,7 @@ defmodule Pleroma.Application do
   defp after_supervisor_start do
     with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
          true <- digest_config[:active] do
+      # TODO: consider replacing with `quantum` scheduler
       PleromaJobQueue.schedule(
         digest_config[:schedule],
         :digest_emails,

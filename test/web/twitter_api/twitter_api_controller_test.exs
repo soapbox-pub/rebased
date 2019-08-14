@@ -12,6 +12,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
@@ -1099,6 +1100,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
     end
 
     test "it sends an email to user", %{user: user} do
+      ObanHelpers.perform_all()
       token_record = Repo.get_by(Pleroma.PasswordResetToken, user_id: user.id)
 
       email = Pleroma.Emails.UserEmail.password_reset_email(user, token_record.token)
@@ -1208,6 +1210,8 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn
       |> assign(:user, user)
       |> post("/api/account/resend_confirmation_email?email=#{user.email}")
+
+      ObanHelpers.perform_all()
 
       email = Pleroma.Emails.UserEmail.account_confirmation_email(user)
       notify_email = Pleroma.Config.get([:instance, :notify_email])

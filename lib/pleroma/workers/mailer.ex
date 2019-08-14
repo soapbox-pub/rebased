@@ -11,6 +11,15 @@ defmodule Pleroma.Workers.Mailer do
     max_attempts: Pleroma.Config.get([:workers, :retries, :compile_time_default])
 
   @impl Oban.Worker
+  def perform(%{"op" => "email", "encoded_email" => encoded_email, "config" => config}) do
+    email =
+      encoded_email
+      |> Base.decode64!()
+      |> :erlang.binary_to_term()
+
+    Pleroma.Emails.Mailer.deliver(email, config)
+  end
+
   def perform(%{"op" => "digest_email", "user_id" => user_id}) do
     user = User.get_by_id(user_id)
     Pleroma.DigestEmailWorker.perform(user)

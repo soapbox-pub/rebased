@@ -4,6 +4,7 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
   import Pleroma.Factory
   import Swoosh.TestAssertions
 
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.Web.CommonAPI
 
   setup_all do
@@ -38,6 +39,8 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
       {:ok, yesterday_date} = Timex.format(yesterday, "%F", :strftime)
 
       :ok = Mix.Tasks.Pleroma.Digest.run(["test", user2.nickname, yesterday_date])
+
+      ObanHelpers.perform_all()
 
       assert_receive {:mix_shell, :info, [message]}
       assert message =~ "Digest email have been sent"

@@ -7,6 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
+  alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.UserInviteToken
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -321,6 +322,7 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
     }
 
     {:ok, user} = TwitterAPI.register_user(data)
+    ObanHelpers.perform_all()
 
     assert user.info.confirmation_pending
 
