@@ -7,7 +7,9 @@ defmodule Pleroma.Stats do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  def start_link do
+  use Agent
+
+  def start_link(_) do
     agent = Agent.start_link(fn -> {[], %{}} end, name: __MODULE__)
     spawn(fn -> schedule_update() end)
     agent

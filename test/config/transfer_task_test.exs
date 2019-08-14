@@ -31,7 +31,7 @@ defmodule Pleroma.Config.TransferTaskTest do
       value: [live: 15, com: 35]
     })
 
-    Pleroma.Config.TransferTask.start_link()
+    Pleroma.Config.TransferTask.start_link([])
 
     assert Application.get_env(:pleroma, :test_key) == [live: 2, com: 3]
     assert Application.get_env(:idna, :test_key) == [live: 15, com: 35]
@@ -50,7 +50,7 @@ defmodule Pleroma.Config.TransferTaskTest do
     })
 
     assert ExUnit.CaptureLog.capture_log(fn ->
-             Pleroma.Config.TransferTask.start_link()
+             Pleroma.Config.TransferTask.start_link([])
            end) =~
              "updating env causes error, key: \"undefined_atom_key\", error: %ArgumentError{message: \"argument error\"}"
   end

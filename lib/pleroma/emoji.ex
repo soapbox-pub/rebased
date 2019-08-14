@@ -24,7 +24,7 @@ defmodule Pleroma.Emoji do
   @ets_options [:ordered_set, :protected, :named_table, {:read_concurrency, true}]
 
   @doc false
-  def start_link do
+  def start_link(_) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 

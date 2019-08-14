@@ -18,7 +18,7 @@ defmodule Pleroma.Web.Streamer do
 
   @keepalive_interval :timer.seconds(30)
 
-  def start_link do
+  def start_link(_) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
