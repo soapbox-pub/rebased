@@ -7,31 +7,56 @@ defmodule Pleroma.Stats do
   alias Pleroma.Repo
   alias Pleroma.User
 
-  def start_link do
-    agent = Agent.start_link(fn -> {[], %{}} end, name: __MODULE__)
-    spawn(fn -> schedule_update() end)
-    agent
+  use GenServer
+
+  @interval 1000 * 60 * 60
+
+  def start_link(_) do
+    GenServer.start_link(__MODULE__, initial_data(), name: __MODULE__)
+  end
+
+  def force_update do
+    GenServer.call(__MODULE__, :force_update)
   end
 
   def get_stats do
-    Agent.get(__MODULE__, fn {_, stats} -> stats end)
+    %{stats: stats} = GenServer.call(__MODULE__, :get_state)
+
+    stats
   end
 
   def get_peers do
-    Agent.get(__MODULE__, fn {peers, _} -> peers end)
+    %{peers: peers} = GenServer.call(__MODULE__, :get_state)
+
+    peers
   end
 
-  def schedule_update do
-    spawn(fn ->
-      # 1 hour
-      Process.sleep(1000 * 60 * 60)
-      schedule_update()
-    end)
-
-    update_stats()
+  def init(args) do
+    Process.send_after(self(), :run_update, @interval)
+    {:ok, args}
   end
 
-  def update_stats do
+  def handle_call(:force_update, _from, _state) do
+    new_stats = get_stat_data()
+    {:reply, new_stats, new_stats}
+  end
+
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  def handle_info(:run_update, _state) do
+    new_stats = get_stat_data()
+
+    Process.send_after(self(), :run_update, @interval)
+    {:noreply, new_stats}
+  end
+
+  defp initial_data do
+    %{peers: [], stats: %{}}
+  end
+
+  defp get_stat_data do
     peers =
       from(
         u in User,
@@ -52,8 +77,9 @@ defmodule Pleroma.Stats do
 
     user_count = Repo.aggregate(User.Query.build(%{local: true, active: true}), :count, :id)
 
-    Agent.update(__MODULE__, fn _ ->
-      {peers, %{domain_count: domain_count, status_count: status_count, user_count: user_count}}
-    end)
+    %{
+      peers: peers,
+      stats: %{domain_count: domain_count, status_count: status_count, user_count: user_count}
+    }
   end
 end

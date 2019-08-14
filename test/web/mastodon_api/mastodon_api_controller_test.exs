@@ -2624,7 +2624,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> Changeset.put_embed(:info, info_change)
       |> User.update_and_set_cache()
 
-    Pleroma.Stats.update_stats()
+    Pleroma.Stats.force_update()
 
     conn = get(conn, "/api/v1/instance")
 
@@ -2642,7 +2642,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})
 
-    Pleroma.Stats.update_stats()
+    Pleroma.Stats.force_update()
 
     conn = get(conn, "/api/v1/instance/peers")
 

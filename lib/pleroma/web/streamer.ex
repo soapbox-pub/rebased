@@ -18,7 +18,7 @@ defmodule Pleroma.Web.Streamer do
 
   @keepalive_interval :timer.seconds(30)
 
-  def start_link do
+  def start_link(_) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
@@ -35,28 +35,21 @@ defmodule Pleroma.Web.Streamer do
   end
 
   def init(args) do
-    spawn(fn ->
-      # 30 seconds
-      Process.sleep(@keepalive_interval)
-      GenServer.cast(__MODULE__, %{action: :ping})
-    end)
+    Process.send_after(self(), %{action: :ping}, @keepalive_interval)
 
     {:ok, args}
   end
 
-  def handle_cast(%{action: :ping}, topics) do
-    Map.values(topics)
+  def handle_info(%{action: :ping}, topics) do
+    topics
+    |> Map.values()
     |> List.flatten()
     |> Enum.each(fn socket ->
       Logger.debug("Sending keepalive ping")
       send(socket.transport_pid, {:text, ""})
     end)
 
-    spawn(fn ->
-      # 30 seconds
-      Process.sleep(@keepalive_interval)
-      GenServer.cast(__MODULE__, %{action: :ping})
-    end)
+    Process.send_after(self(), %{action: :ping}, @keepalive_interval)
 
     {:noreply, topics}
   end

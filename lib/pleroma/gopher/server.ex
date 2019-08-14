@@ -6,7 +6,7 @@ defmodule Pleroma.Gopher.Server do
   use GenServer
   require Logger
 
-  def start_link do
+  def start_link(_) do
     config = Pleroma.Config.get(:gopher, [])
     ip = Keyword.get(config, :ip, {0, 0, 0, 0})
     port = Keyword.get(config, :port, 1234)
