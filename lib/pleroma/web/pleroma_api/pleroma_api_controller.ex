@@ -66,7 +66,7 @@ defmodule Pleroma.Web.PleromaAPI.PleromaAPIController do
       |> Participation.get()
 
     with true <- user.id == participation.user_id,
-         {:ok, _} <- Participation.set_recipients(participation, recipients) do
+         {:ok, participation} <- Participation.set_recipients(participation, recipients) do
       conn
       |> put_view(ConversationView)
       |> render("participation.json", %{participation: participation, for: user})
