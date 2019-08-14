@@ -388,7 +388,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def follow(follower, followed, activity_id \\ nil, local \\ true) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity) do
+         :ok <- maybe_federate(activity),
+         _ <- User.set_follow_state_cache(follower.ap_id, followed.ap_id, activity.data["state"]) do
       {:ok, activity}
     end
   end
