@@ -59,6 +59,7 @@ defmodule Pleroma.Application do
             restart: :temporary
           }
         ] ++
+        oauth_cleanup_child(oauth_cleanup_enabled?()) ++
         streamer_child(@env) ++
         chat_child(@env, chat_enabled?()) ++
         [
@@ -134,11 +135,19 @@ defmodule Pleroma.Application do
 
   defp chat_enabled?, do: Pleroma.Config.get([:chat, :enabled])
 
+  defp oauth_cleanup_enabled?,
+    do: Pleroma.Config.get([:oauth2, :clean_expired_tokens], false)
+
   defp streamer_child(:test), do: []
 
   defp streamer_child(_) do
     [Pleroma.Web.Streamer]
   end
+
+  defp oauth_cleanup_child(true),
+       do: [Pleroma.Web.OAuth.Token.CleanWorker]
+
+  defp oauth_cleanup_child(_), do: []
 
   defp chat_child(:test, _), do: []
 
