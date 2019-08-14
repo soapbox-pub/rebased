@@ -42,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pleroma.Upload base_url was not automatically whitelisted by MediaProxy. Now your custom CDN or file hosting will be accessed directly as expected.
 - Report email not being sent to admins when the reporter is a remote user
 - MRF: ensure that subdomain_match calls are case-insensitive
+- MRF: fix use of unserializable keyword lists in describe() implementations
 
 ### Added
 - **Breaking:** MRF describe API, which adds support for exposing configuration information about MRF policies to NodeInfo.
