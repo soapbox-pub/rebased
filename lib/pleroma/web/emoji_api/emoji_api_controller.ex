@@ -184,19 +184,19 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
           pack_dir = Path.join(@emoji_dir_path, local_name)
           File.mkdir_p!(pack_dir)
 
+          # Fallback cannot contain a pack.json file
           files =
-            ['pack.json'] ++
+            unless(pinfo[:fallback], do: ['pack.json'], else: []) ++
               (pfiles |> Enum.map(fn {_, path} -> to_charlist(path) end))
 
           {:ok, _} = :zip.unzip(emoji_archive, cwd: to_charlist(pack_dir), file_list: files)
 
-          # Fallback URL might not contain a pack.json file. Put on we have if there's none
+          # Fallback can't contain a pack.json file, since that would cause the fallback-src-sha256
+          # in it to depend on itself
           if pinfo[:fallback] do
             pack_file_path = Path.join(pack_dir, "pack.json")
 
-            unless File.exists?(pack_file_path) do
-              File.write!(pack_file_path, Jason.encode!(full_pack))
-            end
+            File.write!(pack_file_path, Jason.encode!(full_pack))
           end
 
           conn |> text("ok")
