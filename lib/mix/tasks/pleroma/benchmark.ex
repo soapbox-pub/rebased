@@ -26,4 +26,28 @@ defmodule Mix.Tasks.Pleroma.Benchmark do
       end
     })
   end
+
+  def run(["render_timeline", nickname]) do
+    start_pleroma()
+    user = Pleroma.User.get_by_nickname(nickname)
+
+    activities =
+      %{}
+      |> Map.put("type", ["Create", "Announce"])
+      |> Map.put("blocking_user", user)
+      |> Map.put("muting_user", user)
+      |> Map.put("user", user)
+      |> Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities()
+      |> Enum.reverse()
+
+    Benchee.run(%{
+      "render_timeline" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
+          activities: activities,
+          for: user,
+          as: :activity
+        })
+      end
+    })
+  end
 end
