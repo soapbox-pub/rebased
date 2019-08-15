@@ -41,7 +41,6 @@ defmodule Pleroma.Application do
         hackney_pool_children() ++
         [
           Pleroma.Web.Federator.RetryQueue,
-          Pleroma.Web.OAuth.Token.CleanWorker,
           Pleroma.Stats,
           %{
             id: :web_push_init,
