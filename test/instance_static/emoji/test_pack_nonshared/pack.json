@@ -4,8 +4,8 @@
         "homepage": "https://pleroma.social",
         "description": "Test description",
 
-        "fallblack-src": "https://example.com",
-        "fallback-src-sha256": "65CDCCBCA9388A68023519F997367783BE69ED42864398CAC568E56F65CE0E75",
+        "fallback-src": "https://nonshared-pack",
+        "fallback-src-sha256": "74409E2674DAA06C072729C6C8426C4CB3B7E0B85ED77792DB7A436E11D76DAF",
 
         "share-files": false
     },

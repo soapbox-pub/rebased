@@ -42,9 +42,10 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
     assert Enum.find(arch, fn {n, _} -> n == 'blank.png' end)
   end
 
-  test "downloading a shared pack from another instance via download_from, deleting it" do
+  test "downloading shared & unshared packs from another instance via download_from, deleting them" do
     on_exit(fn ->
       File.rm_rf!("test/instance_static/emoji/test_pack2")
+      File.rm_rf!("test/instance_static/emoji/test_pack_nonshared2")
     end)
 
     mock(fn
@@ -69,6 +70,12 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
         |> get(emoji_api_path(conn, :download_shared, "test_pack"))
         |> response(200)
         |> text()
+
+      %{
+        method: :get,
+        url: "https://nonshared-pack"
+      } ->
+        text(File.read!("test/instance_static/emoji/test_pack_nonshared/nonshared.zip"))
     end)
 
     admin = insert(:user, info: %{is_admin: true})
@@ -101,5 +108,36 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
            |> response(200) == "ok"
 
     refute File.exists?("test/instance_static/emoji/test_pack2")
+
+    # non-shared, downloaded from the fallback URL
+
+    conn = build_conn()
+
+    assert conn
+           |> put_req_header("content-type", "application/json")
+           |> assign(:user, admin)
+           |> post(
+             emoji_api_path(
+               conn,
+               :download_from
+             ),
+             %{
+               instance_address: "https://example.com",
+               pack_name: "test_pack_nonshared",
+               as: "test_pack_nonshared2"
+             }
+             |> Jason.encode!()
+           )
+           |> text_response(200) == "ok"
+
+    assert File.exists?("test/instance_static/emoji/test_pack_nonshared2/pack.json")
+    assert File.exists?("test/instance_static/emoji/test_pack_nonshared2/blank.png")
+
+    assert conn
+           |> assign(:user, admin)
+           |> delete(emoji_api_path(conn, :delete, "test_pack_nonshared2"))
+           |> response(200) == "ok"
+
+    refute File.exists?("test/instance_static/emoji/test_pack_nonshared2")
   end
 end
