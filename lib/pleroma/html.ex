@@ -203,6 +203,8 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes("p", [])
   Meta.allow_tag_with_these_attributes("pre", [])
   Meta.allow_tag_with_these_attributes("strong", [])
+  Meta.allow_tag_with_these_attributes("sub", [])
+  Meta.allow_tag_with_these_attributes("sup", [])
   Meta.allow_tag_with_these_attributes("u", [])
   Meta.allow_tag_with_these_attributes("ul", [])
 
