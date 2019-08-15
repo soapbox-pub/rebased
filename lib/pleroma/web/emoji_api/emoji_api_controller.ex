@@ -196,7 +196,7 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
           if pinfo[:fallback] do
             pack_file_path = Path.join(pack_dir, "pack.json")
 
-            File.write!(pack_file_path, Jason.encode!(full_pack))
+            File.write!(pack_file_path, Jason.encode!(full_pack, pretty: true))
           end
 
           conn |> text("ok")
@@ -220,6 +220,53 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
 
       {:error, _} ->
         conn |> put_status(:internal_server_error) |> text("Couldn't delete the pack #{name}")
+    end
+  end
+
+  def update_metadata(conn, %{"name" => name, "new_data" => new_data}) do
+    pack_dir = Path.join(@emoji_dir_path, name)
+    pack_file_p = Path.join(pack_dir, "pack.json")
+
+    full_pack = Jason.decode!(File.read!(pack_file_p))
+
+    new_data =
+      if not is_nil(new_data["fallback-src"]) and is_nil(new_data["fallback-src-sha256"]) do
+        pack_arch = Tesla.get!(new_data["fallback-src"]).body
+
+        {:ok, flist} = :zip.unzip(pack_arch, [:memory])
+
+        # Check if all files from the pack.json are in the archive
+        has_all_files =
+          Enum.all?(full_pack["files"], fn {_, from_manifest} ->
+            Enum.find(flist, fn {from_archive, _} ->
+              to_string(from_archive) == from_manifest
+            end)
+          end)
+
+        unless has_all_files do
+          {:error,
+           conn
+           |> put_status(:bad_request)
+           |> text("The fallback archive does not have all files specified in pack.json")}
+        else
+          fallback_sha = :crypto.hash(:sha256, pack_arch) |> Base.encode16()
+
+          {:ok, new_data |> Map.put("fallback-src-sha256", fallback_sha)}
+        end
+      else
+        {:ok, new_data}
+      end
+
+    case new_data do
+      {:ok, new_data} ->
+        full_pack = Map.put(full_pack, "pack", new_data)
+        File.write!(pack_file_p, Jason.encode!(full_pack, pretty: true))
+
+        # Send new data back with fallback sha filled
+        conn |> json(new_data)
+
+      {:error, e} ->
+        e
     end
   end
 end
