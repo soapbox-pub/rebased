@@ -38,7 +38,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     {:ok, arch} = :zip.unzip(resp, [:memory])
 
-    assert Enum.find(arch, fn {n, _} -> n == 'pack.yml' end)
+    assert Enum.find(arch, fn {n, _} -> n == 'pack.json' end)
     assert Enum.find(arch, fn {n, _} -> n == 'blank.png' end)
   end
 
@@ -92,7 +92,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
            )
            |> text_response(200) == "ok"
 
-    assert File.exists?("test/instance_static/emoji/test_pack2/pack.yml")
+    assert File.exists?("test/instance_static/emoji/test_pack2/pack.json")
     assert File.exists?("test/instance_static/emoji/test_pack2/blank.png")
 
     assert conn

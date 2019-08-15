@@ -146,12 +146,12 @@ defmodule Pleroma.Emoji do
   defp load_pack(pack_dir, emoji_groups) do
     pack_name = Path.basename(pack_dir)
 
-    pack_yaml = Path.join(pack_dir, "pack.yml")
+    pack_file = Path.join(pack_dir, "pack.json")
 
-    if File.exists?(pack_yaml) do
-      yaml = RelaxYaml.Decoder.read_from_file(pack_yaml)
+    if File.exists?(pack_file) do
+      contents = Jason.decode!(File.read!(pack_file))
 
-      yaml["files"]
+      contents["files"]
       |> Enum.map(fn {name, rel_file} ->
         filename = Path.join("/emoji/#{pack_name}", rel_file)
         {name, filename, pack_name}

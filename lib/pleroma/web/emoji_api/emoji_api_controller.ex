@@ -26,14 +26,14 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
           results
           |> Enum.filter(fn file ->
             dir_path = Path.join(@emoji_dir_path, file)
-            # Filter to only use the pack.yml packs
-            File.dir?(dir_path) and File.exists?(Path.join(dir_path, "pack.yml"))
+            # Filter to only use the pack.json packs
+            File.dir?(dir_path) and File.exists?(Path.join(dir_path, "pack.json"))
           end)
           |> Enum.map(fn pack_name ->
             pack_path = Path.join(@emoji_dir_path, pack_name)
-            pack_file = Path.join(pack_path, "pack.yml")
+            pack_file = Path.join(pack_path, "pack.json")
 
-            {pack_name, RelaxYaml.Decoder.read_from_file(pack_file)}
+            {pack_name, Jason.decode!(File.read!(pack_file))}
           end)
           # Transform into a map of pack-name => pack-data
           # Check if all the files are in place and can be sent
@@ -72,7 +72,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
 
   defp create_archive_and_cache(name, pack, pack_dir, md5) do
     files =
-      ['pack.yml'] ++
+      ['pack.json'] ++
         (pack["files"] |> Enum.map(fn {_, path} -> to_charlist(path) end))
 
     {:ok, {_, zip_result}} = :zip.zip('#{name}.zip', files, [:memory, cwd: to_charlist(pack_dir)])
@@ -82,8 +82,8 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
     Cachex.put!(
       :emoji_packs_cache,
       name,
-      # if pack.yml MD5 changes, the cache is not valid anymore
-      %{pack_yml_md5: md5, pack_data: zip_result},
+      # if pack.json MD5 changes, the cache is not valid anymore
+      %{pack_json_md5: md5, pack_data: zip_result},
       # Add a minute to cache time for every file in the pack
       ttl: cache_ms
     )
@@ -95,21 +95,21 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
   end
 
   defp make_archive(name, pack, pack_dir) do
-    # Having a different pack.yml md5 invalidates cache
-    pack_yml_md5 = :crypto.hash(:md5, File.read!(Path.join(pack_dir, "pack.yml")))
+    # Having a different pack.json md5 invalidates cache
+    pack_file_md5 = :crypto.hash(:md5, File.read!(Path.join(pack_dir, "pack.json")))
 
     maybe_cached_pack = Cachex.get!(:emoji_packs_cache, name)
 
     zip_result =
       if is_nil(maybe_cached_pack) do
-        create_archive_and_cache(name, pack, pack_dir, pack_yml_md5)
+        create_archive_and_cache(name, pack, pack_dir, pack_file_md5)
       else
-        if maybe_cached_pack[:pack_yml_md5] == pack_yml_md5 do
+        if maybe_cached_pack[:pack_file_md5] == pack_file_md5 do
           Logger.debug("Using cache for the '#{name}' shared emoji pack")
 
           maybe_cached_pack[:pack_data]
         else
-          create_archive_and_cache(name, pack, pack_dir, pack_yml_md5)
+          create_archive_and_cache(name, pack, pack_dir, pack_file_md5)
         end
       end
 
@@ -118,10 +118,10 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
 
   def download_shared(conn, %{"name" => name}) do
     pack_dir = Path.join(@emoji_dir_path, name)
-    pack_yaml = Path.join(pack_dir, "pack.yml")
+    pack_file = Path.join(pack_dir, "pack.json")
 
-    if File.exists?(pack_yaml) do
-      pack = RelaxYaml.Decoder.read_from_file(pack_yaml)
+    if File.exists?(pack_file) do
+      pack = Jason.decode!(File.read!(pack_file))
 
       if can_download?(pack, pack_dir) do
         zip_result = make_archive(name, pack, pack_dir)
@@ -185,17 +185,17 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
           File.mkdir_p!(pack_dir)
 
           files =
-            ['pack.yml'] ++
+            ['pack.json'] ++
               (pfiles |> Enum.map(fn {_, path} -> to_charlist(path) end))
 
           {:ok, _} = :zip.unzip(emoji_archive, cwd: to_charlist(pack_dir), file_list: files)
 
-          # Fallback URL might not contain a pack.yml file. Put on we have if there's none
+          # Fallback URL might not contain a pack.json file. Put on we have if there's none
           if pinfo[:fallback] do
-            yaml_path = Path.join(pack_dir, "pack.yml")
+            pack_file_path = Path.join(pack_dir, "pack.json")
 
-            unless File.exists?(yaml_path) do
-              File.write!(yaml_path, RelaxYaml.Encoder.encode(full_pack, []))
+            unless File.exists?(pack_file_path) do
+              File.write!(pack_file_path, Jason.encode!(full_pack))
             end
           end
 

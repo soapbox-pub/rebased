@@ -84,7 +84,6 @@
   "quantum": {:hex, :quantum, "2.3.4", "72a0e8855e2adc101459eac8454787cb74ab4169de6ca50f670e72142d4960e9", [:mix], [{:calendar, "~> 0.17", [hex: :calendar, repo: "hexpm", optional: true]}, {:crontab, "~> 1.1", [hex: :crontab, repo: "hexpm", optional: false]}, {:gen_stage, "~> 0.12", [hex: :gen_stage, repo: "hexpm", optional: false]}, {:swarm, "~> 3.3", [hex: :swarm, repo: "hexpm", optional: false]}, {:timex, "~> 3.1", [hex: :timex, repo: "hexpm", optional: true]}], "hexpm"},
   "ranch": {:hex, :ranch, "1.7.1", "6b1fab51b49196860b733a49c07604465a47bdb78aa10c1c16a3d199f7f8c881", [:rebar3], [], "hexpm"},
   "recon": {:git, "https://github.com/ferd/recon.git", "75d70c7c08926d2f24f1ee6de14ee50fe8a52763", [tag: "2.4.0"]},
-  "relax_yaml": {:hex, :relax_yaml, "0.1.4", "99e55ae80b3bd1135f4288e1ba77b816ad7de05bcb4618a1a9f983ce7c89ff32", [:mix], [{:yamerl, "~> 0.4.0", [hex: :yamerl, repo: "hexpm", optional: false]}], "hexpm"},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.4", "f0eafff810d2041e93f915ef59899c923f4568f4585904d010387ed74988e77b", [:make, :mix, :rebar3], [], "hexpm"},
   "swarm": {:hex, :swarm, "3.4.0", "64f8b30055d74640d2186c66354b33b999438692a91be275bb89cdc7e401f448", [:mix], [{:gen_state_machine, "~> 2.0", [hex: :gen_state_machine, repo: "hexpm", optional: false]}, {:libring, "~> 1.0", [hex: :libring, repo: "hexpm", optional: false]}], "hexpm"},
   "sweet_xml": {:hex, :sweet_xml, "0.6.6", "fc3e91ec5dd7c787b6195757fbcf0abc670cee1e4172687b45183032221b66b8", [:mix], [], "hexpm"},
