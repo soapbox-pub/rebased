@@ -109,7 +109,11 @@ defmodule Pleroma.ReverseProxy do
       end
 
     with {:ok, code, headers, client} <- request(method, url, req_headers, hackney_opts),
-         :ok <- header_length_constraint(headers, Keyword.get(opts, :max_body_length, @max_body_length)) do
+         :ok <-
+           header_length_constraint(
+             headers,
+             Keyword.get(opts, :max_body_length, @max_body_length)
+           ) do
       response(conn, client, url, code, headers, opts)
     else
       {:ok, code, headers} ->
@@ -200,7 +204,11 @@ defmodule Pleroma.ReverseProxy do
          {:ok, data} <- client().stream_body(client),
          {:ok, duration} <- increase_read_duration(duration),
          sent_so_far = sent_so_far + byte_size(data),
-         :ok <- body_size_constraint(sent_so_far, Keyword.get(opts, :max_body_length, @max_body_length)),
+         :ok <-
+           body_size_constraint(
+             sent_so_far,
+             Keyword.get(opts, :max_body_length, @max_body_length)
+           ),
          {:ok, conn} <- chunk(conn, data) do
       chunk_reply(conn, client, opts, sent_so_far, duration)
     else
