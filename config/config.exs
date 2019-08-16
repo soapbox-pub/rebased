@@ -507,6 +507,17 @@ config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
+config :pleroma, Pleroma.Emails.UserEmail,
+  logo: nil,
+  styling: %{
+    link_color: "#d8a070",
+    background_color: "#2C3645",
+    content_background_color: "#1B2635",
+    header_color: "#d8a070",
+    text_color: "#b9b9ba",
+    text_muted_color: "#b9b9ba"
+  }
+
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 
 config :pleroma, Pleroma.ScheduledActivity,

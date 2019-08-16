@@ -7,21 +7,21 @@ defmodule Pleroma.Emails.UserEmail do
 
   use Phoenix.Swoosh, view: Pleroma.Web.EmailView, layout: {Pleroma.Web.LayoutView, :email}
 
+  alias Pleroma.Config
+  alias Pleroma.User
   alias Pleroma.Web.Endpoint
   alias Pleroma.Web.Router
 
-  defp instance_config, do: Pleroma.Config.get(:instance)
-
-  defp instance_name, do: instance_config()[:name]
+  defp instance_name, do: Config.get([:instance, :name])
 
   defp sender do
-    email = Keyword.get(instance_config(), :notify_email, instance_config()[:email])
+    email = Config.get([:instance, :notify_email]) || Config.get([:instance, :email])
     {instance_name(), email}
   end
 
   defp recipient(email, nil), do: email
   defp recipient(email, name), do: {name, email}
-  defp recipient(%Pleroma.User{} = user), do: recipient(user.email, user.name)
+  defp recipient(%User{} = user), do: recipient(user.email, user.name)
 
   def password_reset_email(user, token) when is_binary(token) do
     password_reset_url = Router.Helpers.reset_password_url(Endpoint, :reset, token)
@@ -93,50 +93,54 @@ defmodule Pleroma.Emails.UserEmail do
   Includes Mentions and New Followers data
   If there are no mentions (even when new followers exist), the function will return nil
   """
-  @spec digest_email(Pleroma.User.t()) :: Swoosh.Email.t() | nil
+  @spec digest_email(User.t()) :: Swoosh.Email.t() | nil
   def digest_email(user) do
-    new_notifications =
-      Pleroma.Notification.for_user_since(user, user.last_digest_emailed_at)
-      |> Enum.reduce(%{followers: [], mentions: []}, fn
-        %{activity: %{data: %{"type" => "Create"}, actor: actor} = activity} = notification,
-        acc ->
-          new_mention = %{
-            data: notification,
-            object: Pleroma.Object.normalize(activity),
-            from: Pleroma.User.get_by_ap_id(actor)
-          }
+    notifications = Pleroma.Notification.for_user_since(user, user.last_digest_emailed_at)
 
-          %{acc | mentions: [new_mention | acc.mentions]}
+    mentions =
+      notifications
+      |> Enum.filter(&(&1.activity.data["type"] == "Create"))
+      |> Enum.map(fn notification ->
+        object = Pleroma.Object.normalize(notification.activity)
+        object = update_in(object.data["content"], &format_links/1)
 
-        %{activity: %{data: %{"type" => "Follow"}, actor: actor} = activity} = notification,
-        acc ->
-          new_follower = %{
-            data: notification,
-            object: Pleroma.Object.normalize(activity),
-            from: Pleroma.User.get_by_ap_id(actor)
-          }
-
-          %{acc | followers: [new_follower | acc.followers]}
-
-        _, acc ->
-          acc
+        %{
+          data: notification,
+          object: object,
+          from: User.get_by_ap_id(notification.activity.actor)
+        }
       end)
 
-    with [_ | _] = mentions <- new_notifications.mentions do
-      mentions =
-        Enum.map(mentions, fn mention ->
-          update_in(mention.object.data["content"], &format_links/1)
-        end)
+    followers =
+      notifications
+      |> Enum.filter(&(&1.activity.data["type"] == "Follow"))
+      |> Enum.map(fn notification ->
+        %{
+          data: notification,
+          object: Pleroma.Object.normalize(notification.activity),
+          from: User.get_by_ap_id(notification.activity.actor)
+        }
+      end)
+
+    unless Enum.empty?(mentions) do
+      styling = Config.get([__MODULE__, :styling])
+      logo = Config.get([__MODULE__, :logo])
 
       html_data = %{
         instance: instance_name(),
         user: user,
         mentions: mentions,
-        followers: new_notifications.followers,
-        unsubscribe_link: unsubscribe_url(user, "digest")
+        followers: followers,
+        unsubscribe_link: unsubscribe_url(user, "digest"),
+        styling: styling
       }
 
-      logo_path = Path.join(:code.priv_dir(:pleroma), "static/static/logo.png")
+      logo_path =
+        if is_nil(logo) do
+          Path.join(:code.priv_dir(:pleroma), "static/static/logo.png")
+        else
+          Path.join(Config.get([:instance, :static_dir]), logo)
+        end
 
       new()
       |> to(recipient(user))
@@ -145,17 +149,15 @@ defmodule Pleroma.Emails.UserEmail do
       |> put_layout(false)
       |> render_body("digest.html", html_data)
       |> attachment(Swoosh.Attachment.new(logo_path, filename: "logo.png", type: :inline))
-    else
-      _ ->
-        nil
     end
   end
 
   defp format_links(str) do
     re = ~r/<a.+href=['"].*>/iU
+    %{link_color: color} = Config.get([__MODULE__, :styling])
 
     Regex.replace(re, str, fn link ->
-      String.replace(link, "<a", "<a style=\"color: #d8a070;text-decoration: none;\"")
+      String.replace(link, "<a", "<a style=\"color: #{color};text-decoration: none;\"")
     end)
   end
 
@@ -164,13 +166,13 @@ defmodule Pleroma.Emails.UserEmail do
   The link contains JWT token with the data, and subscription can be modified without
   authorization.
   """
-  @spec unsubscribe_url(Pleroma.User.t(), String.t()) :: String.t()
+  @spec unsubscribe_url(User.t(), String.t()) :: String.t()
   def unsubscribe_url(user, notifications_type) do
     token =
       %{"sub" => user.id, "act" => %{"unsubscribe" => notifications_type}, "exp" => false}
       |> Pleroma.JWT.generate_and_sign!()
       |> Base.encode64()
 
-    Router.Helpers.subscription_url(Pleroma.Web.Endpoint, :unsubscribe, token)
+    Router.Helpers.subscription_url(Endpoint, :unsubscribe, token)
   end
 end
