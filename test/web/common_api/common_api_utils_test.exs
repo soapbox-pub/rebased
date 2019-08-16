@@ -239,7 +239,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "public")
+      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "public", nil)
 
       assert length(to) == 2
       assert length(cc) == 1
@@ -256,7 +256,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
       mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "public")
+      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "public", nil)
 
       assert length(to) == 3
       assert length(cc) == 1
@@ -272,7 +272,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "unlisted")
+      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "unlisted", nil)
 
       assert length(to) == 2
       assert length(cc) == 1
@@ -289,7 +289,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
       mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "unlisted")
+      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "unlisted", nil)
 
       assert length(to) == 3
       assert length(cc) == 1
@@ -305,7 +305,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "private")
+      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "private", nil)
       assert length(to) == 2
       assert length(cc) == 0
 
@@ -320,7 +320,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
       mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private")
+      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "private", nil)
 
       assert length(to) == 3
       assert length(cc) == 0
@@ -335,7 +335,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       mentioned_user = insert(:user)
       mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "direct")
+      {to, cc} = Utils.get_to_and_cc(user, mentions, nil, "direct", nil)
 
       assert length(to) == 1
       assert length(cc) == 0
@@ -350,7 +350,7 @@ defmodule Pleroma.Web.CommonAPI.UtilsTest do
       {:ok, activity} = CommonAPI.post(third_user, %{"status" => "uguu"})
       mentions = [mentioned_user.ap_id]
 
-      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct")
+      {to, cc} = Utils.get_to_and_cc(user, mentions, activity, "direct", nil)
 
       assert length(to) == 2
       assert length(cc) == 0

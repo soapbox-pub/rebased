@@ -319,3 +319,38 @@ See [Admin-API](Admin-API.md)
   "healthy": true # Instance state
 }
 ```
+
+# Pleroma Conversations
+
+Pleroma Conversations have the same general structure that Mastodon Conversations have. The behavior differs in the following ways when using these endpoints:
+
+1. Pleroma Conversations never add or remove recipients, unless explicitly changed by the user. 
+2. Pleroma Conversations statuses can be requested by Conversation id.
+3. Pleroma Conversations can be replied to.
+
+Conversations have the additional field "recipients" under the "pleroma" key. This holds a list of all the accounts that will receive a message in this conversation.
+
+The status posting endpoint takes an additional parameter, `in_reply_to_conversation_id`, which, when set, will set the visiblity to direct and address only the people who are the recipients of that Conversation.
+
+
+## `GET /api/v1/pleroma/conversations/:id/statuses`
+### Timeline for a given conversation
+* Method `GET`
+* Authentication: required
+* Params: Like other timelines
+* Response: JSON, statuses (200 - healthy, 503 unhealthy).
+
+## `GET /api/v1/pleroma/conversations/:id`
+### The conversation with the given ID.
+* Method `GET`
+* Authentication: required
+* Params: None
+* Response: JSON, statuses (200 - healthy, 503 unhealthy).
+
+## `PATCH /api/v1/pleroma/conversations/:id`
+### Update a conversation. Used to change the set of recipients.
+* Method `PATCH`
+* Authentication: required
+* Params:
+    * `recipients`: A list of ids of users that should receive posts to this conversation. This will replace the current list of recipients, so submit the full list. The owner of owner of the conversation will always be part of the set of recipients, though.
+* Response: JSON, statuses (200 - healthy, 503 unhealthy)
