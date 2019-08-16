@@ -742,6 +742,7 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
+  @spec maybe_fetch_follow_information(User.t()) :: User.t()
   def maybe_fetch_follow_information(user) do
     with {:ok, user} <- fetch_follow_information(user) do
       user
@@ -799,9 +800,10 @@ defmodule Pleroma.User do
     end
   end
 
+  @spec maybe_update_following_count(User.t()) :: User.t()
   def maybe_update_following_count(%User{local: false} = user) do
     if Pleroma.Config.get([:instance, :external_user_synchronization]) do
-      {:ok, maybe_fetch_follow_information(user)}
+      maybe_fetch_follow_information(user)
     else
       user
     end
