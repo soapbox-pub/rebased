@@ -229,8 +229,13 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
 
     full_pack = Jason.decode!(File.read!(pack_file_p))
 
+    # The new fallback-src is in the new data and it's not the same as it was in the old data
+    should_update_fb_sha =
+      not is_nil(new_data["fallback-src"]) and
+        new_data["fallback-src"] != full_pack["pack"]["fallback-src"]
+
     new_data =
-      if not is_nil(new_data["fallback-src"]) and is_nil(new_data["fallback-src-sha256"]) do
+      if should_update_fb_sha do
         pack_arch = Tesla.get!(new_data["fallback-src"]).body
 
         {:ok, flist} = :zip.unzip(pack_arch, [:memory])
