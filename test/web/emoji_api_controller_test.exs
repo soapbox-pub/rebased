@@ -5,6 +5,11 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
   import Pleroma.Factory
 
+  @emoji_dir_path Path.join(
+                    Pleroma.Config.get!([:instance, :static_dir]),
+                    "emoji"
+                  )
+
   test "shared & non-shared pack information in list_packs is ok" do
     conn = build_conn()
     resp = conn |> get(emoji_api_path(conn, :list_packs)) |> json_response(200)
@@ -44,8 +49,8 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
   test "downloading shared & unshared packs from another instance via download_from, deleting them" do
     on_exit(fn ->
-      File.rm_rf!("test/instance_static/emoji/test_pack2")
-      File.rm_rf!("test/instance_static/emoji/test_pack_nonshared2")
+      File.rm_rf!("#{@emoji_dir_path}/test_pack2")
+      File.rm_rf!("#{@emoji_dir_path}/test_pack_nonshared2")
     end)
 
     mock(fn
@@ -75,7 +80,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
         method: :get,
         url: "https://nonshared-pack"
       } ->
-        text(File.read!("test/instance_static/emoji/test_pack_nonshared/nonshared.zip"))
+        text(File.read!("#{@emoji_dir_path}/test_pack_nonshared/nonshared.zip"))
     end)
 
     admin = insert(:user, info: %{is_admin: true})
@@ -99,15 +104,15 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
            )
            |> text_response(200) == "ok"
 
-    assert File.exists?("test/instance_static/emoji/test_pack2/pack.json")
-    assert File.exists?("test/instance_static/emoji/test_pack2/blank.png")
+    assert File.exists?("#{@emoji_dir_path}/test_pack2/pack.json")
+    assert File.exists?("#{@emoji_dir_path}/test_pack2/blank.png")
 
     assert conn
            |> assign(:user, admin)
            |> delete(emoji_api_path(conn, :delete, "test_pack2"))
            |> response(200) == "ok"
 
-    refute File.exists?("test/instance_static/emoji/test_pack2")
+    refute File.exists?("#{@emoji_dir_path}/test_pack2")
 
     # non-shared, downloaded from the fallback URL
 
@@ -130,14 +135,109 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
            )
            |> text_response(200) == "ok"
 
-    assert File.exists?("test/instance_static/emoji/test_pack_nonshared2/pack.json")
-    assert File.exists?("test/instance_static/emoji/test_pack_nonshared2/blank.png")
+    assert File.exists?("#{@emoji_dir_path}/test_pack_nonshared2/pack.json")
+    assert File.exists?("#{@emoji_dir_path}/test_pack_nonshared2/blank.png")
 
     assert conn
            |> assign(:user, admin)
            |> delete(emoji_api_path(conn, :delete, "test_pack_nonshared2"))
            |> response(200) == "ok"
 
-    refute File.exists?("test/instance_static/emoji/test_pack_nonshared2")
+    refute File.exists?("#{@emoji_dir_path}/test_pack_nonshared2")
+  end
+
+  describe "updating pack metadata" do
+    setup do
+      pack_file = "#{@emoji_dir_path}/test_pack/pack.json"
+      original_content = File.read!(pack_file)
+
+      on_exit(fn ->
+        File.write!(pack_file, original_content)
+      end)
+
+      {:ok,
+       admin: insert(:user, info: %{is_admin: true}),
+       pack_file: pack_file,
+       new_data: %{
+         "license" => "Test license changed",
+         "homepage" => "https://pleroma.social",
+         "description" => "Test description",
+         "share-files" => false
+       }}
+    end
+
+    test "for a pack without a fallback source", ctx do
+      conn = build_conn()
+
+      assert conn
+             |> assign(:user, ctx[:admin])
+             |> post(
+               emoji_api_path(conn, :update_metadata, "test_pack"),
+               %{
+                 "new_data" => ctx[:new_data]
+               }
+             )
+             |> json_response(200) == ctx[:new_data]
+
+      assert Jason.decode!(File.read!(ctx[:pack_file]))["pack"] == ctx[:new_data]
+    end
+
+    test "for a pack with a fallback source", ctx do
+      mock(fn
+        %{
+          method: :get,
+          url: "https://nonshared-pack"
+        } ->
+          text(File.read!("#{@emoji_dir_path}/test_pack_nonshared/nonshared.zip"))
+      end)
+
+      new_data = Map.put(ctx[:new_data], "fallback-src", "https://nonshared-pack")
+
+      new_data_with_sha =
+        Map.put(
+          new_data,
+          "fallback-src-sha256",
+          "74409E2674DAA06C072729C6C8426C4CB3B7E0B85ED77792DB7A436E11D76DAF"
+        )
+
+      conn = build_conn()
+
+      assert conn
+             |> assign(:user, ctx[:admin])
+             |> post(
+               emoji_api_path(conn, :update_metadata, "test_pack"),
+               %{
+                 "new_data" => new_data
+               }
+             )
+             |> json_response(200) == new_data_with_sha
+
+      assert Jason.decode!(File.read!(ctx[:pack_file]))["pack"] == new_data_with_sha
+    end
+
+    test "when the fallback source doesn't have all the files", ctx do
+      mock(fn
+        %{
+          method: :get,
+          url: "https://nonshared-pack"
+        } ->
+          {:ok, {'empty.zip', empty_arch}} = :zip.zip('empty.zip', [], [:memory])
+          text(empty_arch)
+      end)
+
+      new_data = Map.put(ctx[:new_data], "fallback-src", "https://nonshared-pack")
+
+      conn = build_conn()
+
+      assert conn
+             |> assign(:user, ctx[:admin])
+             |> post(
+               emoji_api_path(conn, :update_metadata, "test_pack"),
+               %{
+                 "new_data" => new_data
+               }
+             )
+             |> text_response(:bad_request) =~ "does not have all"
+    end
   end
 end
