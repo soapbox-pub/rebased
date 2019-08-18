@@ -414,6 +414,26 @@ defmodule Pleroma.Web.StreamerTest do
     Task.await(task)
   end
 
+  test "it doesn't send posts from muted threads" do
+    user = insert(:user)
+    user2 = insert(:user)
+    {:ok, user2, user, _activity} = CommonAPI.follow(user2, user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
+
+    {:ok, activity} = CommonAPI.add_mute(user2, activity)
+
+    task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
+
+    Streamer.add_socket(
+      "user",
+      %{transport_pid: task.pid, assigns: %{user: user2}}
+    )
+
+    Streamer.stream("user", activity)
+    Task.await(task)
+  end
+
   describe "direct streams" do
     setup do
       GenServer.start(Streamer, %{}, name: Streamer)

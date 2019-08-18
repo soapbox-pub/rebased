@@ -113,8 +113,7 @@ defmodule Pleroma.Web.Streamer do
     |> Map.get("#{topic}:#{item.user_id}", [])
     |> Enum.each(fn socket ->
       with %User{} = user <- User.get_cached_by_ap_id(socket.assigns[:user].ap_id),
-           true <- should_send?(user, item),
-           false <- CommonAPI.thread_muted?(user, item.activity) do
+           true <- should_send?(user, item) do
         send(
           socket.transport_pid,
           {:text, represent_notification(socket.assigns[:user], item)}
@@ -236,7 +235,8 @@ defmodule Pleroma.Web.Streamer do
          %{host: parent_host} <- URI.parse(parent.data["actor"]),
          false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, item_host),
          false <- Pleroma.Web.ActivityPub.MRF.subdomain_match?(domain_blocks, parent_host),
-         true <- thread_containment(item, user) do
+         true <- thread_containment(item, user),
+         false <- CommonAPI.thread_muted?(user, item) do
       true
     else
       _ -> false
