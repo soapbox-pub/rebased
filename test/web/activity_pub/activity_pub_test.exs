@@ -540,24 +540,24 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
   test "doesn't return thread muted activities" do
     user = insert(:user)
-    activity_one = insert(:note_activity)
+    _activity_one = insert(:note_activity)
     note_two = insert(:note, data: %{"context" => "suya.."})
     activity_two = insert(:note_activity, note: note_two)
 
     {:ok, _activity_two} = CommonAPI.add_mute(user, activity_two)
 
-    assert [activity_one] = ActivityPub.fetch_activities([], %{"muting_user" => user})
+    assert [_activity_one] = ActivityPub.fetch_activities([], %{"muting_user" => user})
   end
 
   test "returns thread muted activities when with_muted is set" do
     user = insert(:user)
-    activity_one = insert(:note_activity)
+    _activity_one = insert(:note_activity)
     note_two = insert(:note, data: %{"context" => "suya.."})
     activity_two = insert(:note_activity, note: note_two)
 
     {:ok, activity_two} = CommonAPI.add_mute(user, activity_two)
 
-    assert [activity_two, activity_one] =
+    assert [_activity_two, _activity_one] =
              ActivityPub.fetch_activities([], %{"muting_user" => user, "with_muted" => true})
   end
 
