@@ -94,7 +94,7 @@ defmodule Pleroma.UserTest do
     followed = insert(:user, %{info: %{locked: true}})
     follower = insert(:user)
 
-    Pleroma.Web.TwitterAPI.TwitterAPI.follow(follower, %{"user_id" => followed.id})
+    CommonAPI.follow(follower, followed)
     assert {:ok, [_activity]} = User.get_follow_requests(followed)
 
     {:ok, _follower} = User.block(followed, follower)
