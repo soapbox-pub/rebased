@@ -21,6 +21,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.OStatus
@@ -912,6 +913,13 @@ defmodule Pleroma.User do
         blocker
       else
         blocker
+      end
+
+    # clear any requested follows as well
+    blocked =
+      case CommonAPI.reject_follow_request(blocked, blocker) do
+        {:ok, %User{} = updated_blocked} -> updated_blocked
+        nil -> blocked
       end
 
     blocker =

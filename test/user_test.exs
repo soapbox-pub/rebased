@@ -90,6 +90,17 @@ defmodule Pleroma.UserTest do
     assert activity
   end
 
+  test "clears follow requests when requester is blocked" do
+    followed = insert(:user, %{info: %{locked: true}})
+    follower = insert(:user)
+
+    CommonAPI.follow(follower, followed)
+    assert {:ok, [_activity]} = User.get_follow_requests(followed)
+
+    {:ok, _follower} = User.block(followed, follower)
+    assert {:ok, []} = User.get_follow_requests(followed)
+  end
+
   test "follow_all follows mutliple users" do
     user = insert(:user)
     followed_zero = insert(:user)
