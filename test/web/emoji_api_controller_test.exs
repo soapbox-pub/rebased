@@ -85,11 +85,10 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     admin = insert(:user, info: %{is_admin: true})
 
-    conn = build_conn()
+    conn = build_conn() |> assign(:user, admin)
 
     assert conn
            |> put_req_header("content-type", "application/json")
-           |> assign(:user, admin)
            |> post(
              emoji_api_path(
                conn,
@@ -108,7 +107,6 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
     assert File.exists?("#{@emoji_dir_path}/test_pack2/blank.png")
 
     assert conn
-           |> assign(:user, admin)
            |> delete(emoji_api_path(conn, :delete, "test_pack2"))
            |> response(200) == "ok"
 
@@ -116,11 +114,10 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     # non-shared, downloaded from the fallback URL
 
-    conn = build_conn()
+    conn = build_conn() |> assign(:user, admin)
 
     assert conn
            |> put_req_header("content-type", "application/json")
-           |> assign(:user, admin)
            |> post(
              emoji_api_path(
                conn,
@@ -139,7 +136,6 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
     assert File.exists?("#{@emoji_dir_path}/test_pack_nonshared2/blank.png")
 
     assert conn
-           |> assign(:user, admin)
            |> delete(emoji_api_path(conn, :delete, "test_pack_nonshared2"))
            |> response(200) == "ok"
 
@@ -239,5 +235,66 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
              )
              |> text_response(:bad_request) =~ "does not have all"
     end
+  end
+
+  test "updating pack files" do
+    pack_file = "#{@emoji_dir_path}/test_pack/pack.json"
+    original_content = File.read!(pack_file)
+
+    on_exit(fn ->
+      File.write!(pack_file, original_content)
+
+      File.rm_rf!("#{@emoji_dir_path}/test_pack/dir")
+      File.rm_rf!("#{@emoji_dir_path}/test_pack/dir_2")
+    end)
+
+    admin = insert(:user, info: %{is_admin: true})
+
+    conn = build_conn()
+
+    same_name = %{
+      "action" => "add",
+      "shortcode" => "blank",
+      "filename" => "dir/blank.png",
+      "file" => %Plug.Upload{
+        filename: "blank.png",
+        path: "#{@emoji_dir_path}/test_pack/blank.png"
+      }
+    }
+
+    different_name = %{same_name | "shortcode" => "blank_2"}
+
+    conn = conn |> assign(:user, admin)
+
+    assert conn
+           |> post(emoji_api_path(conn, :update_file, "test_pack"), same_name)
+           |> text_response(:conflict) =~ "already exists"
+
+    assert conn
+           |> post(emoji_api_path(conn, :update_file, "test_pack"), different_name)
+           |> json_response(200) == %{"blank" => "blank.png", "blank_2" => "dir/blank.png"}
+
+    assert File.exists?("#{@emoji_dir_path}/test_pack/dir/blank.png")
+
+    assert conn
+           |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
+             "action" => "update",
+             "shortcode" => "blank_2",
+             "new_shortcode" => "blank_3",
+             "new_filename" => "dir_2/blank_3.png"
+           })
+           |> json_response(200) == %{"blank" => "blank.png", "blank_3" => "dir_2/blank_3.png"}
+
+    refute File.exists?("#{@emoji_dir_path}/test_pack/dir/")
+    assert File.exists?("#{@emoji_dir_path}/test_pack/dir_2/blank_3.png")
+
+    assert conn
+           |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
+             "action" => "remove",
+             "shortcode" => "blank_3"
+           })
+           |> json_response(200) == %{"blank" => "blank.png"}
+
+    refute File.exists?("#{@emoji_dir_path}/test_pack/dir_2/")
   end
 end
