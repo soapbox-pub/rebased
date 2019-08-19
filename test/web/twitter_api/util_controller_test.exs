@@ -14,19 +14,12 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
 
   setup do
     Tesla.Mock.mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-    instance_config = Pleroma.Config.get([:instance])
-    pleroma_fe = Pleroma.Config.get([:frontend_configurations, :pleroma_fe])
-    deny_follow_blocked = Pleroma.Config.get([:user, :deny_follow_blocked])
-
-    on_exit(fn ->
-      Pleroma.Config.put([:instance], instance_config)
-      Pleroma.Config.put([:frontend_configurations, :pleroma_fe], pleroma_fe)
-      Pleroma.Config.put([:user, :deny_follow_blocked], deny_follow_blocked)
-    end)
-
     :ok
   end
+
+  clear_config([:instance])
+  clear_config([:frontend_configurations, :pleroma_fe])
+  clear_config([:user, :deny_follow_blocked])
 
   describe "POST /api/pleroma/follow_import" do
     test "it returns HTTP 200", %{conn: conn} do
@@ -260,7 +253,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
     end
 
     test "returns the state of safe_dm_mentions flag", %{conn: conn} do
-      option = Pleroma.Config.get([:instance, :safe_dm_mentions])
       Pleroma.Config.put([:instance, :safe_dm_mentions], true)
 
       response =
@@ -278,8 +270,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
         |> json_response(:ok)
 
       assert response["site"]["safeDMMentionsEnabled"] == "0"
-
-      Pleroma.Config.put([:instance, :safe_dm_mentions], option)
     end
 
     test "it returns the managed config", %{conn: conn} do
@@ -534,15 +524,7 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   end
 
   describe "GET /api/pleroma/healthcheck" do
-    setup do
-      config_healthcheck = Pleroma.Config.get([:instance, :healthcheck])
-
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :healthcheck], config_healthcheck)
-      end)
-
-      :ok
-    end
+    clear_config([:instance, :healthcheck])
 
     test "returns 503 when healthcheck disabled", %{conn: conn} do
       Pleroma.Config.put([:instance, :healthcheck], false)

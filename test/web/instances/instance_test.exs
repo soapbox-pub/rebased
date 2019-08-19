@@ -10,14 +10,8 @@ defmodule Pleroma.Instances.InstanceTest do
 
   import Pleroma.Factory
 
-  setup_all do
-    config_path = [:instance, :federation_reachability_timeout_days]
-    initial_setting = Pleroma.Config.get(config_path)
-
-    Pleroma.Config.put(config_path, 1)
-    on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
-
-    :ok
+  clear_config_all([:instance, :federation_reachability_timeout_days]) do
+    Pleroma.Config.put([:instance, :federation_reachability_timeout_days], 1)
   end
 
   describe "set_reachable/1" do

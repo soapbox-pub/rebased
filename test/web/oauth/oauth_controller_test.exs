@@ -11,23 +11,15 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   alias Pleroma.Web.OAuth.OAuthController
   alias Pleroma.Web.OAuth.Token
 
-  @oauth_config_path [:oauth2, :issue_new_refresh_token]
   @session_opts [
     store: :cookie,
     key: "_test",
     signing_salt: "cooldude"
   ]
+  clear_config_all([:instance, :account_activation_required])
 
   describe "in OAuth consumer mode, " do
     setup do
-      oauth_consumer_strategies_path = [:auth, :oauth_consumer_strategies]
-      oauth_consumer_strategies = Pleroma.Config.get(oauth_consumer_strategies_path)
-      Pleroma.Config.put(oauth_consumer_strategies_path, ~w(twitter facebook))
-
-      on_exit(fn ->
-        Pleroma.Config.put(oauth_consumer_strategies_path, oauth_consumer_strategies)
-      end)
-
       [
         app: insert(:oauth_app),
         conn:
@@ -35,6 +27,13 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
           |> Plug.Session.call(Plug.Session.init(@session_opts))
           |> fetch_session()
       ]
+    end
+
+    clear_config([:auth, :oauth_consumer_strategies]) do
+      Pleroma.Config.put(
+        [:auth, :oauth_consumer_strategies],
+        ~w(twitter facebook)
+      )
     end
 
     test "GET /oauth/authorize renders auth forms, including OAuth consumer form", %{
@@ -775,12 +774,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
 
     test "rejects token exchange for valid credentials belonging to unconfirmed user and confirmation is required" do
-      setting = Pleroma.Config.get([:instance, :account_activation_required])
-
-      unless setting do
-        Pleroma.Config.put([:instance, :account_activation_required], true)
-        on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
-      end
+      Pleroma.Config.put([:instance, :account_activation_required], true)
 
       password = "testpassword"
       user = insert(:user, password_hash: Comeonin.Pbkdf2.hashpwsalt(password))
@@ -857,16 +851,10 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
   end
 
   describe "POST /oauth/token - refresh token" do
-    setup do
-      oauth_token_config = Pleroma.Config.get(@oauth_config_path)
-
-      on_exit(fn ->
-        Pleroma.Config.get(@oauth_config_path, oauth_token_config)
-      end)
-    end
+    clear_config([:oauth2, :issue_new_refresh_token])
 
     test "issues a new access token with keep fresh token" do
-      Pleroma.Config.put(@oauth_config_path, true)
+      Pleroma.Config.put([:oauth2, :issue_new_refresh_token], true)
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write"])
 
@@ -906,7 +894,7 @@ defmodule Pleroma.Web.OAuth.OAuthControllerTest do
     end
 
     test "issues a new access token with new fresh token" do
-      Pleroma.Config.put(@oauth_config_path, false)
+      Pleroma.Config.put([:oauth2, :issue_new_refresh_token], false)
       user = insert(:user)
       app = insert(:oauth_app, scopes: ["read", "write"])
 

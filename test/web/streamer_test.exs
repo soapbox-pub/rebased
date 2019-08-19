@@ -11,15 +11,7 @@ defmodule Pleroma.Web.StreamerTest do
   alias Pleroma.Web.Streamer
   import Pleroma.Factory
 
-  setup do
-    skip_thread_containment = Pleroma.Config.get([:instance, :skip_thread_containment])
-
-    on_exit(fn ->
-      Pleroma.Config.put([:instance, :skip_thread_containment], skip_thread_containment)
-    end)
-
-    :ok
-  end
+  clear_config_all([:instance, :skip_thread_containment])
 
   describe "user streams" do
     setup do

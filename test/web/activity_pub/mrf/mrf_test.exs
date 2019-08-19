@@ -1,5 +1,6 @@
 defmodule Pleroma.Web.ActivityPub.MRFTest do
   use ExUnit.Case, async: true
+  use Pleroma.Tests.Helpers
   alias Pleroma.Web.ActivityPub.MRF
 
   test "subdomains_regex/1" do
@@ -59,6 +60,8 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
   end
 
   describe "describe/0" do
+    clear_config([:instance, :rewrite_policy])
+
     test "it works as expected with noop policy" do
       expected = %{
         mrf_policies: ["NoOpPolicy"],
@@ -69,7 +72,6 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
     end
 
     test "it works as expected with mock policy" do
-      config = Pleroma.Config.get([:instance, :rewrite_policy])
       Pleroma.Config.put([:instance, :rewrite_policy], [MRFModuleMock])
 
       expected = %{
@@ -79,8 +81,6 @@ defmodule Pleroma.Web.ActivityPub.MRFTest do
       }
 
       {:ok, ^expected} = MRF.describe()
-
-      Pleroma.Config.put([:instance, :rewrite_policy], config)
     end
   end
 end

@@ -7,12 +7,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.UserAllowListPolicyTest do
 
   alias Pleroma.Web.ActivityPub.MRF.UserAllowListPolicy
 
-  setup do
-    policy = Pleroma.Config.get([:mrf_user_allowlist]) || []
-    on_exit(fn -> Pleroma.Config.put([:mrf_user_allowlist], policy) end)
-
-    :ok
-  end
+  clear_config([:mrf_user_allowlist, :localhost])
 
   test "pass filter if allow list is empty" do
     actor = insert(:user)

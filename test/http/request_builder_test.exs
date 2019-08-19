@@ -4,20 +4,18 @@
 
 defmodule Pleroma.HTTP.RequestBuilderTest do
   use ExUnit.Case, async: true
+  use Pleroma.Tests.Helpers
   alias Pleroma.HTTP.RequestBuilder
 
   describe "headers/2" do
+    clear_config([:http, :send_user_agent])
+
     test "don't send pleroma user agent" do
       assert RequestBuilder.headers(%{}, []) == %{headers: []}
     end
 
     test "send pleroma user agent" do
-      send = Pleroma.Config.get([:http, :send_user_agent])
       Pleroma.Config.put([:http, :send_user_agent], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:http, :send_user_agent], send)
-      end)
 
       assert RequestBuilder.headers(%{}, []) == %{
                headers: [{"User-Agent", Pleroma.Application.user_agent()}]

@@ -15,14 +15,11 @@ defmodule Pleroma.Web.OStatus.OStatusControllerTest do
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-    config_path = [:instance, :federating]
-    initial_setting = Pleroma.Config.get(config_path)
-
-    Pleroma.Config.put(config_path, true)
-    on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
-
     :ok
+  end
+
+  clear_config_all([:instance, :federating]) do
+    Pleroma.Config.put([:instance, :federating], true)
   end
 
   describe "salmon_incoming" do
