@@ -92,5 +92,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.HellthreadPolicy do
   def filter(message), do: {:ok, message}
 
   @impl true
-  def describe, do: {:ok, %{mrf_hellthread: Pleroma.Config.get([:mrf_hellthread])}}
+  def describe,
+    do: {:ok, %{mrf_hellthread: Pleroma.Config.get(:mrf_hellthread) |> Enum.into(%{})}}
 end

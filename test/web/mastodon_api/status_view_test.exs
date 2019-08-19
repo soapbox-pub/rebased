@@ -23,6 +23,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     :ok
   end
 
+  test "returns the direct conversation id when given the `with_conversation_id` option" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    status =
+      StatusView.render("status.json",
+        activity: activity,
+        with_direct_conversation_id: true,
+        for: user
+      )
+
+    assert status[:pleroma][:direct_conversation_id]
+  end
+
   test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 
@@ -133,7 +148,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         conversation_id: convo_id,
         in_reply_to_account_acct: nil,
         content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
-        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])}
+        spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])},
+        direct_conversation_id: nil
       }
     }
 

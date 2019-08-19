@@ -11,19 +11,11 @@ defmodule Pleroma.Uploaders.S3Test do
   import Mock
   import ExUnit.CaptureLog
 
-  setup do
-    config = Config.get([Pleroma.Uploaders.S3])
-
+  clear_config([Pleroma.Uploaders.S3]) do
     Config.put([Pleroma.Uploaders.S3],
       bucket: "test_bucket",
       public_endpoint: "https://s3.amazonaws.com"
     )
-
-    on_exit(fn ->
-      Config.put([Pleroma.Uploaders.S3], config)
-    end)
-
-    :ok
   end
 
   describe "get_file/1" do

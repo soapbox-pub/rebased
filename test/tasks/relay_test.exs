@@ -69,4 +69,27 @@ defmodule Mix.Tasks.Pleroma.RelayTest do
       assert undo_activity.data["object"] == cancelled_activity.data
     end
   end
+
+  describe "mix pleroma.relay list" do
+    test "Prints relay subscription list" do
+      :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
+
+      refute_receive {:mix_shell, :info, _}
+
+      Pleroma.Web.ActivityPub.Relay.get_actor()
+      |> Ecto.Changeset.change(
+        following: [
+          "http://test-app.com/user/test1",
+          "http://test-app.com/user/test1",
+          "http://test-app-42.com/user/test1"
+        ]
+      )
+      |> Pleroma.User.update_and_set_cache()
+
+      :ok = Mix.Tasks.Pleroma.Relay.run(["list"])
+
+      assert_receive {:mix_shell, :info, ["test-app.com"]}
+      assert_receive {:mix_shell, :info, ["test-app-42.com"]}
+    end
+  end
 end

@@ -259,6 +259,21 @@ defmodule Pleroma.Web.Router do
     end
   end
 
+  scope "/api/v1/pleroma", Pleroma.Web.PleromaAPI do
+    pipe_through(:authenticated_api)
+
+    scope [] do
+      pipe_through(:oauth_read)
+      get("/conversations/:id/statuses", PleromaAPIController, :conversation_statuses)
+      get("/conversations/:id", PleromaAPIController, :conversation)
+    end
+
+    scope [] do
+      pipe_through(:oauth_write)
+      patch("/conversations/:id", PleromaAPIController, :update_conversation)
+    end
+  end
+
   scope "/api/v1", Pleroma.Web.MastodonAPI do
     pipe_through(:authenticated_api)
 

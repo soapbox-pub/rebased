@@ -11,15 +11,7 @@ defmodule Pleroma.Web.StreamerTest do
   alias Pleroma.Web.Streamer
   import Pleroma.Factory
 
-  setup do
-    skip_thread_containment = Pleroma.Config.get([:instance, :skip_thread_containment])
-
-    on_exit(fn ->
-      Pleroma.Config.put([:instance, :skip_thread_containment], skip_thread_containment)
-    end)
-
-    :ok
-  end
+  clear_config_all([:instance, :skip_thread_containment])
 
   describe "user streams" do
     setup do
@@ -411,6 +403,26 @@ defmodule Pleroma.Web.StreamerTest do
 
     Streamer.push_to_socket(topics, "public", announce_activity)
 
+    Task.await(task)
+  end
+
+  test "it doesn't send posts from muted threads" do
+    user = insert(:user)
+    user2 = insert(:user)
+    {:ok, user2, user, _activity} = CommonAPI.follow(user2, user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "super hot take"})
+
+    {:ok, activity} = CommonAPI.add_mute(user2, activity)
+
+    task = Task.async(fn -> refute_receive {:text, _}, 4_000 end)
+
+    Streamer.add_socket(
+      "user",
+      %{transport_pid: task.pid, assigns: %{user: user2}}
+    )
+
+    Streamer.stream("user", activity)
     Task.await(task)
   end
 

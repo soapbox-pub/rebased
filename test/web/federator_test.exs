@@ -13,14 +13,16 @@ defmodule Pleroma.Web.FederatorTest do
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
 
-    config_path = [:instance, :federating]
-    initial_setting = Pleroma.Config.get(config_path)
-
-    Pleroma.Config.put(config_path, true)
-    on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
-
     :ok
   end
+
+  clear_config_all([:instance, :federating]) do
+    Pleroma.Config.put([:instance, :federating], true)
+  end
+
+  clear_config([:instance, :allow_relay])
+  clear_config([:instance, :rewrite_policy])
+  clear_config([:mrf_keyword])
 
   describe "Publisher.perform" do
     test "call `perform` with unknown task" do
@@ -67,8 +69,6 @@ defmodule Pleroma.Web.FederatorTest do
       end
 
       refute_received :relay_publish
-
-      Pleroma.Config.put([:instance, :allow_relay], true)
     end
   end
 
@@ -231,19 +231,18 @@ defmodule Pleroma.Web.FederatorTest do
     end
 
     test "it does not crash if MRF rejects the post" do
-      policies = Pleroma.Config.get([:instance, :rewrite_policy])
-      mrf_keyword_policy = Pleroma.Config.get(:mrf_keyword)
       Pleroma.Config.put([:mrf_keyword, :reject], ["lain"])
-      Pleroma.Config.put([:instance, :rewrite_policy], Pleroma.Web.ActivityPub.MRF.KeywordPolicy)
+
+      Pleroma.Config.put(
+        [:instance, :rewrite_policy],
+        Pleroma.Web.ActivityPub.MRF.KeywordPolicy
+      )
 
       params =
         File.read!("test/fixtures/mastodon-post-activity.json")
         |> Poison.decode!()
 
       assert Federator.incoming_ap_doc(params) == :error
-
-      Pleroma.Config.put([:instance, :rewrite_policy], policies)
-      Pleroma.Config.put(:mrf_keyword, mrf_keyword_policy)
     end
   end
 end

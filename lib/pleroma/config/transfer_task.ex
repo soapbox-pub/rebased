@@ -6,7 +6,7 @@ defmodule Pleroma.Config.TransferTask do
   use Task
   alias Pleroma.Web.AdminAPI.Config
 
-  def start_link do
+  def start_link(_) do
     load_and_update_env()
     if Pleroma.Config.get(:env) == :test, do: Ecto.Adapters.SQL.Sandbox.checkin(Pleroma.Repo)
     :ignore

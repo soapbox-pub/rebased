@@ -33,6 +33,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     :ok
   end
 
+  clear_config([:instance, :public])
+  clear_config([:rich_media, :enabled])
+
   test "the home timeline", %{conn: conn} do
     user = insert(:user)
     following = insert(:user)
@@ -86,12 +89,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   end
 
   test "the public timeline when public is set to false", %{conn: conn} do
-    public = Config.get([:instance, :public])
     Config.put([:instance, :public], false)
-
-    on_exit(fn ->
-      Config.put([:instance, :public], public)
-    end)
 
     assert conn
            |> get("/api/v1/timelines/public", %{"local" => "False"})
@@ -261,7 +259,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{"id" => id, "card" => %{"title" => "The Rock"}} = json_response(conn, 200)
       assert Activity.get_by_id(id)
-      Config.put([:rich_media, :enabled], false)
     end
 
     test "posting a direct status", %{conn: conn} do
@@ -1634,14 +1631,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   describe "media upload" do
     setup do
-      upload_config = Config.get([Pleroma.Upload])
-      proxy_config = Config.get([:media_proxy])
-
-      on_exit(fn ->
-        Config.put([Pleroma.Upload], upload_config)
-        Config.put([:media_proxy], proxy_config)
-      end)
-
       user = insert(:user)
 
       conn =
@@ -1656,6 +1645,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       [conn: conn, image: image]
     end
+
+    clear_config([:media_proxy])
+    clear_config([Pleroma.Upload])
 
     test "returns uploaded image", %{conn: conn, image: image} do
       desc = "Description of the image"
@@ -2624,7 +2616,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       |> Changeset.put_embed(:info, info_change)
       |> User.update_and_set_cache()
 
-    Pleroma.Stats.update_stats()
+    Pleroma.Stats.force_update()
 
     conn = get(conn, "/api/v1/instance")
 
@@ -2642,7 +2634,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     insert(:user, %{local: false, nickname: "u@peer1.com"})
     insert(:user, %{local: false, nickname: "u@peer2.com"})
 
-    Pleroma.Stats.update_stats()
+    Pleroma.Stats.force_update()
 
     conn = get(conn, "/api/v1/instance/peers")
 
@@ -2667,12 +2659,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   describe "pinned statuses" do
     setup do
-      Config.put([:instance, :max_pinned_statuses], 1)
-
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "HI!!!"})
 
       [user: user, activity: activity]
+    end
+
+    clear_config([:instance, :max_pinned_statuses]) do
+      Config.put([:instance, :max_pinned_statuses], 1)
     end
 
     test "returns pinned statuses", %{conn: conn, user: user, activity: activity} do
@@ -2768,10 +2762,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   describe "cards" do
     setup do
       Config.put([:rich_media, :enabled], true)
-
-      on_exit(fn ->
-        Config.put([:rich_media, :enabled], false)
-      end)
 
       user = insert(:user)
       %{user: user}
@@ -3127,15 +3117,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       conn: conn,
       path: path
     } do
-      is_public = Config.get([:instance, :public])
       Config.put([:instance, :public], false)
 
       conn = get(conn, path)
 
       assert conn.status == 302
       assert redirected_to(conn) == "/web/login"
-
-      Config.put([:instance, :public], is_public)
     end
 
     test "does not redirect logged in users to the login page", %{conn: conn, path: path} do
@@ -3910,13 +3897,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   describe "POST /api/v1/pleroma/accounts/confirmation_resend" do
     setup do
-      setting = Config.get([:instance, :account_activation_required])
-
-      unless setting do
-        Config.put([:instance, :account_activation_required], true)
-        on_exit(fn -> Config.put([:instance, :account_activation_required], setting) end)
-      end
-
       user = insert(:user)
       info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
 
@@ -3929,6 +3909,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
       assert user.info.confirmation_pending
 
       [user: user]
+    end
+
+    clear_config([:instance, :account_activation_required]) do
+      Config.put([:instance, :account_activation_required], true)
     end
 
     test "resend account confirmation email", %{conn: conn, user: user} do
@@ -3953,9 +3937,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     setup do
       user = insert(:user)
       other_user = insert(:user)
-      config = Config.get(:suggestions)
-      on_exit(fn -> Config.put(:suggestions, config) end)
-
       host = Config.get([Pleroma.Web.Endpoint, :url, :host])
       url500 = "http://test500?#{host}&#{user.nickname}"
       url200 = "http://test200?#{host}&#{user.nickname}"
@@ -3976,6 +3957,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       [user: user, other_user: other_user]
     end
+
+    clear_config(:suggestions)
 
     test "returns empty result when suggestions disabled", %{conn: conn, user: user} do
       Config.put([:suggestions, :enabled], false)

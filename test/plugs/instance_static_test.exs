@@ -8,14 +8,12 @@ defmodule Pleroma.Web.RuntimeStaticPlugTest do
   @dir "test/tmp/instance_static"
 
   setup do
-    static_dir = Pleroma.Config.get([:instance, :static_dir])
-    Pleroma.Config.put([:instance, :static_dir], @dir)
     File.mkdir_p!(@dir)
+    on_exit(fn -> File.rm_rf(@dir) end)
+  end
 
-    on_exit(fn ->
-      Pleroma.Config.put([:instance, :static_dir], static_dir)
-      File.rm_rf(@dir)
-    end)
+  clear_config([:instance, :static_dir]) do
+    Pleroma.Config.put([:instance, :static_dir], @dir)
   end
 
   test "overrides index" do
