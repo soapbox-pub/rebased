@@ -298,19 +298,27 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
                   filename
                 end
 
-              file_path = Path.join(pack_dir, filename)
+              unless String.trim(shortcode) |> String.length() == 0 or
+                       String.trim(filename) |> String.length() == 0 do
+                file_path = Path.join(pack_dir, filename)
 
-              # If the name contains directories, create them
-              if String.contains?(file_path, "/") do
-                File.mkdir_p!(Path.dirname(file_path))
+                # If the name contains directories, create them
+                if String.contains?(file_path, "/") do
+                  File.mkdir_p!(Path.dirname(file_path))
+                end
+
+                # Copy the uploaded file from the temporary directory
+                File.copy!(upload_path, file_path)
+
+                updated_full_pack = put_in(full_pack, ["files", shortcode], filename)
+
+                {:ok, updated_full_pack}
+              else
+                {:error,
+                 conn
+                 |> put_status(:bad_request)
+                 |> text("shortcode or filename cannot be empty")}
               end
-
-              # Copy the uploaded file from the temporary directory
-              File.copy!(upload_path, file_path)
-
-              updated_full_pack = put_in(full_pack, ["files", shortcode], filename)
-
-              {:ok, updated_full_pack}
             else
               _ -> {:error, conn |> put_status(:bad_request) |> text("\"file\" not provided")}
             end
@@ -348,34 +356,42 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
         "update" ->
           if Map.has_key?(full_pack["files"], shortcode) do
             with %{"new_shortcode" => new_shortcode, "new_filename" => new_filename} <- params do
-              # First, remove the old shortcode, saving the old path
-              {old_emoji_file_path, updated_full_pack} = pop_in(full_pack, ["files", shortcode])
-              old_emoji_file_path = Path.join(pack_dir, old_emoji_file_path)
-              new_emoji_file_path = Path.join(pack_dir, new_filename)
+              unless String.trim(new_shortcode) |> String.length() == 0 or
+                       String.trim(new_filename) |> String.length() == 0 do
+                # First, remove the old shortcode, saving the old path
+                {old_emoji_file_path, updated_full_pack} = pop_in(full_pack, ["files", shortcode])
+                old_emoji_file_path = Path.join(pack_dir, old_emoji_file_path)
+                new_emoji_file_path = Path.join(pack_dir, new_filename)
 
-              # If the name contains directories, create them
-              if String.contains?(new_emoji_file_path, "/") do
-                File.mkdir_p!(Path.dirname(new_emoji_file_path))
-              end
-
-              # Move/Rename the old filename to a new filename
-              # These are probably on the same filesystem, so just rename should work
-              :ok = File.rename(old_emoji_file_path, new_emoji_file_path)
-
-              # If the old directory has no more files, remove it
-              if String.contains?(old_emoji_file_path, "/") do
-                dir = Path.dirname(old_emoji_file_path)
-
-                if Enum.empty?(File.ls!(dir)) do
-                  File.rmdir!(dir)
+                # If the name contains directories, create them
+                if String.contains?(new_emoji_file_path, "/") do
+                  File.mkdir_p!(Path.dirname(new_emoji_file_path))
                 end
+
+                # Move/Rename the old filename to a new filename
+                # These are probably on the same filesystem, so just rename should work
+                :ok = File.rename(old_emoji_file_path, new_emoji_file_path)
+
+                # If the old directory has no more files, remove it
+                if String.contains?(old_emoji_file_path, "/") do
+                  dir = Path.dirname(old_emoji_file_path)
+
+                  if Enum.empty?(File.ls!(dir)) do
+                    File.rmdir!(dir)
+                  end
+                end
+
+                # Then, put in the new shortcode with the new path
+                updated_full_pack =
+                  put_in(updated_full_pack, ["files", new_shortcode], new_filename)
+
+                {:ok, updated_full_pack}
+              else
+                {:error,
+                 conn
+                 |> put_status(:bad_request)
+                 |> text("new_shortcode or new_filename cannot be empty")}
               end
-
-              # Then, put in the new shortcode with the new path
-              updated_full_pack =
-                put_in(updated_full_pack, ["files", new_shortcode], new_filename)
-
-              {:ok, updated_full_pack}
             else
               _ ->
                 {:error,
