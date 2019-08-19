@@ -10,13 +10,11 @@ defmodule Pleroma.Web.WebFinger.WebFingerControllerTest do
 
   setup do
     mock(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-    config_path = [:instance, :federating]
-    initial_setting = Pleroma.Config.get(config_path)
-
-    Pleroma.Config.put(config_path, true)
-    on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
     :ok
+  end
+
+  clear_config_all([:instance, :federating]) do
+    Pleroma.Config.put([:instance, :federating], true)
   end
 
   test "GET host-meta" do

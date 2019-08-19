@@ -8,9 +8,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
   alias Pleroma.Config
   alias Pleroma.Web.ActivityPub.MRF.SimplePolicy
 
-  setup do
-    orig = Config.get!(:mrf_simple)
-
+  clear_config([:mrf_simple]) do
     Config.put(:mrf_simple,
       media_removal: [],
       media_nsfw: [],
@@ -21,10 +19,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.SimplePolicyTest do
       avatar_removal: [],
       banner_removal: []
     )
-
-    on_exit(fn ->
-      Config.put(:mrf_simple, orig)
-    end)
   end
 
   describe "when :media_removal" do

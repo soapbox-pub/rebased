@@ -16,17 +16,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-    config_path = [:instance, :federating]
-    initial_setting = Pleroma.Config.get(config_path)
-
-    Pleroma.Config.put(config_path, true)
-    on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
-
     :ok
   end
 
+  clear_config_all([:instance, :federating],
+    do: Pleroma.Config.put([:instance, :federating], true)
+  )
+
   describe "/relay" do
+    clear_config([:instance, :allow_relay])
+
     test "with the relay active, it returns the relay user", %{conn: conn} do
       res =
         conn
@@ -43,8 +42,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> get(activity_pub_path(conn, :relay))
       |> json_response(404)
       |> assert
-
-      Pleroma.Config.put([:instance, :allow_relay], true)
     end
   end
 

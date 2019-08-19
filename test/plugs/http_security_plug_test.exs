@@ -7,17 +7,12 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
   alias Pleroma.Config
   alias Plug.Conn
 
+  clear_config([:http_securiy, :enabled])
+  clear_config([:http_security, :sts])
+
   describe "http security enabled" do
     setup do
-      enabled = Config.get([:http_securiy, :enabled])
-
       Config.put([:http_security, :enabled], true)
-
-      on_exit(fn ->
-        Config.put([:http_security, :enabled], enabled)
-      end)
-
-      :ok
     end
 
     test "it sends CSP headers when enabled", %{conn: conn} do
@@ -81,13 +76,7 @@ defmodule Pleroma.Web.Plugs.HTTPSecurityPlugTest do
   end
 
   test "it does not send CSP headers when disabled", %{conn: conn} do
-    enabled = Config.get([:http_securiy, :enabled])
-
     Config.put([:http_security, :enabled], false)
-
-    on_exit(fn ->
-      Config.put([:http_security, :enabled], enabled)
-    end)
 
     conn = get(conn, "/api/v1/instance")
 

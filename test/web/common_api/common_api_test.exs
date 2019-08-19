@@ -14,6 +14,10 @@ defmodule Pleroma.Web.CommonAPITest do
 
   import Pleroma.Factory
 
+  clear_config([:instance, :safe_dm_mentions])
+  clear_config([:instance, :limit])
+  clear_config([:instance, :max_pinned_statuses])
+
   test "when replying to a conversation / participation, it will set the correct context id even if no explicit reply_to is given" do
     user = insert(:user)
     {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
@@ -61,7 +65,6 @@ defmodule Pleroma.Web.CommonAPITest do
     har = insert(:user)
     jafnhar = insert(:user)
     tridi = insert(:user)
-    option = Pleroma.Config.get([:instance, :safe_dm_mentions])
     Pleroma.Config.put([:instance, :safe_dm_mentions], true)
 
     {:ok, activity} =
@@ -72,7 +75,6 @@ defmodule Pleroma.Web.CommonAPITest do
 
     refute tridi.ap_id in activity.recipients
     assert jafnhar.ap_id in activity.recipients
-    Pleroma.Config.put([:instance, :safe_dm_mentions], option)
   end
 
   test "it de-duplicates tags" do
@@ -195,15 +197,12 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "it returns error when character limit is exceeded" do
-      limit = Pleroma.Config.get([:instance, :limit])
       Pleroma.Config.put([:instance, :limit], 5)
 
       user = insert(:user)
 
       assert {:error, "The status is over the character limit"} =
                CommonAPI.post(user, %{"status" => "foobar"})
-
-      Pleroma.Config.put([:instance, :limit], limit)
     end
   end
 

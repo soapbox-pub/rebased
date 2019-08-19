@@ -5,14 +5,8 @@
 defmodule Pleroma.Config.TransferTaskTest do
   use Pleroma.DataCase
 
-  setup do
-    dynamic = Pleroma.Config.get([:instance, :dynamic_configuration])
-
+  clear_config([:instance, :dynamic_configuration]) do
     Pleroma.Config.put([:instance, :dynamic_configuration], true)
-
-    on_exit(fn ->
-      Pleroma.Config.put([:instance, :dynamic_configuration], dynamic)
-    end)
   end
 
   test "transfer config values from db to env" do
