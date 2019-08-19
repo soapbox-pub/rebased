@@ -203,24 +203,64 @@ defmodule Pleroma.UserTest do
   #   assert websub
   # end
 
-  test "unfollow takes a user and another user" do
-    followed = insert(:user)
-    user = insert(:user, %{following: [User.ap_followers(followed)]})
+  describe "unfollow/2" do
+    setup do
+      setting = Pleroma.Config.get([:instance, :external_user_synchronization])
 
-    {:ok, user, _activity} = User.unfollow(user, followed)
+      on_exit(fn ->
+        Pleroma.Config.put([:instance, :external_user_synchronization], setting)
+      end)
 
-    user = User.get_cached_by_id(user.id)
+      :ok
+    end
 
-    assert user.following == []
-  end
+    test "unfollow with syncronizes external user" do
+      Pleroma.Config.put([:instance, :external_user_synchronization], true)
 
-  test "unfollow doesn't unfollow yourself" do
-    user = insert(:user)
+      followed =
+        insert(:user,
+          nickname: "fuser1",
+          follower_address: "http://localhost:4001/users/fuser1/followers",
+          following_address: "http://localhost:4001/users/fuser1/following",
+          ap_id: "http://localhost:4001/users/fuser1"
+        )
 
-    {:error, _} = User.unfollow(user, user)
+      user =
+        insert(:user, %{
+          local: false,
+          nickname: "fuser2",
+          ap_id: "http://localhost:4001/users/fuser2",
+          follower_address: "http://localhost:4001/users/fuser2/followers",
+          following_address: "http://localhost:4001/users/fuser2/following",
+          following: [User.ap_followers(followed)]
+        })
 
-    user = User.get_cached_by_id(user.id)
-    assert user.following == [user.ap_id]
+      {:ok, user, _activity} = User.unfollow(user, followed)
+
+      user = User.get_cached_by_id(user.id)
+
+      assert user.following == []
+    end
+
+    test "unfollow takes a user and another user" do
+      followed = insert(:user)
+      user = insert(:user, %{following: [User.ap_followers(followed)]})
+
+      {:ok, user, _activity} = User.unfollow(user, followed)
+
+      user = User.get_cached_by_id(user.id)
+
+      assert user.following == []
+    end
+
+    test "unfollow doesn't unfollow yourself" do
+      user = insert(:user)
+
+      {:error, _} = User.unfollow(user, user)
+
+      user = User.get_cached_by_id(user.id)
+      assert user.following == [user.ap_id]
+    end
   end
 
   test "test if a user is following another user" do

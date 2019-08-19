@@ -53,13 +53,11 @@ defmodule Mix.Tasks.Pleroma.Relay do
   def run(["list"]) do
     start_pleroma()
 
-    with %User{} = user <- Relay.get_actor() do
-      user.following
-      |> Enum.each(fn entry ->
-        URI.parse(entry)
-        |> Map.get(:host)
-        |> shell_info()
-      end)
+    with %User{following: following} = _user <- Relay.get_actor() do
+      following
+      |> Enum.map(fn entry -> URI.parse(entry).host end)
+      |> Enum.uniq()
+      |> Enum.each(&shell_info(&1))
     else
       e -> shell_error("Error while fetching relay subscription list: #{inspect(e)}")
     end
