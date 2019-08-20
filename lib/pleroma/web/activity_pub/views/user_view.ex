@@ -80,6 +80,17 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       |> Transmogrifier.add_emoji_tags()
       |> Map.get("tag", [])
 
+    fields =
+      user.info
+      |> User.Info.fields()
+      |> Enum.map(fn %{"name" => name, "value" => value} ->
+        %{
+          "name" => Pleroma.HTML.strip_tags(name),
+          "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+        }
+      end)
+      |> Enum.map(&Map.put(&1, "type", "PropertyValue"))
+
     %{
       "id" => user.ap_id,
       "type" => "Person",
@@ -98,6 +109,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "publicKeyPem" => public_key
       },
       "endpoints" => endpoints,
+      "attachment" => fields,
       "tag" => (user.info.source_data["tag"] || []) ++ user_tags
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))

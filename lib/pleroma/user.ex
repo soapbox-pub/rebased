@@ -222,12 +222,12 @@ defmodule Pleroma.User do
     |> validate_length(:name, min: 1, max: name_limit)
   end
 
-  def upgrade_changeset(struct, params \\ %{}) do
+  def upgrade_changeset(struct, params \\ %{}, remote? \\ false) do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
     params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
-    info_cng = User.Info.user_upgrade(struct.info, params[:info])
+    info_cng = User.Info.user_upgrade(struct.info, params[:info], remote?)
 
     struct
     |> cast(params, [

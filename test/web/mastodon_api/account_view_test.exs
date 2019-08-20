@@ -67,7 +67,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       source: %{
         note: "valid html",
         sensitive: false,
-        pleroma: %{}
+        pleroma: %{},
+        fields: []
       },
       pleroma: %{
         background_image: "https://example.com/images/asuka_hospital.png",
@@ -134,7 +135,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       source: %{
         note: user.bio,
         sensitive: false,
-        pleroma: %{}
+        pleroma: %{},
+        fields: []
       },
       pleroma: %{
         background_image: nil,
@@ -304,7 +306,8 @@ defmodule Pleroma.Web.MastodonAPI.AccountViewTest do
       source: %{
         note: user.bio,
         sensitive: false,
-        pleroma: %{}
+        pleroma: %{},
+        fields: []
       },
       pleroma: %{
         background_image: nil,
