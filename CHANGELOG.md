@@ -46,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - MRF: ensure that subdomain_match calls are case-insensitive
 - Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
 - MRF: fix use of unserializable keyword lists in describe() implementations
+- ActivityPub: Deactivated user deletion
 
 ### Added
 - Conversations: Add Pleroma-specific conversation endpoints and status posting extensions. Run the `bump_all_conversations` task again to create the necessary data.

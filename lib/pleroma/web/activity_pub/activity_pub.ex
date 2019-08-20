@@ -65,12 +65,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
            false <- user.info.deactivated do
-        :ok
+        true
       else
-        _e -> :reject
+        _e -> false
       end
     else
-      :ok
+      true
     end
   end
 
@@ -119,10 +119,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
-  def insert(map, local \\ true, fake \\ false) when is_map(map) do
+  def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
-         :ok <- check_actor_is_active(map["actor"]),
+         true <- bypass_actor_check || check_actor_is_active(map["actor"]),
          {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
@@ -411,7 +411,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "actor" => ap_id,
            "object" => %{"type" => "Person", "id" => ap_id}
          },
-         {:ok, activity} <- insert(data, true, true),
+         {:ok, activity} <- insert(data, true, true, true),
          :ok <- maybe_federate(activity) do
       {:ok, user}
     end
