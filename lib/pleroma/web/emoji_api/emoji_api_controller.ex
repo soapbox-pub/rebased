@@ -288,39 +288,44 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
       case action do
         "add" ->
           unless Map.has_key?(full_pack["files"], shortcode) do
-            with %{"file" => %Plug.Upload{filename: filename, path: upload_path}} <- params do
-              # If there was a file name provided with the request, use it, otherwise just use the
-              # uploaded file name
-              filename =
-                if Map.has_key?(params, "filename") do
-                  params["filename"]
-                else
-                  filename
-                end
-
-              unless String.trim(shortcode) |> String.length() == 0 or
-                       String.trim(filename) |> String.length() == 0 do
-                file_path = Path.join(pack_dir, filename)
-
-                # If the name contains directories, create them
-                if String.contains?(file_path, "/") do
-                  File.mkdir_p!(Path.dirname(file_path))
-                end
-
-                # Copy the uploaded file from the temporary directory
-                File.copy!(upload_path, file_path)
-
-                updated_full_pack = put_in(full_pack, ["files", shortcode], filename)
-
-                {:ok, updated_full_pack}
+            filename =
+              if Map.has_key?(params, "filename") do
+                params["filename"]
               else
-                {:error,
-                 conn
-                 |> put_status(:bad_request)
-                 |> text("shortcode or filename cannot be empty")}
+                case params["file"] do
+                  %Plug.Upload{filename: filename} -> filename
+                  url when is_binary(url) -> Path.basename(url)
+                end
               end
+
+            unless String.trim(shortcode) |> String.length() == 0 or
+                     String.trim(filename) |> String.length() == 0 do
+              file_path = Path.join(pack_dir, filename)
+
+              # If the name contains directories, create them
+              if String.contains?(file_path, "/") do
+                File.mkdir_p!(Path.dirname(file_path))
+              end
+
+              case params["file"] do
+                %Plug.Upload{path: upload_path} ->
+                  # Copy the uploaded file from the temporary directory
+                  File.copy!(upload_path, file_path)
+
+                url when is_binary(url) ->
+                  # Download and write the file
+                  file_contents = Tesla.get!(url).body
+                  File.write!(file_path, file_contents)
+              end
+
+              updated_full_pack = put_in(full_pack, ["files", shortcode], filename)
+
+              {:ok, updated_full_pack}
             else
-              _ -> {:error, conn |> put_status(:bad_request) |> text("\"file\" not provided")}
+              {:error,
+               conn
+               |> put_status(:bad_request)
+               |> text("shortcode or filename cannot be empty")}
             end
           else
             {:error,

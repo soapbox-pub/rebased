@@ -244,6 +244,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
     on_exit(fn ->
       File.write!(pack_file, original_content)
 
+      File.rm_rf!("#{@emoji_dir_path}/test_pack/blank_url.png")
       File.rm_rf!("#{@emoji_dir_path}/test_pack/dir")
       File.rm_rf!("#{@emoji_dir_path}/test_pack/dir_2")
     end)
@@ -296,5 +297,38 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
            |> json_response(200) == %{"blank" => "blank.png"}
 
     refute File.exists?("#{@emoji_dir_path}/test_pack/dir_2/")
+
+    mock(fn
+      %{
+        method: :get,
+        url: "https://test-blank/blank_url.png"
+      } ->
+        text(File.read!("#{@emoji_dir_path}/test_pack/blank.png"))
+    end)
+
+    # The name should be inferred from the URL ending
+    from_url = %{
+      "action" => "add",
+      "shortcode" => "blank_url",
+      "file" => "https://test-blank/blank_url.png"
+    }
+
+    assert conn
+           |> post(emoji_api_path(conn, :update_file, "test_pack"), from_url)
+           |> json_response(200) == %{
+             "blank" => "blank.png",
+             "blank_url" => "blank_url.png"
+           }
+
+    assert File.exists?("#{@emoji_dir_path}/test_pack/blank_url.png")
+
+    assert conn
+           |> post(emoji_api_path(conn, :update_file, "test_pack"), %{
+             "action" => "remove",
+             "shortcode" => "blank_url"
+           })
+           |> json_response(200) == %{"blank" => "blank.png"}
+
+    refute File.exists?("#{@emoji_dir_path}/test_pack/blank_url.png")
   end
 end
