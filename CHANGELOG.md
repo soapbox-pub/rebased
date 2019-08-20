@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - NodeInfo: Return `mailerEnabled` in `metadata`
 - Mastodon API: Unsubscribe followers when they unfollow a user
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
+- Improve digest email template
 
 ### Fixed
 - Not being able to pin unlisted posts
