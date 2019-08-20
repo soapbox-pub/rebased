@@ -559,6 +559,11 @@ Email notifications settings.
     - interval: Minimum interval between digest emails to one user
     - inactivity_threshold: Minimum user inactivity threshold
 
+## Pleroma.Emails.UserEmail
+
+- `:logo` - a path to a custom logo. Set it to `nil` to use the default Pleroma logo.
+- `:styling` - a map with color settings for email templates.
+
 ## OAuth consumer mode
 
 OAuth consumer mode allows sign in / sign up via external OAuth providers (e.g. Twitter, Facebook, Google, Microsoft, etc.).
