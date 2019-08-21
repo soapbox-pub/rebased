@@ -541,6 +541,9 @@ defmodule Pleroma.UserTest do
       avatar: %{some: "avatar"}
     }
 
+    clear_config([:instance, :user_bio_length])
+    clear_config([:instance, :user_name_length])
+
     test "it confirms validity" do
       cs = User.remote_user_creation(@valid_remote)
       assert cs.valid?
