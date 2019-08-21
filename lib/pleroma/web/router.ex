@@ -151,10 +151,6 @@ defmodule Pleroma.Web.Router do
     post("/users/follow", AdminAPIController, :user_follow)
     post("/users/unfollow", AdminAPIController, :user_unfollow)
 
-    # TODO: to be removed at version 1.0
-    delete("/user", AdminAPIController, :user_delete)
-    post("/user", AdminAPIController, :user_create)
-
     delete("/users", AdminAPIController, :user_delete)
     post("/users", AdminAPIController, :users_create)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
