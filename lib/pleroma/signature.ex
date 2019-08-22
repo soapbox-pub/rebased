@@ -53,4 +53,10 @@ defmodule Pleroma.Signature do
       HTTPSignatures.sign(private_key, user.ap_id <> "#main-key", headers)
     end
   end
+
+  def signed_date, do: signed_date(NaiveDateTime.utc_now())
+
+  def signed_date(%NaiveDateTime{} = date) do
+    Timex.format!(date, "{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
+  end
 end

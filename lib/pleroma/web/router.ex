@@ -133,6 +133,10 @@ defmodule Pleroma.Web.Router do
     })
   end
 
+  pipeline :http_signature do
+    plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
+  end
+
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
 
@@ -686,7 +690,11 @@ defmodule Pleroma.Web.Router do
     pipe_through(:ap_service_actor)
 
     get("/", ActivityPubController, :relay)
-    post("/inbox", ActivityPubController, :inbox)
+
+    scope [] do
+      pipe_through(:http_signature)
+      post("/inbox", ActivityPubController, :inbox)
+    end
 
     get("/following", ActivityPubController, :following, assigns: %{relay: true})
     get("/followers", ActivityPubController, :followers, assigns: %{relay: true})
