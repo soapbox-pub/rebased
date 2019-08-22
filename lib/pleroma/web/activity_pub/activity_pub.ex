@@ -68,12 +68,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     if not is_nil(actor) do
       with user <- User.get_cached_by_ap_id(actor),
            false <- user.info.deactivated do
-        :ok
+        true
       else
-        _e -> :reject
+        _e -> false
       end
     else
-      :ok
+      true
     end
   end
 
@@ -122,10 +122,10 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   def increase_poll_votes_if_vote(_create_data), do: :noop
 
-  def insert(map, local \\ true, fake \\ false) when is_map(map) do
+  def insert(map, local \\ true, fake \\ false, bypass_actor_check \\ false) when is_map(map) do
     with nil <- Activity.normalize(map),
          map <- lazy_put_activity_defaults(map, fake),
-         :ok <- check_actor_is_active(map["actor"]),
+         true <- bypass_actor_check || check_actor_is_active(map["actor"]),
          {_, true} <- {:remote_limit_error, check_remote_limit(map)},
          {:ok, map} <- MRF.filter(map),
          {recipients, _, _} = get_recipients(map),
@@ -393,7 +393,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   def follow(follower, followed, activity_id \\ nil, local \\ true) do
     with data <- make_follow_data(follower, followed, activity_id),
          {:ok, activity} <- insert(data, local),
-         :ok <- maybe_federate(activity) do
+         :ok <- maybe_federate(activity),
+         _ <- User.set_follow_state_cache(follower.ap_id, followed.ap_id, activity.data["state"]) do
       {:ok, activity}
     end
   end
@@ -415,7 +416,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
            "actor" => ap_id,
            "object" => %{"type" => "Person", "id" => ap_id}
          },
-         {:ok, activity} <- insert(data, true, true),
+         {:ok, activity} <- insert(data, true, true, true),
          :ok <- maybe_federate(activity) do
       {:ok, user}
     end
@@ -795,14 +796,20 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp restrict_muted(query, %{"with_muted" => val}) when val in [true, "true", "1"], do: query
 
-  defp restrict_muted(query, %{"muting_user" => %User{info: info}}) do
+  defp restrict_muted(query, %{"muting_user" => %User{info: info}} = opts) do
     mutes = info.mutes
 
-    from(
-      activity in query,
-      where: fragment("not (? = ANY(?))", activity.actor, ^mutes),
-      where: fragment("not (?->'to' \\?| ?)", activity.data, ^mutes)
-    )
+    query =
+      from([activity] in query,
+        where: fragment("not (? = ANY(?))", activity.actor, ^mutes),
+        where: fragment("not (?->'to' \\?| ?)", activity.data, ^mutes)
+      )
+
+    unless opts["skip_preload"] do
+      from([thread_mute: tm] in query, where: is_nil(tm))
+    else
+      query
+    end
   end
 
   defp restrict_muted(query, _), do: query
@@ -903,7 +910,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
   defp maybe_set_thread_muted_field(query, opts) do
     query
-    |> Activity.with_set_thread_muted_field(opts["user"])
+    |> Activity.with_set_thread_muted_field(opts["muting_user"] || opts["user"])
   end
 
   defp maybe_order(query, %{order: :desc}) do
@@ -1021,6 +1028,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           "url" => [%{"href" => data["image"]["url"]}]
         }
 
+    fields =
+      data
+      |> Map.get("attachment", [])
+      |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
+      |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
+
     locked = data["manuallyApprovesFollowers"] || false
     data = Transmogrifier.maybe_fix_user_object(data)
 
@@ -1030,6 +1043,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
         ap_enabled: true,
         source_data: data,
         banner: banner,
+        fields: fields,
         locked: locked
       },
       avatar: avatar,

@@ -11,14 +11,8 @@ defmodule Pleroma.ConversationTest do
 
   import Pleroma.Factory
 
-  setup_all do
-    config_path = [:instance, :federating]
-    initial_setting = Pleroma.Config.get(config_path)
-
-    Pleroma.Config.put(config_path, true)
-    on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
-
-    :ok
+  clear_config_all([:instance, :federating]) do
+    Pleroma.Config.put([:instance, :federating], true)
   end
 
   test "it goes through old direct conversations" do

@@ -132,6 +132,10 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `skip_thread_containment`: Skip filter out broken threads. The default is `false`.
 * `limit_to_local_content`: Limit unauthenticated users to search for local statutes and users only. Possible values: `:unauthenticated`, `:all` and `false`. The default is `:unauthenticated`.
 * `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
+* `max_account_fields`: The maximum number of custom fields in the user profile (default: `10`)
+* `max_remote_account_fields`: The maximum number of custom fields in the remote user profile (default: `20`)
+* `account_field_name_length`: An account field name maximum length (default: `255`)
+* `account_field_value_length`: An account field value maximum length (default: `255`)
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 
 
@@ -547,6 +551,11 @@ Email notifications settings.
       "0 0 * * 0" is the default, meaning "once a week at midnight on Sunday morning"
     - interval: Minimum interval between digest emails to one user
     - inactivity_threshold: Minimum user inactivity threshold
+
+## Pleroma.Emails.UserEmail
+
+- `:logo` - a path to a custom logo. Set it to `nil` to use the default Pleroma logo.
+- `:styling` - a map with color settings for email templates.
 
 ## OAuth consumer mode
 

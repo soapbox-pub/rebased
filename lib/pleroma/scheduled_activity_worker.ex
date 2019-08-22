@@ -20,7 +20,7 @@ defmodule Pleroma.ScheduledActivityWorker do
 
   defdelegate worker_args(queue), to: Pleroma.Workers.Helper
 
-  def start_link do
+  def start_link(_) do
     GenServer.start_link(__MODULE__, nil)
   end
 

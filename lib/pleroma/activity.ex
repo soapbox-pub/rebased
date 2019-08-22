@@ -96,6 +96,7 @@ defmodule Pleroma.Activity do
     from([a] in query,
       left_join: tm in ThreadMute,
       on: tm.user_id == ^user.id and tm.context == fragment("?->>'context'", a.data),
+      as: :thread_mute,
       select: %Activity{a | thread_muted?: not is_nil(tm.id)}
     )
   end

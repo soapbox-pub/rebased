@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Mix.Tasks.Pleroma.DatabaseTest do
+  alias Pleroma.Activity
   alias Pleroma.Object
   alias Pleroma.Repo
   alias Pleroma.User
@@ -20,6 +21,52 @@ defmodule Mix.Tasks.Pleroma.DatabaseTest do
     end)
 
     :ok
+  end
+
+  describe "running remove_embedded_objects" do
+    test "it replaces objects with references" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "test"})
+      new_data = Map.put(activity.data, "object", activity.object.data)
+
+      {:ok, activity} =
+        activity
+        |> Activity.change(%{data: new_data})
+        |> Repo.update()
+
+      assert is_map(activity.data["object"])
+
+      Mix.Tasks.Pleroma.Database.run(["remove_embedded_objects"])
+
+      activity = Activity.get_by_id_with_object(activity.id)
+      assert is_binary(activity.data["object"])
+    end
+  end
+
+  describe "prune_objects" do
+    test "it prunes old objects from the database" do
+      insert(:note)
+      deadline = Pleroma.Config.get([:instance, :remote_post_retention_days]) + 1
+
+      date =
+        Timex.now()
+        |> Timex.shift(days: -deadline)
+        |> Timex.to_naive_datetime()
+        |> NaiveDateTime.truncate(:second)
+
+      %{id: id} =
+        :note
+        |> insert()
+        |> Ecto.Changeset.change(%{inserted_at: date})
+        |> Repo.update!()
+
+      assert length(Repo.all(Object)) == 2
+
+      Mix.Tasks.Pleroma.Database.run(["prune_objects"])
+
+      assert length(Repo.all(Object)) == 1
+      refute Object.get_by_id(id)
+    end
   end
 
   describe "running update_users_following_followers_counts" do

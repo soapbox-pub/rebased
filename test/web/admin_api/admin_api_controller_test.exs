@@ -294,18 +294,15 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
   describe "POST /api/pleroma/admin/email_invite, with valid config" do
     setup do
-      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
-      invites_enabled = Pleroma.Config.get([:instance, :invites_enabled])
-      Pleroma.Config.put([:instance, :registrations_open], false)
-      Pleroma.Config.put([:instance, :invites_enabled], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :registrations_open], registrations_open)
-        Pleroma.Config.put([:instance, :invites_enabled], invites_enabled)
-        :ok
-      end)
-
       [user: insert(:user, info: %{is_admin: true})]
+    end
+
+    clear_config([:instance, :registrations_open]) do
+      Pleroma.Config.put([:instance, :registrations_open], false)
+    end
+
+    clear_config([:instance, :invites_enabled]) do
+      Pleroma.Config.put([:instance, :invites_enabled], true)
     end
 
     test "sends invitation and returns 204", %{conn: conn, user: user} do
@@ -360,17 +357,12 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       [user: insert(:user, info: %{is_admin: true})]
     end
 
+    clear_config([:instance, :registrations_open])
+    clear_config([:instance, :invites_enabled])
+
     test "it returns 500 if `invites_enabled` is not enabled", %{conn: conn, user: user} do
-      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
-      invites_enabled = Pleroma.Config.get([:instance, :invites_enabled])
       Pleroma.Config.put([:instance, :registrations_open], false)
       Pleroma.Config.put([:instance, :invites_enabled], false)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :registrations_open], registrations_open)
-        Pleroma.Config.put([:instance, :invites_enabled], invites_enabled)
-        :ok
-      end)
 
       conn =
         conn
@@ -381,16 +373,8 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
     end
 
     test "it returns 500 if `registrations_open` is enabled", %{conn: conn, user: user} do
-      registrations_open = Pleroma.Config.get([:instance, :registrations_open])
-      invites_enabled = Pleroma.Config.get([:instance, :invites_enabled])
       Pleroma.Config.put([:instance, :registrations_open], true)
       Pleroma.Config.put([:instance, :invites_enabled], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :registrations_open], registrations_open)
-        Pleroma.Config.put([:instance, :invites_enabled], invites_enabled)
-        :ok
-      end)
 
       conn =
         conn
@@ -1402,15 +1386,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         :ok = File.rm(temp_file)
       end)
 
-      dynamic = Pleroma.Config.get([:instance, :dynamic_configuration])
-
-      Pleroma.Config.put([:instance, :dynamic_configuration], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :dynamic_configuration], dynamic)
-      end)
-
       %{conn: assign(conn, :user, admin)}
+    end
+
+    clear_config([:instance, :dynamic_configuration]) do
+      Pleroma.Config.put([:instance, :dynamic_configuration], true)
     end
 
     test "create new config setting in db", %{conn: conn} do
@@ -1961,15 +1941,11 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         :ok = File.rm(temp_file)
       end)
 
-      dynamic = Pleroma.Config.get([:instance, :dynamic_configuration])
-
-      Pleroma.Config.put([:instance, :dynamic_configuration], true)
-
-      on_exit(fn ->
-        Pleroma.Config.put([:instance, :dynamic_configuration], dynamic)
-      end)
-
       %{conn: assign(conn, :user, admin), admin: admin}
+    end
+
+    clear_config([:instance, :dynamic_configuration]) do
+      Pleroma.Config.put([:instance, :dynamic_configuration], true)
     end
 
     test "transfer settings to DB and to file", %{conn: conn, admin: admin} do

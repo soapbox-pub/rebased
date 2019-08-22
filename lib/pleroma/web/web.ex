@@ -66,9 +66,23 @@ defmodule Pleroma.Web do
       end
 
       @doc """
-      Same as `render_many/4` but wrapped in rescue block.
+      Same as `render_many/4` but wrapped in rescue block and parallelized (unless disabled by passing false as a fifth argument).
       """
-      def safe_render_many(collection, view, template, assigns \\ %{}) do
+      def safe_render_many(collection, view, template, assigns \\ %{}, parallel \\ true)
+
+      def safe_render_many(collection, view, template, assigns, true) do
+        Enum.map(collection, fn resource ->
+          Task.async(fn ->
+            as = Map.get(assigns, :as) || view.__resource__
+            assigns = Map.put(assigns, as, resource)
+            safe_render(view, template, assigns)
+          end)
+        end)
+        |> Enum.map(&Task.await(&1, :infinity))
+        |> Enum.filter(& &1)
+      end
+
+      def safe_render_many(collection, view, template, assigns, false) do
         Enum.map(collection, fn resource ->
           as = Map.get(assigns, :as) || view.__resource__
           assigns = Map.put(assigns, as, resource)

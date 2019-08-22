@@ -60,7 +60,8 @@ defmodule Pleroma.Web.RichMedia.TTL.AwsSignedUrlTest do
     {:ok, cache_ttl} = Cachex.ttl(:rich_media_cache, url)
 
     # as there is delay in setting and pulling the data from cache we ignore 1 second
-    assert_in_delta(valid_till * 1000, cache_ttl, 1000)
+    # make it 2 seconds for flakyness
+    assert_in_delta(valid_till * 1000, cache_ttl, 2000)
   end
 
   defp construct_s3_url(timestamp, valid_till) do

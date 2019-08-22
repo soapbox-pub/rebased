@@ -47,7 +47,7 @@ defmodule Mix.Tasks.Pleroma.DigestTest do
 
       assert_email_sent(
         to: {user2.name, user2.email},
-        html_body: ~r/new mentions:/i
+        html_body: ~r/here is what you've missed!/i
       )
     end
   end

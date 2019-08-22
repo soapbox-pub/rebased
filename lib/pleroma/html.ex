@@ -203,6 +203,8 @@ defmodule Pleroma.HTML.Scrubber.Default do
   Meta.allow_tag_with_these_attributes("p", [])
   Meta.allow_tag_with_these_attributes("pre", [])
   Meta.allow_tag_with_these_attributes("strong", [])
+  Meta.allow_tag_with_these_attributes("sub", [])
+  Meta.allow_tag_with_these_attributes("sup", [])
   Meta.allow_tag_with_these_attributes("u", [])
   Meta.allow_tag_with_these_attributes("ul", [])
 
@@ -279,4 +281,32 @@ defmodule Pleroma.HTML.Transform.MediaProxy do
   def scrub({tag, attributes, children}), do: {tag, attributes, children}
   def scrub({_tag, children}), do: children
   def scrub(text), do: text
+end
+
+defmodule Pleroma.HTML.Scrubber.LinksOnly do
+  @moduledoc """
+  An HTML scrubbing policy which limits to links only.
+  """
+
+  @valid_schemes Pleroma.Config.get([:uri_schemes, :valid_schemes], [])
+
+  require HtmlSanitizeEx.Scrubber.Meta
+  alias HtmlSanitizeEx.Scrubber.Meta
+
+  Meta.remove_cdata_sections_before_scrub()
+  Meta.strip_comments()
+
+  # links
+  Meta.allow_tag_with_uri_attributes("a", ["href"], @valid_schemes)
+
+  Meta.allow_tag_with_this_attribute_values("a", "rel", [
+    "tag",
+    "nofollow",
+    "noopener",
+    "noreferrer",
+    "me"
+  ])
+
+  Meta.allow_tag_with_these_attributes("a", ["name", "title"])
+  Meta.strip_everything_not_covered()
 end

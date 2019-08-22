@@ -601,14 +601,20 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
 
       banner = new_user_data[:info][:banner]
       locked = new_user_data[:info][:locked] || false
+      attachment = get_in(new_user_data, [:info, :source_data, "attachment"]) || []
+
+      fields =
+        attachment
+        |> Enum.filter(fn %{"type" => t} -> t == "PropertyValue" end)
+        |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
 
       update_data =
         new_user_data
         |> Map.take([:name, :bio, :avatar])
-        |> Map.put(:info, %{banner: banner, locked: locked})
+        |> Map.put(:info, %{banner: banner, locked: locked, fields: fields})
 
       actor
-      |> User.upgrade_changeset(update_data)
+      |> User.upgrade_changeset(update_data, true)
       |> User.update_and_set_cache()
 
       ActivityPub.update(%{

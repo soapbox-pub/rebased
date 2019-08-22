@@ -15,11 +15,7 @@ defmodule Pleroma.Emails.MailerTest do
     to: [{"Test User", "user1@example.com"}]
   }
 
-  setup do
-    value = Pleroma.Config.get([Pleroma.Emails.Mailer, :enabled])
-    on_exit(fn -> Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], value) end)
-    :ok
-  end
+  clear_config([Pleroma.Emails.Mailer, :enabled])
 
   test "not send email when mailer is disabled" do
     Pleroma.Config.put([Pleroma.Emails.Mailer, :enabled], false)

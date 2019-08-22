@@ -367,6 +367,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         [state, actor, object]
       )
 
+      User.set_follow_state_cache(actor, object, state)
       activity = Activity.get_by_id(activity.id)
       {:ok, activity}
     rescue
@@ -375,12 +376,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     end
   end
 
-  def update_follow_state(%Activity{} = activity, state) do
+  def update_follow_state(
+        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
+        state
+      ) do
     with new_data <-
            activity.data
            |> Map.put("state", state),
          changeset <- Changeset.change(activity, data: new_data),
-         {:ok, activity} <- Repo.update(changeset) do
+         {:ok, activity} <- Repo.update(changeset),
+         _ <- User.set_follow_state_cache(actor, object, state) do
       {:ok, activity}
     end
   end

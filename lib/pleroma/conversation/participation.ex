@@ -5,6 +5,7 @@
 defmodule Pleroma.Conversation.Participation do
   use Ecto.Schema
   alias Pleroma.Conversation
+  alias Pleroma.Conversation.Participation.RecipientShip
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
@@ -16,6 +17,9 @@ defmodule Pleroma.Conversation.Participation do
     belongs_to(:conversation, Conversation)
     field(:read, :boolean, default: false)
     field(:last_activity_id, Pleroma.FlakeId, virtual: true)
+
+    has_many(:recipient_ships, RecipientShip)
+    has_many(:recipients, through: [:recipient_ships, :user])
 
     timestamps()
   end
@@ -65,6 +69,14 @@ defmodule Pleroma.Conversation.Participation do
     |> Pleroma.Pagination.fetch_paginated(params)
   end
 
+  def for_user_and_conversation(user, conversation) do
+    from(p in __MODULE__,
+      where: p.user_id == ^user.id,
+      where: p.conversation_id == ^conversation.id
+    )
+    |> Repo.one()
+  end
+
   def for_user_with_last_activity_id(user, params \\ %{}) do
     for_user(user, params)
     |> Enum.map(fn participation ->
@@ -80,5 +92,47 @@ defmodule Pleroma.Conversation.Participation do
       }
     end)
     |> Enum.filter(& &1.last_activity_id)
+  end
+
+  def get(_, _ \\ [])
+  def get(nil, _), do: nil
+
+  def get(id, params) do
+    query =
+      if preload = params[:preload] do
+        from(p in __MODULE__,
+          preload: ^preload
+        )
+      else
+        __MODULE__
+      end
+
+    Repo.get(query, id)
+  end
+
+  def set_recipients(participation, user_ids) do
+    user_ids =
+      [participation.user_id | user_ids]
+      |> Enum.uniq()
+
+    Repo.transaction(fn ->
+      query =
+        from(r in RecipientShip,
+          where: r.participation_id == ^participation.id
+        )
+
+      Repo.delete_all(query)
+
+      users =
+        from(u in User,
+          where: u.id in ^user_ids
+        )
+        |> Repo.all()
+
+      RecipientShip.create(users, participation)
+      :ok
+    end)
+
+    {:ok, Repo.preload(participation, :recipients, force: true)}
   end
 end

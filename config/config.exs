@@ -255,6 +255,10 @@ config :pleroma, :instance,
   dynamic_configuration: false,
   user_bio_length: 5000,
   user_name_length: 100,
+  max_account_fields: 10,
+  max_remote_account_fields: 20,
+  account_field_name_length: 255,
+  account_field_value_length: 255,
   external_user_synchronization: true
 
 config :pleroma, :markup,
@@ -521,6 +525,17 @@ config :ueberauth,
 config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
+
+config :pleroma, Pleroma.Emails.UserEmail,
+  logo: nil,
+  styling: %{
+    link_color: "#d8a070",
+    background_color: "#2C3645",
+    content_background_color: "#1B2635",
+    header_color: "#d8a070",
+    text_color: "#b9b9ba",
+    text_muted_color: "#b9b9ba"
+  }
 
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 

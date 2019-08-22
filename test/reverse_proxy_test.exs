@@ -108,11 +108,11 @@ defmodule Pleroma.ReverseProxyTest do
       end
     end
 
-    test "max_body_size returns error if streaming body more than that option", %{conn: conn} do
+    test "max_body_length returns error if streaming body more than that option", %{conn: conn} do
       stream_mock(3, true)
 
       assert capture_log(fn ->
-               ReverseProxy.call(conn, "/stream-bytes/50", max_body_size: 30)
+               ReverseProxy.call(conn, "/stream-bytes/50", max_body_length: 30)
              end) =~
                "[warn] Elixir.Pleroma.ReverseProxy request to /stream-bytes/50 failed while reading/chunking: :body_too_large"
     end

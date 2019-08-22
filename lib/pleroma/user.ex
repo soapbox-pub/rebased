@@ -21,6 +21,7 @@ defmodule Pleroma.User do
   alias Pleroma.Web
   alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.CommonAPI.Utils, as: CommonUtils
   alias Pleroma.Web.OAuth
   alias Pleroma.Web.OStatus
@@ -135,6 +136,28 @@ defmodule Pleroma.User do
     |> Map.put(:follower_count, follower_count)
   end
 
+  def follow_state(%User{} = user, %User{} = target) do
+    follow_activity = Utils.fetch_latest_follow(user, target)
+
+    if follow_activity,
+      do: follow_activity.data["state"],
+      # Ideally this would be nil, but then Cachex does not commit the value
+      else: false
+  end
+
+  def get_cached_follow_state(user, target) do
+    key = "follow_state:#{user.ap_id}|#{target.ap_id}"
+    Cachex.fetch!(:user_cache, key, fn _ -> {:commit, follow_state(user, target)} end)
+  end
+
+  def set_follow_state_cache(user_ap_id, target_ap_id, state) do
+    Cachex.put(
+      :user_cache,
+      "follow_state:#{user_ap_id}|#{target_ap_id}",
+      state
+    )
+  end
+
   def set_info_cache(user, args) do
     Cachex.put(:user_cache, "user_info:#{user.id}", user_info(user, args))
   end
@@ -202,12 +225,12 @@ defmodule Pleroma.User do
     |> validate_length(:name, min: 1, max: name_limit)
   end
 
-  def upgrade_changeset(struct, params \\ %{}) do
+  def upgrade_changeset(struct, params \\ %{}, remote? \\ false) do
     bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
     name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
 
     params = Map.put(params, :last_refreshed_at, NaiveDateTime.utc_now())
-    info_cng = User.Info.user_upgrade(struct.info, params[:info])
+    info_cng = User.Info.user_upgrade(struct.info, params[:info], remote?)
 
     struct
     |> cast(params, [
@@ -464,6 +487,13 @@ defmodule Pleroma.User do
 
   def get_by_ap_id(ap_id) do
     Repo.get_by(User, ap_id: ap_id)
+  end
+
+  def get_all_by_ap_id(ap_ids) do
+    from(u in __MODULE__,
+      where: u.ap_id in ^ap_ids
+    )
+    |> Repo.all()
   end
 
   # This is mostly an SPC migration fix. This guesses the user nickname by taking the last part
@@ -726,6 +756,7 @@ defmodule Pleroma.User do
     |> update_and_set_cache()
   end
 
+  @spec maybe_fetch_follow_information(User.t()) :: User.t()
   def maybe_fetch_follow_information(user) do
     with {:ok, user} <- fetch_follow_information(user) do
       user
@@ -783,9 +814,10 @@ defmodule Pleroma.User do
     end
   end
 
+  @spec maybe_update_following_count(User.t()) :: User.t()
   def maybe_update_following_count(%User{local: false} = user) do
     if Pleroma.Config.get([:instance, :external_user_synchronization]) do
-      {:ok, maybe_fetch_follow_information(user)}
+      maybe_fetch_follow_information(user)
     else
       user
     end
@@ -889,6 +921,13 @@ defmodule Pleroma.User do
         blocker
       else
         blocker
+      end
+
+    # clear any requested follows as well
+    blocked =
+      case CommonAPI.reject_follow_request(blocked, blocker) do
+        {:ok, %User{} = updated_blocked} -> updated_blocked
+        nil -> blocked
       end
 
     blocker =
