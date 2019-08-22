@@ -10,9 +10,9 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ObjectView
+  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
-  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
 
   setup_all do
