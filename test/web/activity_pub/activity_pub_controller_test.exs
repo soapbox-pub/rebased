@@ -12,6 +12,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   alias Pleroma.Web.ActivityPub.ObjectView
   alias Pleroma.Web.ActivityPub.UserView
   alias Pleroma.Web.ActivityPub.Utils
+  alias Pleroma.Web.ActivityPub.Relay
   alias Pleroma.Web.CommonAPI
 
   setup_all do
@@ -590,6 +591,34 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
       assert object = Object.get_by_ap_id(note_object.data["id"])
       assert object.data["like_count"] == 1
+    end
+  end
+
+  describe "/relay/followers" do
+    test "it returns relay followers", %{conn: conn} do
+      relay_actor = Relay.get_actor()
+      user = insert(:user)
+      User.follow(user, relay_actor)
+
+      result =
+        conn
+        |> assign(:relay, true)
+        |> get("/relay/followers")
+        |> json_response(200)
+
+      assert result["first"]["orderedItems"] == [user.ap_id]
+    end
+  end
+
+  describe "/relay/following" do
+    test "it returns relay following", %{conn: conn} do
+      result =
+        conn
+        |> assign(:relay, true)
+        |> get("/relay/following")
+        |> json_response(200)
+
+      assert result["first"]["orderedItems"] == []
     end
   end
 

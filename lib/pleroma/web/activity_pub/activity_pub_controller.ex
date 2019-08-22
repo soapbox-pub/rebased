@@ -104,6 +104,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     end
   end
 
+  # GET /relay/following
+  def following(%{assigns: %{relay: true}} = conn, _params) do
+    conn
+    |> put_resp_header("content-type", "application/activity+json")
+    |> json(UserView.render("following.json", %{user: Relay.get_actor()}))
+  end
+
   def following(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user),
@@ -129,6 +136,13 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       |> put_resp_header("content-type", "application/activity+json")
       |> json(UserView.render("following.json", %{user: user, for: for_user}))
     end
+  end
+
+  # GET /relay/followers
+  def followers(%{assigns: %{relay: true}} = conn, _params) do
+    conn
+    |> put_resp_header("content-type", "application/activity+json")
+    |> json(UserView.render("followers.json", %{user: Relay.get_actor()}))
   end
 
   def followers(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do

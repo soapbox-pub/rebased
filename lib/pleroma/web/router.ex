@@ -687,6 +687,9 @@ defmodule Pleroma.Web.Router do
 
     get("/", ActivityPubController, :relay)
     post("/inbox", ActivityPubController, :inbox)
+
+    get("/following", ActivityPubController, :following, assigns: %{relay: true})
+    get("/followers", ActivityPubController, :followers, assigns: %{relay: true})
   end
 
   scope "/internal/fetch", Pleroma.Web.ActivityPub do
