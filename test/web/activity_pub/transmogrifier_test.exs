@@ -24,6 +24,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     :ok
   end
 
+  clear_config([:instance, :max_remote_account_fields])
+
   describe "handle_incoming" do
     test "it ignores an incoming notice if we already have it" do
       activity = insert(:note_activity)

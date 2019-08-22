@@ -555,7 +555,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     note_two = insert(:note, data: %{"context" => "suya.."})
     activity_two = insert(:note_activity, note: note_two)
 
-    {:ok, activity_two} = CommonAPI.add_mute(user, activity_two)
+    {:ok, _activity_two} = CommonAPI.add_mute(user, activity_two)
 
     assert [_activity_two, _activity_one] =
              ActivityPub.fetch_activities([], %{"muting_user" => user, "with_muted" => true})
