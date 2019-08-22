@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
+  clear_config([:instance, :max_account_fields])
 
   describe "updating credentials" do
     test "sets user settings in a generic way", %{conn: conn} do

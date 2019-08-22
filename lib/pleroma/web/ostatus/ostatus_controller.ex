@@ -22,6 +22,11 @@ defmodule Pleroma.Web.OStatus.OStatusController do
   alias Pleroma.Web.Router
   alias Pleroma.Web.XML
 
+  plug(
+    Pleroma.Plugs.RateLimiter,
+    {:ap_routes, params: ["uuid"]} when action in [:object, :activity]
+  )
+
   plug(Pleroma.Web.FederatingPlug when action in [:salmon_incoming])
 
   plug(
