@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Unsubscribe followers when they unfollow a user
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
+- Replaced [pleroma_job_queue](https://git.pleroma.social/pleroma/pleroma_job_queue) with [Oban](https://github.com/sorentwo/oban)
+- Introduced [quantum](https://github.com/quantum-elixir/quantum-core) job scheduler
 
 ### Fixed
 - Not being able to pin unlisted posts

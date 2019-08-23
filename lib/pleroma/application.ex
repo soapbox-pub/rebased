@@ -31,6 +31,7 @@ defmodule Pleroma.Application do
     children =
       [
         Pleroma.Repo,
+        Pleroma.Scheduler,
         Pleroma.Config.TransferTask,
         Pleroma.Emoji,
         Pleroma.Captcha,
@@ -69,9 +70,7 @@ defmodule Pleroma.Application do
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Pleroma.Supervisor]
-    result = Supervisor.start_link(children, opts)
-    :ok = after_supervisor_start()
-    result
+    Supervisor.start_link(children, opts)
   end
 
   defp setup_instrumenters do
@@ -161,19 +160,5 @@ defmodule Pleroma.Application do
       options = Pleroma.Config.get([:hackney_pools, pool])
       :hackney_pool.child_spec(pool, options)
     end
-  end
-
-  defp after_supervisor_start do
-    with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
-         true <- digest_config[:active] do
-      # TODO: consider replacing with `quantum` scheduler
-      PleromaJobQueue.schedule(
-        digest_config[:schedule],
-        :digest_emails,
-        Pleroma.DigestEmailWorker
-      )
-    end
-
-    :ok
   end
 end

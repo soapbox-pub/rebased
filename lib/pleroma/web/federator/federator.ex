@@ -21,7 +21,7 @@ defmodule Pleroma.Web.Federator do
   defdelegate worker_args(queue), to: Pleroma.Workers.Helper
 
   def init do
-    # 1 minute
+    # To do: consider removing this call in favor of scheduled execution (`quantum`-based)
     refresh_subscriptions(schedule_in: 60)
   end
 
@@ -146,12 +146,6 @@ defmodule Pleroma.Web.Federator do
   def perform(:refresh_subscriptions) do
     Logger.debug("Federator running refresh subscriptions")
     Websub.refresh_subscriptions()
-
-    spawn(fn ->
-      # 6 hours
-      Process.sleep(1000 * 60 * 60 * 6)
-      refresh_subscriptions()
-    end)
   end
 
   def ap_enabled_actor(id) do
