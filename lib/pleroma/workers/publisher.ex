@@ -18,6 +18,7 @@ defmodule Pleroma.Workers.Publisher do
   end
 
   def perform(%{"op" => "publish_one", "module" => module_name, "params" => params}, _job) do
+    params = Map.new(params, fn {k, v} -> {String.to_atom(k), v} end)
     Federator.perform(:publish_one, String.to_atom(module_name), params)
   end
 end
