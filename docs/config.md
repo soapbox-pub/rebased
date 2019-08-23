@@ -134,8 +134,8 @@ config :pleroma, Pleroma.Emails.Mailer,
 * `dynamic_configuration`: Allow transferring configuration to DB with the subsequent customization from Admin api.
 * `max_account_fields`: The maximum number of custom fields in the user profile (default: `10`)
 * `max_remote_account_fields`: The maximum number of custom fields in the remote user profile (default: `20`)
-* `account_field_name_length`: An account field name maximum length (default: `255`)
-* `account_field_value_length`: An account field value maximum length (default: `255`)
+* `account_field_name_length`: An account field name maximum length (default: `512`)
+* `account_field_value_length`: An account field value maximum length (default: `512`)
 * `external_user_synchronization`: Enabling following/followers counters synchronization for external users.
 
 
