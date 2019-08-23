@@ -9,10 +9,10 @@ defmodule Pleroma.Workers.WebPusher do
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
     queue: "web_push",
-    max_attempts: Pleroma.Config.get([:workers, :retries, :compile_time_default])
+    max_attempts: 1
 
   @impl Oban.Worker
-  def perform(%{"op" => "web_push", "notification_id" => notification_id}) do
+  def perform(%{"op" => "web_push", "notification_id" => notification_id}, _job) do
     notification = Repo.get(Notification, notification_id)
     Pleroma.Web.Push.Impl.perform(notification)
   end

@@ -10,19 +10,19 @@ defmodule Pleroma.Workers.Subscriber do
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
     queue: "federator_outgoing",
-    max_attempts: Pleroma.Config.get([:workers, :retries, :compile_time_default])
+    max_attempts: 1
 
   @impl Oban.Worker
-  def perform(%{"op" => "refresh_subscriptions"}) do
+  def perform(%{"op" => "refresh_subscriptions"}, _job) do
     Federator.perform(:refresh_subscriptions)
   end
 
-  def perform(%{"op" => "request_subscription", "websub_id" => websub_id}) do
+  def perform(%{"op" => "request_subscription", "websub_id" => websub_id}, _job) do
     websub = Repo.get(WebsubClientSubscription, websub_id)
     Federator.perform(:request_subscription, websub)
   end
 
-  def perform(%{"op" => "verify_websub", "websub_id" => websub_id}) do
+  def perform(%{"op" => "verify_websub", "websub_id" => websub_id}, _job) do
     websub = Repo.get(WebsubClientSubscription, websub_id)
     Federator.perform(:verify_websub, websub)
   end

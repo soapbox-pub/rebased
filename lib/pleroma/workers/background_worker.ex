@@ -11,55 +11,61 @@ defmodule Pleroma.Workers.BackgroundWorker do
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
     queue: "background",
-    max_attempts: Pleroma.Config.get([:workers, :retries, :compile_time_default])
+    max_attempts: 1
 
   @impl Oban.Worker
-  def perform(%{"op" => "fetch_initial_posts", "user_id" => user_id}) do
+  def perform(%{"op" => "fetch_initial_posts", "user_id" => user_id}, _job) do
     user = User.get_by_id(user_id)
     User.perform(:fetch_initial_posts, user)
   end
 
-  def perform(%{"op" => "deactivate_user", "user_id" => user_id, "status" => status}) do
+  def perform(%{"op" => "deactivate_user", "user_id" => user_id, "status" => status}, _job) do
     user = User.get_by_id(user_id)
     User.perform(:deactivate_async, user, status)
   end
 
-  def perform(%{"op" => "delete_user", "user_id" => user_id}) do
+  def perform(%{"op" => "delete_user", "user_id" => user_id}, _job) do
     user = User.get_by_id(user_id)
     User.perform(:delete, user)
   end
 
-  def perform(%{
-        "op" => "blocks_import",
-        "blocker_id" => blocker_id,
-        "blocked_identifiers" => blocked_identifiers
-      }) do
+  def perform(
+        %{
+          "op" => "blocks_import",
+          "blocker_id" => blocker_id,
+          "blocked_identifiers" => blocked_identifiers
+        },
+        _job
+      ) do
     blocker = User.get_by_id(blocker_id)
     User.perform(:blocks_import, blocker, blocked_identifiers)
   end
 
-  def perform(%{
-        "op" => "follow_import",
-        "follower_id" => follower_id,
-        "followed_identifiers" => followed_identifiers
-      }) do
+  def perform(
+        %{
+          "op" => "follow_import",
+          "follower_id" => follower_id,
+          "followed_identifiers" => followed_identifiers
+        },
+        _job
+      ) do
     follower = User.get_by_id(follower_id)
     User.perform(:follow_import, follower, followed_identifiers)
   end
 
-  def perform(%{"op" => "clean_expired_tokens"}) do
+  def perform(%{"op" => "clean_expired_tokens"}, _job) do
     CleanWorker.perform(:clean)
   end
 
-  def perform(%{"op" => "media_proxy_preload", "message" => message}) do
+  def perform(%{"op" => "media_proxy_preload", "message" => message}, _job) do
     MediaProxyWarmingPolicy.perform(:preload, message)
   end
 
-  def perform(%{"op" => "media_proxy_prefetch", "url" => url}) do
+  def perform(%{"op" => "media_proxy_prefetch", "url" => url}, _job) do
     MediaProxyWarmingPolicy.perform(:prefetch, url)
   end
 
-  def perform(%{"op" => "fetch_data_for_activity", "activity_id" => activity_id}) do
+  def perform(%{"op" => "fetch_data_for_activity", "activity_id" => activity_id}, _job) do
     activity = Activity.get_by_id(activity_id)
     Pleroma.Web.RichMedia.Helpers.perform(:fetch, activity)
   end

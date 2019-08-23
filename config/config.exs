@@ -469,7 +469,6 @@ config :pleroma, Oban,
 
 config :pleroma, :workers,
   retries: [
-    compile_time_default: 1,
     federator_incoming: 5,
     federator_outgoing: 5
   ]

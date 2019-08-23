@@ -8,10 +8,10 @@ defmodule Pleroma.Workers.Mailer do
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
     queue: "mailer",
-    max_attempts: Pleroma.Config.get([:workers, :retries, :compile_time_default])
+    max_attempts: 1
 
   @impl Oban.Worker
-  def perform(%{"op" => "email", "encoded_email" => encoded_email, "config" => config}) do
+  def perform(%{"op" => "email", "encoded_email" => encoded_email, "config" => config}, _job) do
     email =
       encoded_email
       |> Base.decode64!()
@@ -20,7 +20,7 @@ defmodule Pleroma.Workers.Mailer do
     Pleroma.Emails.Mailer.deliver(email, config)
   end
 
-  def perform(%{"op" => "digest_email", "user_id" => user_id}) do
+  def perform(%{"op" => "digest_email", "user_id" => user_id}, _job) do
     user = User.get_by_id(user_id)
     Pleroma.DigestEmailWorker.perform(user)
   end

@@ -8,10 +8,10 @@ defmodule Pleroma.Workers.Transmogrifier do
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
     queue: "transmogrifier",
-    max_attempts: Pleroma.Config.get([:workers, :retries, :compile_time_default])
+    max_attempts: 1
 
   @impl Oban.Worker
-  def perform(%{"op" => "user_upgrade", "user_id" => user_id}) do
+  def perform(%{"op" => "user_upgrade", "user_id" => user_id}, _job) do
     user = User.get_by_id(user_id)
     Pleroma.Web.ActivityPub.Transmogrifier.perform(:user_upgrade, user)
   end

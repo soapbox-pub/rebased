@@ -9,15 +9,15 @@ defmodule Pleroma.Workers.Publisher do
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
     queue: "federator_outgoing",
-    max_attempts: Pleroma.Config.get([:workers, :retries, :compile_time_default])
+    max_attempts: 1
 
   @impl Oban.Worker
-  def perform(%{"op" => "publish", "activity_id" => activity_id}) do
+  def perform(%{"op" => "publish", "activity_id" => activity_id}, _job) do
     activity = Activity.get_by_id(activity_id)
     Federator.perform(:publish, activity)
   end
 
-  def perform(%{"op" => "publish_one", "module" => module_name, "params" => params}) do
+  def perform(%{"op" => "publish_one", "module" => module_name, "params" => params}, _job) do
     Federator.perform(:publish_one, String.to_atom(module_name), params)
   end
 end
