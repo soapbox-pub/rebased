@@ -144,8 +144,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.dedup()
 
     params =
-      if Map.has_key?(params, "fields_attributes") && Enum.all?(params["fields_attributes"], &is_tuple/1) do
-        Map.update!(params, "fields_attributes", &Enum.map(&1, fn {_, v} -> v end))
+      if Map.has_key?(params, "fields_attributes") do
+        Map.update!(params, "fields_attributes", fn fields ->
+          if Enum.all?(fields, &is_tuple/1) do
+            Enum.map(fields, fn {_, v} -> v end)
+          else
+            fields
+          end
+          |> Enum.filter(fn %{"name" => n} -> n != "" end)
+        end)
       else
         params
       end
