@@ -9,6 +9,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
   use Pleroma.Web.ConnCase
 
   import Pleroma.Factory
+  clear_config([:instance, :max_account_fields])
 
   describe "updating credentials" do
     test "sets user settings in a generic way", %{conn: conn} do
@@ -299,6 +300,70 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
       assert user["note"] == note
       assert user["display_name"] == name
       assert [%{"shortcode" => "blank"}, %{"shortcode" => "firefox"}] = user["emojis"]
+    end
+
+    test "update fields", %{conn: conn} do
+      user = insert(:user)
+
+      fields = [
+        %{"name" => "<a href=\"http://google.com\">foo</a>", "value" => "<script>bar</script>"},
+        %{"name" => "link", "value" => "cofe.io"}
+      ]
+
+      account =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
+        |> json_response(200)
+
+      assert account["fields"] == [
+               %{"name" => "foo", "value" => "bar"},
+               %{"name" => "link", "value" => "<a href=\"http://cofe.io\">cofe.io</a>"}
+             ]
+
+      assert account["source"]["fields"] == [
+               %{
+                 "name" => "<a href=\"http://google.com\">foo</a>",
+                 "value" => "<script>bar</script>"
+               },
+               %{"name" => "link", "value" => "cofe.io"}
+             ]
+
+      name_limit = Pleroma.Config.get([:instance, :account_field_name_length])
+      value_limit = Pleroma.Config.get([:instance, :account_field_value_length])
+
+      long_value = Enum.map(0..value_limit, fn _ -> "x" end) |> Enum.join()
+
+      fields = [%{"name" => "<b>foo<b>", "value" => long_value}]
+
+      assert %{"error" => "Invalid request"} ==
+               conn
+               |> assign(:user, user)
+               |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
+               |> json_response(403)
+
+      long_name = Enum.map(0..name_limit, fn _ -> "x" end) |> Enum.join()
+
+      fields = [%{"name" => long_name, "value" => "bar"}]
+
+      assert %{"error" => "Invalid request"} ==
+               conn
+               |> assign(:user, user)
+               |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
+               |> json_response(403)
+
+      Pleroma.Config.put([:instance, :max_account_fields], 1)
+
+      fields = [
+        %{"name" => "<b>foo<b>", "value" => "<i>bar</i>"},
+        %{"name" => "link", "value" => "cofe.io"}
+      ]
+
+      assert %{"error" => "Invalid request"} ==
+               conn
+               |> assign(:user, user)
+               |> patch("/api/v1/accounts/update_credentials", %{"fields" => fields})
+               |> json_response(403)
     end
   end
 end

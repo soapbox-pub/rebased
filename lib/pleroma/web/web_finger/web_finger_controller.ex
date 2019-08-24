@@ -7,6 +7,7 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
 
   alias Pleroma.Web.WebFinger
 
+  plug(Pleroma.Plugs.SetFormatPlug)
   plug(Pleroma.Web.FederatingPlug)
 
   def host_meta(conn, _params) do
@@ -17,30 +18,28 @@ defmodule Pleroma.Web.WebFinger.WebFingerController do
     |> send_resp(200, xml)
   end
 
-  def webfinger(conn, %{"resource" => resource}) do
-    case get_format(conn) do
-      n when n in ["xml", "xrd+xml"] ->
-        with {:ok, response} <- WebFinger.webfinger(resource, "XML") do
-          conn
-          |> put_resp_content_type("application/xrd+xml")
-          |> send_resp(200, response)
-        else
-          _e -> send_resp(conn, 404, "Couldn't find user")
-        end
-
-      n when n in ["json", "jrd+json"] ->
-        with {:ok, response} <- WebFinger.webfinger(resource, "JSON") do
-          json(conn, response)
-        else
-          _e -> send_resp(conn, 404, "Couldn't find user")
-        end
-
-      _ ->
-        send_resp(conn, 404, "Unsupported format")
+  def webfinger(%{assigns: %{format: format}} = conn, %{"resource" => resource})
+      when format in ["xml", "xrd+xml"] do
+    with {:ok, response} <- WebFinger.webfinger(resource, "XML") do
+      conn
+      |> put_resp_content_type("application/xrd+xml")
+      |> send_resp(200, response)
+    else
+      _e -> send_resp(conn, 404, "Couldn't find user")
     end
   end
 
-  def webfinger(conn, _params) do
-    send_resp(conn, 400, "Bad Request")
+  def webfinger(%{assigns: %{format: format}} = conn, %{"resource" => resource})
+      when format in ["json", "jrd+json"] do
+    with {:ok, response} <- WebFinger.webfinger(resource, "JSON") do
+      json(conn, response)
+    else
+      _e ->
+        conn
+        |> put_status(404)
+        |> json("Couldn't find user")
+    end
   end
+
+  def webfinger(conn, _params), do: send_resp(conn, 400, "Bad Request")
 end

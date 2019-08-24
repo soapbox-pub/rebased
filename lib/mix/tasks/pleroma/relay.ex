@@ -5,6 +5,7 @@
 defmodule Mix.Tasks.Pleroma.Relay do
   use Mix.Task
   import Mix.Pleroma
+  alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Relay
 
   @shortdoc "Manages remote relays"
@@ -22,6 +23,10 @@ defmodule Mix.Tasks.Pleroma.Relay do
   ``mix pleroma.relay unfollow <relay_url>``
 
   Example: ``mix pleroma.relay unfollow https://example.org/relay``
+
+  ## List relay subscriptions
+
+  ``mix pleroma.relay list``
   """
   def run(["follow", target]) do
     start_pleroma()
@@ -42,6 +47,19 @@ defmodule Mix.Tasks.Pleroma.Relay do
       :timer.sleep(500)
     else
       {:error, e} -> shell_error("Error while following #{target}: #{inspect(e)}")
+    end
+  end
+
+  def run(["list"]) do
+    start_pleroma()
+
+    with %User{following: following} = _user <- Relay.get_actor() do
+      following
+      |> Enum.map(fn entry -> URI.parse(entry).host end)
+      |> Enum.uniq()
+      |> Enum.each(&shell_info(&1))
+    else
+      e -> shell_error("Error while fetching relay subscription list: #{inspect(e)}")
     end
   end
 end

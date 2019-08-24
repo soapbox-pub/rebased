@@ -11,7 +11,7 @@ defmodule Pleroma.Uploaders.Local do
 
   def put_file(upload) do
     {local_path, file} =
-      case Enum.reverse(String.split(upload.path, "/", trim: true)) do
+      case Enum.reverse(Path.split(upload.path)) do
         [file] ->
           {upload_path(), file}
 
@@ -23,7 +23,7 @@ defmodule Pleroma.Uploaders.Local do
 
     result_file = Path.join(local_path, file)
 
-    unless File.exists?(result_file) do
+    if not File.exists?(result_file) do
       File.cp!(upload.tempfile, result_file)
     end
 

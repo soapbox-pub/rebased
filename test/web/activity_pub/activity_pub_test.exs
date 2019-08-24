@@ -538,6 +538,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     assert Enum.member?(activities, activity_one)
   end
 
+  test "doesn't return thread muted activities" do
+    user = insert(:user)
+    _activity_one = insert(:note_activity)
+    note_two = insert(:note, data: %{"context" => "suya.."})
+    activity_two = insert(:note_activity, note: note_two)
+
+    {:ok, _activity_two} = CommonAPI.add_mute(user, activity_two)
+
+    assert [_activity_one] = ActivityPub.fetch_activities([], %{"muting_user" => user})
+  end
+
+  test "returns thread muted activities when with_muted is set" do
+    user = insert(:user)
+    _activity_one = insert(:note_activity)
+    note_two = insert(:note, data: %{"context" => "suya.."})
+    activity_two = insert(:note_activity, note: note_two)
+
+    {:ok, _activity_two} = CommonAPI.add_mute(user, activity_two)
+
+    assert [_activity_two, _activity_one] =
+             ActivityPub.fetch_activities([], %{"muting_user" => user, "with_muted" => true})
+  end
+
   test "does include announces on request" do
     activity_three = insert(:note_activity)
     user = insert(:user)
@@ -677,14 +700,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
       assert object.data["likes"] == [user.ap_id]
       assert object.data["like_count"] == 1
 
-      [note_activity] = Activity.get_all_create_by_object_ap_id(object.data["id"])
-      assert note_activity.data["object"]["like_count"] == 1
-
       {:ok, _like_activity, object} = ActivityPub.like(user_two, object)
       assert object.data["like_count"] == 2
-
-      [note_activity] = Activity.get_all_create_by_object_ap_id(object.data["id"])
-      assert note_activity.data["object"]["like_count"] == 2
     end
   end
 
@@ -1126,6 +1143,67 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
 
       [result] = ActivityPub.fetch_activities_bounded([], [user.follower_address])
       assert result.id == activity.id
+    end
+  end
+
+  describe "fetch_follow_information_for_user" do
+    test "syncronizes following/followers counters" do
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/fuser2/followers",
+          following_address: "http://localhost:4001/users/fuser2/following"
+        )
+
+      {:ok, info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert info.follower_count == 527
+      assert info.following_count == 267
+    end
+
+    test "detects hidden followers" do
+      mock(fn env ->
+        case env.url do
+          "http://localhost:4001/users/masto_closed/followers?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+
+          _ ->
+            apply(HttpRequestMock, :request, [env])
+        end
+      end)
+
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following"
+        )
+
+      {:ok, info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert info.hide_followers == true
+      assert info.hide_follows == false
+    end
+
+    test "detects hidden follows" do
+      mock(fn env ->
+        case env.url do
+          "http://localhost:4001/users/masto_closed/following?page=1" ->
+            %Tesla.Env{status: 403, body: ""}
+
+          _ ->
+            apply(HttpRequestMock, :request, [env])
+        end
+      end)
+
+      user =
+        insert(:user,
+          local: false,
+          follower_address: "http://localhost:4001/users/masto_closed/followers",
+          following_address: "http://localhost:4001/users/masto_closed/following"
+        )
+
+      {:ok, info} = ActivityPub.fetch_follow_information_for_user(user)
+      assert info.hide_followers == false
+      assert info.hide_follows == true
     end
   end
 end

@@ -31,8 +31,8 @@ defmodule Mix.Tasks.Pleroma.User do
       mix pleroma.user invite [OPTION...]
 
     Options:
-    - `--expires_at DATE` - last day on which token is active (e.g. "2019-04-05")
-    - `--max_use NUMBER` - maximum numbers of token uses
+    - `--expires-at DATE` - last day on which token is active (e.g. "2019-04-05")
+    - `--max-use NUMBER` - maximum numbers of token uses
 
   ## List generated invites
 

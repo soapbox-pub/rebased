@@ -29,7 +29,8 @@ config :pleroma, :instance,
   email: "admin@example.com",
   notify_email: "noreply@example.com",
   skip_thread_containment: false,
-  federating: false
+  federating: false,
+  external_user_synchronization: false
 
 config :pleroma, :activitypub, sign_object_fetches: false
 
@@ -70,7 +71,8 @@ config :pleroma, Pleroma.ScheduledActivity,
 config :pleroma, :rate_limit,
   search: [{1000, 30}, {1000, 30}],
   app_account_creation: {10_000, 5},
-  password_reset: {1000, 30}
+  password_reset: {1000, 30},
+  ap_routes: nil
 
 config :pleroma, :http_security, report_uri: "https://endpoint.com"
 
@@ -79,6 +81,8 @@ config :pleroma, :http, send_user_agent: false
 rum_enabled = System.get_env("RUM_ENABLED") == "true"
 config :pleroma, :database, rum_enabled: rum_enabled
 IO.puts("RUM enabled: #{rum_enabled}")
+
+config :joken, default_signer: "yU8uHKq+yyAkZ11Hx//jcdacWc8yQ1bxAAGrplzB0Zwwjkp35v0RK9SO8WTPr6QZ"
 
 config :pleroma, Pleroma.ReverseProxy.Client, Pleroma.ReverseProxy.ClientMock
 

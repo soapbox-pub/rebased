@@ -24,6 +24,8 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
     :ok
   end
 
+  clear_config([:instance, :max_remote_account_fields])
+
   describe "handle_incoming" do
     test "it ignores an incoming notice if we already have it" do
       activity = insert(:note_activity)
@@ -450,6 +452,27 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert !is_nil(data["cc"])
     end
 
+    test "it strips internal likes" do
+      data =
+        File.read!("test/fixtures/mastodon-post-activity.json")
+        |> Poison.decode!()
+
+      likes = %{
+        "first" =>
+          "http://mastodon.example.org/objects/dbdbc507-52c8-490d-9b7c-1e1d52e5c132/likes?page=1",
+        "id" => "http://mastodon.example.org/objects/dbdbc507-52c8-490d-9b7c-1e1d52e5c132/likes",
+        "totalItems" => 3,
+        "type" => "OrderedCollection"
+      }
+
+      object = Map.put(data["object"], "likes", likes)
+      data = Map.put(data, "object", object)
+
+      {:ok, %Activity{object: object}} = Transmogrifier.handle_incoming(data)
+
+      refute Map.has_key?(object.data, "likes")
+    end
+
     test "it works for incoming update activities" do
       data = File.read!("test/fixtures/mastodon-post-activity.json") |> Poison.decode!()
 
@@ -486,6 +509,60 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
              ]
 
       assert user.bio == "<p>Some bio</p>"
+    end
+
+    test "it works with custom profile fields" do
+      {:ok, activity} =
+        "test/fixtures/mastodon-post-activity.json"
+        |> File.read!()
+        |> Poison.decode!()
+        |> Transmogrifier.handle_incoming()
+
+      user = User.get_cached_by_ap_id(activity.actor)
+
+      assert User.Info.fields(user.info) == [
+               %{"name" => "foo", "value" => "bar"},
+               %{"name" => "foo1", "value" => "bar1"}
+             ]
+
+      update_data = File.read!("test/fixtures/mastodon-update.json") |> Poison.decode!()
+
+      object =
+        update_data["object"]
+        |> Map.put("actor", user.ap_id)
+        |> Map.put("id", user.ap_id)
+
+      update_data =
+        update_data
+        |> Map.put("actor", user.ap_id)
+        |> Map.put("object", object)
+
+      {:ok, _update_activity} = Transmogrifier.handle_incoming(update_data)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert User.Info.fields(user.info) == [
+               %{"name" => "foo", "value" => "updated"},
+               %{"name" => "foo1", "value" => "updated"}
+             ]
+
+      Pleroma.Config.put([:instance, :max_remote_account_fields], 2)
+
+      update_data =
+        put_in(update_data, ["object", "attachment"], [
+          %{"name" => "foo", "type" => "PropertyValue", "value" => "bar"},
+          %{"name" => "foo11", "type" => "PropertyValue", "value" => "bar11"},
+          %{"name" => "foo22", "type" => "PropertyValue", "value" => "bar22"}
+        ])
+
+      {:ok, _} = Transmogrifier.handle_incoming(update_data)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert User.Info.fields(user.info) == [
+               %{"name" => "foo", "value" => "updated"},
+               %{"name" => "foo1", "value" => "updated"}
+             ]
     end
 
     test "it works for incoming update activities which lock the account" do
@@ -1061,14 +1138,7 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert is_nil(modified["object"]["announcements"])
       assert is_nil(modified["object"]["announcement_count"])
       assert is_nil(modified["object"]["context_id"])
-    end
-
-    test "it adds like collection to object" do
-      activity = insert(:note_activity)
-      {:ok, modified} = Transmogrifier.prepare_outgoing(activity.data)
-
-      assert modified["object"]["likes"]["type"] == "OrderedCollection"
-      assert modified["object"]["likes"]["totalItems"] == 0
+      assert is_nil(modified["object"]["likes"])
     end
 
     test "the directMessage flag is present" do
@@ -1372,33 +1442,5 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       refute recipient.follower_address in fixed_object["cc"]
       refute recipient.follower_address in fixed_object["to"]
     end
-  end
-
-  test "update_following_followers_counters/1" do
-    user1 =
-      insert(:user,
-        local: false,
-        follower_address: "http://localhost:4001/users/masto_closed/followers",
-        following_address: "http://localhost:4001/users/masto_closed/following"
-      )
-
-    user2 =
-      insert(:user,
-        local: false,
-        follower_address: "http://localhost:4001/users/fuser2/followers",
-        following_address: "http://localhost:4001/users/fuser2/following"
-      )
-
-    Transmogrifier.update_following_followers_counters(user1)
-    Transmogrifier.update_following_followers_counters(user2)
-
-    %{follower_count: followers, following_count: following} = User.get_cached_user_info(user1)
-    assert followers == 437
-    assert following == 152
-
-    %{follower_count: followers, following_count: following} = User.get_cached_user_info(user2)
-
-    assert followers == 527
-    assert following == 267
   end
 end

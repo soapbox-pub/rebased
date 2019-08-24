@@ -379,6 +379,16 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     end
   end
 
+  def migrate_to_db(conn, _params) do
+    Mix.Tasks.Pleroma.Config.run(["migrate_to_db"])
+    json(conn, %{})
+  end
+
+  def migrate_from_db(conn, _params) do
+    Mix.Tasks.Pleroma.Config.run(["migrate_from_db", Pleroma.Config.get(:env), "true"])
+    json(conn, %{})
+  end
+
   def config_show(conn, _params) do
     configs = Pleroma.Repo.all(Config)
 
@@ -392,9 +402,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
       if Pleroma.Config.get([:instance, :dynamic_configuration]) do
         updated =
           Enum.map(configs, fn
-            %{"group" => group, "key" => key, "delete" => "true"} ->
-              {:ok, _} = Config.delete(%{group: group, key: key})
-              nil
+            %{"group" => group, "key" => key, "delete" => "true"} = params ->
+              {:ok, config} = Config.delete(%{group: group, key: key, subkeys: params["subkeys"]})
+              config
 
             %{"group" => group, "key" => key, "value" => value} ->
               {:ok, config} = Config.update_or_create(%{group: group, key: key, value: value})

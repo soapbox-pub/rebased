@@ -12,21 +12,12 @@ defmodule Pleroma.Web.OAuth.LDAPAuthorizationTest do
 
   @skip if !Code.ensure_loaded?(:eldap), do: :skip
 
-  setup_all do
-    ldap_authenticator =
-      Pleroma.Config.get(Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.PleromaAuthenticator)
-
-    ldap_enabled = Pleroma.Config.get([:ldap, :enabled])
-
-    on_exit(fn ->
-      Pleroma.Config.put(Pleroma.Web.Auth.Authenticator, ldap_authenticator)
-      Pleroma.Config.put([:ldap, :enabled], ldap_enabled)
-    end)
-
-    Pleroma.Config.put(Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.LDAPAuthenticator)
+  clear_config_all([:ldap, :enabled]) do
     Pleroma.Config.put([:ldap, :enabled], true)
+  end
 
-    :ok
+  clear_config_all(Pleroma.Web.Auth.Authenticator) do
+    Pleroma.Config.put(Pleroma.Web.Auth.Authenticator, Pleroma.Web.Auth.LDAPAuthenticator)
   end
 
   @tag @skip

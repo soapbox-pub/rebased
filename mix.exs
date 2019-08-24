@@ -95,7 +95,7 @@ defmodule Pleroma.Mixfile do
   defp deps do
     [
       {:phoenix, "~> 1.4.8"},
-      {:tzdata, "~> 1.0"},
+      {:tzdata, "~> 0.5.21"},
       {:plug_cowboy, "~> 2.0"},
       {:phoenix_pubsub, "~> 1.1"},
       {:phoenix_ecto, "~> 4.0"},
@@ -114,8 +114,9 @@ defmodule Pleroma.Mixfile do
       {:tesla, "~> 1.2"},
       {:jason, "~> 1.0"},
       {:mogrify, "~> 0.6.1"},
-      {:ex_aws, "~> 2.0"},
+      {:ex_aws, "~> 2.1"},
       {:ex_aws_s3, "~> 2.0"},
+      {:sweet_xml, "~> 0.6.6"},
       {:earmark, "~> 1.3"},
       {:bbcode, "~> 0.1.1"},
       {:ex_machina, "~> 2.3", only: :test},
@@ -127,6 +128,7 @@ defmodule Pleroma.Mixfile do
       {:ex_doc, "~> 0.20.2", only: :dev, runtime: false},
       {:web_push_encryption, "~> 0.2.1"},
       {:swoosh, "~> 0.23.2"},
+      {:phoenix_swoosh, "~> 0.2"},
       {:gen_smtp, "~> 0.13"},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
       {:floki, "~> 0.20.0"},
@@ -139,7 +141,7 @@ defmodule Pleroma.Mixfile do
       {:http_signatures,
        git: "https://git.pleroma.social/pleroma/http_signatures.git",
        ref: "293d77bb6f4a67ac8bde1428735c3b42f22cbb30"},
-      {:pleroma_job_queue, "~> 0.2.0"},
+      {:pleroma_job_queue, "~> 0.3"},
       {:telemetry, "~> 0.3"},
       {:prometheus_ex, "~> 3.0"},
       {:prometheus_plugs, "~> 1.1"},
@@ -147,9 +149,11 @@ defmodule Pleroma.Mixfile do
       {:prometheus_ecto, "~> 1.4"},
       {:recon, github: "ferd/recon", tag: "2.4.0"},
       {:quack, "~> 0.1.1"},
+      {:joken, "~> 2.0"},
       {:benchee, "~> 1.0"},
       {:esshd, "~> 0.1.0", runtime: Application.get_env(:esshd, :enabled, false)},
       {:ex_rated, "~> 1.3"},
+      {:ex_const, "~> 0.2"},
       {:plug_static_index_html, "~> 1.0.0"},
       {:excoveralls, "~> 0.11.1", only: :test},
       {:mox, "~> 0.5", only: :test}
@@ -189,12 +193,13 @@ defmodule Pleroma.Mixfile do
            tag = String.trim(tag),
            {describe, 0} <- System.cmd("git", ["describe", "--tags", "--abbrev=8"]),
            describe = String.trim(describe),
-           ahead <- String.replace(describe, tag, "") do
+           ahead <- String.replace(describe, tag, ""),
+           ahead <- String.trim_leading(ahead, "-") do
         {String.replace_prefix(tag, "v", ""), if(ahead != "", do: String.trim(ahead))}
       else
         _ ->
           {commit_hash, 0} = System.cmd("git", ["rev-parse", "--short", "HEAD"])
-          {nil, "-0-g" <> String.trim(commit_hash)}
+          {nil, "0-g" <> String.trim(commit_hash)}
       end
 
     if git_tag && version != git_tag do
@@ -206,14 +211,15 @@ defmodule Pleroma.Mixfile do
     # Branch name as pre-release version component, denoted with a dot
     branch_name =
       with {branch_name, 0} <- System.cmd("git", ["rev-parse", "--abbrev-ref", "HEAD"]),
+           branch_name <- String.trim(branch_name),
            branch_name <- System.get_env("PLEROMA_BUILD_BRANCH") || branch_name,
-           true <- branch_name != "master" do
+           true <- branch_name not in ["master", "HEAD"] do
         branch_name =
           branch_name
           |> String.trim()
           |> String.replace(identifier_filter, "-")
 
-        "." <> branch_name
+        branch_name
       end
 
     build_name =
@@ -233,6 +239,17 @@ defmodule Pleroma.Mixfile do
         env_override -> env_override
       end
 
+    # Pre-release version, denoted by appending a hyphen
+    # and a series of dot separated identifiers
+    pre_release =
+      [git_pre_release, branch_name]
+      |> Enum.filter(fn string -> string && string != "" end)
+      |> Enum.join(".")
+      |> (fn
+            "" -> nil
+            string -> "-" <> String.replace(string, identifier_filter, "-")
+          end).()
+
     # Build metadata, denoted with a plus sign
     build_metadata =
       [build_name, env_name]
@@ -243,7 +260,7 @@ defmodule Pleroma.Mixfile do
             string -> "+" <> String.replace(string, identifier_filter, "-")
           end).()
 
-    [version, git_pre_release, branch_name, build_metadata]
+    [version, pre_release, build_metadata]
     |> Enum.filter(fn string -> string && string != "" end)
     |> Enum.join()
   end

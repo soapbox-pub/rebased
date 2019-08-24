@@ -15,7 +15,7 @@ defmodule Mix.Tasks.Pleroma.Config do
 
       mix pleroma.config migrate_to_db
 
-  ## Transfers config from DB to file.
+  ## Transfers config from DB to file `config/env.exported_from_db.secret.exs`
 
       mix pleroma.config migrate_from_db ENV
   """

@@ -65,7 +65,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
     do: render("service.json", %{user: user})
 
   def render("user.json", %{user: %User{nickname: "internal." <> _} = user}),
-    do: render("service.json", %{user: user})
+    do: render("service.json", %{user: user}) |> Map.put("preferredUsername", user.nickname)
 
   def render("user.json", %{user: user}) do
     {:ok, user} = User.ensure_keys_present(user)
@@ -79,6 +79,17 @@ defmodule Pleroma.Web.ActivityPub.UserView do
       user
       |> Transmogrifier.add_emoji_tags()
       |> Map.get("tag", [])
+
+    fields =
+      user.info
+      |> User.Info.fields()
+      |> Enum.map(fn %{"name" => name, "value" => value} ->
+        %{
+          "name" => Pleroma.HTML.strip_tags(name),
+          "value" => Pleroma.HTML.filter_tags(value, Pleroma.HTML.Scrubber.LinksOnly)
+        }
+      end)
+      |> Enum.map(&Map.put(&1, "type", "PropertyValue"))
 
     %{
       "id" => user.ap_id,
@@ -98,6 +109,7 @@ defmodule Pleroma.Web.ActivityPub.UserView do
         "publicKeyPem" => public_key
       },
       "endpoints" => endpoints,
+      "attachment" => fields,
       "tag" => (user.info.source_data["tag"] || []) ++ user_tags
     }
     |> Map.merge(maybe_make_image(&User.avatar_url/2, "icon", user))

@@ -19,7 +19,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
      - `mrf_tag:disable-any-subscription`: Reject any follow requests
   """
 
-  @public "https://www.w3.org/ns/activitystreams#Public"
+  require Pleroma.Constants
 
   defp get_tags(%User{tags: tags}) when is_list(tags), do: tags
   defp get_tags(_), do: []
@@ -70,9 +70,9 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
        ) do
     user = User.get_cached_by_ap_id(actor)
 
-    if Enum.member?(to, @public) do
-      to = List.delete(to, @public) ++ [user.follower_address]
-      cc = List.delete(cc, user.follower_address) ++ [@public]
+    if Enum.member?(to, Pleroma.Constants.as_public()) do
+      to = List.delete(to, Pleroma.Constants.as_public()) ++ [user.follower_address]
+      cc = List.delete(cc, user.follower_address) ++ [Pleroma.Constants.as_public()]
 
       object =
         object
@@ -103,9 +103,10 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
        ) do
     user = User.get_cached_by_ap_id(actor)
 
-    if Enum.member?(to, @public) or Enum.member?(cc, @public) do
-      to = List.delete(to, @public) ++ [user.follower_address]
-      cc = List.delete(cc, @public)
+    if Enum.member?(to, Pleroma.Constants.as_public()) or
+         Enum.member?(cc, Pleroma.Constants.as_public()) do
+      to = List.delete(to, Pleroma.Constants.as_public()) ++ [user.follower_address]
+      cc = List.delete(cc, Pleroma.Constants.as_public())
 
       object =
         object
@@ -164,4 +165,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.TagPolicy do
 
   @impl true
   def filter(message), do: {:ok, message}
+
+  @impl true
+  def describe, do: {:ok, %{}}
 end

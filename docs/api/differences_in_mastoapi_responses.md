@@ -60,11 +60,18 @@ Has these additional fields under the `pleroma` object:
 - `show_role`: boolean, nullable, true when the user wants his role (e.g admin, moderator) to be shown
 - `no_rich_text` - boolean, nullable, true when html tags are stripped from all statuses requested from the API
 
+## Conversations
+
+Has an additional field under the `pleroma` object:
+
+- `recipients`: The list of the recipients of this Conversation. These will be addressed when replying to this conversation.
+
 ## Account Search
 
 Behavior has changed:
 
 - `/api/v1/accounts/search`: Does not require authentication
+
 
 ## Notifications
 
@@ -81,6 +88,7 @@ Additional parameters can be added to the JSON body/Form data:
 - `to`: A list of nicknames (like `lain@soykaf.club` or `lain` on the local server) that will be used to determine who is going to be addressed by this post. Using this will disable the implicit addressing by mentioned names in the `status` body, only the people in the `to` list will be addressed. The normal rules for for post visibility are not affected by this and will still apply.
 - `visibility`: string, besides standard MastoAPI values (`direct`, `private`, `unlisted` or `public`) it can be used to address a List by setting it to `list:LIST_ID`.
 - `expires_on`: datetime (iso8601), sets when the posted activity should expire. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated.
+- `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
 
 ## PATCH `/api/v1/update_credentials`
 

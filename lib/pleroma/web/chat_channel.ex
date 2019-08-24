@@ -33,9 +33,11 @@ defmodule Pleroma.Web.ChatChannel do
 end
 
 defmodule Pleroma.Web.ChatChannel.ChatChannelState do
+  use Agent
+
   @max_messages 20
 
-  def start_link do
+  def start_link(_) do
     Agent.start_link(fn -> %{max_id: 1, messages: []} end, name: __MODULE__)
   end
 

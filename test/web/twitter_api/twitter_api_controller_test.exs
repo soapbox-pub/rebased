@@ -151,6 +151,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "GET /statuses/public_timeline.json" do
     setup [:valid_user]
+    clear_config([:instance, :public])
 
     test "returns statuses", %{conn: conn} do
       user = insert(:user)
@@ -173,8 +174,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn
       |> get("/api/statuses/public_timeline.json")
       |> json_response(403)
-
-      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to authenticated request when the instance is not public",
@@ -185,8 +184,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_timeline.json")
       |> json_response(200)
-
-      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
@@ -220,6 +217,7 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "GET /statuses/public_and_external_timeline.json" do
     setup [:valid_user]
+    clear_config([:instance, :public])
 
     test "returns 403 to unauthenticated request when the instance is not public", %{conn: conn} do
       Pleroma.Config.put([:instance, :public], false)
@@ -227,8 +225,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       conn
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(403)
-
-      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to authenticated request when the instance is not public",
@@ -239,8 +235,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       |> with_credentials(user.nickname, "test")
       |> get("/api/statuses/public_and_external_timeline.json")
       |> json_response(200)
-
-      Pleroma.Config.put([:instance, :public], true)
     end
 
     test "returns 200 to unauthenticated request when the instance is public", %{conn: conn} do
@@ -1176,13 +1170,6 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
 
   describe "POST /api/account/resend_confirmation_email" do
     setup do
-      setting = Pleroma.Config.get([:instance, :account_activation_required])
-
-      unless setting do
-        Pleroma.Config.put([:instance, :account_activation_required], true)
-        on_exit(fn -> Pleroma.Config.put([:instance, :account_activation_required], setting) end)
-      end
-
       user = insert(:user)
       info_change = User.Info.confirmation_changeset(user.info, need_confirmation: true)
 
@@ -1195,6 +1182,10 @@ defmodule Pleroma.Web.TwitterAPI.ControllerTest do
       assert user.info.confirmation_pending
 
       [user: user]
+    end
+
+    clear_config([:instance, :account_activation_required]) do
+      Pleroma.Config.put([:instance, :account_activation_required], true)
     end
 
     test "it returns 204 No Content", %{conn: conn, user: user} do

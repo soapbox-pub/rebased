@@ -66,8 +66,10 @@ defmodule Pleroma.Web.ActivityPub.ObjectView do
       "orderedItems" => items
     }
 
-    if offset < total do
+    if offset + length(items) < total do
       Map.put(map, "next", "#{iri}?page=#{page + 1}")
+    else
+      map
     end
   end
 end

@@ -8,6 +8,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Calendar.Strftime
   alias Pleroma.Activity
   alias Pleroma.Config
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
   alias Pleroma.Object
   alias Pleroma.Plugs.AuthenticationPlug
@@ -19,11 +20,17 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   alias Pleroma.Web.MediaProxy
 
   require Logger
+  require Pleroma.Constants
 
   # This is a hack for twidere.
   def get_by_id_or_ap_id(id) do
     activity =
-      Activity.get_by_id_with_object(id) || Activity.get_create_by_object_ap_id_with_object(id)
+      with true <- Pleroma.FlakeId.is_flake_id?(id),
+           %Activity{} = activity <- Activity.get_by_id_with_object(id) do
+        activity
+      else
+        _ -> Activity.get_create_by_object_ap_id_with_object(id)
+      end
 
     activity &&
       if activity.data["type"] == "Create" do
@@ -41,32 +48,61 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def get_replied_to_activity(_), do: nil
 
-  def attachments_from_ids(data) do
-    if Map.has_key?(data, "descriptions") do
-      attachments_from_ids_descs(data["media_ids"], data["descriptions"])
-    else
-      attachments_from_ids_no_descs(data["media_ids"])
-    end
+  def attachments_from_ids(%{"media_ids" => ids, "descriptions" => desc} = _) do
+    attachments_from_ids_descs(ids, desc)
   end
 
-  def attachments_from_ids_no_descs(ids) do
-    Enum.map(ids || [], fn media_id ->
-      Repo.get(Object, media_id).data
-    end)
+  def attachments_from_ids(%{"media_ids" => ids} = _) do
+    attachments_from_ids_no_descs(ids)
   end
+
+  def attachments_from_ids(_), do: []
+
+  def attachments_from_ids_no_descs([]), do: []
+
+  def attachments_from_ids_no_descs(ids) do
+    Enum.map(ids, fn media_id ->
+      case Repo.get(Object, media_id) do
+        %Object{data: data} = _ -> data
+        _ -> nil
+      end
+    end)
+    |> Enum.filter(& &1)
+  end
+
+  def attachments_from_ids_descs([], _), do: []
 
   def attachments_from_ids_descs(ids, descs_str) do
     {_, descs} = Jason.decode(descs_str)
 
-    Enum.map(ids || [], fn media_id ->
-      Map.put(Repo.get(Object, media_id).data, "name", descs[media_id])
+    Enum.map(ids, fn media_id ->
+      case Repo.get(Object, media_id) do
+        %Object{data: data} = _ ->
+          Map.put(data, "name", descs[media_id])
+
+        _ ->
+          nil
+      end
     end)
+    |> Enum.filter(& &1)
   end
 
-  @spec get_to_and_cc(User.t(), list(String.t()), Activity.t() | nil, String.t()) ::
+  @spec get_to_and_cc(
+          User.t(),
+          list(String.t()),
+          Activity.t() | nil,
+          String.t(),
+          Participation.t() | nil
+        ) ::
           {list(String.t()), list(String.t())}
-  def get_to_and_cc(user, mentioned_users, inReplyTo, "public") do
-    to = ["https://www.w3.org/ns/activitystreams#Public" | mentioned_users]
+
+  def get_to_and_cc(_, _, _, _, %Participation{} = participation) do
+    participation = Repo.preload(participation, :recipients)
+    {Enum.map(participation.recipients, & &1.ap_id), []}
+  end
+
+  def get_to_and_cc(user, mentioned_users, inReplyTo, "public", _) do
+    to = [Pleroma.Constants.as_public() | mentioned_users]
     cc = [user.follower_address]
 
     if inReplyTo do
@@ -76,9 +112,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def get_to_and_cc(user, mentioned_users, inReplyTo, "unlisted") do
+  def get_to_and_cc(user, mentioned_users, inReplyTo, "unlisted", _) do
     to = [user.follower_address | mentioned_users]
-    cc = ["https://www.w3.org/ns/activitystreams#Public"]
+    cc = [Pleroma.Constants.as_public()]
 
     if inReplyTo do
       {Enum.uniq([inReplyTo.data["actor"] | to]), cc}
@@ -87,12 +123,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def get_to_and_cc(user, mentioned_users, inReplyTo, "private") do
-    {to, cc} = get_to_and_cc(user, mentioned_users, inReplyTo, "direct")
+  def get_to_and_cc(user, mentioned_users, inReplyTo, "private", _) do
+    {to, cc} = get_to_and_cc(user, mentioned_users, inReplyTo, "direct", nil)
     {[user.follower_address | to], cc}
   end
 
-  def get_to_and_cc(_user, mentioned_users, inReplyTo, "direct") do
+  def get_to_and_cc(_user, mentioned_users, inReplyTo, "direct", _) do
     if inReplyTo do
       {Enum.uniq([inReplyTo.data["actor"] | mentioned_users]), []}
     else
@@ -100,7 +136,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     end
   end
 
-  def get_to_and_cc(_user, mentions, _inReplyTo, {:list, _}), do: {mentions, []}
+  def get_to_and_cc(_user, mentions, _inReplyTo, {:list, _}, _), do: {mentions, []}
 
   def get_addressed_users(_, to) when is_list(to) do
     User.get_ap_ids_by_nicknames(to)
@@ -230,8 +266,12 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   defp maybe_add_nsfw_tag(data, _), do: data
 
-  def make_context(%Activity{data: %{"context" => context}}), do: context
-  def make_context(_), do: Utils.generate_context_id()
+  def make_context(_, %Participation{} = participation) do
+    Repo.preload(participation, :conversation).conversation.ap_id
+  end
+
+  def make_context(%Activity{data: %{"context" => context}}, _), do: context
+  def make_context(_, _), do: Utils.generate_context_id()
 
   def maybe_add_attachments(parsed, _attachments, true = _no_links), do: parsed
 
@@ -241,19 +281,17 @@ defmodule Pleroma.Web.CommonAPI.Utils do
   end
 
   def add_attachments(text, attachments) do
-    attachment_text =
-      Enum.map(attachments, fn
-        %{"url" => [%{"href" => href} | _]} = attachment ->
-          name = attachment["name"] || URI.decode(Path.basename(href))
-          href = MediaProxy.url(href)
-          "<a href=\"#{href}\" class='attachment'>#{shortname(name)}</a>"
-
-        _ ->
-          ""
-      end)
-
+    attachment_text = Enum.map(attachments, &build_attachment_link/1)
     Enum.join([text | attachment_text], "<br>")
   end
+
+  defp build_attachment_link(%{"url" => [%{"href" => href} | _]} = attachment) do
+    name = attachment["name"] || URI.decode(Path.basename(href))
+    href = MediaProxy.url(href)
+    "<a href=\"#{href}\" class='attachment'>#{shortname(name)}</a>"
+  end
+
+  defp build_attachment_link(_), do: ""
 
   def format_input(text, format, options \\ [])
 
@@ -314,7 +352,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
         sensitive \\ false,
         merge \\ %{}
       ) do
-    object = %{
+    %{
       "type" => "Note",
       "to" => to,
       "cc" => cc,
@@ -324,18 +362,20 @@ defmodule Pleroma.Web.CommonAPI.Utils do
       "context" => context,
       "attachment" => attachments,
       "actor" => actor,
-      "tag" => tags |> Enum.map(fn {_, tag} -> tag end) |> Enum.uniq()
+      "tag" => Keyword.values(tags) |> Enum.uniq()
     }
+    |> add_in_reply_to(in_reply_to)
+    |> Map.merge(merge)
+  end
 
-    object =
-      with false <- is_nil(in_reply_to),
-           %Object{} = in_reply_to_object <- Object.normalize(in_reply_to) do
-        Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
-      else
-        _ -> object
-      end
+  defp add_in_reply_to(object, nil), do: object
 
-    Map.merge(object, merge)
+  defp add_in_reply_to(object, in_reply_to) do
+    with %Object{} = in_reply_to_object <- Object.normalize(in_reply_to) do
+      Map.put(object, "inReplyTo", in_reply_to_object.data["id"])
+    else
+      _ -> object
+    end
   end
 
   def format_naive_asctime(date) do
@@ -367,16 +407,15 @@ defmodule Pleroma.Web.CommonAPI.Utils do
     |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
   end
 
-  def to_masto_date(date) do
-    try do
-      date
-      |> NaiveDateTime.from_iso8601!()
-      |> NaiveDateTime.to_iso8601()
-      |> String.replace(~r/(\.\d+)?$/, ".000Z", global: false)
-    rescue
-      _e -> ""
+  def to_masto_date(date) when is_binary(date) do
+    with {:ok, date} <- NaiveDateTime.from_iso8601(date) do
+      to_masto_date(date)
+    else
+      _ -> ""
     end
   end
+
+  def to_masto_date(_), do: ""
 
   defp shortname(name) do
     if String.length(name) < 30 do
@@ -422,7 +461,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
     object_data =
       cond do
-        !is_nil(object) ->
+        not is_nil(object) ->
           object.data
 
         is_map(data["object"]) ->
@@ -466,9 +505,9 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def maybe_extract_mentions(%{"tag" => tag}) do
     tag
-    |> Enum.filter(fn x -> is_map(x) end)
-    |> Enum.filter(fn x -> x["type"] == "Mention" end)
+    |> Enum.filter(fn x -> is_map(x) && x["type"] == "Mention" end)
     |> Enum.map(fn x -> x["href"] end)
+    |> Enum.uniq()
   end
 
   def maybe_extract_mentions(_), do: []

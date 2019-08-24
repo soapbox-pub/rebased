@@ -9,6 +9,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
   alias Pleroma.Web.OStatus.UserRepresenter
 
   require Logger
+  require Pleroma.Constants
 
   defp get_href(id) do
     with %Object{data: %{"external_url" => external_url}} <- Object.get_cached_by_ap_id(id) do
@@ -34,7 +35,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     Enum.map(to, fn id ->
       cond do
         # Special handling for the AP/Ostatus public collections
-        "https://www.w3.org/ns/activitystreams#Public" == id ->
+        Pleroma.Constants.as_public() == id ->
           {:link,
            [
              rel: "mentioned",
@@ -182,6 +183,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
     author = if with_author, do: [{:author, UserRepresenter.to_simple_form(user)}], else: []
 
     retweeted_activity = Activity.get_create_by_object_ap_id(activity.data["object"])
+    retweeted_object = Object.normalize(retweeted_activity)
     retweeted_user = User.get_cached_by_ap_id(retweeted_activity.data["actor"])
 
     retweeted_xml = to_simple_form(retweeted_activity, retweeted_user, true)
@@ -196,7 +198,7 @@ defmodule Pleroma.Web.OStatus.ActivityRepresenter do
       {:"activity:verb", ['http://activitystrea.ms/schema/1.0/share']},
       {:id, h.(activity.data["id"])},
       {:title, ['#{user.nickname} repeated a notice']},
-      {:content, [type: 'html'], ['RT #{retweeted_activity.data["object"]["content"]}']},
+      {:content, [type: 'html'], ['RT #{retweeted_object.data["content"]}']},
       {:published, h.(inserted_at)},
       {:updated, h.(updated_at)},
       {:"ostatus:conversation", [ref: h.(activity.data["context"])],

@@ -23,6 +23,21 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     :ok
   end
 
+  test "returns the direct conversation id when given the `with_conversation_id` option" do
+    user = insert(:user)
+
+    {:ok, activity} = CommonAPI.post(user, %{"status" => "Hey @shp!", "visibility" => "direct"})
+
+    status =
+      StatusView.render("status.json",
+        activity: activity,
+        with_direct_conversation_id: true,
+        for: user
+      )
+
+    assert status[:pleroma][:direct_conversation_id]
+  end
+
   test "returns a temporary ap_id based user for activities missing db users" do
     user = insert(:user)
 
@@ -134,7 +149,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         in_reply_to_account_acct: nil,
         content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])},
-        expires_at: nil
+        expires_at: nil,
+        direct_conversation_id: nil
       }
     }
 
@@ -299,6 +315,16 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     # If theres a "id", use that instead of the generated one
     object = Map.put(object, "id", 2)
     assert %{id: "2"} = StatusView.render("attachment.json", %{attachment: object})
+  end
+
+  test "put the url advertised in the Activity in to the url attribute" do
+    id = "https://wedistribute.org/wp-json/pterotype/v1/object/85810"
+    [activity] = Activity.search(nil, id)
+
+    status = StatusView.render("status.json", %{activity: activity})
+
+    assert status.uri == id
+    assert status.url == "https://wedistribute.org/2019/07/mastodon-drops-ostatus/"
   end
 
   test "a reblog" do

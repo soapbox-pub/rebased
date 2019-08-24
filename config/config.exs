@@ -253,6 +253,12 @@ config :pleroma, :instance,
   skip_thread_containment: true,
   limit_to_local_content: :unauthenticated,
   dynamic_configuration: false,
+  user_bio_length: 5000,
+  user_name_length: 100,
+  max_account_fields: 10,
+  max_remote_account_fields: 20,
+  account_field_name_length: 512,
+  account_field_value_length: 512,
   external_user_synchronization: true
 
 config :pleroma, :markup,
@@ -302,7 +308,6 @@ config :pleroma, :assets,
   default_mascot: :pleroma_fox_tan
 
 config :pleroma, :activitypub,
-  accept_blocks: true,
   unfollow_blocked: true,
   outgoing_blocks: true,
   follow_handshake_timeout: 500,
@@ -336,6 +341,10 @@ config :pleroma, :mrf_keyword,
   replace: []
 
 config :pleroma, :mrf_subchain, match_actor: %{}
+
+config :pleroma, :mrf_vocabulary,
+  accept: [],
+  reject: []
 
 config :pleroma, :rich_media,
   enabled: true,
@@ -508,12 +517,31 @@ config :pleroma, :auth, oauth_consumer_strategies: oauth_consumer_strategies
 
 config :pleroma, Pleroma.Emails.Mailer, adapter: Swoosh.Adapters.Sendmail, enabled: false
 
+config :pleroma, Pleroma.Emails.UserEmail,
+  logo: nil,
+  styling: %{
+    link_color: "#d8a070",
+    background_color: "#2C3645",
+    content_background_color: "#1B2635",
+    header_color: "#d8a070",
+    text_color: "#b9b9ba",
+    text_muted_color: "#b9b9ba"
+  }
+
 config :prometheus, Pleroma.Web.Endpoint.MetricsExporter, path: "/api/pleroma/app_metrics"
 
 config :pleroma, Pleroma.ScheduledActivity,
   daily_user_limit: 25,
   total_user_limit: 300,
   enabled: true
+
+config :pleroma, :email_notifications,
+  digest: %{
+    active: false,
+    schedule: "0 0 * * 0",
+    interval: 7,
+    inactivity_threshold: 7
+  }
 
 config :pleroma, :oauth2,
   token_expires_in: 600,
@@ -535,7 +563,9 @@ config :pleroma, :rate_limit,
   relation_id_action: {60_000, 2},
   statuses_actions: {10_000, 15},
   status_id_action: {60_000, 3},
-  password_reset: {1_800_000, 5}
+  password_reset: {1_800_000, 5},
+  account_confirmation_resend: {8_640_000, 5},
+  ap_routes: {60_000, 15}
 
 config :pleroma, Pleroma.ActivityExpiration, enabled: true
 

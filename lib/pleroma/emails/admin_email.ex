@@ -63,7 +63,6 @@ defmodule Pleroma.Emails.AdminEmail do
     new()
     |> to({to.name, to.email})
     |> from({instance_name(), instance_notify_email()})
-    |> reply_to({reporter.name, reporter.email})
     |> subject("#{instance_name()} Report")
     |> html_body(html_body)
   end

@@ -25,7 +25,7 @@ defmodule Pleroma.Upload.Filter.DedupeTest do
 
     assert {
              :ok,
-             %Pleroma.Upload{id: @shasum, path: "#{@shasum}.jpg"}
+             %Pleroma.Upload{id: @shasum, path: @shasum <> ".jpg"}
            } = Dedupe.filter(upload)
   end
 end

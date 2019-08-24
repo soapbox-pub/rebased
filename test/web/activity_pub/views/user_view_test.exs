@@ -22,6 +22,21 @@ defmodule Pleroma.Web.ActivityPub.UserViewTest do
     assert String.contains?(result["publicKey"]["publicKeyPem"], "BEGIN PUBLIC KEY")
   end
 
+  test "Renders profile fields" do
+    fields = [
+      %{"name" => "foo", "value" => "bar"}
+    ]
+
+    {:ok, user} =
+      insert(:user)
+      |> User.upgrade_changeset(%{info: %{fields: fields}})
+      |> User.update_and_set_cache()
+
+    assert %{
+             "attachment" => [%{"name" => "foo", "type" => "PropertyValue", "value" => "bar"}]
+           } = UserView.render("user.json", %{user: user})
+  end
+
   test "Does not add an avatar image if the user hasn't set one" do
     user = insert(:user)
     {:ok, user} = User.ensure_keys_present(user)

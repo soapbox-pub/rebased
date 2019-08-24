@@ -15,10 +15,10 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   alias Pleroma.Plugs.AuthenticationPlug
   alias Pleroma.User
   alias Pleroma.Web
-  alias Pleroma.Web.ActivityPub.ActivityPub
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Web.OStatus
   alias Pleroma.Web.WebFinger
+
+  plug(Pleroma.Plugs.SetFormatPlug when action in [:config, :version])
 
   def help_test(conn, _params) do
     json(conn, "ok")
@@ -60,26 +60,24 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
       %Activity{id: activity_id} = Activity.get_create_by_object_ap_id(object.data["id"])
       redirect(conn, to: "/notice/#{activity_id}")
     else
-      {err, followee} = OStatus.find_or_make_user(acct)
-      avatar = User.avatar_url(followee)
-      name = followee.nickname
-      id = followee.id
-
-      if !!user do
+      with {:ok, followee} <- User.get_or_fetch(acct) do
         conn
-        |> render("follow.html", %{error: err, acct: acct, avatar: avatar, name: name, id: id})
-      else
-        conn
-        |> render("follow_login.html", %{
+        |> render(follow_template(user), %{
           error: false,
           acct: acct,
-          avatar: avatar,
-          name: name,
-          id: id
+          avatar: User.avatar_url(followee),
+          name: followee.nickname,
+          id: followee.id
         })
+      else
+        {:error, _reason} ->
+          render(conn, follow_template(user), %{error: :error})
       end
     end
   end
+
+  defp follow_template(%User{} = _user), do: "follow.html"
+  defp follow_template(_), do: "follow_login.html"
 
   defp is_status?(acct) do
     case Pleroma.Object.Fetcher.fetch_and_contain_remote_object_from_id(acct) do
@@ -94,50 +92,53 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
   def do_remote_follow(conn, %{
         "authorization" => %{"name" => username, "password" => password, "id" => id}
       }) do
-    followee = User.get_cached_by_id(id)
-    avatar = User.avatar_url(followee)
-    name = followee.nickname
-
-    with %User{} = user <- User.get_cached_by_nickname(username),
-         true <- AuthenticationPlug.checkpw(password, user.password_hash),
-         %User{} = _followed <- User.get_cached_by_id(id),
-         {:ok, follower} <- User.follow(user, followee),
-         {:ok, _activity} <- ActivityPub.follow(follower, followee) do
+    with %User{} = followee <- User.get_cached_by_id(id),
+         {_, %User{} = user, _} <- {:auth, User.get_cached_by_nickname(username), followee},
+         {_, true, _} <- {
+           :auth,
+           AuthenticationPlug.checkpw(password, user.password_hash),
+           followee
+         },
+         {:ok, _follower, _followee, _activity} <- CommonAPI.follow(user, followee) do
       conn
       |> render("followed.html", %{error: false})
     else
       # Was already following user
       {:error, "Could not follow user:" <> _rest} ->
-        render(conn, "followed.html", %{error: false})
+        render(conn, "followed.html", %{error: "Error following account"})
 
-      _e ->
+      {:auth, _, followee} ->
         conn
         |> render("follow_login.html", %{
           error: "Wrong username or password",
           id: id,
-          name: name,
-          avatar: avatar
+          name: followee.nickname,
+          avatar: User.avatar_url(followee)
         })
+
+      e ->
+        Logger.debug("Remote follow failed with error #{inspect(e)}")
+        render(conn, "followed.html", %{error: "Something went wrong."})
     end
   end
 
   def do_remote_follow(%{assigns: %{user: user}} = conn, %{"user" => %{"id" => id}}) do
-    with %User{} = followee <- User.get_cached_by_id(id),
-         {:ok, follower} <- User.follow(user, followee),
-         {:ok, _activity} <- ActivityPub.follow(follower, followee) do
+    with {:fetch_user, %User{} = followee} <- {:fetch_user, User.get_cached_by_id(id)},
+         {:ok, _follower, _followee, _activity} <- CommonAPI.follow(user, followee) do
       conn
       |> render("followed.html", %{error: false})
     else
       # Was already following user
       {:error, "Could not follow user:" <> _rest} ->
-        conn
-        |> render("followed.html", %{error: false})
+        render(conn, "followed.html", %{error: "Error following account"})
+
+      {:fetch_user, error} ->
+        Logger.debug("Remote follow failed with error #{inspect(error)}")
+        render(conn, "followed.html", %{error: "Could not find user"})
 
       e ->
         Logger.debug("Remote follow failed with error #{inspect(e)}")
-
-        conn
-        |> render("followed.html", %{error: inspect(e)})
+        render(conn, "followed.html", %{error: "Something went wrong."})
     end
   end
 
@@ -152,66 +153,69 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     end
   end
 
+  def config(%{assigns: %{format: "xml"}} = conn, _params) do
+    instance = Pleroma.Config.get(:instance)
+
+    response = """
+    <config>
+    <site>
+    <name>#{Keyword.get(instance, :name)}</name>
+    <site>#{Web.base_url()}</site>
+    <textlimit>#{Keyword.get(instance, :limit)}</textlimit>
+    <closed>#{!Keyword.get(instance, :registrations_open)}</closed>
+    </site>
+    </config>
+    """
+
+    conn
+    |> put_resp_content_type("application/xml")
+    |> send_resp(200, response)
+  end
+
   def config(conn, _params) do
     instance = Pleroma.Config.get(:instance)
 
-    case get_format(conn) do
-      "xml" ->
-        response = """
-        <config>
-          <site>
-            <name>#{Keyword.get(instance, :name)}</name>
-            <site>#{Web.base_url()}</site>
-            <textlimit>#{Keyword.get(instance, :limit)}</textlimit>
-            <closed>#{!Keyword.get(instance, :registrations_open)}</closed>
-          </site>
-        </config>
-        """
+    vapid_public_key = Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
 
-        conn
-        |> put_resp_content_type("application/xml")
-        |> send_resp(200, response)
+    uploadlimit = %{
+      uploadlimit: to_string(Keyword.get(instance, :upload_limit)),
+      avatarlimit: to_string(Keyword.get(instance, :avatar_upload_limit)),
+      backgroundlimit: to_string(Keyword.get(instance, :background_upload_limit)),
+      bannerlimit: to_string(Keyword.get(instance, :banner_upload_limit))
+    }
 
-      _ ->
-        vapid_public_key = Keyword.get(Pleroma.Web.Push.vapid_config(), :public_key)
+    data = %{
+      name: Keyword.get(instance, :name),
+      description: Keyword.get(instance, :description),
+      server: Web.base_url(),
+      textlimit: to_string(Keyword.get(instance, :limit)),
+      uploadlimit: uploadlimit,
+      closed: bool_to_val(Keyword.get(instance, :registrations_open), "0", "1"),
+      private: bool_to_val(Keyword.get(instance, :public, true), "0", "1"),
+      vapidPublicKey: vapid_public_key,
+      accountActivationRequired:
+        bool_to_val(Keyword.get(instance, :account_activation_required, false)),
+      invitesEnabled: bool_to_val(Keyword.get(instance, :invites_enabled, false)),
+      safeDMMentionsEnabled: bool_to_val(Pleroma.Config.get([:instance, :safe_dm_mentions]))
+    }
 
-        uploadlimit = %{
-          uploadlimit: to_string(Keyword.get(instance, :upload_limit)),
-          avatarlimit: to_string(Keyword.get(instance, :avatar_upload_limit)),
-          backgroundlimit: to_string(Keyword.get(instance, :background_upload_limit)),
-          bannerlimit: to_string(Keyword.get(instance, :banner_upload_limit))
-        }
+    managed_config = Keyword.get(instance, :managed_config)
 
-        data = %{
-          name: Keyword.get(instance, :name),
-          description: Keyword.get(instance, :description),
-          server: Web.base_url(),
-          textlimit: to_string(Keyword.get(instance, :limit)),
-          uploadlimit: uploadlimit,
-          closed: if(Keyword.get(instance, :registrations_open), do: "0", else: "1"),
-          private: if(Keyword.get(instance, :public, true), do: "0", else: "1"),
-          vapidPublicKey: vapid_public_key,
-          accountActivationRequired:
-            if(Keyword.get(instance, :account_activation_required, false), do: "1", else: "0"),
-          invitesEnabled: if(Keyword.get(instance, :invites_enabled, false), do: "1", else: "0"),
-          safeDMMentionsEnabled:
-            if(Pleroma.Config.get([:instance, :safe_dm_mentions]), do: "1", else: "0")
-        }
-
+    data =
+      if managed_config do
         pleroma_fe = Pleroma.Config.get([:frontend_configurations, :pleroma_fe])
+        Map.put(data, "pleromafe", pleroma_fe)
+      else
+        data
+      end
 
-        managed_config = Keyword.get(instance, :managed_config)
-
-        data =
-          if managed_config do
-            data |> Map.put("pleromafe", pleroma_fe)
-          else
-            data
-          end
-
-        json(conn, %{site: data})
-    end
+    json(conn, %{site: data})
   end
+
+  defp bool_to_val(true), do: "1"
+  defp bool_to_val(_), do: "0"
+  defp bool_to_val(true, val, _), do: val
+  defp bool_to_val(_, _, val), do: val
 
   def frontend_configurations(conn, _params) do
     config =
@@ -221,20 +225,16 @@ defmodule Pleroma.Web.TwitterAPI.UtilController do
     json(conn, config)
   end
 
-  def version(conn, _params) do
+  def version(%{assigns: %{format: "xml"}} = conn, _params) do
     version = Pleroma.Application.named_version()
 
-    case get_format(conn) do
-      "xml" ->
-        response = "<version>#{version}</version>"
+    conn
+    |> put_resp_content_type("application/xml")
+    |> send_resp(200, "<version>#{version}</version>")
+  end
 
-        conn
-        |> put_resp_content_type("application/xml")
-        |> send_resp(200, response)
-
-      _ ->
-        json(conn, version)
-    end
+  def version(conn, _params) do
+    json(conn, Pleroma.Application.named_version())
   end
 
   def emoji(conn, _params) do

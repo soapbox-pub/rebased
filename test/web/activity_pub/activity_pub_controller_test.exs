@@ -16,17 +16,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
 
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
-
-    config_path = [:instance, :federating]
-    initial_setting = Pleroma.Config.get(config_path)
-
-    Pleroma.Config.put(config_path, true)
-    on_exit(fn -> Pleroma.Config.put(config_path, initial_setting) end)
-
     :ok
   end
 
+  clear_config_all([:instance, :federating],
+    do: Pleroma.Config.put([:instance, :federating], true)
+  )
+
   describe "/relay" do
+    clear_config([:instance, :allow_relay])
+
     test "with the relay active, it returns the relay user", %{conn: conn} do
       res =
         conn
@@ -43,8 +42,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
       |> get(activity_pub_path(conn, :relay))
       |> json_response(404)
       |> assert
-
-      Pleroma.Config.put([:instance, :allow_relay], true)
     end
   end
 
@@ -180,18 +177,65 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubControllerTest do
   end
 
   describe "/object/:uuid/likes" do
-    test "it returns the like activities in a collection", %{conn: conn} do
+    setup do
       like = insert(:like_activity)
       like_object_ap_id = Object.normalize(like).data["id"]
-      uuid = String.split(like_object_ap_id, "/") |> List.last()
 
+      uuid =
+        like_object_ap_id
+        |> String.split("/")
+        |> List.last()
+
+      [id: like.data["id"], uuid: uuid]
+    end
+
+    test "it returns the like activities in a collection", %{conn: conn, id: id, uuid: uuid} do
       result =
         conn
         |> put_req_header("accept", "application/activity+json")
         |> get("/objects/#{uuid}/likes")
         |> json_response(200)
 
-      assert List.first(result["first"]["orderedItems"])["id"] == like.data["id"]
+      assert List.first(result["first"]["orderedItems"])["id"] == id
+      assert result["type"] == "OrderedCollection"
+      assert result["totalItems"] == 1
+      refute result["first"]["next"]
+    end
+
+    test "it does not crash when page number is exceeded total pages", %{conn: conn, uuid: uuid} do
+      result =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}/likes?page=2")
+        |> json_response(200)
+
+      assert result["type"] == "OrderedCollectionPage"
+      assert result["totalItems"] == 1
+      refute result["next"]
+      assert Enum.empty?(result["orderedItems"])
+    end
+
+    test "it contains the next key when likes count is more than 10", %{conn: conn} do
+      note = insert(:note_activity)
+      insert_list(11, :like_activity, note_activity: note)
+
+      uuid =
+        note
+        |> Object.normalize()
+        |> Map.get(:data)
+        |> Map.get("id")
+        |> String.split("/")
+        |> List.last()
+
+      result =
+        conn
+        |> put_req_header("accept", "application/activity+json")
+        |> get("/objects/#{uuid}/likes?page=1")
+        |> json_response(200)
+
+      assert result["totalItems"] == 11
+      assert length(result["orderedItems"]) == 10
+      assert result["next"]
     end
   end
 

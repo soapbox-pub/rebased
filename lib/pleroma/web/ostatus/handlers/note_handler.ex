@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.OStatus.NoteHandler do
   require Logger
+  require Pleroma.Constants
 
   alias Pleroma.Activity
   alias Pleroma.Object
@@ -49,7 +50,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
   def get_collection_mentions(entry) do
     transmogrify = fn
       "http://activityschema.org/collection/public" ->
-        "https://www.w3.org/ns/activitystreams#Public"
+        Pleroma.Constants.as_public()
 
       group ->
         group
@@ -110,7 +111,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
     with id <- XML.string_from_xpath("//id", entry),
          activity when is_nil(activity) <- Activity.get_create_by_object_ap_id_with_object(id),
          [author] <- :xmerl_xpath.string('//author[1]', doc),
-         {:ok, actor} <- OStatus.find_make_or_update_user(author),
+         {:ok, actor} <- OStatus.find_make_or_update_actor(author),
          content_html <- OStatus.get_content(entry),
          cw <- OStatus.get_cw(entry),
          in_reply_to <- XML.string_from_xpath("//thr:in-reply-to[1]/@ref", entry),
@@ -126,7 +127,7 @@ defmodule Pleroma.Web.OStatus.NoteHandler do
          to <- make_to_list(actor, mentions),
          date <- XML.string_from_xpath("//published", entry),
          unlisted <- XML.string_from_xpath("//mastodon:scope", entry) == "unlisted",
-         cc <- if(unlisted, do: ["https://www.w3.org/ns/activitystreams#Public"], else: []),
+         cc <- if(unlisted, do: [Pleroma.Constants.as_public()], else: []),
          note <-
            CommonAPI.Utils.make_note_data(
              actor.ap_id,

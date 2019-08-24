@@ -51,6 +51,10 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("https://mastodon.social/users/not_found", _, _, _) do
+    {:ok, %Tesla.Env{status: 404}}
+  end
+
   def get("https://mastodon.sdf.org/users/rinpatch", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -298,6 +302,22 @@ defmodule HttpRequestMock do
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/tesla_mock/baptiste.gelex.xyz-article.json")
+     }}
+  end
+
+  def get("https://wedistribute.org/wp-json/pterotype/v1/object/85810", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wedistribute-article.json")
+     }}
+  end
+
+  def get("https://wedistribute.org/wp-json/pterotype/v1/actor/-blog", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/wedistribute-user.json")
      }}
   end
 
@@ -614,6 +634,15 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get(
+        "https://social.heldscal.la/.well-known/webfinger?resource=invalid_content@social.heldscal.la",
+        _,
+        _,
+        Accept: "application/xrd+xml,application/jrd+json"
+      ) do
+    {:ok, %Tesla.Env{status: 200, body: ""}}
+  end
+
   def get("http://framatube.org/.well-known/host-meta", _, _, _) do
     {:ok,
      %Tesla.Env{
@@ -767,11 +796,27 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("http://localhost:4001/users/masto_closed/followers?page=1", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/masto_closed_followers_page.json")
+     }}
+  end
+
   def get("http://localhost:4001/users/masto_closed/following", _, _, _) do
     {:ok,
      %Tesla.Env{
        status: 200,
        body: File.read!("test/fixtures/users_mock/masto_closed_following.json")
+     }}
+  end
+
+  def get("http://localhost:4001/users/masto_closed/following?page=1", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/users_mock/masto_closed_following_page.json")
      }}
   end
 
@@ -913,6 +958,14 @@ defmodule HttpRequestMock do
 
   def get("https://info.pleroma.site/activity3.json", _, _, _) do
     {:ok, %Tesla.Env{status: 404, body: ""}}
+  end
+
+  def get("https://mstdn.jp/.well-known/webfinger?resource=acct:kpherox@mstdn.jp", _, _, _) do
+    {:ok,
+     %Tesla.Env{
+       status: 200,
+       body: File.read!("test/fixtures/tesla_mock/kpherox@mstdn.jp.xml")
+     }}
   end
 
   def get(url, query, body, headers) do

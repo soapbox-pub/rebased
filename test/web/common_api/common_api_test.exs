@@ -5,18 +5,66 @@
 defmodule Pleroma.Web.CommonAPITest do
   use Pleroma.DataCase
   alias Pleroma.Activity
+  alias Pleroma.Conversation.Participation
   alias Pleroma.Object
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.ActivityPub
+  alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.CommonAPI
 
   import Pleroma.Factory
+
+  clear_config([:instance, :safe_dm_mentions])
+  clear_config([:instance, :limit])
+  clear_config([:instance, :max_pinned_statuses])
+
+  test "when replying to a conversation / participation, it will set the correct context id even if no explicit reply_to is given" do
+    user = insert(:user)
+    {:ok, activity} = CommonAPI.post(user, %{"status" => ".", "visibility" => "direct"})
+
+    [participation] = Participation.for_user(user)
+
+    {:ok, convo_reply} =
+      CommonAPI.post(user, %{"status" => ".", "in_reply_to_conversation_id" => participation.id})
+
+    assert Visibility.is_direct?(convo_reply)
+
+    assert activity.data["context"] == convo_reply.data["context"]
+  end
+
+  test "when replying to a conversation / participation, it only mentions the recipients explicitly declared in the participation" do
+    har = insert(:user)
+    jafnhar = insert(:user)
+    tridi = insert(:user)
+
+    {:ok, activity} =
+      CommonAPI.post(har, %{
+        "status" => "@#{jafnhar.nickname} hey",
+        "visibility" => "direct"
+      })
+
+    assert har.ap_id in activity.recipients
+    assert jafnhar.ap_id in activity.recipients
+
+    [participation] = Participation.for_user(har)
+
+    {:ok, activity} =
+      CommonAPI.post(har, %{
+        "status" => "I don't really like @#{tridi.nickname}",
+        "visibility" => "direct",
+        "in_reply_to_status_id" => activity.id,
+        "in_reply_to_conversation_id" => participation.id
+      })
+
+    assert har.ap_id in activity.recipients
+    assert jafnhar.ap_id in activity.recipients
+    refute tridi.ap_id in activity.recipients
+  end
 
   test "with the safe_dm_mention option set, it does not mention people beyond the initial tags" do
     har = insert(:user)
     jafnhar = insert(:user)
     tridi = insert(:user)
-    option = Pleroma.Config.get([:instance, :safe_dm_mentions])
     Pleroma.Config.put([:instance, :safe_dm_mentions], true)
 
     {:ok, activity} =
@@ -27,7 +75,6 @@ defmodule Pleroma.Web.CommonAPITest do
 
     refute tridi.ap_id in activity.recipients
     assert jafnhar.ap_id in activity.recipients
-    Pleroma.Config.put([:instance, :safe_dm_mentions], option)
   end
 
   test "it de-duplicates tags" do
@@ -150,15 +197,12 @@ defmodule Pleroma.Web.CommonAPITest do
     end
 
     test "it returns error when character limit is exceeded" do
-      limit = Pleroma.Config.get([:instance, :limit])
       Pleroma.Config.put([:instance, :limit], 5)
 
       user = insert(:user)
 
       assert {:error, "The status is over the character limit"} =
                CommonAPI.post(user, %{"status" => "foobar"})
-
-      Pleroma.Config.put([:instance, :limit], limit)
     end
 
     test "it can handle activities that expire" do

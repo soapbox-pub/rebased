@@ -4,14 +4,11 @@
 
 defmodule Pleroma.Web.MediaProxyTest do
   use ExUnit.Case
+  use Pleroma.Tests.Helpers
   import Pleroma.Web.MediaProxy
   alias Pleroma.Web.MediaProxy.MediaProxyController
 
-  setup do
-    enabled = Pleroma.Config.get([:media_proxy, :enabled])
-    on_exit(fn -> Pleroma.Config.put([:media_proxy, :enabled], enabled) end)
-    :ok
-  end
+  clear_config([:media_proxy, :enabled])
 
   describe "when enabled" do
     setup do
@@ -171,21 +168,6 @@ defmodule Pleroma.Web.MediaProxyTest do
       encoded = url(url)
       assert decode_result(encoded) == url
     end
-
-    test "does not change whitelisted urls" do
-      upload_config = Pleroma.Config.get([Pleroma.Upload])
-      media_url = "https://media.pleroma.social"
-      Pleroma.Config.put([Pleroma.Upload, :base_url], media_url)
-      Pleroma.Config.put([:media_proxy, :whitelist], ["media.pleroma.social"])
-      Pleroma.Config.put([:media_proxy, :base_url], "https://cache.pleroma.social")
-
-      url = "#{media_url}/static/logo.png"
-      encoded = url(url)
-
-      assert String.starts_with?(encoded, media_url)
-
-      Pleroma.Config.put([Pleroma.Upload], upload_config)
-    end
   end
 
   describe "when disabled" do
@@ -215,12 +197,43 @@ defmodule Pleroma.Web.MediaProxyTest do
     decoded
   end
 
-  test "mediaproxy whitelist" do
-    Pleroma.Config.put([:media_proxy, :enabled], true)
-    Pleroma.Config.put([:media_proxy, :whitelist], ["google.com", "feld.me"])
-    url = "https://feld.me/foo.png"
+  describe "whitelist" do
+    setup do
+      Pleroma.Config.put([:media_proxy, :enabled], true)
+      :ok
+    end
 
-    unencoded = url(url)
-    assert unencoded == url
+    test "mediaproxy whitelist" do
+      Pleroma.Config.put([:media_proxy, :whitelist], ["google.com", "feld.me"])
+      url = "https://feld.me/foo.png"
+
+      unencoded = url(url)
+      assert unencoded == url
+    end
+
+    test "does not change whitelisted urls" do
+      Pleroma.Config.put([:media_proxy, :whitelist], ["mycdn.akamai.com"])
+      Pleroma.Config.put([:media_proxy, :base_url], "https://cache.pleroma.social")
+
+      media_url = "https://mycdn.akamai.com"
+
+      url = "#{media_url}/static/logo.png"
+      encoded = url(url)
+
+      assert String.starts_with?(encoded, media_url)
+    end
+
+    test "ensure Pleroma.Upload base_url is always whitelisted" do
+      upload_config = Pleroma.Config.get([Pleroma.Upload])
+      media_url = "https://media.pleroma.social"
+      Pleroma.Config.put([Pleroma.Upload, :base_url], media_url)
+
+      url = "#{media_url}/static/logo.png"
+      encoded = url(url)
+
+      assert String.starts_with?(encoded, media_url)
+
+      Pleroma.Config.put([Pleroma.Upload], upload_config)
+    end
   end
 end

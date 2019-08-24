@@ -4,13 +4,15 @@
 
 defmodule Pleroma.NotificationTest do
   use Pleroma.DataCase
+
+  import Pleroma.Factory
+
   alias Pleroma.Notification
   alias Pleroma.User
   alias Pleroma.Web.ActivityPub.Transmogrifier
   alias Pleroma.Web.CommonAPI
   alias Pleroma.Web.Streamer
   alias Pleroma.Web.TwitterAPI.TwitterAPI
-  import Pleroma.Factory
 
   describe "create_notifications" do
     test "notifies someone when they are directly addressed" do
@@ -352,6 +354,51 @@ defmodule Pleroma.NotificationTest do
     end
   end
 
+  describe "for_user_since/2" do
+    defp days_ago(days) do
+      NaiveDateTime.add(
+        NaiveDateTime.truncate(NaiveDateTime.utc_now(), :second),
+        -days * 60 * 60 * 24,
+        :second
+      )
+    end
+
+    test "Returns recent notifications" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      Enum.each(0..10, fn i ->
+        {:ok, _activity} =
+          CommonAPI.post(user1, %{
+            "status" => "hey ##{i} @#{user2.nickname}!"
+          })
+      end)
+
+      {old, new} = Enum.split(Notification.for_user(user2), 5)
+
+      Enum.each(old, fn notification ->
+        notification
+        |> cast(%{updated_at: days_ago(10)}, [:updated_at])
+        |> Pleroma.Repo.update!()
+      end)
+
+      recent_notifications_ids =
+        user2
+        |> Notification.for_user_since(
+          NaiveDateTime.add(NaiveDateTime.utc_now(), -5 * 86_400, :second)
+        )
+        |> Enum.map(& &1.id)
+
+      Enum.each(old, fn %{id: id} ->
+        refute id in recent_notifications_ids
+      end)
+
+      Enum.each(new, fn %{id: id} ->
+        assert id in recent_notifications_ids
+      end)
+    end
+  end
+
   describe "notification target determination" do
     test "it sends notifications to addressed users in new messages" do
       user = insert(:user)
@@ -563,6 +610,64 @@ defmodule Pleroma.NotificationTest do
         })
 
       assert Enum.empty?(Notification.for_user(user))
+    end
+
+    test "notifications are deleted if a local user is deleted" do
+      user = insert(:user)
+      other_user = insert(:user)
+
+      {:ok, _activity} =
+        CommonAPI.post(user, %{"status" => "hi @#{other_user.nickname}", "visibility" => "direct"})
+
+      refute Enum.empty?(Notification.for_user(other_user))
+
+      User.delete(user)
+
+      assert Enum.empty?(Notification.for_user(other_user))
+    end
+
+    test "notifications are deleted if a remote user is deleted" do
+      remote_user = insert(:user)
+      local_user = insert(:user)
+
+      dm_message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "type" => "Create",
+        "actor" => remote_user.ap_id,
+        "id" => remote_user.ap_id <> "/activities/test",
+        "to" => [local_user.ap_id],
+        "cc" => [],
+        "object" => %{
+          "type" => "Note",
+          "content" => "Hello!",
+          "tag" => [
+            %{
+              "type" => "Mention",
+              "href" => local_user.ap_id,
+              "name" => "@#{local_user.nickname}"
+            }
+          ],
+          "to" => [local_user.ap_id],
+          "cc" => [],
+          "attributedTo" => remote_user.ap_id
+        }
+      }
+
+      {:ok, _dm_activity} = Transmogrifier.handle_incoming(dm_message)
+
+      refute Enum.empty?(Notification.for_user(local_user))
+
+      delete_user_message = %{
+        "@context" => "https://www.w3.org/ns/activitystreams",
+        "id" => remote_user.ap_id <> "/activities/delete",
+        "actor" => remote_user.ap_id,
+        "type" => "Delete",
+        "object" => remote_user.ap_id
+      }
+
+      {:ok, _delete_activity} = Transmogrifier.handle_incoming(delete_user_message)
+
+      assert Enum.empty?(Notification.for_user(local_user))
     end
   end
 

@@ -66,6 +66,16 @@ defmodule Pleroma.FlakeId do
   @spec get :: binary
   def get, do: to_string(:gen_server.call(:flake, :get))
 
+  # checks that ID is is valid FlakeID
+  #
+  @spec is_flake_id?(String.t()) :: boolean
+  def is_flake_id?(id), do: is_flake_id?(String.to_charlist(id), true)
+  defp is_flake_id?([c | cs], true) when c >= ?0 and c <= ?9, do: is_flake_id?(cs, true)
+  defp is_flake_id?([c | cs], true) when c >= ?A and c <= ?Z, do: is_flake_id?(cs, true)
+  defp is_flake_id?([c | cs], true) when c >= ?a and c <= ?z, do: is_flake_id?(cs, true)
+  defp is_flake_id?([], true), do: true
+  defp is_flake_id?(_, _), do: false
+
   # -- Ecto.Type API
   @impl Ecto.Type
   def type, do: :uuid
@@ -88,7 +98,7 @@ defmodule Pleroma.FlakeId do
   def autogenerate, do: get()
 
   # -- GenServer API
-  def start_link do
+  def start_link(_) do
     :gen_server.start_link({:local, :flake}, __MODULE__, [], [])
   end
 

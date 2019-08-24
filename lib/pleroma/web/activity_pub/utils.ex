@@ -18,6 +18,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   import Ecto.Query
 
   require Logger
+  require Pleroma.Constants
 
   @supported_object_types ["Article", "Note", "Video", "Page", "Question", "Answer"]
   @supported_report_states ~w(open closed resolved)
@@ -250,20 +251,6 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def insert_full_object(map), do: {:ok, map, nil}
 
-  def update_object_in_activities(%{data: %{"id" => id}} = object) do
-    # TODO
-    # Update activities that already had this. Could be done in a seperate process.
-    # Alternatively, just don't do this and fetch the current object each time. Most
-    # could probably be taken from cache.
-    relevant_activities = Activity.get_all_create_by_object_ap_id(id)
-
-    Enum.map(relevant_activities, fn activity ->
-      new_activity_data = activity.data |> Map.put("object", object.data)
-      changeset = Changeset.change(activity, data: new_activity_data)
-      Repo.update(changeset)
-    end)
-  end
-
   #### Like-related helpers
 
   @doc """
@@ -346,8 +333,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
            |> Map.put("#{property}_count", length(element))
            |> Map.put("#{property}s", element),
          changeset <- Changeset.change(object, data: new_data),
-         {:ok, object} <- Object.update_and_set_cache(changeset),
-         _ <- update_object_in_activities(object) do
+         {:ok, object} <- Object.update_and_set_cache(changeset) do
       {:ok, object}
     end
   end
@@ -388,6 +374,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         [state, actor, object]
       )
 
+      User.set_follow_state_cache(actor, object, state)
       activity = Activity.get_by_id(activity.id)
       {:ok, activity}
     rescue
@@ -396,12 +383,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     end
   end
 
-  def update_follow_state(%Activity{} = activity, state) do
+  def update_follow_state(
+        %Activity{data: %{"actor" => actor, "object" => object}} = activity,
+        state
+      ) do
     with new_data <-
            activity.data
            |> Map.put("state", state),
          changeset <- Changeset.change(activity, data: new_data),
-         {:ok, activity} <- Repo.update(changeset) do
+         {:ok, activity} <- Repo.update(changeset),
+         _ <- User.set_follow_state_cache(actor, object, state) do
       {:ok, activity}
     end
   end
@@ -418,7 +409,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "type" => "Follow",
       "actor" => follower_id,
       "to" => [followed_id],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [Pleroma.Constants.as_public()],
       "object" => followed_id,
       "state" => "pending"
     }
@@ -510,7 +501,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => ap_id,
       "object" => id,
       "to" => [user.follower_address, object.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [Pleroma.Constants.as_public()],
       "context" => object.data["context"]
     }
 
@@ -530,7 +521,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => ap_id,
       "object" => activity.data,
       "to" => [user.follower_address, activity.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
 
@@ -547,7 +538,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "actor" => ap_id,
       "object" => activity.data,
       "to" => [user.follower_address, activity.data["actor"]],
-      "cc" => ["https://www.w3.org/ns/activitystreams#Public"],
+      "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
 
@@ -556,7 +547,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def add_announce_to_object(
         %Activity{
-          data: %{"actor" => actor, "cc" => ["https://www.w3.org/ns/activitystreams#Public"]}
+          data: %{"actor" => actor, "cc" => [Pleroma.Constants.as_public()]}
         },
         object
       ) do
@@ -765,7 +756,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
        ) do
     cc = Map.get(data, "cc", [])
     follower_address = User.get_cached_by_ap_id(data["actor"]).follower_address
-    public = "https://www.w3.org/ns/activitystreams#Public"
+    public = Pleroma.Constants.as_public()
 
     case visibility do
       "public" ->
