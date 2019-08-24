@@ -50,9 +50,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - ActivityPub: Deactivated user deletion
 
 ### Added
-- Expiring/ephemeral activites. All activities can have expires_on value set, which controls when they should be deleted automatically.
-- Mastodon API: in post_status, the expires_in parameter lets you set the number of minutes until an activity expires. It must be at least one hour.
-- Mastodon API: all status JSON responses contain a `pleroma.expires_on` item which states when an activity will expire. The value is only shown to the user who created the activity. To everyone else it's empty.
+- Expiring/ephemeral activites. All activities can have expires_at value set, which controls when they should be deleted automatically.
+- Mastodon API: in post_status, the expires_in parameter lets you set the number of seconds until an activity expires. It must be at least one hour.
+- Mastodon API: all status JSON responses contain a `pleroma.expires_at` item which states when an activity will expire. The value is only shown to the user who created the activity. To everyone else it's empty.
 - Configuration: `ActivityExpiration.enabled` controls whether expired activites will get deleted at the appropriate time. Enabled by default.
 - Conversations: Add Pleroma-specific conversation endpoints and status posting extensions. Run the `bump_all_conversations` task again to create the necessary data.
 - **Breaking:** MRF describe API, which adds support for exposing configuration information about MRF policies to NodeInfo.
