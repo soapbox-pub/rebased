@@ -201,14 +201,21 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
-  defp check_expiry_date(expiry_str) do
-    {:ok, expiry} = Ecto.Type.cast(:naive_datetime, expiry_str)
+  defp check_expiry_date({:ok, nil} = res), do: res
 
-    if is_nil(expiry) || ActivityExpiration.expires_late_enough?(expiry) do
+  defp check_expiry_date({:ok, in_seconds}) do
+    expiry = NaiveDateTime.utc_now() |> NaiveDateTime.add(in_seconds)
+
+    if ActivityExpiration.expires_late_enough?(expiry) do
       {:ok, expiry}
     else
       {:error, "Expiry date is too soon"}
     end
+  end
+
+  defp check_expiry_date(expiry_str) do
+    Ecto.Type.cast(:integer, expiry_str)
+    |> check_expiry_date()
   end
 
   def post(user, %{"status" => status} = data) do
@@ -237,7 +244,7 @@ defmodule Pleroma.Web.CommonAPI do
          context <- make_context(in_reply_to, in_reply_to_conversation),
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
-         {:ok, expires_at} <- check_expiry_date(data["expires_at"]),
+         {:ok, expires_at} <- check_expiry_date(data["expires_in"]),
          full_payload <- String.trim(status <> cw),
          :ok <- validate_character_limit(full_payload, attachments, limit),
          object <-
