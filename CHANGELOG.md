@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Not being able to pin unlisted posts
 - Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
+- Favorites timeline doing database-intensive queries
 - Metadata rendering errors resulting in the entire page being inaccessible
 - `federation_incoming_replies_max_depth` option being ignored in certain cases
 - Federation/MediaProxy not working with instances that have wrong certificate order
