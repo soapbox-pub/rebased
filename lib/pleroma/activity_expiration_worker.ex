@@ -15,7 +15,7 @@ defmodule Pleroma.ActivityExpirationWorker do
 
   @schedule_interval :timer.minutes(1)
 
-  def start_link do
+  def start_link(_) do
     GenServer.start_link(__MODULE__, nil)
   end
 
