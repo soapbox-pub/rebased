@@ -426,6 +426,12 @@ config :pleroma, Oban,
 
 This config contains two queues: `federator_incoming` and `federator_outgoing`. Both have the number of max concurrent jobs set to `50`.
 
+## :workers
+
+Includes custom worker options not interpretable directly by `Oban`.
+
+* `retries` — keyword lists where keys are `Oban` queues (see above) and values are numbers of max attempts for failed jobs.
+
 ## Pleroma.Web.Metadata
 * `providers`: a list of metadata providers to enable. Providers available:
   * Pleroma.Web.Metadata.Providers.OpenGraph
