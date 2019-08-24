@@ -195,6 +195,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Configuration: Added `extra_cookie_attrs` for setting non-standard cookie attributes. Defaults to ["SameSite=Lax"] so that remote follows work.
 - Timelines: Messages involving people you have blocked will be excluded from the timeline in all cases instead of just repeats.
 - Admin API: Move the user related API to `api/pleroma/admin/users`
+- Admin API: `POST /api/pleroma/admin/users` will take list of users
 - Pleroma API: Support for emoji tags in `/api/pleroma/emoji` resulting in a breaking API change
 - Mastodon API: Support for `exclude_types`, `limit` and `min_id` in `/api/v1/notifications`
 - Mastodon API: Add `languages` and `registrations` to `/api/v1/instance`

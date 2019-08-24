@@ -53,24 +53,52 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
     |> json("ok")
   end
 
-  def user_create(
-        conn,
-        %{"nickname" => nickname, "email" => email, "password" => password}
-      ) do
-    user_data = %{
-      nickname: nickname,
-      name: nickname,
-      email: email,
-      password: password,
-      password_confirmation: password,
-      bio: "."
-    }
+  def users_create(conn, %{"users" => users}) do
+    changesets =
+      Enum.map(users, fn %{"nickname" => nickname, "email" => email, "password" => password} ->
+        user_data = %{
+          nickname: nickname,
+          name: nickname,
+          email: email,
+          password: password,
+          password_confirmation: password,
+          bio: "."
+        }
 
-    changeset = User.register_changeset(%User{}, user_data, need_confirmation: false)
-    {:ok, user} = User.register(changeset)
+        User.register_changeset(%User{}, user_data, need_confirmation: false)
+      end)
+      |> Enum.reduce(Ecto.Multi.new(), fn changeset, multi ->
+        Ecto.Multi.insert(multi, Ecto.UUID.generate(), changeset)
+      end)
 
-    conn
-    |> json(user.nickname)
+    case Pleroma.Repo.transaction(changesets) do
+      {:ok, users} ->
+        res =
+          users
+          |> Map.values()
+          |> Enum.map(fn user ->
+            {:ok, user} = User.post_register_action(user)
+            user
+          end)
+          |> Enum.map(&AccountView.render("created.json", %{user: &1}))
+
+        conn
+        |> json(res)
+
+      {:error, id, changeset, _} ->
+        res =
+          Enum.map(changesets.operations, fn
+            {current_id, {:changeset, _current_changeset, _}} when current_id == id ->
+              AccountView.render("create-error.json", %{changeset: changeset})
+
+            {_, {:changeset, current_changeset, _}} ->
+              AccountView.render("create-error.json", %{changeset: current_changeset})
+          end)
+
+        conn
+        |> put_status(:conflict)
+        |> json(res)
+    end
   end
 
   def user_show(conn, %{"nickname" => nickname}) do
