@@ -143,6 +143,13 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> Enum.concat(Formatter.get_emoji_map(emojis_text))
       |> Enum.dedup()
 
+    params =
+      if Map.has_key?(params, "fields_attributes") && Enum.all?(params["fields_attributes"], &is_tuple/1) do
+        Map.update!(params, "fields_attributes", &Enum.map(&1, fn {_, v} -> v end))
+      else
+        params
+      end
+
     info_params =
       [
         :no_rich_text,
