@@ -1,5 +1,5 @@
 # Pleroma: A lightweight social networking server
-# Copyright © 2017-2018 Pleroma Authors <https://pleroma.social/>
+# Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Factory do
@@ -141,6 +141,25 @@ defmodule Pleroma.Factory do
       recipients: data["to"]
     }
     |> Map.merge(attrs)
+  end
+
+  defp expiration_offset_by_minutes(attrs, minutes) do
+    scheduled_at =
+      NaiveDateTime.utc_now()
+      |> NaiveDateTime.add(:timer.minutes(minutes), :millisecond)
+      |> NaiveDateTime.truncate(:second)
+
+    %Pleroma.ActivityExpiration{}
+    |> Map.merge(attrs)
+    |> Map.put(:scheduled_at, scheduled_at)
+  end
+
+  def expiration_in_the_past_factory(attrs \\ %{}) do
+    expiration_offset_by_minutes(attrs, -60)
+  end
+
+  def expiration_in_the_future_factory(attrs \\ %{}) do
+    expiration_offset_by_minutes(attrs, 61)
   end
 
   def article_activity_factory do

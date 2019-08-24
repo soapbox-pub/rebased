@@ -495,6 +495,10 @@ config :auto_linker,
 * `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
 
+## Pleroma.ActivityExpiration
+
+# `enabled`: whether expired activities will be sent to the job queue to be deleted
+
 ## Pleroma.Web.Auth.Authenticator
 
 * `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator

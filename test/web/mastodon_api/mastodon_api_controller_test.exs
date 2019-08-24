@@ -7,6 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
   alias Ecto.Changeset
   alias Pleroma.Activity
+  alias Pleroma.ActivityExpiration
   alias Pleroma.Config
   alias Pleroma.Notification
   alias Pleroma.Object
@@ -150,6 +151,32 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
 
       assert %{"id" => third_id} = json_response(conn_three, 200)
       refute id == third_id
+
+      # An activity that will expire:
+      # 2 hours
+      expires_in = 120 * 60
+
+      conn_four =
+        conn
+        |> post("api/v1/statuses", %{
+          "status" => "oolong",
+          "expires_in" => expires_in
+        })
+
+      assert fourth_response = %{"id" => fourth_id} = json_response(conn_four, 200)
+      assert activity = Activity.get_by_id(fourth_id)
+      assert expiration = ActivityExpiration.get_by_activity_id(fourth_id)
+
+      estimated_expires_at =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.add(expires_in)
+        |> NaiveDateTime.truncate(:second)
+
+      # This assert will fail if the test takes longer than a minute. I sure hope it never does:
+      assert abs(NaiveDateTime.diff(expiration.scheduled_at, estimated_expires_at, :second)) < 60
+
+      assert fourth_response["pleroma"]["expires_at"] ==
+               NaiveDateTime.to_iso8601(expiration.scheduled_at)
     end
 
     test "replying to a status", %{conn: conn} do
@@ -403,7 +430,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     assert %{"visibility" => "direct"} = status
     assert status["url"] != direct.data["id"]
 
-    # User should be able to see his own direct message
+    # User should be able to see their own direct message
     res_conn =
       build_conn()
       |> assign(:user, user_one)

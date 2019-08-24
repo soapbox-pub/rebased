@@ -204,6 +204,21 @@ defmodule Pleroma.Web.CommonAPITest do
       assert {:error, "The status is over the character limit"} =
                CommonAPI.post(user, %{"status" => "foobar"})
     end
+
+    test "it can handle activities that expire" do
+      user = insert(:user)
+
+      expires_at =
+        NaiveDateTime.utc_now()
+        |> NaiveDateTime.truncate(:second)
+        |> NaiveDateTime.add(1_000_000, :second)
+
+      assert {:ok, activity} =
+               CommonAPI.post(user, %{"status" => "chai", "expires_in" => 1_000_000})
+
+      assert expiration = Pleroma.ActivityExpiration.get_by_activity_id(activity.id)
+      assert expiration.scheduled_at == expires_at
+    end
   end
 
   describe "reactions" do

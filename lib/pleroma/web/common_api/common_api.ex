@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
+  alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
   alias Pleroma.Formatter
   alias Pleroma.Object
@@ -200,6 +201,23 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  defp check_expiry_date({:ok, nil} = res), do: res
+
+  defp check_expiry_date({:ok, in_seconds}) do
+    expiry = NaiveDateTime.utc_now() |> NaiveDateTime.add(in_seconds)
+
+    if ActivityExpiration.expires_late_enough?(expiry) do
+      {:ok, expiry}
+    else
+      {:error, "Expiry date is too soon"}
+    end
+  end
+
+  defp check_expiry_date(expiry_str) do
+    Ecto.Type.cast(:integer, expiry_str)
+    |> check_expiry_date()
+  end
+
   def post(user, %{"status" => status} = data) do
     limit = Pleroma.Config.get([:instance, :limit])
 
@@ -226,6 +244,7 @@ defmodule Pleroma.Web.CommonAPI do
          context <- make_context(in_reply_to, in_reply_to_conversation),
          cw <- data["spoiler_text"] || "",
          sensitive <- data["sensitive"] || Enum.member?(tags, {"#nsfw", "nsfw"}),
+         {:ok, expires_at} <- check_expiry_date(data["expires_in"]),
          full_payload <- String.trim(status <> cw),
          :ok <- validate_character_limit(full_payload, attachments, limit),
          object <-
@@ -251,15 +270,24 @@ defmodule Pleroma.Web.CommonAPI do
       preview? = Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
       direct? = visibility == "direct"
 
-      %{
-        to: to,
-        actor: user,
-        context: context,
-        object: object,
-        additional: %{"cc" => cc, "directMessage" => direct?}
-      }
-      |> maybe_add_list_data(user, visibility)
-      |> ActivityPub.create(preview?)
+      result =
+        %{
+          to: to,
+          actor: user,
+          context: context,
+          object: object,
+          additional: %{"cc" => cc, "directMessage" => direct?}
+        }
+        |> maybe_add_list_data(user, visibility)
+        |> ActivityPub.create(preview?)
+
+      if expires_at do
+        with {:ok, activity} <- result do
+          {:ok, _} = ActivityExpiration.create(activity, expires_at)
+        end
+      end
+
+      result
     else
       {:private_to_public, true} ->
         {:error, dgettext("errors", "The message visibility must be direct")}
