@@ -159,12 +159,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
         end)
       end)
       |> add_if_present(params, "default_scope", :default_scope)
-      |> add_if_present(params, "fields", :fields, fn fields ->
+      |> add_if_present(params, "fields_attributes", :fields, fn fields ->
         fields = Enum.map(fields, fn f -> Map.update!(f, "value", &AutoLinker.link(&1)) end)
 
         {:ok, fields}
       end)
-      |> add_if_present(params, "fields", :raw_fields)
+      |> add_if_present(params, "fields_attributes", :raw_fields)
       |> add_if_present(params, "pleroma_settings_store", :pleroma_settings_store, fn value ->
         {:ok, Map.merge(user.info.pleroma_settings_store, value)}
       end)
