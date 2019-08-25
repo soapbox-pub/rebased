@@ -94,6 +94,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Relays: Added a task to list relay subscriptions.
 - Mix Tasks: `mix pleroma.database fix_likes_collections`
 - Federation: Remove `likes` from objects.
+- Admin API: Added moderation log
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text

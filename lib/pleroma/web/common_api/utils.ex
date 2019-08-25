@@ -93,8 +93,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
           Activity.t() | nil,
           String.t(),
           Participation.t() | nil
-        ) ::
-          {list(String.t()), list(String.t())}
+        ) :: {list(String.t()), list(String.t())}
 
   def get_to_and_cc(_, _, _, _, %Participation{} = participation) do
     participation = Repo.preload(participation, :recipients)

@@ -694,3 +694,27 @@ Compile time settings (need instance reboot):
   ]
 }
 ```
+
+## `/api/pleroma/admin/moderation_log`
+### Get moderation log
+- Method `GET`
+- Params:
+  - *optional* `page`: **integer** page number
+  - *optional* `page_size`: **integer** number of users per page (default is `50`)
+- Response:
+
+```json
+[
+  {
+    "data": {
+      "actor": {
+        "id": 1,
+        "nickname": "lain"
+      },
+      "action": "relay_follow"
+    },
+    "time": 1502812026, // timestamp
+    "message": "[2017-08-15 15:47:06] @nick0 followed relay: https://example.org/relay" // log message
+  }
+]
+```
