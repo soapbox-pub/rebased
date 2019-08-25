@@ -364,6 +364,21 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController.UpdateCredentialsTest do
                |> assign(:user, user)
                |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
                |> json_response(403)
+
+      fields = [
+        %{"name" => "foo", "value" => ""},
+        %{"name" => "", "value" => "bar"}
+      ]
+
+      account =
+        conn
+        |> assign(:user, user)
+        |> patch("/api/v1/accounts/update_credentials", %{"fields_attributes" => fields})
+        |> json_response(200)
+
+      assert account["fields"] == [
+               %{"name" => "foo", "value" => ""}
+             ]
     end
   end
 end
