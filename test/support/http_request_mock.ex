@@ -18,8 +18,6 @@ defmodule HttpRequestMock do
       res
     else
       error ->
-        error = error
-
         with {:error, message} <- error do
           Logger.warn(message)
         end
