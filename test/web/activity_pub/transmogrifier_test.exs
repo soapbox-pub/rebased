@@ -563,6 +563,14 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
                %{"name" => "foo", "value" => "updated"},
                %{"name" => "foo1", "value" => "updated"}
              ]
+
+      update_data = put_in(update_data, ["object", "attachment"], [])
+
+      {:ok, _} = Transmogrifier.handle_incoming(update_data)
+
+      user = User.get_cached_by_ap_id(user.ap_id)
+
+      assert User.Info.fields(user.info) == []
     end
 
     test "it works for incoming update activities which lock the account" do
