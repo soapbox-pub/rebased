@@ -973,6 +973,22 @@ defmodule HttpRequestMock do
      }}
   end
 
+  def get("http://example.com/rel_me/anchor", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rel_me_anchor.html")}}
+  end
+
+  def get("http://example.com/rel_me/anchor_nofollow", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rel_me_anchor_nofollow.html")}}
+  end
+
+  def get("http://example.com/rel_me/link", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rel_me_link.html")}}
+  end
+
+  def get("http://example.com/rel_me/null", _, _, _) do
+    {:ok, %Tesla.Env{status: 200, body: File.read!("test/fixtures/rel_me_null.html")}}
+  end
+
   def get(url, query, body, headers) do
     {:error,
      "Mock response not implemented for GET #{inspect(url)}, #{query}, #{inspect(body)}, #{
