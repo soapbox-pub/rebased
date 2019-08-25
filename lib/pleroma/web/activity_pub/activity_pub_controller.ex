@@ -41,7 +41,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- User.ensure_keys_present(user) do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(UserView.render("user.json", %{user: user}))
     else
       nil -> {:error, :not_found}
@@ -53,7 +53,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          %Object{} = object <- Object.get_cached_by_ap_id(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(object)} do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(ObjectView.render("object.json", %{object: object}))
     else
       {:public?, false} ->
@@ -69,7 +69,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       {page, _} = Integer.parse(page)
 
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(ObjectView.render("likes.json", ap_id, likes, page))
     else
       {:public?, false} ->
@@ -83,7 +83,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          {_, true} <- {:public?, Visibility.is_public?(object)},
          likes <- Utils.get_object_likes(object) do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(ObjectView.render("likes.json", ap_id, likes))
     else
       {:public?, false} ->
@@ -96,12 +96,19 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
          %Activity{} = activity <- Activity.normalize(ap_id),
          {_, true} <- {:public?, Visibility.is_public?(activity)} do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(ObjectView.render("object.json", %{object: activity}))
     else
       {:public?, false} ->
         {:error, :not_found}
     end
+  end
+
+  # GET /relay/following
+  def following(%{assigns: %{relay: true}} = conn, _params) do
+    conn
+    |> put_resp_content_type("application/activity+json")
+    |> json(UserView.render("following.json", %{user: Relay.get_actor()}))
   end
 
   def following(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
@@ -112,12 +119,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       {page, _} = Integer.parse(page)
 
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(UserView.render("following.json", %{user: user, page: page, for: for_user}))
     else
       {:show_follows, _} ->
         conn
-        |> put_resp_header("content-type", "application/activity+json")
+        |> put_resp_content_type("application/activity+json")
         |> send_resp(403, "")
     end
   end
@@ -126,9 +133,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(UserView.render("following.json", %{user: user, for: for_user}))
     end
+  end
+
+  # GET /relay/followers
+  def followers(%{assigns: %{relay: true}} = conn, _params) do
+    conn
+    |> put_resp_content_type("application/activity+json")
+    |> json(UserView.render("followers.json", %{user: Relay.get_actor()}))
   end
 
   def followers(%{assigns: %{user: for_user}} = conn, %{"nickname" => nickname, "page" => page}) do
@@ -139,12 +153,12 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
       {page, _} = Integer.parse(page)
 
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(UserView.render("followers.json", %{user: user, page: page, for: for_user}))
     else
       {:show_followers, _} ->
         conn
-        |> put_resp_header("content-type", "application/activity+json")
+        |> put_resp_content_type("application/activity+json")
         |> send_resp(403, "")
     end
   end
@@ -153,7 +167,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {user, for_user} <- ensure_user_keys_present_and_maybe_refresh_for_user(user, for_user) do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(UserView.render("followers.json", %{user: user, for: for_user}))
     end
   end
@@ -162,7 +176,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
     with %User{} = user <- User.get_cached_by_nickname(nickname),
          {:ok, user} <- User.ensure_keys_present(user) do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(UserView.render("outbox.json", %{user: user, max_id: params["max_id"]}))
     end
   end
@@ -210,7 +224,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   defp represent_service_actor(%User{} = user, conn) do
     with {:ok, user} <- User.ensure_keys_present(user) do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(UserView.render("user.json", %{user: user}))
     else
       nil -> {:error, :not_found}
@@ -231,7 +245,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
 
   def whoami(%{assigns: %{user: %User{} = user}} = conn, _params) do
     conn
-    |> put_resp_header("content-type", "application/activity+json")
+    |> put_resp_content_type("application/activity+json")
     |> json(UserView.render("user.json", %{user: user}))
   end
 
@@ -240,7 +254,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   def read_inbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = params) do
     if nickname == user.nickname do
       conn
-      |> put_resp_header("content-type", "application/activity+json")
+      |> put_resp_content_type("application/activity+json")
       |> json(UserView.render("inbox.json", %{user: user, max_id: params["max_id"]}))
     else
       err =

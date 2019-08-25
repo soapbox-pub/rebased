@@ -117,9 +117,7 @@ defmodule Pleroma.Object.Fetcher do
   def fetch_and_contain_remote_object_from_id(id) when is_binary(id) do
     Logger.info("Fetching object #{id} via AP")
 
-    date =
-      NaiveDateTime.utc_now()
-      |> Timex.format!("{WDshort}, {0D} {Mshort} {YYYY} {h24}:{m}:{s} GMT")
+    date = Pleroma.Signature.signed_date()
 
     headers =
       [{:Accept, "application/activity+json"}]
