@@ -49,7 +49,7 @@ defmodule Pleroma.User.Info do
     field(:mascot, :map, default: nil)
     field(:emoji, {:array, :map}, default: [])
     field(:pleroma_settings_store, :map, default: %{})
-    field(:fields, {:array, :map}, default: [])
+    field(:fields, {:array, :map}, default: nil)
     field(:raw_fields, {:array, :map}, default: [])
 
     field(:notification_settings, :map,
@@ -422,7 +422,7 @@ defmodule Pleroma.User.Info do
 
   # ``fields`` is an array of mastodon profile field, containing ``{"name": "…", "value": "…"}``.
   # For example: [{"name": "Pronoun", "value": "she/her"}, …]
-  def fields(%{fields: [], source_data: %{"attachment" => attachment}}) do
+  def fields(%{fields: nil, source_data: %{"attachment" => attachment}}) do
     limit = Pleroma.Config.get([:instance, :max_remote_account_fields], 0)
 
     attachment
@@ -430,6 +430,8 @@ defmodule Pleroma.User.Info do
     |> Enum.map(fn fields -> Map.take(fields, ["name", "value"]) end)
     |> Enum.take(limit)
   end
+
+  def fields(%{fields: nil}), do: []
 
   def fields(%{fields: fields}), do: fields
 
