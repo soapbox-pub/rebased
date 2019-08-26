@@ -296,6 +296,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Repo.all(query)
   end
 
+  def is_emoji?(emoji) do
+    String.length(emoji) == 1
+  end
+
+  def make_emoji_reaction_data(user, object, emoji, activity_id) do
+    make_like_data(user, object, activity_id)
+    |> Map.put("type", "EmojiReaction")
+    |> Map.put("content", emoji)
+  end
+
   def make_like_data(
         %User{ap_id: ap_id} = actor,
         %{data: %{"actor" => object_actor_id, "id" => id}} = object,

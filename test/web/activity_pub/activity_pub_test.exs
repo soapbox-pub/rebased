@@ -675,6 +675,28 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     end
   end
 
+  describe "react to an object" do
+    test "adds an emoji reaction activity to the db" do
+      user = insert(:user)
+      reactor = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "YASSSS queen slay"})
+      assert object = Object.normalize(activity)
+
+      {:ok, reaction_activity, object} = ActivityPub.react_with_emoji(reactor, object, "🔥")
+
+      assert reaction_activity
+
+      assert reaction_activity.data["actor"] == reactor.ap_id
+      assert reaction_activity.data["type"] == "EmojiReaction"
+      assert reaction_activity.data["content"] == "🔥"
+      assert reaction_activity.data["object"] == object.data["id"]
+      assert reaction_activity.data["to"] == [User.ap_followers(reactor), activity.data["actor"]]
+      assert reaction_activity.data["context"] == object.data["context"]
+      # assert object.data["reaction_count"] == 1
+      # assert object.data["reactions"] == [user.ap_id]
+    end
+  end
+
   describe "like an object" do
     test "adds a like activity to the db" do
       note_activity = insert(:note_activity)

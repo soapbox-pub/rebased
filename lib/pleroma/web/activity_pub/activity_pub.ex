@@ -312,6 +312,16 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
+  def react_with_emoji(user, object, emoji, options \\ []) do
+    with local <- Keyword.get(options, :local, true),
+         activity_id <- Keyword.get(options, :activity_id, nil),
+         is_emoji?(emoji),
+         reaction_data <- make_emoji_reaction_data(user, object, emoji, activity_id),
+         {:ok, activity} <- insert(reaction_data, local) do
+      {:ok, activity, object}
+    end
+  end
+
   # TODO: This is weird, maybe we shouldn't check here if we can make the activity.
   def like(
         %User{ap_id: ap_id} = user,
