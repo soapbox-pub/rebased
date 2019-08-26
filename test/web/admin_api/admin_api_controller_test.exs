@@ -64,8 +64,7 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       log_entry = Repo.one(ModerationLog)
 
-      assert ModerationLog.get_log_entry_message(log_entry) ==
-               "@#{admin.nickname} created users: @lain2, @lain"
+      assert ["lain", "lain2"] -- Enum.map(log_entry.data["subjects"], & &1["nickname"]) == []
     end
 
     test "Cannot create user with exisiting email" do
