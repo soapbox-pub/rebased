@@ -671,6 +671,8 @@ This will probably take a long time.
 
 ## :rate_limit
 
+This is an advanced feature and disabled by default.
+
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 
 * The first element: `scale` (Integer). The time scale in milliseconds.
