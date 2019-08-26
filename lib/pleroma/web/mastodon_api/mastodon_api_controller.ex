@@ -1205,86 +1205,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 
-  def get_lists(%{assigns: %{user: user}} = conn, opts) do
-    lists = Pleroma.List.for_user(user, opts)
-    res = ListView.render("lists.json", lists: lists)
-    json(conn, res)
-  end
-
-  def get_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(id, user) do
-      res = ListView.render("list.json", list: list)
-      json(conn, res)
-    else
-      _e -> render_error(conn, :not_found, "Record not found")
-    end
-  end
-
   def account_lists(%{assigns: %{user: user}} = conn, %{"id" => account_id}) do
     lists = Pleroma.List.get_lists_account_belongs(user, account_id)
     res = ListView.render("lists.json", lists: lists)
     json(conn, res)
-  end
-
-  def delete_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-         {:ok, _list} <- Pleroma.List.delete(list) do
-      json(conn, %{})
-    else
-      _e ->
-        json(conn, dgettext("errors", "error"))
-    end
-  end
-
-  def create_list(%{assigns: %{user: user}} = conn, %{"title" => title}) do
-    with {:ok, %Pleroma.List{} = list} <- Pleroma.List.create(title, user) do
-      res = ListView.render("list.json", list: list)
-      json(conn, res)
-    end
-  end
-
-  def add_to_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
-    accounts
-    |> Enum.each(fn account_id ->
-      with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-           %User{} = followed <- User.get_cached_by_id(account_id) do
-        Pleroma.List.follow(list, followed)
-      end
-    end)
-
-    json(conn, %{})
-  end
-
-  def remove_from_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
-    accounts
-    |> Enum.each(fn account_id ->
-      with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-           %User{} = followed <- User.get_cached_by_id(account_id) do
-        Pleroma.List.unfollow(list, followed)
-      end
-    end)
-
-    json(conn, %{})
-  end
-
-  def list_accounts(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-         {:ok, users} = Pleroma.List.get_following(list) do
-      conn
-      |> put_view(AccountView)
-      |> render("accounts.json", %{for: user, users: users, as: :user})
-    end
-  end
-
-  def rename_list(%{assigns: %{user: user}} = conn, %{"id" => id, "title" => title}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-         {:ok, list} <- Pleroma.List.rename(list, title) do
-      res = ListView.render("list.json", list: list)
-      json(conn, res)
-    else
-      _e ->
-        json(conn, dgettext("errors", "error"))
-    end
   end
 
   def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
