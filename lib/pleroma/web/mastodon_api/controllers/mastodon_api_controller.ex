@@ -189,7 +189,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     info_cng = User.Info.profile_update(user.info, info_params)
 
     with changeset <- User.update_changeset(user, user_params),
-         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
+         changeset <- Changeset.put_embed(changeset, :info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       if original_user != user do
         CommonAPI.update(user)
@@ -225,7 +225,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
     with new_info <- %{"banner" => %{}},
          info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)
 
@@ -237,7 +237,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
          new_info <- %{"banner" => object.data},
          info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)
       %{"url" => [%{"href" => href} | _]} = object.data
@@ -249,7 +249,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
     with new_info <- %{"background" => %{}},
          info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       json(conn, %{url: nil})
     end
@@ -259,7 +259,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with {:ok, object} <- ActivityPub.upload(params, type: :background),
          new_info <- %{"background" => object.data},
          info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       %{"url" => [%{"href" => href} | _]} = object.data
 
@@ -806,8 +806,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
         user_changeset =
           user
-          |> Ecto.Changeset.change()
-          |> Ecto.Changeset.put_embed(:info, info_changeset)
+          |> Changeset.change()
+          |> Changeset.put_embed(:info, info_changeset)
 
         {:ok, _user} = User.update_and_set_cache(user_changeset)
 
@@ -1344,8 +1344,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
     info_cng = User.Info.mastodon_settings_update(user.info, settings)
 
-    with changeset <- Ecto.Changeset.change(user),
-         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
+    with changeset <- Changeset.change(user),
+         changeset <- Changeset.put_embed(changeset, :info, info_cng),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       json(conn, %{})
     else
@@ -1409,7 +1409,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           {:ok, app}
         else
           app
-          |> Ecto.Changeset.change(%{scopes: scopes})
+          |> Changeset.change(%{scopes: scopes})
           |> Repo.update()
         end
 
