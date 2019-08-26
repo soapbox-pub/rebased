@@ -573,6 +573,27 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   end
 
   def handle_incoming(
+        %{
+          "type" => "EmojiReaction",
+          "object" => object_id,
+          "actor" => _actor,
+          "id" => id,
+          "content" => emoji
+        } = data,
+        _options
+      ) do
+    with actor <- Containment.get_actor(data),
+         {:ok, %User{} = actor} <- User.get_or_fetch_by_ap_id(actor),
+         {:ok, object} <- get_obj_helper(object_id),
+         {:ok, activity, _object} <-
+           ActivityPub.react_with_emoji(actor, object, emoji, activity_id: id, local: false) do
+      {:ok, activity}
+    else
+      _e -> :error
+    end
+  end
+
+  def handle_incoming(
         %{"type" => "Announce", "object" => object_id, "actor" => _actor, "id" => id} = data,
         _options
       ) do

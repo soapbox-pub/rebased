@@ -311,6 +311,24 @@ defmodule Pleroma.Web.ActivityPub.TransmogrifierTest do
       assert data["object"] == activity.data["object"]
     end
 
+    test "it works for incoming emoji reactions" do
+      user = insert(:user)
+      {:ok, activity} = CommonAPI.post(user, %{"status" => "hello"})
+
+      data =
+        File.read!("test/fixtures/emoji-reaction.json")
+        |> Poison.decode!()
+        |> Map.put("object", activity.data["object"])
+
+      {:ok, %Activity{data: data, local: false}} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "http://mastodon.example.org/users/admin"
+      assert data["type"] == "EmojiReaction"
+      assert data["id"] == "http://mastodon.example.org/users/admin#reactions/2"
+      assert data["object"] == activity.data["object"]
+      assert data["content"] == "👌"
+    end
+
     test "it returns an error for incoming unlikes wihout a like activity" do
       user = insert(:user)
       {:ok, activity} = CommonAPI.post(user, %{"status" => "leave a like pls"})
