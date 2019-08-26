@@ -64,8 +64,6 @@ defmodule Pleroma.Web.MastodonAPI.SubscriptionController do
   end
 
   def errors(conn, _) do
-    conn
-    |> put_status(:internal_server_error)
-    |> json(dgettext("errors", "Something went wrong"))
+    Pleroma.Web.MastodonAPI.FallbackController.call(conn, nil)
   end
 end

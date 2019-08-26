@@ -83,7 +83,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   @local_mastodon_name "Mastodon-Local"
 
-  action_fallback(:errors)
+  action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   def create_app(conn, params) do
     scopes = Scopes.fetch_scopes(params, ["read"])
@@ -1585,35 +1585,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     {:ok, _} = Filter.delete(query)
     json(conn, %{})
-  end
-
-  # fallback action
-  #
-  def errors(conn, {:error, %Changeset{} = changeset}) do
-    error_message =
-      changeset
-      |> Changeset.traverse_errors(fn {message, _opt} -> message end)
-      |> Enum.map_join(", ", fn {_k, v} -> v end)
-
-    conn
-    |> put_status(:unprocessable_entity)
-    |> json(%{error: error_message})
-  end
-
-  def errors(conn, {:error, :not_found}) do
-    render_error(conn, :not_found, "Record not found")
-  end
-
-  def errors(conn, {:error, error_message}) do
-    conn
-    |> put_status(:bad_request)
-    |> json(%{error: error_message})
-  end
-
-  def errors(conn, _) do
-    conn
-    |> put_status(:internal_server_error)
-    |> json(dgettext("errors", "Something went wrong"))
   end
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
