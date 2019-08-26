@@ -119,6 +119,14 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  defp normalize_fields_attributes(fields) do
+    if Enum.all?(fields, &is_tuple/1) do
+      Enum.map(fields, fn {_, v} -> v end)
+    else
+      fields
+    end
+  end
+
   def update_credentials(%{assigns: %{user: user}} = conn, params) do
     original_user = user
 
@@ -146,11 +154,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     params =
       if Map.has_key?(params, "fields_attributes") do
         Map.update!(params, "fields_attributes", fn fields ->
-          if Enum.all?(fields, &is_tuple/1) do
-            Enum.map(fields, fn {_, v} -> v end)
-          else
-            fields
-          end
+          fields
+          |> normalize_fields_attributes()
           |> Enum.filter(fn %{"name" => n} -> n != "" end)
         end)
       else
