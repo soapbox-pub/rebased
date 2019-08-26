@@ -19,6 +19,25 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier.FollowHandlingTest do
   end
 
   describe "handle_incoming" do
+    test "it works for osada follow request" do
+      user = insert(:user)
+
+      data =
+        File.read!("test/fixtures/osada-follow-activity.json")
+        |> Poison.decode!()
+        |> Map.put("object", user.ap_id)
+
+      {:ok, %Activity{data: data, local: false} = activity} = Transmogrifier.handle_incoming(data)
+
+      assert data["actor"] == "https://apfed.club/channel/indio"
+      assert data["type"] == "Follow"
+      assert data["id"] == "https://apfed.club/follow/9"
+
+      activity = Repo.get(Activity, activity.id)
+      assert activity.data["state"] == "accept"
+      assert User.following?(User.get_cached_by_ap_id(data["actor"]), user)
+    end
+
     test "it works for incoming follow requests" do
       user = insert(:user)
 

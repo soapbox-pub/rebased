@@ -464,8 +464,8 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
         %{"type" => "Follow", "object" => followed, "actor" => follower, "id" => id} = data,
         _options
       ) do
-    with %User{local: true} = followed <- User.get_cached_by_ap_id(followed),
-         {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(follower),
+    with %User{local: true} = followed <- User.get_cached_by_ap_id(Object.get_ap_id(followed)),
+         {:ok, %User{} = follower} <- User.get_or_fetch_by_ap_id(Object.get_ap_id(follower)),
          {:ok, activity} <- ActivityPub.follow(follower, followed, id, false) do
       with deny_follow_blocked <- Pleroma.Config.get([:user, :deny_follow_blocked]),
            {_, false} <- {:user_blocked, User.blocks?(followed, follower) && deny_follow_blocked},

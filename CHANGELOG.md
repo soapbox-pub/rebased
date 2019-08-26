@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improve digest email template
 
 ### Fixed
+- Following from Osada
 - Not being able to pin unlisted posts
 - Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
 - Favorites timeline doing database-intensive queries
