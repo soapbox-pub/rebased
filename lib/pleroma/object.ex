@@ -150,8 +150,6 @@ defmodule Pleroma.Object do
   def update_and_set_cache(changeset) do
     with {:ok, object} <- Repo.update(changeset) do
       set_cache(object)
-    else
-      e -> e
     end
   end
 
