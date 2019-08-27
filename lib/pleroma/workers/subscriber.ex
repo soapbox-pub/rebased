@@ -5,7 +5,7 @@
 defmodule Pleroma.Workers.Subscriber do
   alias Pleroma.Repo
   alias Pleroma.Web.Federator
-  alias Pleroma.Web.Websub.WebsubClientSubscription
+  alias Pleroma.Web.Websub
 
   # Note: `max_attempts` is intended to be overridden in `new/1` call
   use Oban.Worker,
@@ -18,12 +18,12 @@ defmodule Pleroma.Workers.Subscriber do
   end
 
   def perform(%{"op" => "request_subscription", "websub_id" => websub_id}, _job) do
-    websub = Repo.get(WebsubClientSubscription, websub_id)
+    websub = Repo.get(Websub.WebsubClientSubscription, websub_id)
     Federator.perform(:request_subscription, websub)
   end
 
   def perform(%{"op" => "verify_websub", "websub_id" => websub_id}, _job) do
-    websub = Repo.get(WebsubClientSubscription, websub_id)
+    websub = Repo.get(Websub.WebsubServerSubscription, websub_id)
     Federator.perform(:verify_websub, websub)
   end
 end
