@@ -14,13 +14,46 @@ defmodule Pleroma.ModerationLog do
     timestamps()
   end
 
-  def get_all(page, page_size) do
+  def get_all(params) do
+    params
+    |> get_all_query()
+    |> maybe_filter_by_date(params)
+    |> Repo.all()
+  end
+
+  defp maybe_filter_by_date(query, %{start_date: nil, end_date: nil}), do: query
+
+  defp maybe_filter_by_date(query, %{start_date: start_date, end_date: nil}) do
+    from(q in query,
+      where: q.inserted_at >= ^parse_datetime(start_date)
+    )
+  end
+
+  defp maybe_filter_by_date(query, %{start_date: nil, end_date: end_date}) do
+    from(q in query,
+      where: q.inserted_at <= ^parse_datetime(end_date)
+    )
+  end
+
+  defp maybe_filter_by_date(query, %{start_date: start_date, end_date: end_date}) do
+    from(q in query,
+      where: q.inserted_at >= ^parse_datetime(start_date),
+      where: q.inserted_at <= ^parse_datetime(end_date)
+    )
+  end
+
+  defp get_all_query(%{page: page, page_size: page_size}) do
     from(q in __MODULE__,
       order_by: [desc: q.inserted_at],
       limit: ^page_size,
       offset: ^((page - 1) * page_size)
     )
-    |> Repo.all()
+  end
+
+  defp parse_datetime(datetime) do
+    {:ok, parsed_datetime, _} = DateTime.from_iso8601(datetime)
+
+    parsed_datetime
   end
 
   def insert_log(%{

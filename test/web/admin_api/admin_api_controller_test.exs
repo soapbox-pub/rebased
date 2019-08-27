@@ -2348,6 +2348,52 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       assert second_entry["message"] ==
                "@#{admin.nickname} followed relay: https://example.org/relay"
     end
+
+    test "filters log by date", %{conn: conn, admin: admin} do
+      first_date = "2017-08-15T15:47:06Z"
+      second_date = "2017-08-20T15:47:06Z"
+
+      Repo.insert(%ModerationLog{
+        data: %{
+          actor: %{
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "type" => "user"
+          },
+          action: "relay_follow",
+          target: "https://example.org/relay"
+        },
+        inserted_at: NaiveDateTime.from_iso8601!(first_date)
+      })
+
+      Repo.insert(%ModerationLog{
+        data: %{
+          actor: %{
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "type" => "user"
+          },
+          action: "relay_unfollow",
+          target: "https://example.org/relay"
+        },
+        inserted_at: NaiveDateTime.from_iso8601!(second_date)
+      })
+
+      conn1 =
+        get(
+          conn,
+          "/api/pleroma/admin/moderation_log?start_date=#{second_date}"
+        )
+
+      response1 = json_response(conn1, 200)
+      [first_entry] = response1
+
+      assert response1 |> length() == 1
+      assert first_entry["data"]["action"] == "relay_unfollow"
+
+      assert first_entry["message"] ==
+               "@#{admin.nickname} unfollowed relay: https://example.org/relay"
+    end
   end
 end
 
