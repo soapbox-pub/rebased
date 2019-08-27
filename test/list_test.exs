@@ -15,6 +15,13 @@ defmodule Pleroma.ListTest do
     assert title == "title"
   end
 
+  test "validates title" do
+    user = insert(:user)
+
+    assert {:error, changeset} = Pleroma.List.create("", user)
+    assert changeset.errors == [title: {"can't be blank", [validation: :required]}]
+  end
+
   test "getting a list not belonging to the user" do
     user = insert(:user)
     other_user = insert(:user)

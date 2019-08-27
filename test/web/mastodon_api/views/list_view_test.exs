@@ -7,7 +7,7 @@ defmodule Pleroma.Web.MastodonAPI.ListViewTest do
   import Pleroma.Factory
   alias Pleroma.Web.MastodonAPI.ListView
 
-  test "Represent a list" do
+  test "show" do
     user = insert(:user)
     title = "mortal enemies"
     {:ok, list} = Pleroma.List.create(title, user)
@@ -17,6 +17,16 @@ defmodule Pleroma.Web.MastodonAPI.ListViewTest do
       title: title
     }
 
-    assert expected == ListView.render("list.json", %{list: list})
+    assert expected == ListView.render("show.json", %{list: list})
+  end
+
+  test "index" do
+    user = insert(:user)
+
+    {:ok, list} = Pleroma.List.create("my list", user)
+    {:ok, list2} = Pleroma.List.create("cofe", user)
+
+    assert [%{id: _, title: "my list"}, %{id: _, title: "cofe"}] =
+             ListView.render("index.json", lists: [list, list2])
   end
 end

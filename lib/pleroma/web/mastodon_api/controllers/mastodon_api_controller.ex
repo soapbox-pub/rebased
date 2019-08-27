@@ -83,7 +83,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   @local_mastodon_name "Mastodon-Local"
 
-  action_fallback(:errors)
+  action_fallback(Pleroma.Web.MastodonAPI.FallbackController)
 
   def create_app(conn, params) do
     scopes = Scopes.fetch_scopes(params, ["read"])
@@ -189,7 +189,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     info_cng = User.Info.profile_update(user.info, info_params)
 
     with changeset <- User.update_changeset(user, user_params),
-         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
+         changeset <- Changeset.put_embed(changeset, :info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       if original_user != user do
         CommonAPI.update(user)
@@ -225,7 +225,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_banner(%{assigns: %{user: user}} = conn, %{"banner" => ""}) do
     with new_info <- %{"banner" => %{}},
          info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)
 
@@ -237,7 +237,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with {:ok, object} <- ActivityPub.upload(%{"img" => params["banner"]}, type: :banner),
          new_info <- %{"banner" => object.data},
          info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
          {:ok, user} <- User.update_and_set_cache(changeset) do
       CommonAPI.update(user)
       %{"url" => [%{"href" => href} | _]} = object.data
@@ -249,7 +249,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def update_background(%{assigns: %{user: user}} = conn, %{"img" => ""}) do
     with new_info <- %{"background" => %{}},
          info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       json(conn, %{url: nil})
     end
@@ -259,7 +259,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     with {:ok, object} <- ActivityPub.upload(params, type: :background),
          new_info <- %{"background" => object.data},
          info_cng <- User.Info.profile_update(user.info, new_info),
-         changeset <- Ecto.Changeset.change(user) |> Ecto.Changeset.put_embed(:info, info_cng),
+         changeset <- Changeset.change(user) |> Changeset.put_embed(:info, info_cng),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       %{"url" => [%{"href" => href} | _]} = object.data
 
@@ -806,8 +806,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
         user_changeset =
           user
-          |> Ecto.Changeset.change()
-          |> Ecto.Changeset.put_embed(:info, info_changeset)
+          |> Changeset.change()
+          |> Changeset.put_embed(:info, info_changeset)
 
         {:ok, _user} = User.update_and_set_cache(user_changeset)
 
@@ -1205,86 +1205,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> render("index.json", %{activities: activities, for: user, as: :activity})
   end
 
-  def get_lists(%{assigns: %{user: user}} = conn, opts) do
-    lists = Pleroma.List.for_user(user, opts)
-    res = ListView.render("lists.json", lists: lists)
-    json(conn, res)
-  end
-
-  def get_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(id, user) do
-      res = ListView.render("list.json", list: list)
-      json(conn, res)
-    else
-      _e -> render_error(conn, :not_found, "Record not found")
-    end
-  end
-
   def account_lists(%{assigns: %{user: user}} = conn, %{"id" => account_id}) do
     lists = Pleroma.List.get_lists_account_belongs(user, account_id)
     res = ListView.render("lists.json", lists: lists)
     json(conn, res)
-  end
-
-  def delete_list(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-         {:ok, _list} <- Pleroma.List.delete(list) do
-      json(conn, %{})
-    else
-      _e ->
-        json(conn, dgettext("errors", "error"))
-    end
-  end
-
-  def create_list(%{assigns: %{user: user}} = conn, %{"title" => title}) do
-    with {:ok, %Pleroma.List{} = list} <- Pleroma.List.create(title, user) do
-      res = ListView.render("list.json", list: list)
-      json(conn, res)
-    end
-  end
-
-  def add_to_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
-    accounts
-    |> Enum.each(fn account_id ->
-      with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-           %User{} = followed <- User.get_cached_by_id(account_id) do
-        Pleroma.List.follow(list, followed)
-      end
-    end)
-
-    json(conn, %{})
-  end
-
-  def remove_from_list(%{assigns: %{user: user}} = conn, %{"id" => id, "account_ids" => accounts}) do
-    accounts
-    |> Enum.each(fn account_id ->
-      with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-           %User{} = followed <- User.get_cached_by_id(account_id) do
-        Pleroma.List.unfollow(list, followed)
-      end
-    end)
-
-    json(conn, %{})
-  end
-
-  def list_accounts(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-         {:ok, users} = Pleroma.List.get_following(list) do
-      conn
-      |> put_view(AccountView)
-      |> render("accounts.json", %{for: user, users: users, as: :user})
-    end
-  end
-
-  def rename_list(%{assigns: %{user: user}} = conn, %{"id" => id, "title" => title}) do
-    with %Pleroma.List{} = list <- Pleroma.List.get(id, user),
-         {:ok, list} <- Pleroma.List.rename(list, title) do
-      res = ListView.render("list.json", list: list)
-      json(conn, res)
-    else
-      _e ->
-        json(conn, dgettext("errors", "error"))
-    end
   end
 
   def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
@@ -1420,8 +1344,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def put_settings(%{assigns: %{user: user}} = conn, %{"data" => settings} = _params) do
     info_cng = User.Info.mastodon_settings_update(user.info, settings)
 
-    with changeset <- Ecto.Changeset.change(user),
-         changeset <- Ecto.Changeset.put_embed(changeset, :info, info_cng),
+    with changeset <- Changeset.change(user),
+         changeset <- Changeset.put_embed(changeset, :info, info_cng),
          {:ok, _user} <- User.update_and_set_cache(changeset) do
       json(conn, %{})
     else
@@ -1485,7 +1409,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           {:ok, app}
         else
           app
-          |> Ecto.Changeset.change(%{scopes: scopes})
+          |> Changeset.change(%{scopes: scopes})
           |> Repo.update()
         end
 
@@ -1585,35 +1509,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
     {:ok, _} = Filter.delete(query)
     json(conn, %{})
-  end
-
-  # fallback action
-  #
-  def errors(conn, {:error, %Changeset{} = changeset}) do
-    error_message =
-      changeset
-      |> Changeset.traverse_errors(fn {message, _opt} -> message end)
-      |> Enum.map_join(", ", fn {_k, v} -> v end)
-
-    conn
-    |> put_status(:unprocessable_entity)
-    |> json(%{error: error_message})
-  end
-
-  def errors(conn, {:error, :not_found}) do
-    render_error(conn, :not_found, "Record not found")
-  end
-
-  def errors(conn, {:error, error_message}) do
-    conn
-    |> put_status(:bad_request)
-    |> json(%{error: error_message})
-  end
-
-  def errors(conn, _) do
-    conn
-    |> put_status(:internal_server_error)
-    |> json(dgettext("errors", "Something went wrong"))
   end
 
   def suggestions(%{assigns: %{user: user}} = conn, _) do
