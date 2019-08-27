@@ -166,6 +166,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Enqueues an activity for federation if it's local
   """
+  @spec maybe_federate(any()) :: :ok
   def maybe_federate(%Activity{local: true} = activity) do
     if Pleroma.Config.get!([:instance, :federating]) do
       priority =
@@ -256,44 +257,24 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Returns an existing like if a user already liked an object
   """
+  @spec get_existing_like(String.t(), map()) :: Activity.t() | nil
   def get_existing_like(actor, %{data: %{"id" => id}}) do
-    query =
-      from(
-        activity in Activity,
-        where: fragment("(?)->>'actor' = ?", activity.data, ^actor),
-        # this is to use the index
-        where:
-          fragment(
-            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-            activity.data,
-            activity.data,
-            ^id
-          ),
-        where: fragment("(?)->>'type' = 'Like'", activity.data)
-      )
-
-    Repo.one(query)
+    actor
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_object_id(id)
+    |> Activity.Queries.by_type("Like")
+    |> Activity.Queries.limit(1)
+    |> Repo.one()
   end
 
   @doc """
   Returns like activities targeting an object
   """
   def get_object_likes(%{data: %{"id" => id}}) do
-    query =
-      from(
-        activity in Activity,
-        # this is to use the index
-        where:
-          fragment(
-            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-            activity.data,
-            activity.data,
-            ^id
-          ),
-        where: fragment("(?)->>'type' = 'Like'", activity.data)
-      )
-
-    Repo.all(query)
+    id
+    |> Activity.Queries.by_object_id()
+    |> Activity.Queries.by_type("Like")
+    |> Repo.all()
   end
 
   def is_emoji?(emoji) do
@@ -306,6 +287,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> Map.put("content", emoji)
   end
 
+  @spec make_like_data(User.t(), map(), String.t()) :: map()
   def make_like_data(
         %User{ap_id: ap_id} = actor,
         %{data: %{"actor" => object_actor_id, "id" => id}} = object,
@@ -325,7 +307,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       |> List.delete(actor.ap_id)
       |> List.delete(object_actor.follower_address)
 
-    data = %{
+    %{
       "type" => "Like",
       "actor" => ap_id,
       "object" => id,
@@ -333,38 +315,49 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => cc,
       "context" => object.data["context"]
     }
-
-    if activity_id, do: Map.put(data, "id", activity_id), else: data
+    |> maybe_put("id", activity_id)
   end
 
+  @spec update_element_in_object(String.t(), list(any), Object.t()) ::
+          {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
   def update_element_in_object(property, element, object) do
-    with new_data <-
-           object.data
-           |> Map.put("#{property}_count", length(element))
-           |> Map.put("#{property}s", element),
-         changeset <- Changeset.change(object, data: new_data),
-         {:ok, object} <- Object.update_and_set_cache(changeset) do
-      {:ok, object}
-    end
+    data =
+      Map.merge(
+        object.data,
+        %{"#{property}_count" => length(element), "#{property}s" => element}
+      )
+
+    object
+    |> Changeset.change(data: data)
+    |> Object.update_and_set_cache()
   end
 
-  def update_likes_in_object(likes, object) do
+  @spec add_like_to_object(Activity.t(), Object.t()) ::
+          {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
+  def add_like_to_object(%Activity{data: %{"actor" => actor}}, object) do
+    [actor | fetch_likes(object)]
+    |> Enum.uniq()
+    |> update_likes_in_object(object)
+  end
+
+  @spec remove_like_from_object(Activity.t(), Object.t()) ::
+          {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
+  def remove_like_from_object(%Activity{data: %{"actor" => actor}}, object) do
+    object
+    |> fetch_likes()
+    |> List.delete(actor)
+    |> update_likes_in_object(object)
+  end
+
+  defp update_likes_in_object(likes, object) do
     update_element_in_object("like", likes, object)
   end
 
-  def add_like_to_object(%Activity{data: %{"actor" => actor}}, object) do
-    likes = if is_list(object.data["likes"]), do: object.data["likes"], else: []
-
-    with likes <- [actor | likes] |> Enum.uniq() do
-      update_likes_in_object(likes, object)
-    end
-  end
-
-  def remove_like_from_object(%Activity{data: %{"actor" => actor}}, object) do
-    likes = if is_list(object.data["likes"]), do: object.data["likes"], else: []
-
-    with likes <- likes |> List.delete(actor) do
-      update_likes_in_object(likes, object)
+  defp fetch_likes(object) do
+    if is_list(object.data["likes"]) do
+      object.data["likes"]
+    else
+      []
     end
   end
 
@@ -415,7 +408,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %User{ap_id: followed_id} = _followed,
         activity_id
       ) do
-    data = %{
+    %{
       "type" => "Follow",
       "actor" => follower_id,
       "to" => [followed_id],
@@ -423,10 +416,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "object" => followed_id,
       "state" => "pending"
     }
-
-    data = if activity_id, do: Map.put(data, "id", activity_id), else: data
-
-    data
+    |> maybe_put("id", activity_id)
   end
 
   def fetch_latest_follow(%User{ap_id: follower_id}, %User{ap_id: followed_id}) do
@@ -488,7 +478,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         activity_id,
         false
       ) do
-    data = %{
+    %{
       "type" => "Announce",
       "actor" => ap_id,
       "object" => id,
@@ -496,8 +486,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => [],
       "context" => object.data["context"]
     }
-
-    if activity_id, do: Map.put(data, "id", activity_id), else: data
+    |> maybe_put("id", activity_id)
   end
 
   def make_announce_data(
@@ -506,7 +495,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         activity_id,
         true
       ) do
-    data = %{
+    %{
       "type" => "Announce",
       "actor" => ap_id,
       "object" => id,
@@ -514,8 +503,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => [Pleroma.Constants.as_public()],
       "context" => object.data["context"]
     }
-
-    if activity_id, do: Map.put(data, "id", activity_id), else: data
+    |> maybe_put("id", activity_id)
   end
 
   @doc """
@@ -526,7 +514,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"context" => context}} = activity,
         activity_id
       ) do
-    data = %{
+    %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => activity.data,
@@ -534,8 +522,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
-
-    if activity_id, do: Map.put(data, "id", activity_id), else: data
+    |> maybe_put("id", activity_id)
   end
 
   def make_unlike_data(
@@ -543,7 +530,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"context" => context}} = activity,
         activity_id
       ) do
-    data = %{
+    %{
       "type" => "Undo",
       "actor" => ap_id,
       "object" => activity.data,
@@ -551,8 +538,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
       "cc" => [Pleroma.Constants.as_public()],
       "context" => context
     }
-
-    if activity_id, do: Map.put(data, "id", activity_id), else: data
+    |> maybe_put("id", activity_id)
   end
 
   def add_announce_to_object(
@@ -583,14 +569,13 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   #### Unfollow-related helpers
 
   def make_unfollow_data(follower, followed, follow_activity, activity_id) do
-    data = %{
+    %{
       "type" => "Undo",
       "actor" => follower.ap_id,
       "to" => [followed.ap_id],
       "object" => follow_activity.data
     }
-
-    if activity_id, do: Map.put(data, "id", activity_id), else: data
+    |> maybe_put("id", activity_id)
   end
 
   #### Block-related helpers
@@ -620,25 +605,23 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   def make_block_data(blocker, blocked, activity_id) do
-    data = %{
+    %{
       "type" => "Block",
       "actor" => blocker.ap_id,
       "to" => [blocked.ap_id],
       "object" => blocked.ap_id
     }
-
-    if activity_id, do: Map.put(data, "id", activity_id), else: data
+    |> maybe_put("id", activity_id)
   end
 
   def make_unblock_data(blocker, blocked, block_activity, activity_id) do
-    data = %{
+    %{
       "type" => "Undo",
       "actor" => blocker.ap_id,
       "to" => [blocked.ap_id],
       "object" => block_activity.data
     }
-
-    if activity_id, do: Map.put(data, "id", activity_id), else: data
+    |> maybe_put("id", activity_id)
   end
 
   #### Create-related helpers
@@ -809,4 +792,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
     Repo.all(query)
   end
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

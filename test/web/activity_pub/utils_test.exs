@@ -14,6 +14,8 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
   import Pleroma.Factory
 
+  require Pleroma.Constants
+
   describe "fetch the latest Follow" do
     test "fetches the latest Follow activity" do
       %Activity{data: %{"type" => "Follow"}} = activity = insert(:follow_activity)
@@ -84,6 +86,32 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
       object = %{"tag" => ["2hu"]}
 
       assert Utils.determine_explicit_mentions(object) == []
+    end
+  end
+
+  describe "make_unlike_data/3" do
+    test "returns data for unlike activity" do
+      user = insert(:user)
+      like_activity = insert(:like_activity, data_attrs: %{"context" => "test context"})
+
+      assert Utils.make_unlike_data(user, like_activity, nil) == %{
+               "type" => "Undo",
+               "actor" => user.ap_id,
+               "object" => like_activity.data,
+               "to" => [user.follower_address, like_activity.data["actor"]],
+               "cc" => [Pleroma.Constants.as_public()],
+               "context" => like_activity.data["context"]
+             }
+
+      assert Utils.make_unlike_data(user, like_activity, "9mJEZK0tky1w2xD2vY") == %{
+               "type" => "Undo",
+               "actor" => user.ap_id,
+               "object" => like_activity.data,
+               "to" => [user.follower_address, like_activity.data["actor"]],
+               "cc" => [Pleroma.Constants.as_public()],
+               "context" => like_activity.data["context"],
+               "id" => "9mJEZK0tky1w2xD2vY"
+             }
     end
   end
 
@@ -297,6 +325,80 @@ defmodule Pleroma.Web.ActivityPub.UtilsTest do
 
       assert Repo.get(Activity, follow_activity.id).data["state"] == "pending"
       assert Repo.get(Activity, follow_activity_two.id).data["state"] == "reject"
+    end
+  end
+
+  describe "update_element_in_object/3" do
+    test "updates likes" do
+      user = insert(:user)
+      activity = insert(:note_activity)
+      object = Object.normalize(activity)
+
+      assert {:ok, updated_object} =
+               Utils.update_element_in_object(
+                 "like",
+                 [user.ap_id],
+                 object
+               )
+
+      assert updated_object.data["likes"] == [user.ap_id]
+      assert updated_object.data["like_count"] == 1
+    end
+  end
+
+  describe "add_like_to_object/2" do
+    test "add actor to likes" do
+      user = insert(:user)
+      user2 = insert(:user)
+      object = insert(:note)
+
+      assert {:ok, updated_object} =
+               Utils.add_like_to_object(
+                 %Activity{data: %{"actor" => user.ap_id}},
+                 object
+               )
+
+      assert updated_object.data["likes"] == [user.ap_id]
+      assert updated_object.data["like_count"] == 1
+
+      assert {:ok, updated_object2} =
+               Utils.add_like_to_object(
+                 %Activity{data: %{"actor" => user2.ap_id}},
+                 updated_object
+               )
+
+      assert updated_object2.data["likes"] == [user2.ap_id, user.ap_id]
+      assert updated_object2.data["like_count"] == 2
+    end
+  end
+
+  describe "remove_like_from_object/2" do
+    test "removes ap_id from likes" do
+      user = insert(:user)
+      user2 = insert(:user)
+      object = insert(:note, data: %{"likes" => [user.ap_id, user2.ap_id], "like_count" => 2})
+
+      assert {:ok, updated_object} =
+               Utils.remove_like_from_object(
+                 %Activity{data: %{"actor" => user.ap_id}},
+                 object
+               )
+
+      assert updated_object.data["likes"] == [user2.ap_id]
+      assert updated_object.data["like_count"] == 1
+    end
+  end
+
+  describe "get_existing_like/2" do
+    test "fetches existing like" do
+      note_activity = insert(:note_activity)
+      assert object = Object.normalize(note_activity)
+
+      user = insert(:user)
+      refute Utils.get_existing_like(user.ap_id, object)
+      {:ok, like_activity, _object} = ActivityPub.like(user, object)
+
+      assert ^like_activity = Utils.get_existing_like(user.ap_id, object)
     end
   end
 end
