@@ -230,8 +230,4 @@ defmodule Pleroma.Object do
       _ -> :noop
     end
   end
-
-  def get_ap_id(%{"id" => id}), do: id
-  def get_ap_id(id) when is_binary(id), do: id
-  def get_ap_id(_), do: {:error, "Object is not a string and has no id."}
 end
