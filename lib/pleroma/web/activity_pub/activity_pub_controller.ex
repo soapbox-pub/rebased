@@ -309,40 +309,41 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubController do
   end
 
   def update_outbox(
-        %{assigns: %{user: user}} = conn,
+        %{assigns: %{user: %User{nickname: user_nickname} = user}} = conn,
         %{"nickname" => nickname} = params
-      ) do
-    if nickname == user.nickname do
-      actor = user.ap_id()
+      )
+      when user_nickname == nickname do
+    actor = user.ap_id()
 
-      params =
-        params
-        |> Map.drop(["id"])
-        |> Map.put("actor", actor)
-        |> Transmogrifier.fix_addressing()
+    params =
+      params
+      |> Map.drop(["id"])
+      |> Map.put("actor", actor)
+      |> Transmogrifier.fix_addressing()
 
-      with {:ok, %Activity{} = activity} <- handle_user_activity(user, params) do
-        conn
-        |> put_status(:created)
-        |> put_resp_header("location", activity.data["id"])
-        |> json(activity.data)
-      else
-        {:error, message} ->
-          conn
-          |> put_status(:bad_request)
-          |> json(message)
-      end
-    else
-      err =
-        dgettext("errors", "can't update outbox of %{nickname} as %{as_nickname}",
-          nickname: nickname,
-          as_nickname: user.nickname
-        )
-
+    with {:ok, %Activity{} = activity} <- handle_user_activity(user, params) do
       conn
-      |> put_status(:forbidden)
-      |> json(err)
+      |> put_status(:created)
+      |> put_resp_header("location", activity.data["id"])
+      |> json(activity.data)
+    else
+      {:error, message} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(message)
     end
+  end
+
+  def update_outbox(%{assigns: %{user: user}} = conn, %{"nickname" => nickname} = _) do
+    err =
+      dgettext("errors", "can't update outbox of %{nickname} as %{as_nickname}",
+        nickname: nickname,
+        as_nickname: user.nickname
+      )
+
+    conn
+    |> put_status(:forbidden)
+    |> json(err)
   end
 
   def errors(conn, {:error, :not_found}) do
