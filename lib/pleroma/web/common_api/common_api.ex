@@ -123,6 +123,16 @@ defmodule Pleroma.Web.CommonAPI do
     end
   end
 
+  def react_with_emoji(id, user, emoji) do
+    with %Activity{} = activity <- Activity.get_by_id(id),
+         object <- Object.normalize(activity) do
+      ActivityPub.react_with_emoji(user, object, emoji)
+    else
+      _ ->
+        {:error, dgettext("errors", "Could not add reaction emoji")}
+    end
+  end
+
   def vote(user, object, choices) do
     with "Question" <- object.data["type"],
          {:author, false} <- {:author, object.data["actor"] == user.ap_id},
