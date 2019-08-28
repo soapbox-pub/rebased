@@ -329,12 +329,13 @@ See [Admin-API](Admin-API.md)
     * `password`: user's password
     * `email`: new email
 * Response: JSON. Returns `{"status": "success"}` if the change was successful, `{"error": "[error message]"}` otherwise
+* Note: Currently, Mastodon has no API for changing email. If they add it in future it might be incompatible with Pleroma.
 
 # Pleroma Conversations
 
 Pleroma Conversations have the same general structure that Mastodon Conversations have. The behavior differs in the following ways when using these endpoints:
 
-1. Pleroma Conversations never add or remove recipients, unless explicitly changed by the user. 
+1. Pleroma Conversations never add or remove recipients, unless explicitly changed by the user.
 2. Pleroma Conversations statuses can be requested by Conversation id.
 3. Pleroma Conversations can be replied to.
 
