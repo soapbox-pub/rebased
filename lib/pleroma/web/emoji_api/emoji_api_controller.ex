@@ -211,6 +211,27 @@ keeping it in cache for #{div(cache_ms, 1000)}s")
     end
   end
 
+  def create(conn, %{"name" => name}) do
+    pack_dir = Path.join(@emoji_dir_path, name)
+
+    unless File.exists?(pack_dir) do
+      File.mkdir_p!(pack_dir)
+
+      pack_file_p = Path.join(pack_dir, "pack.json")
+
+      File.write!(
+        pack_file_p,
+        Jason.encode!(%{pack: %{}, files: %{}})
+      )
+
+      conn |> text("ok")
+    else
+      conn
+      |> put_status(:conflict)
+      |> text("A pack named \"#{name}\" already exists")
+    end
+  end
+
   def delete(conn, %{"name" => name}) do
     pack_dir = Path.join(@emoji_dir_path, name)
 

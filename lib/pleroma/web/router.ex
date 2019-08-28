@@ -220,6 +220,7 @@ defmodule Pleroma.Web.Router do
 
       post("/update_file/:pack_name", EmojiAPIController, :update_file)
       post("/update_metadata/:pack_name", EmojiAPIController, :update_metadata)
+      post("/create/:name", EmojiAPIController, :create)
       delete("/delete/:name", EmojiAPIController, :delete)
       post("/download_from", EmojiAPIController, :download_from)
     end

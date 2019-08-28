@@ -331,4 +331,38 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIControllerTest do
 
     refute File.exists?("#{@emoji_dir_path}/test_pack/blank_url.png")
   end
+
+  test "creating and deleting a pack" do
+    on_exit(fn ->
+      File.rm_rf!("#{@emoji_dir_path}/test_created")
+    end)
+
+    admin = insert(:user, info: %{is_admin: true})
+
+    conn = build_conn() |> assign(:user, admin)
+
+    assert conn
+           |> put_req_header("content-type", "application/json")
+           |> post(
+             emoji_api_path(
+               conn,
+               :create,
+               "test_created"
+             )
+           )
+           |> text_response(200) == "ok"
+
+    assert File.exists?("#{@emoji_dir_path}/test_created/pack.json")
+
+    assert Jason.decode!(File.read!("#{@emoji_dir_path}/test_created/pack.json")) == %{
+             "pack" => %{},
+             "files" => %{}
+           }
+
+    assert conn
+           |> delete(emoji_api_path(conn, :delete, "test_created"))
+           |> response(200) == "ok"
+
+    refute File.exists?("#{@emoji_dir_path}/test_created/pack.json")
+  end
 end
