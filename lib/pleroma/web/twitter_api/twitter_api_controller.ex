@@ -9,7 +9,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   alias Ecto.Changeset
   alias Pleroma.Activity
-  alias Pleroma.Formatter
+  alias Pleroma.Emoji
   alias Pleroma.Notification
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -713,7 +713,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
       emojis_text = (params["description"] || "") <> " " <> (params["name"] || "")
 
       emojis =
-        ((user.info.emoji || []) ++ Formatter.get_emoji_map(emojis_text))
+        ((user.info.emoji || []) ++ Emoji.Formatter.get_emoji_map(emojis_text))
         |> Enum.dedup()
 
       user_info =

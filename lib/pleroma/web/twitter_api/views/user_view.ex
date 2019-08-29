@@ -4,7 +4,8 @@
 
 defmodule Pleroma.Web.TwitterAPI.UserView do
   use Pleroma.Web, :view
-  alias Pleroma.Formatter
+
+  alias Pleroma.Emoji
   alias Pleroma.HTML
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI.Utils
@@ -72,7 +73,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
     description_html =
       (user.bio || "")
       |> HTML.filter_tags(User.html_filter_policy(for_user))
-      |> Formatter.emojify(emoji)
+      |> Emoji.Formatter.emojify(emoji)
 
     fields =
       user.info
@@ -99,7 +100,7 @@ defmodule Pleroma.Web.TwitterAPI.UserView do
         "name" => user.name || user.nickname,
         "name_html" =>
           if(user.name,
-            do: HTML.strip_tags(user.name) |> Formatter.emojify(emoji),
+            do: HTML.strip_tags(user.name) |> Emoji.Formatter.emojify(emoji),
             else: user.nickname
           ),
         "profile_image_url" => image,

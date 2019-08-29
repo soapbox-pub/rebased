@@ -5,7 +5,7 @@
 defmodule Pleroma.Web.TwitterAPI.ActivityView do
   use Pleroma.Web, :view
   alias Pleroma.Activity
-  alias Pleroma.Formatter
+  alias Pleroma.Emoji
   alias Pleroma.HTML
   alias Pleroma.Object
   alias Pleroma.Repo
@@ -262,7 +262,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
         activity,
         "twitterapi:content"
       )
-      |> Formatter.emojify(object.data["emoji"])
+      |> Emoji.Formatter.emojify(object.data["emoji"])
 
     text =
       if content do
@@ -319,7 +319,7 @@ defmodule Pleroma.Web.TwitterAPI.ActivityView do
       "possibly_sensitive" => possibly_sensitive,
       "visibility" => Pleroma.Web.ActivityPub.Visibility.get_visibility(object),
       "summary" => summary,
-      "summary_html" => summary |> Formatter.emojify(object.data["emoji"]),
+      "summary_html" => Emoji.Formatter.emojify(summary, object.data["emoji"]),
       "card" => card,
       "muted" => thread_muted? || User.mutes?(opts[:for], user)
     }

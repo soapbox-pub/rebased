@@ -6,7 +6,7 @@ defmodule Pleroma.Web.CommonAPI do
   alias Pleroma.Activity
   alias Pleroma.ActivityExpiration
   alias Pleroma.Conversation.Participation
-  alias Pleroma.Formatter
+  alias Pleroma.Emoji
   alias Pleroma.Object
   alias Pleroma.ThreadMute
   alias Pleroma.User
@@ -261,12 +261,7 @@ defmodule Pleroma.Web.CommonAPI do
              sensitive,
              poll
            ),
-         object <-
-           Map.put(
-             object,
-             "emoji",
-             Map.merge(Formatter.get_emoji_map(full_payload), poll_emoji)
-           ) do
+         object <- put_emoji(object, full_payload, poll_emoji) do
       preview? = Pleroma.Web.ControllerHelper.truthy_param?(data["preview"]) || false
       direct? = visibility == "direct"
 
@@ -298,6 +293,15 @@ defmodule Pleroma.Web.CommonAPI do
       e ->
         {:error, e}
     end
+  end
+
+  # parse and put emoji to object data
+  defp put_emoji(map, text, emojis) do
+    Map.put(
+      map,
+      "emoji",
+      Map.merge(Emoji.Formatter.get_emoji_map(text), emojis)
+    )
   end
 
   # Updates the emojis for a user based on their profile
