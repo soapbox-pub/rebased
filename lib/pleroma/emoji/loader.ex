@@ -122,19 +122,17 @@ defmodule Pleroma.Emoji.Loader do
   end
 
   def find_all_emoji(dir, exts) do
-    Enum.reduce(
-      File.ls!(dir),
-      [],
-      fn f, acc ->
-        filepath = Path.join(dir, f)
+    dir
+    |> File.ls!()
+    |> Enum.flat_map(fn f ->
+      filepath = Path.join(dir, f)
 
-        if File.dir?(filepath) do
-          acc ++ find_all_emoji(filepath, exts)
-        else
-          acc ++ [filepath]
-        end
+      if File.dir?(filepath) do
+        find_all_emoji(filepath, exts)
+      else
+        [filepath]
       end
-    )
+    end)
     |> Enum.filter(fn f -> Path.extname(f) in exts end)
   end
 
