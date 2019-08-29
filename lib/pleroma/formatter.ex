@@ -107,19 +107,22 @@ defmodule Pleroma.Formatter do
   def emojify(text, nil), do: text
 
   def emojify(text, emoji, strip \\ false) do
-    Enum.reduce(emoji, text, fn emoji_data, text ->
-      emoji = HTML.strip_tags(elem(emoji_data, 0))
-      file = HTML.strip_tags(elem(emoji_data, 1))
+    Enum.reduce(emoji, text, fn
+      {_, _, _, emoji, file}, text ->
+        String.replace(text, ":#{emoji}:", prepare_emoji_html(emoji, file, strip))
 
-      html =
-        if not strip do
-          "<img class='emoji' alt='#{emoji}' title='#{emoji}' src='#{MediaProxy.url(file)}' />"
-        else
-          ""
-        end
-
-      String.replace(text, ":#{emoji}:", html) |> HTML.filter_tags()
+      emoji_data, text ->
+        emoji = HTML.strip_tags(elem(emoji_data, 0))
+        file = HTML.strip_tags(elem(emoji_data, 1))
+        String.replace(text, ":#{emoji}:", prepare_emoji_html(emoji, file, strip))
     end)
+    |> HTML.filter_tags()
+  end
+
+  defp prepare_emoji_html(_emoji, _file, true), do: ""
+
+  defp prepare_emoji_html(emoji, file, _strip) do
+    "<img class='emoji' alt='#{emoji}' title='#{emoji}' src='#{MediaProxy.url(file)}' />"
   end
 
   def demojify(text) do
@@ -130,7 +133,9 @@ defmodule Pleroma.Formatter do
 
   @doc "Outputs a list of the emoji-shortcodes in a text"
   def get_emoji(text) when is_binary(text) do
-    Enum.filter(Emoji.get_all(), fn {emoji, _, _} -> String.contains?(text, ":#{emoji}:") end)
+    Enum.filter(Emoji.get_all(), fn {emoji, _, _, _, _} ->
+      String.contains?(text, ":#{emoji}:")
+    end)
   end
 
   def get_emoji(_), do: []
@@ -138,7 +143,7 @@ defmodule Pleroma.Formatter do
   @doc "Outputs a list of the emoji-Maps in a text"
   def get_emoji_map(text) when is_binary(text) do
     get_emoji(text)
-    |> Enum.reduce(%{}, fn {name, file, _group}, acc ->
+    |> Enum.reduce(%{}, fn {name, file, _group, _, _}, acc ->
       Map.put(acc, name, "#{Pleroma.Web.Endpoint.static_url()}#{file}")
     end)
   end

@@ -14,9 +14,9 @@ defmodule Pleroma.EmojiTest do
 
     test "first emoji", %{emoji_list: emoji_list} do
       [emoji | _others] = emoji_list
-      {code, path, tags} = emoji
+      {code, path, tags, _, _} = emoji
 
-      assert tuple_size(emoji) == 3
+      assert tuple_size(emoji) == 5
       assert is_binary(code)
       assert is_binary(path)
       assert is_list(tags)
@@ -24,9 +24,9 @@ defmodule Pleroma.EmojiTest do
 
     test "random emoji", %{emoji_list: emoji_list} do
       emoji = Enum.random(emoji_list)
-      {code, path, tags} = emoji
+      {code, path, tags, _, _} = emoji
 
-      assert tuple_size(emoji) == 3
+      assert tuple_size(emoji) == 5
       assert is_binary(code)
       assert is_binary(path)
       assert is_list(tags)

