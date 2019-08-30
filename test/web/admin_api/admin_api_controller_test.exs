@@ -2251,8 +2251,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
   describe "GET /api/pleroma/admin/moderation_log" do
     setup %{conn: conn} do
       admin = insert(:user, info: %{is_admin: true})
+      moderator = insert(:user, info: %{is_moderator: true})
 
-      %{conn: assign(conn, :user, admin), admin: admin}
+      %{conn: assign(conn, :user, admin), admin: admin, moderator: moderator}
     end
 
     test "returns the log", %{conn: conn, admin: admin} do
@@ -2393,6 +2394,64 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
 
       assert first_entry["message"] ==
                "@#{admin.nickname} unfollowed relay: https://example.org/relay"
+    end
+
+    test "returns log filtered by user", %{conn: conn, admin: admin, moderator: moderator} do
+      Repo.insert(%ModerationLog{
+        data: %{
+          actor: %{
+            "id" => admin.id,
+            "nickname" => admin.nickname,
+            "type" => "user"
+          },
+          action: "relay_follow",
+          target: "https://example.org/relay"
+        }
+      })
+
+      Repo.insert(%ModerationLog{
+        data: %{
+          actor: %{
+            "id" => moderator.id,
+            "nickname" => moderator.nickname,
+            "type" => "user"
+          },
+          action: "relay_unfollow",
+          target: "https://example.org/relay"
+        }
+      })
+
+      conn1 = get(conn, "/api/pleroma/admin/moderation_log?user_id=#{moderator.id}")
+
+      response1 = json_response(conn1, 200)
+      [first_entry] = response1
+
+      assert response1 |> length() == 1
+      assert get_in(first_entry, ["data", "actor", "id"]) == moderator.id
+    end
+
+    test "returns log filtered by search", %{conn: conn, moderator: moderator} do
+      ModerationLog.insert_log(%{
+        actor: moderator,
+        action: "relay_follow",
+        target: "https://example.org/relay"
+      })
+
+      ModerationLog.insert_log(%{
+        actor: moderator,
+        action: "relay_unfollow",
+        target: "https://example.org/relay"
+      })
+
+      conn1 = get(conn, "/api/pleroma/admin/moderation_log?search=unfo")
+
+      response1 = json_response(conn1, 200)
+      [first_entry] = response1
+
+      assert response1 |> length() == 1
+
+      assert get_in(first_entry, ["data", "message"]) ==
+               "@#{moderator.nickname} unfollowed relay: https://example.org/relay"
     end
   end
 end

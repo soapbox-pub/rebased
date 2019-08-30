@@ -18,6 +18,8 @@ defmodule Pleroma.ModerationLog do
     params
     |> get_all_query()
     |> maybe_filter_by_date(params)
+    |> maybe_filter_by_user(params)
+    |> maybe_filter_by_search(params)
     |> Repo.all()
   end
 
@@ -42,6 +44,23 @@ defmodule Pleroma.ModerationLog do
     )
   end
 
+  defp maybe_filter_by_user(query, %{user_id: nil}), do: query
+
+  defp maybe_filter_by_user(query, %{user_id: user_id}) do
+    from(q in query,
+      where: fragment("(?)->'actor'->>'id' = ?", q.data, ^user_id)
+    )
+  end
+
+  defp maybe_filter_by_search(query, %{search: search}) when is_nil(search) or search == "",
+    do: query
+
+  defp maybe_filter_by_search(query, %{search: search}) do
+    from(q in query,
+      where: fragment("(?)->>'message' ILIKE ?", q.data, ^"%#{search}%")
+    )
+  end
+
   defp get_all_query(%{page: page, page_size: page_size}) do
     from(q in __MODULE__,
       order_by: [desc: q.inserted_at],
@@ -56,52 +75,71 @@ defmodule Pleroma.ModerationLog do
     parsed_datetime
   end
 
+  @spec insert_log(%{actor: User, subject: User, action: String.t(), permission: String.t()}) ::
+          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         subject: %User{} = subject,
         action: action,
         permission: permission
       }) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        subject: user_to_map(subject),
-        action: action,
-        permission: permission
+        "actor" => user_to_map(actor),
+        "subject" => user_to_map(subject),
+        "action" => action,
+        "permission" => permission,
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{actor: User, subject: User, action: String.t()}) ::
+          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         action: "report_update",
         subject: %Activity{data: %{"type" => "Flag"}} = subject
       }) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: "report_update",
-        subject: report_to_map(subject)
+        "actor" => user_to_map(actor),
+        "action" => "report_update",
+        "subject" => report_to_map(subject),
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{actor: User, subject: Activity, action: String.t(), text: String.t()}) ::
+          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         action: "report_response",
         subject: %Activity{} = subject,
         text: text
       }) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: "report_response",
-        subject: report_to_map(subject),
-        text: text
+        "actor" => user_to_map(actor),
+        "action" => "report_response",
+        "subject" => report_to_map(subject),
+        "text" => text,
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{
+          actor: User,
+          subject: Activity,
+          action: String.t(),
+          sensitive: String.t(),
+          visibility: String.t()
+        }) :: {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         action: "status_update",
@@ -109,41 +147,49 @@ defmodule Pleroma.ModerationLog do
         sensitive: sensitive,
         visibility: visibility
       }) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: "status_update",
-        subject: status_to_map(subject),
-        sensitive: sensitive,
-        visibility: visibility
+        "actor" => user_to_map(actor),
+        "action" => "status_update",
+        "subject" => status_to_map(subject),
+        "sensitive" => sensitive,
+        "visibility" => visibility,
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{actor: User, action: String.t(), subject_id: String.t()}) ::
+          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         action: "status_delete",
         subject_id: subject_id
       }) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: "status_delete",
-        subject_id: subject_id
+        "actor" => user_to_map(actor),
+        "action" => "status_delete",
+        "subject_id" => subject_id,
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
   @spec insert_log(%{actor: User, subject: User, action: String.t()}) ::
           {:ok, ModerationLog} | {:error, any}
   def insert_log(%{actor: %User{} = actor, subject: subject, action: action}) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: action,
-        subject: user_to_map(subject)
+        "actor" => user_to_map(actor),
+        "action" => action,
+        "subject" => user_to_map(subject),
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
   @spec insert_log(%{actor: User, subjects: [User], action: String.t()}) ::
@@ -151,97 +197,124 @@ defmodule Pleroma.ModerationLog do
   def insert_log(%{actor: %User{} = actor, subjects: subjects, action: action}) do
     subjects = Enum.map(subjects, &user_to_map/1)
 
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: action,
-        subjects: subjects
+        "actor" => user_to_map(actor),
+        "action" => action,
+        "subjects" => subjects,
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{actor: User, action: String.t(), followed: User, follower: User}) ::
+          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         followed: %User{} = followed,
         follower: %User{} = follower,
         action: "follow"
       }) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: "follow",
-        followed: user_to_map(followed),
-        follower: user_to_map(follower)
+        "actor" => user_to_map(actor),
+        "action" => "follow",
+        "followed" => user_to_map(followed),
+        "follower" => user_to_map(follower),
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{actor: User, action: String.t(), followed: User, follower: User}) ::
+          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         followed: %User{} = followed,
         follower: %User{} = follower,
         action: "unfollow"
       }) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: "unfollow",
-        followed: user_to_map(followed),
-        follower: user_to_map(follower)
+        "actor" => user_to_map(actor),
+        "action" => "unfollow",
+        "followed" => user_to_map(followed),
+        "follower" => user_to_map(follower),
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{actor: User, action: String.t(), nicknames: [String.t()], tags: [String.t()]}) ::
+          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         nicknames: nicknames,
         tags: tags,
         action: action
       }) do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        nicknames: nicknames,
-        tags: tags,
-        action: action
+        "actor" => user_to_map(actor),
+        "nicknames" => nicknames,
+        "tags" => tags,
+        "action" => action,
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
   end
 
+  @spec insert_log(%{actor: User, action: String.t(), target: String.t()}) ::
+          {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         action: action,
         target: target
       })
       when action in ["relay_follow", "relay_unfollow"] do
-    Repo.insert(%ModerationLog{
+    %ModerationLog{
       data: %{
-        actor: user_to_map(actor),
-        action: action,
-        target: target
+        "actor" => user_to_map(actor),
+        "action" => action,
+        "target" => target,
+        "message" => ""
       }
-    })
+    }
+    |> insert_log_entry_with_message()
+  end
+
+  @spec insert_log_entry_with_message(ModerationLog) :: {:ok, ModerationLog} | {:error, any}
+
+  defp insert_log_entry_with_message(entry) do
+    entry.data["message"]
+    |> put_in(get_log_entry_message(entry))
+    |> Repo.insert()
   end
 
   defp user_to_map(%User{} = user) do
     user
     |> Map.from_struct()
     |> Map.take([:id, :nickname])
-    |> Map.put(:type, "user")
+    |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
+    |> Map.put("type", "user")
   end
 
   defp report_to_map(%Activity{} = report) do
     %{
-      type: "report",
-      id: report.id,
-      state: report.data["state"]
+      "type" => "report",
+      "id" => report.id,
+      "state" => report.data["state"]
     }
   end
 
   defp status_to_map(%Activity{} = status) do
     %{
-      type: "status",
-      id: status.id
+      "type" => "status",
+      "id" => status.id
     }
   end
 
