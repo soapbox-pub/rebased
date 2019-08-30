@@ -49,6 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
 - MRF: fix use of unserializable keyword lists in describe() implementations
 - ActivityPub: Deactivated user deletion
+- MRF: fix ability to follow a relay when AntiFollowbotPolicy was enabled
 
 ### Added
 - Expiring/ephemeral activites. All activities can have expires_at value set, which controls when they should be deleted automatically.
