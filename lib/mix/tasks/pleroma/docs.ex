@@ -27,7 +27,7 @@ defmodule Mix.Tasks.Pleroma.Docs do
 
   defp do_run(implementation) do
     start_pleroma()
-    descriptions = Config.Reader.read!("config/description.exs")
+    {descriptions, _paths} = Mix.Config.eval!("config/description.exs")
 
     {:ok, file_path} =
       Pleroma.Docs.Formatter.process(
