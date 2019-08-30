@@ -10,8 +10,8 @@ defmodule Pleroma.Docs.Markdown do
 
     IO.write(
       file,
-      "This file describe the configuration, it is recommended to edit the relevant `*.secret.exs` file instead of the others founds in the ``config`` directory.  \r\n
-      If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherwise it is ``dev.secret.exs``.\r\n\r\n"
+      "This file describe the configuration, it is recommended to edit the relevant `*.secret.exs` file instead of the others founds in the ``config`` directory.  \r\n\r\n" <>
+        " If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherwise it is ``dev.secret.exs``.\r\n\r\n"
     )
 
     for group <- descriptions do
