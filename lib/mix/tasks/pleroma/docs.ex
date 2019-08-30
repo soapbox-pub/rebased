@@ -14,7 +14,7 @@ defmodule Mix.Tasks.Pleroma.Docs do
 
   ## Generate JSON docs
 
-  `mix pleroma.docs json`s
+  `mix pleroma.docs json`
   """
 
   def run(["json"]) do
