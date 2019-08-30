@@ -248,8 +248,12 @@ defmodule Pleroma.ModerationLog do
     |> insert_log_entry_with_message()
   end
 
-  @spec insert_log(%{actor: User, action: String.t(), nicknames: [String.t()], tags: [String.t()]}) ::
-          {:ok, ModerationLog} | {:error, any}
+  @spec insert_log(%{
+          actor: User,
+          action: String.t(),
+          nicknames: [String.t()],
+          tags: [String.t()]
+        }) :: {:ok, ModerationLog} | {:error, any}
   def insert_log(%{
         actor: %User{} = actor,
         nicknames: nicknames,
