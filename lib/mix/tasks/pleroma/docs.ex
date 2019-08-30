@@ -8,11 +8,11 @@ defmodule Mix.Tasks.Pleroma.Docs do
 
   Supports two formats: `markdown` and `json`.
 
-  ## Generate markdown docs
+  ## Generate Markdown docs
 
   `mix pleroma.docs`
 
-  ## Generate json docs
+  ## Generate JSON docs
 
   `mix pleroma.docs json`s
   """
@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Pleroma.Docs do
     {descriptions, _paths} = Mix.Config.eval!("config/description.exs")
 
     {:ok, file_path} =
-      Pleroma.Docs.Formatter.process(
+      Pleroma.Docs.Generator.process(
         implementation,
         descriptions[:pleroma][:config_description]
       )

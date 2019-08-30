@@ -1,5 +1,5 @@
 use Mix.Config
-alias Pleroma.Docs.Formatter
+alias Pleroma.Docs.Generator
 
 websocket_config = [
   path: "/websocket",
@@ -24,7 +24,7 @@ config :pleroma, :config_description, [
         type: :module,
         description: "Module which will be used for uploads",
         suggestions: [
-          Formatter.uploaders_list()
+          Generator.uploaders_list()
         ]
       },
       %{
@@ -32,7 +32,7 @@ config :pleroma, :config_description, [
         type: {:list, :module},
         description: "List of filter modules for uploads",
         suggestions: [
-          Formatter.filters_list()
+          Generator.filters_list()
         ]
       },
       %{
@@ -64,8 +64,7 @@ config :pleroma, :config_description, [
       %{
         key: :proxy_opts,
         type: :keyword,
-        description: "Proxy options, see `Pleroma.ReverseProxy` documentation",
-        suggestions: ["somehow created link to Pleroma.ReverseProxy options"]
+        description: "Proxy options, see `Pleroma.ReverseProxy` documentation"
       }
     ]
   },
@@ -93,7 +92,7 @@ config :pleroma, :config_description, [
     children: [
       %{
         key: :bucket,
-        type: :strings,
+        type: :string,
         description: "S3 bucket",
         suggestions: [
           "bucket"
@@ -629,7 +628,7 @@ config :pleroma, :config_description, [
         description: "A list of MRF policies enabled",
         suggestions: [
           Pleroma.Web.ActivityPub.MRF.NoOpPolicy,
-          Formatter.mrf_list()
+          Generator.mrf_list()
         ]
       },
       %{
@@ -1920,7 +1919,7 @@ config :pleroma, :config_description, [
         type: {:list, :module},
         description: "list of Rich Media parsers",
         suggestions: [
-          Formatter.richmedia_parsers()
+          Generator.richmedia_parsers()
         ]
       },
       %{

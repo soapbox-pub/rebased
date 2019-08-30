@@ -1,4 +1,4 @@
-defmodule Pleroma.Docs.Formatter do
+defmodule Pleroma.Docs.Generator do
   @callback process(keyword()) :: {:ok, String.t()}
 
   @spec process(module(), keyword()) :: {:ok, String.t()}
@@ -6,6 +6,7 @@ defmodule Pleroma.Docs.Formatter do
     implementation.process(descriptions)
   end
 
+  @spec uploaders_list() :: [module()]
   def uploaders_list do
     {:ok, modules} = :application.get_key(:pleroma, :modules)
 
@@ -17,6 +18,7 @@ defmodule Pleroma.Docs.Formatter do
     end)
   end
 
+  @spec filters_list() :: [module()]
   def filters_list do
     {:ok, modules} = :application.get_key(:pleroma, :modules)
 
@@ -27,6 +29,7 @@ defmodule Pleroma.Docs.Formatter do
     end)
   end
 
+  @spec mrf_list() :: [module()]
   def mrf_list do
     {:ok, modules} = :application.get_key(:pleroma, :modules)
 
@@ -38,6 +41,7 @@ defmodule Pleroma.Docs.Formatter do
     end)
   end
 
+  @spec richmedia_parsers() :: [module()]
   def richmedia_parsers do
     {:ok, modules} = :application.get_key(:pleroma, :modules)
 
