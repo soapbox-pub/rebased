@@ -1,7 +1,7 @@
 # Installing on Alpine Linux
 ## Installation
 
-This guide is a step-by-step installation guide for Alpine Linux. The instructions were verified against Alpine v.3.10 standard image. You might miss additional dependencies if you use `netboot` instead.
+This guide is a step-by-step installation guide for Alpine Linux. The instructions were verified against Alpine v3.10 standard image. You might miss additional dependencies if you use `netboot` instead.
 
 It assumes that you have administrative rights, either as root or a user with [sudo permissions](https://www.linode.com/docs/tools-reference/custom-kernels-distros/install-alpine-linux-on-your-linode/#configuration). If you want to run this guide with root, ignore the `sudo` at the beginning of the lines, unless it calls a user like `sudo -Hu pleroma`; in this case, use `su -l <username> -s $SHELL -c 'command'` instead.
 
