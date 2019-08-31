@@ -10,8 +10,6 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   alias Pleroma.Web.MastodonAPI.AccountView
   alias Pleroma.Web.TwitterAPI.TwitterAPI
 
-  import Pleroma.Factory
-
   setup_all do
     Tesla.Mock.mock_global(fn env -> apply(HttpRequestMock, :request, [env]) end)
     :ok
