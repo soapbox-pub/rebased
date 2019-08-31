@@ -6,8 +6,8 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
   use Pleroma.Web, :controller
 
   alias Ecto.Changeset
-  alias Pleroma.User
   alias Pleroma.Notification
+  alias Pleroma.User
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TokenView
 
