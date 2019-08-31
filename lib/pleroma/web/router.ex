@@ -133,6 +133,10 @@ defmodule Pleroma.Web.Router do
     })
   end
 
+  pipeline :http_signature do
+    plug(Pleroma.Web.Plugs.HTTPSignaturePlug)
+  end
+
   scope "/api/pleroma", Pleroma.Web.TwitterAPI do
     pipe_through(:pleroma_api)
 
@@ -155,7 +159,7 @@ defmodule Pleroma.Web.Router do
     post("/users/unfollow", AdminAPIController, :user_unfollow)
 
     delete("/users", AdminAPIController, :user_delete)
-    post("/users", AdminAPIController, :user_create)
+    post("/users", AdminAPIController, :users_create)
     patch("/users/:nickname/toggle_activation", AdminAPIController, :user_toggle_activation)
     put("/users/tag", AdminAPIController, :tag_users)
     delete("/users/tag", AdminAPIController, :untag_users)
@@ -198,6 +202,8 @@ defmodule Pleroma.Web.Router do
     post("/config", AdminAPIController, :config_update)
     get("/config/migrate_to_db", AdminAPIController, :migrate_to_db)
     get("/config/migrate_from_db", AdminAPIController, :migrate_from_db)
+
+    get("/moderation_log", AdminAPIController, :list_log)
   end
 
   scope "/", Pleroma.Web.TwitterAPI do
@@ -306,9 +312,9 @@ defmodule Pleroma.Web.Router do
       get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
       get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)
 
-      get("/lists", MastodonAPIController, :get_lists)
-      get("/lists/:id", MastodonAPIController, :get_list)
-      get("/lists/:id/accounts", MastodonAPIController, :list_accounts)
+      get("/lists", ListController, :index)
+      get("/lists/:id", ListController, :show)
+      get("/lists/:id/accounts", ListController, :list_accounts)
 
       get("/domain_blocks", MastodonAPIController, :domain_blocks)
 
@@ -349,12 +355,12 @@ defmodule Pleroma.Web.Router do
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
 
-      delete("/lists/:id", MastodonAPIController, :delete_list)
-      post("/lists", MastodonAPIController, :create_list)
-      put("/lists/:id", MastodonAPIController, :rename_list)
+      delete("/lists/:id", ListController, :delete)
+      post("/lists", ListController, :create)
+      put("/lists/:id", ListController, :update)
 
-      post("/lists/:id/accounts", MastodonAPIController, :add_to_list)
-      delete("/lists/:id/accounts", MastodonAPIController, :remove_from_list)
+      post("/lists/:id/accounts", ListController, :add_to_list)
+      delete("/lists/:id/accounts", ListController, :remove_from_list)
 
       post("/filters", MastodonAPIController, :create_filter)
       get("/filters/:id", MastodonAPIController, :get_filter)
@@ -686,7 +692,14 @@ defmodule Pleroma.Web.Router do
     pipe_through(:ap_service_actor)
 
     get("/", ActivityPubController, :relay)
-    post("/inbox", ActivityPubController, :inbox)
+
+    scope [] do
+      pipe_through(:http_signature)
+      post("/inbox", ActivityPubController, :inbox)
+    end
+
+    get("/following", ActivityPubController, :following, assigns: %{relay: true})
+    get("/followers", ActivityPubController, :followers, assigns: %{relay: true})
   end
 
   scope "/internal/fetch", Pleroma.Web.ActivityPub do

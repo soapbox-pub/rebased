@@ -36,7 +36,8 @@ defmodule Pleroma.Application do
         Pleroma.Emoji,
         Pleroma.Captcha,
         Pleroma.FlakeId,
-        Pleroma.ScheduledActivityWorker
+        Pleroma.ScheduledActivityWorker,
+        Pleroma.ActivityExpirationWorker
       ] ++
         cachex_children() ++
         hackney_pool_children() ++

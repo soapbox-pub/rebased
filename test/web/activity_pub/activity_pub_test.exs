@@ -21,6 +21,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
     :ok
   end
 
+  clear_config([:instance, :federating])
+
   describe "streaming out participations" do
     test "it streams them out" do
       user = insert(:user)
@@ -676,6 +678,29 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "like an object" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+      note_activity = insert(:note_activity)
+      assert object_activity = Object.normalize(note_activity)
+
+      user = insert(:user)
+
+      {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
+      assert called(Pleroma.Web.Federator.publish(like_activity))
+    end
+
+    test "returns exist activity if object already liked" do
+      note_activity = insert(:note_activity)
+      assert object_activity = Object.normalize(note_activity)
+
+      user = insert(:user)
+
+      {:ok, like_activity, _object} = ActivityPub.like(user, object_activity)
+
+      {:ok, like_activity_exist, _object} = ActivityPub.like(user, object_activity)
+      assert like_activity == like_activity_exist
+    end
+
     test "adds a like activity to the db" do
       note_activity = insert(:note_activity)
       assert object = Object.normalize(note_activity)
@@ -706,6 +731,25 @@ defmodule Pleroma.Web.ActivityPub.ActivityPubTest do
   end
 
   describe "unliking" do
+    test_with_mock "sends an activity to federation", Pleroma.Web.Federator, [:passthrough], [] do
+      Pleroma.Config.put([:instance, :federating], true)
+
+      note_activity = insert(:note_activity)
+      object = Object.normalize(note_activity)
+      user = insert(:user)
+
+      {:ok, object} = ActivityPub.unlike(user, object)
+      refute called(Pleroma.Web.Federator.publish())
+
+      {:ok, _like_activity, object} = ActivityPub.like(user, object)
+      assert object.data["like_count"] == 1
+
+      {:ok, unlike_activity, _, object} = ActivityPub.unlike(user, object)
+      assert object.data["like_count"] == 0
+
+      assert called(Pleroma.Web.Federator.publish(unlike_activity))
+    end
+
     test "unliking a previously liked object" do
       note_activity = insert(:note_activity)
       object = Object.normalize(note_activity)

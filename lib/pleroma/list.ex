@@ -109,15 +109,19 @@ defmodule Pleroma.List do
   end
 
   def create(title, %User{} = creator) do
-    list = %Pleroma.List{user_id: creator.id, title: title}
+    changeset = title_changeset(%Pleroma.List{user_id: creator.id}, %{title: title})
 
-    Repo.transaction(fn ->
-      list = Repo.insert!(list)
+    if changeset.valid? do
+      Repo.transaction(fn ->
+        list = Repo.insert!(changeset)
 
-      list
-      |> change(ap_id: "#{creator.ap_id}/lists/#{list.id}")
-      |> Repo.update!()
-    end)
+        list
+        |> change(ap_id: "#{creator.ap_id}/lists/#{list.id}")
+        |> Repo.update!()
+      end)
+    else
+      {:error, changeset}
+    end
   end
 
   def follow(%Pleroma.List{following: following} = list, %User{} = followed) do

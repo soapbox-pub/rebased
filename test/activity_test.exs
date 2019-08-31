@@ -166,4 +166,13 @@ defmodule Pleroma.ActivityTest do
       Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
     end
   end
+
+  test "add an activity with an expiration" do
+    activity = insert(:note_activity)
+    insert(:expiration_in_the_future, %{activity_id: activity.id})
+
+    Pleroma.ActivityExpiration
+    |> where([a], a.activity_id == ^activity.id)
+    |> Repo.one!()
+  end
 end

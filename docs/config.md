@@ -8,7 +8,7 @@ If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherw
 * `filters`: List of `Pleroma.Upload.Filter` to use.
 * `link_name`: When enabled Pleroma will add a `name` parameter to the url of the upload, for example `https://instance.tld/media/corndog.png?name=corndog.png`. This is needed to provide the correct filename in Content-Disposition headers when using filters like `Pleroma.Upload.Filter.Dedupe`
 * `base_url`: The base URL to access a user-uploaded file. Useful when you want to proxy the media files via another host.
-* `proxy_remote`: If you\'re using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
+* `proxy_remote`: If you're using a remote uploader, Pleroma will proxy media requests instead of redirecting to it.
 * `proxy_opts`: Proxy options, see `Pleroma.ReverseProxy` documentation.
 
 Note: `strip_exif` has been replaced by `Pleroma.Upload.Filter.Mogrify`.
@@ -497,6 +497,10 @@ config :auto_linker,
 * `total_user_limit`: the number of scheduled activities a user is allowed to create in total (Default: `300`)
 * `enabled`: whether scheduled activities are sent to the job queue to be executed
 
+## Pleroma.ActivityExpiration
+
+# `enabled`: whether expired activities will be sent to the job queue to be deleted
+
 ## Pleroma.Web.Auth.Authenticator
 
 * `Pleroma.Web.Auth.PleromaAuthenticator`: default database authenticator
@@ -668,6 +672,8 @@ To enable them, both the `rum_enabled` flag has to be set and the following spec
 This will probably take a long time.
 
 ## :rate_limit
+
+This is an advanced feature and disabled by default.
 
 A keyword list of rate limiters where a key is a limiter name and value is the limiter configuration. The basic configuration is a tuple where:
 

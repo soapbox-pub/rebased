@@ -69,4 +69,11 @@ defmodule Pleroma.Workers.BackgroundWorker do
     activity = Activity.get_by_id(activity_id)
     Pleroma.Web.RichMedia.Helpers.perform(:fetch, activity)
   end
+
+  def perform(
+        %{"op" => "activity_expiration", "activity_expiration_id" => activity_expiration_id},
+        _job
+      ) do
+    Pleroma.ActivityExpirationWorker.perform(:execute, activity_expiration_id)
+  end
 end
