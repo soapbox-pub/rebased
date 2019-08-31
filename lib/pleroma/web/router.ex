@@ -495,6 +495,12 @@ defmodule Pleroma.Web.Router do
 
     get("/oauth_tokens", TwitterAPI.Controller, :oauth_tokens)
     delete("/oauth_tokens/:id", TwitterAPI.Controller, :revoke_token)
+
+    scope [] do
+      pipe_through(:oauth_read)
+
+      post("/qvitter/statuses/notifications/read", TwitterAPI.Controller, :notifications_read)
+    end
   end
 
   pipeline :ap_service_actor do

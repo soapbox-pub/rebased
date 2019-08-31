@@ -7,6 +7,7 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
 
   alias Ecto.Changeset
   alias Pleroma.User
+  alias Pleroma.Notification
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.TwitterAPI.TokenView
 
@@ -57,5 +58,29 @@ defmodule Pleroma.Web.TwitterAPI.Controller do
     conn
     |> put_resp_content_type("application/json")
     |> send_resp(status, json)
+  end
+
+  def notifications_read(%{assigns: %{user: user}} = conn, %{"latest_id" => latest_id} = params) do
+    Notification.set_read_up_to(user, latest_id)
+
+    notifications = Notification.for_user(user, params)
+
+    conn
+    # XXX: This is a hack because pleroma-fe still uses that API.
+    |> put_view(Pleroma.Web.MastodonAPI.NotificationView)
+    |> render("index.json", %{notifications: notifications, for: user})
+  end
+
+  def notifications_read(%{assigns: %{user: _user}} = conn, _) do
+    bad_request_reply(conn, "You need to specify latest_id")
+  end
+
+  defp bad_request_reply(conn, error_message) do
+    json = error_json(conn, error_message)
+    json_reply(conn, 400, json)
+  end
+
+  defp error_json(conn, error_message) do
+    %{"error" => error_message, "request" => conn.request_path} |> Jason.encode!()
   end
 end
