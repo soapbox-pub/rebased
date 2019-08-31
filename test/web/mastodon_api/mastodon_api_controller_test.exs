@@ -21,7 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Push
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock
@@ -1583,12 +1582,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         filename: "an_image.jpg"
       }
 
-      media =
-        TwitterAPI.upload(file, user, "json")
-        |> Jason.decode!()
+      {:ok, %{id: media_id}} = ActivityPub.upload(file, actor: user.ap_id)
 
-      {:ok, image_post} =
-        CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media["media_id"]]})
+      {:ok, image_post} = CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media_id]})
 
       conn =
         conn
