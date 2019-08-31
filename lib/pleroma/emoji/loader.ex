@@ -11,13 +11,14 @@ defmodule Pleroma.Emoji.Loader do
     * glob paths, nested folder is used as tag name for grouping e.g. priv/static/emoji/custom/nested_folder
   """
   alias Pleroma.Config
+  alias Pleroma.Emoji
 
   require Logger
 
   @type pattern :: Regex.t() | module() | String.t()
   @type patterns :: pattern() | [pattern()]
   @type group_patterns :: keyword(patterns())
-  @type emoji :: {String.t(), String.t(), list(String.t())}
+  @type emoji :: {String.t(), Emoji.t()}
 
   @doc """
   Loads emojis from files/packs.
@@ -81,15 +82,7 @@ defmodule Pleroma.Emoji.Loader do
     Enum.map(emojis ++ emojis_txt, &prepare_emoji/1)
   end
 
-  defp prepare_emoji({code, file, tags} = _emoji) do
-    {
-      code,
-      file,
-      tags,
-      Pleroma.HTML.strip_tags(code),
-      Pleroma.HTML.strip_tags(file)
-    }
-  end
+  defp prepare_emoji({code, _, _} = emoji), do: {code, Emoji.build(emoji)}
 
   defp load_pack(pack_dir, emoji_groups) do
     pack_name = Path.basename(pack_dir)

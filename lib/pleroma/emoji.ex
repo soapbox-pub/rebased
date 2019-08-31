@@ -21,6 +21,21 @@ defmodule Pleroma.Emoji do
     {:read_concurrency, true}
   ]
 
+  defstruct [:code, :file, :tags, :safe_code, :safe_file]
+
+  @doc "Build emoji struct"
+  def build({code, file, tags}) do
+    %__MODULE__{
+      code: code,
+      file: file,
+      tags: tags,
+      safe_code: Pleroma.HTML.strip_tags(code),
+      safe_file: Pleroma.HTML.strip_tags(file)
+    }
+  end
+
+  def build({code, file}), do: build({code, file, []})
+
   @doc false
   def start_link(_) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)

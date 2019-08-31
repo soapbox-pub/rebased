@@ -436,7 +436,7 @@ defmodule Pleroma.Web.CommonAPI.Utils do
 
   def emoji_from_profile(%{info: _info} = user) do
     (Emoji.Formatter.get_emoji(user.bio) ++ Emoji.Formatter.get_emoji(user.name))
-    |> Enum.map(fn {shortcode, url, _, _, _} ->
+    |> Enum.map(fn {shortcode, %Emoji{file: url}} ->
       %{
         "type" => "Emoji",
         "icon" => %{"type" => "Image", "url" => "#{Endpoint.url()}#{url}"},
