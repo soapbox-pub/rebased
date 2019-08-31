@@ -2,10 +2,10 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Workers.Receiver do
+defmodule Pleroma.Workers.ReceiverWorker do
   alias Pleroma.Web.Federator
 
-  # Note: `max_attempts` is intended to be overridden in `new/1` call
+  # Note: `max_attempts` is intended to be overridden in `new/2` call
   use Oban.Worker,
     queue: "federator_incoming",
     max_attempts: 1

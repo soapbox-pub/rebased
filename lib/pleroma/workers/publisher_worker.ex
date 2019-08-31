@@ -2,14 +2,18 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.Workers.Publisher do
+defmodule Pleroma.Workers.PublisherWorker do
   alias Pleroma.Activity
   alias Pleroma.Web.Federator
 
-  # Note: `max_attempts` is intended to be overridden in `new/1` call
+  # Note: `max_attempts` is intended to be overridden in `new/2` call
   use Oban.Worker,
     queue: "federator_outgoing",
     max_attempts: 1
+
+  def backoff(attempt) when is_integer(attempt) do
+    Pleroma.Workers.WorkerHelper.sidekiq_backoff(attempt, 5)
+  end
 
   @impl Oban.Worker
   def perform(%{"op" => "publish", "activity_id" => activity_id}, _job) do

@@ -171,7 +171,7 @@ defmodule Pleroma.Web.Salmon do
   end
 
   def publish_one(%{recipient_id: recipient_id} = params) do
-    recipient = User.get_by_id(recipient_id)
+    recipient = User.get_cached_by_id(recipient_id)
 
     params
     |> Map.delete(:recipient_id)

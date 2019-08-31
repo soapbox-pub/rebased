@@ -8,24 +8,24 @@ defmodule Pleroma.Workers.BackgroundWorker do
   alias Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy
   alias Pleroma.Web.OAuth.Token.CleanWorker
 
-  # Note: `max_attempts` is intended to be overridden in `new/1` call
+  # Note: `max_attempts` is intended to be overridden in `new/2` call
   use Oban.Worker,
     queue: "background",
     max_attempts: 1
 
   @impl Oban.Worker
   def perform(%{"op" => "fetch_initial_posts", "user_id" => user_id}, _job) do
-    user = User.get_by_id(user_id)
+    user = User.get_cached_by_id(user_id)
     User.perform(:fetch_initial_posts, user)
   end
 
   def perform(%{"op" => "deactivate_user", "user_id" => user_id, "status" => status}, _job) do
-    user = User.get_by_id(user_id)
+    user = User.get_cached_by_id(user_id)
     User.perform(:deactivate_async, user, status)
   end
 
   def perform(%{"op" => "delete_user", "user_id" => user_id}, _job) do
-    user = User.get_by_id(user_id)
+    user = User.get_cached_by_id(user_id)
     User.perform(:delete, user)
   end
 
@@ -37,7 +37,7 @@ defmodule Pleroma.Workers.BackgroundWorker do
         },
         _job
       ) do
-    blocker = User.get_by_id(blocker_id)
+    blocker = User.get_cached_by_id(blocker_id)
     User.perform(:blocks_import, blocker, blocked_identifiers)
   end
 
@@ -49,7 +49,7 @@ defmodule Pleroma.Workers.BackgroundWorker do
         },
         _job
       ) do
-    follower = User.get_by_id(follower_id)
+    follower = User.get_cached_by_id(follower_id)
     User.perform(:follow_import, follower, followed_identifiers)
   end
 
@@ -68,12 +68,5 @@ defmodule Pleroma.Workers.BackgroundWorker do
   def perform(%{"op" => "fetch_data_for_activity", "activity_id" => activity_id}, _job) do
     activity = Activity.get_by_id(activity_id)
     Pleroma.Web.RichMedia.Helpers.perform(:fetch, activity)
-  end
-
-  def perform(
-        %{"op" => "activity_expiration", "activity_expiration_id" => activity_expiration_id},
-        _job
-      ) do
-    Pleroma.ActivityExpirationWorker.perform(:execute, activity_expiration_id)
   end
 end

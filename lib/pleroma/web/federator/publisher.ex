@@ -6,7 +6,7 @@ defmodule Pleroma.Web.Federator.Publisher do
   alias Pleroma.Activity
   alias Pleroma.Config
   alias Pleroma.User
-  alias Pleroma.Workers.Publisher, as: PublisherWorker
+  alias Pleroma.Workers.PublisherWorker
 
   require Logger
 
@@ -31,12 +31,7 @@ defmodule Pleroma.Web.Federator.Publisher do
   """
   @spec enqueue_one(module(), Map.t()) :: :ok
   def enqueue_one(module, %{} = params) do
-    worker_args =
-      if max_attempts = Pleroma.Config.get([:workers, :retries, :federator_outgoing]) do
-        [max_attempts: max_attempts]
-      else
-        []
-      end
+    worker_args = Pleroma.Workers.WorkerHelper.worker_args(:federator_outgoing)
 
     %{"op" => "publish_one", "module" => to_string(module), "params" => params}
     |> PublisherWorker.new(worker_args)

@@ -10,7 +10,7 @@ defmodule Pleroma.Emails.Mailer do
   """
 
   alias Pleroma.Repo
-  alias Pleroma.Workers.Mailer, as: MailerWorker
+  alias Pleroma.Workers.MailerWorker
   alias Swoosh.DeliveryError
 
   @otp_app :pleroma
@@ -19,7 +19,7 @@ defmodule Pleroma.Emails.Mailer do
   @spec enabled?() :: boolean()
   def enabled?, do: Pleroma.Config.get([__MODULE__, :enabled])
 
-  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
+  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   @doc "add email to queue"
   def deliver_async(email, config \\ []) do

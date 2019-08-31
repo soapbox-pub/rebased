@@ -1123,7 +1123,7 @@ defmodule Pleroma.UserTest do
                    "id" => "pleroma:fakeid"
                  }
                },
-               all_enqueued(worker: Pleroma.Workers.Publisher)
+               all_enqueued(worker: Pleroma.Workers.PublisherWorker)
              )
     end
   end

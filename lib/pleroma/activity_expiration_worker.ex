@@ -9,13 +9,13 @@ defmodule Pleroma.ActivityExpirationWorker do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Workers.BackgroundWorker
+  alias Pleroma.Workers.ActivityExpirationWorker
 
   require Logger
   use GenServer
   import Ecto.Query
 
-  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
+  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   @schedule_interval :timer.minutes(1)
 
@@ -57,7 +57,7 @@ defmodule Pleroma.ActivityExpirationWorker do
         "op" => "activity_expiration",
         "activity_expiration_id" => expiration.id
       }
-      |> BackgroundWorker.new(worker_args(:activity_expiration))
+      |> ActivityExpirationWorker.new(worker_args(:activity_expiration))
       |> Repo.insert()
     end)
 

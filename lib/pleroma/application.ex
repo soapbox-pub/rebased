@@ -43,7 +43,7 @@ defmodule Pleroma.Application do
         hackney_pool_children() ++
         [
           Pleroma.Stats,
-          {Oban, Application.get_env(:pleroma, Oban)},
+          {Oban, Pleroma.Config.get(Oban)},
           %{
             id: :web_push_init,
             start: {Task, :start_link, [&Pleroma.Web.Push.init/0]},

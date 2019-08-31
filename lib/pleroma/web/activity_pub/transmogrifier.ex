@@ -15,14 +15,14 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   alias Pleroma.Web.ActivityPub.Utils
   alias Pleroma.Web.ActivityPub.Visibility
   alias Pleroma.Web.Federator
-  alias Pleroma.Workers.Transmogrifier, as: TransmogrifierWorker
+  alias Pleroma.Workers.TransmogrifierWorker
 
   import Ecto.Query
 
   require Logger
   require Pleroma.Constants
 
-  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
+  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.

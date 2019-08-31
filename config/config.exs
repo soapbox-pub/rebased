@@ -470,7 +470,7 @@ config :pleroma, Pleroma.User,
 config :pleroma, Oban,
   repo: Pleroma.Repo,
   verbose: false,
-  prune: {:maxage, 60 * 60 * 24 * 7},
+  prune: {:maxlen, 1500},
   queues: [
     activity_expiration: 10,
     federator_incoming: 50,

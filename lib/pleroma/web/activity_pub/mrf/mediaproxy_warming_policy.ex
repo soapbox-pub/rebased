@@ -18,7 +18,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
     recv_timeout: 10_000
   ]
 
-  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
+  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   def perform(:prefetch, url) do
     Logger.info("Prefetching #{inspect(url)}")

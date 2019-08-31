@@ -20,7 +20,7 @@ defmodule Pleroma.Web.OAuth.Token.CleanWorker do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Workers.BackgroundWorker
 
-  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
+  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   def start_link(_), do: GenServer.start_link(__MODULE__, %{})
 

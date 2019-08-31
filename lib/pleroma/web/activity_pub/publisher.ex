@@ -85,7 +85,7 @@ defmodule Pleroma.Web.ActivityPub.Publisher do
   end
 
   def publish_one(%{actor_id: actor_id} = params) do
-    actor = User.get_by_id(actor_id)
+    actor = User.get_cached_by_id(actor_id)
 
     params
     |> Map.delete(:actor_id)

@@ -4,11 +4,11 @@
 
 defmodule Pleroma.Web.Push do
   alias Pleroma.Repo
-  alias Pleroma.Workers.WebPusher
+  alias Pleroma.Workers.WebPusherWorker
 
   require Logger
 
-  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
+  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   def init do
     unless enabled() do
@@ -36,7 +36,7 @@ defmodule Pleroma.Web.Push do
 
   def send(notification) do
     %{"op" => "web_push", "notification_id" => notification.id}
-    |> WebPusher.new(worker_args(:web_push))
+    |> WebPusherWorker.new(worker_args(:web_push))
     |> Repo.insert()
   end
 end

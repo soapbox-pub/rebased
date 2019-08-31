@@ -12,13 +12,13 @@ defmodule Pleroma.Web.Federator do
   alias Pleroma.Web.Federator.Publisher
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Websub
-  alias Pleroma.Workers.Publisher, as: PublisherWorker
-  alias Pleroma.Workers.Receiver, as: ReceiverWorker
-  alias Pleroma.Workers.Subscriber, as: SubscriberWorker
+  alias Pleroma.Workers.PublisherWorker
+  alias Pleroma.Workers.ReceiverWorker
+  alias Pleroma.Workers.SubscriberWorker
 
   require Logger
 
-  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
+  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   def init do
     # To do: consider removing this call in favor of scheduled execution (`quantum`-based)

@@ -18,7 +18,7 @@ defmodule Pleroma.ScheduledActivityWorker do
 
   @schedule_interval :timer.minutes(1)
 
-  defdelegate worker_args(queue), to: Pleroma.Workers.Helper
+  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil)

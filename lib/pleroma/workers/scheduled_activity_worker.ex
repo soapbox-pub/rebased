@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.ScheduledActivityWorker do
-  # Note: `max_attempts` is intended to be overridden in `new/1` call
+  # Note: `max_attempts` is intended to be overridden in `new/2` call
   use Oban.Worker,
     queue: "scheduled_activities",
     max_attempts: 1

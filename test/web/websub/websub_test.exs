@@ -11,7 +11,7 @@ defmodule Pleroma.Web.WebsubTest do
   alias Pleroma.Web.Websub
   alias Pleroma.Web.Websub.WebsubClientSubscription
   alias Pleroma.Web.Websub.WebsubServerSubscription
-  alias Pleroma.Workers.Subscriber, as: SubscriberWorker
+  alias Pleroma.Workers.SubscriberWorker
 
   import Pleroma.Factory
   import Tesla.Mock
