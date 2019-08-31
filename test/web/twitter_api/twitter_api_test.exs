@@ -7,8 +7,8 @@ defmodule Pleroma.Web.TwitterAPI.TwitterAPITest do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.UserInviteToken
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
   alias Pleroma.Web.MastodonAPI.AccountView
+  alias Pleroma.Web.TwitterAPI.TwitterAPI
 
   import Pleroma.Factory
 
