@@ -8,7 +8,6 @@ defmodule Pleroma.ScheduledActivityWorker do
   """
 
   alias Pleroma.Config
-  alias Pleroma.Repo
   alias Pleroma.ScheduledActivity
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -17,8 +16,6 @@ defmodule Pleroma.ScheduledActivityWorker do
   require Logger
 
   @schedule_interval :timer.minutes(1)
-
-  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil)
@@ -49,9 +46,10 @@ defmodule Pleroma.ScheduledActivityWorker do
   def handle_info(:perform, state) do
     ScheduledActivity.due_activities(@schedule_interval)
     |> Enum.each(fn scheduled_activity ->
-      %{"op" => "execute", "activity_id" => scheduled_activity.id}
-      |> Pleroma.Workers.ScheduledActivityWorker.new(worker_args(:scheduled_activities))
-      |> Repo.insert()
+      Pleroma.Workers.ScheduledActivityWorker.enqueue(
+        "execute",
+        %{"activity_id" => scheduled_activity.id}
+      )
     end)
 
     schedule_next()

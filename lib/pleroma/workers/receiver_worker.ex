@@ -10,6 +10,8 @@ defmodule Pleroma.Workers.ReceiverWorker do
     queue: "federator_incoming",
     max_attempts: 1
 
+  use Pleroma.Workers.WorkerHelper, queue: "federator_incoming"
+
   @impl Oban.Worker
   def perform(%{"op" => "incoming_doc", "body" => doc}, _job) do
     Federator.perform(:incoming_doc, doc)

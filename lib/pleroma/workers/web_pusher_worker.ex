@@ -11,6 +11,8 @@ defmodule Pleroma.Workers.WebPusherWorker do
     queue: "web_push",
     max_attempts: 1
 
+  use Pleroma.Workers.WorkerHelper, queue: "web_push"
+
   @impl Oban.Worker
   def perform(%{"op" => "web_push", "notification_id" => notification_id}, _job) do
     notification = Repo.get(Notification, notification_id)

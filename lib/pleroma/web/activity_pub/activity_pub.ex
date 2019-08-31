@@ -26,8 +26,6 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
   require Logger
   require Pleroma.Constants
 
-  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
-
   # For Announce activities, we filter the recipients based on following status for any actors
   # that match actual users.  See issue #164 for more information about why this is necessary.
   defp get_recipients(%{"type" => "Announce"} = data) do
@@ -148,9 +146,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
           activity
         end
 
-      %{"op" => "fetch_data_for_activity", "activity_id" => activity.id}
-      |> BackgroundWorker.new(worker_args(:background))
-      |> Repo.insert()
+      BackgroundWorker.enqueue("fetch_data_for_activity", %{"activity_id" => activity.id})
 
       Notification.create_notifications(activity)
 

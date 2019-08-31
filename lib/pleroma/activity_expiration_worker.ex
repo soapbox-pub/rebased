@@ -9,13 +9,10 @@ defmodule Pleroma.ActivityExpirationWorker do
   alias Pleroma.Repo
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
-  alias Pleroma.Workers.ActivityExpirationWorker
 
   require Logger
   use GenServer
   import Ecto.Query
-
-  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   @schedule_interval :timer.minutes(1)
 
@@ -53,12 +50,10 @@ defmodule Pleroma.ActivityExpirationWorker do
   def handle_info(:perform, state) do
     ActivityExpiration.due_expirations(@schedule_interval)
     |> Enum.each(fn expiration ->
-      %{
-        "op" => "activity_expiration",
-        "activity_expiration_id" => expiration.id
-      }
-      |> ActivityExpirationWorker.new(worker_args(:activity_expiration))
-      |> Repo.insert()
+      Pleroma.Workers.ActivityExpirationWorker.enqueue(
+        "activity_expiration",
+        %{"activity_expiration_id" => expiration.id}
+      )
     end)
 
     schedule_next()

@@ -11,6 +11,8 @@ defmodule Pleroma.Workers.PublisherWorker do
     queue: "federator_outgoing",
     max_attempts: 1
 
+  use Pleroma.Workers.WorkerHelper, queue: "federator_outgoing"
+
   def backoff(attempt) when is_integer(attempt) do
     Pleroma.Workers.WorkerHelper.sidekiq_backoff(attempt, 5)
   end

@@ -4,6 +4,7 @@
 
 defmodule Pleroma.Workers.WorkerHelper do
   alias Pleroma.Config
+  alias Pleroma.Workers.WorkerHelper
 
   def worker_args(queue) do
     case Config.get([:workers, :retries, queue]) do
@@ -19,5 +20,22 @@ defmodule Pleroma.Workers.WorkerHelper do
         :rand.uniform(2 * base_backoff) * attempt
 
     trunc(backoff)
+  end
+
+  defmacro __using__(opts) do
+    caller_module = __CALLER__.module
+    queue = Keyword.fetch!(opts, :queue)
+
+    quote do
+      def enqueue(op, params, worker_args \\ []) do
+        params = Map.merge(%{"op" => op}, params)
+        queue_atom = String.to_atom(unquote(queue))
+        worker_args = worker_args ++ WorkerHelper.worker_args(queue_atom)
+
+        unquote(caller_module)
+        |> apply(:new, [params, worker_args])
+        |> Pleroma.Repo.insert()
+      end
+    end
   end
 end

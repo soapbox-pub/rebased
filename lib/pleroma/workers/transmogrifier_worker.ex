@@ -10,6 +10,8 @@ defmodule Pleroma.Workers.TransmogrifierWorker do
     queue: "transmogrifier",
     max_attempts: 1
 
+  use Pleroma.Workers.WorkerHelper, queue: "transmogrifier"
+
   @impl Oban.Worker
   def perform(%{"op" => "user_upgrade", "user_id" => user_id}, _job) do
     user = User.get_cached_by_id(user_id)

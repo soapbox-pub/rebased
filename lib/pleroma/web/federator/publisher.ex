@@ -31,11 +31,10 @@ defmodule Pleroma.Web.Federator.Publisher do
   """
   @spec enqueue_one(module(), Map.t()) :: :ok
   def enqueue_one(module, %{} = params) do
-    worker_args = Pleroma.Workers.WorkerHelper.worker_args(:federator_outgoing)
-
-    %{"op" => "publish_one", "module" => to_string(module), "params" => params}
-    |> PublisherWorker.new(worker_args)
-    |> Pleroma.Repo.insert()
+    PublisherWorker.enqueue(
+      "publish_one",
+      %{"module" => to_string(module), "params" => params}
+    )
   end
 
   @doc """

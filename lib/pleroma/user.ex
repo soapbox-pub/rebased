@@ -41,8 +41,6 @@ defmodule Pleroma.User do
   @strict_local_nickname_regex ~r/^[a-zA-Z\d]+$/
   @extended_local_nickname_regex ~r/^[a-zA-Z\d_-]+$/
 
-  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
-
   schema "users" do
     field(:bio, :string)
     field(:email, :string)
@@ -623,9 +621,7 @@ defmodule Pleroma.User do
 
   @doc "Fetch some posts when the user has just been federated with"
   def fetch_initial_posts(user) do
-    %{"op" => "fetch_initial_posts", "user_id" => user.id}
-    |> BackgroundWorker.new(worker_args(:background))
-    |> Repo.insert()
+    BackgroundWorker.enqueue("fetch_initial_posts", %{"user_id" => user.id})
   end
 
   @spec get_followers_query(User.t(), pos_integer() | nil) :: Ecto.Query.t()
@@ -1056,9 +1052,7 @@ defmodule Pleroma.User do
   end
 
   def deactivate_async(user, status \\ true) do
-    %{"op" => "deactivate_user", "user_id" => user.id, "status" => status}
-    |> BackgroundWorker.new(worker_args(:background))
-    |> Repo.insert()
+    BackgroundWorker.enqueue("deactivate_user", %{"user_id" => user.id, "status" => status})
   end
 
   def deactivate(%User{} = user, status \\ true) do
@@ -1087,9 +1081,7 @@ defmodule Pleroma.User do
   end
 
   def delete(%User{} = user) do
-    %{"op" => "delete_user", "user_id" => user.id}
-    |> BackgroundWorker.new(worker_args(:background))
-    |> Repo.insert()
+    BackgroundWorker.enqueue("delete_user", %{"user_id" => user.id})
   end
 
   @spec perform(atom(), User.t()) :: {:ok, User.t()}
@@ -1198,24 +1190,18 @@ defmodule Pleroma.User do
   end
 
   def blocks_import(%User{} = blocker, blocked_identifiers) when is_list(blocked_identifiers) do
-    %{
-      "op" => "blocks_import",
+    BackgroundWorker.enqueue("blocks_import", %{
       "blocker_id" => blocker.id,
       "blocked_identifiers" => blocked_identifiers
-    }
-    |> BackgroundWorker.new(worker_args(:background))
-    |> Repo.insert()
+    })
   end
 
   def follow_import(%User{} = follower, followed_identifiers)
       when is_list(followed_identifiers) do
-    %{
-      "op" => "follow_import",
+    BackgroundWorker.enqueue("follow_import", %{
       "follower_id" => follower.id,
       "followed_identifiers" => followed_identifiers
-    }
-    |> BackgroundWorker.new(worker_args(:background))
-    |> Repo.insert()
+    })
   end
 
   def delete_user_activities(%User{ap_id: ap_id} = user) do

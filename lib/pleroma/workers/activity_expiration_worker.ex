@@ -8,6 +8,8 @@ defmodule Pleroma.Workers.ActivityExpirationWorker do
     queue: "activity_expiration",
     max_attempts: 1
 
+  use Pleroma.Workers.WorkerHelper, queue: "activity_expiration"
+
   @impl Oban.Worker
   def perform(
         %{

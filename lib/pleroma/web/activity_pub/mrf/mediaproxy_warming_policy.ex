@@ -7,7 +7,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
   @behaviour Pleroma.Web.ActivityPub.MRF
 
   alias Pleroma.HTTP
-  alias Pleroma.Repo
   alias Pleroma.Web.MediaProxy
   alias Pleroma.Workers.BackgroundWorker
 
@@ -17,8 +16,6 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
     pool: :media,
     recv_timeout: 10_000
   ]
-
-  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
 
   def perform(:prefetch, url) do
     Logger.info("Prefetching #{inspect(url)}")
@@ -34,9 +31,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
         url
         |> Enum.each(fn
           %{"href" => href} ->
-            %{"op" => "media_proxy_prefetch", "url" => href}
-            |> BackgroundWorker.new(worker_args(:background))
-            |> Repo.insert()
+            BackgroundWorker.enqueue("media_proxy_prefetch", %{"url" => href})
 
           x ->
             Logger.debug("Unhandled attachment URL object #{inspect(x)}")
@@ -52,9 +47,7 @@ defmodule Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy do
         %{"type" => "Create", "object" => %{"attachment" => attachments} = _object} = message
       )
       when is_list(attachments) and length(attachments) > 0 do
-    %{"op" => "media_proxy_preload", "message" => message}
-    |> BackgroundWorker.new(worker_args(:background))
-    |> Repo.insert()
+    BackgroundWorker.enqueue("media_proxy_preload", %{"message" => message})
 
     {:ok, message}
   end

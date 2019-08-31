@@ -13,6 +13,8 @@ defmodule Pleroma.Workers.BackgroundWorker do
     queue: "background",
     max_attempts: 1
 
+  use Pleroma.Workers.WorkerHelper, queue: "background"
+
   @impl Oban.Worker
   def perform(%{"op" => "fetch_initial_posts", "user_id" => user_id}, _job) do
     user = User.get_cached_by_id(user_id)

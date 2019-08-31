@@ -22,8 +22,6 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
   require Logger
   require Pleroma.Constants
 
-  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
-
   @doc """
   Modifies an incoming AP object (mastodon format) to our internal format.
   """
@@ -1054,9 +1052,7 @@ defmodule Pleroma.Web.ActivityPub.Transmogrifier do
          already_ap <- User.ap_enabled?(user),
          {:ok, user} <- user |> User.upgrade_changeset(data) |> User.update_and_set_cache() do
       unless already_ap do
-        %{"op" => "user_upgrade", "user_id" => user.id}
-        |> TransmogrifierWorker.new(worker_args(:transmogrifier))
-        |> Repo.insert()
+        TransmogrifierWorker.enqueue("user_upgrade", %{"user_id" => user.id})
       end
 
       {:ok, user}

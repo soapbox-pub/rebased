@@ -9,7 +9,6 @@ defmodule Pleroma.Emails.Mailer do
   The module contains functions to delivery email using Swoosh.Mailer.
   """
 
-  alias Pleroma.Repo
   alias Pleroma.Workers.MailerWorker
   alias Swoosh.DeliveryError
 
@@ -19,8 +18,6 @@ defmodule Pleroma.Emails.Mailer do
   @spec enabled?() :: boolean()
   def enabled?, do: Pleroma.Config.get([__MODULE__, :enabled])
 
-  import Pleroma.Workers.WorkerHelper, only: [worker_args: 1]
-
   @doc "add email to queue"
   def deliver_async(email, config \\ []) do
     encoded_email =
@@ -28,9 +25,7 @@ defmodule Pleroma.Emails.Mailer do
       |> :erlang.term_to_binary()
       |> Base.encode64()
 
-    %{"op" => "email", "encoded_email" => encoded_email, "config" => config}
-    |> MailerWorker.new(worker_args(:mailer))
-    |> Repo.insert()
+    MailerWorker.enqueue("email", %{"encoded_email" => encoded_email, "config" => config})
   end
 
   @doc "callback to perform send email from queue"

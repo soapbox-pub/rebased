@@ -12,6 +12,8 @@ defmodule Pleroma.Workers.SubscriberWorker do
     queue: "federator_outgoing",
     max_attempts: 1
 
+  use Pleroma.Workers.WorkerHelper, queue: "federator_outgoing"
+
   @impl Oban.Worker
   def perform(%{"op" => "refresh_subscriptions"}, _job) do
     Federator.perform(:refresh_subscriptions)
