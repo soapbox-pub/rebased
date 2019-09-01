@@ -64,7 +64,7 @@ defmodule Pleroma.Web.EmojiAPI.EmojiAPIController do
     # If the pack is set as shared, check if it can be downloaded
     # That means that when asked, the pack can be packed and sent to the remote
     # Otherwise, they'd have to download it from external-src
-    pack["pack"]["share-files"] and
+    pack["pack"]["share-files"] &&
       Enum.all?(pack["files"], fn {_, path} ->
         File.exists?(Path.join(pack_path, path))
       end)
