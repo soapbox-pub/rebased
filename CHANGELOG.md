@@ -95,6 +95,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mix Tasks: `mix pleroma.database fix_likes_collections`
 - Federation: Remove `likes` from objects.
 - Admin API: Added moderation log
+- Admin API: Added moderation log filters (user/start date/end date/search/pagination)
 
 ### Changed
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
