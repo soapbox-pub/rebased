@@ -2286,9 +2286,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn = get(conn, "/api/pleroma/admin/moderation_log")
 
       response = json_response(conn, 200)
-      [first_entry, second_entry] = response
+      [first_entry, second_entry] = response["items"]
 
-      assert response |> length() == 2
+      assert response["total"] == 2
       assert first_entry["data"]["action"] == "relay_unfollow"
 
       assert first_entry["message"] ==
@@ -2330,9 +2330,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn1 = get(conn, "/api/pleroma/admin/moderation_log?page_size=1&page=1")
 
       response1 = json_response(conn1, 200)
-      [first_entry] = response1
+      [first_entry] = response1["items"]
 
-      assert response1 |> length() == 1
+      assert response1["total"] == 2
+      assert response1["items"] |> length() == 1
       assert first_entry["data"]["action"] == "relay_unfollow"
 
       assert first_entry["message"] ==
@@ -2341,9 +2342,10 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn2 = get(conn, "/api/pleroma/admin/moderation_log?page_size=1&page=2")
 
       response2 = json_response(conn2, 200)
-      [second_entry] = response2
+      [second_entry] = response2["items"]
 
-      assert response2 |> length() == 1
+      assert response2["total"] == 2
+      assert response2["items"] |> length() == 1
       assert second_entry["data"]["action"] == "relay_follow"
 
       assert second_entry["message"] ==
@@ -2387,9 +2389,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
         )
 
       response1 = json_response(conn1, 200)
-      [first_entry] = response1
+      [first_entry] = response1["items"]
 
-      assert response1 |> length() == 1
+      assert response1["total"] == 1
       assert first_entry["data"]["action"] == "relay_unfollow"
 
       assert first_entry["message"] ==
@@ -2424,9 +2426,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn1 = get(conn, "/api/pleroma/admin/moderation_log?user_id=#{moderator.id}")
 
       response1 = json_response(conn1, 200)
-      [first_entry] = response1
+      [first_entry] = response1["items"]
 
-      assert response1 |> length() == 1
+      assert response1["total"] == 1
       assert get_in(first_entry, ["data", "actor", "id"]) == moderator.id
     end
 
@@ -2446,9 +2448,9 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIControllerTest do
       conn1 = get(conn, "/api/pleroma/admin/moderation_log?search=unfo")
 
       response1 = json_response(conn1, 200)
-      [first_entry] = response1
+      [first_entry] = response1["items"]
 
-      assert response1 |> length() == 1
+      assert response1["total"] == 1
 
       assert get_in(first_entry, ["data", "message"]) ==
                "@#{moderator.nickname} unfollowed relay: https://example.org/relay"
