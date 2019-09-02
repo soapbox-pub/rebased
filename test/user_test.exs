@@ -1131,6 +1131,8 @@ defmodule Pleroma.UserTest do
 
       data = %{
         ap_id: user.ap_id,
+        name: user.name,
+        nickname: user.nickname,
         info: %{
           fields: [
             %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
