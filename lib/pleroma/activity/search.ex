@@ -27,6 +27,7 @@ defmodule Pleroma.Activity.Search do
     |> maybe_restrict_local(user)
     |> maybe_restrict_author(author)
     |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => limit}, :offset)
+    |> Map.get(:items)
     |> maybe_fetch(user, search_query)
   end
 

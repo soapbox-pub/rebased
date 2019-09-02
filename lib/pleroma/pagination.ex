@@ -18,19 +18,29 @@ defmodule Pleroma.Pagination do
 
   def fetch_paginated(query, params, :keyset) do
     options = cast_params(params)
+    total = Repo.aggregate(query, :count, :id)
 
-    query
-    |> paginate(options, :keyset)
-    |> Repo.all()
-    |> enforce_order(options)
+    %{
+      total: total,
+      items:
+        query
+        |> paginate(options, :keyset)
+        |> Repo.all()
+        |> enforce_order(options)
+    }
   end
 
   def fetch_paginated(query, params, :offset) do
     options = cast_params(params)
+    total = Repo.aggregate(query, :count, :id)
 
-    query
-    |> paginate(options, :offset)
-    |> Repo.all()
+    %{
+      total: total,
+      items:
+        query
+        |> paginate(options, :offset)
+        |> Repo.all()
+    }
   end
 
   def paginate(query, options, method \\ :keyset)

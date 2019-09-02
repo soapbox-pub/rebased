@@ -34,6 +34,7 @@ defmodule Pleroma.User.Search do
         query_string
         |> search_query(for_user, following)
         |> Pagination.fetch_paginated(%{"offset" => offset, "limit" => result_limit}, :offset)
+        |> Map.get(:items)
       end)
 
     results

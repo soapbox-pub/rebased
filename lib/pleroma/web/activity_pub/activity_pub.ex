@@ -556,6 +556,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     q
     |> restrict_unlisted()
     |> Pagination.fetch_paginated(opts)
+    |> Map.get(:items)
     |> Enum.reverse()
   end
 
@@ -953,6 +954,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
     fetch_activities_query(recipients ++ list_memberships, opts)
     |> Pagination.fetch_paginated(opts)
+    |> Map.get(:items)
     |> Enum.reverse()
     |> maybe_update_cc(list_memberships, opts["user"])
   end
@@ -987,6 +989,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     fetch_activities_query([], opts)
     |> fetch_activities_bounded_query(recipients, recipients_with_public)
     |> Pagination.fetch_paginated(opts)
+    |> Map.get(:items)
     |> Enum.reverse()
   end
 
