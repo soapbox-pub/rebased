@@ -8,11 +8,6 @@ defmodule Pleroma.Workers.BackgroundWorker do
   alias Pleroma.Web.ActivityPub.MRF.MediaProxyWarmingPolicy
   alias Pleroma.Web.OAuth.Token.CleanWorker
 
-  # Note: `max_attempts` is intended to be overridden in `new/2` call
-  use Oban.Worker,
-    queue: "background",
-    max_attempts: 1
-
   use Pleroma.Workers.WorkerHelper, queue: "background"
 
   @impl Oban.Worker

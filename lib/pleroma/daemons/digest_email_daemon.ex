@@ -2,7 +2,7 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.DigestEmailWorker do
+defmodule Pleroma.Daemons.DigestEmailDaemon do
   alias Pleroma.Repo
   alias Pleroma.Workers.DigestEmailsWorker
 

@@ -3,11 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.ActivityExpirationWorker do
-  # Note: `max_attempts` is intended to be overridden in `new/2` call
-  use Oban.Worker,
-    queue: "activity_expiration",
-    max_attempts: 1
-
   use Pleroma.Workers.WorkerHelper, queue: "activity_expiration"
 
   @impl Oban.Worker
@@ -18,6 +13,6 @@ defmodule Pleroma.Workers.ActivityExpirationWorker do
         },
         _job
       ) do
-    Pleroma.ActivityExpirationWorker.perform(:execute, activity_expiration_id)
+    Pleroma.Daemons.ActivityExpirationDaemon.perform(:execute, activity_expiration_id)
   end
 end

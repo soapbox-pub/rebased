@@ -5,11 +5,6 @@
 defmodule Pleroma.Workers.TransmogrifierWorker do
   alias Pleroma.User
 
-  # Note: `max_attempts` is intended to be overridden in `new/2` call
-  use Oban.Worker,
-    queue: "transmogrifier",
-    max_attempts: 1
-
   use Pleroma.Workers.WorkerHelper, queue: "transmogrifier"
 
   @impl Oban.Worker

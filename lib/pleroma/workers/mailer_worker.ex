@@ -3,11 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 
 defmodule Pleroma.Workers.MailerWorker do
-  # Note: `max_attempts` is intended to be overridden in `new/2` call
-  use Oban.Worker,
-    queue: "mailer",
-    max_attempts: 1
-
   use Pleroma.Workers.WorkerHelper, queue: "mailer"
 
   @impl Oban.Worker

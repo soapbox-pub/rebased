@@ -5,11 +5,6 @@
 defmodule Pleroma.Workers.ReceiverWorker do
   alias Pleroma.Web.Federator
 
-  # Note: `max_attempts` is intended to be overridden in `new/2` call
-  use Oban.Worker,
-    queue: "federator_incoming",
-    max_attempts: 1
-
   use Pleroma.Workers.WorkerHelper, queue: "federator_incoming"
 
   @impl Oban.Worker

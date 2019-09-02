@@ -7,11 +7,6 @@ defmodule Pleroma.Workers.SubscriberWorker do
   alias Pleroma.Web.Federator
   alias Pleroma.Web.Websub
 
-  # Note: `max_attempts` is intended to be overridden in `new/2` call
-  use Oban.Worker,
-    queue: "federator_outgoing",
-    max_attempts: 1
-
   use Pleroma.Workers.WorkerHelper, queue: "federator_outgoing"
 
   @impl Oban.Worker

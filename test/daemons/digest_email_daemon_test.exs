@@ -2,11 +2,11 @@
 # Copyright © 2017-2019 Pleroma Authors <https://pleroma.social/>
 # SPDX-License-Identifier: AGPL-3.0-only
 
-defmodule Pleroma.DigestEmailWorkerTest do
+defmodule Pleroma.DigestEmailDaemonTest do
   use Pleroma.DataCase
   import Pleroma.Factory
 
-  alias Pleroma.DigestEmailWorker
+  alias Pleroma.Daemons.DigestEmailDaemon
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
   alias Pleroma.Web.CommonAPI
@@ -23,7 +23,7 @@ defmodule Pleroma.DigestEmailWorkerTest do
     User.switch_email_notifications(user2, "digest", true)
     CommonAPI.post(user, %{"status" => "hey @#{user2.nickname}!"})
 
-    DigestEmailWorker.perform()
+    DigestEmailDaemon.perform()
     ObanHelpers.perform_all()
     # Performing job(s) enqueued at previous step
     ObanHelpers.perform_all()

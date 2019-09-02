@@ -6,11 +6,6 @@ defmodule Pleroma.Workers.PublisherWorker do
   alias Pleroma.Activity
   alias Pleroma.Web.Federator
 
-  # Note: `max_attempts` is intended to be overridden in `new/2` call
-  use Oban.Worker,
-    queue: "federator_outgoing",
-    max_attempts: 1
-
   use Pleroma.Workers.WorkerHelper, queue: "federator_outgoing"
 
   def backoff(attempt) when is_integer(attempt) do

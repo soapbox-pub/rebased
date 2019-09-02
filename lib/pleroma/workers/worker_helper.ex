@@ -27,6 +27,11 @@ defmodule Pleroma.Workers.WorkerHelper do
     queue = Keyword.fetch!(opts, :queue)
 
     quote do
+      # Note: `max_attempts` is intended to be overridden in `new/2` call
+      use Oban.Worker,
+        queue: unquote(queue),
+        max_attempts: 1
+
       def enqueue(op, params, worker_args \\ []) do
         params = Map.merge(%{"op" => op}, params)
         queue_atom = String.to_atom(unquote(queue))

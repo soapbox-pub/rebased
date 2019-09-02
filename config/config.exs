@@ -54,7 +54,7 @@ config :pleroma, Pleroma.Repo,
 scheduled_jobs =
   with digest_config <- Application.get_env(:pleroma, :email_notifications)[:digest],
        true <- digest_config[:active] do
-    [{digest_config[:schedule], {Pleroma.DigestEmailWorker, :perform, []}}]
+    [{digest_config[:schedule], {Pleroma.Daemons.DigestEmailDaemon, :perform, []}}]
   else
     _ -> []
   end
