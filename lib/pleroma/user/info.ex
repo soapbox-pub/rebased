@@ -242,7 +242,12 @@ defmodule Pleroma.User.Info do
   end
 
   def remote_user_creation(info, params) do
-    params = Map.put(params, "fields", Enum.map(params["fields"], &truncate_field/1))
+    params =
+      if Map.has_key?(params, :fields) do
+        Map.put(params, :fields, Enum.map(params[:fields], &truncate_field/1))
+      else
+        params
+      end
 
     info
     |> cast(params, [
