@@ -1117,11 +1117,20 @@ defmodule Pleroma.UserTest do
     assert {:ok, _key} = User.get_public_key_for_ap_id("http://mastodon.example.org/users/admin")
   end
 
-  test "insert or update a user from given data" do
-    user = insert(:user, %{nickname: "nick@name.de"})
-    data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
+  describe "insert or update a user from given data" do
+    test "with normal data" do
+        user = insert(:user, %{nickname: "nick@name.de"})
+        data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
 
-    assert {:ok, %User{}} = User.insert_or_update_user(data)
+        assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with overly long fields" do
+        current_max_length = Pleroma.Config.get([:instance, :account_field_value_length], 255)
+        user = insert(:user, nickname: "nickname@supergood.domain")
+        data = %{ap_id: user.ap_id, info: %{ fields: [%{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}] }}
+        assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
   end
 
   describe "per-user rich-text filtering" do
