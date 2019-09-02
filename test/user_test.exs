@@ -1119,17 +1119,26 @@ defmodule Pleroma.UserTest do
 
   describe "insert or update a user from given data" do
     test "with normal data" do
-        user = insert(:user, %{nickname: "nick@name.de"})
-        data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
+      user = insert(:user, %{nickname: "nick@name.de"})
+      data = %{ap_id: user.ap_id <> "xxx", name: user.name, nickname: user.nickname}
 
-        assert {:ok, %User{}} = User.insert_or_update_user(data)
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
     end
 
     test "with overly long fields" do
-        current_max_length = Pleroma.Config.get([:instance, :account_field_value_length], 255)
-        user = insert(:user, nickname: "nickname@supergood.domain")
-        data = %{ap_id: user.ap_id, info: %{ fields: [%{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}] }}
-        assert {:ok, %User{}} = User.insert_or_update_user(data)
+      current_max_length = Pleroma.Config.get([:instance, :account_field_value_length], 255)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        info: %{
+          fields: [
+            %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
+          ]
+        }
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
     end
   end
 
