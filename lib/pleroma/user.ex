@@ -569,8 +569,12 @@ defmodule Pleroma.User do
     end)
   end
 
-  def get_cached_by_nickname_or_id(nickname_or_id) do
-    get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
+  def get_cached_by_nickname_or_id(nickname_or_id, opts \\ []) do
+    if is_integer(nickname_or_id) or Pleroma.FlakeId.is_flake_id?(nickname_or_id) do
+      get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
+    else
+      unless opts[:restrict_remote_nicknames], do: get_cached_by_nickname(nickname_or_id)
+    end
   end
 
   def get_by_nickname(nickname) do

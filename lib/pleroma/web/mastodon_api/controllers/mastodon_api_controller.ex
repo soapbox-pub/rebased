@@ -290,7 +290,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def user(%{assigns: %{user: for_user}} = conn, %{"id" => nickname_or_id}) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(nickname_or_id),
+    with %User{} = user <- get_user_by_nickname_or_id(for_user, nickname_or_id),
          true <- User.auth_active?(user) || user.id == for_user.id || User.superuser?(for_user) do
       account = AccountView.render("account.json", %{user: user, for: for_user})
       json(conn, account)
@@ -390,7 +390,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def user_statuses(%{assigns: %{user: reading_user}} = conn, params) do
-    with %User{} = user <- User.get_cached_by_nickname_or_id(params["id"]) do
+    with %User{} = user <- get_user_by_nickname_or_id(reading_user, params["id"]) do
       params =
         params
         |> Map.put("tag", params["tagged"])
@@ -1697,4 +1697,25 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   defp present?(nil), do: false
   defp present?(false), do: false
   defp present?(_), do: true
+
+  defp get_user_by_nickname_or_id(for_user, nickname_or_id) do
+    restrict_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+
+    opts =
+      cond do
+        restrict_to_local == :all ->
+          [restrict_remote_nicknames: true]
+
+        restrict_to_local == false ->
+          []
+
+        restrict_to_local == :unauthenticated and match?(%User{}, for_user) ->
+          []
+
+        true ->
+          [restrict_remote_nicknames: true]
+      end
+
+    User.get_cached_by_nickname_or_id(nickname_or_id, opts)
+  end
 end
