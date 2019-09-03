@@ -27,16 +27,16 @@ defmodule Mix.Tasks.Pleroma.Docs do
 
   defp do_run(implementation) do
     start_pleroma()
-    {descriptions, _paths} = Mix.Config.eval!("config/description.exs")
 
-    {:ok, file_path} =
-      Pleroma.Docs.Generator.process(
-        implementation,
-        descriptions[:pleroma][:config_description]
-      )
+    with {descriptions, _paths} <- Mix.Config.eval!("config/description.exs"),
+         {:ok, file_path} <-
+           Pleroma.Docs.Generator.process(
+             implementation,
+             descriptions[:pleroma][:config_description]
+           ) do
+      type = if implementation == Pleroma.Docs.Markdown, do: "Markdown", else: "JSON"
 
-    type = if implementation == Pleroma.Docs.Markdown, do: "Markdown", else: "JSON"
-
-    Mix.shell().info([:green, "#{type} docs successfully generated to #{file_path}."])
+      Mix.shell().info([:green, "#{type} docs successfully generated to #{file_path}."])
+    end
   end
 end
