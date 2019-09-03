@@ -38,7 +38,8 @@ config :pleroma, :config_description, [
       %{
         key: :link_name,
         type: :boolean,
-        description: "If enabled, a name parameter will be added to the url of the upload. For example `https://instance.tld/media/imagehash.png?name=realname.png`",
+        description:
+          "If enabled, a name parameter will be added to the url of the upload. For example `https://instance.tld/media/imagehash.png?name=realname.png`",
         suggestions: [
           true,
           false
@@ -55,7 +56,8 @@ config :pleroma, :config_description, [
       %{
         key: :proxy_remote,
         type: :boolean,
-        description: "If enabled, requests to media stored using a remote uploader will be proxied instead of being redirected.",
+        description:
+          "If enabled, requests to media stored using a remote uploader will be proxied instead of being redirected.",
         suggestions: [
           true,
           false
