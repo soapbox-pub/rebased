@@ -1,4 +1,4 @@
-FROM rinpatch/elixir:1.9.0-rc.0-alpine as build
+FROM elixir:1.9-alpine as build
 
 COPY . .
 
