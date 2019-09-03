@@ -35,6 +35,8 @@ defmodule Mix.Tasks.Pleroma.Docs do
         descriptions[:pleroma][:config_description]
       )
 
-    Mix.shell().info([:green, "Markdown docs successfully generated to #{file_path}."])
+    type = if implementation == Pleroma.Docs.Markdown, do: "Markdown", else: "JSON"
+
+    Mix.shell().info([:green, "#{type} docs successfully generated to #{file_path}."])
   end
 end
