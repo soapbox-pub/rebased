@@ -443,6 +443,7 @@ defmodule Pleroma.Web.Router do
       get("/timelines/tag/:tag", MastodonAPIController, :hashtag_timeline)
       get("/timelines/list/:list_id", MastodonAPIController, :list_timeline)
 
+      get("/statuses", MastodonAPIController, :get_statuses)
       get("/statuses/:id", MastodonAPIController, :get_status)
       get("/statuses/:id/context", MastodonAPIController, :get_context)
 

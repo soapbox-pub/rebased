@@ -91,6 +91,18 @@ Additional parameters can be added to the JSON body/Form data:
 - `expires_in`: The number of seconds the posted activity should expire in. When a posted activity expires it will be deleted from the server, and a delete request for it will be federated. This needs to be longer than an hour.
 - `in_reply_to_conversation_id`: Will reply to a given conversation, addressing only the people who are part of the recipient set of that conversation. Sets the visibility to `direct`.
 
+## GET `/api/v1/statuses`
+
+An endpoint to get multiple statuses by IDs.
+
+Required parameters:
+
+- `ids`: array of activity ids
+
+Usage example: `GET /api/v1/statuses/?ids[]=1&ids[]=2`.
+
+Returns: array of Status.
+
 ## PATCH `/api/v1/update_credentials`
 
 Additional parameters can be added to the JSON body/Form data:

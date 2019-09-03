@@ -173,6 +173,13 @@ defmodule Pleroma.Activity do
     |> Repo.one()
   end
 
+  def all_by_ids_with_object(ids) do
+    Activity
+    |> where([a], a.id in ^ids)
+    |> with_preloaded_object()
+    |> Repo.all()
+  end
+
   def by_object_ap_id(ap_id) do
     from(
       activity in Activity,
