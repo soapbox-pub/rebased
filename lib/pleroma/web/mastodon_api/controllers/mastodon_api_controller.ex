@@ -420,7 +420,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       [user.ap_id]
       |> ActivityPub.fetch_activities_query(params)
       |> Pagination.fetch_paginated(params)
-      |> Map.get(:items)
 
     conn
     |> add_link_headers(:dm_timeline, activities)
@@ -1195,7 +1194,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     bookmarks =
       Bookmark.for_user_query(user.id)
       |> Pagination.fetch_paginated(params)
-      |> Map.get(:items)
 
     activities =
       bookmarks

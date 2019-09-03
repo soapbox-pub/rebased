@@ -75,7 +75,6 @@ defmodule Pleroma.Notification do
     user
     |> for_user_query(opts)
     |> Pagination.fetch_paginated(opts)
-    |> Map.get(:items)
   end
 
   @doc """

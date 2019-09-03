@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Mastodon API: Unsubscribe followers when they unfollow a user
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
-– Pagination: return `total` alongside with `items` when paginating
+– Pagination: (optional) return `total` alongside with `items` when paginating
 
 ### Fixed
 - Following from Osada

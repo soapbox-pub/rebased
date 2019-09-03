@@ -67,7 +67,6 @@ defmodule Pleroma.Conversation.Participation do
       preload: [conversation: [:users]]
     )
     |> Pleroma.Pagination.fetch_paginated(params)
-    |> Map.get(:items)
   end
 
   def for_user_and_conversation(user, conversation) do
