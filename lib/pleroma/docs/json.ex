@@ -4,11 +4,13 @@ defmodule Pleroma.Docs.JSON do
   @spec process(keyword()) :: {:ok, String.t()}
   def process(descriptions) do
     config_path = "docs/generate_config.json"
-    {:ok, file} = File.open(config_path, [:write])
-    json = generate_json(descriptions)
-    IO.write(file, json)
-    :ok = File.close(file)
-    {:ok, config_path}
+
+    with {:ok, file} <- File.open(config_path, [:write]),
+         json <- generate_json(descriptions),
+         :ok <- IO.write(file, json),
+         :ok <- File.close(file) do
+      {:ok, config_path}
+    end
   end
 
   @spec generate_json([keyword()]) :: String.t()
