@@ -103,6 +103,8 @@ Usage example: `GET /api/v1/statuses/?ids[]=1&ids[]=2`.
 
 Returns: array of Status.
 
+The maximum number of statuses is limited to 100 per request.
+
 ## PATCH `/api/v1/update_credentials`
 
 Additional parameters can be added to the JSON body/Form data:
