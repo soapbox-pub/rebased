@@ -38,7 +38,7 @@ config :pleroma, :config_description, [
       %{
         key: :link_name,
         type: :boolean,
-        description: "If enabled Pleroma will add name parameter to the url off the upload",
+        description: "If enabled, a name parameter will be added to the url of the upload. For example `https://instance.tld/media/imagehash.png?name=realname.png`",
         suggestions: [
           true,
           false
