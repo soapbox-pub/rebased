@@ -317,7 +317,8 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
          activity_id <- Keyword.get(options, :activity_id, nil),
          is_emoji?(emoji),
          reaction_data <- make_emoji_reaction_data(user, object, emoji, activity_id),
-         {:ok, activity} <- insert(reaction_data, local) do
+         {:ok, activity} <- insert(reaction_data, local),
+         {:ok, object} <- add_emoji_reaction_to_object(activity, object) do
       {:ok, activity, object}
     end
   end

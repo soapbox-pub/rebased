@@ -321,15 +321,40 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @spec update_element_in_object(String.t(), list(any), Object.t()) ::
           {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
   def update_element_in_object(property, element, object) do
+    length =
+      if is_map(element) do
+        element
+        |> Map.values()
+        |> List.flatten()
+        |> length()
+      else
+        element
+        |> length()
+      end
+
     data =
       Map.merge(
         object.data,
-        %{"#{property}_count" => length(element), "#{property}s" => element}
+        %{"#{property}_count" => length, "#{property}s" => element}
       )
 
     object
     |> Changeset.change(data: data)
     |> Object.update_and_set_cache()
+  end
+
+  @spec add_emoji_reaction_to_object(Activity.t(), Object.t()) ::
+          {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
+
+  def add_emoji_reaction_to_object(
+        %Activity{data: %{"content" => emoji, "actor" => actor}},
+        object
+      ) do
+    reactions = object.data["reactions"] || %{}
+    emoji_actors = reactions[emoji] || []
+    new_emoji_actors = [actor | emoji_actors] |> Enum.uniq()
+    new_reactions = Map.put(reactions, emoji, new_emoji_actors)
+    update_element_in_object("reaction", new_reactions, object)
   end
 
   @spec add_like_to_object(Activity.t(), Object.t()) ::
