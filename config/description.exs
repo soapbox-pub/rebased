@@ -55,7 +55,7 @@ config :pleroma, :config_description, [
       %{
         key: :proxy_remote,
         type: :boolean,
-        description: "If enabled, Pleroma will proxy media requests instead of redirecting to it",
+        description: "If enabled, requests to media stored using a remote uploader will be proxied instead of being redirected.",
         suggestions: [
           true,
           false
