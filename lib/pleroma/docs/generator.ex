@@ -14,7 +14,7 @@ defmodule Pleroma.Docs.Generator do
       name_as_list = Module.split(module)
 
       List.starts_with?(name_as_list, ["Pleroma", "Uploaders"]) and
-        List.last(name_as_list) in ["S3", "Local", "MDII"]
+        List.last(name_as_list) != "Uploader"
     end)
   end
 
