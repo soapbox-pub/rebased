@@ -4,24 +4,24 @@ defmodule Pleroma.Docs.Markdown do
   @spec process(keyword()) :: {:ok, String.t()}
   def process(descriptions) do
     config_path = "docs/config.md"
-    {:ok, file} = File.open(config_path, [:write])
-    IO.write(file, "# Configuration\r\n\r\n")
-    IO.write(file, "Date of generation: #{Date.utc_today()}\r\n\r\n")
+    {:ok, file} = File.open(config_path, [:utf8, :write])
+    IO.write(file, "# Configuration\n")
+    IO.write(file, "Date of generation: #{Date.utc_today()}\n\n")
 
     IO.write(
       file,
-      "This file describe the configuration, it is recommended to edit the relevant `*.secret.exs` file instead of the others founds in the ``config`` directory.  \r\n\r\n" <>
-        " If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherwise it is ``dev.secret.exs``.\r\n\r\n"
+      "This file describe the configuration, it is recommended to edit the relevant `*.secret.exs` file instead of the others founds in the ``config`` directory.\n\n" <>
+        "If you run Pleroma with ``MIX_ENV=prod`` the file is ``prod.secret.exs``, otherwise it is ``dev.secret.exs``.\n\n"
     )
 
     for group <- descriptions do
       if is_nil(group[:key]) do
-        IO.write(file, "## #{inspect(group[:group])}\r\n\r\n")
+        IO.write(file, "## #{inspect(group[:group])}\n")
       else
-        IO.write(file, "## #{inspect(group[:key])}\r\n\r\n")
+        IO.write(file, "## #{inspect(group[:key])}\n")
       end
 
-      IO.write(file, "#{group[:description]}  \r\n\r\n")
+      IO.write(file, "#{group[:description]}\n")
 
       for child <- group[:children] do
         print_child_header(file, child)
@@ -37,7 +37,7 @@ defmodule Pleroma.Docs.Markdown do
         end
       end
 
-      IO.write(file, "\r\n")
+      IO.write(file, "\n")
     end
 
     :ok = File.close(file)
@@ -45,22 +45,22 @@ defmodule Pleroma.Docs.Markdown do
   end
 
   defp print_suggestion(file, suggestion) when is_list(suggestion) do
-    IO.write(file, "    `#{inspect(suggestion)}`\r\n")
+    IO.write(file, "  `#{inspect(suggestion)}`\n")
   end
 
   defp print_suggestion(file, suggestion) when is_function(suggestion) do
-    IO.write(file, "    `#{inspect(suggestion.())}`\r\n")
+    IO.write(file, "  `#{inspect(suggestion.())}`\n")
   end
 
   defp print_suggestion(file, suggestion, as_list \\ false) do
-    list_mark = if as_list, do: "*", else: ""
-    IO.write(file, "    #{list_mark} `#{inspect(suggestion)}`\r\n")
+    list_mark = if as_list, do: "- ", else: ""
+    IO.write(file, "  #{list_mark}`#{inspect(suggestion)}`\n")
   end
 
   defp print_suggestions(_file, nil), do: nil
 
   defp print_suggestions(file, suggestions) do
-    IO.write(file, "    Suggestions:  \r\n")
+    IO.write(file, "Suggestions:\n")
 
     if length(suggestions) > 1 do
       for suggestion <- suggestions do
@@ -72,8 +72,7 @@ defmodule Pleroma.Docs.Markdown do
   end
 
   defp print_child_header(file, child) do
-    IO.write(file, "* `#{inspect(child[:key])}`  \r\n")
-    IO.write(file, "    #{child[:description]}  \r\n")
-    IO.write(file, "    Type: `#{inspect(child[:type])}`  \r\n")
+    IO.write(file, "- `#{inspect(child[:key])}` -`#{inspect(child[:type])}`  \n")
+    IO.write(file, "#{child[:description]}  \n")
   end
 end
