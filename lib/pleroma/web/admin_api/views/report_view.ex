@@ -12,7 +12,8 @@ defmodule Pleroma.Web.AdminAPI.ReportView do
 
   def render("index.json", %{reports: reports}) do
     %{
-      reports: render_many(reports, __MODULE__, "show.json", as: :report)
+      reports: render_many(reports[:items], __MODULE__, "show.json", as: :report),
+      total: reports[:total]
     }
   end
 
