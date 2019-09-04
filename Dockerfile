@@ -12,7 +12,7 @@ RUN apk add git gcc g++ musl-dev make &&\
 	mkdir release &&\
 	mix release --path release
 
-FROM alpine:latest
+FROM alpine:3.9
 
 ARG HOME=/opt/pleroma
 ARG DATA=/var/lib/pleroma
