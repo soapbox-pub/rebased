@@ -133,7 +133,7 @@ See [Admin-API](Admin-API.md)
 * Params (mutually exclusive):
     * `id`: a single notification id to read
     * `max_id`: read all notifications up to this id
-* Response: Notification entity/Array of Notification entities. In case of `max_id`, only the first 80 notifications will be returned.
+* Response: Notification entity/Array of Notification entities that were read. In case of `max_id`, only the first 80 read notifications will be returned.
 
 ## `/api/v1/pleroma/accounts/:id/subscribe`
 ### Subscribe to receive notifications for all statuses posted by a user
