@@ -299,7 +299,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary_plaintext},
         expires_at: expires_at,
-        direct_conversation_id: direct_conversation_id
+        direct_conversation_id: direct_conversation_id,
+        thread_muted: thread_muted?
       }
     }
   end
