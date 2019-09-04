@@ -175,7 +175,7 @@ defmodule Pleroma.User do
   end
 
   defp truncate_if_exists(params, key, max_length) do
-    if Map.has_key?(params, key) do
+    if Map.has_key?(params, key) and is_binary(params[key]) do
       {value, _chopped} = String.split_at(params[key], max_length)
       Map.put(params, key, value)
     else
