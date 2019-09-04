@@ -570,22 +570,6 @@ defmodule Pleroma.UserTest do
         refute cs.valid?
       end)
     end
-
-    test "it restricts some sizes" do
-      bio_limit = Pleroma.Config.get([:instance, :user_bio_length], 5000)
-      name_limit = Pleroma.Config.get([:instance, :user_name_length], 100)
-
-      [bio: bio_limit, name: name_limit]
-      |> Enum.each(fn {field, size} ->
-        string = String.pad_leading(".", size)
-        cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
-        assert cs.valid?
-
-        string = String.pad_leading(".", size + 1)
-        cs = User.remote_user_creation(Map.put(@valid_remote, field, string))
-        refute cs.valid?
-      end)
-    end
   end
 
   describe "followers and friends" do
@@ -1138,6 +1122,35 @@ defmodule Pleroma.UserTest do
             %{"name" => "myfield", "value" => String.duplicate("h", current_max_length + 1)}
           ]
         }
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with an overly long bio" do
+      current_max_length = Pleroma.Config.get([:instance, :user_bio_length], 5000)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        name: user.name,
+        nickname: user.nickname,
+        bio: String.duplicate("h", current_max_length + 1),
+        info: %{}
+      }
+
+      assert {:ok, %User{}} = User.insert_or_update_user(data)
+    end
+
+    test "with an overly long display name" do
+      current_max_length = Pleroma.Config.get([:instance, :user_name_length], 100)
+      user = insert(:user, nickname: "nickname@supergood.domain")
+
+      data = %{
+        ap_id: user.ap_id,
+        name: String.duplicate("h", current_max_length + 1),
+        nickname: user.nickname,
+        info: %{}
       }
 
       assert {:ok, %User{}} = User.insert_or_update_user(data)
