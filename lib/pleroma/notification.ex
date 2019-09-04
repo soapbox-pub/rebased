@@ -116,7 +116,8 @@ defmodule Pleroma.Notification do
 
     {_, notification_ids} = Repo.update_all(query, [])
 
-    from(n in Notification, where: n.id in ^notification_ids)
+    Notification
+    |> where([n], n.id in ^notification_ids)
     |> join(:inner, [n], activity in assoc(n, :activity))
     |> join(:left, [n, a], object in Object,
       on:
