@@ -359,7 +359,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
    "Follow"
    |> Activity.Queries.by_type()
    |> Activity.Queries.by_actor(actor)
-   |> Activity.Queries.by_object_id(object["id"])
+   |> Activity.Queries.by_object_id(object)
    |> where(fragment("data->>'state' = 'pending'"))
    |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
    |> Repo.update_all([])
