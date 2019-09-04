@@ -356,26 +356,19 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"actor" => actor, "object" => object}} = activity,
         state
       ) do
-    query =
-      from(activity in Activity,
-        where: fragment("data->>'type' = 'Follow'"),
-        where: fragment("data->>'state' = 'pending'"),
-        where: fragment("data->>'actor' = ?", ^actor),
-        where: fragment("data->>'object' = ?", ^object),
-        update: [
-          set: [
-            data: fragment("jsonb_set(data, '{state}', ?)", ^state)
-          ]
-        ]
-      )
-
-    with {_, _} <- Repo.update_all(query, []),
-         {_, _} <- User.set_follow_state_cache(actor, object, state),
-         %Activity{} = activity <- Activity.get_by_id(activity.id) do
-      {:ok, activity}
-    else
-      e -> {:error, e}
-    end
+   "Follow"
+   |> Activity.Queries.by_type()
+   |> Activity.Queries.by_actor(actor)
+   |> Activity.Queries.by_object_id(object["id"])
+   |> where(fragment("data->>'state' = 'pending'"))
+   |> update(set: [data: fragment("jsonb_set(data, '{state}', ?)", ^state)])
+   |> Repo.update_all([])
+   
+   User.set_follow_state_cache(actor, object, state)
+   
+   activity = Activity.get_by_id(activity.id)
+   
+   {:ok, activity}
   end
 
   def update_follow_state(
