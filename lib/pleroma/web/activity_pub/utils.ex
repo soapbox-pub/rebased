@@ -33,50 +33,40 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     Map.put(params, "actor", get_ap_id(params["actor"]))
   end
 
-  def determine_explicit_mentions(%{"tag" => tag} = _object) when is_list(tag) do
-    tag
-    |> Enum.filter(fn x -> is_map(x) end)
-    |> Enum.filter(fn x -> x["type"] == "Mention" end)
-    |> Enum.map(fn x -> x["href"] end)
+  @spec determine_explicit_mentions(map()) :: map()
+  def determine_explicit_mentions(%{"tag" => tag} = _) when is_list(tag) do
+    Enum.flat_map(tag, fn
+      %{"type" => "Mention", "href" => href} -> [href]
+      _ -> []
+    end)
   end
 
   def determine_explicit_mentions(%{"tag" => tag} = object) when is_map(tag) do
-    Map.put(object, "tag", [tag])
+    object
+    |> Map.put("tag", [tag])
     |> determine_explicit_mentions()
   end
 
   def determine_explicit_mentions(_), do: []
 
+  @spec recipient_in_collection(any(), any()) :: boolean()
   defp recipient_in_collection(ap_id, coll) when is_binary(coll), do: ap_id == coll
   defp recipient_in_collection(ap_id, coll) when is_list(coll), do: ap_id in coll
   defp recipient_in_collection(_, _), do: false
 
+  @spec recipient_in_message(User.t(), User.t(), map()) :: boolean()
   def recipient_in_message(%User{ap_id: ap_id} = recipient, %User{} = actor, params) do
+    addresses = [params["to"], params["cc"], params["bto"], params["bcc"]]
+
     cond do
-      recipient_in_collection(ap_id, params["to"]) ->
-        true
-
-      recipient_in_collection(ap_id, params["cc"]) ->
-        true
-
-      recipient_in_collection(ap_id, params["bto"]) ->
-        true
-
-      recipient_in_collection(ap_id, params["bcc"]) ->
-        true
-
+      Enum.any?(addresses, &recipient_in_collection(ap_id, &1)) -> true
       # if the message is unaddressed at all, then assume it is directly addressed
       # to the recipient
-      !params["to"] && !params["cc"] && !params["bto"] && !params["bcc"] ->
-        true
-
+      Enum.all?(addresses, &is_nil(&1)) -> true
       # if the message is sent from somebody the user is following, then assume it
       # is addressed to the recipient
-      User.following?(recipient, actor) ->
-        true
-
-      true ->
-        false
+      User.following?(recipient, actor) -> true
+      true -> false
     end
   end
 
@@ -188,53 +178,58 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   Adds an id and a published data if they aren't there,
   also adds it to an included object
   """
-  def lazy_put_activity_defaults(map, fake \\ false) do
-    map =
-      unless fake do
-        %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
+  @spec lazy_put_activity_defaults(map(), boolean) :: map()
+  def lazy_put_activity_defaults(map, fake \\ false)
 
-        map
-        |> Map.put_new_lazy("id", &generate_activity_id/0)
-        |> Map.put_new_lazy("published", &make_date/0)
-        |> Map.put_new("context", context)
-        |> Map.put_new("context_id", context_id)
-      else
-        map
-        |> Map.put_new("id", "pleroma:fakeid")
-        |> Map.put_new_lazy("published", &make_date/0)
-        |> Map.put_new("context", "pleroma:fakecontext")
-        |> Map.put_new("context_id", -1)
-      end
+  def lazy_put_activity_defaults(map, true) do
+    map
+    |> Map.put_new("id", "pleroma:fakeid")
+    |> Map.put_new_lazy("published", &make_date/0)
+    |> Map.put_new("context", "pleroma:fakecontext")
+    |> Map.put_new("context_id", -1)
+    |> lazy_put_object_defaults(true)
+  end
 
-    if is_map(map["object"]) do
-      object = lazy_put_object_defaults(map["object"], map, fake)
-      %{map | "object" => object}
-    else
+  def lazy_put_activity_defaults(map, _fake) do
+    %{data: %{"id" => context}, id: context_id} = create_context(map["context"])
+
+    map
+    |> Map.put_new_lazy("id", &generate_activity_id/0)
+    |> Map.put_new_lazy("published", &make_date/0)
+    |> Map.put_new("context", context)
+    |> Map.put_new("context_id", context_id)
+    |> lazy_put_object_defaults(false)
+  end
+
+  # Adds an id and published date if they aren't there.
+  #
+  @spec lazy_put_object_defaults(map(), boolean()) :: map()
+  defp lazy_put_object_defaults(%{"object" => map} = activity, true)
+       when is_map(map) do
+    object =
       map
-    end
+      |> Map.put_new("id", "pleroma:fake_object_id")
+      |> Map.put_new_lazy("published", &make_date/0)
+      |> Map.put_new("context", activity["context"])
+      |> Map.put_new("context_id", activity["context_id"])
+      |> Map.put_new("fake", true)
+
+    %{activity | "object" => object}
   end
 
-  @doc """
-  Adds an id and published date if they aren't there.
-  """
-  def lazy_put_object_defaults(map, activity \\ %{}, fake)
+  defp lazy_put_object_defaults(%{"object" => map} = activity, _)
+       when is_map(map) do
+    object =
+      map
+      |> Map.put_new_lazy("id", &generate_object_id/0)
+      |> Map.put_new_lazy("published", &make_date/0)
+      |> Map.put_new("context", activity["context"])
+      |> Map.put_new("context_id", activity["context_id"])
 
-  def lazy_put_object_defaults(map, activity, true = _fake) do
-    map
-    |> Map.put_new_lazy("published", &make_date/0)
-    |> Map.put_new("id", "pleroma:fake_object_id")
-    |> Map.put_new("context", activity["context"])
-    |> Map.put_new("fake", true)
-    |> Map.put_new("context_id", activity["context_id"])
+    %{activity | "object" => object}
   end
 
-  def lazy_put_object_defaults(map, activity, _fake) do
-    map
-    |> Map.put_new_lazy("id", &generate_object_id/0)
-    |> Map.put_new_lazy("published", &make_date/0)
-    |> Map.put_new("context", activity["context"])
-    |> Map.put_new("context_id", activity["context_id"])
-  end
+  defp lazy_put_object_defaults(activity, _), do: activity
 
   @doc """
   Inserts a full object if it is contained in an activity.
@@ -356,23 +351,30 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Updates a follow activity's state (for locked accounts).
   """
+  @spec update_follow_state_for_all(Activity.t(), String.t()) :: {:ok, Activity} | {:error, any()}
   def update_follow_state_for_all(
         %Activity{data: %{"actor" => actor, "object" => object}} = activity,
         state
       ) do
-    try do
-      Ecto.Adapters.SQL.query!(
-        Repo,
-        "UPDATE activities SET data = jsonb_set(data, '{state}', $1) WHERE data->>'type' = 'Follow' AND data->>'actor' = $2 AND data->>'object' = $3 AND data->>'state' = 'pending'",
-        [state, actor, object]
+    query =
+      from(activity in Activity,
+        where: fragment("data->>'type' = 'Follow'"),
+        where: fragment("data->>'state' = 'pending'"),
+        where: fragment("data->>'actor' = ?", ^actor),
+        where: fragment("data->>'object' = ?", ^object),
+        update: [
+          set: [
+            data: fragment("jsonb_set(data, '{state}', ?)", ^state)
+          ]
+        ]
       )
 
-      User.set_follow_state_cache(actor, object, state)
-      activity = Activity.get_by_id(activity.id)
+    with {_, _} <- Repo.update_all(query, []),
+         {_, _} <- User.set_follow_state_cache(actor, object, state),
+         %Activity{} = activity <- Activity.get_by_id(activity.id) do
       {:ok, activity}
-    rescue
-      e ->
-        {:error, e}
+    else
+      e -> {:error, e}
     end
   end
 
@@ -380,9 +382,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"actor" => actor, "object" => object}} = activity,
         state
       ) do
-    with new_data <-
-           activity.data
-           |> Map.put("state", state),
+    with new_data <- Map.put(activity.data, "state", state),
          changeset <- Changeset.change(activity, data: new_data),
          {:ok, activity} <- Repo.update(changeset),
          _ <- User.set_follow_state_cache(actor, object, state) do
@@ -411,27 +411,17 @@ defmodule Pleroma.Web.ActivityPub.Utils do
 
   def fetch_latest_follow(%User{ap_id: follower_id}, %User{ap_id: followed_id}) do
     query =
-      from(
-        activity in Activity,
-        where:
-          fragment(
-            "? ->> 'type' = 'Follow'",
-            activity.data
-          ),
-        where: activity.actor == ^follower_id,
-        # this is to use the index
-        where:
-          fragment(
-            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-            activity.data,
-            activity.data,
-            ^followed_id
-          ),
-        order_by: [fragment("? desc nulls last", activity.id)],
-        limit: 1
-      )
+      follower_id
+      |> Activity.Queries.by_actor()
+      |> Activity.Queries.by_type("Follow")
+      |> Activity.Queries.by_object_id(followed_id)
+      |> Activity.Queries.limit(1)
 
-    Repo.one(query)
+    from(
+      activity in query,
+      order_by: [fragment("? desc nulls last", activity.id)]
+    )
+    |> Repo.one()
   end
 
   #### Announce-related helpers
@@ -439,23 +429,14 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @doc """
   Retruns an existing announce activity if the notice has already been announced
   """
+  @spec get_existing_announce(String.t(), map()) :: Activity.t() | nil
   def get_existing_announce(actor, %{data: %{"id" => id}}) do
-    query =
-      from(
-        activity in Activity,
-        where: activity.actor == ^actor,
-        # this is to use the index
-        where:
-          fragment(
-            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-            activity.data,
-            activity.data,
-            ^id
-          ),
-        where: fragment("(?)->>'type' = 'Announce'", activity.data)
-      )
-
-    Repo.one(query)
+    actor
+    |> Activity.Queries.by_actor()
+    |> Activity.Queries.by_type("Announce")
+    |> Activity.Queries.by_object_id(id)
+    |> Activity.Queries.limit(1)
+    |> Repo.one()
   end
 
   @doc """
@@ -531,30 +512,34 @@ defmodule Pleroma.Web.ActivityPub.Utils do
     |> maybe_put("id", activity_id)
   end
 
+  @spec add_announce_to_object(Activity.t(), Object.t()) ::
+          {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
   def add_announce_to_object(
-        %Activity{
-          data: %{"actor" => actor, "cc" => [Pleroma.Constants.as_public()]}
-        },
+        %Activity{data: %{"actor" => actor, "cc" => [Pleroma.Constants.as_public()]}},
         object
       ) do
-    announcements =
-      if is_list(object.data["announcements"]), do: object.data["announcements"], else: []
+    announcements = fetch_announcements(object)
 
-    with announcements <- [actor | announcements] |> Enum.uniq() do
+    with announcements <- Enum.uniq([actor | announcements]) do
       update_element_in_object("announcement", announcements, object)
     end
   end
 
   def add_announce_to_object(_, object), do: {:ok, object}
 
+  @spec remove_announce_from_object(Activity.t(), Object.t()) ::
+          {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
   def remove_announce_from_object(%Activity{data: %{"actor" => actor}}, object) do
-    announcements =
-      if is_list(object.data["announcements"]), do: object.data["announcements"], else: []
-
-    with announcements <- announcements |> List.delete(actor) do
+    with announcements <- List.delete(fetch_announcements(object), actor) do
       update_element_in_object("announcement", announcements, object)
     end
   end
+
+  defp fetch_announcements(%{data: %{"announcements" => announcements}} = _)
+       when is_list(announcements),
+       do: announcements
+
+  defp fetch_announcements(_), do: []
 
   #### Unfollow-related helpers
 
@@ -569,29 +554,20 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   #### Block-related helpers
+  @spec fetch_latest_block(User.t(), User.t()) :: Activity.t() | nil
   def fetch_latest_block(%User{ap_id: blocker_id}, %User{ap_id: blocked_id}) do
     query =
-      from(
-        activity in Activity,
-        where:
-          fragment(
-            "? ->> 'type' = 'Block'",
-            activity.data
-          ),
-        where: activity.actor == ^blocker_id,
-        # this is to use the index
-        where:
-          fragment(
-            "coalesce((?)->'object'->>'id', (?)->>'object') = ?",
-            activity.data,
-            activity.data,
-            ^blocked_id
-          ),
-        order_by: [fragment("? desc nulls last", activity.id)],
-        limit: 1
-      )
+      blocker_id
+      |> Activity.Queries.by_actor()
+      |> Activity.Queries.by_type("Block")
+      |> Activity.Queries.by_object_id(blocked_id)
+      |> Activity.Queries.limit(1)
 
-    Repo.one(query)
+    from(
+      activity in query,
+      order_by: [fragment("? desc nulls last", activity.id)]
+    )
+    |> Repo.one()
   end
 
   def make_block_data(blocker, blocked, activity_id) do
@@ -631,27 +607,31 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   end
 
   #### Flag-related helpers
-
-  def make_flag_data(params, additional) do
-    status_ap_ids =
-      Enum.map(params.statuses || [], fn
-        %Activity{} = act -> act.data["id"]
-        act when is_map(act) -> act["id"]
-        act when is_binary(act) -> act
-      end)
-
-    object = [params.account.ap_id] ++ status_ap_ids
-
+  @spec make_flag_data(map(), map()) :: map()
+  def make_flag_data(%{actor: actor, context: context, content: content} = params, additional) do
     %{
       "type" => "Flag",
-      "actor" => params.actor.ap_id,
-      "content" => params.content,
-      "object" => object,
-      "context" => params.context,
+      "actor" => actor.ap_id,
+      "content" => content,
+      "object" => build_flag_object(params),
+      "context" => context,
       "state" => "open"
     }
     |> Map.merge(additional)
   end
+
+  def make_flag_data(_, _), do: %{}
+
+  defp build_flag_object(%{account: account, statuses: statuses} = _) do
+    [account.ap_id] ++
+      Enum.map(statuses || [], fn
+        %Activity{} = act -> act.data["id"]
+        act when is_map(act) -> act["id"]
+        act when is_binary(act) -> act
+      end)
+  end
+
+  defp build_flag_object(_), do: []
 
   @doc """
   Fetches the OrderedCollection/OrderedCollectionPage from `from`, limiting the amount of pages fetched after
