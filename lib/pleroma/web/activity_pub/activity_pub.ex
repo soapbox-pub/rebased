@@ -139,7 +139,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
 
       # Splice in the child object if we have one.
       activity =
-        if !is_nil(object) do
+        if not is_nil(object) do
           Map.put(activity, :object, object)
         else
           activity
@@ -331,12 +331,7 @@ defmodule Pleroma.Web.ActivityPub.ActivityPub do
     end
   end
 
-  def unlike(
-        %User{} = actor,
-        %Object{} = object,
-        activity_id \\ nil,
-        local \\ true
-      ) do
+  def unlike(%User{} = actor, %Object{} = object, activity_id \\ nil, local \\ true) do
     with %Activity{} = like_activity <- get_existing_like(actor.ap_id, object),
          unlike_data <- make_unlike_data(actor, like_activity, activity_id),
          {:ok, unlike_activity} <- insert(unlike_data, local),

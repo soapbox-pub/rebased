@@ -150,7 +150,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
         content: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["content"])},
         spoiler_text: %{"text/plain" => HtmlSanitizeEx.strip_tags(object_data["summary"])},
         expires_at: nil,
-        direct_conversation_id: nil
+        direct_conversation_id: nil,
+        thread_muted: false
       }
     }
 
@@ -171,6 +172,24 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
     status = StatusView.render("status.json", %{activity: activity, for: user})
 
     assert status.muted == true
+  end
+
+  test "tells if the message is thread muted" do
+    user = insert(:user)
+    other_user = insert(:user)
+
+    {:ok, user} = User.mute(user, other_user)
+
+    {:ok, activity} = CommonAPI.post(other_user, %{"status" => "test"})
+    status = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert status.pleroma.thread_muted == false
+
+    {:ok, activity} = CommonAPI.add_mute(user, activity)
+
+    status = StatusView.render("status.json", %{activity: activity, for: user})
+
+    assert status.pleroma.thread_muted == true
   end
 
   test "tells if the status is bookmarked" do

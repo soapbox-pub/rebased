@@ -11,16 +11,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - **Breaking:** Configuration: A setting to explicitly disable the mailer was added, defaulting to true, if you are using a mailer add `config :pleroma, Pleroma.Emails.Mailer, enabled: true` to your config
 - **Breaking:** Configuration: `/media/` is now removed when `base_url` is configured, append `/media/` to your `base_url` config to keep the old behaviour if desired
+- **Breaking:** `/api/pleroma/notifications/read` is moved to `/api/v1/pleroma/notifications/read` and now supports `max_id` and responds with Mastodon API entities.
 - Configuration: OpenGraph and TwitterCard providers enabled by default
 - Configuration: Filter.AnonymizeFilename added ability to retain file extension with custom text
+- Mastodon API: `pleroma.thread_muted` key in the Status entity
 - Federation: Return 403 errors when trying to request pages from a user's follower/following collections if they have `hide_followers`/`hide_follows` set
 - NodeInfo: Return `skipThreadContainment` in `metadata` for the `skip_thread_containment` option
 - NodeInfo: Return `mailerEnabled` in `metadata`
 - Mastodon API: Unsubscribe followers when they unfollow a user
 - AdminAPI: Add "godmode" while fetching user statuses (i.e. admin can see private statuses)
 - Improve digest email template
+– Pagination: (optional) return `total` alongside with `items` when paginating
 
 ### Fixed
+- Following from Osada
 - Not being able to pin unlisted posts
 - Objects being re-embedded to activities after being updated (e.g faved/reposted). Running 'mix pleroma.database prune_objects' again is advised.
 - Favorites timeline doing database-intensive queries
@@ -48,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reverse Proxy limiting `max_body_length` was incorrectly defined and only checked `Content-Length` headers which may not be sufficient in some circumstances
 - MRF: fix use of unserializable keyword lists in describe() implementations
 - ActivityPub: Deactivated user deletion
+- MRF: fix ability to follow a relay when AntiFollowbotPolicy was enabled
 
 ### Added
 - Expiring/ephemeral activites. All activities can have expires_at value set, which controls when they should be deleted automatically.

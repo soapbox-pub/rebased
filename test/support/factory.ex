@@ -207,13 +207,15 @@ defmodule Pleroma.Factory do
     object = Object.normalize(note_activity)
     user = insert(:user)
 
-    data = %{
-      "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
-      "actor" => user.ap_id,
-      "type" => "Like",
-      "object" => object.data["id"],
-      "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
-    }
+    data =
+      %{
+        "id" => Pleroma.Web.ActivityPub.Utils.generate_activity_id(),
+        "actor" => user.ap_id,
+        "type" => "Like",
+        "object" => object.data["id"],
+        "published_at" => DateTime.utc_now() |> DateTime.to_iso8601()
+      }
+      |> Map.merge(attrs[:data_attrs] || %{})
 
     %Pleroma.Activity{
       data: data

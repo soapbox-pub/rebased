@@ -236,12 +236,6 @@ defmodule Pleroma.Web.Router do
       post("/blocks_import", UtilController, :blocks_import)
       post("/follow_import", UtilController, :follow_import)
     end
-
-    scope [] do
-      pipe_through(:oauth_read)
-
-      post("/notifications/read", UtilController, :notifications_read)
-    end
   end
 
   scope "/oauth", Pleroma.Web.OAuth do
@@ -277,6 +271,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
       patch("/conversations/:id", PleromaAPIController, :update_conversation)
+      post("/notifications/read", PleromaAPIController, :read_notification)
     end
   end
 
@@ -312,9 +307,9 @@ defmodule Pleroma.Web.Router do
       get("/scheduled_statuses", MastodonAPIController, :scheduled_statuses)
       get("/scheduled_statuses/:id", MastodonAPIController, :show_scheduled_status)
 
-      get("/lists", MastodonAPIController, :get_lists)
-      get("/lists/:id", MastodonAPIController, :get_list)
-      get("/lists/:id/accounts", MastodonAPIController, :list_accounts)
+      get("/lists", ListController, :index)
+      get("/lists/:id", ListController, :show)
+      get("/lists/:id/accounts", ListController, :list_accounts)
 
       get("/domain_blocks", MastodonAPIController, :domain_blocks)
 
@@ -355,12 +350,12 @@ defmodule Pleroma.Web.Router do
       post("/media", MastodonAPIController, :upload)
       put("/media/:id", MastodonAPIController, :update_media)
 
-      delete("/lists/:id", MastodonAPIController, :delete_list)
-      post("/lists", MastodonAPIController, :create_list)
-      put("/lists/:id", MastodonAPIController, :rename_list)
+      delete("/lists/:id", ListController, :delete)
+      post("/lists", ListController, :create)
+      put("/lists/:id", ListController, :update)
 
-      post("/lists/:id/accounts", MastodonAPIController, :add_to_list)
-      delete("/lists/:id/accounts", MastodonAPIController, :remove_from_list)
+      post("/lists/:id/accounts", ListController, :add_to_list)
+      delete("/lists/:id/accounts", ListController, :remove_from_list)
 
       post("/filters", MastodonAPIController, :create_filter)
       get("/filters/:id", MastodonAPIController, :get_filter)
