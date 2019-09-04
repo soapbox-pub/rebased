@@ -277,6 +277,7 @@ defmodule Pleroma.Web.Router do
     scope [] do
       pipe_through(:oauth_write)
       patch("/conversations/:id", PleromaAPIController, :update_conversation)
+      post("/statuses/:id/react_with_emoji", PleromaAPIController, :react_with_emoji)
     end
   end
 
