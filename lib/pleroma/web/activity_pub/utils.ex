@@ -518,7 +518,7 @@ defmodule Pleroma.Web.ActivityPub.Utils do
         %Activity{data: %{"actor" => actor, "cc" => [Pleroma.Constants.as_public()]}},
         object
       ) do
-    announcements = fetch_announcements(object)
+    announcements = take_announcements(object)
 
     with announcements <- Enum.uniq([actor | announcements]) do
       update_element_in_object("announcement", announcements, object)
@@ -530,16 +530,16 @@ defmodule Pleroma.Web.ActivityPub.Utils do
   @spec remove_announce_from_object(Activity.t(), Object.t()) ::
           {:ok, Object.t()} | {:error, Ecto.Changeset.t()}
   def remove_announce_from_object(%Activity{data: %{"actor" => actor}}, object) do
-    with announcements <- List.delete(fetch_announcements(object), actor) do
+    with announcements <- List.delete(take_announcements(object), actor) do
       update_element_in_object("announcement", announcements, object)
     end
   end
 
-  defp fetch_announcements(%{data: %{"announcements" => announcements}} = _)
+  defp take_announcements(%{data: %{"announcements" => announcements}} = _)
        when is_list(announcements),
        do: announcements
 
-  defp fetch_announcements(_), do: []
+  defp take_announcements(_), do: []
 
   #### Unfollow-related helpers
 
