@@ -21,31 +21,38 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
   - `--activities NUMBER` - number of activities to generate (default: 20000)
   """
 
-  @aliases [u: :users, a: :activities, d: :delete]
-  @switches [users: :integer, activities: :integer, delete: :boolean]
+  @aliases [u: :users, a: :activities]
+  @switches [
+    users: :integer,
+    activities: :integer,
+    dms: :integer,
+    thread_length: :integer,
+    non_visible_posts: :integer
+  ]
   @users_default 20_000
   @activities_default 50_000
+  @dms_default 50_000
+  @thread_length_default 2_000
+  @non_visible_posts_default 2_000
 
   def run(args) do
-    {opts, _} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)
     start_pleroma()
+    {opts, _} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
-    current_max = Keyword.get(opts, :users, @users_default)
+    users_max = Keyword.get(opts, :users, @users_default)
     activities_max = Keyword.get(opts, :activities, @activities_default)
+    dms_max = Keyword.get(opts, :dms, @dms_default)
+    long_thread_length = Keyword.get(opts, :thread_length, @thread_length_default)
+    non_visible_posts = Keyword.get(opts, :non_visible_posts, @non_visible_posts_default)
 
-    {users_min, users_max} =
-      if opts[:delete] do
-        clean_tables()
-        {1, current_max}
-      else
-        current_count = Repo.aggregate(from(u in User), :count, :id) + 1
-        {current_count, current_max + current_count}
-      end
+    clean_tables()
 
     opts =
-      Keyword.put(opts, :users_min, users_min)
-      |> Keyword.put(:users_max, users_max)
+      Keyword.put(opts, :users_max, users_max)
       |> Keyword.put(:activities_max, activities_max)
+      |> Keyword.put(:dms_max, dms_max)
+      |> Keyword.put(:long_thread_length, long_thread_length)
+      |> Keyword.put(:non_visible_posts_max, non_visible_posts)
 
     generate_users(opts)
 
@@ -76,6 +83,12 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
 
     generate_activities(users, Keyword.put(opts, :mention, user))
 
+    generate_dms(user, users, opts)
+
+    {:ok, activity} = generate_long_thread(user, users, opts)
+
+    generate_private_thread(users, opts)
+
     # generate_replies(user, users, activities)
 
     # activity = Enum.random(activities)
@@ -86,9 +99,12 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
     IO.puts("Objects in DB: #{Repo.aggregate(from(o in Object), :count, :id)}")
     IO.puts("Notifications in DB: #{Repo.aggregate(from(n in Notification), :count, :id)}")
 
+    fetch_user(user)
     query_timelines(user)
     query_notifications(user)
-    # query_long_thread(user, activity)
+    query_dms(user)
+    query_long_thread(user, activity)
+    query_timelines(user)
   end
 
   defp clean_tables do
