@@ -6,7 +6,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
   use Pleroma.Web.ConnCase
   use Oban.Testing, repo: Pleroma.Repo
 
-  alias Pleroma.Notification
   alias Pleroma.Repo
   alias Pleroma.Tests.ObanHelpers
   alias Pleroma.User
@@ -140,37 +139,6 @@ defmodule Pleroma.Web.TwitterAPI.UtilControllerTest do
                  all_enqueued(worker: Pleroma.Workers.BackgroundWorker)
                )
       end
-    end
-  end
-
-  describe "POST /api/pleroma/notifications/read" do
-    test "it marks a single notification as read", %{conn: conn} do
-      user1 = insert(:user)
-      user2 = insert(:user)
-      {:ok, activity1} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
-      {:ok, activity2} = CommonAPI.post(user2, %{"status" => "hi @#{user1.nickname}"})
-      {:ok, [notification1]} = Notification.create_notifications(activity1)
-      {:ok, [notification2]} = Notification.create_notifications(activity2)
-
-      conn
-      |> assign(:user, user1)
-      |> post("/api/pleroma/notifications/read", %{"id" => "#{notification1.id}"})
-      |> json_response(:ok)
-
-      assert Repo.get(Notification, notification1.id).seen
-      refute Repo.get(Notification, notification2.id).seen
-    end
-
-    test "it returns error when notification not found", %{conn: conn} do
-      user1 = insert(:user)
-
-      response =
-        conn
-        |> assign(:user, user1)
-        |> post("/api/pleroma/notifications/read", %{"id" => "22222222222222"})
-        |> json_response(403)
-
-      assert response == %{"error" => "Cannot get notification"}
     end
   end
 
