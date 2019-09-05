@@ -51,10 +51,52 @@ defmodule Pleroma.LoadTesting.Fetcher do
         )
       end,
       "User mastodon public timeline" => fn ->
-        ActivityPub.ActivityPub.fetch_public_activities(mastodon_public_timeline_params)
+        Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities(
+          mastodon_public_timeline_params
+        )
       end,
       "User mastodon federated public timeline" => fn ->
-        ActivityPub.ActivityPub.fetch_public_activities(mastodon_federated_timeline_params)
+        Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities(
+          mastodon_federated_timeline_params
+        )
+      end
+    })
+
+    home_activities =
+      Pleroma.Web.ActivityPub.ActivityPub.fetch_activities(
+        [user.ap_id | user.following],
+        home_timeline_params
+      )
+
+    public_activities =
+      Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities(mastodon_public_timeline_params)
+
+    public_federated_activities =
+      Pleroma.Web.ActivityPub.ActivityPub.fetch_public_activities(
+        mastodon_federated_timeline_params
+      )
+
+    Benchee.run(%{
+      "Rendering home timeline" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
+          activities: home_activities,
+          for: user,
+          as: :activity
+        })
+      end,
+      "Rendering public timeline" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
+          activities: public_activities,
+          for: user,
+          as: :activity
+        })
+      end,
+      "Rendering public federated timeline" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
+          activities: public_federated_activities,
+          for: user,
+          as: :activity
+        })
       end
     })
   end
@@ -70,6 +112,27 @@ defmodule Pleroma.LoadTesting.Fetcher do
       end,
       "Notifications with muted" => fn ->
         Pleroma.Web.MastodonAPI.MastodonAPI.get_notifications(user, with_muted_params)
+      end
+    })
+
+    without_muted_notifications =
+      Pleroma.Web.MastodonAPI.MastodonAPI.get_notifications(user, without_muted_params)
+
+    with_muted_notifications =
+      Pleroma.Web.MastodonAPI.MastodonAPI.get_notifications(user, with_muted_params)
+
+    Benchee.run(%{
+      "Render notifications without muted" => fn ->
+        Pleroma.Web.MastodonAPI.NotificationView.render("index.json", %{
+          notifications: without_muted_notifications,
+          for: user
+        })
+      end,
+      "Render notifications with muted" => fn ->
+        Pleroma.Web.MastodonAPI.NotificationView.render("index.json", %{
+          notifications: with_muted_notifications,
+          for: user
+        })
       end
     })
   end
@@ -96,13 +159,40 @@ defmodule Pleroma.LoadTesting.Fetcher do
         |> Pleroma.Pagination.fetch_paginated(Map.put(params, "with_muted", false))
       end
     })
+
+    dms_with_muted =
+      Pleroma.Web.ActivityPub.ActivityPub.fetch_activities_query([user.ap_id], params)
+      |> Pleroma.Pagination.fetch_paginated(params)
+
+    dms_without_muted =
+      Pleroma.Web.ActivityPub.ActivityPub.fetch_activities_query([user.ap_id], params)
+      |> Pleroma.Pagination.fetch_paginated(Map.put(params, "with_muted", false))
+
+    Benchee.run(%{
+      "Rendering dms with muted" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
+          activities: dms_with_muted,
+          for: user,
+          as: :activity
+        })
+      end,
+      "Rendering dms without muted" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render("index.json", %{
+          activities: dms_without_muted,
+          for: user,
+          as: :activity
+        })
+      end
+    })
   end
 
   def query_long_thread(user, activity) do
     IO.puts("\n=================================")
 
     Benchee.run(%{
-      "Fetch main post" => fn -> Activity.get_by_id_with_object(activity.id) end,
+      "Fetch main post" => fn ->
+        Pleroma.Activity.get_by_id_with_object(activity.id)
+      end,
       "Fetch context of main post" => fn ->
         Pleroma.Web.ActivityPub.ActivityPub.fetch_activities_for_context(
           activity.data["context"],
@@ -112,6 +202,36 @@ defmodule Pleroma.LoadTesting.Fetcher do
             "exclude_id" => activity.id
           }
         )
+      end
+    })
+
+    activity = Pleroma.Activity.get_by_id_with_object(activity.id)
+
+    context =
+      Pleroma.Web.ActivityPub.ActivityPub.fetch_activities_for_context(
+        activity.data["context"],
+        %{
+          "blocking_user" => user,
+          "user" => user,
+          "exclude_id" => activity.id
+        }
+      )
+
+    Benchee.run(%{
+      "Render status" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render("status.json", %{
+          activity: activity,
+          for: user
+        })
+      end,
+      "Render context ancestors" => fn ->
+        Pleroma.Web.MastodonAPI.StatusView.render(
+          "index.json",
+          for: user,
+          activities: context,
+          as: :activity
+        )
+        |> Enum.reverse()
       end
     })
   end

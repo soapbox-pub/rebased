@@ -1,9 +1,11 @@
 defmodule Pleroma.LoadTesting.Generator do
   use Pleroma.LoadTesting.Helper
+  alias Pleroma.Web.CommonAPI
 
   def generate_users(opts) do
     IO.puts("Starting generating #{opts[:users_max]} users...")
     {time, _} = :timer.tc(fn -> do_generate_users(opts) end)
+
     IO.puts("Inserting users take #{to_sec(time)} sec.\n")
   end
 
@@ -37,34 +39,111 @@ defmodule Pleroma.LoadTesting.Generator do
         following: [User.ap_id(user)]
     }
 
-    Pleroma.Repo.insert!(user)
+    Repo.insert!(user)
   end
 
-  def generate_activities(users, opts) do
-    IO.puts("Starting generating #{opts[:activities_max]} activities...")
-    {time, _} = :timer.tc(fn -> do_generate_activities(users, opts) end)
-    IO.puts("Inserting activities take #{to_sec(time)} sec.\n")
+  def generate_activities(user, users) do
+    do_generate_activities(user, users)
   end
 
-  defp do_generate_activities(users, opts) do
-    Task.async_stream(
-      1..opts[:activities_max],
-      fn _ ->
-        do_generate_activity(users, opts)
-      end,
-      max_concurrency: 10,
-      timeout: 30_000
-    )
-    |> Stream.run()
+  defp do_generate_activities(user, users) do
+    IO.puts("Starting generating 20000 common activities...")
+
+    {time, _} =
+      :timer.tc(fn ->
+        Task.async_stream(
+          1..20_000,
+          fn _ ->
+            do_generate_activity([user | users])
+          end,
+          max_concurrency: 10,
+          timeout: 30_000
+        )
+        |> Stream.run()
+      end)
+
+    IO.puts("Inserting common activities take #{to_sec(time)} sec.\n")
+
+    IO.puts("Starting generating 20000 activities with mentions...")
+
+    {time, _} =
+      :timer.tc(fn ->
+        Task.async_stream(
+          1..20_000,
+          fn _ ->
+            do_generate_activity_with_mention(user, users)
+          end,
+          max_concurrency: 10,
+          timeout: 30_000
+        )
+        |> Stream.run()
+      end)
+
+    IO.puts("Inserting activities with menthions take #{to_sec(time)} sec.\n")
+
+    IO.puts("Starting generating 10000 activities with threads...")
+
+    {time, _} =
+      :timer.tc(fn ->
+        Task.async_stream(
+          1..10_000,
+          fn _ ->
+            do_generate_threads([user | users])
+          end,
+          max_concurrency: 10,
+          timeout: 30_000
+        )
+        |> Stream.run()
+      end)
+
+    IO.puts("Inserting activities with threads take #{to_sec(time)} sec.\n")
   end
 
-  defp do_generate_activity(users, opts) do
-    status =
-      if opts[:mention],
-        do: "some status with @#{opts[:mention].nickname}",
-        else: "some status"
+  defp do_generate_activity(users) do
+    post = %{
+      "status" => "Some status without mention with random user"
+    }
 
-    Pleroma.Web.CommonAPI.post(Enum.random(users), %{"status" => status})
+    CommonAPI.post(Enum.random(users), post)
+  end
+
+  defp do_generate_activity_with_mention(user, users) do
+    mentions_cnt = Enum.random([2, 3, 4, 5])
+    with_user = Enum.random([true, false])
+    users = Enum.shuffle(users)
+    mentions_users = Enum.take(users, mentions_cnt)
+    mentions_users = if with_user, do: [user | mentions_users], else: mentions_users
+
+    mentions_str =
+      Enum.map(mentions_users, fn user -> "@" <> user.nickname end) |> Enum.join(", ")
+
+    post = %{
+      "status" => mentions_str <> "some status with mentions random users"
+    }
+
+    CommonAPI.post(Enum.random(users), post)
+  end
+
+  defp do_generate_threads(users) do
+    thread_length = Enum.random([2, 3, 4, 5])
+    actor = Enum.random(users)
+
+    post = %{
+      "status" => "Start of the thread"
+    }
+
+    {:ok, activity} = CommonAPI.post(actor, post)
+
+    Enum.each(1..thread_length, fn _ ->
+      user = Enum.random(users)
+
+      post = %{
+        "status" => "@#{actor.nickname} reply to thread",
+        "in_reply_to_status_id" => activity.id
+      }
+
+      CommonAPI.post(user, post)
+    end)
   end
 
   def generate_dms(user, users, opts) do
@@ -91,22 +170,21 @@ defmodule Pleroma.LoadTesting.Generator do
       "visibility" => "direct"
     }
 
-    Pleroma.Web.CommonAPI.post(Enum.random(users), post)
+    CommonAPI.post(Enum.random(users), post)
   end
 
   def generate_long_thread(user, users, opts) do
-    IO.puts("Starting generating long thread with #{opts[:long_thread_length]} replies")
+    IO.puts("Starting generating long thread with #{opts[:thread_length]} replies")
     {time, activity} = :timer.tc(fn -> do_generate_long_thread(user, users, opts) end)
     IO.puts("Inserting long thread replies take #{to_sec(time)} sec.\n")
     {:ok, activity}
   end
 
   defp do_generate_long_thread(user, users, opts) do
-    {:ok, %{id: id} = activity} =
-      Pleroma.Web.CommonAPI.post(user, %{"status" => "Start of long thread"})
+    {:ok, %{id: id} = activity} = CommonAPI.post(user, %{"status" => "Start of long thread"})
 
     Task.async_stream(
-      1..opts[:long_thread_length],
+      1..opts[:thread_length],
       fn _ -> do_generate_thread(users, id) end,
       max_concurrency: 10,
       timeout: 30_000
@@ -117,50 +195,63 @@ defmodule Pleroma.LoadTesting.Generator do
   end
 
   defp do_generate_thread(users, activity_id) do
-    Pleroma.Web.CommonAPI.post(Enum.random(users), %{
+    CommonAPI.post(Enum.random(users), %{
       "status" => "reply to main post",
       "in_reply_to_status_id" => activity_id
     })
   end
 
-  def generate_private_thread(users, opts) do
-    IO.puts("Starting generating long thread with #{opts[:non_visible_posts_max]} replies")
-    {time, _} = :timer.tc(fn -> do_generate_non_visible_posts(users, opts) end)
-    IO.puts("Inserting long thread replies take #{to_sec(time)} sec.\n")
+  def generate_non_visible_message(user, users) do
+    IO.puts("Starting generating 1000 non visible posts")
+
+    {time, _} =
+      :timer.tc(fn ->
+        do_generate_non_visible_posts(user, users)
+      end)
+
+    IO.puts("Inserting non visible posts take #{to_sec(time)} sec.\n")
   end
 
-  defp do_generate_non_visible_posts(users, opts) do
-    [user1, user2] = Enum.take(users, 2)
-    {:ok, user1} = Pleroma.User.follow(user1, user2)
-    {:ok, user2} = Pleroma.User.follow(user2, user1)
+  defp do_generate_non_visible_posts(user, users) do
+    [not_friend | users] = users
 
-    {:ok, activity} =
-      Pleroma.Web.CommonAPI.post(user1, %{
-        "status" => "Some private post",
-        "visibility" => "private"
-      })
+    make_friends(user, users)
 
-    {:ok, activity_public} =
-      Pleroma.Web.CommonAPI.post(user2, %{
-        "status" => "Some public reply",
-        "in_reply_to_status_id" => activity.id
-      })
-
-    Task.async_stream(
-      1..opts[:non_visible_posts_max],
-      fn _ -> do_generate_non_visible_post(users, activity_public) end,
+    Task.async_stream(1..1000, fn _ -> do_generate_non_visible_post(not_friend, users) end,
       max_concurrency: 10,
       timeout: 30_000
     )
+    |> Stream.run()
   end
 
-  defp do_generate_non_visible_post(users, activity) do
-    visibility = Enum.random(["private", "public"])
+  defp make_friends(_user, []), do: nil
 
-    Pleroma.Web.CommonAPI.post(Enum.random(users), %{
-      "visibility" => visibility,
-      "status" => "Some #{visibility} reply",
-      "in_reply_to_status_id" => activity.id
-    })
+  defp make_friends(user, [friend | users]) do
+    {:ok, _} = User.follow(user, friend)
+    {:ok, _} = User.follow(friend, user)
+    make_friends(user, users)
+  end
+
+  defp do_generate_non_visible_post(not_friend, users) do
+    post = %{
+      "status" => "some non visible post",
+      "visibility" => "private"
+    }
+
+    {:ok, activity} = CommonAPI.post(not_friend, post)
+
+    thread_length = Enum.random([2, 3, 4, 5])
+
+    Enum.each(1..thread_length, fn _ ->
+      user = Enum.random(users)
+
+      post = %{
+        "status" => "@#{not_friend.nickname} reply to non visible post",
+        "in_reply_to_status_id" => activity.id,
+        "visibility" => "private"
+      }
+
+      CommonAPI.post(user, post)
+    end)
   end
 end
