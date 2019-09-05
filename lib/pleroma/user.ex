@@ -570,10 +570,20 @@ defmodule Pleroma.User do
   end
 
   def get_cached_by_nickname_or_id(nickname_or_id, opts \\ []) do
-    if is_integer(nickname_or_id) or Pleroma.FlakeId.is_flake_id?(nickname_or_id) do
-      get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
-    else
-      unless opts[:restrict_remote_nicknames], do: get_cached_by_nickname(nickname_or_id)
+    restrict_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+
+    cond do
+      is_integer(nickname_or_id) or Pleroma.FlakeId.is_flake_id?(nickname_or_id) ->
+        get_cached_by_id(nickname_or_id) || get_cached_by_nickname(nickname_or_id)
+
+      restrict_to_local == false ->
+        get_cached_by_nickname(nickname_or_id)
+
+      restrict_to_local == :unauthenticated and match?(%User{}, opts[:for]) ->
+        get_cached_by_nickname(nickname_or_id)
+
+      true ->
+        nil
     end
   end
 
