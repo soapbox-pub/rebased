@@ -23,7 +23,8 @@ defmodule Pleroma.Plugs.TrailingFormatPlug do
     "/nodeinfo",
     "/api/help",
     "/api/externalprofile",
-    "/notice"
+    "/notice",
+    "/api/pleroma/emoji"
   ]
 
   def init(opts) do
