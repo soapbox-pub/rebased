@@ -551,6 +551,14 @@ defmodule Pleroma.Web.MastodonAPI.StatusViewTest do
       assert Enum.at(result[:options], 1)[:votes_count] == 1
       assert Enum.at(result[:options], 2)[:votes_count] == 1
     end
+
+    test "does not crash on polls with no end date" do
+      object = Object.normalize("https://skippers-bin.com/notes/7x9tmrp97i")
+      result = StatusView.render("poll.json", %{object: object})
+
+      assert result[:expires_at] == nil
+      assert result[:expired] == false
+    end
   end
 
   test "embeds a relationship in the account" do
