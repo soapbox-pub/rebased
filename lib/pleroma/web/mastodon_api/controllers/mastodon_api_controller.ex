@@ -447,8 +447,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
          grouped_activities <- Enum.group_by(activities, fn %{id: id} -> id < activity.id end) do
       result = %{
         ancestors:
-          StatusView.render(
-            "index.json",
+          StatusView.render("index.json",
             for: user,
             activities: grouped_activities[true] || [],
             as: :activity
@@ -456,8 +455,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
           |> Enum.reverse(),
         # credo:disable-for-previous-line Credo.Check.Refactor.PipeChainStart
         descendants:
-          StatusView.render(
-            "index.json",
+          StatusView.render("index.json",
             for: user,
             activities: grouped_activities[false] || [],
             as: :activity
@@ -746,9 +744,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   end
 
   def relationships(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    id = List.wrap(id)
-    q = from(u in User, where: u.id in ^id)
-    targets = Repo.all(q)
+    targets = User.get_all_by_ids(List.wrap(id))
 
     conn
     |> put_view(AccountView)
@@ -758,25 +754,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   # Instead of returning a 400 when no "id" params is present, Mastodon returns an empty array.
   def relationships(%{assigns: %{user: _user}} = conn, _), do: json(conn, [])
 
-  def update_media(%{assigns: %{user: user}} = conn, data) do
-    with %Object{} = object <- Repo.get(Object, data["id"]),
+  def update_media(
+        %{assigns: %{user: user}} = conn,
+        %{"id" => id, "description" => description} = _
+      )
+      when is_binary(description) do
+    with %Object{} = object <- Repo.get(Object, id),
          true <- Object.authorize_mutation(object, user),
-         true <- is_binary(data["description"]),
-         description <- data["description"] do
-      new_data = %{object.data | "name" => description}
-
-      {:ok, _} =
-        object
-        |> Object.change(%{data: new_data})
-        |> Repo.update()
-
-      attachment_data = Map.put(new_data, "id", object.id)
+         {:ok, %Object{data: data}} <- Object.update_data(object, %{"name" => description}) do
+      attachment_data = Map.put(data, "id", object.id)
 
       conn
       |> put_view(StatusView)
       |> render("attachment.json", %{attachment: attachment_data})
     end
   end
+
+  def update_media(_conn, _data), do: {:error, :bad_request}
 
   def upload(%{assigns: %{user: user}} = conn, %{"file" => file} = data) do
     with {:ok, object} <-
@@ -796,34 +790,23 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def set_mascot(%{assigns: %{user: user}} = conn, %{"file" => file}) do
     with {:ok, object} <- ActivityPub.upload(file, actor: User.ap_id(user)),
          %{} = attachment_data <- Map.put(object.data, "id", object.id),
-         %{type: type} = rendered <-
-           StatusView.render("attachment.json", %{attachment: attachment_data}) do
-      # Reject if not an image
-      if type == "image" do
-        # Sure!
-        # Save to the user's info
-        info_changeset = User.Info.mascot_update(user.info, rendered)
-
-        user_changeset =
-          user
-          |> Changeset.change()
-          |> Changeset.put_embed(:info, info_changeset)
-
-        {:ok, _user} = User.update_and_set_cache(user_changeset)
-
-        conn
-        |> json(rendered)
-      else
+         %{type: "image"} = rendered <-
+           StatusView.render("attachment.json", %{attachment: attachment_data}),
+         {:ok, _user} = User.update_mascot(user, rendered) do
+      json(conn, rendered)
+    else
+      %{type: _type} = _ ->
         render_error(conn, :unsupported_media_type, "mascots can only be images")
-      end
+
+      e ->
+        e
     end
   end
 
   def get_mascot(%{assigns: %{user: user}} = conn, _params) do
     mascot = User.get_mascot(user)
 
-    conn
-    |> json(mascot)
+    json(conn, mascot)
   end
 
   def favourited_by(%{assigns: %{user: user}} = conn, %{"id" => id}) do
@@ -1119,10 +1102,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(AccountView)
       |> render("relationship.json", %{user: user, target: subscription_target})
     else
-      {:error, message} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(%{error: message})
+      nil -> {:error, :not_found}
+      e -> e
     end
   end
 
@@ -1133,10 +1114,8 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       |> put_view(AccountView)
       |> render("relationship.json", %{user: user, target: subscription_target})
     else
-      {:error, message} ->
-        conn
-        |> put_status(:forbidden)
-        |> json(%{error: message})
+      nil -> {:error, :not_found}
+      e -> e
     end
   end
 
@@ -1207,8 +1186,10 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
 
   def account_lists(%{assigns: %{user: user}} = conn, %{"id" => account_id}) do
     lists = Pleroma.List.get_lists_account_belongs(user, account_id)
-    res = ListView.render("lists.json", lists: lists)
-    json(conn, res)
+
+    conn
+    |> put_view(ListView)
+    |> render("index.json", %{lists: lists})
   end
 
   def list_timeline(%{assigns: %{user: user}} = conn, %{"list_id" => id} = params) do
@@ -1363,7 +1344,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   @doc "Local Mastodon FE login init action"
   def login(conn, %{"code" => auth_token}) do
     with {:ok, app} <- get_or_make_app(),
-         %Authorization{} = auth <- Repo.get_by(Authorization, token: auth_token, app_id: app.id),
+         {:ok, auth} <- Authorization.get_by_token(app, auth_token),
          {:ok, token} <- Token.exchange_token(app, auth) do
       conn
       |> put_session(:oauth_token, token.token)
@@ -1375,9 +1356,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
   def login(conn, _) do
     with {:ok, app} <- get_or_make_app() do
       path =
-        o_auth_path(
-          conn,
-          :authorize,
+        o_auth_path(conn, :authorize,
           response_type: "code",
           client_id: app.client_id,
           redirect_uri: ".",
@@ -1399,31 +1378,12 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
+  @spec get_or_make_app() :: {:ok, App.t()} | {:error, Ecto.Changeset.t()}
   defp get_or_make_app do
-    find_attrs = %{client_name: @local_mastodon_name, redirect_uris: "."}
-    scopes = ["read", "write", "follow", "push"]
-
-    with %App{} = app <- Repo.get_by(App, find_attrs) do
-      {:ok, app} =
-        if app.scopes == scopes do
-          {:ok, app}
-        else
-          app
-          |> Changeset.change(%{scopes: scopes})
-          |> Repo.update()
-        end
-
-      {:ok, app}
-    else
-      _e ->
-        cs =
-          App.register_changeset(
-            %App{},
-            Map.put(find_attrs, :scopes, scopes)
-          )
-
-        Repo.insert(cs)
-    end
+    App.get_or_make(
+      %{client_name: @local_mastodon_name, redirect_uris: "."},
+      ["read", "write", "follow", "push"]
+    )
   end
 
   def logout(conn, _) do
@@ -1432,24 +1392,11 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     |> redirect(to: "/")
   end
 
-  def relationship_noop(%{assigns: %{user: user}} = conn, %{"id" => id}) do
-    Logger.debug("Unimplemented, returning unmodified relationship")
-
-    with %User{} = target <- User.get_cached_by_id(id) do
-      conn
-      |> put_view(AccountView)
-      |> render("relationship.json", %{user: user, target: target})
-    end
-  end
-
+  # Stubs for unimplemented mastodon api
+  #
   def empty_array(conn, _) do
     Logger.debug("Unimplemented, returning an empty array")
     json(conn, [])
-  end
-
-  def empty_object(conn, _) do
-    Logger.debug("Unimplemented, returning an empty object")
-    json(conn, %{})
   end
 
   def get_filters(%{assigns: %{user: user}} = conn, _) do
@@ -1570,7 +1517,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
       json(conn, data)
     else
       _e ->
-        %{}
+        json(conn, %{})
     end
   end
 
@@ -1623,7 +1570,7 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def account_register(%{assigns: %{app: _app}} = conn, _params) do
+  def account_register(%{assigns: %{app: _app}} = conn, _) do
     render_error(conn, :bad_request, "Missing parameters")
   end
 
@@ -1682,15 +1629,15 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIController do
     end
   end
 
-  def try_render(conn, target, params)
-      when is_binary(target) do
+  defp try_render(conn, target, params)
+       when is_binary(target) do
     case render(conn, target, params) do
       nil -> render_error(conn, :not_implemented, "Can't display this activity")
       res -> res
     end
   end
 
-  def try_render(conn, _, _) do
+  defp try_render(conn, _, _) do
     render_error(conn, :not_implemented, "Can't display this activity")
   end
 
