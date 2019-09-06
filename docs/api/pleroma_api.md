@@ -126,13 +126,14 @@ Request parameters can be passed via [query strings](https://en.wikipedia.org/wi
 ## `/api/pleroma/admin/`…
 See [Admin-API](Admin-API.md)
 
-## `/api/pleroma/notifications/read`
-### Mark a single notification as read
+## `/api/v1/pleroma/notifications/read`
+### Mark notifications as read
 * Method `POST`
 * Authentication: required
-* Params:
-    * `id`: notification's id
-* Response: JSON. Returns `{"status": "success"}` if the reading was successful, otherwise returns `{"error": "error_msg"}`
+* Params (mutually exclusive):
+    * `id`: a single notification id to read
+    * `max_id`: read all notifications up to this id
+* Response: Notification entity/Array of Notification entities that were read. In case of `max_id`, only the first 80 read notifications will be returned.
 
 ## `/api/v1/pleroma/accounts/:id/subscribe`
 ### Subscribe to receive notifications for all statuses posted by a user

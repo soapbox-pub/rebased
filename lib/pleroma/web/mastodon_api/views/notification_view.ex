@@ -14,7 +14,7 @@ defmodule Pleroma.Web.MastodonAPI.NotificationView do
   alias Pleroma.Web.MastodonAPI.StatusView
 
   def render("index.json", %{notifications: notifications, for: user}) do
-    render_many(notifications, NotificationView, "show.json", %{for: user})
+    safe_render_many(notifications, NotificationView, "show.json", %{for: user})
   end
 
   def render("show.json", %{

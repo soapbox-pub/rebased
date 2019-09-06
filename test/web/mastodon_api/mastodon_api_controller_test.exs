@@ -21,7 +21,6 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
   alias Pleroma.Web.OAuth.Token
   alias Pleroma.Web.OStatus
   alias Pleroma.Web.Push
-  alias Pleroma.Web.TwitterAPI.TwitterAPI
   import Pleroma.Factory
   import ExUnit.CaptureLog
   import Tesla.Mock
@@ -1484,12 +1483,9 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
         filename: "an_image.jpg"
       }
 
-      media =
-        TwitterAPI.upload(file, user, "json")
-        |> Jason.decode!()
+      {:ok, %{id: media_id}} = ActivityPub.upload(file, actor: user.ap_id)
 
-      {:ok, image_post} =
-        CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media["media_id"]]})
+      {:ok, image_post} = CommonAPI.post(user, %{"status" => "cofe", "media_ids" => [media_id]})
 
       conn =
         conn
@@ -1675,32 +1671,85 @@ defmodule Pleroma.Web.MastodonAPI.MastodonAPIControllerTest do
     end
   end
 
-  test "account fetching", %{conn: conn} do
-    user = insert(:user)
+  describe "account fetching" do
+    test "works by id" do
+      user = insert(:user)
 
-    conn =
-      conn
-      |> get("/api/v1/accounts/#{user.id}")
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.id}")
 
-    assert %{"id" => id} = json_response(conn, 200)
-    assert id == to_string(user.id)
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == to_string(user.id)
 
-    conn =
-      build_conn()
-      |> get("/api/v1/accounts/-1")
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/-1")
 
-    assert %{"error" => "Can't find user"} = json_response(conn, 404)
-  end
+      assert %{"error" => "Can't find user"} = json_response(conn, 404)
+    end
 
-  test "account fetching also works nickname", %{conn: conn} do
-    user = insert(:user)
+    test "works by nickname" do
+      user = insert(:user)
 
-    conn =
-      conn
-      |> get("/api/v1/accounts/#{user.nickname}")
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.nickname}")
 
-    assert %{"id" => id} = json_response(conn, 200)
-    assert id == user.id
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == user.id
+    end
+
+    test "works by nickname for remote users" do
+      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+      Pleroma.Config.put([:instance, :limit_to_local_content], false)
+      user = insert(:user, nickname: "user@example.com", local: false)
+
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.nickname}")
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == user.id
+    end
+
+    test "respects limit_to_local_content == :all for remote user nicknames" do
+      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+      Pleroma.Config.put([:instance, :limit_to_local_content], :all)
+
+      user = insert(:user, nickname: "user@example.com", local: false)
+
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.nickname}")
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
+      assert json_response(conn, 404)
+    end
+
+    test "respects limit_to_local_content == :unauthenticated for remote user nicknames" do
+      limit_to_local = Pleroma.Config.get([:instance, :limit_to_local_content])
+      Pleroma.Config.put([:instance, :limit_to_local_content], :unauthenticated)
+
+      user = insert(:user, nickname: "user@example.com", local: false)
+      reading_user = insert(:user)
+
+      conn =
+        build_conn()
+        |> get("/api/v1/accounts/#{user.nickname}")
+
+      assert json_response(conn, 404)
+
+      conn =
+        build_conn()
+        |> assign(:user, reading_user)
+        |> get("/api/v1/accounts/#{user.nickname}")
+
+      Pleroma.Config.put([:instance, :limit_to_local_content], limit_to_local)
+      assert %{"id" => id} = json_response(conn, 200)
+      assert id == user.id
+    end
   end
 
   test "mascot upload", %{conn: conn} do

@@ -299,7 +299,8 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         content: %{"text/plain" => content_plaintext},
         spoiler_text: %{"text/plain" => summary_plaintext},
         expires_at: expires_at,
-        direct_conversation_id: direct_conversation_id
+        direct_conversation_id: direct_conversation_id,
+        thread_muted: thread_muted?
       }
     }
   end
@@ -384,16 +385,27 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
       end
 
     if options do
-      end_time =
-        (object.data["closed"] || object.data["endTime"])
-        |> NaiveDateTime.from_iso8601!()
+      {end_time, expired} =
+        case object.data["closed"] || object.data["endTime"] do
+          end_time when is_binary(end_time) ->
+            end_time =
+              (object.data["closed"] || object.data["endTime"])
+              |> NaiveDateTime.from_iso8601!()
 
-      expired =
-        end_time
-        |> NaiveDateTime.compare(NaiveDateTime.utc_now())
-        |> case do
-          :lt -> true
-          _ -> false
+            expired =
+              end_time
+              |> NaiveDateTime.compare(NaiveDateTime.utc_now())
+              |> case do
+                :lt -> true
+                _ -> false
+              end
+
+            end_time = Utils.to_masto_date(end_time)
+
+            {end_time, expired}
+
+          _ ->
+            {nil, false}
         end
 
       voted =
@@ -420,7 +432,7 @@ defmodule Pleroma.Web.MastodonAPI.StatusView do
         # Mastodon uses separate ids for polls, but an object can't have
         # more than one poll embedded so object id is fine
         id: to_string(object.id),
-        expires_at: Utils.to_masto_date(end_time),
+        expires_at: end_time,
         expired: expired,
         multiple: multiple,
         votes_count: votes_count,
