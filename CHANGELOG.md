@@ -110,6 +110,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - RichMedia: add the rich media ttl based on image expiration time.
 
 ### Removed
+- GNU Social API with Qvitter extensions support
 - Emoji: Remove longfox emojis.
 - Remove `Reply-To` header from report emails for admins.
 - ActivityPub: The `accept_blocks` configuration setting.
