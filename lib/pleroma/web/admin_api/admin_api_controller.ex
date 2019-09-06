@@ -402,11 +402,21 @@ defmodule Pleroma.Web.AdminAPI.AdminAPIController do
 
   @doc "Get a account registeration invite token (base64 string)"
   def get_invite_token(conn, params) do
-    options = params["invite"] || %{}
-    {:ok, invite} = UserInviteToken.create_invite(options)
+    opts = %{}
 
-    conn
-    |> json(invite.token)
+    opts =
+      if params["max_use"],
+        do: Map.put(opts, :max_use, params["max_use"]),
+        else: opts
+
+    opts =
+      if params["expires_at"],
+        do: Map.put(opts, :expires_at, params["expires_at"]),
+        else: opts
+
+    {:ok, invite} = UserInviteToken.create_invite(opts)
+
+    json(conn, AccountView.render("invite.json", %{invite: invite}))
   end
 
   @doc "Get list of created invites"
