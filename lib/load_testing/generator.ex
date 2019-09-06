@@ -22,6 +22,8 @@ defmodule Pleroma.LoadTesting.Generator do
   end
 
   defp generate_user_data(i) do
+    remote = Enum.random([true, false])
+
     user = %User{
       name: "Test テスト User #{i}",
       email: "user#{i}@example.com",
@@ -29,16 +31,32 @@ defmodule Pleroma.LoadTesting.Generator do
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: "Tester Number #{i}",
       info: %{},
-      local: Enum.random([true, false])
+      local: remote
     }
 
-    user = %{
-      user
-      | ap_id: User.ap_id(user),
-        follower_address: User.ap_followers(user),
-        following_address: User.ap_following(user),
-        following: [User.ap_id(user)]
-    }
+    user_urls =
+      if remote do
+        base_url =
+          Enum.random(["https://domain1.com", "https://domain2.com", "https://domain3.com"])
+
+        ap_id = "#{base_url}/users/#{user.nickname}"
+
+        %{
+          ap_id: ap_id,
+          follower_address: ap_id <> "/followers",
+          following_address: ap_id <> "/following",
+          following: [ap_id]
+        }
+      else
+        %{
+          ap_id: User.ap_id(user),
+          follower_address: User.ap_followers(user),
+          following_address: User.ap_following(user),
+          following: [User.ap_id(user)]
+        }
+      end
+
+    user = Map.merge(user, user_urls)
 
     Repo.insert!(user)
   end

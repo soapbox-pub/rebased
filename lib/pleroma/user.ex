@@ -429,7 +429,9 @@ defmodule Pleroma.User do
         {:error, "Could not follow user: #{followed.nickname} blocked you."}
 
       true ->
-        if !followed.local && follower.local && !ap_enabled?(followed) do
+        benchmark? = Pleroma.Config.get([:env]) == :benchmark
+
+        if !followed.local && follower.local && !ap_enabled?(followed) && !benchmark? do
           Websub.subscribe(follower, followed)
         end
 

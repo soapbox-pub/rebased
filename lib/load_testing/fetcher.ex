@@ -215,7 +215,7 @@ defmodule Pleroma.LoadTesting.Fetcher do
           for: user
         })
       end,
-      "Render context ancestors" => fn ->
+      "Render context" => fn ->
         Pleroma.Web.MastodonAPI.StatusView.render(
           "index.json",
           for: user,
