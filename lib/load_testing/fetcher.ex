@@ -2,8 +2,6 @@ defmodule Pleroma.LoadTesting.Fetcher do
   use Pleroma.LoadTesting.Helper
 
   def fetch_user(user) do
-    IO.puts("=================================")
-
     Benchee.run(%{
       "By id" => fn -> Repo.get_by(User, id: user.id) end,
       "By ap_id" => fn -> Repo.get_by(User, ap_id: user.ap_id) end,
@@ -13,8 +11,6 @@ defmodule Pleroma.LoadTesting.Fetcher do
   end
 
   def query_timelines(user) do
-    IO.puts("\n=================================")
-
     home_timeline_params = %{
       "count" => 20,
       "with_muted" => true,
@@ -102,7 +98,6 @@ defmodule Pleroma.LoadTesting.Fetcher do
   end
 
   def query_notifications(user) do
-    IO.puts("\n=================================")
     without_muted_params = %{"count" => "20", "with_muted" => "false"}
     with_muted_params = %{"count" => "20", "with_muted" => "true"}
 
@@ -138,8 +133,6 @@ defmodule Pleroma.LoadTesting.Fetcher do
   end
 
   def query_dms(user) do
-    IO.puts("\n=================================")
-
     params = %{
       "count" => "20",
       "with_muted" => "true",
@@ -187,8 +180,6 @@ defmodule Pleroma.LoadTesting.Fetcher do
   end
 
   def query_long_thread(user, activity) do
-    IO.puts("\n=================================")
-
     Benchee.run(%{
       "Fetch main post" => fn ->
         Pleroma.Activity.get_by_id_with_object(activity.id)

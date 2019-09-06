@@ -28,7 +28,8 @@ defmodule Pleroma.LoadTesting.Generator do
       nickname: "nick#{i}",
       password_hash: Comeonin.Pbkdf2.hashpwsalt("test"),
       bio: "Tester Number #{i}",
-      info: %{}
+      info: %{},
+      local: Enum.random([true, false])
     }
 
     user = %{

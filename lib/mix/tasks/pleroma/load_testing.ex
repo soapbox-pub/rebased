@@ -5,19 +5,23 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
   import Pleroma.LoadTesting.Generator
   import Pleroma.LoadTesting.Fetcher
 
-  # tODO: remove autovacuum worker until generation is not ended
   @shortdoc "Factory for generation data"
   @moduledoc """
   Generates data like:
   - users
   - activities with notifications
+  - direct messages
+  - long thread
+  - non visible posts
 
   ## Generate data
-      MIX_ENV=benchmark mix pleroma.load_testing --users 10000
-      MIX_ENV=benchmark mix pleroma.load_testing -u 10000
+      MIX_ENV=benchmark mix pleroma.load_testing --users 20000 --dms 20000 --thread_length 2000
+      MIX_ENV=benchmark mix pleroma.load_testing -u 20000 -d 20000 -t 2000
 
   Options:
-  - `--users NUMBER` - number of users to generate (default: 10000)
+  - `--users NUMBER` - number of users to generate. Defaults to: 20000. Alias: `-u`
+  - `--dms NUMBER` - number of direct messages to generate. Defaults to: 20000. Alias `-d`
+  - `--thread_length` - number of messages in thread. Defaults to: 2000. ALias `-t`
   """
 
   @aliases [u: :users, d: :dms, t: :thread_length]
@@ -32,6 +36,7 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
 
   def run(args) do
     start_pleroma()
+    Pleroma.Config.put([:instance, :skip_thread_containment], true)
     {opts, _} = OptionParser.parse!(args, strict: @switches, aliases: @aliases)
 
     users_max = Keyword.get(opts, :users, @users_default)
@@ -95,11 +100,12 @@ defmodule Mix.Tasks.Pleroma.LoadTesting do
     query_notifications(user)
     query_dms(user)
     query_long_thread(user, activity)
+    Pleroma.Config.put([:instance, :skip_thread_containment], false)
     query_timelines(user)
   end
 
   defp clean_tables do
-    IO.puts("\n\nDeleting old data...\n")
+    IO.puts("Deleting old data...\n")
     Ecto.Adapters.SQL.query!(Repo, "TRUNCATE users CASCADE;")
     Ecto.Adapters.SQL.query!(Repo, "TRUNCATE activities CASCADE;")
     Ecto.Adapters.SQL.query!(Repo, "TRUNCATE objects CASCADE;")
