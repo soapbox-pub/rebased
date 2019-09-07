@@ -228,10 +228,8 @@ Note: Available `:permission_group` is currently moderator and admin. 404 is ret
 
 - Methods: `POST`
 - Params:
-  - *optional* `invite` => [
-    - *optional* `max_use` (integer)
-    - *optional* `expires_at` (date string e.g. "2019-04-07")
-  ]
+  - *optional* `max_use` (integer)
+  - *optional* `expires_at` (date string e.g. "2019-04-07")
 - Response:
 
 ```json
